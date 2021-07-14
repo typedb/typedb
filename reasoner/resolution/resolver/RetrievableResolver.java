@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
@@ -40,10 +41,11 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
 
     private final Retrievable retrievable;
-    protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, Driver<BoundRetrievableResolver>>> boundRetrievablesByRoot;
+    private final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, Driver<BoundRetrievableResolver>>> boundRetrievablesByRoot;
     private final Map<Driver<BoundRetrievableResolver>, Integer> boundRetrievableIterations;
-    protected final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
+    private final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
     private final Map<Request, Request> requestMap;
+    private final Map<Driver<? extends Resolver<?>>, SubsumptionTracker> subsumptionTrackers;
 
     public RetrievableResolver(Driver<RetrievableResolver> driver, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
@@ -54,6 +56,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         this.iterationByRoot = new HashMap<>();
         this.boundRetrievableIterations = new HashMap<>();
         this.requestMap = new HashMap<>();  // TODO: We can do without this by specialising the message types
+        this.subsumptionTrackers = new HashMap<>();
     }
 
     @Override
@@ -72,6 +75,9 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             failToUpstream(fromUpstream, iteration);
         } else {
             ConceptMap bounds = fromUpstream.partialAnswer().conceptMap();
+            Optional<ConceptMap> finishedSubsumingBounds = subsumptionTrackers.computeIfAbsent(
+                    root, r -> new SubsumptionTracker()).getSubsumer(bounds);
+            if (finishedSubsumingBounds.isPresent()) bounds = finishedSubsumingBounds.get();
             Driver<BoundRetrievableResolver> boundRetrievable = getOrReplaceBoundRetrievable(root, bounds, iteration);
             Request request = Request.create(driver(), boundRetrievable, fromUpstream.partialAnswer());
             requestMap.put(request, fromUpstream);
@@ -83,6 +89,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         iterationByRoot.put(root, iteration);
         boundRetrievablesByRoot.get(root).clear();
         // boundRetrievableIterations.clear(); // TODO: Clearing this causes a test failure
+        subsumptionTrackers.remove(root);
     }
 
     @Override
@@ -92,6 +99,9 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
+        subsumptionTrackers
+                .computeIfAbsent(fromDownstream.sourceRequest().partialAnswer().root(), r -> new SubsumptionTracker())
+                .addFinished(fromDownstream.sourceRequest().partialAnswer().conceptMap());
         failToUpstream(requestMap.get(fromDownstream.sourceRequest()), iteration);
     }
 
@@ -102,7 +112,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     private Driver<BoundRetrievableResolver> getOrReplaceBoundRetrievable(Driver<? extends Resolver<?>> root,
                                                                           ConceptMap bounds, int iteration) {
-        boundRetrievablesByRoot.computeIfAbsent(root, x -> new HashMap<>());
+        boundRetrievablesByRoot.computeIfAbsent(root, r -> new HashMap<>());
         Driver<BoundRetrievableResolver> boundRetrievable;
         if (!boundRetrievablesByRoot.get(root).containsKey(bounds)) {
             boundRetrievable = putBoundRetrievable(root, bounds, iteration);

@@ -43,7 +43,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     private final Retrievable retrievable;
     private final ConceptMap bounds;
     private final ConceptMapCache cache;
-    private final Map<Request, RetrievableRequestState> requestStates;
+    private final Map<Request, BoundRetrievableRequestState> requestStates;
 
     public BoundRetrievableResolver(Retrievable retrievable, ConceptMap bounds, Driver<BoundRetrievableResolver> driver,
                                     ResolverRegistry registry, TraversalEngine traversalEngine,
@@ -52,8 +52,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         this.retrievable = retrievable;
         this.bounds = bounds;
         this.cache = new ConceptMapCache(new HashMap<>(), this.bounds);
-        // TODO: Figure out how to fetch answers from completed subsumers
-        if (!this.cache.completeIfSubsumerComplete()) this.cache.addSource(traversalIterator(this.retrievable.pattern(), this.bounds));
+        this.cache.addSource(traversalIterator(this.retrievable.pattern(), this.bounds));
         this.requestStates = new HashMap<>();
     }
 
@@ -64,8 +63,8 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
-        this.requestStates.computeIfAbsent(fromUpstream, request -> new RetrievableRequestState(request, cache, iteration)); // TODO: Iteration shouldn't be needed
-        RetrievableRequestState requestState = this.requestStates.get(fromUpstream);
+        this.requestStates.computeIfAbsent(fromUpstream, request -> new BoundRetrievableRequestState(request, cache, iteration)); // TODO: Iteration shouldn't be needed
+        BoundRetrievableRequestState requestState = this.requestStates.get(fromUpstream);
 
         Optional<AnswerState.Partial.Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
         if (upstreamAnswer.isPresent()) {
@@ -91,16 +90,15 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private static class RetrievableRequestState extends RequestState.CachingRequestState<ConceptMap, ConceptMap> {
+    private static class BoundRetrievableRequestState extends RequestState.CachingRequestState<ConceptMap, ConceptMap> {
 
-        public RetrievableRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache, int iteration) {
+        public BoundRetrievableRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache, int iteration) {
             super(fromUpstream, answerCache, iteration, false, false);
         }
 
         @Override
         protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ConceptMap answer) {
-            return Iterators.single(fromUpstream.partialAnswer().asRetrievable()
-                                            .aggregateToUpstream(answer));
+            return Iterators.single(fromUpstream.partialAnswer().asRetrievable().aggregateToUpstream(answer));
         }
     }
 }
