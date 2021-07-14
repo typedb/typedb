@@ -43,6 +43,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, Driver<BoundRetrievableResolver>>> boundRetrievablesByRoot;
     private final Map<Driver<BoundRetrievableResolver>, Integer> boundRetrievableIterations;
     protected final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
+    private final Map<Request, Request> requestMap;
 
     public RetrievableResolver(Driver<RetrievableResolver> driver, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
@@ -52,6 +53,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         this.boundRetrievablesByRoot = new HashMap<>();
         this.iterationByRoot = new HashMap<>();
         this.boundRetrievableIterations = new HashMap<>();
+        this.requestMap = new HashMap<>();  // TODO: We can do without this by specialising the message types
     }
 
     @Override
@@ -72,6 +74,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             ConceptMap bounds = fromUpstream.partialAnswer().conceptMap();
             Driver<BoundRetrievableResolver> boundRetrievable = getOrReplaceBoundRetrievable(root, bounds, iteration);
             Request request = Request.create(driver(), boundRetrievable, fromUpstream.partialAnswer());
+            requestMap.put(request, fromUpstream);
             requestFromDownstream(request, fromUpstream, iteration);
         }
     }
@@ -79,17 +82,17 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     private void prepareNextIteration(Driver<? extends Resolver<?>> root, int iteration) {
         iterationByRoot.put(root, iteration);
         boundRetrievablesByRoot.get(root).clear();
-        boundRetrievableIterations.clear();
+        // boundRetrievableIterations.clear(); // TODO: Clearing this causes a test failure
     }
 
     @Override
     protected void receiveAnswer(Answer fromDownstream, int iteration) {
-        answerToUpstream(fromDownstream.answer(), fromDownstream.sourceRequest(), iteration);
+        answerToUpstream(fromDownstream.answer(), requestMap.get(fromDownstream.sourceRequest()), iteration);
     }
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-        failToUpstream(fromDownstream.sourceRequest(), iteration);
+        failToUpstream(requestMap.get(fromDownstream.sourceRequest()), iteration);
     }
 
     @Override
