@@ -22,7 +22,6 @@ import com.vaticle.factory.tracing.client.FactoryTracing;
 import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.common.util.Java;
-import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;

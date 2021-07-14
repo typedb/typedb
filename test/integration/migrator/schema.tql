@@ -1,0 +1,542 @@
+#
+# Copyright (C) 2021 Vaticle
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
+define
+
+access-token sub attribute,
+    value string;
+
+active sub attribute,
+    value boolean;
+
+alias sub attribute,
+    value string;
+
+analysis-id sub attribute,
+    value long;
+
+build-correctness-wait-for-quality sub attribute,
+    value boolean;
+
+build-performance-wait-for-correctness sub attribute,
+    value boolean;
+
+build-performance-wait-for-quality sub attribute,
+    value boolean;
+
+command sub attribute,
+    value string;
+
+config sub attribute,
+    value string;
+
+content sub attribute,
+    value string;
+
+created sub attribute,
+    value datetime;
+
+data sub attribute,
+    value string;
+
+default sub attribute,
+    value boolean;
+
+description sub attribute,
+    value string;
+
+discord-id sub attribute,
+    value string;
+
+discord-webhook-url sub attribute,
+    value string;
+
+duration sub attribute,
+    value long;
+
+ended sub attribute,
+    value datetime;
+
+environment-variable sub attribute,
+    value string;
+
+error sub attribute,
+    value string;
+
+fork sub attribute,
+    value boolean;
+
+format sub attribute,
+    value string;
+
+full-name sub attribute,
+    value string;
+
+github-token sub attribute,
+    value string;
+
+heads sub attribute,
+    value string;
+
+idr sub attribute,
+    value string;
+
+index sub attribute,
+    value long;
+
+installation-id sub attribute,
+    value string;
+
+ip sub attribute,
+    value string;
+
+is-approved sub attribute,
+    value boolean;
+
+iteration sub attribute,
+    value long;
+
+job-type sub attribute,
+    value string;
+
+label sub attribute,
+    value string;
+
+latest sub attribute,
+    value boolean;
+
+monitor sub attribute,
+    value string;
+
+name sub attribute,
+    value string;
+
+offer sub attribute,
+    value string;
+
+org-role sub attribute,
+    value string;
+
+os-type sub attribute,
+    value string;
+
+parent-github-id sub attribute,
+    value long;
+
+path sub attribute,
+    value string;
+
+pattern sub attribute,
+    value string;
+
+permission sub attribute,
+    value string;
+
+priority sub attribute,
+    value long;
+
+private sub attribute,
+    value boolean;
+
+publisher sub attribute,
+    value string;
+
+reference-type sub attribute,
+    value string;
+
+resource-group sub attribute,
+    value string;
+
+run sub attribute,
+    value long;
+
+sha sub attribute,
+    value string;
+
+sku sub attribute,
+    value string;
+
+started sub attribute,
+    value datetime;
+
+status sub attribute,
+    value string;
+
+symbol sub attribute,
+    value string;
+
+sync sub attribute,
+    value boolean;
+
+user-ssh-private-key sub attribute,
+    value string;
+
+user-ssh-public-key sub attribute,
+    value string;
+
+version-candidate sub attribute,
+    value string;
+
+commit-analysis sub relation,
+    relates analysis,
+    relates commit,
+    relates producer;
+
+commit-author sub relation,
+    relates author,
+    relates commit;
+
+commit-dependency sub relation,
+    owns status,
+    relates analysis,
+    relates dependant,
+    relates dependee;
+
+commit-file sub relation,
+    relates commit,
+    relates file;
+
+commit-link sub relation,
+    relates next,
+    relates previous;
+
+commit-reference sub relation,
+    relates commit,
+    relates reference;
+
+job-dependency sub relation,
+    relates dependant,
+    relates dependee;
+
+job-image sub relation,
+    relates image,
+    relates job;
+
+nested-relation sub relation,
+    relates nested,
+    plays nested-relation:nested;
+
+org-installer sub relation,
+    relates installer,
+    relates org;
+
+org-member sub relation,
+    owns org-role,
+    relates member,
+    relates org;
+
+org-team sub relation,
+    relates org,
+    relates team;
+
+performance-trace sub relation,
+    relates analysis,
+    relates trace;
+
+performance-tracker sub relation,
+    relates analysis,
+    relates tracker;
+
+pipeline-automation sub relation,
+    relates branch,
+    relates pipeline,
+    relates trigger;
+
+pipeline-dependency sub relation,
+    relates dependant,
+    relates dependee;
+
+pipeline-workflow sub relation,
+    relates pipeline,
+    relates workflow;
+
+repo-branch-rule sub relation,
+    relates repo,
+    relates rule;
+
+repo-collaborator sub relation,
+    owns permission,
+    relates collaborator,
+    relates repo;
+
+repo-commit sub relation,
+    relates commit,
+    relates repo;
+
+repo-dependency sub relation,
+    owns reference-type,
+    relates dependant,
+    relates dependee;
+
+repo-dependency-direct sub repo-dependency;
+
+repo-dependency-transitive sub repo-dependency;
+
+repo-fork sub relation,
+    relates child,
+    relates parent;
+
+repo-owner sub relation,
+    relates owner,
+    relates repo;
+
+repo-reference sub relation,
+    relates reference,
+    relates repo;
+
+repo-team sub relation,
+    owns permission,
+    relates repo,
+    relates team;
+
+team-member sub relation,
+    relates member,
+    relates team;
+
+trace-tracker sub relation,
+    relates trace,
+    relates tracker;
+
+trace-tree sub relation,
+    relates child,
+    relates parent;
+
+tracker-tree sub relation,
+    relates child,
+    relates parent;
+
+workflow-dependency sub relation,
+    relates dependant,
+    relates dependee;
+
+workflow-job sub relation,
+    relates job,
+    relates workflow;
+
+analysis sub entity,
+    abstract,
+    owns analysis-id @key,
+    owns created,
+    owns name,
+    plays commit-analysis:analysis;
+
+dependency-analysis sub analysis,
+    owns error,
+    owns status,
+    plays commit-dependency:analysis;
+
+performance-analysis sub analysis,
+    plays performance-trace:analysis,
+    plays performance-tracker:analysis;
+
+automation sub entity,
+    abstract,
+    owns symbol @key,
+    owns ended,
+    owns index,
+    owns latest,
+    owns name,
+    owns run,
+    owns started,
+    owns status;
+
+job sub automation,
+    owns command,
+    owns environment-variable,
+    owns ip,
+    owns job-type,
+    owns monitor,
+    plays job-dependency:dependant,
+    plays job-dependency:dependee,
+    plays job-image:job,
+    plays workflow-job:job;
+
+pipeline sub automation,
+    plays pipeline-automation:pipeline,
+    plays pipeline-dependency:dependant,
+    plays pipeline-dependency:dependee,
+    plays pipeline-workflow:pipeline;
+
+pipeline-release sub pipeline,
+    owns is-approved;
+
+workflow sub automation,
+    plays commit-analysis:producer,
+    plays pipeline-workflow:workflow,
+    plays workflow-dependency:dependant,
+    plays workflow-dependency:dependee,
+    plays workflow-job:workflow;
+
+branch sub entity,
+    owns symbol @key,
+    owns default,
+    owns heads,
+    owns name,
+    owns sync,
+    plays commit-reference:reference,
+    plays pipeline-automation:branch,
+    plays repo-reference:reference;
+
+branch-rule sub entity,
+    owns symbol @key,
+    owns build-correctness-wait-for-quality,
+    owns build-performance-wait-for-correctness,
+    owns build-performance-wait-for-quality,
+    owns pattern,
+    owns priority,
+    plays repo-branch-rule:rule;
+
+commit sub entity,
+    owns symbol @key,
+    owns created,
+    owns sha,
+    owns version-candidate,
+    plays commit-analysis:commit,
+    plays commit-author:commit,
+    plays commit-dependency:dependant,
+    plays commit-dependency:dependee,
+    plays commit-file:commit,
+    plays commit-link:next,
+    plays commit-link:previous,
+    plays commit-reference:commit,
+    plays pipeline-automation:trigger,
+    plays repo-commit:commit;
+
+file sub entity,
+    owns content,
+    owns error,
+    owns format,
+    owns name,
+    plays commit-file:file;
+
+image sub entity,
+    abstract,
+    owns active,
+    owns alias,
+    owns os-type,
+    plays job-image:image;
+
+custom-image sub image,
+    owns name,
+    owns resource-group;
+
+marketplace-image sub image,
+    owns offer,
+    owns publisher,
+    owns sku;
+
+organisation sub entity,
+    owns name @key,
+    owns access-token,
+    owns discord-webhook-url,
+    owns environment-variable,
+    owns full-name,
+    owns installation-id,
+    owns permission,
+    plays org-installer:org,
+    plays org-member:org,
+    plays org-team:org,
+    plays repo-owner:owner;
+
+repository sub entity,
+    owns symbol @key,
+    owns active,
+    owns description,
+    owns environment-variable,
+    owns fork,
+    owns name,
+    owns parent-github-id,
+    owns private,
+    plays repo-branch-rule:repo,
+    plays repo-collaborator:repo,
+    plays repo-commit:repo,
+    plays repo-dependency:dependant,
+    plays repo-dependency:dependee,
+    plays repo-fork:child,
+    plays repo-fork:parent,
+    plays repo-owner:repo,
+    plays repo-reference:repo,
+    plays repo-team:repo;
+
+tag sub entity,
+    owns symbol @key,
+    owns latest,
+    owns name,
+    plays commit-dependency:dependee,
+    plays commit-reference:reference,
+    plays pipeline-automation:trigger,
+    plays repo-reference:reference;
+
+team sub entity,
+    owns symbol @key,
+    owns name,
+    plays org-team:team,
+    plays repo-team:team,
+    plays team-member:team;
+
+trace sub entity,
+    owns idr @key,
+    owns data,
+    owns duration,
+    owns ended,
+    owns iteration,
+    owns label,
+    owns name,
+    owns path,
+    owns started,
+    plays performance-trace:trace,
+    plays trace-tracker:trace,
+    plays trace-tree:child,
+    plays trace-tree:parent;
+
+tracker sub entity,
+    owns idr @key,
+    owns name,
+    owns path,
+    plays performance-tracker:tracker,
+    plays trace-tracker:tracker,
+    plays tracker-tree:child,
+    plays tracker-tree:parent;
+
+user sub entity,
+    owns name @key,
+    owns access-token,
+    owns discord-id,
+    owns discord-webhook-url,
+    owns environment-variable,
+    owns full-name,
+    owns github-token,
+    owns installation-id,
+    owns user-ssh-private-key,
+    owns user-ssh-public-key,
+    plays commit-author:author,
+    plays org-installer:installer,
+    plays org-member:member,
+    plays repo-collaborator:collaborator,
+    plays repo-owner:owner,
+    plays team-member:member;
+
+rule performance-trace-rule:
+    when
+    {
+        (analysis: $x, trace: $y) isa performance-trace;
+        (parent: $y, child: $z) isa trace-tree;
+    }
+    then
+    {
+        (analysis: $x, trace: $z) isa performance-trace;
+    };

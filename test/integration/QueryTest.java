@@ -58,7 +58,7 @@ public class QueryTest {
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("query-test");
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
-    private static String database = "query-test";
+    private static final String database = "query-test";
 
     @Test
     public void test_query_define() throws IOException {

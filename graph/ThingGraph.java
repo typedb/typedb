@@ -440,7 +440,7 @@ public class ThingGraph {
         statistics.clear();
     }
 
-    public Map<VertexIID.Thing, VertexIID.Thing> bufferedToPersistedIIDs() {
+    public Map<VertexIID.Thing, VertexIID.Thing> committedIIDs() {
         return bufferedToPersistedIIDs;
     }
 

@@ -328,8 +328,8 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
             dataStorage.close();
         }
 
-        public FunctionalIterator<Pair<ByteArray, ByteArray>> bufferedToPersistedThingIIDs() {
-            return iterate(graphMgr.data().bufferedToPersistedIIDs().entrySet())
+        public FunctionalIterator<Pair<ByteArray, ByteArray>> committedIIDs() {
+            return iterate(graphMgr.data().committedIIDs().entrySet())
                     .filter(entry -> !entry.getKey().encoding().equals(Encoding.Vertex.Thing.ROLE))
                     .map(entry -> new Pair<>(entry.getKey().bytes(), entry.getValue().bytes()));
         }

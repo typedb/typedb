@@ -548,20 +548,24 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
     }
 
     public static class Migrator extends ErrorMessage {
+        public static final Migrator DATABASE_NOT_FOUND =
+                new Migrator(1, "The database '%s' was not found.");
         public static final Migrator FILE_NOT_FOUND =
-                new Migrator(1, "The specified file path '%s' could not be found.");
+                new Migrator(2, "The specified file path '%s' could not be found.");
         public static final Migrator FILE_NOT_READABLE =
-                new Migrator(2, "The specified file '%s' cannot be opened for read.");
+                new Migrator(3, "The specified file '%s' cannot be opened for read.");
         public static final Migrator FILE_NOT_WRITABLE =
-                new Migrator(3, "The specified file '%s' cannot be opened for write.");
+                new Migrator(4, "The specified file '%s' cannot be opened for write.");
         public static final Migrator TYPE_NOT_FOUND =
-                new Migrator(4, "The type '%s' (originally '%s') is not defined in the schema.");
+                new Migrator(5, "The type '%s' (originally '%s') is not defined in the schema.");
         public static final Migrator ROLE_TYPE_NOT_FOUND =
-                new Migrator(5, "The role type '%s' (originally '%s') is not defined for relation type '%s. Please confirm schema was migrated correctly.");
+                new Migrator(6, "The role type '%s' (originally '%s') is not defined for relation type '%s. Please confirm schema was migrated correctly.");
         public static final Migrator PLAYER_NOT_FOUND =
-                new Migrator(6, "A player for relation type '%s' was expected but not found.");
+                new Migrator(7, "A player for relation type '%s' was expected but not found.");
         public static final Migrator INVALID_DATA =
-                new Migrator(7, "The data being imported is invalid.");
+                new Migrator(8, "The data being imported is invalid.");
+        public static final Migrator IMPORT_CHECKSUM_MISMATCH =
+                new Migrator(9, "The import has finished but mismatches the required checksums.");
 
         private static final String codePrefix = "MIG";
         private static final String messagePrefix = "Migrator failure";
