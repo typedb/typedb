@@ -107,6 +107,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         return requestRouter.get(toDownstream);
     }
 
+    // TODO: Rename to sendRequest or request
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name(), request);
         if (resolutionTracing) ResolutionTracer.get().request(this.name(), request.receiver().name(), iteration,
@@ -117,6 +118,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         receiver.execute(actor -> actor.receiveRequest(request, iteration));
     }
 
+    // TODO: Rename to sendResponse or respond
     protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
         assert answer.isPartial();
         Answer response = Answer.create(fromUpstream, answer.asPartial());
