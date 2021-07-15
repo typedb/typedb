@@ -46,7 +46,7 @@ import static com.vaticle.typedb.core.common.poller.Pollers.poll;
 public abstract class AnswerCache<ANSWER, SUBSUMES> {
 
     protected final List<ANSWER> answers;
-    private final Set<ANSWER> answersSet;
+    protected final Set<ANSWER> answersSet;
     protected boolean reiterateOnAnswerAdded;
     protected boolean requiresReiteration;
     protected Poller<ANSWER> answerSource;
@@ -292,7 +292,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
             }
 
             @Override
-            protected boolean subsumes(ConceptMap conceptMap, ConceptMap contained) {
+            public boolean subsumes(ConceptMap conceptMap, ConceptMap contained) {
                 return conceptMap.concepts().entrySet().containsAll(contained.concepts().entrySet());
             }
         }

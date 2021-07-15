@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
+import java.util.Optional;
 
 public class Request {
 
@@ -30,28 +31,36 @@ public class Request {
     private final Actor.Driver<? extends Resolver<?>> receiver;
     private final Partial<?> partialAnswer;
     private final int planIndex;
+    private final Actor.Driver<? extends Resolver<?>> subsumer; // TODO: This should be a separate subclass of request
 
     private final int hash;
 
     private Request(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                    Partial<?> partialAnswer, int planIndex) {
+                    @Nullable Actor.Driver<? extends Resolver<?>> subsumer, Partial<?> partialAnswer, int planIndex) {
         this.sender = sender;
         this.receiver = receiver;
         this.partialAnswer = partialAnswer;
         this.planIndex = planIndex;
-        this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer);
+        this.subsumer = subsumer;
+        this.hash = Objects.hash(this.sender, this.receiver, this.subsumer, this.partialAnswer);
     }
 
     public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer, int planIndex) {
-        return new Request(sender, receiver, partialAnswer, planIndex);
+        return new Request(sender, receiver, null, partialAnswer, planIndex);
     }
 
     public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
-        return new Request(sender, receiver, partialAnswer, -1);
+        return new Request(sender, receiver, null, partialAnswer, -1);
+    }
+
+    public static Request create(Actor.Driver<? extends Resolver<?>> sender,
+                                 Actor.Driver<? extends Resolver<?>> receiver,
+                                 Actor.Driver<? extends Resolver<?>> subsumer, Partial<?> partialAnswer) {
+        return new Request(sender, receiver, subsumer, partialAnswer, -1);
     }
 
     public static Request create(Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
-        return new Request(null, receiver, partialAnswer, -1);
+        return new Request(null, receiver, null, partialAnswer, -1);
     }
 
     public Actor.Driver<? extends Resolver<?>> receiver() {
@@ -60,6 +69,10 @@ public class Request {
 
     public Actor.Driver<? extends Resolver<?>> sender() {
         return sender;
+    }
+
+    public Optional<Actor.Driver<? extends Resolver<?>>> subsumer() {
+        return Optional.ofNullable(subsumer);
     }
 
     public Partial<?> partialAnswer() {
@@ -77,6 +90,7 @@ public class Request {
         Request request = (Request) o;
         return Objects.equals(sender, request.sender) &&
                 Objects.equals(receiver, request.receiver) &&
+                Objects.equals(subsumer, request.subsumer) &&
                 Objects.equals(partialAnswer, request.partialAnswer());
     }
 
@@ -90,6 +104,7 @@ public class Request {
         return "Request{" +
                 "sender=" + sender +
                 ", receiver=" + receiver +
+                ", subsumer=" + subsumer +
                 ", partial=" + partialAnswer +
                 '}';
     }

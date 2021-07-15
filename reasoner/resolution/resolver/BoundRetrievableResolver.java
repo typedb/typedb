@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
@@ -45,6 +46,8 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     private final ConceptMap bounds;
     private final ConceptMapCache cache;
     private final Map<Request, BoundRetrievableRequestState> requestStates;
+    private boolean traversalInitialised;
+    private final Map<Request, Request> subsumptionRequests;
 
     public BoundRetrievableResolver(Retrievable retrievable, ConceptMap bounds, Driver<BoundRetrievableResolver> driver,
                                     ResolverRegistry registry, TraversalEngine traversalEngine,
@@ -53,8 +56,9 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         this.retrievable = retrievable;
         this.bounds = bounds;
         this.cache = new ConceptMapCache(new HashMap<>(), this.bounds);
-        this.cache.addSource(traversalIterator(this.retrievable.pattern(), this.bounds));
         this.requestStates = new HashMap<>();
+        this.traversalInitialised = false;
+        this.subsumptionRequests = new HashMap<>(); // TODO: Remove this map by storing the original request in the request/response sent/received for subsumption
     }
 
     private static String initName(Retrievable retrievable, ConceptMap bounds) {
@@ -64,27 +68,74 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
-        this.requestStates.computeIfAbsent(fromUpstream, request -> new BoundRetrievableRequestState(request, cache, iteration)); // TODO: Iteration shouldn't be needed
-        BoundRetrievableRequestState requestState = this.requestStates.get(fromUpstream);
+        // TODO: Problems:
+        //  1. Passing from BoundConcludable to BoundConcludable means they try to aggregateToUpstream twice
+        //  2. We need to continue from where the requeststate left off before subsumption was activated
+        requestStates.computeIfAbsent(fromUpstream, request -> new BoundRetrievableRequestState(request, cache, iteration)); // TODO: Iteration shouldn't be needed
+        if (fromUpstream.subsumer().isPresent() && !cache.isComplete()) {
+            // TODO: Once we don't add the traversal into the cache, we can first check for any existing answers not yet
+            //  returned and send them first.
+            requestFromSubsumer(fromUpstream, iteration);
+        } else {
+            initTraversal();
+            Optional<Compound<?, ?>> upstreamAnswer = requestStates.get(fromUpstream).nextAnswer().map(AnswerState.Partial::asCompound);
+            if (upstreamAnswer.isPresent()) {
+                answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
+            } else {
+                cache.setComplete();
+                failToUpstream(fromUpstream, iteration);
+            }
+        }
+    }
 
-        Optional<Compound<?, ?>> upstreamAnswer =
-                requestState.nextAnswer(fromUpstream.partialAnswer().conceptMap()).map(AnswerState.Partial::asCompound);
+    private void requestFromSubsumer(Request fromUpstream, int iteration) {
+        assert fromUpstream.subsumer().isPresent();
+        Request subsumptionRequest = Request.create(driver(), fromUpstream.subsumer().get(),
+                                                    fromUpstream.partialAnswer());
+        subsumptionRequests.put(subsumptionRequest, fromUpstream);
+        requestFromDownstream(subsumptionRequest, fromUpstream, iteration);
+    }
+
+    private void initTraversal() {
+        // TODO: Once we no longer rely on the cache to detect the conditions for reiteration, we can not add the
+        //  traversal as a source and instead add answers from traversal one-by-one as needed, so that we can kill the
+        //  traversal as soon as subsumption kicks in.
+        if (!traversalInitialised) cache.addSource(traversalIterator(retrievable.pattern(), bounds));
+        traversalInitialised = true;
+    }
+
+    @Override
+    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
+        Request fromUpstream = subsumptionRequests.get(fromDownstream.sourceRequest());
+        ConceptMap subsumerAnswer = fromDownstream.answer().conceptMap();
+        if (cache.subsumes(subsumerAnswer, bounds)) {
+            cache.add(fromDownstream.answer().conceptMap());
+            BoundRetrievableRequestState requestState = requestStates.get(fromUpstream);
+            Optional<Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
+            if (upstreamAnswer.isPresent()) {
+                answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
+            } else {
+                requestFromSubsumer(fromUpstream, iteration);
+            }
+        } else {
+            requestFromSubsumer(fromUpstream, iteration);
+        }
+
+    }
+
+    @Override
+    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
+        // Check the cache for answers that could have arrived in async
+        // If none then fail
+        Request fromUpstream = subsumptionRequests.get(fromDownstream.sourceRequest());
+        BoundRetrievableRequestState requestState = requestStates.get(fromUpstream);
+        Optional<Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
         } else {
             cache.setComplete();
             failToUpstream(fromUpstream, iteration);
         }
-    }
-
-    @Override
-    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
-        throw TypeDBException.of(ILLEGAL_STATE);
-    }
-
-    @Override
-    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-        throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     @Override
