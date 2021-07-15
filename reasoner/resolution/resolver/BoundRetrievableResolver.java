@@ -67,7 +67,8 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         this.requestStates.computeIfAbsent(fromUpstream, request -> new BoundRetrievableRequestState(request, cache, iteration)); // TODO: Iteration shouldn't be needed
         BoundRetrievableRequestState requestState = this.requestStates.get(fromUpstream);
 
-        Optional<Compound<?, ?>> upstreamAnswer = requestState.nextAnswer(bounds).map(AnswerState.Partial::asCompound);
+        Optional<Compound<?, ?>> upstreamAnswer =
+                requestState.nextAnswer(fromUpstream.partialAnswer().conceptMap()).map(AnswerState.Partial::asCompound);
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
         } else {
