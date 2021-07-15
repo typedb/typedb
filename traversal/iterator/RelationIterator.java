@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
-import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.edge.impl.ThingEdgeImpl;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
@@ -50,7 +49,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static java.util.stream.Collectors.toMap;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 
 public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
 
@@ -60,7 +59,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
     private final GraphManager graphMgr;
 
     private final Map<Retrievable, Vertex<?, ?>> answer;
-    private final Map<Integer, FunctionalIterator.Sorted<ThingVertex>> iterators;
+    private final Map<Integer, FunctionalIterator.Sorted.Forwardable<ThingVertex>> iterators;
     private final Scoped scoped;
     private Retrievable relationId;
     private TypeVertex relationType;
@@ -68,41 +67,19 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
     private ThingVertex relation;
     private State state;
 
+    private enum State { INIT, EMPTY, PROPOSED, FETCHED, COMPLETED }
+
     public RelationIterator(Structure structure, Traversal.Parameters parameters, GraphManager graphMgr) {
         this.graphMgr = graphMgr;
         this.parameters = parameters;
         vertices = structure.vertices();
         edges = new ArrayList<>(structure.edges());
-        assert edges.stream().allMatch(edge -> edge.isNative() && edge.asNative().isRolePlayer());
+        assert iterate(edges).allMatch(edge -> edge.isNative() && edge.asNative().isRolePlayer());
         answer = new HashMap<>();
         iterators = new HashMap<>();
         scoped = new Scoped();
         state = State.INIT;
         relationProposer = 0;
-    }
-
-    private enum State {
-        INIT, EMPTY, PROPOSED, FETCHED, COMPLETED;
-    }
-
-    private boolean tryInitialise() {
-        List<StructureVertex<?>> withoutIID = iterate(vertices)
-                .filter(vertex -> !parameters.withIID().contains(vertex.id().asVariable().asRetrievable())).toList();
-        assert withoutIID.size() == 1;
-        StructureVertex.Thing relationVertex = withoutIID.get(0).asThing();
-        assert relationVertex.asThing().props().types().size() == 1;
-        relationId = relationVertex.id().asVariable().asRetrievable();
-        relationType = graphMgr.schema().getType(relationVertex.props().types().iterator().next());
-        for (Identifier.Variable withIID : parameters.withIID()) {
-            assert withIID.isRetrievable();
-            ThingVertex thingVertex = graphMgr.data().getReadable(parameters.getIID(withIID));
-            if (thingVertex == null) {
-                state = State.COMPLETED;
-                return false;
-            }
-            answer.put(withIID.asRetrievable(), thingVertex);
-        }
-        return true;
     }
 
     @Override
@@ -118,6 +95,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
                 return true;
             case COMPLETED:
                 return false;
+            case PROPOSED:
             default:
                 throw TypeDBException.of(ILLEGAL_STATE);
         }
@@ -135,11 +113,39 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
         if (tryInitialise() && proposeFirst()) {
             state = State.PROPOSED;
             while (state == State.PROPOSED) {
-                verifyProposeOrComplete();
+                verifyProposed();
             }
         } else {
             state = State.COMPLETED;
         }
+    }
+
+    private boolean tryInitialise() {
+        StructureVertex.Thing relationVertex = relationVertex();
+        assert relationVertex.asThing().props().types().size() == 1;
+        relationId = relationVertex.id().asVariable().asRetrievable();
+        relationType = graphMgr.schema().getType(relationVertex.props().types().iterator().next());
+        return tryInitialiseFixedPlayers();
+    }
+
+    private StructureVertex.Thing relationVertex() {
+        List<StructureVertex<?>> withoutIID = iterate(vertices)
+                .filter(vertex -> !parameters.withIID().contains(vertex.id().asVariable().asRetrievable())).toList();
+        assert withoutIID.size() == 1;
+        return withoutIID.get(0).asThing();
+    }
+
+    private boolean tryInitialiseFixedPlayers() {
+        for (Identifier.Variable withIID : parameters.withIID()) {
+            assert withIID.isRetrievable();
+            ThingVertex thingVertex = graphMgr.data().getReadable(parameters.getIID(withIID));
+            if (thingVertex == null) {
+                state = State.COMPLETED;
+                return false;
+            }
+            answer.put(withIID.asRetrievable(), thingVertex);
+        }
+        return true;
     }
 
     private boolean proposeFirst() {
@@ -157,7 +163,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
         if (proposeNext()) {
             state = State.PROPOSED;
             while (state == State.PROPOSED) {
-                verifyProposeOrComplete();
+                verifyProposed();
             }
         } else {
             state = State.COMPLETED;
@@ -179,16 +185,16 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
         return false;
     }
 
-    private void verifyProposeOrComplete() {
+    private void verifyProposed() {
         for (int i = 0; i < edges.size(); i++) {
-            if (i != relationProposer && !verify(i)) return;
+            if (i != relationProposer && !verifyProposed(i)) return;
         }
         answer.put(relationId, relation);
         state = State.FETCHED;
     }
 
-    private boolean verify(int i) {
-        FunctionalIterator.Sorted<ThingVertex> relationIterator = getIterator(i);
+    private boolean verifyProposed(int edge) {
+        FunctionalIterator.Sorted.Forwardable<ThingVertex> relationIterator = getIterator(edge);
         if (!relationIterator.hasNext()) {
             state = State.COMPLETED;
             return false;
@@ -199,9 +205,9 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
             return true;
         } else if (comparison < 0) {
             relationIterator.forward(this.relation);
-            return verify(i);
+            return verifyProposed(edge);
         } else {
-            propose(i, relationIterator.next());
+            propose(edge, relationIterator.next());
             return false;
         }
     }
@@ -213,20 +219,20 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
         state = State.PROPOSED;
     }
 
-    private FunctionalIterator.Sorted<ThingVertex> getIterator(int edge) {
+    private FunctionalIterator.Sorted.Forwardable<ThingVertex> getIterator(int edge) {
         assert edges.get(edge).to().id().isRetrievable();
         return iterators.computeIfAbsent(edge, this::createIterator);
     }
 
-    private FunctionalIterator.Sorted<ThingVertex> createIterator(int edge) {
+    private FunctionalIterator.Sorted.Forwardable<ThingVertex> createIterator(int edge) {
         StructureEdge<?, ?> structureEdge = edges.get(edge);
         Retrievable playerId = structureEdge.to().id().asVariable().asRetrievable();
         ThingVertex player = answer.get(playerId).asThing();
         Set<Label> roleTypes = structureEdge.asNative().asRolePlayer().types();
         assert roleTypes.size() == 1;
-        TypeVertex roleType = graphMgr.schema().getType(roleTypes.iterator().next());
+        TypeVertex rt = graphMgr.schema().getType(roleTypes.iterator().next());
         return player.ins()
-                .edgeRolePlayer(roleType.iid(), PrefixIID.of(relationType.iid().encoding().instance()), relationType.iid()).get()
+                .edge(ROLEPLAYER, rt, PrefixIID.of(relationType.iid().encoding().instance()), relationType.iid()).get()
                 .filter(directedEdge -> !scoped.containsRole(directedEdge.getEdge().optimised().get()))
                 .mapSorted(
                         directedEdge -> {
@@ -234,8 +240,8 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
                             scoped.record(edge, role);
                             return directedEdge.getEdge().from();
                         }, vertex -> {
-                            ThingEdge target = new ThingEdgeImpl.Virtual(Encoding.Edge.Thing.ROLEPLAYER, vertex, answer.get(playerId).asThing(), roleType);
-                            return ThingAdjacency.EdgeDirected.in(target);
+                            ThingEdge target = new ThingEdgeImpl.Virtual(ROLEPLAYER, vertex, answer.get(playerId).asThing(), rt);
+                            return ThingAdjacency.DirectedEdge.in(target);
                         });
     }
 

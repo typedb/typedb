@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.common.iterator;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator.Sorted.Forwardable;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -62,9 +63,9 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     }
 
     @Override
-    public <U extends Comparable<U>> FunctionalIterator.Sorted<U> mergeMap(
-            Function<T, FunctionalIterator.Sorted<U>> mappingFn) {
-        return new MergeMappedIterator<>(this, mappingFn);
+    public <U extends Comparable<U>> Forwardable<U> mergeMap(
+            Function<T, Forwardable<U>> mappingFn) {
+        return new MergeMappedIterator.Forwardable<>(this, mappingFn);
     }
 
     @Override
@@ -245,24 +246,24 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
         }
 
         @Override
-        public <U extends Comparable<? super U>> FunctionalIterator.Sorted<U> mapSorted(
-                Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
-            return new MappedIterator.Sorted<>(this, mappingFn, reverseMappingFn);
+        public <U extends Comparable<? super U>> FunctionalIterator.Sorted<U> mapSorted(Function<T, U> mappingFn) {
+            return new MappedIterator.Sorted<>(this, mappingFn);
         }
 
         @Override
         public FunctionalIterator.Sorted<T> distinct() {
-            return new DistinctIterator.Sorted<>(this);
+            return Iterators.Sorted.distinct(this);
         }
 
         @Override
         public FunctionalIterator.Sorted<T> filter(Predicate<T> predicate) {
-            return new FilteredIterator.Sorted<>(this, predicate);
+            return Iterators.Sorted.filter(this, predicate);
         }
 
         @Override
         public FunctionalIterator.Sorted<T> onFinalise(Runnable function) {
             return new FinaliseHandledIterator.Sorted<>(this, function);
         }
+
     }
 }

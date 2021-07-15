@@ -20,9 +20,9 @@ package com.vaticle.typedb.core.concept.thing.impl;
 
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.PLAYING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.RELATING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Data.PLAYING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Data.RELATING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 import static java.util.Objects.requireNonNull;
 
 public class RoleImpl {
@@ -38,7 +38,7 @@ public class RoleImpl {
     }
 
     void optimise() {
-        ThingVertex.Write relation = vertex.ins().edge(RELATING).from().next().toWrite(); // TODO should be using `.first()` to cleanup resource
+        ThingVertex.Write relation = vertex.ins().edge(RELATING).from().next().toWrite();
         ThingVertex.Write player = vertex.ins().edge(PLAYING).from().next().toWrite();
         relation.outs().put(ROLEPLAYER, player, vertex, vertex.isInferred());
     }

@@ -22,9 +22,12 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import java.util.NoSuchElementException;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
 
@@ -51,37 +54,23 @@ class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
         iterator.recycle();
     }
 
-    static class Sorted<T extends Comparable<? super T>, U extends Comparable<? super U>>
-            extends AbstractFunctionalIterator.Sorted<U> {
+    static class Sorted<
+            T extends Comparable<? super T>, U extends Comparable<? super U>, ITER extends FunctionalIterator.Sorted<T>
+            > extends AbstractFunctionalIterator.Sorted<U> {
 
-        private final FunctionalIterator.Sorted<T> source;
-        private final Function<T, U> mappingFn;
-        private final Function<U, T> reverseMappingFn;
-        private State state;
-        private U next;
-        private U last;
+        final ITER iterator;
+        final Function<T, U> mappingFn;
+        State state;
+        U next;
+        U last;
 
-        private enum State {EMPTY, FETCHED, COMPLETED};
+        enum State {EMPTY, FETCHED, COMPLETED}
 
-        /**
-         * @param source - iterator to create mapped iterators from
-         * @param mappingFn - The forward mapping function must return a new iterator that is sorted with respect to U's comparator.
-         * @param reverseMappingFn - The reverse mapping function must be the inverse of the forward mapping function.
-         */
-        Sorted(FunctionalIterator.Sorted<T> source, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
-            this.source = source;
+        Sorted(ITER iterator, Function<T, U> mappingFn) {
+            this.iterator = iterator;
             this.mappingFn = mappingFn;
-            this.reverseMappingFn = reverseMappingFn;
             this.state = State.EMPTY;
             last = null;
-        }
-
-        @Override
-        public void forward(U target) {
-            if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
-            T reverseMapped = reverseMappingFn.apply(target);
-            source.forward(reverseMapped);
-            state = State.EMPTY;
         }
 
         @Override
@@ -105,15 +94,18 @@ class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
         }
 
         private boolean fetchAndCheck() {
-            if (source.hasNext()) {
-                T value = source.next();
-                this.next = mappingFn.apply(value);
-                assert reverseMappingFn.apply(this.next).equals(value);
+            if (iterator.hasNext()) {
+                this.next = mappedNext();
                 state = State.FETCHED;
             } else {
                 state = State.COMPLETED;
             }
             return state == State.FETCHED;
+        }
+
+        U mappedNext() {
+            T value = iterator.next();
+            return mappingFn.apply(value);
         }
 
         @Override
@@ -127,7 +119,63 @@ class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
 
         @Override
         public void recycle() {
-            source.recycle();
+            iterator.recycle();
+        }
+
+        static class Forwardable<T extends Comparable<? super T>, U extends Comparable<? super U>>
+                extends MappedIterator.Sorted<T, U, FunctionalIterator.Sorted.Forwardable<T>>
+                implements FunctionalIterator.Sorted.Forwardable<U> {
+
+            private final Function<U, T> reverseMappingFn;
+
+            /**
+             * @param source           - iterator to create mapped iterators from
+             * @param mappingFn        - The forward mapping function must return a new iterator that is sorted with respect to U's comparator.
+             * @param reverseMappingFn - The reverse mapping function must be the able to invert the forward mapping function
+             */
+            Forwardable(FunctionalIterator.Sorted.Forwardable<T> source, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
+                super(source, mappingFn);
+                this.reverseMappingFn = reverseMappingFn;
+            }
+
+            @Override
+            U mappedNext() {
+                T value = iterator.next();
+                U next = mappingFn.apply(value);
+//                assert reverseMappingFn.apply(next).equals(value);
+                return next;
+            }
+
+            @Override
+            public void forward(U target) {
+                if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                T reverseMapped = reverseMappingFn.apply(target);
+                iterator.forward(reverseMapped);
+                state = State.EMPTY;
+            }
+
+            @SafeVarargs
+            @Override
+            public final FunctionalIterator.Sorted.Forwardable<U> merge(FunctionalIterator.Sorted.Forwardable<U>... iterators) {
+                return Iterators.Sorted.merge(this, iterators);
+            }
+
+            @Override
+            public <V extends Comparable<? super V>> FunctionalIterator.Sorted.Forwardable<V> mapSorted(
+                    Function<U, V> mappingFn, Function<V, U> reverseMappingFn) {
+                return Iterators.Sorted.mapSorted(this, mappingFn, reverseMappingFn);
+            }
+
+            @Override
+            public FunctionalIterator.Sorted.Forwardable<U> distinct() {
+                return Iterators.Sorted.distinct(this);
+            }
+
+            @Override
+            public FunctionalIterator.Sorted.Forwardable<U> filter(Predicate<U> predicate) {
+                return Iterators.Sorted.filter(this, predicate);
+            }
+
         }
     }
 }

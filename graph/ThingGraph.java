@@ -57,7 +57,7 @@ import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
@@ -223,10 +223,8 @@ public class ThingGraph {
     public FunctionalIterator.Sorted<ThingVertex> getReadable(TypeVertex typeVertex) {
         ByteArray.Base prefix = join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes());
         FunctionalIterator.Sorted<ThingVertex> storageIterator = storage.iterate(prefix)
-                .mapSorted(
-                        keyValue -> convertToReadable(EdgeIID.InwardsISA.of(keyValue.key()).end()),
-                        vertex -> KeyValue.of(join(prefix, vertex.iid().bytes()), ByteArray.empty())
-                );
+                .mapSorted(keyValue -> convertToReadable(EdgeIID.InwardsISA.of(keyValue.key()).end()),
+                        vertex -> KeyValue.of(join(prefix, vertex.iid().bytes()), ByteArray.empty()));
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
         else {
             FunctionalIterator.Sorted<ThingVertex> buffered = iterateSorted(thingsByTypeIID.get(typeVertex.iid())).mapSorted(e -> e, ThingVertex::toWrite);

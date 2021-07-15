@@ -236,8 +236,7 @@ public class KeyGenerator {
                 for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
                     ByteArray typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
                     FunctionalIterator<ByteArray> typeIterator = schemaStorage.iterate(typeEncoding)
-                            .filter(keyValue -> keyValue.key().length() == VertexIID.Type.LENGTH)
-                            .map(KeyValue::key);
+                            .filter(keyValue -> keyValue.key().length() == VertexIID.Type.LENGTH).map(KeyValue::key);
                     while (typeIterator.hasNext()) {
                         ByteArray typeIID = typeIterator.next();
                         ByteArray prefix = join(thingEncoding.prefix().bytes(), typeIID);

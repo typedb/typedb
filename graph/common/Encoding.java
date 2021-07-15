@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.graph.common;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 
@@ -44,6 +45,7 @@ import static com.vaticle.typedb.core.common.collection.Bytes.signedByte;
 import static com.vaticle.typedb.core.common.collection.Bytes.unsignedByte;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Encoding {
@@ -695,6 +697,7 @@ public class Encoding {
             public String toString() {
                 return name();
             }
+
         };
 
         enum Type implements Edge {
@@ -740,26 +743,19 @@ public class Encoding {
             public Type asType() {
                 return this;
             }
+
         }
 
-        // create OPTIMISED and NONOPTIMISED subtypes
+        abstract class Thing implements Edge {
 
-        enum Thing implements Edge {
-            HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
-            PLAYING(Infix.EDGE_PLAYING_OUT, Infix.EDGE_PLAYING_IN),
-            RELATING(Infix.EDGE_RELATING_OUT, Infix.EDGE_RELATING_IN),
-            ROLEPLAYER(Infix.EDGE_ROLEPLAYER_OUT, Infix.EDGE_ROLEPLAYER_IN, true, 1);
-
-            private final Infix out;
-            private final Infix in;
+            private final String name;
             private final boolean isOptimisation;
             private final int tailSize;
+            final Infix out;
+            final Infix in;
 
-            Thing(Infix out, Infix in) {
-                this(out, in, false, 0);
-            }
-
-            Thing(Infix out, Infix in, boolean isOptimisation, int tailSize) {
+            Thing(String name, Infix out, Infix in, boolean isOptimisation, int tailSize) {
+                this.name = name;
                 this.out = out;
                 this.in = in;
                 this.isOptimisation = isOptimisation;
@@ -772,15 +768,23 @@ public class Encoding {
                 return of(infix.key);
             }
 
+            public static FunctionalIterator<Thing> values() {
+                return iterate(Data.HAS, Data.RELATING, Data.PLAYING, Optimised.ROLEPLAYER);
+            }
+
             public static Thing of(byte infix) {
-                if ((HAS.out != null && HAS.out.key == infix) || (HAS.in != null && HAS.in.key == infix)) {
-                    return HAS;
-                } else if ((PLAYING.out != null && PLAYING.out.key == infix) || (PLAYING.in != null && PLAYING.in.key == infix)) {
-                    return PLAYING;
-                } else if ((RELATING.out != null && RELATING.out.key == infix) || (RELATING.in != null && RELATING.in.key == infix)) {
-                    return RELATING;
-                } else if ((ROLEPLAYER.out != null && ROLEPLAYER.out.key == infix) || (ROLEPLAYER.in != null && ROLEPLAYER.in.key == infix)) {
-                    return ROLEPLAYER;
+                if ((Data.HAS.out != null && Data.HAS.out.key == infix)
+                        || (Data.HAS.in != null && Data.HAS.in.key == infix)) {
+                    return Data.HAS;
+                } else if ((Data.PLAYING.out != null && Data.PLAYING.out.key == infix)
+                        || (Data.PLAYING.in != null && Data.PLAYING.in.key == infix)) {
+                    return Data.PLAYING;
+                } else if ((Data.RELATING.out != null && Data.RELATING.out.key == infix)
+                        || (Data.RELATING.in != null && Data.RELATING.in.key == infix)) {
+                    return Data.RELATING;
+                } else if ((Optimised.ROLEPLAYER.out != null && Optimised.ROLEPLAYER.out.key == infix)
+                        || (Optimised.ROLEPLAYER.in != null && Optimised.ROLEPLAYER.in.key == infix)) {
+                    return Optimised.ROLEPLAYER;
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
@@ -811,12 +815,38 @@ public class Encoding {
                 return this;
             }
 
+            @Override
+            public String name() {
+                return name;
+            }
+
             public int tailSize() {
                 return tailSize;
             }
 
             public int lookAhead() {
                 return tailSize + 2;
+            }
+
+            public static class Data extends Thing {
+                public static Data HAS = new Data("HAS", Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN);
+                public static Data PLAYING = new Data("PLAYING", Infix.EDGE_PLAYING_OUT, Infix.EDGE_PLAYING_IN);
+                public static Data RELATING = new Data("RELATING", Infix.EDGE_RELATING_OUT, Infix.EDGE_RELATING_IN);
+
+                public Data(String name, Infix out, Infix in) {
+                    super(name, out, in, false, 0);
+                }
+            }
+
+            public static class Optimised extends Thing {
+
+                public static Optimised ROLEPLAYER = new Optimised(
+                        "ROLEPLAYER", Infix.EDGE_ROLEPLAYER_OUT, Infix.EDGE_ROLEPLAYER_IN, true, 1
+                );
+
+                Optimised(String name, Infix out, Infix in, boolean isOptimisation, int tailSize) {
+                    super(name, out, in, isOptimisation, tailSize);
+                }
             }
         }
     }

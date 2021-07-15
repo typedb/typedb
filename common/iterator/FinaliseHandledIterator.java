@@ -20,7 +20,12 @@ package com.vaticle.typedb.core.common.iterator;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 class FinaliseHandledIterator<T> extends AbstractFunctionalIterator<T> implements FunctionalIterator<T> {
 
@@ -52,48 +57,81 @@ class FinaliseHandledIterator<T> extends AbstractFunctionalIterator<T> implement
         function.run();
     }
 
-    static class Sorted<T extends Comparable<? super T>> extends AbstractFunctionalIterator.Sorted<T> {
+    static class Sorted<T extends Comparable<? super T>, ITER extends FunctionalIterator.Sorted<T>>
+            extends AbstractFunctionalIterator.Sorted<T> {
 
-        private final FunctionalIterator.Sorted<T> source;
         private final Runnable function;
-        private T last;
+        final ITER iterator;
+        T last;
 
-        Sorted(FunctionalIterator.Sorted<T> source, Runnable function) {
-            this.source = source;
+        Sorted(ITER iterator, Runnable function) {
+            this.iterator = iterator;
             this.function = function;
             this.last = null;
         }
 
         @Override
         public T peek() {
-            return source.peek();
+            return iterator.peek();
         }
 
         @Override
         public boolean hasNext() {
-            return source.hasNext();
+            return iterator.hasNext();
         }
 
         @Override
         public T next() {
-            last = source.next();
+            last = iterator.next();
             return last;
         }
 
         @Override
-        public void forward(T target) {
-            if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
-            source.forward(target);
-        }
-
-        @Override
         public void recycle() {
-            source.recycle();
+            iterator.recycle();
         }
 
         @Override
         protected void finalize() {
             function.run();
+        }
+
+        static class Forwardable<T extends Comparable<? super T>>
+                extends FinaliseHandledIterator.Sorted<T, FunctionalIterator.Sorted.Forwardable<T>>
+                implements FunctionalIterator.Sorted.Forwardable<T> {
+
+            Forwardable(FunctionalIterator.Sorted.Forwardable<T> source, Runnable function) {
+                super(source, function);
+            }
+
+            @Override
+            public void forward(T target) {
+                if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                iterator.forward(target);
+            }
+
+            @SafeVarargs
+            @Override
+            public final FunctionalIterator.Sorted.Forwardable<T> merge(FunctionalIterator.Sorted.Forwardable<T>... iterators) {
+                return Iterators.Sorted.merge(this, iterators);
+            }
+
+            @Override
+            public <U extends Comparable<? super U>> FunctionalIterator.Sorted.Forwardable<U> mapSorted(
+                    Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
+                return Iterators.Sorted.mapSorted(this, mappingFn, reverseMappingFn);
+            }
+
+            @Override
+            public FunctionalIterator.Sorted.Forwardable<T> distinct() {
+                return Iterators.Sorted.distinct(this);
+            }
+
+            @Override
+            public FunctionalIterator.Sorted.Forwardable<T> filter(Predicate<T> predicate) {
+                return Iterators.Sorted.filter(this, predicate);
+            }
+
         }
     }
 }

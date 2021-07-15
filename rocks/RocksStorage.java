@@ -185,7 +185,7 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public FunctionalIterator.Sorted<KeyValue<ByteArray, ByteArray>> iterate(ByteArray key) {
+        public FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> iterate(ByteArray key) {
             RocksIterator iterator = new RocksIterator(this, key);
             iterators.add(iterator);
             if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED); //guard against close() race conditions
@@ -259,7 +259,7 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public FunctionalIterator.Sorted<KeyValue<ByteArray, ByteArray>> iterate(ByteArray key) {
+        public FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> iterate(ByteArray key) {
             RocksIterator iterator = new RocksIterator(this, key);
             iterators.add(iterator);
             if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED); //guard against close() race conditions

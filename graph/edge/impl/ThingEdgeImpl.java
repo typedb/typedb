@@ -169,7 +169,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                     graph.storage().deleteTracked(outIID().bytes());
                     graph.storage().deleteUntracked(inIID().bytes());
                 }
-                if (encoding == Encoding.Edge.Thing.HAS && !isInferred) {
+                if (encoding == Encoding.Edge.Thing.Data.HAS && !isInferred) {
                     graph.stats().hasEdgeDeleted(from.iid(), to.iid().asAttribute());
                 }
             }
@@ -228,7 +228,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         private final ThingVertex to;
         private final TypeVertex optimisedType;
 
-        public Virtual(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, TypeVertex optimisedType) {
+        public Virtual(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, @Nullable TypeVertex optimisedType) {
             super(from.graph(), encoding, false);
             this.optimisedType = optimisedType;
             assert !encoding.isOptimisation() || optimisedType != null;
@@ -448,7 +448,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 toWritable().ins().remove(this);
                 graph.storage().deleteTracked(this.outIID.bytes());
                 graph.storage().deleteUntracked(this.inIID.bytes());
-                if (encoding == Encoding.Edge.Thing.HAS && !isInferred) {
+                if (encoding == Encoding.Edge.Thing.Data.HAS && !isInferred) {
                     graph.stats().hasEdgeDeleted(fromIID, toIID.asAttribute());
                 }
             }
