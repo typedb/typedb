@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.common.poller;
 
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 
@@ -38,6 +39,11 @@ public abstract class AbstractPoller<T> implements Poller<T> {
     @Override
     public Poller<T> link(Poller<T> poller) {
         return new LinkedPollers<>(list(this, poller));
+    }
+
+    @Override
+    public Poller<T> filter(Predicate<T> predicate) {
+        return new FilteredPoller<>(this, predicate);
     }
 
 }

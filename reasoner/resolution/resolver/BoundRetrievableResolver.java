@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache.SubsumptionAnswerCache.ConceptMapCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
@@ -66,7 +67,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         this.requestStates.computeIfAbsent(fromUpstream, request -> new BoundRetrievableRequestState(request, cache, iteration)); // TODO: Iteration shouldn't be needed
         BoundRetrievableRequestState requestState = this.requestStates.get(fromUpstream);
 
-        Optional<AnswerState.Partial.Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
+        Optional<Compound<?, ?>> upstreamAnswer = requestState.nextAnswer(bounds).map(AnswerState.Partial::asCompound);
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
         } else {
