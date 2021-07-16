@@ -76,7 +76,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     private void receiveSubsumedRequest(Request.ToSubsumed fromUpstream, int iteration) {
         RequestState requestState = requestStates.computeIfAbsent(
-                fromUpstream.toRequest(), request -> new BoundRetrievableRequestState(request, cache, iteration));
+                fromUpstream, request -> new BoundRetrievableRequestState(request, cache, iteration));
         if (cache.isComplete()) {
             // We need to continue from where the RequestState left off before subsumption was activated, so we use
             // toRequest() to convert to a vanilla request. TODO: Create a more elegant solution to track this state
@@ -102,15 +102,15 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         Request.ToSubsumed fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
-        if (cache.isComplete()) sendAnswerOrFail(fromUpstream.toRequest(), iteration, requestStates.get(fromUpstream));
+        if (cache.isComplete()) sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
         else {
             ConceptMap subsumerAnswer = fromDownstream.answer().conceptMap();
             if (cache.subsumes(subsumerAnswer, bounds)) {
                 cache.add(subsumerAnswer.filter(retrievable.retrieves()));
-                RequestState requestState = requestStates.get(fromUpstream.toRequest());
+                RequestState requestState = requestStates.get(fromUpstream);
                 Optional<Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
                 if (upstreamAnswer.isPresent()) {
-                    answerToUpstream(upstreamAnswer.get(), fromUpstream.toRequest(), iteration);
+                    answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
                 } else {
                     requestFromSubsumer(fromUpstream, iteration);
                 }
@@ -122,7 +122,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-        Request fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed().toRequest();
+        Request fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
         RequestState requestState = requestStates.get(fromUpstream);
         sendAnswerOrFail(fromUpstream, iteration, requestState);
     }

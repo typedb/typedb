@@ -116,7 +116,6 @@ public class Request {
     public static class ToSubsumed extends Request {
 
         private final Actor.Driver<? extends Resolver<?>> subsumer;
-        private final int hash;
 
         private ToSubsumed(@Nullable Actor.Driver<? extends Resolver<?>> sender,
                            Actor.Driver<? extends Resolver<?>> receiver,
@@ -124,17 +123,12 @@ public class Request {
                            int planIndex) {
             super(sender, receiver, partialAnswer, planIndex);
             this.subsumer = subsumer;
-            this.hash = Objects.hash(super.hashCode(), subsumer);
         }
 
         public static Request create(Actor.Driver<? extends Resolver<?>> sender,
                                      Actor.Driver<? extends Resolver<?>> receiver,
                                      Actor.Driver<? extends Resolver<?>> subsumer, Partial<?> partialAnswer) {
             return new ToSubsumed(sender, receiver, subsumer, partialAnswer, -1);
-        }
-
-        public Request toRequest() {
-            return Request.create(sender, receiver, partialAnswer, planIndex);
         }
 
         public Actor.Driver<? extends Resolver<?>> subsumer() {
@@ -151,33 +145,17 @@ public class Request {
             return this;
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            if (!super.equals(o)) return false;
-            ToSubsumed that = (ToSubsumed) o;
-            return subsumer.equals(that.subsumer);
-        }
-
-        @Override
-        public int hashCode() {
-            return hash;
-        }
-
     }
 
     public static class ToSubsumer extends Request {
 
         private final ToSubsumed toSubsumed;
-        private final int hash;
 
         private ToSubsumer(@Nullable Actor.Driver<? extends Resolver<?>> sender,
                            Actor.Driver<? extends Resolver<?>> receiver,
                            ToSubsumed toSubsumed, Partial<?> partialAnswer, int planIndex) {
             super(sender, receiver, partialAnswer, planIndex);
             this.toSubsumed = toSubsumed;
-            this.hash = Objects.hash(super.hashCode(), toSubsumed);
         }
 
         public static ToSubsumer create(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<?
@@ -199,19 +177,6 @@ public class Request {
             return this;
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            if (!super.equals(o)) return false;
-            ToSubsumer that = (ToSubsumer) o;
-            return toSubsumed.equals(that.toSubsumed);
-        }
-
-        @Override
-        public int hashCode() {
-            return hash;
-        }
     }
 
 }

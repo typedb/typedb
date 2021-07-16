@@ -83,7 +83,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
                 // If there is a finished subsumer, let the BoundRetrievable know that it can go there for answers
                 Driver<BoundRetrievableResolver> subsumer = boundRetrievablesByRoot.get(root).get(finishedSubsumingBounds.get());
                 request = Request.ToSubsumed.create(driver(), boundRetrievable, subsumer, fromUpstream.partialAnswer());
-                requestMap.put(request.asToSubsumed().toRequest(), fromUpstream);
+                requestMap.put(request.asToSubsumed(), fromUpstream);
             } else {
                 request = Request.create(driver(), boundRetrievable, fromUpstream.partialAnswer());
                 requestMap.put(request, fromUpstream);
@@ -114,7 +114,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     }
 
     private static Request unpackRequest(Request request) {
-        return request.isToSubsumed() ? request.asToSubsumed().toRequest() : request;
+        return request.isToSubsumed() ? request.asToSubsumed() : request;
     }
 
     @Override
