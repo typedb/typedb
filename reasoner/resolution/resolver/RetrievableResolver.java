@@ -82,11 +82,12 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             if (finishedSubsumingBounds.isPresent()) {
                 // If there is a finished subsumer, let the BoundRetrievable know that it can go there for answers
                 Driver<BoundRetrievableResolver> subsumer = boundRetrievablesByRoot.get(root).get(finishedSubsumingBounds.get());
-                request = Request.create(driver(), boundRetrievable, subsumer, fromUpstream.partialAnswer());
+                request = Request.ToSubsumed.create(driver(), boundRetrievable, subsumer, fromUpstream.partialAnswer());
+                requestMap.put(request.asToSubsumed().toRequest(), fromUpstream);
             } else {
                 request = Request.create(driver(), boundRetrievable, fromUpstream.partialAnswer());
+                requestMap.put(request, fromUpstream);
             }
-            requestMap.put(request, fromUpstream);
             requestFromDownstream(request, fromUpstream, iteration);
         }
     }
@@ -100,15 +101,20 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     @Override
     protected void receiveAnswer(Answer fromDownstream, int iteration) {
-        answerToUpstream(fromDownstream.answer(), requestMap.get(fromDownstream.sourceRequest()), iteration);
+        answerToUpstream(fromDownstream.answer(), requestMap.get(unpackRequest(fromDownstream.sourceRequest())), iteration);
     }
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
+        Request request = unpackRequest(fromDownstream.sourceRequest());
         subsumptionTrackers
-                .computeIfAbsent(fromDownstream.sourceRequest().partialAnswer().root(), r -> new SubsumptionTracker())
-                .addFinished(fromDownstream.sourceRequest().partialAnswer().conceptMap());
-        failToUpstream(requestMap.get(fromDownstream.sourceRequest()), iteration);
+                .computeIfAbsent(request.partialAnswer().root(), r -> new SubsumptionTracker())
+                .addFinished(request.partialAnswer().conceptMap());
+        failToUpstream(requestMap.get(request), iteration);
+    }
+
+    private static Request unpackRequest(Request request) {
+        return request.isToSubsumed() ? request.asToSubsumed().toRequest() : request;
     }
 
     @Override

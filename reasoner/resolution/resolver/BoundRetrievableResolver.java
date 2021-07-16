@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
@@ -45,9 +44,8 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     private final Retrievable retrievable;
     private final ConceptMap bounds;
     private final ConceptMapCache cache;
-    private final Map<Request, BoundRetrievableRequestState> requestStates;
+    private final Map<Request, RequestState> requestStates;
     private boolean traversalInitialised;
-    private final Map<Request, Request> subsumptionRequests;
 
     public BoundRetrievableResolver(Retrievable retrievable, ConceptMap bounds, Driver<BoundRetrievableResolver> driver,
                                     ResolverRegistry registry, TraversalEngine traversalEngine,
@@ -58,7 +56,6 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         this.cache = new ConceptMapCache(new HashMap<>(), this.bounds);
         this.requestStates = new HashMap<>();
         this.traversalInitialised = false;
-        this.subsumptionRequests = new HashMap<>(); // TODO: Remove this map by storing the original request in the request/response sent/received for subsumption
     }
 
     private static String initName(Retrievable retrievable, ConceptMap bounds) {
@@ -68,32 +65,82 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
-        // TODO: Problems:
-        //  1. Passing from BoundConcludable to BoundConcludable means they try to aggregateToUpstream twice
-        //  2. We need to continue from where the requeststate left off before subsumption was activated
-        requestStates.computeIfAbsent(fromUpstream, request -> new BoundRetrievableRequestState(request, cache, iteration)); // TODO: Iteration shouldn't be needed
-        if (fromUpstream.subsumer().isPresent() && !cache.isComplete()) {
-            // TODO: Once we don't add the traversal into the cache, we can first check for any existing answers not yet
-            //  returned and send them first.
-            requestFromSubsumer(fromUpstream, iteration);
+        if (fromUpstream.isToSubsumed()) {
+            receiveSubsumedRequest(fromUpstream, iteration);
+        } else if (fromUpstream.isToSubsumer()) {
+            receiveSubsumerRequest(fromUpstream, iteration);
         } else {
-            initTraversal();
-            Optional<Compound<?, ?>> upstreamAnswer = requestStates.get(fromUpstream).nextAnswer().map(AnswerState.Partial::asCompound);
-            if (upstreamAnswer.isPresent()) {
-                answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
+            receiveDirectRequest(fromUpstream, iteration);
+        }
+    }
+
+    private void receiveSubsumedRequest(Request fromUpstream, int iteration) {
+        RequestState requestState = requestStates.computeIfAbsent(
+                fromUpstream.asToSubsumed().toRequest(), request -> new BoundRetrievableRequestState(request, cache, iteration));
+        if (cache.isComplete()) {
+            // We need to continue from where the RequestState left off before subsumption was activated, so we use
+            // toRequest() to convert to a vanilla request. TODO: Create a more elegant solution to track this state
+            sendAnswerOrFail(fromUpstream, iteration, requestState);
+        } else {
+            // TODO: Once we don't add the traversal into the cache, we will be able to first check for any existing
+            //  answers not yet returned and send them first.
+            requestFromSubsumer(fromUpstream, iteration);
+        }
+    }
+
+    private void receiveSubsumerRequest(Request fromUpstream, int iteration) {
+        sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
+                fromUpstream, request -> new BoundRetrievableRequestState(request, cache, iteration)));
+    }
+
+    private void receiveDirectRequest(Request fromUpstream, int iteration) {
+        initTraversal();
+        sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
+                fromUpstream, request -> new BoundRetrievableRequestState(request, cache, iteration)));
+    }
+
+    @Override
+    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
+        Request fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed().toRequest();
+        if (cache.isComplete()) sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
+        else {
+            ConceptMap subsumerAnswer = fromDownstream.answer().conceptMap();
+            if (cache.subsumes(subsumerAnswer, bounds)) {
+                cache.add(subsumerAnswer.filter(retrievable.retrieves()));
+                RequestState requestState = requestStates.get(fromUpstream);
+                Optional<Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
+                if (upstreamAnswer.isPresent()) {
+                    answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
+                } else {
+                    requestFromSubsumer(fromUpstream, iteration);
+                }
             } else {
-                cache.setComplete();
-                failToUpstream(fromUpstream, iteration);
+                requestFromSubsumer(fromUpstream, iteration);
             }
         }
     }
 
+    @Override
+    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
+        Request fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed().toRequest();
+        RequestState requestState = requestStates.get(fromUpstream);
+        sendAnswerOrFail(fromUpstream, iteration, requestState);
+    }
+
+    private void sendAnswerOrFail(Request fromUpstream, int iteration, RequestState requestState) {
+        Optional<Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
+        if (upstreamAnswer.isPresent()) {
+            answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
+        } else {
+            cache.setComplete();
+            failToUpstream(fromUpstream, iteration);
+        }
+    }
+
     private void requestFromSubsumer(Request fromUpstream, int iteration) {
-        assert fromUpstream.subsumer().isPresent();
-        Request subsumptionRequest = Request.create(driver(), fromUpstream.subsumer().get(),
-                                                    fromUpstream.partialAnswer());
-        subsumptionRequests.put(subsumptionRequest, fromUpstream);
-        requestFromDownstream(subsumptionRequest, fromUpstream, iteration);
+        Request toSubsumer = Request.ToSubsumer.create(driver(), fromUpstream.asToSubsumed().subsumer(),
+                                                       fromUpstream.asToSubsumed(), fromUpstream.partialAnswer());
+        requestFromDownstream(toSubsumer, fromUpstream, iteration);
     }
 
     private void initTraversal() {
@@ -105,47 +152,13 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     }
 
     @Override
-    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
-        Request fromUpstream = subsumptionRequests.get(fromDownstream.sourceRequest());
-        ConceptMap subsumerAnswer = fromDownstream.answer().conceptMap();
-        if (cache.subsumes(subsumerAnswer, bounds)) {
-            cache.add(fromDownstream.answer().conceptMap());
-            BoundRetrievableRequestState requestState = requestStates.get(fromUpstream);
-            Optional<Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
-            if (upstreamAnswer.isPresent()) {
-                answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
-            } else {
-                requestFromSubsumer(fromUpstream, iteration);
-            }
-        } else {
-            requestFromSubsumer(fromUpstream, iteration);
-        }
-
-    }
-
-    @Override
-    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-        // Check the cache for answers that could have arrived in async
-        // If none then fail
-        Request fromUpstream = subsumptionRequests.get(fromDownstream.sourceRequest());
-        BoundRetrievableRequestState requestState = requestStates.get(fromUpstream);
-        Optional<Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
-        if (upstreamAnswer.isPresent()) {
-            answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
-        } else {
-            cache.setComplete();
-            failToUpstream(fromUpstream, iteration);
-        }
-    }
-
-    @Override
     protected void initialiseDownstreamResolvers() {
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     private static class BoundRetrievableRequestState extends RequestState.CachingRequestState<ConceptMap, ConceptMap> {
 
-        public BoundRetrievableRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache, int iteration) {
+        public BoundRetrievableRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
             super(fromUpstream, answerCache, iteration, false, false);
         }
 
