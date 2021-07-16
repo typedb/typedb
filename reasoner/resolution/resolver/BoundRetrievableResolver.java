@@ -66,17 +66,17 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
         if (fromUpstream.isToSubsumed()) {
-            receiveSubsumedRequest(fromUpstream, iteration);
+            receiveSubsumedRequest(fromUpstream.asToSubsumed(), iteration);
         } else if (fromUpstream.isToSubsumer()) {
-            receiveSubsumerRequest(fromUpstream, iteration);
+            receiveSubsumerRequest(fromUpstream.asToSubsumer(), iteration);
         } else {
             receiveDirectRequest(fromUpstream, iteration);
         }
     }
 
-    private void receiveSubsumedRequest(Request fromUpstream, int iteration) {
+    private void receiveSubsumedRequest(Request.ToSubsumed fromUpstream, int iteration) {
         RequestState requestState = requestStates.computeIfAbsent(
-                fromUpstream.asToSubsumed().toRequest(), request -> new BoundRetrievableRequestState(request, cache, iteration));
+                fromUpstream.toRequest(), request -> new BoundRetrievableRequestState(request, cache, iteration));
         if (cache.isComplete()) {
             // We need to continue from where the RequestState left off before subsumption was activated, so we use
             // toRequest() to convert to a vanilla request. TODO: Create a more elegant solution to track this state
@@ -88,7 +88,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         }
     }
 
-    private void receiveSubsumerRequest(Request fromUpstream, int iteration) {
+    private void receiveSubsumerRequest(Request.ToSubsumer fromUpstream, int iteration) {
         sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
                 fromUpstream, request -> new BoundRetrievableRequestState(request, cache, iteration)));
     }
@@ -101,16 +101,16 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
-        Request fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed().toRequest();
-        if (cache.isComplete()) sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
+        Request.ToSubsumed fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
+        if (cache.isComplete()) sendAnswerOrFail(fromUpstream.toRequest(), iteration, requestStates.get(fromUpstream));
         else {
             ConceptMap subsumerAnswer = fromDownstream.answer().conceptMap();
             if (cache.subsumes(subsumerAnswer, bounds)) {
                 cache.add(subsumerAnswer.filter(retrievable.retrieves()));
-                RequestState requestState = requestStates.get(fromUpstream);
+                RequestState requestState = requestStates.get(fromUpstream.toRequest());
                 Optional<Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
                 if (upstreamAnswer.isPresent()) {
-                    answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
+                    answerToUpstream(upstreamAnswer.get(), fromUpstream.toRequest(), iteration);
                 } else {
                     requestFromSubsumer(fromUpstream, iteration);
                 }
@@ -137,9 +137,9 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         }
     }
 
-    private void requestFromSubsumer(Request fromUpstream, int iteration) {
-        Request toSubsumer = Request.ToSubsumer.create(driver(), fromUpstream.asToSubsumed().subsumer(),
-                                                       fromUpstream.asToSubsumed(), fromUpstream.partialAnswer());
+    private void requestFromSubsumer(Request.ToSubsumed fromUpstream, int iteration) {
+        Request toSubsumer = Request.ToSubsumer.create(driver(), fromUpstream.subsumer(),
+                                                       fromUpstream, fromUpstream.partialAnswer());
         requestFromDownstream(toSubsumer, fromUpstream, iteration);
     }
 
