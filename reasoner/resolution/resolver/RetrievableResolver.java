@@ -106,16 +106,26 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     @Override
     protected void receiveAnswer(Answer fromDownstream, int iteration) {
-        answerToUpstream(fromDownstream.answer(), requestMap.get(fromDownstream.sourceRequest()), iteration);
+        if (iteration < iterationByRoot.get(fromDownstream.answer().root())) {
+            // short circuit old iteration failed messages to upstream
+            failToUpstream(fromDownstream.sourceRequest(), iteration);
+        } else {
+            answerToUpstream(fromDownstream.answer(), requestMap.get(fromDownstream.sourceRequest()), iteration);
+        }
     }
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-        Request request = fromDownstream.sourceRequest();
-        subsumptionTrackers
-                .computeIfAbsent(request.partialAnswer().root(), r -> new SubsumptionTracker())
-                .addFinished(request.partialAnswer().conceptMap());
-        failToUpstream(requestMap.get(request), iteration);
+        if (iteration < iterationByRoot.get(fromDownstream.sourceRequest().partialAnswer().root())) {
+            // short circuit old iteration failed messages to upstream
+            failToUpstream(fromDownstream.sourceRequest(), iteration);
+        } else {
+            Request request = fromDownstream.sourceRequest();
+            subsumptionTrackers
+                    .computeIfAbsent(request.partialAnswer().root(), r -> new SubsumptionTracker())
+                    .addFinished(request.partialAnswer().conceptMap());
+            failToUpstream(requestMap.get(request), iteration); // TODO: Throws with nullpointer. Possible solution is scoping the requestMap by root so that not all are reset each iteration. However queries in the tests are serial so don't see how this can help
+        }
     }
 
     @Override
