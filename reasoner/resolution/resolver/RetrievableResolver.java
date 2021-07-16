@@ -101,20 +101,16 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
 
     @Override
     protected void receiveAnswer(Answer fromDownstream, int iteration) {
-        answerToUpstream(fromDownstream.answer(), requestMap.get(unpackRequest(fromDownstream.sourceRequest())), iteration);
+        answerToUpstream(fromDownstream.answer(), requestMap.get(fromDownstream.sourceRequest()), iteration);
     }
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-        Request request = unpackRequest(fromDownstream.sourceRequest());
+        Request request = fromDownstream.sourceRequest();
         subsumptionTrackers
                 .computeIfAbsent(request.partialAnswer().root(), r -> new SubsumptionTracker())
                 .addFinished(request.partialAnswer().conceptMap());
         failToUpstream(requestMap.get(request), iteration);
-    }
-
-    private static Request unpackRequest(Request request) {
-        return request.isToSubsumed() ? request.asToSubsumed() : request;
     }
 
     @Override
