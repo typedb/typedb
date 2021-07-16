@@ -41,11 +41,10 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
 
     private final Retrievable retrievable;
-    private final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, Driver<BoundRetrievableResolver>>> boundRetrievablesByRoot;
-    private final Map<Driver<BoundRetrievableResolver>, Integer> boundRetrievableIterations;
+    private final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, Driver<BoundRetrievableResolver>>> boundRetrievablesByRoot; // TODO: We would like these not to be by root. They need to be, for now, for reiteration purposes.
     private final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
-    private final Map<Request, Request> requestMap;
     private final Map<Driver<? extends Resolver<?>>, SubsumptionTracker> subsumptionTrackers;
+    private final Map<Request, Request> requestMap;
 
     public RetrievableResolver(Driver<RetrievableResolver> driver, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
@@ -54,7 +53,6 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         this.retrievable = retrievable;
         this.boundRetrievablesByRoot = new HashMap<>();
         this.iterationByRoot = new HashMap<>();
-        this.boundRetrievableIterations = new HashMap<>();
         this.requestMap = new HashMap<>();  // TODO: We can do without this by specialising the message types
         this.subsumptionTrackers = new HashMap<>();
     }
@@ -75,7 +73,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             failToUpstream(fromUpstream, iteration);
         } else {
             ConceptMap bounds = fromUpstream.partialAnswer().conceptMap();
-            Driver<BoundRetrievableResolver> boundRetrievable = getOrReplaceBoundRetrievable(root, bounds, iteration);
+            Driver<BoundRetrievableResolver> boundRetrievable = getOrReplaceBoundRetrievable(root, bounds);
             Optional<ConceptMap> finishedSubsumingBounds = subsumptionTrackers.computeIfAbsent(
                     root, r -> new SubsumptionTracker()).getSubsumer(bounds);
             Request request;
@@ -83,20 +81,27 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
                 // If there is a finished subsumer, let the BoundRetrievable know that it can go there for answers
                 Driver<BoundRetrievableResolver> subsumer = boundRetrievablesByRoot.get(root).get(finishedSubsumingBounds.get());
                 request = Request.ToSubsumed.create(driver(), boundRetrievable, subsumer, fromUpstream.partialAnswer());
-                requestMap.put(request.asToSubsumed(), fromUpstream);
             } else {
                 request = Request.create(driver(), boundRetrievable, fromUpstream.partialAnswer());
-                requestMap.put(request, fromUpstream);
             }
+            requestMap.put(request, fromUpstream);
             requestFromDownstream(request, fromUpstream, iteration);
         }
     }
 
     private void prepareNextIteration(Driver<? extends Resolver<?>> root, int iteration) {
         iterationByRoot.put(root, iteration);
-        boundRetrievablesByRoot.get(root).clear();
-        // boundRetrievableIterations.clear(); // TODO: Clearing this causes a test failure
+        boundRetrievablesByRoot.remove(root);
         subsumptionTrackers.remove(root);
+        requestMap.clear();
+    }
+
+    private Driver<BoundRetrievableResolver> getOrReplaceBoundRetrievable(Driver<? extends Resolver<?>> root, ConceptMap bounds) {
+        boundRetrievablesByRoot.computeIfAbsent(root, r -> new HashMap<>());
+        return boundRetrievablesByRoot.get(root).computeIfAbsent(bounds, b -> {
+            LOG.debug("{}: Creating a new BoundRetrievableResolver for bounds: {}", name(), bounds);
+            return registry.registerBoundRetrievable(retrievable, bounds);
+        });
     }
 
     @Override
@@ -116,31 +121,6 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     @Override
     protected void initialiseDownstreamResolvers() {
         throw TypeDBException.of(ILLEGAL_STATE);
-    }
-
-    private Driver<BoundRetrievableResolver> getOrReplaceBoundRetrievable(Driver<? extends Resolver<?>> root,
-                                                                          ConceptMap bounds, int iteration) {
-        boundRetrievablesByRoot.computeIfAbsent(root, r -> new HashMap<>());
-        Driver<BoundRetrievableResolver> boundRetrievable;
-        if (!boundRetrievablesByRoot.get(root).containsKey(bounds)) {
-            boundRetrievable = putBoundRetrievable(root, bounds, iteration);
-        } else {
-            boundRetrievable = boundRetrievablesByRoot.get(root).get(bounds);
-            if (boundRetrievableIterations.get(boundRetrievable) < iteration) {
-                // when the same request for the next iteration the first time, re-initialise required state
-                boundRetrievable = putBoundRetrievable(root, bounds, iteration);
-            }
-        }
-        return boundRetrievable;
-    }
-
-    protected Driver<BoundRetrievableResolver> putBoundRetrievable(Driver<? extends Resolver<?>> root,
-                                                                   ConceptMap bounds, int iteration) {
-        LOG.debug("{}: Creating a new BoundRetrievableResolver for iteration:{}, bounds: {}", name(), iteration, bounds);
-        Driver<BoundRetrievableResolver> boundRetrievable = registry.registerBoundRetrievable(retrievable, bounds);
-        boundRetrievablesByRoot.get(root).put(bounds, boundRetrievable);
-        boundRetrievableIterations.put(boundRetrievable, iteration);
-        return boundRetrievable;
     }
 
 }

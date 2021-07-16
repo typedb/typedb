@@ -107,8 +107,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
             ConceptMap subsumerAnswer = fromDownstream.answer().conceptMap();
             if (cache.subsumes(subsumerAnswer, bounds)) {
                 cache.add(subsumerAnswer.filter(retrievable.retrieves()));
-                RequestState requestState = requestStates.get(fromUpstream);
-                Optional<Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
+                Optional<Compound<?, ?>> upstreamAnswer = requestStates.get(fromUpstream).nextAnswer().map(AnswerState.Partial::asCompound);
                 if (upstreamAnswer.isPresent()) {
                     answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
                 } else {
@@ -123,8 +122,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
         Request fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
-        RequestState requestState = requestStates.get(fromUpstream);
-        sendAnswerOrFail(fromUpstream, iteration, requestState);
+        sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
     }
 
     private void sendAnswerOrFail(Request fromUpstream, int iteration, RequestState requestState) {
