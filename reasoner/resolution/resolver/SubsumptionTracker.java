@@ -43,22 +43,18 @@ class SubsumptionTracker {
         this.finishedStates.add(conceptMap);
     }
 
-    public void clear() {
-        finishedStates.clear();
-    }
-
     public Optional<ConceptMap> getSubsumer(ConceptMap unfinished) {
         if (finishedMapping.containsKey(unfinished)) return Optional.of(finishedMapping.get(unfinished));
         else {
             Optional<ConceptMap> finishedSubsumer = findFinishedSubsumer(
                     subsumersMap.computeIfAbsent(unfinished, this::subsumingConceptMaps));
-            finishedSubsumer.ifPresent(conceptMap -> finishedMapping.put(unfinished, conceptMap));
+            finishedSubsumer.ifPresent(finished -> finishedMapping.put(unfinished, finished));
             return finishedSubsumer;
         }
     }
 
-    protected Optional<ConceptMap> findFinishedSubsumer(Set<ConceptMap> subsumingConceptMaps) {
-        for (ConceptMap subsumer : subsumingConceptMaps) {
+    protected Optional<ConceptMap> findFinishedSubsumer(Set<ConceptMap> subsumers) {
+        for (ConceptMap subsumer : subsumers) {
             // Gets the first complete cache we find. Getting the smallest could be more efficient.
             if (finishedStates.contains(subsumer)) return Optional.of(subsumer);
         }
@@ -66,11 +62,11 @@ class SubsumptionTracker {
     }
 
     private Set<ConceptMap> subsumingConceptMaps(ConceptMap fromUpstream) {
-        Set<ConceptMap> subsumingCacheKeys = new HashSet<>();
+        Set<ConceptMap> subsumers = new HashSet<>();
         Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>(fromUpstream.concepts());
-        powerSet(concepts.entrySet()).forEach(powerSet -> subsumingCacheKeys.add(toConceptMap(powerSet)));
-        subsumingCacheKeys.remove(fromUpstream);
-        return subsumingCacheKeys;
+        powerSet(concepts.entrySet()).forEach(c -> subsumers.add(toConceptMap(c)));
+        subsumers.remove(fromUpstream);
+        return subsumers;
     }
 
     private <T> Set<Set<T>> powerSet(Set<T> set) {
