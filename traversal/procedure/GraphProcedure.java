@@ -71,8 +71,8 @@ public class GraphProcedure implements Procedure {
         return procedure;
     }
 
-    public static GraphProcedure.Builder builder(int size) {
-        GraphProcedure procedure = new GraphProcedure(size);
+    public static GraphProcedure.Builder builder(int edgeSize) {
+        GraphProcedure procedure = new GraphProcedure(edgeSize);
         return procedure.new Builder();
     }
 
@@ -309,6 +309,23 @@ public class GraphProcedure implements Procedure {
             registerEdge(edge);
             return edge;
         }
+
+        public ProcedureEdge.Native.Type.Relates.Forward forwardRelates(
+                int order, ProcedureVertex.Type relation, ProcedureVertex.Type playerType) {
+            ProcedureEdge.Native.Type.Relates.Forward edge =
+                    new ProcedureEdge.Native.Type.Relates.Forward(relation, playerType, order);
+            registerEdge(edge);
+            return edge;
+        }
+
+        public ProcedureEdge.Native.Type.Relates.Backward backwardRelates(
+                int order, ProcedureVertex.Type playerType, ProcedureVertex.Type relation) {
+            ProcedureEdge.Native.Type.Relates.Backward edge =
+                    new ProcedureEdge.Native.Type.Relates.Backward(playerType, relation, order);
+            registerEdge(edge);
+            return edge;
+        }
+
 
         public ProcedureEdge.Native.Thing.Has.Forward forwardHas(
                 int order, ProcedureVertex.Thing owner, ProcedureVertex.Thing attribute) {

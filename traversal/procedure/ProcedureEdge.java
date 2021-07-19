@@ -608,7 +608,7 @@ public abstract class ProcedureEdge<
 
                 static class Forward extends Relates {
 
-                    private Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order) {
+                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order) {
                         super(from, to, order, FORWARD);
                     }
 
@@ -644,7 +644,7 @@ public abstract class ProcedureEdge<
 
                 static class Backward extends Relates {
 
-                    private Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order) {
+                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order) {
                         super(from, to, order, BACKWARD);
                     }
 
