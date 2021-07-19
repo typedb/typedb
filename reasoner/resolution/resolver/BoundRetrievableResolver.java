@@ -102,6 +102,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         Request.ToSubsumed fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
         if (cache.isComplete()) sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
         else {
+            cache.clearSources();
             cache.add(fromDownstream.answer().conceptMap().filter(retrievable.retrieves()));
             Optional<Compound<?, ?>> upstreamAnswer = requestStates.get(fromUpstream).nextAnswer().map(AnswerState.Partial::asCompound);
             if (upstreamAnswer.isPresent()) {

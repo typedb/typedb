@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.poller.AbstractPoller;
 import com.vaticle.typedb.core.common.poller.Poller;
-import com.vaticle.typedb.core.common.poller.Pollers;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
@@ -41,6 +40,7 @@ import java.util.Set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.poller.Pollers.empty;
 import static com.vaticle.typedb.core.common.poller.Pollers.poll;
 
 public abstract class AnswerCache<ANSWER, SUBSUMES> {
@@ -57,7 +57,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     protected AnswerCache(Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister, ConceptMap state) {
         this.cacheRegister = cacheRegister;
         this.state = state;
-        this.answerSource = Pollers.empty();
+        this.answerSource = empty();
         this.answers = new ArrayList<>(); // TODO: Replace answer list and deduplication set with a bloom filter
         this.answersSet = new HashSet<>();
         this.reiterateOnAnswerAdded = false;
@@ -73,6 +73,10 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     public void addSource(FunctionalIterator<ANSWER> newAnswers) {
         assert !isComplete();
         answerSource = answerSource.link(poll(newAnswers));
+    }
+
+    public void clearSources() {
+        answerSource = empty();
     }
 
     public Poller<ANSWER> reader(boolean isSubscriber) {
