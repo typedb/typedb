@@ -102,7 +102,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         Request.ToSubsumed fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
         if (cache.isComplete()) sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
         else {
-            cache.clearSources();
+            cache.clearSource();
             cache.add(fromDownstream.answer().conceptMap().filter(retrievable.retrieves()));
             Optional<Compound<?, ?>> upstreamAnswer = requestStates.get(fromUpstream).nextAnswer().map(AnswerState.Partial::asCompound);
             if (upstreamAnswer.isPresent()) {
@@ -139,7 +139,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         // TODO: Once we no longer rely on the cache to detect the conditions for reiteration, we can not add the
         //  traversal as a source and instead add answers from traversal one-by-one as needed, so that we can kill the
         //  traversal as soon as subsumption kicks in.
-        if (!traversalInitialised) cache.addSource(traversalIterator(retrievable.pattern(), bounds));
+        if (!traversalInitialised) cache.addToSource(traversalIterator(retrievable.pattern(), bounds));
         traversalInitialised = true;
     }
 

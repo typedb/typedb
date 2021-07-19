@@ -285,7 +285,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                 ConceptMapCache answerCache = new ConceptMapCache(cacheRegister, answerFromUpstream);
                 cacheRegister.put(answerFromUpstream, answerCache);
                 if (!answerCache.completeIfSubsumerComplete()) {
-                    answerCache.addSource(traversalIterator(concludable.pattern(), answerFromUpstream));
+                    answerCache.addToSource(traversalIterator(concludable.pattern(), answerFromUpstream));
                 }
                 boolean singleAnswerRequired = answerFromUpstream.concepts().keySet().containsAll(unboundVars);
                 requestState = new Match(fromUpstream, answerCache, iteration, singleAnswerRequired);

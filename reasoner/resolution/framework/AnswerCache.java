@@ -70,12 +70,12 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         if (addIfAbsent(answer) && reiterateOnAnswerAdded) requiresReiteration = true;
     }
 
-    public void addSource(FunctionalIterator<ANSWER> newAnswers) {
+    public void addToSource(FunctionalIterator<ANSWER> newAnswers) {
         assert !isComplete();
         answerSource = answerSource.link(poll(newAnswers));
     }
 
-    public void clearSources() {
+    public void clearSource() {
         answerSource = empty();
     }
 
@@ -127,10 +127,10 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     }
 
     protected Optional<ANSWER> searchForAnswer(int index, boolean mayReadOverEagerly) {
-        return searchUnexploredForAnswer();
+        return searchSourceForAnswer();
     }
 
-    protected Optional<ANSWER> searchUnexploredForAnswer() {
+    protected Optional<ANSWER> searchSourceForAnswer() {
         Optional<ANSWER> answer;
         while ((answer = answerSource.poll()).isPresent()) {
             if (addIfAbsent(answer.get())) {
@@ -229,7 +229,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
             if (completeIfSubsumerComplete()) {
                 return get(index, mayReadOverEagerly);
             } else {
-                return searchUnexploredForAnswer();
+                return searchSourceForAnswer();
             }
         }
 
