@@ -44,7 +44,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     private final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, Driver<BoundRetrievableResolver>>> boundRetrievablesByRoot; // TODO: We would like these not to be by root. They need to be, for now, for reiteration purposes.
     private final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
     private final Map<Driver<? extends Resolver<?>>, SubsumptionTracker> subsumptionTrackers;
-    private final Map<Request, Request> requestMap;
+    private final Map<Driver<? extends Resolver<?>>, Map<Request, Request>> requestMapByRoot;
 
     public RetrievableResolver(Driver<RetrievableResolver> driver, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
@@ -53,7 +53,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         this.retrievable = retrievable;
         this.boundRetrievablesByRoot = new HashMap<>();
         this.iterationByRoot = new HashMap<>();
-        this.requestMap = new HashMap<>();  // TODO: We can do without this by specialising the message types
+        this.requestMapByRoot = new HashMap<>();  // TODO: We can do without this by specialising the message types
         this.subsumptionTrackers = new HashMap<>();
     }
 
@@ -84,7 +84,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             } else {
                 request = Request.create(driver(), boundRetrievable, fromUpstream.partialAnswer());
             }
-            requestMap.put(request, fromUpstream);
+            requestMapByRoot.computeIfAbsent(root, r -> new HashMap<>()).put(request, fromUpstream);
             requestFromDownstream(request, fromUpstream, iteration);
         }
     }
@@ -93,7 +93,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         iterationByRoot.put(root, iteration);
         boundRetrievablesByRoot.remove(root);
         subsumptionTrackers.remove(root);
-        requestMap.clear();
+        requestMapByRoot.remove(root);
     }
 
     private Driver<BoundRetrievableResolver> getOrReplaceBoundRetrievable(Driver<? extends Resolver<?>> root, ConceptMap bounds) {
@@ -110,7 +110,9 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             // short circuit old iteration failed messages to upstream
             failToUpstream(fromDownstream.sourceRequest(), iteration);
         } else {
-            answerToUpstream(fromDownstream.answer(), requestMap.get(fromDownstream.sourceRequest()), iteration);
+            answerToUpstream(fromDownstream.answer(),
+                             requestMapByRoot.get(fromDownstream.answer().root()).get(fromDownstream.sourceRequest()),
+                             iteration);
         }
     }
 
@@ -124,7 +126,8 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             subsumptionTrackers
                     .computeIfAbsent(request.partialAnswer().root(), r -> new SubsumptionTracker())
                     .addFinished(request.partialAnswer().conceptMap());
-            failToUpstream(requestMap.get(request), iteration); // TODO: Throws with nullpointer. Possible solution is scoping the requestMap by root so that not all are reset each iteration. However queries in the tests are serial so don't see how this can help
+            failToUpstream(requestMapByRoot.get(fromDownstream.sourceRequest().partialAnswer().root()).get(request),
+                           iteration);
         }
     }
 
