@@ -119,7 +119,8 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
                     .computeIfAbsent(fromDownstream.answer().root(), r -> new HashMap<>())
                     .computeIfAbsent(fromDownstream.sourceRequest(), request -> new HashSet<>());
             if (p.contains(fromDownstream.answer().conceptMap())) {
-                LOG.debug("Request send: {}\nAnswer received: {}\nRetrievable: {}", fromDownstream.sourceRequest(), fromDownstream, retrievable);
+                throw new RuntimeException(String.format("Request send: %s\nAnswer received: %s\nRetrievable: %s",
+                                           fromDownstream.sourceRequest(), fromDownstream, retrievable));
             }
             p.add(fromDownstream.answer().conceptMap());
             answerToUpstream(fromDownstream.answer(),
