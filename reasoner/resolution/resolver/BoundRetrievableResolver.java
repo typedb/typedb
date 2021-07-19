@@ -78,8 +78,6 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         RequestState requestState = requestStates.computeIfAbsent(
                 fromUpstream, request -> new BoundRetrievableRequestState(request, cache, iteration));
         if (cache.isComplete()) {
-            // We need to continue from where the RequestState left off before subsumption was activated, so we use
-            // toRequest() to convert to a vanilla request. TODO: Create a more elegant solution to track this state
             sendAnswerOrFail(fromUpstream, iteration, requestState);
         } else {
             // TODO: Once we don't add the traversal into the cache, we will be able to first check for any existing
