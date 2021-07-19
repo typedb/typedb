@@ -76,7 +76,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     private void receiveSubsumedRequest(Request.ToSubsumed fromUpstream, int iteration) {
         RequestState requestState = requestStates.computeIfAbsent(
-                fromUpstream, request -> new BoundRetrievableRequestState(request, cache, iteration));
+                fromUpstream, request -> new BoundRequestState(request, cache, iteration));
         if (cache.isComplete()) {
             sendAnswerOrFail(fromUpstream, iteration, requestState);
         } else {
@@ -88,13 +88,13 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     private void receiveSubsumerRequest(Request.ToSubsumer fromUpstream, int iteration) {
         sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
-                fromUpstream, request -> new SubsumptionBoundRetrievableRequestState(request, cache, iteration)));
+                fromUpstream, request -> new SubsumerRequestState(request, cache, iteration)));
     }
 
     private void receiveDirectRequest(Request fromUpstream, int iteration) {
         initTraversal();
         sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
-                fromUpstream, request -> new BoundRetrievableRequestState(request, cache, iteration)));
+                fromUpstream, request -> new BoundRequestState(request, cache, iteration)));
     }
 
     @Override
@@ -147,9 +147,9 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private static class BoundRetrievableRequestState extends RequestState.CachingRequestState<ConceptMap, ConceptMap> {
+    private static class BoundRequestState extends RequestState.CachingRequestState<ConceptMap, ConceptMap> {
 
-        public BoundRetrievableRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
+        public BoundRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
             super(fromUpstream, answerCache, iteration, false, false);
         }
 
@@ -159,9 +159,9 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         }
     }
 
-    private static class SubsumptionBoundRetrievableRequestState extends RequestState.CachingRequestState<ConceptMap, ConceptMap> {
+    private static class SubsumerRequestState extends RequestState.CachingRequestState<ConceptMap, ConceptMap> {
 
-        public SubsumptionBoundRetrievableRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
+        public SubsumerRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
             super(fromUpstream, answerCache, iteration, false, false);
         }
 
