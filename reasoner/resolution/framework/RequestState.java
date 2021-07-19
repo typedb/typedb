@@ -92,16 +92,6 @@ public abstract class RequestState {
             return ans;
         }
 
-        public Optional<? extends AnswerState.Partial<?>> nextAnswer(ConceptMap subsumptionFilter) {
-            Optional<? extends AnswerState.Partial<?>> ans = cacheReader.filter(a -> subsumes(a.conceptMap(), subsumptionFilter)).poll();
-            if (ans.isPresent() && deduplicationSet != null) deduplicationSet.add(ans.get().conceptMap());
-            return ans;
-        }
-
-        private static boolean subsumes(ConceptMap conceptMap, ConceptMap contained) {
-            return conceptMap.concepts().entrySet().containsAll(contained.concepts().entrySet());
-        }
-
         protected abstract FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ANSWER answer);
 
         public AnswerCache<ANSWER, SUBSUMES> answerCache() {

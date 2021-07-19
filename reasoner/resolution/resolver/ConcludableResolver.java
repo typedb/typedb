@@ -307,8 +307,8 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
             for (Unifier unifier : entry.getValue()) {
                 Optional<? extends Partial.Conclusion<?, ?>> unified = partialAnswer.toDownstream(
                         unifier, resolverRules.get(conclusionResolver));
-                unified.ifPresent(conclusion -> downstreams.add(
-                        Request.create(driver(), conclusionResolver, conclusion)));
+                unified.ifPresent(
+                        conclusion -> downstreams.add(Request.create(driver(), conclusionResolver, conclusion)));
             }
         }
         return downstreams;
