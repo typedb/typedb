@@ -31,8 +31,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
@@ -45,6 +47,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     private final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
     private final Map<Driver<? extends Resolver<?>>, SubsumptionTracker> subsumptionTrackers;
     private final Map<Driver<? extends Resolver<?>>, Map<Request, Request>> requestMapByRoot;
+    private final Map<Driver<? extends Resolver<?>>, Map<Request, Set<ConceptMap>>> previousAnswers;
 
     public RetrievableResolver(Driver<RetrievableResolver> driver, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
@@ -55,6 +58,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         this.iterationByRoot = new HashMap<>();
         this.requestMapByRoot = new HashMap<>();  // TODO: We can do without this by specialising the message types
         this.subsumptionTrackers = new HashMap<>();
+        this.previousAnswers = new HashMap<>();
     }
 
     @Override
@@ -94,6 +98,7 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         boundRetrievablesByRoot.remove(root);
         subsumptionTrackers.remove(root);
         requestMapByRoot.remove(root);
+        previousAnswers.remove(root);
     }
 
     private Driver<BoundRetrievableResolver> getOrReplaceBoundRetrievable(Driver<? extends Resolver<?>> root, ConceptMap bounds) {
@@ -110,6 +115,13 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             // short circuit old iteration failed messages to upstream
             failToUpstream(fromDownstream.sourceRequest(), iteration);
         } else {
+            Set<ConceptMap> p = previousAnswers
+                    .computeIfAbsent(fromDownstream.answer().root(), r -> new HashMap<>())
+                    .computeIfAbsent(fromDownstream.sourceRequest(), request -> new HashSet<>());
+            if (p.contains(fromDownstream.answer().conceptMap())) {
+                LOG.debug("Request send: {}\nAnswer received: {}\nRetrievable: {}", fromDownstream.sourceRequest(), fromDownstream, retrievable);
+            }
+            p.add(fromDownstream.answer().conceptMap());
             answerToUpstream(fromDownstream.answer(),
                              requestMapByRoot.get(fromDownstream.answer().root()).get(fromDownstream.sourceRequest()),
                              iteration);
