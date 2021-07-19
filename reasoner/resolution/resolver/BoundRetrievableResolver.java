@@ -90,7 +90,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     private void receiveSubsumerRequest(Request.ToSubsumer fromUpstream, int iteration) {
         sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
-                fromUpstream, request -> new BoundRetrievableRequestState(request, cache, iteration)));
+                fromUpstream, request -> new SubsumptionBoundRetrievableRequestState(request, cache, iteration)));
     }
 
     private void receiveDirectRequest(Request fromUpstream, int iteration) {
@@ -104,15 +104,10 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         Request.ToSubsumed fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
         if (cache.isComplete()) sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
         else {
-            ConceptMap subsumerAnswer = fromDownstream.answer().conceptMap();
-            if (cache.subsumes(subsumerAnswer, bounds)) {
-                cache.add(subsumerAnswer.filter(retrievable.retrieves()));
-                Optional<Compound<?, ?>> upstreamAnswer = requestStates.get(fromUpstream).nextAnswer().map(AnswerState.Partial::asCompound);
-                if (upstreamAnswer.isPresent()) {
-                    answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
-                } else {
-                    requestFromSubsumer(fromUpstream, iteration);
-                }
+            cache.add(fromDownstream.answer().conceptMap().filter(retrievable.retrieves()));
+            Optional<Compound<?, ?>> upstreamAnswer = requestStates.get(fromUpstream).nextAnswer().map(AnswerState.Partial::asCompound);
+            if (upstreamAnswer.isPresent()) {
+                answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
             } else {
                 requestFromSubsumer(fromUpstream, iteration);
             }
@@ -163,6 +158,26 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         @Override
         protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ConceptMap answer) {
             return Iterators.single(fromUpstream.partialAnswer().asRetrievable().aggregateToUpstream(answer));
+        }
+    }
+
+    private static class SubsumptionBoundRetrievableRequestState extends RequestState.CachingRequestState<ConceptMap, ConceptMap> {
+
+        public SubsumptionBoundRetrievableRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
+            super(fromUpstream, answerCache, iteration, false, false);
+        }
+
+        @Override
+        protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ConceptMap answer) {
+            if (subsumes(answer, fromUpstream.partialAnswer().conceptMap())) {
+                return Iterators.single(fromUpstream.partialAnswer().asRetrievable().aggregateToUpstream(answer));
+            } else {
+                return Iterators.empty();
+            }
+        }
+
+        private boolean subsumes(ConceptMap subsumer, ConceptMap subsumed) {
+            return subsumer.concepts().entrySet().containsAll(subsumed.concepts().entrySet());
         }
     }
 }
