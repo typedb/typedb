@@ -55,6 +55,8 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     protected final Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister;
     protected final ConceptMap state;
     private final Supplier<FunctionalIterator<ANSWER>> answerSourceSupplier;
+    private boolean sourceCleared;
+    private boolean sourceExhausted;
 
     protected AnswerCache(Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister, ConceptMap state,
                           Supplier<FunctionalIterator<ANSWER>> answerSourceSupplier) {
@@ -67,6 +69,8 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         this.reiterateOnAnswerAdded = false;
         this.requiresReiteration = false;
         this.complete = false;
+        this.sourceCleared = false;
+        this.sourceExhausted = false;
     }
 
     public void add(ANSWER answer) {
@@ -75,8 +79,9 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     }
 
     public void clearSource() {
-        answerSource.recycle();
+        if (answerSource != null) answerSource.recycle();
         answerSource = empty();
+        sourceCleared = true;
     }
 
     public Poller<ANSWER> reader(boolean isSubscriber) {
@@ -85,11 +90,20 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
 
     public void setComplete() {
         complete = true;
-        answerSource.recycle();
+        setSourceExhausted();
     }
 
     public boolean isComplete() {
         return complete;
+    }
+
+    public void setSourceExhausted() {
+        sourceExhausted = true;
+        if (answerSource != null) answerSource.recycle();
+    }
+
+    public boolean isSourceExhausted() {
+        return sourceExhausted;
     }
 
     public boolean requiresReiteration() {
@@ -134,12 +148,12 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         if (answerSource == null) answerSource = answerSourceSupplier.get();
         while (answerSource.hasNext()) {
             ANSWER answer = answerSource.next();
-            if (addIfAbsent(answerSource.next())) {
+            if (addIfAbsent(answer)) {
                 if (reiterateOnAnswerAdded) requiresReiteration = true;
                 return Optional.of(answer);
             }
         }
-        setComplete();
+        if (!sourceCleared) setSourceExhausted();
         return Optional.empty();
     }
 
