@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
@@ -62,7 +63,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> applicableRules;
     private final Map<Driver<ConclusionResolver>, Rule> resolverRules;
-    private final com.vaticle.typedb.core.logic.resolvable.Concludable concludable;
+    private final Concludable concludable;
     private final LogicManager logicMgr;
     private final Map<Request, CachingRequestState<?, ConceptMap>> requestStates;
     private final Set<Identifier.Variable.Retrievable> unboundVars;
@@ -70,7 +71,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, AnswerCache<?, ConceptMap>>> cacheRegistersByRoot;
     protected final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
 
-    public ConcludableResolver(Driver<ConcludableResolver> driver, com.vaticle.typedb.core.logic.resolvable.Concludable concludable,
+    public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable,
                                ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                                LogicManager logicMgr, boolean resolutionTracing) {
         super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",

@@ -47,7 +47,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     private final Map<Request, RequestState> requestStates;
     private boolean traversalInitialised;
 
-    public BoundRetrievableResolver(Retrievable retrievable, ConceptMap bounds, Driver<BoundRetrievableResolver> driver,
+    public BoundRetrievableResolver(Driver<BoundRetrievableResolver> driver, Retrievable retrievable, ConceptMap bounds,
                                     ResolverRegistry registry, TraversalEngine traversalEngine,
                                     ConceptManager conceptMgr, boolean resolutionTracing) {
         super(driver, initName(retrievable, bounds), registry, traversalEngine, conceptMgr, resolutionTracing);
@@ -59,7 +59,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     }
 
     private static String initName(Retrievable retrievable, ConceptMap bounds) {
-        return BoundRetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() + " " +
+        return BoundRetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() + " bounds: " +
                 bounds.toString() + ")";
     }
 

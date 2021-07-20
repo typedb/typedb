@@ -194,7 +194,7 @@ public class ResolverRegistry {
     public Actor.Driver<BoundRetrievableResolver> registerBoundRetrievable(Retrievable retrievable, ConceptMap bounds) {
         LOG.debug("Register BoundRetrievableResolver, pattern: {} bounds: {}", retrievable.pattern(), bounds);
         Actor.Driver<BoundRetrievableResolver> resolver = Actor.driver(driver -> new BoundRetrievableResolver(
-                retrievable, bounds, driver, this, traversalEngine, conceptMgr, resolutionTracing
+                driver, retrievable, bounds, this, traversalEngine, conceptMgr, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
