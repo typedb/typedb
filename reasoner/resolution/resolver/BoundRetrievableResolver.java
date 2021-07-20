@@ -25,7 +25,6 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache.SubsumptionAnswerCache.ConceptMapCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
@@ -80,9 +79,14 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         if (cache.isComplete()) {
             sendAnswerOrFail(fromUpstream, iteration, requestState);
         } else {
-            // TODO: Once we don't add the traversal into the cache, we will be able to first check for any existing
-            //  answers not yet returned and send them first.
-            requestFromSubsumer(fromUpstream, iteration);
+            cache.clearSource();
+            Optional<? extends AnswerState.Partial<?>> upstreamAnswer;
+            upstreamAnswer = requestState.nextAnswer();
+            if (upstreamAnswer.isPresent()) {
+                answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
+            } else {
+                requestFromSubsumer(fromUpstream, iteration);
+            }
         }
     }
 
@@ -102,9 +106,8 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         Request.ToSubsumed fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
         if (cache.isComplete()) sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
         else {
-            cache.clearSource();
             cache.add(fromDownstream.answer().conceptMap().filter(retrievable.retrieves()));
-            Optional<Compound<?, ?>> upstreamAnswer = requestStates.get(fromUpstream).nextAnswer().map(AnswerState.Partial::asCompound);
+            Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestStates.get(fromUpstream).nextAnswer();
             if (upstreamAnswer.isPresent()) {
                 answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
             } else {
@@ -120,7 +123,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     }
 
     private void sendAnswerOrFail(Request fromUpstream, int iteration, RequestState requestState) {
-        Optional<Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
+        Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
         } else {
@@ -175,7 +178,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
             }
         }
 
-        private boolean subsumes(ConceptMap subsumer, ConceptMap subsumed) {
+        private static boolean subsumes(ConceptMap subsumer, ConceptMap subsumed) {
             return subsumer.concepts().entrySet().containsAll(subsumed.concepts().entrySet());
         }
     }

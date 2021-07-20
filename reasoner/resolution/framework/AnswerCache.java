@@ -76,6 +76,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     }
 
     public void clearSource() {
+        answerSource.recycle();
         answerSource = empty();
     }
 
