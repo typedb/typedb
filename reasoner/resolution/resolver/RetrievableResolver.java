@@ -31,10 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
@@ -47,7 +45,6 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     private final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
     private final Map<Driver<? extends Resolver<?>>, SubsumptionTracker> subsumptionTrackers;
     private final Map<Driver<? extends Resolver<?>>, Map<Request, Request>> requestMapByRoot;
-    private final Map<Driver<? extends Resolver<?>>, Map<Request, Set<ConceptMap>>> previousAnswers;
 
     public RetrievableResolver(Driver<RetrievableResolver> driver, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
@@ -58,7 +55,6 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         this.iterationByRoot = new HashMap<>();
         this.requestMapByRoot = new HashMap<>();  // TODO: We can do without this by specialising the message types
         this.subsumptionTrackers = new HashMap<>();
-        this.previousAnswers = new HashMap<>();
     }
 
     @Override
@@ -78,16 +74,14 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         } else {
             ConceptMap bounds = fromUpstream.partialAnswer().conceptMap();
             Driver<BoundRetrievableResolver> boundRetrievable = getOrReplaceBoundRetrievable(root, bounds);
-            Optional<ConceptMap> finishedSubsumingBounds = subsumptionTrackers.computeIfAbsent(
+            Optional<ConceptMap> subsumer = subsumptionTrackers.computeIfAbsent(
                     root, r -> new SubsumptionTracker()).getSubsumer(bounds);
-            Request request;
-            if (finishedSubsumingBounds.isPresent()) {
-                // If there is a finished subsumer, let the BoundRetrievable know that it can go there for answers
-                Driver<BoundRetrievableResolver> subsumer = boundRetrievablesByRoot.get(root).get(finishedSubsumingBounds.get());
-                request = Request.ToSubsumed.create(driver(), boundRetrievable, subsumer, fromUpstream.partialAnswer());
-            } else {
-                request = Request.create(driver(), boundRetrievable, fromUpstream.partialAnswer());
-            }
+            // If there is a finished subsumer, let the BoundRetrievable know that it can go there for answers
+            Request request = subsumer
+                    .map(conceptMap -> Request.ToSubsumed.create(
+                            driver(), boundRetrievable, boundRetrievablesByRoot.get(root).get(conceptMap),
+                            fromUpstream.partialAnswer()))
+                    .orElseGet(() -> Request.create(driver(), boundRetrievable, fromUpstream.partialAnswer()));
             requestMapByRoot.computeIfAbsent(root, r -> new HashMap<>()).put(request, fromUpstream);
             requestFromDownstream(request, fromUpstream, iteration);
         }
@@ -98,12 +92,10 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         boundRetrievablesByRoot.remove(root);
         subsumptionTrackers.remove(root);
         requestMapByRoot.remove(root);
-        previousAnswers.remove(root);
     }
 
     private Driver<BoundRetrievableResolver> getOrReplaceBoundRetrievable(Driver<? extends Resolver<?>> root, ConceptMap bounds) {
-        boundRetrievablesByRoot.computeIfAbsent(root, r -> new HashMap<>());
-        return boundRetrievablesByRoot.get(root).computeIfAbsent(bounds, b -> {
+        return boundRetrievablesByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(bounds, b -> {
             LOG.debug("{}: Creating a new BoundRetrievableResolver for bounds: {}", name(), bounds);
             return registry.registerBoundRetrievable(retrievable, bounds);
         });
@@ -115,14 +107,6 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
             // short circuit old iteration failed messages to upstream
             failToUpstream(fromDownstream.sourceRequest(), iteration);
         } else {
-            Set<ConceptMap> p = previousAnswers
-                    .computeIfAbsent(fromDownstream.answer().root(), r -> new HashMap<>())
-                    .computeIfAbsent(fromDownstream.sourceRequest(), request -> new HashSet<>());
-            if (p.contains(fromDownstream.answer().conceptMap())) {
-                throw new RuntimeException(String.format("Request send: %s\nAnswer received: %s\nRetrievable: %s",
-                                           fromDownstream.sourceRequest(), fromDownstream, retrievable));
-            }
-            p.add(fromDownstream.answer().conceptMap());
             answerToUpstream(fromDownstream.answer(),
                              requestMapByRoot.get(fromDownstream.answer().root()).get(fromDownstream.sourceRequest()),
                              iteration);
@@ -130,16 +114,16 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     }
 
     @Override
-    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-        if (iteration < iterationByRoot.get(fromDownstream.sourceRequest().partialAnswer().root())) {
+    protected void receiveFail(Response.Fail fail, int iteration) {
+        if (iteration < iterationByRoot.get(fail.sourceRequest().partialAnswer().root())) {
             // short circuit old iteration failed messages to upstream
-            failToUpstream(fromDownstream.sourceRequest(), iteration);
+            failToUpstream(fail.sourceRequest(), iteration);
         } else {
-            Request request = fromDownstream.sourceRequest();
+            Request request = fail.sourceRequest();
             subsumptionTrackers
                     .computeIfAbsent(request.partialAnswer().root(), r -> new SubsumptionTracker())
                     .addFinished(request.partialAnswer().conceptMap());
-            failToUpstream(requestMapByRoot.get(fromDownstream.sourceRequest().partialAnswer().root()).get(request),
+            failToUpstream(requestMapByRoot.get(fail.sourceRequest().partialAnswer().root()).get(request),
                            iteration);
         }
     }
