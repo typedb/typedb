@@ -111,6 +111,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
+        cache.setComplete();
         Request fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
         sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
     }
@@ -120,7 +121,6 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
         } else {
-            cache.setComplete();
             failToUpstream(fromUpstream, iteration);
         }
     }
