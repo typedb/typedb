@@ -40,21 +40,15 @@ import java.util.Optional;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver> {
-    private final Retrievable retrievable;
-    private final ConceptMap bounds;
     private final ConceptMapCache cache;
     private final Map<Request, RequestState> requestStates;
-    private boolean traversalInitialised;
 
     public BoundRetrievableResolver(Driver<BoundRetrievableResolver> driver, Retrievable retrievable, ConceptMap bounds,
                                     ResolverRegistry registry, TraversalEngine traversalEngine,
                                     ConceptManager conceptMgr, boolean resolutionTracing) {
         super(driver, initName(retrievable, bounds), registry, traversalEngine, conceptMgr, resolutionTracing);
-        this.retrievable = retrievable;
-        this.bounds = bounds;
-        this.cache = new ConceptMapCache(new HashMap<>(), this.bounds);
+        this.cache = new ConceptMapCache(new HashMap<>(), bounds, () -> traversalIterator(retrievable.pattern(), bounds));
         this.requestStates = new HashMap<>();
-        this.traversalInitialised = false;
     }
 
     private static String initName(Retrievable retrievable, ConceptMap bounds) {
@@ -96,7 +90,6 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     }
 
     private void receiveDirectRequest(Request fromUpstream, int iteration) {
-        initTraversal();
         sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
                 fromUpstream, request -> new BoundRequestState(request, cache, iteration)));
     }
@@ -136,14 +129,6 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         Request toSubsumer = Request.ToSubsumer.create(driver(), fromUpstream.subsumer(),
                                                        fromUpstream, fromUpstream.partialAnswer());
         requestFromDownstream(toSubsumer, fromUpstream, iteration);
-    }
-
-    private void initTraversal() {
-        // TODO: Once we no longer rely on the cache to detect the conditions for reiteration, we can not add the
-        //  traversal as a source and instead add answers from traversal one-by-one as needed, so that we can kill the
-        //  traversal as soon as subsumption kicks in.
-        if (!traversalInitialised) cache.addToSource(traversalIterator(retrievable.pattern(), bounds));
-        traversalInitialised = true;
     }
 
     @Override

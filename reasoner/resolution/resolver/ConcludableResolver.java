@@ -283,11 +283,11 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                     throw TypeDBException.of(ILLEGAL_STATE);
                 }
             } else {
-                ConceptMapCache answerCache = new ConceptMapCache(cacheRegister, answerFromUpstream);
+                ConceptMapCache answerCache = new ConceptMapCache(cacheRegister, answerFromUpstream,
+                                                                  () -> traversalIterator(concludable.pattern(),
+                                                                                          answerFromUpstream));
                 cacheRegister.put(answerFromUpstream, answerCache);
-                if (!answerCache.completeIfSubsumerComplete()) {
-                    answerCache.addToSource(traversalIterator(concludable.pattern(), answerFromUpstream));
-                }
+                answerCache.completeIfSubsumerComplete();
                 boolean singleAnswerRequired = answerFromUpstream.concepts().keySet().containsAll(unboundVars);
                 requestState = new Match(fromUpstream, answerCache, iteration, singleAnswerRequired);
                 requestState.asExploration().downstreamManager().addDownstreams(ruleDownstreams(fromUpstream));
