@@ -99,8 +99,8 @@ build:
     test-behaviour-reasoner:
       image: vaticle-ubuntu-20.04
       command: |
-        export DEFAULT_JVM_DEBUG_PORT="*:5005"
-        bazel test //test/behaviour/reasoner/tests/attribute_attachment:test --test_output=streamed --java_debug --spawn_strategy=standalone
+        # export DEFAULT_JVM_DEBUG_PORT="*:5005"
+        # bazel test //test/behaviour/reasoner/tests/attribute_attachment:test --test_output=streamed --java_debug --spawn_strategy=standalone
         bazel test //test/behaviour/reasoner/tests/compound_queries:test --test_output=streamed
         bazel test //test/behaviour/reasoner/tests/relation_inference:test --test_output=streamed
         bazel test //test/behaviour/reasoner/tests/rule_interaction:test --test_output=streamed
