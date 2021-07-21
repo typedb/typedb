@@ -70,7 +70,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     private void receiveSubsumedRequest(Request.ToSubsumed fromUpstream, int iteration) {
         RequestState requestState = requestStates.computeIfAbsent(
                 fromUpstream, request -> new BoundRequestState(request, cache, iteration));
-        if (cache.isSourceExhausted()) {
+        if (cache.sourceExhausted()) {
             sendAnswerOrFail(fromUpstream, iteration, requestState);
         } else {
             cache.clearSource();
@@ -97,7 +97,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         Request.ToSubsumed fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
-        if (cache.isSourceExhausted()) sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
+        if (cache.sourceExhausted()) sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
         else {
             cache.add(fromDownstream.answer().conceptMap());
             Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestStates.get(fromUpstream).nextAnswer();

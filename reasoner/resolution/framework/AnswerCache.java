@@ -102,7 +102,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         if (answerSource != null) answerSource.recycle();
     }
 
-    public boolean isSourceExhausted() {
+    public boolean sourceExhausted() {
         return sourceExhausted;
     }
 
@@ -131,7 +131,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         if (index < answers.size()) {
             return Optional.of(answers.get(index));
         } else if (index == answers.size()) {
-            if (isComplete()) return Optional.empty();
+            if (isComplete() || sourceExhausted()) return Optional.empty();
             Optional<ANSWER> nextAnswer = searchForAnswer(index, isSubscriber);
             if (nextAnswer.isEmpty() && isSubscriber) reiterateOnAnswerAdded = true;
             return nextAnswer;
