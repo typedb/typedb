@@ -152,7 +152,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         }
     }
 
-    private static class SubsumerRequestState extends RequestState.CachingRequestState<ConceptMap, ConceptMap> {
+    private class SubsumerRequestState extends RequestState.CachingRequestState<ConceptMap, ConceptMap> {
 
         public SubsumerRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
             super(fromUpstream, answerCache, iteration, false, false);
@@ -160,15 +160,15 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
         @Override
         protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ConceptMap answer) {
-            if (subsumes(answer, fromUpstream.partialAnswer().conceptMap())) {
+            if (subsumesBounds(answer)) {
                 return Iterators.single(fromUpstream.partialAnswer().asRetrievable().with(answer));
             } else {
                 return Iterators.empty();
             }
         }
 
-        private static boolean subsumes(ConceptMap subsumer, ConceptMap subsumed) {
-            return subsumer.concepts().entrySet().containsAll(subsumed.concepts().entrySet());
+        private boolean subsumesBounds(ConceptMap subsumer) {
+            return subsumer.concepts().entrySet().containsAll(bounds.concepts().entrySet());
         }
     }
 }
