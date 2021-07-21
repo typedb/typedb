@@ -30,12 +30,14 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
+import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundRetrievableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConcludableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConclusionResolver;
@@ -52,6 +54,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,6 +75,7 @@ public class ResolverRegistry {
 
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
+    private final Set<Actor.Driver<BoundConcludableResolver>> boundConcludableResolvers;
     private final Map<Concludable, Actor.Driver<ConcludableResolver>> concludableResolvers;
     private final ConcurrentMap<Rule, Actor.Driver<ConditionResolver>> ruleConditions;
     private final ConcurrentMap<Rule, Actor.Driver<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
@@ -88,6 +92,7 @@ public class ResolverRegistry {
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
         this.concludableResolvers = new HashMap<>();
+        this.boundConcludableResolvers = new HashSet<>();
         this.ruleConditions = new ConcurrentHashMap<>();
         this.ruleConclusions = new ConcurrentHashMap<>();
         this.resolvers = new ConcurrentSet<>();
@@ -95,15 +100,13 @@ public class ResolverRegistry {
         this.resolutionTracing = resolutionTracing;
     }
 
-    public Set<Actor.Driver<ConcludableResolver>> concludableResolvers() {
-        return new HashSet<>(concludableResolvers.values());
+    public Set<Actor.Driver<BoundConcludableResolver>> boundConcludableResolvers() {
+        return boundConcludableResolvers;
     }
 
     public void terminateResolvers(Throwable cause) {
         if (terminated.compareAndSet(false, true)) {
-            resolvers.forEach(actor -> {
-                actor.execute(r -> r.terminate(cause));
-            });
+            resolvers.forEach(actor -> actor.execute(r -> r.terminate(cause)));
         }
     }
 
@@ -197,6 +200,19 @@ public class ResolverRegistry {
                 driver, retrievable, bounds, this, traversalEngine, conceptMgr, resolutionTracing
         ), executorService);
         resolvers.add(resolver);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return resolver;
+    }
+
+    public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(
+            Concludable concludable, ConceptMap bounds, Map<Actor.Driver<ConclusionResolver>, Rule> resolverRules,
+            LinkedHashMap<Actor.Driver<ConclusionResolver>, Set<Unifier>> applicableRules) {
+        LOG.debug("Register BoundConcludableResolver, pattern: {} bounds: {}", concludable.pattern(), bounds);
+        Actor.Driver<BoundConcludableResolver> resolver = Actor.driver(driver -> new BoundConcludableResolver(
+                driver, concludable, bounds, resolverRules, applicableRules, this, traversalEngine, conceptMgr, resolutionTracing
+        ), executorService);
+        resolvers.add(resolver);
+        boundConcludableResolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
     }

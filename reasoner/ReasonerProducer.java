@@ -120,8 +120,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     @Override
-    public void recycle() {
-    }
+    public void recycle() {}
 
     // note: root resolver calls this single-threaded, so is thread safe
     private void requestAnswered(Finished answer) {
@@ -139,7 +138,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void requestFailed(int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
         if (options.traceInference()) ResolutionTracer.get().finish();
-        if (resolverRegistry.concludableResolvers().size() == 0) {
+        if (resolverRegistry.boundConcludableResolvers().size() == 0) {
             finish();
         } else if (!sentReiterationRequests && iteration == this.iteration) {
             sendReiterationRequests();
@@ -156,8 +155,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void sendReiterationRequests() {
         assert reiterationQueryRespondents == null || reiterationQueryRespondents.isEmpty();
         sentReiterationRequests = true;
-        reiterationQueryRespondents = new HashSet<>(resolverRegistry.concludableResolvers());
-        resolverRegistry.concludableResolvers()
+        reiterationQueryRespondents = new HashSet<>(resolverRegistry.boundConcludableResolvers());
+        resolverRegistry.boundConcludableResolvers()
                 .forEach(res -> res.execute(actor -> actor.receiveReiterationQuery(reiterationRequest)));
     }
 

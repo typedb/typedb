@@ -199,6 +199,10 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
             return true;
         }
 
+        public ConcludableAnswerCache asConcludableAnswerCache() {
+            return this;
+        }
+
         @Override
         protected List<ConceptMap> answers() {
             return iterate(answers).map(AnswerState::conceptMap).distinct().toList();
