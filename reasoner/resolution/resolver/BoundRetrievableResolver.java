@@ -42,11 +42,13 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver> {
     private final ConceptMapCache cache;
     private final Map<Request, RequestState> requestStates;
+    private ConceptMap bounds;
 
     public BoundRetrievableResolver(Driver<BoundRetrievableResolver> driver, Retrievable retrievable, ConceptMap bounds,
                                     ResolverRegistry registry, TraversalEngine traversalEngine,
                                     ConceptManager conceptMgr, boolean resolutionTracing) {
         super(driver, initName(retrievable, bounds), registry, traversalEngine, conceptMgr, resolutionTracing);
+        this.bounds = bounds;
         this.cache = new ConceptMapCache(new HashMap<>(), bounds, () -> traversalIterator(retrievable.pattern(), bounds));
         this.requestStates = new HashMap<>();
     }
@@ -59,10 +61,12 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
         if (fromUpstream.isToSubsumed()) {
+            assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
             receiveSubsumedRequest(fromUpstream.asToSubsumed(), iteration);
         } else if (fromUpstream.isToSubsumer()) {
             receiveSubsumerRequest(fromUpstream.asToSubsumer(), iteration);
         } else {
+            assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
             receiveDirectRequest(fromUpstream, iteration);
         }
     }

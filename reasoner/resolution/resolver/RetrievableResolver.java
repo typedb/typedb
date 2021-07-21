@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
@@ -74,14 +73,16 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         } else {
             ConceptMap bounds = fromUpstream.partialAnswer().conceptMap();
             Driver<BoundRetrievableResolver> boundRetrievable = getOrReplaceBoundRetrievable(root, bounds);
-            Optional<ConceptMap> subsumer = subsumptionTrackers.computeIfAbsent(
-                    root, r -> new SubsumptionTracker()).getSubsumer(bounds);
-            // If there is a finished subsumer, let the BoundRetrievable know that it can go there for answers
-            Request request = subsumer
-                    .map(conceptMap -> Request.ToSubsumed.create(
-                            driver(), boundRetrievable, boundRetrievablesByRoot.get(root).get(conceptMap),
-                            fromUpstream.partialAnswer()))
-                    .orElseGet(() -> Request.create(driver(), boundRetrievable, fromUpstream.partialAnswer()));
+            // TODO: Re-enable subsumption when async bug is fixed
+            // Optional<ConceptMap> subsumer = subsumptionTrackers.computeIfAbsent(
+            //         root, r -> new SubsumptionTracker()).getSubsumer(bounds);
+            // // If there is a finished subsumer, let the BoundRetrievable know that it can go there for answers
+            // Request request = subsumer
+            //         .map(conceptMap -> Request.ToSubsumed.create(
+            //                 driver(), boundRetrievable, boundRetrievablesByRoot.get(root).get(conceptMap),
+            //                 fromUpstream.partialAnswer()))
+            //         .orElseGet(() -> Request.create(driver(), boundRetrievable, fromUpstream.partialAnswer()));
+            Request request = Request.create(driver(), boundRetrievable, fromUpstream.partialAnswer());
             requestMapByRoot.computeIfAbsent(root, r -> new HashMap<>()).put(request, fromUpstream);
             requestFromDownstream(request, fromUpstream, iteration);
         }
