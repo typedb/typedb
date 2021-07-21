@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.traversal.iterator;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator.Sorted.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
@@ -45,6 +46,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -58,14 +60,14 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
     private final Traversal.Parameters parameters;
     private final GraphManager graphMgr;
 
+    private final Map<Integer, Forwardable<ThingVertex>> iterators;
     private final Map<Retrievable, Vertex<?, ?>> answer;
-    private final Map<Integer, FunctionalIterator.Sorted.Forwardable<ThingVertex>> iterators;
     private final Scoped scoped;
     private Retrievable relationId;
     private TypeVertex relationType;
-    private int relationProposer;
     private ThingVertex relation;
     private State state;
+    private int relationProposer;
 
     private enum State { INIT, EMPTY, PROPOSED, FETCHED, COMPLETED }
 
@@ -103,6 +105,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
 
     @Override
     public VertexMap next() {
+        if (!hasNext()) throw new NoSuchElementException();
         VertexMap vertexMap = VertexMap.of(answer);
         state = State.EMPTY;
         return vertexMap;
@@ -130,13 +133,13 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private StructureVertex.Thing relationVertex() {
         List<StructureVertex<?>> withoutIID = iterate(vertices)
-                .filter(vertex -> !parameters.withIID().contains(vertex.id().asVariable().asRetrievable())).toList();
+                .filter(vertex -> !parameters.getIdentifiersWithIID().contains(vertex.id().asVariable().asRetrievable())).toList();
         assert withoutIID.size() == 1;
         return withoutIID.get(0).asThing();
     }
 
     private boolean tryInitialiseFixedPlayers() {
-        for (Identifier.Variable withIID : parameters.withIID()) {
+        for (Identifier.Variable withIID : parameters.getIdentifiersWithIID()) {
             assert withIID.isRetrievable();
             ThingVertex thingVertex = graphMgr.data().getReadable(parameters.getIID(withIID));
             if (thingVertex == null) {
@@ -194,7 +197,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private boolean verifyProposed(int edge) {
-        FunctionalIterator.Sorted.Forwardable<ThingVertex> relationIterator = getIterator(edge);
+        Forwardable<ThingVertex> relationIterator = getIterator(edge);
         if (!relationIterator.hasNext()) {
             state = State.COMPLETED;
             return false;
@@ -219,12 +222,12 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
         state = State.PROPOSED;
     }
 
-    private FunctionalIterator.Sorted.Forwardable<ThingVertex> getIterator(int edge) {
+    private Forwardable<ThingVertex> getIterator(int edge) {
         assert edges.get(edge).to().id().isRetrievable();
         return iterators.computeIfAbsent(edge, this::createIterator);
     }
 
-    private FunctionalIterator.Sorted.Forwardable<ThingVertex> createIterator(int edge) {
+    private Forwardable<ThingVertex> createIterator(int edge) {
         StructureEdge<?, ?> structureEdge = edges.get(edge);
         Retrievable playerId = structureEdge.to().id().asVariable().asRetrievable();
         ThingVertex player = answer.get(playerId).asThing();
@@ -240,7 +243,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
                             scoped.record(edge, role);
                             return directedEdge.getEdge().from();
                         }, vertex -> {
-                            ThingEdge target = new ThingEdgeImpl.Virtual(ROLEPLAYER, vertex, answer.get(playerId).asThing(), rt);
+                            ThingEdge target = new ThingEdgeImpl.Target(ROLEPLAYER, vertex, answer.get(playerId).asThing(), rt);
                             return ThingAdjacency.DirectedEdge.in(target);
                         });
     }

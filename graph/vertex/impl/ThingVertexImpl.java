@@ -108,7 +108,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         protected final ThingAdjacency outs;
         protected final ThingAdjacency ins;
 
-
         public Read(ThingGraph graph, VertexIID.Thing iid) {
             super(graph, iid);
             this.outs = new ThingAdjacencyImpl.Read(this, Encoding.Direction.Adjacency.OUT);
@@ -152,7 +151,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         public AttributeVertex<?> asAttribute() {
             throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.class));
         }
-
     }
 
     public static abstract class Write extends ThingVertexImpl implements ThingVertex.Write {
@@ -296,7 +294,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             public void setModified() {
                 if (!isModified) isModified = true;
             }
-
         }
 
         public static class Persisted extends ThingVertexImpl.Write {

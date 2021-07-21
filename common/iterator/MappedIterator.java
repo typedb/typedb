@@ -24,10 +24,8 @@ import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
 
@@ -154,10 +152,9 @@ class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
                 state = State.EMPTY;
             }
 
-            @SafeVarargs
             @Override
-            public final FunctionalIterator.Sorted.Forwardable<U> merge(FunctionalIterator.Sorted.Forwardable<U>... iterators) {
-                return Iterators.Sorted.merge(this, iterators);
+            public final FunctionalIterator.Sorted.Forwardable<U> merge(FunctionalIterator.Sorted.Forwardable<U> iterator) {
+                return Iterators.Sorted.merge(this, iterator);
             }
 
             @Override
@@ -175,7 +172,6 @@ class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
             public FunctionalIterator.Sorted.Forwardable<U> filter(Predicate<U> predicate) {
                 return Iterators.Sorted.filter(this, predicate);
             }
-
         }
     }
 }

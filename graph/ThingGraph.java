@@ -30,7 +30,6 @@ import com.vaticle.typedb.core.graph.common.KeyGenerator;
 import com.vaticle.typedb.core.graph.common.StatisticsBytes;
 import com.vaticle.typedb.core.graph.common.Storage;
 import com.vaticle.typedb.core.graph.iid.EdgeIID;
-import com.vaticle.typedb.core.graph.iid.IID;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
@@ -56,8 +55,8 @@ import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
@@ -210,24 +209,22 @@ public class ThingGraph {
         return vertex;
     }
 
-    private <VALUE, ATT_IID extends VertexIID.Attribute<VALUE>, ATT_VERTEX extends AttributeVertex<VALUE>>
-    ATT_VERTEX getOrReadFromStorage(Map<ATT_IID, ? extends ATT_VERTEX> map, ATT_IID attIID, Function<ATT_IID, ATT_VERTEX> vertexConstructor) {
-        ATT_VERTEX vertex = map.get(attIID);
-        if (vertex == null && storage.get(attIID.bytes()) != null) {
-            return vertexConstructor.apply(attIID);
-        } else {
-            return vertex;
-        }
+    private <VAL, IID extends VertexIID.Attribute<VAL>, VERTEX extends AttributeVertex<VAL>> VERTEX getOrReadFromStorage(
+            Map<IID, ? extends VERTEX> map, IID attIID, Function<IID, VERTEX> vertexConstructor) {
+        VERTEX vertex = map.get(attIID);
+        if (vertex == null && storage.get(attIID.bytes()) != null) return vertexConstructor.apply(attIID);
+        else return vertex;
     }
 
     public FunctionalIterator.Sorted<ThingVertex> getReadable(TypeVertex typeVertex) {
         ByteArray.Base prefix = join(typeVertex.iid().bytes(), Encoding.Edge.ISA.in().bytes());
         FunctionalIterator.Sorted<ThingVertex> storageIterator = storage.iterate(prefix)
-                .mapSorted(keyValue -> convertToReadable(EdgeIID.InwardsISA.of(keyValue.key()).end()),
+                .mapSorted(kv -> convertToReadable(EdgeIID.InwardsISA.of(kv.key()).end()),
                         vertex -> KeyValue.of(join(prefix, vertex.iid().bytes()), ByteArray.empty()));
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return storageIterator;
         else {
-            FunctionalIterator.Sorted<ThingVertex> buffered = iterateSorted(thingsByTypeIID.get(typeVertex.iid())).mapSorted(e -> e, ThingVertex::toWrite);
+            FunctionalIterator.Sorted<ThingVertex> buffered = iterateSorted(thingsByTypeIID.get(typeVertex.iid()))
+                    .mapSorted(e -> e, ThingVertex::toWrite);
             return storageIterator.merge(buffered).distinct();
         }
     }
@@ -424,7 +421,7 @@ public class ThingGraph {
         storage.trackExclusiveCreate(join(ownerType.iid().bytes(), attribute.iid().bytes()));
     }
 
-    public void setModified(IID iid) {
+    public void setModified(com.vaticle.typedb.core.graph.iid.IID iid) {
         assert storage.isOpen();
         if (!isModified) isModified = true;
         storage.trackModified(iid.bytes());
@@ -763,7 +760,7 @@ public class ThingGraph {
 
         public boolean processCountJobs() {
             FunctionalIterator<CountJob> countJobs = storage.iterate(StatisticsBytes.countJobKey())
-                    .map(keyValue -> CountJob.of(keyValue.key(), keyValue.value()));
+                    .map(kv -> CountJob.of(kv.key(), kv.value()));
             for (long processed = 0; processed < COUNT_JOB_BATCH_SIZE && countJobs.hasNext(); processed++) {
                 CountJob countJob = countJobs.next();
                 if (countJob instanceof CountJob.Attribute) {

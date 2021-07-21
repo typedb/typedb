@@ -24,9 +24,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 class FilteredIterator<T> extends AbstractFunctionalIterator<T> {
 
@@ -119,10 +117,9 @@ class FilteredIterator<T> extends AbstractFunctionalIterator<T> {
                 next = null;
             }
 
-            @SafeVarargs
             @Override
-            public final FunctionalIterator.Sorted.Forwardable<T> merge(FunctionalIterator.Sorted.Forwardable<T>... iterators) {
-                return Iterators.Sorted.merge(this, iterators);
+            public final FunctionalIterator.Sorted.Forwardable<T> merge(FunctionalIterator.Sorted.Forwardable<T> iterator) {
+                return Iterators.Sorted.merge(this, iterator);
             }
 
             @Override
@@ -140,7 +137,6 @@ class FilteredIterator<T> extends AbstractFunctionalIterator<T> {
             public FunctionalIterator.Sorted.Forwardable<T> filter(Predicate<T> predicate) {
                 return Iterators.Sorted.filter(this, predicate);
             }
-
         }
     }
 }

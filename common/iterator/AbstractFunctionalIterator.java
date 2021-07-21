@@ -36,6 +36,7 @@ import java.util.stream.StreamSupport;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.single;
 import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -238,11 +239,9 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     public static abstract class Sorted<T extends Comparable<? super T>>
             extends AbstractFunctionalIterator<T> implements FunctionalIterator.Sorted<T> {
 
-        @SafeVarargs
         @Override
-        public final FunctionalIterator.Sorted<T> merge(FunctionalIterator.Sorted<T>... iterators) {
-            List<FunctionalIterator.Sorted<T>> iters = list(list(iterators), this);
-            return new MergeMappedIterator<>(iterate(iters), e -> e);
+        public final FunctionalIterator.Sorted<T> merge(FunctionalIterator.Sorted<T> iterator) {
+            return new MergeMappedIterator<>(single(iterator), e -> e);
         }
 
         @Override
@@ -264,6 +263,5 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
         public FunctionalIterator.Sorted<T> onFinalise(Runnable function) {
             return new FinaliseHandledIterator.Sorted<>(this, function);
         }
-
     }
 }

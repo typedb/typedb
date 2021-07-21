@@ -59,9 +59,9 @@ import static com.vaticle.typedb.core.concurrent.executor.Executors.async2;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.ISA;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Data.HAS;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Data.PLAYING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Data.RELATING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.HAS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.PLAYING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.RELATING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
@@ -134,8 +134,7 @@ public class Traversal {
     }
 
     FunctionalIterator<VertexMap> relations(GraphManager graphMgr) {
-        RelationIterator relationIterator = new RelationIterator(this.structure, this.parameters, graphMgr);
-        return relationIterator;
+        return new RelationIterator(structure, parameters, graphMgr);
     }
 
     FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Either<Arguments.Query.Producer, Long> context,
@@ -338,19 +337,23 @@ public class Traversal {
         return structure;
     }
 
+    public Parameters parameters() {
+        return parameters;
+    }
+
     public static class Parameters {
 
-        private final Map<Identifier.Variable, VertexIID.Thing> iid;
+        private final Map<Identifier.Variable, VertexIID.Thing> iids;
         private final Map<Pair<Identifier.Variable, Predicate.Value<?>>, Set<Value>> values;
 
         public Parameters() {
-            iid = new HashMap<>();
+            iids = new HashMap<>();
             values = new HashMap<>();
         }
 
         public void putIID(Identifier.Variable identifier, VertexIID.Thing iid) {
-            assert !this.iid.containsKey(identifier);
-            this.iid.put(identifier, iid);
+            assert !this.iids.containsKey(identifier);
+            this.iids.put(identifier, iid);
         }
 
         public void pushValue(Identifier.Variable identifier, Predicate.Value<?> predicate, Value value) {
@@ -358,11 +361,11 @@ public class Traversal {
         }
 
         public VertexIID.Thing getIID(Identifier.Variable identifier) {
-            return iid.get(identifier);
+            return iids.get(identifier);
         }
 
-        public Set<Identifier.Variable> withIID() {
-            return iid.keySet();
+        public Set<Identifier.Variable> getIdentifiersWithIID() {
+            return iids.keySet();
         }
 
         public Set<Value> getValues(Identifier.Variable identifier, Predicate.Value<?> predicate) {
@@ -372,7 +375,7 @@ public class Traversal {
         @Override
         public String toString() {
             StringBuilder str = new StringBuilder().append("Parameters: {");
-            if (!iid.isEmpty()) str.append("\n\tiid: ").append(iid);
+            if (!iids.isEmpty()) str.append("\n\tiid: ").append(iids);
             if (!values.isEmpty()) str.append("\n\tvalues: ").append(values);
             str.append("\n}");
             return str.toString();
@@ -385,12 +388,12 @@ public class Traversal {
 
             Parameters that = (Parameters) o;
 
-            return iid.equals(that.iid) && values.equals(that.values);
+            return iids.equals(that.iids) && values.equals(that.values);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(iid, values);
+            return Objects.hash(iids, values);
         }
 
         public static class Value {

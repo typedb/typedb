@@ -93,8 +93,7 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
         T peek();
 
-        @SuppressWarnings("unchecked")
-        Sorted<T> merge(Sorted<T>... iterators);
+        Sorted<T> merge(Sorted<T> iterator);
 
         Sorted<T> distinct();
 
@@ -106,8 +105,7 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
             void forward(T target);
 
-            @SuppressWarnings("unchecked")
-            Forwardable<T> merge(Forwardable<T>... iterators);
+            Forwardable<T> merge(Forwardable<T> iterator);
 
             @Override
             Forwardable<T> distinct();
@@ -116,8 +114,6 @@ public interface FunctionalIterator<T> extends Iterator<T> {
             Forwardable<T> filter(Predicate<T> predicate);
 
             <U extends Comparable<? super U>> Forwardable<U> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn);
-
         }
-
     }
 }

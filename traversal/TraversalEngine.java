@@ -29,8 +29,6 @@ import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 
 import java.util.Set;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
-
 public class TraversalEngine {
 
     private final GraphManager graphMgr;
@@ -66,13 +64,12 @@ public class TraversalEngine {
         return traversal.iterator(graphMgr, singleUse);
     }
 
-    public FunctionalIterator<VertexMap> relations(Traversal traversal) {
-        return traversal.relations(graphMgr);
-    }
-
     public FunctionalIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter) {
         return procedure.iterator(graphMgr, params, filter);
     }
 
+    public FunctionalIterator<VertexMap> relations(Traversal traversal) {
+        return traversal.relations(graphMgr);
+    }
 }

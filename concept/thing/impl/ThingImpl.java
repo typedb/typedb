@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.type.impl.RoleTypeImpl;
-import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.TypeImpl;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
@@ -53,8 +52,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.T
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Data.HAS;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Data.PLAYING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.HAS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.PLAYING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 
 public abstract class ThingImpl extends ConceptImpl implements Thing {

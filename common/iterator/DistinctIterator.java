@@ -26,9 +26,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 // TODO: verify (and potentially fix) this class is able to handle null objects
 class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
@@ -122,10 +120,9 @@ class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
                 iterator.forward(target);
             }
 
-            @SafeVarargs
             @Override
-            public final FunctionalIterator.Sorted.Forwardable<T> merge(FunctionalIterator.Sorted.Forwardable<T>... iterators) {
-                return Iterators.Sorted.merge(this, iterators);
+            public final FunctionalIterator.Sorted.Forwardable<T> merge(FunctionalIterator.Sorted.Forwardable<T> iterator) {
+                return Iterators.Sorted.merge(this, iterator);
             }
 
             @Override
@@ -143,7 +140,6 @@ class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
             public FunctionalIterator.Sorted.Forwardable<T> filter(Predicate<T> predicate) {
                 return Iterators.Sorted.filter(this, predicate);
             }
-
         }
     }
 }

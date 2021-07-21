@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.graph.common;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 
@@ -45,7 +44,6 @@ import static com.vaticle.typedb.core.common.collection.Bytes.signedByte;
 import static com.vaticle.typedb.core.common.collection.Bytes.unsignedByte;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Encoding {
@@ -697,7 +695,6 @@ public class Encoding {
             public String toString() {
                 return name();
             }
-
         };
 
         enum Type implements Edge {
@@ -743,109 +740,117 @@ public class Encoding {
             public Type asType() {
                 return this;
             }
-
         }
 
-        abstract class Thing implements Edge {
+        interface Thing extends Edge {
 
-            private final String name;
-            private final boolean isOptimisation;
-            private final int tailSize;
-            final Infix out;
-            final Infix in;
-
-            Thing(String name, Infix out, Infix in, boolean isOptimisation, int tailSize) {
-                this.name = name;
-                this.out = out;
-                this.in = in;
-                this.isOptimisation = isOptimisation;
-                this.tailSize = tailSize;
-                assert out == null || out.isOptimisation() == isOptimisation;
-                assert in == null || in.isOptimisation() == isOptimisation;
-            }
-
-            public static Thing of(Infix infix) {
+            static Thing of(Infix infix) {
                 return of(infix.key);
             }
 
-            public static FunctionalIterator<Thing> values() {
-                return iterate(Data.HAS, Data.RELATING, Data.PLAYING, Optimised.ROLEPLAYER);
-            }
-
-            public static Thing of(byte infix) {
-                if ((Data.HAS.out != null && Data.HAS.out.key == infix)
-                        || (Data.HAS.in != null && Data.HAS.in.key == infix)) {
-                    return Data.HAS;
-                } else if ((Data.PLAYING.out != null && Data.PLAYING.out.key == infix)
-                        || (Data.PLAYING.in != null && Data.PLAYING.in.key == infix)) {
-                    return Data.PLAYING;
-                } else if ((Data.RELATING.out != null && Data.RELATING.out.key == infix)
-                        || (Data.RELATING.in != null && Data.RELATING.in.key == infix)) {
-                    return Data.RELATING;
-                } else if ((Optimised.ROLEPLAYER.out != null && Optimised.ROLEPLAYER.out.key == infix)
-                        || (Optimised.ROLEPLAYER.in != null && Optimised.ROLEPLAYER.in.key == infix)) {
+            static Thing of(byte infix) {
+                if (Base.HAS.out.key == infix || Base.HAS.in.key == infix) {
+                    return Base.HAS;
+                } else if (Base.PLAYING.out.key == infix || Base.PLAYING.in.key == infix) {
+                    return Base.PLAYING;
+                } else if (Base.RELATING.out.key == infix || Base.RELATING.in.key == infix) {
+                    return Base.RELATING;
+                } else if (Optimised.ROLEPLAYER.out.key == infix || Optimised.ROLEPLAYER.in.key == infix) {
                     return Optimised.ROLEPLAYER;
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
             }
 
-            @Override
-            public Infix out() {
-                return out;
+            String name();
+
+            Infix in();
+
+            Infix out();
+
+            boolean isOptimisation();
+
+            int tailSize();
+
+            default int lookAhead() {
+                return tailSize() + 2;
             }
 
             @Override
-            public Infix in() {
-                return in;
-            }
-
-            @Override
-            public boolean isOptimisation() {
-                return isOptimisation;
-            }
-
-            @Override
-            public boolean isThing() {
+            default boolean isThing() {
                 return true;
             }
 
             @Override
-            public Thing asThing() {
+            default Thing asThing() {
                 return this;
             }
 
-            @Override
-            public String name() {
-                return name;
-            }
+            enum Base implements Thing { // TODO: name could be improved
+                HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
+                PLAYING(Infix.EDGE_PLAYING_OUT, Infix.EDGE_PLAYING_IN),
+                RELATING(Infix.EDGE_RELATING_OUT, Infix.EDGE_RELATING_IN);
 
-            public int tailSize() {
-                return tailSize;
-            }
+                private final Infix out;
+                private final Infix in;
 
-            public int lookAhead() {
-                return tailSize + 2;
-            }
+                Base(Infix out, Infix in) {
+                    this.out = out;
+                    this.in = in;
+                }
 
-            public static class Data extends Thing {
-                public static Data HAS = new Data("HAS", Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN);
-                public static Data PLAYING = new Data("PLAYING", Infix.EDGE_PLAYING_OUT, Infix.EDGE_PLAYING_IN);
-                public static Data RELATING = new Data("RELATING", Infix.EDGE_RELATING_OUT, Infix.EDGE_RELATING_IN);
+                @Override
+                public Infix in() {
+                    return in;
+                }
 
-                public Data(String name, Infix out, Infix in) {
-                    super(name, out, in, false, 0);
+                @Override
+                public Infix out() {
+                    return out;
+                }
+
+                @Override
+                public boolean isOptimisation() {
+                    return false;
+                }
+
+                @Override
+                public int tailSize() {
+                    return 0;
                 }
             }
 
-            public static class Optimised extends Thing {
+            enum Optimised implements Thing {
+                ROLEPLAYER(Infix.EDGE_ROLEPLAYER_OUT, Infix.EDGE_ROLEPLAYER_IN, 1);
 
-                public static Optimised ROLEPLAYER = new Optimised(
-                        "ROLEPLAYER", Infix.EDGE_ROLEPLAYER_OUT, Infix.EDGE_ROLEPLAYER_IN, true, 1
-                );
+                private final Infix out;
+                private final Infix in;
+                private final int tailSize;
 
-                Optimised(String name, Infix out, Infix in, boolean isOptimisation, int tailSize) {
-                    super(name, out, in, isOptimisation, tailSize);
+                Optimised(Infix out, Infix in, int tailSize) {
+                    this.out = out;
+                    this.in = in;
+                    this.tailSize = tailSize;
+                }
+
+                @Override
+                public Infix in() {
+                    return in;
+                }
+
+                @Override
+                public Infix out() {
+                    return out;
+                }
+
+                @Override
+                public boolean isOptimisation() {
+                    return true;
+                }
+
+                @Override
+                public int tailSize() {
+                    return tailSize;
                 }
             }
         }

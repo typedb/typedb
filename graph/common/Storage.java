@@ -37,11 +37,11 @@ public interface Storage {
 
     void deleteUntracked(ByteArray key);
 
+    FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> iterate(ByteArray key);
+
     void putUntracked(ByteArray key);
 
     void putUntracked(ByteArray key, ByteArray value);
-
-    FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> iterate(ByteArray key);
 
     TypeDBException exception(ErrorMessage error);
 

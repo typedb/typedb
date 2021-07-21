@@ -37,7 +37,7 @@ public interface ThingAdjacency {
      * @param encoding the {@code Encoding} to filter the type of edges
      * @return an {@code SortedIteratorBuilder} to retrieve vertices of a set of edges.
      */
-    SortedIteratorBuilder edge(Encoding.Edge.Thing.Data encoding, IID... lookAhead);
+    SortedIteratorBuilder edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead);
 
     SortedIteratorBuilder edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
 
@@ -158,21 +158,18 @@ public interface ThingAdjacency {
         public abstract EdgeIID.Thing iid();
 
         public static DirectedEdge in(ThingEdge edge) {
-            EdgeIID.Thing inIID = edge.inIID();
-            return new DirectedEdge(edge) {
-                @Override
-                public EdgeIID.Thing iid() {
-                    return inIID;
-                }
-            };
+            return directedEdge(edge, edge.inIID());
         }
 
         public static DirectedEdge out(ThingEdge edge) {
-            EdgeIID.Thing outIID = edge.outIID();
+            return directedEdge(edge, edge.outIID());
+        }
+
+        private static DirectedEdge directedEdge(ThingEdge edge, EdgeIID.Thing iid) {
             return new DirectedEdge(edge) {
                 @Override
                 public EdgeIID.Thing iid() {
-                    return outIID;
+                    return iid;
                 }
             };
         }

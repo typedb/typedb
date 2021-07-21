@@ -169,7 +169,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                     graph.storage().deleteTracked(outIID().bytes());
                     graph.storage().deleteUntracked(inIID().bytes());
                 }
-                if (encoding == Encoding.Edge.Thing.Data.HAS && !isInferred) {
+                if (encoding == Encoding.Edge.Thing.Base.HAS && !isInferred) {
                     graph.stats().hasEdgeDeleted(from.iid(), to.iid().asAttribute());
                 }
             }
@@ -222,13 +222,13 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
     }
 
-    public static class Virtual extends ThingEdgeImpl implements ThingEdge {
+    public static class Target extends ThingEdgeImpl implements ThingEdge {
 
         private final ThingVertex from;
         private final ThingVertex to;
         private final TypeVertex optimisedType;
 
-        public Virtual(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, @Nullable TypeVertex optimisedType) {
+        public Target(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, @Nullable TypeVertex optimisedType) {
             super(from.graph(), encoding, false);
             this.optimisedType = optimisedType;
             assert !encoding.isOptimisation() || optimisedType != null;
@@ -300,7 +300,6 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public void isInferred(boolean isInferred) {
             throw TypeDBException.of(ILLEGAL_OPERATION);
         }
-
     }
 
     public static class Persisted extends ThingEdgeImpl implements ThingEdge {
@@ -448,7 +447,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 toWritable().ins().remove(this);
                 graph.storage().deleteTracked(this.outIID.bytes());
                 graph.storage().deleteUntracked(this.inIID.bytes());
-                if (encoding == Encoding.Edge.Thing.Data.HAS && !isInferred) {
+                if (encoding == Encoding.Edge.Thing.Base.HAS && !isInferred) {
                     graph.stats().hasEdgeDeleted(fromIID, toIID.asAttribute());
                 }
             }

@@ -23,9 +23,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 class FinaliseHandledIterator<T> extends AbstractFunctionalIterator<T> implements FunctionalIterator<T> {
 
@@ -110,10 +108,9 @@ class FinaliseHandledIterator<T> extends AbstractFunctionalIterator<T> implement
                 iterator.forward(target);
             }
 
-            @SafeVarargs
             @Override
-            public final FunctionalIterator.Sorted.Forwardable<T> merge(FunctionalIterator.Sorted.Forwardable<T>... iterators) {
-                return Iterators.Sorted.merge(this, iterators);
+            public final FunctionalIterator.Sorted.Forwardable<T> merge(FunctionalIterator.Sorted.Forwardable<T> iterator) {
+                return Iterators.Sorted.merge(this, iterator);
             }
 
             @Override
@@ -131,7 +128,6 @@ class FinaliseHandledIterator<T> extends AbstractFunctionalIterator<T> implement
             public FunctionalIterator.Sorted.Forwardable<T> filter(Predicate<T> predicate) {
                 return Iterators.Sorted.filter(this, predicate);
             }
-
         }
     }
 }

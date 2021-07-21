@@ -41,7 +41,7 @@ public final class RocksIterator extends AbstractFunctionalIterator.Sorted<KeyVa
     private KeyValue<ByteArray, ByteArray> next;
     private boolean isClosed;
 
-    private enum State {INIT, EMPTY, FORWARDED_EMPTY, FETCHED, COMPLETED}
+    private enum State {INIT, UNFETCHED, FORWARDED, FETCHED, COMPLETED}
 
     RocksIterator(RocksStorage storage, ByteArray prefix) {
         this.storage = storage;
@@ -65,7 +65,7 @@ public final class RocksIterator extends AbstractFunctionalIterator.Sorted<KeyVa
             if (isClosed) throw TypeDBException.of(RESOURCE_CLOSED);
             else throw new NoSuchElementException();
         }
-        state = State.EMPTY;
+        state = State.UNFETCHED;
         return next;
     }
 
@@ -76,10 +76,10 @@ public final class RocksIterator extends AbstractFunctionalIterator.Sorted<KeyVa
                 return false;
             case FETCHED:
                 return true;
-            case EMPTY:
+            case UNFETCHED:
                 return fetchAndCheck();
-            case FORWARDED_EMPTY:
-                return checkValidNext();
+            case FORWARDED:
+                return hasValidNext();
             case INIT:
                 return initialiseAndCheck();
             default: // This should never be reached
@@ -91,22 +91,13 @@ public final class RocksIterator extends AbstractFunctionalIterator.Sorted<KeyVa
     public synchronized void forward(KeyValue<ByteArray, ByteArray> target) {
         if (state == State.INIT) initialise(target.key());
         else internalRocksIterator.seek(target.key().getBytes());
-        state = State.FORWARDED_EMPTY;
-    }
-
-    private synchronized boolean fetchAndCheck() {
-        if (state != State.COMPLETED) {
-            internalRocksIterator.next();
-            return checkValidNext();
-        } else {
-            return false;
-        }
+        state = State.FORWARDED;
     }
 
     private synchronized boolean initialiseAndCheck() {
         if (state != State.COMPLETED) {
             initialise(prefix);
-            return checkValidNext();
+            return hasValidNext();
         } else {
             return false;
         }
@@ -116,10 +107,19 @@ public final class RocksIterator extends AbstractFunctionalIterator.Sorted<KeyVa
         assert state == State.INIT;
         this.internalRocksIterator = storage.getInternalRocksIterator();
         this.internalRocksIterator.seek(prefix.getBytes());
-        state = State.FORWARDED_EMPTY;
+        state = State.FORWARDED;
     }
 
-    private synchronized boolean checkValidNext() {
+    private synchronized boolean fetchAndCheck() {
+        if (state != State.COMPLETED) {
+            internalRocksIterator.next();
+            return hasValidNext();
+        } else {
+            return false;
+        }
+    }
+
+    private synchronized boolean hasValidNext() {
         ByteArray key;
         if (!internalRocksIterator.isValid() || !((key = ByteArray.of(internalRocksIterator.key())).hasPrefix(prefix))) {
             recycle();
@@ -145,11 +145,10 @@ public final class RocksIterator extends AbstractFunctionalIterator.Sorted<KeyVa
         }
     }
 
-    @SafeVarargs
     @Override
     public final FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> merge(
-            FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>>... iterators) {
-        return Iterators.Sorted.merge(this, iterators);
+            FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> iterator) {
+        return Iterators.Sorted.merge(this, iterator);
     }
 
     @Override

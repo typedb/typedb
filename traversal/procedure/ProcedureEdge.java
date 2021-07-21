@@ -59,9 +59,9 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
 import static com.vaticle.typedb.core.graph.common.Encoding.Direction.Edge.BACKWARD;
 import static com.vaticle.typedb.core.graph.common.Encoding.Direction.Edge.FORWARD;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.ISA;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Data.HAS;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Data.PLAYING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Data.RELATING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.HAS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.PLAYING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.RELATING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
@@ -716,7 +716,7 @@ public abstract class ProcedureEdge<
             }
 
             FunctionalIterator<? extends Vertex<?, ?>> forwardBranchToRole(GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                                                                           Encoding.Edge.Thing.Data encoding) {
+                                                                           Encoding.Edge.Thing.Base encoding) {
                 assert !to.props().hasIID() && to.props().predicates().isEmpty();
                 ThingVertex relation = fromVertex.asThing();
                 if (!to.props().types().isEmpty()) {
