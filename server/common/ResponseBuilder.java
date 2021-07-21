@@ -71,7 +71,7 @@ public class ResponseBuilder {
             return (StatusRuntimeException) e;
         } else {
             return Status.INTERNAL.withDescription(
-                    e.getMessage() + " Please check server logs for the stack trace."
+                    e.getMessage() + "\n\nPlease check server logs for the stack trace."
             ).asRuntimeException();
         }
     }
