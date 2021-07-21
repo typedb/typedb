@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -86,7 +86,7 @@ public class PlaysConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(Traversal traversal) {
+    public void addTo(GraphTraversal traversal) {
         if (overridden().isPresent()) throw TypeDBException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
         traversal.plays(owner.id(), roleType.id());
     }

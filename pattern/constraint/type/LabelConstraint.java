@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -69,7 +69,7 @@ public class LabelConstraint extends TypeConstraint implements AlphaEquivalent<L
     }
 
     @Override
-    public void addTo(Traversal traversal) {
+    public void addTo(GraphTraversal traversal) {
         assert !owner.resolvedTypes().isEmpty();
     }
 

@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.iterator.GraphIterator;
@@ -168,7 +168,7 @@ public class GraphProcedure implements Procedure {
     }
 
     @Override
-    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
+    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
         if (LOG.isDebugEnabled()) {
             LOG.debug(params.toString());
@@ -182,7 +182,7 @@ public class GraphProcedure implements Procedure {
     }
 
     @Override
-    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
+    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter) {
         if (LOG.isDebugEnabled()) {
             LOG.debug(params.toString());

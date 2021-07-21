@@ -48,7 +48,7 @@ import com.vaticle.typedb.core.pattern.variable.SystemReference;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
@@ -86,7 +86,7 @@ public class TypeResolver {
     }
 
     public FunctionalIterator<Map<Identifier.Variable.Name, Label>> namedCombinations(Conjunction conjunction, boolean insertable) {
-        Traversal resolverTraversal = new Traversal();
+        GraphTraversal resolverTraversal = new GraphTraversal();
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, resolverTraversal, 0, insertable);
         resolverTraversal.filter(traversalBuilder.retrievedResolvers());
         return traversalEng.iterator(traversalBuilder.traversal()).map(vertexMap -> {
@@ -142,7 +142,7 @@ public class TypeResolver {
     }
 
     private void resolveVariableTypes(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
-        Traversal resolverTraversal = new Traversal();
+        GraphTraversal resolverTraversal = new GraphTraversal();
         TraversalBuilder traversalBuilder = builder(resolverTraversal, conjunction, scopingConjunctions, insertable);
         resolverTraversal.filter(traversalBuilder.retrievedResolvers());
         Map<Identifier.Variable.Retrievable, Set<Label>> resolvedLabels = executeTypeResolvers(traversalBuilder);
@@ -159,7 +159,7 @@ public class TypeResolver {
         return iterate(conjunction.variables()).noneMatch(Variable::isThing);
     }
 
-    private TraversalBuilder builder(Traversal traversal, Conjunction conjunction, List<Conjunction> scopingConjunctions,
+    private TraversalBuilder builder(GraphTraversal traversal, Conjunction conjunction, List<Conjunction> scopingConjunctions,
                                      boolean insertable) {
         TraversalBuilder currentBuilder;
         if (!scopingConjunctions.isEmpty()) {
@@ -223,13 +223,13 @@ public class TypeResolver {
         private final Map<Identifier.Variable, Variable> resolverToOriginal;
         private final ConceptManager conceptMgr;
         private final Conjunction conjunction;
-        private final Traversal traversal;
+        private final GraphTraversal traversal;
         private final boolean insertable;
         private boolean hasRootAttribute;
         private boolean hasRootThing;
         private int sysVarCounter;
 
-        TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr, Traversal initialTraversal,
+        TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr, GraphTraversal initialTraversal,
                          int initialAnonymousVarCounter, boolean insertable) {
             this.conceptMgr = conceptMgr;
             this.conjunction = conjunction;
@@ -252,7 +252,7 @@ public class TypeResolver {
             return sysVarCounter;
         }
 
-        Traversal traversal() {
+        GraphTraversal traversal() {
             return traversal;
         }
 

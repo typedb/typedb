@@ -241,7 +241,7 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
 
         @Override
         public final FunctionalIterator.Sorted<T> merge(FunctionalIterator.Sorted<T> iterator) {
-            return new MergeMappedIterator<>(single(iterator), e -> e);
+            return new MergeMappedIterator<>(iterate(this, iterator), e -> e);
         }
 
         @Override

@@ -33,7 +33,7 @@ import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
@@ -138,14 +138,14 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
 
     protected FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
         return compatibleBounds(conjunction, bounds).map(c -> {
-            Traversal traversal = boundTraversal(conjunction.traversal(), c);
+            GraphTraversal traversal = boundTraversal(conjunction.traversal(), c);
             return traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
         }).orElse(Iterators.empty());
     }
 
     protected Producer<ConceptMap> traversalProducer(Conjunction conjunction, ConceptMap bounds, int parallelisation) {
         return compatibleBounds(conjunction, bounds).map(b -> {
-            Traversal traversal = boundTraversal(conjunction.traversal(), b);
+            GraphTraversal traversal = boundTraversal(conjunction.traversal(), b);
             return traversalEngine.producer(traversal, Either.first(INCREMENTAL), parallelisation).map(conceptMgr::conceptMap);
         }).orElse(Producers.empty());
     }
@@ -174,7 +174,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         return Optional.of(new ConceptMap(newBounds));
     }
 
-    protected Traversal boundTraversal(Traversal traversal, ConceptMap bounds) {
+    protected GraphTraversal boundTraversal(GraphTraversal traversal, ConceptMap bounds) {
         bounds.concepts().forEach((id, concept) -> {
             if (concept.isThing()) traversal.iid(id.asVariable(), concept.asThing().getIID());
             else {

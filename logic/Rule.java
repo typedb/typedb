@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -45,7 +46,8 @@ import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
+import com.vaticle.typedb.core.traversal.RelationTraversal;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.Pattern;
@@ -560,14 +562,16 @@ public class Rule {
             private FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> matchRelation(
                     RelationType relationType, ConceptMap whenConcepts,
                     TraversalEngine traversalEng, ConceptManager conceptMgr) {
-                Traversal traversal = new Traversal();
+                RelationTraversal traversal = new RelationTraversal();
                 Identifier.Variable.Retrievable relationId = relation().owner().id();
-                traversal.types(relationId, set(relationType.getLabel()));
+                traversal.types(relationId, relationType.getSubtypes().map(Type::getLabel).toSet());
                 relation().players().forEach(rp -> {
                     Identifier.Variable.Retrievable playerId = rp.player().id();
                     assert rp.roleType().isPresent() && rp.roleType().get().label().isPresent()
                             && whenConcepts.contains(playerId);
-                    traversal.rolePlayer(relationId, playerId, set(getRole(rp, relationType, whenConcepts).getLabel()), rp.repetition());
+                    traversal.rolePlayer(relationId, playerId,
+                            getRole(rp, relationType, whenConcepts).getSubtypes().map(Type::getLabel).toSet(),
+                            rp.repetition());
                     if (traversal.parameters().getIID(playerId) == null) {
                         traversal.iid(playerId, whenConcepts.get(playerId).asThing().getIID());
                     }

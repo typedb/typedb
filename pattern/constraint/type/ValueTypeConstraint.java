@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 
 import java.util.Objects;
@@ -56,7 +56,7 @@ public class ValueTypeConstraint extends TypeConstraint implements AlphaEquivale
     }
 
     @Override
-    public void addTo(Traversal traversal) {
+    public void addTo(GraphTraversal traversal) {
         traversal.valueType(owner.id(), valueType);
     }
 

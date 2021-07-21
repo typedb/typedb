@@ -155,10 +155,12 @@ public class Iterators {
         }
 
         @SafeVarargs
-        public static <T extends Comparable<? super T>> Forwardable<T> merge(Forwardable<T> iterator,
-                                                                             Forwardable<T>... iterators) {
-            List<Forwardable<T>> iters = list(list(iterators), iterator);
-            return new MergeMappedIterator.Forwardable<>(iterate(iters), e -> e);
+        public static <T extends Comparable<? super T>> Forwardable<T> merge(Forwardable<T>... iterators) {
+            return new MergeMappedIterator.Forwardable<>(iterate(iterators), e -> e);
+        }
+
+        public static <T extends Comparable<? super T>> Forwardable<T> merge(List<Forwardable<T>> iterators) {
+            return new MergeMappedIterator.Forwardable<>(iterate(iterators), e -> e);
         }
 
         public static <T extends Comparable<? super T>> Forwardable<T> onFinalise(Forwardable<T> iterator,

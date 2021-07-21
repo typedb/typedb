@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 
 import java.util.Objects;
 
@@ -66,7 +66,7 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
     }
 
     @Override
-    public void addTo(Traversal traversal) {
+    public void addTo(GraphTraversal traversal) {
         // TODO: assert !(type.reference().isLabel() && typeHints.isEmpty());
         if (type.reference().isName() || owner.resolvedTypes().isEmpty()) {
             traversal.isa(owner.id(), type.id(), !isExplicit);

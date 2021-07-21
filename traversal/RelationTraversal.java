@@ -16,22 +16,35 @@
  *
  */
 
-package com.vaticle.typedb.core.traversal.procedure;
+package com.vaticle.typedb.core.traversal;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.traversal.GraphTraversal;
-import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.iterator.RelationIterator;
 
-import java.util.Set;
+import java.util.Objects;
 
-public interface Procedure {
+public class RelationTraversal extends Traversal {
 
-    FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Parameters params,
-                                           Set<Identifier.Variable.Retrievable> filter, int parallelisation);
+    public RelationTraversal() {
+        super();
+    }
 
-    FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Parameters params,
-                                           Set<Identifier.Variable.Retrievable> filter);
+    FunctionalIterator<VertexMap> relations(GraphManager graphMgr) {
+        return new RelationIterator(this, graphMgr);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RelationTraversal that = (RelationTraversal) o;
+        return (this.structure.equals(that.structure) && this.parameters.equals(that.parameters));
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.structure, this.parameters);
+    }
 }

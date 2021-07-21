@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.traversal.predicate;
 
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.Objects;
@@ -79,7 +79,7 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
             return argument.valueType();
         }
 
-        public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+        public boolean apply(AttributeVertex<?> vertex, GraphTraversal.Parameters.Value value) {
             return argument.apply(operator, vertex, value);
         }
 

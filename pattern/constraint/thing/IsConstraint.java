@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typeql.lang.pattern.constraint.ConceptConstraint;
 
 import java.util.Objects;
@@ -56,7 +56,7 @@ public class IsConstraint extends ThingConstraint {
     }
 
     @Override
-    public void addTo(Traversal traversal) {
+    public void addTo(GraphTraversal traversal) {
         traversal.equalThings(owner.id(), variable.id());
     }
 

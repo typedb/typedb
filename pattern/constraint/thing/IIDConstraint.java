@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.pattern.constraint.thing;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 
 import java.util.Objects;
 
@@ -54,7 +54,7 @@ public class IIDConstraint extends ThingConstraint {
     }
 
     @Override
-    public void addTo(Traversal traversal) {
+    public void addTo(GraphTraversal traversal) {
         traversal.iid(owner.id(), iid);
     }
 

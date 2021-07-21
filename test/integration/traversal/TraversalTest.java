@@ -161,19 +161,19 @@ public class TraversalTest {
             ProcedureVertex.Thing y = proc.namedThing("y");
             y.props().types(set(Label.of("person")));
 
-            Traversal.Parameters params = new Traversal.Parameters();
+            GraphTraversal.Parameters params = new GraphTraversal.Parameters();
             params.pushValue(_0.id().asVariable(),
                              Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ),
-                             new Traversal.Parameters.Value("Alex"));
+                             new GraphTraversal.Parameters.Value("Alex"));
             params.pushValue(_1.id().asVariable(),
                              Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ),
-                             new Traversal.Parameters.Value("John"));
+                             new GraphTraversal.Parameters.Value("John"));
             params.pushValue(r1.id().asVariable(),
                              Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG),
-                             new Traversal.Parameters.Value(3L));
+                             new GraphTraversal.Parameters.Value(3L));
             params.pushValue(r2.id().asVariable(),
                              Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG),
-                             new Traversal.Parameters.Value(1L));
+                             new GraphTraversal.Parameters.Value(1L));
 
             /*
             edges:

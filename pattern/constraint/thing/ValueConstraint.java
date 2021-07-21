@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
@@ -220,7 +220,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public void addTo(Traversal traversal) {
+        public void addTo(GraphTraversal traversal) {
             traversal.predicate(owner.id(), predicate.asEquality(), value);
         }
 
@@ -252,7 +252,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public void addTo(Traversal traversal) {
+        public void addTo(GraphTraversal traversal) {
             traversal.predicate(owner.id(), predicate.asEquality(), value);
         }
 
@@ -284,7 +284,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public void addTo(Traversal traversal) {
+        public void addTo(GraphTraversal traversal) {
             traversal.predicate(owner.id(), predicate.asEquality(), value);
         }
 
@@ -311,7 +311,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public void addTo(Traversal traversal) {
+        public void addTo(GraphTraversal traversal) {
             traversal.predicate(owner.id(), predicate, value);
         }
 
@@ -348,7 +348,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public void addTo(Traversal traversal) {
+        public void addTo(GraphTraversal traversal) {
             traversal.predicate(owner.id(), predicate.asEquality(), value);
         }
 
@@ -381,7 +381,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public void addTo(Traversal traversal) {
+        public void addTo(GraphTraversal traversal) {
             traversal.predicate(owner.id(), predicate.asEquality(), value.id());
         }
 
