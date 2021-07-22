@@ -34,6 +34,7 @@ native_java_libraries(
         ["*.java",
         "resolution/*.java",
         "resolution/framework/*.java",
+        "resolution/resolver/coordinator/*.java",
         "resolution/resolver/*.java",
         "resolution/answer/*.java",
         ], exclude = ["*Test.java", "**/*Test.java"],
