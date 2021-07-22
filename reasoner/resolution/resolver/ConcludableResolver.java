@@ -81,8 +81,10 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
         Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
         iterationByRoot.putIfAbsent(root, iteration);
-        if (iteration > iterationByRoot.get(root)) prepareNextIteration(root, iteration);
-        else if (iteration < iterationByRoot.get(root)) {
+        if (iteration > iterationByRoot.get(root)) {
+            prepareNextIteration(root, iteration);
+        }
+        if (iteration < iterationByRoot.get(root)) {
             // short circuit if the request came from a prior iteration
             failToUpstream(fromUpstream, iteration);
         } else {
@@ -107,6 +109,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         iterationByRoot.put(root, iteration);
         cacheRegistersByRoot.remove(root);
         requestMapByRoot.remove(root);
+        subsumptionTrackers.remove(root);
     }
 
     private Driver<BoundConcludableResolver> getOrReplaceBoundConcludable(Driver<? extends Resolver<?>> root, ConceptMap bounds) {
