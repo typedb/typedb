@@ -110,6 +110,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         cacheRegistersByRoot.remove(root);
         requestMapByRoot.remove(root);
         subsumptionTrackers.remove(root);
+        boundConcludableResolversByRoot.remove(root);
     }
 
     private Driver<BoundConcludableResolver> getOrReplaceBoundConcludable(Driver<? extends Resolver<?>> root, ConceptMap bounds) {
