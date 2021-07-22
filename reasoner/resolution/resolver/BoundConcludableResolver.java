@@ -151,10 +151,9 @@ public class BoundConcludableResolver extends Resolver<BoundConcludableResolver>
             forward them downstream (to parallelise searching for the single answer), and when the first one finds an answer,
             we respond for all N ahead of time. Then, when the rules actually return an answer to this concludable, we do nothing.
              */
-            RequestState.CachingRequestState<?, ConceptMap> requestState1 = this.requestStates.get(fromUpstream);
-            if (requestState1.isExploration() && requestState1.asExploration().singleAnswerRequired()) {
-                requestState1.asExploration().downstreamManager().clearDownstreams();
-                requestState1.answerCache().setComplete();
+            if (requestState.isExploration() && requestState.asExploration().singleAnswerRequired()) {
+                requestState.asExploration().downstreamManager().clearDownstreams();
+                requestState.answerCache().setComplete();
             }
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
         } else {

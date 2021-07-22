@@ -116,7 +116,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         return boundConcludableResolversByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(bounds, b -> {
             LOG.debug("{}: Creating a new BoundConcludableResolver for bounds: {}", name(), bounds);
             // TODO: We could use the bounds to prune the applicable rules further
-            return registry.registerBoundConcludable(concludable, bounds, resolverRules, applicableRules);
+            return registry.registerBoundConcludable(concludable, bounds, resolverRules, applicableRules, root, iterationByRoot.get(root));
         });
     }
 
