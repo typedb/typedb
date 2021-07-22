@@ -19,9 +19,7 @@
 package com.vaticle.typedb.core.traversal;
 
 import com.vaticle.typedb.common.collection.Either;
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
@@ -33,7 +31,6 @@ import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
-import com.vaticle.typedb.core.traversal.iterator.RelationIterator;
 import com.vaticle.typedb.core.traversal.planner.Planner;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
@@ -50,8 +47,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static com.vaticle.typedb.common.collection.Collections.pair;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.cartesian;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
@@ -67,11 +62,6 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.SubString.LIKE;
 import static java.util.stream.Collectors.toList;
 
@@ -79,10 +69,12 @@ public class GraphTraversal extends Traversal {
 
     private final Set<Retrievable> filter;
     private List<Planner> planners;
+    private boolean modifiable;
 
     public GraphTraversal() {
         super();
         filter = new HashSet<>();
+        modifiable = true;
     }
 
     // TODO: We should not dynamically calculate properties like this, and then guard against 'modifiable'.
@@ -157,6 +149,17 @@ public class GraphTraversal extends Traversal {
         structure.equalEdge(structure.typeVertex(type1), structure.typeVertex(type2));
     }
 
+    public void iid(Identifier.Variable thing, ByteArray iid) {
+        assert modifiable;
+        parameters.putIID(thing, VertexIID.Thing.of(iid));
+        structure.thingVertex(thing).props().hasIID(true);
+    }
+
+    public void types(Identifier thing, Set<Label> labels) {
+        assert modifiable;
+        structure.thingVertex(thing).props().types(labels);
+    }
+
     public void has(Identifier.Variable thing, Identifier.Variable attribute) {
         assert modifiable;
         structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(attribute), HAS);
@@ -180,6 +183,16 @@ public class GraphTraversal extends Traversal {
     public void playing(Identifier.Variable thing, Identifier.Scoped role) {
         assert modifiable;
         structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(role), PLAYING);
+    }
+
+    public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, int repetition) {
+        assert modifiable;
+        structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player), repetition);
+    }
+
+    public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, Set<Label> roleTypes, int repetition) {
+        assert modifiable;
+        structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player), roleTypes, repetition);
     }
 
     public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, boolean isKey) {

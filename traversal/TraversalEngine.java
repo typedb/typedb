@@ -70,6 +70,6 @@ public class TraversalEngine {
     }
 
     public FunctionalIterator<VertexMap> relations(RelationTraversal traversal) {
-        return traversal.relations(graphMgr);
+        return traversal.iterator(graphMgr);
     }
 }

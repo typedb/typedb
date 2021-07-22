@@ -19,9 +19,7 @@
 package com.vaticle.typedb.core.traversal;
 
 import com.vaticle.typedb.common.collection.Pair;
-import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -48,12 +46,10 @@ public abstract class Traversal {
 
     final Parameters parameters;
     final Structure structure;
-    boolean modifiable;
 
     Traversal() {
         structure = new Structure();
         parameters = new Parameters();
-        modifiable = true;
     }
 
     public Structure structure() {
@@ -62,27 +58,6 @@ public abstract class Traversal {
 
     public Parameters parameters() {
         return parameters;
-    }
-
-    public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, int repetition) {
-        assert modifiable;
-        structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player), repetition);
-    }
-
-    public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, Set<Label> roleTypes, int repetition) {
-        assert modifiable;
-        structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player), roleTypes, repetition);
-    }
-
-    public void iid(Identifier.Variable thing, ByteArray iid) {
-        assert modifiable;
-        parameters.putIID(thing, VertexIID.Thing.of(iid));
-        structure.thingVertex(thing).props().hasIID(true);
-    }
-
-    public void types(Identifier thing, Set<Label> labels) {
-        assert modifiable;
-        structure.thingVertex(thing).props().types(labels);
     }
 
     public static class Parameters {

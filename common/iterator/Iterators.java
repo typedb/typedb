@@ -159,8 +159,8 @@ public class Iterators {
             return new MergeMappedIterator.Forwardable<>(iterate(iterators), e -> e);
         }
 
-        public static <T extends Comparable<? super T>> Forwardable<T> merge(List<Forwardable<T>> iterators) {
-            return new MergeMappedIterator.Forwardable<>(iterate(iterators), e -> e);
+        public static <T extends Comparable<? super T>> Forwardable<T> merge(FunctionalIterator<Forwardable<T>> iterators) {
+            return new MergeMappedIterator.Forwardable<>(iterators, e -> e);
         }
 
         public static <T extends Comparable<? super T>> Forwardable<T> onFinalise(Forwardable<T> iterator,

@@ -156,7 +156,6 @@ public class Materialiser {
             });
             return newMap;
         }
-
     }
 
     private class Materialisations {

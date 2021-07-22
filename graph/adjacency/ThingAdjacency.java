@@ -174,7 +174,7 @@ public interface ThingAdjacency {
             };
         }
 
-        public ThingEdge getEdge() {
+        public ThingEdge get() {
             return edge;
         }
 
