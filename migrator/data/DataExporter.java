@@ -34,8 +34,6 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZoneId;
@@ -47,11 +45,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.DATABASE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_NOT_WRITABLE;
-import static java.nio.charset.StandardCharsets.UTF_16;
 
 public class DataExporter {
     private static final Logger LOG = LoggerFactory.getLogger(DataExporter.class);
-    private static final Charset BYTES_ENCODING = UTF_16;
 
     private final TypeDB typedb;
     private final String database;
@@ -127,7 +123,7 @@ public class DataExporter {
     private DataProto.Item entity(Entity entity) {
         status.entityCount.incrementAndGet();
         DataProto.Item.Entity.Builder entityBuilder = DataProto.Item.Entity.newBuilder()
-                .setId(entity.getIID().decodeString(BYTES_ENCODING))
+                .setId(entity.getIID().toBase64String())
                 .setLabel(entity.getType().getLabel().name());
         readOwnerships(entity).forEachRemaining(a -> {
             status.ownershipCount.incrementAndGet();
@@ -139,7 +135,7 @@ public class DataExporter {
     private DataProto.Item relation(Relation relation) {
         status.relationCount.incrementAndGet();
         DataProto.Item.Relation.Builder relationBuilder = DataProto.Item.Relation.newBuilder()
-                .setId(relation.getIID().decodeString(BYTES_ENCODING))
+                .setId(relation.getIID().toBase64String())
                 .setLabel(relation.getType().getLabel().name());
         Map<? extends RoleType, ? extends List<? extends Thing>> playersByRole = relation.getPlayersByRoleType();
         for (Map.Entry<? extends RoleType, ? extends List<? extends Thing>> rolePlayers : playersByRole.entrySet()) {
@@ -149,7 +145,7 @@ public class DataExporter {
             for (Thing player : rolePlayers.getValue()) {
                 status.roleCount.incrementAndGet();
                 roleBuilder.addPlayer(DataProto.Item.Relation.Role.Player.newBuilder()
-                        .setId(player.getIID().decodeString(BYTES_ENCODING)));
+                        .setId(player.getIID().toBase64String()));
             }
             relationBuilder.addRole(roleBuilder);
         }
@@ -163,7 +159,7 @@ public class DataExporter {
     private DataProto.Item attribute(Attribute attribute) {
         status.attributeCount.incrementAndGet();
         DataProto.Item.Attribute.Builder attributeBuilder = DataProto.Item.Attribute.newBuilder()
-                .setId(attribute.getIID().decodeString(BYTES_ENCODING))
+                .setId(attribute.getIID().toBase64String())
                 .setLabel(attribute.getType().getLabel().name())
                 .setValue(value(attribute));
         readOwnerships(attribute).forEachRemaining(a -> {
@@ -193,7 +189,7 @@ public class DataExporter {
 
     private FunctionalIterator<DataProto.Item.OwnedAttribute.Builder> readOwnerships(Thing thing) {
         return thing.getHas().map(attribute -> DataProto.Item.OwnedAttribute.newBuilder()
-                .setId(attribute.getIID().decodeString(BYTES_ENCODING)));
+                .setId(attribute.getIID().toBase64String()));
     }
 
     private static class Status {

@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.UUID;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
@@ -116,6 +117,10 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     public static ByteArray fromHexString(String string) {
         return of(Bytes.hexStringToBytes(string));
+    }
+
+    public String toBase64String() {
+        return Base64.getEncoder().encodeToString(getBytes());
     }
 
     public static ByteArray.Base encodeString(String string) {
