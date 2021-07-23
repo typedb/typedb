@@ -39,6 +39,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explai
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConclusionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundRetrievableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConcludableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConclusionResolver;
@@ -228,7 +229,28 @@ public class ResolverRegistry {
         return resolver;
     }
 
+    public Actor.Driver<BoundConclusionResolver> registerBoundConclusion(
+            Rule.Conclusion conclusion, ConceptMap bounds, Actor.Driver<ConditionResolver> conditionResolver,
+            boolean explain) {
+        LOG.debug("Register BoundConclusionResolver, pattern: {} bounds: {}", conclusion.conjunction(), bounds);
+        Actor.Driver<BoundConclusionResolver> resolver;
+        if (explain) {
+            // TODO: Use explain resolver
+            resolver = Actor.driver(driver -> new BoundConclusionResolver(
+                    driver, conclusion, bounds, conditionResolver, this, traversalEngine, conceptMgr,
+                    resolutionTracing), executorService);
+        } else {
+            // TODO: Use match resolver
+            resolver = Actor.driver(driver -> new BoundConclusionResolver(
+                    driver, conclusion, bounds, conditionResolver, this, traversalEngine, conceptMgr,
+                    resolutionTracing), executorService);
+        }
+        resolvers.add(resolver);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return resolver;
+    }
     // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
+
     private synchronized ResolverView.MappedConcludable registerConcludable(Concludable concludable) {
         LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
         for (Map.Entry<Concludable, Actor.Driver<ConcludableResolver>> c : concludableResolvers.entrySet()) {

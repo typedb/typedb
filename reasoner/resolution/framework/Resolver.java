@@ -100,7 +100,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
 
     public boolean isTerminated() { return terminated; }
 
-    protected abstract void initialiseDownstreamResolvers();
+    protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
 
     protected Request fromUpstream(Request toDownstream) {
         assert requestRouter.containsKey(toDownstream);
