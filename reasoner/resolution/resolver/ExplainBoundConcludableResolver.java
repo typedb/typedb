@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -60,19 +61,18 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
         return new ConcludableAnswerCache(new HashMap<>(), bounds); // TODO How is this working without doing traversal?
     }
 
-
     @Override
     protected CachingRequestState<?, ConceptMap> createRequestState(Request fromUpstream, int iteration) {
-        LOG.debug("{}: Creating new Responses for iteration{}, request: {}", name(), iteration, fromUpstream);
-        CachingRequestState<?, ConceptMap> requestState;
-        assert cache.isConcludableAnswerCache();
-        if (exploringRequestState == null) {
-            requestState = new ExploringRequestState(fromUpstream, cache.asConcludableAnswerCache(), iteration);
-            requestState.asExploration().downstreamManager().addDownstreams(ruleDownstreams(fromUpstream));
-        } else {
-            requestState = new RequestState(fromUpstream, cache.asConcludableAnswerCache(), iteration, true, true);
-        }
-        return requestState;
+        LOG.debug("{}: Creating new request state for iteration{}, request: {}", name(), iteration, fromUpstream);
+        return new RequestState(fromUpstream, cache.asConcludableAnswerCache(), iteration, true, true);
+    }
+
+    @Override
+    CachingRequestState<?, ConceptMap> createExploringRequestState(Request fromUpstream, int iteration) {
+        LOG.debug("{}: Creating new exploring request state for iteration{}, request: {}", name(), iteration,
+                  fromUpstream);
+        return new ExploringRequestState(fromUpstream, cache.asConcludableAnswerCache(), iteration,
+                                         ruleDownstreams(fromUpstream));
     }
 
     private static class RequestState extends CachingRequestState<AnswerState.Partial.Concludable<?>, ConceptMap> {
@@ -96,9 +96,9 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
 
         public ExploringRequestState(Request fromUpstream,
                                      AnswerCache<AnswerState.Partial.Concludable<?>, ConceptMap> answerCache,
-                                     int iteration) {
+                                     int iteration, List<Request> ruleDownstreams) {
             super(fromUpstream, answerCache, iteration, false, false);
-            this.downstreamManager = new DownstreamManager();
+            this.downstreamManager = new DownstreamManager(ruleDownstreams);
         }
 
         @Override

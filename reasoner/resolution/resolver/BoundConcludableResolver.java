@@ -63,7 +63,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     protected final Concludable concludable;
     protected final ConceptMap bounds;
     protected AnswerCache<?, ConceptMap> cache;
-    protected RequestState exploringRequestState;
+    protected CachingRequestState<?, ConceptMap> exploringRequestState;
 
     public BoundConcludableResolver(Driver<BoundConcludableResolver> driver, Concludable concludable, ConceptMap bounds,
                                     Map<Driver<ConclusionResolver>, Rule> resolverRules,
@@ -128,16 +128,22 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     private void receiveDirectRequest(Request fromUpstream, int iteration) {
         assert fromUpstream.partialAnswer().isConcludable();
-        CachingRequestState<?, ConceptMap> requestState = requestStates.computeIfAbsent(
-                fromUpstream, request -> createRequestState(fromUpstream, iteration));
+        CachingRequestState<?, ConceptMap> requestState;
         if (exploringRequestState == null) {
-            assert requestState.isExploration();
+            requestState = createExploringRequestState(fromUpstream, iteration);
             exploringRequestState = requestState;
+            assert requestStates.get(fromUpstream) == null;
+            requestStates.put(fromUpstream, requestState);
+        } else {
+            requestState = requestStates.computeIfAbsent(
+                    fromUpstream, request -> createRequestState(fromUpstream, iteration));
         }
         sendAnswerOrSearchRulesOrFail(fromUpstream, iteration, requestState);
     }
 
     abstract CachingRequestState<?, ConceptMap> createRequestState(Request fromUpstream, int iteration);
+
+    abstract CachingRequestState<?, ConceptMap> createExploringRequestState(Request fromUpstream, int iteration);
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {

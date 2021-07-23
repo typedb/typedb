@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -68,17 +69,14 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
 
     @Override
     protected CachingRequestState<?, ConceptMap> createRequestState(Request fromUpstream, int iteration) {
-        LOG.debug("{}: Creating new Responses for iteration{}, request: {}", name(), iteration, fromUpstream);
-        CachingRequestState<?, ConceptMap> requestState;
-        assert cache.isConceptMapCache();
-        if (exploringRequestState == null) {
-            requestState = new ExploringRequestState(fromUpstream, cache.asConceptMapCache(), iteration
-            );
-            requestState.asExploration().downstreamManager().addDownstreams(ruleDownstreams(fromUpstream));
-        } else {
-            requestState = new RequestState(fromUpstream, cache.asConceptMapCache(), iteration, true);
-        }
-        return requestState;
+        LOG.debug("{}: Creating new request state for iteration{}, request: {}", name(), iteration, fromUpstream);
+        return new RequestState(fromUpstream, cache.asConceptMapCache(), iteration, true);
+    }
+
+    @Override
+    CachingRequestState<?, ConceptMap> createExploringRequestState(Request fromUpstream, int iteration) {
+        LOG.debug("{}: Creating new exploring request state for iteration{}, request: {}", name(), iteration, fromUpstream);
+        return new ExploringRequestState(fromUpstream, cache.asConceptMapCache(), iteration, ruleDownstreams(fromUpstream));
     }
 
     private Set<Identifier.Variable.Retrievable> unboundVars() {
@@ -111,9 +109,9 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         private final DownstreamManager downstreamManager;
 
         public ExploringRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache,
-                                     int iteration) {
+                                     int iteration, List<Request> ruleDownstreams) {
             super(fromUpstream, answerCache, iteration, false);
-            this.downstreamManager = new DownstreamManager();
+            this.downstreamManager = new DownstreamManager(ruleDownstreams);
         }
 
         @Override
