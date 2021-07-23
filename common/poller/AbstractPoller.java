@@ -31,8 +31,8 @@ public abstract class AbstractPoller<T> implements Poller<T> {
     }
 
     @Override
-    public <U> Poller<U> flatMap(Function<T, Poller<U>> flatMappingFn) {
-        return new FlatMappedPoller<>(this, flatMappingFn);
+    public <U> Poller<U> flatMap(Function<T, Poller<U>> mappingFn) {
+        return new FlatMappedPoller<>(this, mappingFn);
     }
 
     @Override

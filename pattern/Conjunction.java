@@ -31,7 +31,7 @@ import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
@@ -167,15 +167,15 @@ public class Conjunction implements Pattern, Cloneable {
         return negations;
     }
 
-    public Traversal traversal(Set<? extends Retrievable> filter) {
-        Traversal traversal = new Traversal();
+    public GraphTraversal traversal(Set<? extends Retrievable> filter) {
+        GraphTraversal traversal = new GraphTraversal();
         variableSet.forEach(variable -> variable.addTo(traversal));
         assert iterate(filter).allMatch(variableMap::containsKey);
         traversal.filter(filter);
         return traversal;
     }
 
-    public Traversal traversal() {
+    public GraphTraversal traversal() {
         return traversal(new HashSet<>());
     }
 

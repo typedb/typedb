@@ -106,7 +106,6 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             this.overridden = overridden;
         }
 
-
         /**
          * Deletes this {@code Edge} from connecting between two {@code Vertex}.
          *

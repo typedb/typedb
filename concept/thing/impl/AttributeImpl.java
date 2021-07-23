@@ -31,7 +31,7 @@ import java.time.LocalDateTime;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.HAS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.HAS;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
@@ -86,7 +86,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     @Override
     public FunctionalIterator<ThingImpl> getOwners(ThingType ownerType) {
         return ownerType.getSubtypes().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(
-                v -> readableVertex().ins().edge(HAS, PrefixIID.of(v.encoding().instance()), v.iid()).from()
+                v -> readableVertex().ins().edge(HAS, (PrefixIID.of(v.encoding().instance())), v.iid()).from()
         ).map(ThingImpl::of);
     }
 

@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.test.behaviour.reasoner.verification;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -38,7 +37,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 class CompletenessVerifier {

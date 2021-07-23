@@ -21,34 +21,27 @@ package com.vaticle.typedb.core.graph.adjacency;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
+import com.vaticle.typedb.core.graph.iid.EdgeIID;
 import com.vaticle.typedb.core.graph.iid.IID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 public interface ThingAdjacency {
 
     /**
-     * Returns an {@code IteratorBuilder} to retrieve vertices of a set of edges.
+     * Returns an {@code IteratorBuilder} to retrieve vertices of a set of non-optimised edges.
      *
      * This method allows us to traverse the graph, by going from one vertex to
      * another, that are connected by edges that match the provided {@code encoding}.
      *
      * @param encoding the {@code Encoding} to filter the type of edges
-     * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
+     * @return an {@code SortedIteratorBuilder} to retrieve vertices of a set of edges.
      */
-    ThingIteratorBuilder edge(Encoding.Edge.Thing encoding);
+    SortedIteratorBuilder edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead);
 
-    /**
-     * Returns an {@code IteratorBuilder} to retrieve vertices of a set of edges.
-     *
-     * This method allows us to traverse the graph, by going from one vertex to
-     * another, that are connected by edges that match the provided {@code encoding}
-     * and {@code lookahead}.
-     *
-     * @param encoding  type of the edge to filter by
-     * @param lookAhead information of the adjacent edge to filter the edges with
-     * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
-     */
-    ThingIteratorBuilder edge(Encoding.Edge.Thing encoding, IID... lookAhead);
+    SortedIteratorBuilder edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
+
+    IteratorBuilder edge(Encoding.Edge.Thing.Optimised encoding);
 
     /**
      * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
@@ -71,14 +64,22 @@ public interface ThingAdjacency {
      */
     ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
 
-    interface ThingIteratorBuilder {
+    interface IteratorBuilder {
 
         FunctionalIterator<ThingVertex> from();
 
         FunctionalIterator<ThingVertex> to();
 
         FunctionalIterator<ThingEdge> get();
+    }
 
+    interface SortedIteratorBuilder {
+
+        FunctionalIterator.Sorted<ThingVertex> from();
+
+        FunctionalIterator.Sorted<ThingVertex> to();
+
+        FunctionalIterator.Sorted.Forwardable<DirectedEdge> get();
     }
 
     interface Write extends ThingAdjacency {
@@ -144,5 +145,55 @@ public interface ThingAdjacency {
 
     }
 
+    DirectedEdge asDirected(ThingEdge edge);
 
+    abstract class DirectedEdge implements Comparable<DirectedEdge> {
+
+        public final ThingEdge edge;
+
+        DirectedEdge(ThingEdge edge) {
+            this.edge = edge;
+        }
+
+        public abstract EdgeIID.Thing iid();
+
+        public static DirectedEdge in(ThingEdge edge) {
+            return directedEdge(edge, edge.inIID());
+        }
+
+        public static DirectedEdge out(ThingEdge edge) {
+            return directedEdge(edge, edge.outIID());
+        }
+
+        private static DirectedEdge directedEdge(ThingEdge edge, EdgeIID.Thing iid) {
+            return new DirectedEdge(edge) {
+                @Override
+                public EdgeIID.Thing iid() {
+                    return iid;
+                }
+            };
+        }
+
+        public ThingEdge get() {
+            return edge;
+        }
+
+        @Override
+        public int compareTo(DirectedEdge other) {
+            return iid().compareTo(other.iid());
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            final DirectedEdge that = (DirectedEdge) o;
+            return edge.equals(that.edge);
+        }
+
+        @Override
+        public int hashCode() {
+            return edge.hashCode();
+        }
+    }
 }

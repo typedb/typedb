@@ -742,79 +742,116 @@ public class Encoding {
             }
         }
 
-        enum Thing implements Edge {
-            HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
-            PLAYING(Infix.EDGE_PLAYING_OUT, Infix.EDGE_PLAYING_IN),
-            RELATING(Infix.EDGE_RELATING_OUT, Infix.EDGE_RELATING_IN),
-            ROLEPLAYER(Infix.EDGE_ROLEPLAYER_OUT, Infix.EDGE_ROLEPLAYER_IN, true, 1);
+        interface Thing extends Edge {
 
-            private final Infix out;
-            private final Infix in;
-            private final boolean isOptimisation;
-            private final int tailSize;
-
-            Thing(Infix out, Infix in) {
-                this(out, in, false, 0);
-            }
-
-            Thing(Infix out, Infix in, boolean isOptimisation, int tailSize) {
-                this.out = out;
-                this.in = in;
-                this.isOptimisation = isOptimisation;
-                this.tailSize = tailSize;
-                assert out == null || out.isOptimisation() == isOptimisation;
-                assert in == null || in.isOptimisation() == isOptimisation;
-            }
-
-            public static Thing of(Infix infix) {
+            static Thing of(Infix infix) {
                 return of(infix.key);
             }
 
-            public static Thing of(byte infix) {
-                if ((HAS.out != null && HAS.out.key == infix) || (HAS.in != null && HAS.in.key == infix)) {
-                    return HAS;
-                } else if ((PLAYING.out != null && PLAYING.out.key == infix) || (PLAYING.in != null && PLAYING.in.key == infix)) {
-                    return PLAYING;
-                } else if ((RELATING.out != null && RELATING.out.key == infix) || (RELATING.in != null && RELATING.in.key == infix)) {
-                    return RELATING;
-                } else if ((ROLEPLAYER.out != null && ROLEPLAYER.out.key == infix) || (ROLEPLAYER.in != null && ROLEPLAYER.in.key == infix)) {
-                    return ROLEPLAYER;
+            static Thing of(byte infix) {
+                if (Base.HAS.out.key == infix || Base.HAS.in.key == infix) {
+                    return Base.HAS;
+                } else if (Base.PLAYING.out.key == infix || Base.PLAYING.in.key == infix) {
+                    return Base.PLAYING;
+                } else if (Base.RELATING.out.key == infix || Base.RELATING.in.key == infix) {
+                    return Base.RELATING;
+                } else if (Optimised.ROLEPLAYER.out.key == infix || Optimised.ROLEPLAYER.in.key == infix) {
+                    return Optimised.ROLEPLAYER;
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
             }
 
-            @Override
-            public Infix out() {
-                return out;
+            String name();
+
+            Infix in();
+
+            Infix out();
+
+            boolean isOptimisation();
+
+            int tailSize();
+
+            default int lookAhead() {
+                return tailSize() + 2;
             }
 
             @Override
-            public Infix in() {
-                return in;
-            }
-
-            @Override
-            public boolean isOptimisation() {
-                return isOptimisation;
-            }
-
-            @Override
-            public boolean isThing() {
+            default boolean isThing() {
                 return true;
             }
 
             @Override
-            public Thing asThing() {
+            default Thing asThing() {
                 return this;
             }
 
-            public int tailSize() {
-                return tailSize;
+            enum Base implements Thing { // TODO: name could be improved
+                HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
+                PLAYING(Infix.EDGE_PLAYING_OUT, Infix.EDGE_PLAYING_IN),
+                RELATING(Infix.EDGE_RELATING_OUT, Infix.EDGE_RELATING_IN);
+
+                private final Infix out;
+                private final Infix in;
+
+                Base(Infix out, Infix in) {
+                    this.out = out;
+                    this.in = in;
+                }
+
+                @Override
+                public Infix in() {
+                    return in;
+                }
+
+                @Override
+                public Infix out() {
+                    return out;
+                }
+
+                @Override
+                public boolean isOptimisation() {
+                    return false;
+                }
+
+                @Override
+                public int tailSize() {
+                    return 0;
+                }
             }
 
-            public int lookAhead() {
-                return tailSize + 2;
+            enum Optimised implements Thing {
+                ROLEPLAYER(Infix.EDGE_ROLEPLAYER_OUT, Infix.EDGE_ROLEPLAYER_IN, 1);
+
+                private final Infix out;
+                private final Infix in;
+                private final int tailSize;
+
+                Optimised(Infix out, Infix in, int tailSize) {
+                    this.out = out;
+                    this.in = in;
+                    this.tailSize = tailSize;
+                }
+
+                @Override
+                public Infix in() {
+                    return in;
+                }
+
+                @Override
+                public Infix out() {
+                    return out;
+                }
+
+                @Override
+                public boolean isOptimisation() {
+                    return true;
+                }
+
+                @Override
+                public int tailSize() {
+                    return tailSize;
+                }
             }
         }
     }

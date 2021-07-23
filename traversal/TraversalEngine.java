@@ -29,8 +29,6 @@ import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 
 import java.util.Set;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
-
 public class TraversalEngine {
 
     private final GraphManager graphMgr;
@@ -45,33 +43,33 @@ public class TraversalEngine {
         return graphMgr;
     }
 
-    public FunctionalProducer<VertexMap> producer(Traversal traversal, Either<Arguments.Query.Producer, Long> context,
+    public FunctionalProducer<VertexMap> producer(GraphTraversal traversal, Either<Arguments.Query.Producer, Long> context,
                                                   int parallelisation) {
         return producer(traversal, context, parallelisation, false);
     }
 
-    public FunctionalProducer<VertexMap> producer(Traversal traversal, Either<Arguments.Query.Producer, Long> context,
+    public FunctionalProducer<VertexMap> producer(GraphTraversal traversal, Either<Arguments.Query.Producer, Long> context,
                                                   int parallelisation, boolean extraPlanningTime) {
         traversal.initialise(cache);
         return traversal.producer(graphMgr, context, parallelisation, extraPlanningTime);
     }
 
-    public FunctionalIterator<VertexMap> iterator(Traversal traversal) {
+    public FunctionalIterator<VertexMap> iterator(GraphTraversal traversal) {
         return iterator(traversal, false);
     }
 
-    public FunctionalIterator<VertexMap> iterator(Traversal traversal, boolean singleUse) {
+    public FunctionalIterator<VertexMap> iterator(GraphTraversal traversal, boolean singleUse) {
         if (singleUse) traversal.initialise();
         else traversal.initialise(cache);
         return traversal.iterator(graphMgr, singleUse);
     }
 
-    public FunctionalIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params) {
-        return iterator(procedure, params, set());
-    }
-
-    public FunctionalIterator<VertexMap> iterator(GraphProcedure procedure, Traversal.Parameters params,
+    public FunctionalIterator<VertexMap> iterator(GraphProcedure procedure, GraphTraversal.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter) {
         return procedure.iterator(graphMgr, params, filter);
+    }
+
+    public FunctionalIterator<VertexMap> relations(RelationTraversal traversal) {
+        return traversal.iterator(graphMgr);
     }
 }

@@ -30,7 +30,7 @@ import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
@@ -102,7 +102,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     }
 
     @Override
-    public void addTo(Traversal traversal) {
+    public void addTo(GraphTraversal traversal) {
         // TODO: create vertex properties first, then the vertex itself, then edges
         //       that way, we can make properties to be 'final' objects that are
         //       included in equality and hashCode of vertices

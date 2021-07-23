@@ -18,6 +18,7 @@
 package com.vaticle.typedb.core.graph.structure.impl;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.TypeGraph;
@@ -292,7 +293,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         private void deleteVertexFromStorage() {
             graph.storage().deleteUntracked(IndexIID.Rule.of(label).bytes());
-            FunctionalIterator<ByteArray> keys = graph.storage().iterate(iid.bytes(), (iid, value) -> iid);
+            FunctionalIterator<ByteArray> keys = graph.storage().iterate(iid.bytes()).map(KeyValue::key);
             while (keys.hasNext()) graph.storage().deleteUntracked(keys.next());
         }
 

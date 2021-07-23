@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.graph.common;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
@@ -234,8 +235,8 @@ public class KeyGenerator {
 
                 for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
                     ByteArray typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
-                    FunctionalIterator<ByteArray> typeIterator = schemaStorage.iterate(typeEncoding, (iid, value) -> iid)
-                            .filter(iid1 -> iid1.length() == VertexIID.Type.LENGTH);
+                    FunctionalIterator<ByteArray> typeIterator = schemaStorage.iterate(typeEncoding)
+                            .filter(kv -> kv.key().length() == VertexIID.Type.LENGTH).map(KeyValue::key);
                     while (typeIterator.hasNext()) {
                         ByteArray typeIID = typeIterator.next();
                         ByteArray prefix = join(thingEncoding.prefix().bytes(), typeIID);

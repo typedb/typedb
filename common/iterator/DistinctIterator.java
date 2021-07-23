@@ -18,9 +18,15 @@
 
 package com.vaticle.typedb.core.common.iterator;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 
 // TODO: verify (and potentially fix) this class is able to handle null objects
 class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
@@ -29,11 +35,11 @@ class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
     private final Set<T> consumed;
     private T next;
 
-    public DistinctIterator(FunctionalIterator<T> iterator) {
+    DistinctIterator(FunctionalIterator<T> iterator) {
         this(iterator, new HashSet<>());
     }
 
-    public DistinctIterator(FunctionalIterator<T> iterator, Set<T> duplicates) {
+    DistinctIterator(FunctionalIterator<T> iterator, Set<T> duplicates) {
         this.iterator = iterator;
         this.consumed = duplicates;
         this.next = null;
@@ -60,5 +66,80 @@ class DistinctIterator<T> extends AbstractFunctionalIterator<T> {
     @Override
     public void recycle() {
         iterator.recycle();
+    }
+
+    static class Sorted<T extends Comparable<? super T>, ITER extends FunctionalIterator.Sorted<T>>
+            extends AbstractFunctionalIterator.Sorted<T> {
+
+        final ITER iterator;
+        T last;
+
+        Sorted(ITER iterator) {
+            this.iterator = iterator;
+            last = null;
+        }
+
+        @Override
+        public boolean hasNext() {
+            while (iterator.hasNext()) {
+                if (iterator.peek().equals(last)) iterator.next();
+                else return true;
+            }
+            return false;
+        }
+
+        @Override
+        public T next() {
+            if (!hasNext()) throw new NoSuchElementException();
+            last = iterator.next();
+            return last;
+        }
+
+        @Override
+        public T peek() {
+            if (!hasNext()) throw new NoSuchElementException();
+            return iterator.peek();
+        }
+
+        @Override
+        public void recycle() {
+            iterator.recycle();
+        }
+
+        static class Forwardable<T extends Comparable<? super T>>
+                extends DistinctIterator.Sorted<T, FunctionalIterator.Sorted.Forwardable<T>>
+                implements FunctionalIterator.Sorted.Forwardable<T> {
+
+            Forwardable(FunctionalIterator.Sorted.Forwardable<T> source) {
+                super(source);
+            }
+
+            @Override
+            public void forward(T target) {
+                if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                iterator.forward(target);
+            }
+
+            @Override
+            public final FunctionalIterator.Sorted.Forwardable<T> merge(FunctionalIterator.Sorted.Forwardable<T> iterator) {
+                return Iterators.Sorted.merge(this, iterator);
+            }
+
+            @Override
+            public <U extends Comparable<? super U>> FunctionalIterator.Sorted.Forwardable<U> mapSorted(
+                    Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
+                return Iterators.Sorted.mapSorted(this, mappingFn, reverseMappingFn);
+            }
+
+            @Override
+            public FunctionalIterator.Sorted.Forwardable<T> distinct() {
+                return Iterators.Sorted.distinct(this);
+            }
+
+            @Override
+            public FunctionalIterator.Sorted.Forwardable<T> filter(Predicate<T> predicate) {
+                return Iterators.Sorted.filter(this, predicate);
+            }
+        }
     }
 }

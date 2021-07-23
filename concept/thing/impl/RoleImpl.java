@@ -20,9 +20,9 @@ package com.vaticle.typedb.core.concept.thing.impl;
 
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.PLAYING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.RELATING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.PLAYING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.RELATING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 import static java.util.Objects.requireNonNull;
 
 public class RoleImpl {

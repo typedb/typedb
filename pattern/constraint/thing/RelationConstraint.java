@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import javax.annotation.Nullable;
@@ -86,7 +86,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
     }
 
     @Override
-    public void addTo(Traversal traversal) {
+    public void addTo(GraphTraversal traversal) {
         for (RolePlayer rolePlayer : rolePlayers) {
             ThingVariable player = rolePlayer.player();
             int rep = rolePlayer.repetition();

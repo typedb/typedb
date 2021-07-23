@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.common.collection;
 
+import com.google.common.primitives.UnsignedBytes;
 import com.vaticle.typedb.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 
@@ -53,7 +54,6 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     public static ByteArray empty() {
         return new ByteArray.Base(new byte[]{});
     }
-
 
     public abstract byte[] getBytes();
 
@@ -275,13 +275,8 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     @Override
     public int compareTo(ByteArray that) {
-        if (that instanceof Base) return compareToBase((Base) that);
-        else return compareToView((View) that);
+        return UnsignedBytes.lexicographicalComparator().compare(getBytes(), that.getBytes());
     }
-
-    abstract int compareToView(View that);
-
-    abstract int compareToBase(Base that);
 
     @Override
     public boolean equals(Object o) {
@@ -407,26 +402,6 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         }
 
         @Override
-        int compareToBase(Base that) {
-            int n = Math.min(array.length, that.array.length);
-            for (int i = 0; i < n; i++) {
-                int cmp = Byte.compare(array[i], that.array[i]);
-                if (cmp != 0) return cmp;
-            }
-            return Integer.compare(array.length, that.array.length);
-        }
-
-        @Override
-        int compareToView(View that) {
-            int n = Math.min(array.length, that.length);
-            for (int i = 0; i < n; i++) {
-                int cmp = Byte.compare(array[i], that.array[i + that.start]);
-                if (cmp != 0) return cmp;
-            }
-            return Integer.compare(array.length, that.length);
-        }
-
-        @Override
         public boolean equalsBase(Base o) {
             return Arrays.equals(array, o.array);
         }
@@ -542,26 +517,6 @@ public abstract class ByteArray implements Comparable<ByteArray> {
                 if (array[i + start] != prefix.get(i)) return false;
             }
             return true;
-        }
-
-        @Override
-        int compareToBase(Base that) {
-            int n = Math.min(length, that.array.length);
-            for (int i = 0; i < n; i++) {
-                int cmp = Byte.compare(array[i + start], that.array[i]);
-                if (cmp != 0) return cmp;
-            }
-            return Integer.compare(length, that.array.length);
-        }
-
-        @Override
-        int compareToView(View that) {
-            int n = Math.min(length, that.length);
-            for (int i = 0; i < n; i++) {
-                int cmp = Byte.compare(array[i + start], that.array[i + that.start]);
-                if (cmp != 0) return cmp;
-            }
-            return Integer.compare(length, that.length);
         }
 
         @Override

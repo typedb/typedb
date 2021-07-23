@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.TypeConstraint;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 
 import java.util.Set;
 
@@ -36,7 +36,7 @@ public abstract class Constraint {
 
     public abstract Set<? extends Variable> variables();
 
-    public abstract void addTo(Traversal traversal);
+    public abstract void addTo(GraphTraversal traversal);
 
     public boolean isType() {
         return false;

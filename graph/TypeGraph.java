@@ -406,8 +406,8 @@ public class TypeGraph {
 
         public FunctionalIterator<RuleStructure> all() {
             Encoding.Prefix index = IndexIID.Rule.prefix();
-            FunctionalIterator<RuleStructure> persistedRules = storage.iterate(index.bytes(), (key, value) ->
-                    convert(StructureIID.Rule.of(value)));
+            FunctionalIterator<RuleStructure> persistedRules = storage.iterate(index.bytes())
+                    .map(kv -> convert(StructureIID.Rule.of(kv.value())));
             return link(buffered(), persistedRules).distinct();
         }
 
@@ -589,21 +589,21 @@ public class TypeGraph {
 
                 private void deleteConcludesEdgeTo(RuleStructure rule, TypeVertex type) {
                     Set<RuleStructure> rules = concludesEdgeTo.get(type);
-                    if (rules != null && rules.contains(rule)) {
-                        rules.remove(rule);
-                    }
+                    if (rules != null) rules.remove(rule);
                     storage.deleteUntracked(Rule.Key.concludedEdgeTo(type.iid(), rule.iid()).bytes());
                 }
 
                 private Set<RuleStructure> loadConcludesVertex(TypeVertex type) {
                     Rule scanPrefix = Rule.Prefix.concludedVertex(type.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of((key.view(scanPrefix.length()))))
+                    return storage.iterate(scanPrefix.bytes())
+                            .map(kv -> StructureIID.Rule.of((kv.key().view(scanPrefix.length()))))
                             .map(Rules.this::convert).toSet();
                 }
 
                 private Set<RuleStructure> loadConcludesEdgeTo(TypeVertex attrType) {
                     Rule scanPrefix = Rule.Prefix.concludedEdgeTo(attrType.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(key.view(scanPrefix.length())))
+                    return storage.iterate(scanPrefix.bytes())
+                            .map(kv -> StructureIID.Rule.of(kv.key().view(scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
 
@@ -611,7 +611,6 @@ public class TypeGraph {
                     concludesVertex.clear();
                     concludesEdgeTo.clear();
                 }
-
             }
 
             public class Buffered {
@@ -734,7 +733,8 @@ public class TypeGraph {
 
                 private Set<RuleStructure> loadIndex(TypeVertex type) {
                     Rule scanPrefix = Rule.Prefix.contained(type.iid());
-                    return storage.iterate(scanPrefix.bytes(), (key, value) -> StructureIID.Rule.of(key.view(scanPrefix.length())))
+                    return storage.iterate(scanPrefix.bytes())
+                            .map(kv -> StructureIID.Rule.of(kv.key().view(scanPrefix.length())))
                             .map(Rules.this::convert).toSet();
                 }
 
@@ -768,18 +768,15 @@ public class TypeGraph {
                 }
 
                 private void commit() {
-                    references.forEach((type, rules) -> {
-                        rules.forEach(rule -> {
-                            Rule typeInRule = Rule.Key.contained(type.iid(), rule.iid());
-                            storage.putUntracked(typeInRule.bytes());
-                        });
-                    });
+                    references.forEach((type, rules) -> rules.forEach(rule -> {
+                        Rule typeInRule = Rule.Key.contained(type.iid(), rule.iid());
+                        storage.putUntracked(typeInRule.bytes());
+                    }));
                 }
 
                 private void clear() {
                     references.clear();
                 }
-
             }
         }
     }
@@ -810,7 +807,9 @@ public class TypeGraph {
         }
 
         public long abstractTypeCount() {
-            Supplier<Integer> fn = () -> toIntExact(Stream.concat(thingTypes().stream(), roleTypes().stream()).filter(TypeVertex::isAbstract).count());
+            Supplier<Integer> fn = () -> toIntExact(
+                    Stream.concat(thingTypes().stream(), roleTypes().stream()).filter(TypeVertex::isAbstract).count()
+            );
             if (isReadOnly) {
                 if (abstractTypeCount == UNSET_COUNT) abstractTypeCount = fn.get();
                 return abstractTypeCount;
@@ -963,6 +962,5 @@ public class TypeGraph {
                 }
             } else return maxDepthFn.get();
         }
-
     }
 }

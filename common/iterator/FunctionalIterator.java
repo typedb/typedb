@@ -37,7 +37,9 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
     <U> FunctionalIterator<U> map(Function<T, U> mappingFn);
 
-    <U> FunctionalIterator<U> flatMap(Function<T, FunctionalIterator<U>> flatMappingFn);
+    <U> FunctionalIterator<U> flatMap(Function<T, FunctionalIterator<U>> mappingFn);
+
+    <U extends Comparable<U>> Sorted.Forwardable<U> mergeMap(Function<T, Sorted.Forwardable<U>> mappingFn);
 
     FunctionalIterator<T> filter(Predicate<T> predicate);
 
@@ -86,4 +88,32 @@ public interface FunctionalIterator<T> extends Iterator<T> {
     FunctionalIterator<T> onFinalise(Runnable function);
 
     void recycle();
+
+    interface Sorted<T extends Comparable<? super T>> extends FunctionalIterator<T> {
+
+        T peek();
+
+        Sorted<T> merge(Sorted<T> iterator);
+
+        Sorted<T> distinct();
+
+        Sorted<T> filter(Predicate<T> predicate);
+
+        <U extends Comparable<? super U>> Sorted<U> mapSorted(Function<T, U> mappingFn);
+
+        interface Forwardable<T extends Comparable<? super T>> extends Sorted<T> {
+
+            void forward(T target);
+
+            Forwardable<T> merge(Forwardable<T> iterator);
+
+            @Override
+            Forwardable<T> distinct();
+
+            @Override
+            Forwardable<T> filter(Predicate<T> predicate);
+
+            <U extends Comparable<? super U>> Forwardable<U> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn);
+        }
+    }
 }

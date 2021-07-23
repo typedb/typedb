@@ -31,8 +31,6 @@ import org.rocksdb.ClockCache;
 import org.rocksdb.RocksDB;
 import org.rocksdb.UInt64AddOperator;
 import org.rocksdb.util.SizeUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;

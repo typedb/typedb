@@ -28,7 +28,7 @@ class OffsetIterator<T> extends AbstractFunctionalIterator<T> {
 
     private enum State {INIT, OFFSET}
 
-    public OffsetIterator(FunctionalIterator<T> iterator, long offset) {
+    OffsetIterator(FunctionalIterator<T> iterator, long offset) {
         this.iterator = iterator;
         this.offset = offset;
         state = State.INIT;

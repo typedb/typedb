@@ -98,6 +98,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(ThingVertex.Write.class));
     }
 
+    @Override
+    public int compareTo(ThingVertex o) {
+        return iid.bytes().compareTo(o.iid().bytes());
+    }
+
     public static class Read extends ThingVertexImpl {
 
         protected final ThingAdjacency outs;
@@ -146,7 +151,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         public AttributeVertex<?> asAttribute() {
             throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.class));
         }
-
     }
 
     public static abstract class Write extends ThingVertexImpl implements ThingVertex.Write {
@@ -290,7 +294,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             public void setModified() {
                 if (!isModified) isModified = true;
             }
-
         }
 
         public static class Persisted extends ThingVertexImpl.Write {

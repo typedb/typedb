@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.pattern.Pattern;
 import com.vaticle.typedb.core.pattern.constraint.Constraint;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 
@@ -57,7 +57,7 @@ public abstract class Variable implements Pattern {
         return identifier.reference();
     }
 
-    public abstract void addTo(Traversal traversal);
+    public abstract void addTo(GraphTraversal traversal);
 
     public boolean isType() {
         return false;

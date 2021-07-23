@@ -50,10 +50,10 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
 import static com.vaticle.typedb.core.graph.common.Encoding.Direction.Edge.BACKWARD;
 import static com.vaticle.typedb.core.graph.common.Encoding.Direction.Edge.FORWARD;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.ISA;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.HAS;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.PLAYING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.RELATING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.ROLEPLAYER;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.HAS;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.PLAYING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.RELATING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
@@ -326,11 +326,17 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             varOrderNumber_result = order;
         }
 
-        public boolean isEqual() { return false; }
+        public boolean isEqual() {
+            return false;
+        }
 
-        public boolean isPredicate() { return false; }
+        public boolean isPredicate() {
+            return false;
+        }
 
-        public boolean isNative() { return false; }
+        public boolean isNative() {
+            return false;
+        }
 
         public Equal.Directional asEqual() {
             throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Equal.Directional.class));
@@ -375,10 +381,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             }
 
             @Override
-            public boolean isEqual() { return true; }
+            public boolean isEqual() {
+                return true;
+            }
 
             @Override
-            public Equal.Directional asEqual() { return this; }
+            public Equal.Directional asEqual() {
+                return this;
+            }
         }
     }
 
@@ -414,10 +424,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             }
 
             @Override
-            public boolean isPredicate() { return true; }
+            public boolean isPredicate() {
+                return true;
+            }
 
             @Override
-            public Predicate.Directional asPredicate() { return this; }
+            public Predicate.Directional asPredicate() {
+                return this;
+            }
 
             @Override
             void updateObjective(GraphManager graphMgr) {
@@ -482,16 +496,26 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             }
 
             @Override
-            public boolean isNative() { return true; }
+            public boolean isNative() {
+                return true;
+            }
 
             @Override
-            public Native.Directional<?, ?> asNative() { return this; }
+            public Native.Directional<?, ?> asNative() {
+                return this;
+            }
 
-            public boolean isIsa() { return false; }
+            public boolean isIsa() {
+                return false;
+            }
 
-            public boolean isType() { return false; }
+            public boolean isType() {
+                return false;
+            }
 
-            public boolean isThing() { return false; }
+            public boolean isThing() {
+                return false;
+            }
 
             public Isa.Directional<?, ?> asIsa() {
                 throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Isa.Directional.class));
@@ -533,10 +557,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 }
 
                 @Override
-                public boolean isIsa() { return true; }
+                public boolean isIsa() {
+                    return true;
+                }
 
                 @Override
-                public Isa.Directional<?, ?> asIsa() { return this; }
+                public Isa.Directional<?, ?> asIsa() {
+                    return this;
+                }
             }
 
             private class Forward extends Isa.Directional<PlannerVertex.Thing, PlannerVertex.Type> {
@@ -632,18 +660,30 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 }
 
                 @Override
-                public boolean isType() { return true; }
+                public boolean isType() {
+                    return true;
+                }
 
                 @Override
-                public Type.Directional asType() { return this; }
+                public Type.Directional asType() {
+                    return this;
+                }
 
-                public boolean isSub() { return false; }
+                public boolean isSub() {
+                    return false;
+                }
 
-                public boolean isOwns() { return false; }
+                public boolean isOwns() {
+                    return false;
+                }
 
-                public boolean isPlays() { return false; }
+                public boolean isPlays() {
+                    return false;
+                }
 
-                public boolean isRelates() { return false; }
+                public boolean isRelates() {
+                    return false;
+                }
 
                 public Type.Sub.Directional asSub() {
                     throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Sub.Directional.class));
@@ -681,10 +721,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    public boolean isSub() { return true; }
+                    public boolean isSub() {
+                        return true;
+                    }
 
                     @Override
-                    public Type.Sub.Directional asSub() { return this; }
+                    public Type.Sub.Directional asSub() {
+                        return this;
+                    }
                 }
 
                 private class Forward extends Sub.Directional {
@@ -762,10 +806,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    public boolean isOwns() { return true; }
+                    public boolean isOwns() {
+                        return true;
+                    }
 
                     @Override
-                    public Type.Owns.Directional asOwns() { return this; }
+                    public Type.Owns.Directional asOwns() {
+                        return this;
+                    }
                 }
 
                 private class Forward extends Owns.Directional {
@@ -838,10 +886,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    public boolean isPlays() { return true; }
+                    public boolean isPlays() {
+                        return true;
+                    }
 
                     @Override
-                    public Type.Plays.Directional asPlays() { return this; }
+                    public Type.Plays.Directional asPlays() {
+                        return this;
+                    }
                 }
 
                 private class Forward extends Plays.Directional {
@@ -910,10 +962,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    public boolean isRelates() { return true; }
+                    public boolean isRelates() {
+                        return true;
+                    }
 
                     @Override
-                    public Type.Relates.Directional asRelates() { return this; }
+                    public Type.Relates.Directional asRelates() {
+                        return this;
+                    }
                 }
 
                 private class Forward extends Relates.Directional {
@@ -976,17 +1032,16 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
             static Thing of(PlannerVertex.Thing from, PlannerVertex.Thing to, StructureEdge.Native<?, ?> structureEdge) {
                 Encoding.Edge.Thing encoding = structureEdge.encoding().asThing();
-                switch (encoding) {
-                    case HAS:
-                        return new Has(from, to);
-                    case PLAYING:
-                        return new Playing(from, to);
-                    case RELATING:
-                        return new Relating(from, to);
-                    case ROLEPLAYER:
-                        return new RolePlayer(from, to, structureEdge.asRolePlayer().types());
-                    default:
-                        throw TypeDBException.of(UNRECOGNISED_VALUE);
+                if (encoding == HAS) {
+                    return new Has(from, to);
+                } else if (encoding == PLAYING) {
+                    return new Playing(from, to);
+                } else if (encoding == RELATING) {
+                    return new Relating(from, to);
+                } else if (encoding == ROLEPLAYER) {
+                    return new RolePlayer(from, to, structureEdge.asRolePlayer().types());
+                } else {
+                    throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
             }
 
@@ -998,18 +1053,30 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 }
 
                 @Override
-                public boolean isThing() { return true; }
+                public boolean isThing() {
+                    return true;
+                }
 
                 @Override
-                public Thing.Directional asThing() { return this; }
+                public Thing.Directional asThing() {
+                    return this;
+                }
 
-                public boolean isHas() { return false; }
+                public boolean isHas() {
+                    return false;
+                }
 
-                public boolean isPlaying() { return false; }
+                public boolean isPlaying() {
+                    return false;
+                }
 
-                public boolean isRelating() { return false; }
+                public boolean isRelating() {
+                    return false;
+                }
 
-                public boolean isRolePlayer() { return false; }
+                public boolean isRolePlayer() {
+                    return false;
+                }
 
                 public Thing.Has.Directional asHas() {
                     throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.Has.Directional.class));
@@ -1047,10 +1114,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    public boolean isHas() { return true; }
+                    public boolean isHas() {
+                        return true;
+                    }
 
                     @Override
-                    public Thing.Has.Directional asHas() { return this; }
+                    public Thing.Has.Directional asHas() {
+                        return this;
+                    }
                 }
 
                 private static class Forward extends Has.Directional {
@@ -1182,10 +1253,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    public boolean isPlaying() { return true; }
+                    public boolean isPlaying() {
+                        return true;
+                    }
 
                     @Override
-                    public Thing.Playing.Directional asPlaying() { return this; }
+                    public Thing.Playing.Directional asPlaying() {
+                        return this;
+                    }
                 }
 
                 private static class Forward extends Playing.Directional {
@@ -1245,10 +1320,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    public boolean isRelating() { return true; }
+                    public boolean isRelating() {
+                        return true;
+                    }
 
                     @Override
-                    public Thing.Relating.Directional asRelating() { return this; }
+                    public Thing.Relating.Directional asRelating() {
+                        return this;
+                    }
                 }
 
                 private static class Forward extends Relating.Directional {
@@ -1325,10 +1404,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    public boolean isRolePlayer() { return true; }
+                    public boolean isRolePlayer() {
+                        return true;
+                    }
 
                     @Override
-                    public Thing.RolePlayer.Directional asRolePlayer() { return this; }
+                    public Thing.RolePlayer.Directional asRolePlayer() {
+                        return this;
+                    }
 
                     public Set<Label> roleTypes() {
                         return roleTypes;

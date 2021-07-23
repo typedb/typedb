@@ -26,25 +26,25 @@ import java.util.function.Function;
 public class FlatMappedPoller<T, U> extends AbstractPoller<U> {
 
     private final Poller<T> source;
-    private final Function<T, Poller<U>> flatMappingFn;
-    private final List<Poller<U>> flatMappedPollers;
+    private final Function<T, Poller<U>> mappingFn;
+    private final List<Poller<U>> mappedPollers;
 
-    FlatMappedPoller(Poller<T> poller, Function<T, Poller<U>> flatMappingFn) {
+    FlatMappedPoller(Poller<T> poller, Function<T, Poller<U>> mappingFn) {
         this.source = poller;
-        this.flatMappingFn = flatMappingFn;
-        this.flatMappedPollers = new ArrayList<>();
+        this.mappingFn = mappingFn;
+        this.mappedPollers = new ArrayList<>();
     }
 
     @Override
     public Optional<U> poll() {
-        for (Poller<U> poller : flatMappedPollers) {
+        for (Poller<U> poller : mappedPollers) {
             Optional<U> next = poller.poll();
             if (next.isPresent()) return next;
         }
         Optional<T> fromSource;
         while ((fromSource = source.poll()).isPresent()) {
-            Poller<U> newPoller = flatMappingFn.apply(fromSource.get());
-            flatMappedPollers.add(newPoller);
+            Poller<U> newPoller = mappingFn.apply(fromSource.get());
+            mappedPollers.add(newPoller);
             Optional<U> next = newPoller.poll();
             if (next.isPresent()) return next;
         }
@@ -53,7 +53,7 @@ public class FlatMappedPoller<T, U> extends AbstractPoller<U> {
 
     @Override
     public void recycle() {
-        flatMappedPollers.forEach(Poller::recycle);
+        mappedPollers.forEach(Poller::recycle);
         source.recycle();
     }
 

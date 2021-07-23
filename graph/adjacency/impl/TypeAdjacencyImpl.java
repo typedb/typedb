@@ -95,7 +95,6 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
         edges.values().forEach(set -> set.forEach(Edge::commit));
     }
 
-
     public static class Buffered extends TypeAdjacencyImpl implements TypeAdjacency {
 
         public Buffered(TypeVertex owner, Encoding.Direction.Adjacency direction) {
@@ -108,7 +107,6 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
             if (t != null) return new TypeIteratorBuilder(iterate(t.iterator()));
             return new TypeIteratorBuilder(empty());
         }
-
 
         @Override
         public TypeEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent) {
@@ -156,8 +154,8 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
             }
 
             ByteArray iid = join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes());
-            FunctionalIterator<TypeEdge> storageIterator = owner.graph().storage()
-                    .iterate(iid, (key, value) -> cache(newPersistedEdge(key, value)));
+            FunctionalIterator<TypeEdge> storageIterator = owner.graph().storage().iterate(iid)
+                    .map(kv -> cache(newPersistedEdge(kv.key(), kv.value())));
             if (isReadOnly) storageIterator = storageIterator.onConsumed(() -> fetched.add(encoding));
             if ((bufferedEdges = edges.get(encoding)) == null) return storageIterator;
             else return link(bufferedEdges.iterator(), storageIterator).distinct();

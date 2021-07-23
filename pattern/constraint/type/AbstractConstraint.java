@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.pattern.constraint.type;
 
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 
 import java.util.Objects;
 
@@ -42,7 +42,7 @@ public class AbstractConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(Traversal traversal) {
+    public void addTo(GraphTraversal traversal) {
         traversal.isAbstract(owner.id());
     }
 

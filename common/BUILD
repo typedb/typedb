@@ -30,6 +30,7 @@ java_library(
 
         # External Maven Dependencies
         "@maven//:com_github_ben_manes_caffeine_caffeine",
+        "@maven//:com_google_guava_guava",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_slf4j_slf4j_api",
     ],

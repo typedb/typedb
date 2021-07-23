@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 
 public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID {
 
@@ -81,7 +82,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
         static InfixIID.Thing extract(ByteArray bytes, int from) {
             Encoding.Edge.Thing encoding = Encoding.Edge.Thing.of(bytes.get(from));
-            if ((encoding.equals(Encoding.Edge.Thing.ROLEPLAYER))) {
+            if ((encoding.equals(ROLEPLAYER))) {
                 return RolePlayer.extract(bytes, from);
             } else {
                 return new InfixIID.Thing(bytes.view(from, from+1));
@@ -89,7 +90,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         public static InfixIID.Thing of(Encoding.Infix infix) {
-            if (Encoding.Edge.Thing.of(infix).equals(Encoding.Edge.Thing.ROLEPLAYER)) {
+            if (Encoding.Edge.Thing.of(infix).equals(ROLEPLAYER)) {
                 return new InfixIID.RolePlayer(infix.bytes());
             } else {
                 return new InfixIID.Thing(infix.bytes());
@@ -103,7 +104,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
                 iidBytes[i + 1] = tail[i].bytes();
             }
 
-            if (Encoding.Edge.Thing.of(infix).equals(Encoding.Edge.Thing.ROLEPLAYER)) {
+            if (Encoding.Edge.Thing.of(infix).equals(ROLEPLAYER)) {
                 return new InfixIID.RolePlayer(join(iidBytes));
             } else {
                 return new InfixIID.Thing(join(iidBytes));
@@ -143,7 +144,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         public static RolePlayer of(Encoding.Infix infix, VertexIID.Type type) {
-            assert type != null && Encoding.Edge.Thing.of(infix).equals(Encoding.Edge.Thing.ROLEPLAYER);
+            assert type != null && Encoding.Edge.Thing.of(infix).equals(ROLEPLAYER);
             return new RolePlayer(join(infix.bytes(), type.bytes()));
         }
 

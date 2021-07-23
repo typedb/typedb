@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -65,7 +65,7 @@ public class SubConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(Traversal traversal) {
+    public void addTo(GraphTraversal traversal) {
         // TODO: is there a scenario where we are able to skip this edge with the help of TypeResolver?
         traversal.sub(owner.id(), type.id(), !isExplicit);
     }

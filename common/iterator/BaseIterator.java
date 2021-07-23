@@ -19,14 +19,21 @@
 package com.vaticle.typedb.core.common.iterator;
 
 import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import java.util.Iterator;
+import java.util.NavigableSet;
+import java.util.NoSuchElementException;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 
 class BaseIterator<T> extends AbstractFunctionalIterator<T> {
 
     private final Either<FunctionalIterator<T>, Iterator<T>> iterator;
 
-    public BaseIterator(Either<FunctionalIterator<T>, Iterator<T>> iterator) {
+    BaseIterator(Either<FunctionalIterator<T>, Iterator<T>> iterator) {
         this.iterator = iterator;
     }
 
@@ -43,5 +50,77 @@ class BaseIterator<T> extends AbstractFunctionalIterator<T> {
     @Override
     public void recycle() {
         iterator.ifFirst(FunctionalIterator::recycle);
+    }
+
+    static class Sorted<T extends Comparable<? super T>> extends AbstractFunctionalIterator.Sorted<T>
+            implements FunctionalIterator.Sorted.Forwardable<T> {
+
+        private final NavigableSet<T> source;
+        private Iterator<T> iterator;
+        private T next;
+        private T last;
+
+        Sorted(NavigableSet<T> source) {
+            this.source = source;
+            this.iterator = source.iterator();
+            this.last = null;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return (next != null) || fetchAndCheck();
+        }
+
+        private boolean fetchAndCheck() {
+            if (iterator.hasNext()) {
+                next = iterator.next();
+                return true;
+            } else return false;
+        }
+
+        @Override
+        public T next() {
+            if (!hasNext()) throw new NoSuchElementException();
+            last = next;
+            next = null;
+            return last;
+        }
+
+        @Override
+        public T peek() {
+            if (!hasNext()) throw new NoSuchElementException();
+            return next;
+        }
+
+        @Override
+        public void forward(T target) {
+            if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+            this.iterator = source.tailSet(target).iterator();
+            this.next = null;
+        }
+
+        @Override
+        public final Forwardable<T> merge(Forwardable<T> iterator) {
+            return Iterators.Sorted.merge(this, iterator);
+        }
+
+        @Override
+        public <U extends Comparable<? super U>> Forwardable<U> mapSorted(
+                Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
+            return Iterators.Sorted.mapSorted(this, mappingFn, reverseMappingFn);
+        }
+
+        @Override
+        public FunctionalIterator.Sorted.Forwardable<T> distinct() {
+            return Iterators.Sorted.distinct(this);
+        }
+
+        @Override
+        public FunctionalIterator.Sorted.Forwardable<T> filter(Predicate<T> predicate) {
+            return Iterators.Sorted.filter(this, predicate);
+        }
+
+        @Override
+        public void recycle() { }
     }
 }

@@ -21,6 +21,7 @@ artifacts = [
     "com.github.ben-manes.caffeine:caffeine",
     "com.google.code.findbugs:jsr305",
     "com.google.errorprone:error_prone_annotations",
+    "com.google.guava:guava",
     "com.google.ortools:ortools-darwin",
     "com.google.ortools:ortools-darwin-java",
     "com.google.ortools:ortools-linux-x86-64",

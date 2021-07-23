@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.traversal.predicate;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 
 import java.time.LocalDateTime;
 
@@ -67,13 +67,13 @@ public abstract class PredicateArgument {
             return valueType;
         }
 
-        public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value);
+        public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, GraphTraversal.Parameters.Value value);
 
         public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, ARG_VAL_TYPE value);
 
         public static Value<PredicateOperator.Equality, Boolean> BOOLEAN = new Value<PredicateOperator.Equality, Boolean>(Encoding.ValueType.BOOLEAN) {
             @Override
-            public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+            public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, GraphTraversal.Parameters.Value value) {
                 assert value.isBoolean();
                 return apply(operator, vertex, value.getBoolean());
             }
@@ -88,7 +88,7 @@ public abstract class PredicateArgument {
 
         public static Value<PredicateOperator.Equality, Long> LONG = new Value<PredicateOperator.Equality, Long>(Encoding.ValueType.LONG) {
             @Override
-            public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+            public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, GraphTraversal.Parameters.Value value) {
                 assert value.isLong();
                 return apply(operator, vertex, value.getLong());
             }
@@ -107,7 +107,7 @@ public abstract class PredicateArgument {
 
         public static Value<PredicateOperator.Equality, Double> DOUBLE = new Value<PredicateOperator.Equality, Double>(Encoding.ValueType.DOUBLE) {
             @Override
-            public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+            public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, GraphTraversal.Parameters.Value value) {
                 assert value.isDouble();
                 return apply(operator, vertex, value.getDouble());
             }
@@ -127,7 +127,7 @@ public abstract class PredicateArgument {
 
         public static Value<PredicateOperator.Equality, LocalDateTime> DATETIME = new Value<PredicateOperator.Equality, LocalDateTime>(Encoding.ValueType.DATETIME) {
             @Override
-            public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+            public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, GraphTraversal.Parameters.Value value) {
                 assert value.isDateTime();
                 return apply(operator, vertex, value.getDateTime());
             }
@@ -143,7 +143,7 @@ public abstract class PredicateArgument {
 
         public static Value<PredicateOperator, String> STRING = new Value<PredicateOperator, String>(Encoding.ValueType.STRING) {
             @Override
-            public boolean apply(PredicateOperator operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+            public boolean apply(PredicateOperator operator, AttributeVertex<?> vertex, GraphTraversal.Parameters.Value value) {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
                 assert value.isString() || value.isRegex();
                 if (operator.isSubString()) return operator.asSubString().apply(vertex.asString().value(), value);

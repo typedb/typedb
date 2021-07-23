@@ -19,11 +19,10 @@
 package com.vaticle.typedb.core.graph.common;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-
-import java.util.function.BiFunction;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
@@ -36,9 +35,9 @@ public interface Storage {
 
     ByteArray getLastKey(ByteArray prefix);
 
-    <G> FunctionalIterator<G> iterate(ByteArray key, BiFunction<ByteArray, ByteArray, G> constructor);
-
     void deleteUntracked(ByteArray key);
+
+    FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> iterate(ByteArray key);
 
     void putUntracked(ByteArray key);
 

@@ -45,7 +45,7 @@ import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
-import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.RelationTraversal;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.Pattern;
@@ -334,7 +334,9 @@ public class Rule {
         public abstract FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
                                                                                           ConceptManager conceptMgr);
 
-        public Rule rule() { return rule; }
+        public Rule rule() {
+            return rule;
+        }
 
         public abstract Optional<ThingVariable> generating();
 
@@ -555,22 +557,19 @@ public class Rule {
                 return this;
             }
 
-            private FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> matchRelation(RelationType relationType, ConceptMap whenConcepts,
-                                                                                                     TraversalEngine traversalEng, ConceptManager conceptMgr) {
-                Traversal traversal = new Traversal();
+            private FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> matchRelation(
+                    RelationType relationType, ConceptMap whenConcepts,
+                    TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 Identifier.Variable.Retrievable relationId = relation().owner().id();
-                traversal.types(relationId, set(relationType.getLabel()));
-                Set<Identifier.Variable> playersWithIIDs = new HashSet<>();
+                RelationTraversal traversal = new RelationTraversal(relationId, set(relationType.getLabel())); // TODO include inheritance
                 relation().players().forEach(rp -> {
                     Identifier.Variable.Retrievable playerId = rp.player().id();
-                    assert rp.roleType().isPresent() && rp.roleType().get().label().isPresent() && whenConcepts.contains(playerId);
-                    traversal.rolePlayer(relationId, playerId, set(getRole(rp, relationType, whenConcepts).getLabel()), rp.repetition());
-                    if (!playersWithIIDs.contains(playerId)) {
-                        traversal.iid(playerId, whenConcepts.get(playerId).asThing().getIID());
-                        playersWithIIDs.add(playerId);
-                    }
+                    assert rp.roleType().isPresent() && rp.roleType().get().label().isPresent()
+                            && whenConcepts.contains(playerId);
+                    traversal.player(playerId, whenConcepts.get(playerId).asThing().getIID(),
+                            set(getRole(rp, relationType, whenConcepts).getLabel())); // TODO include inheritance
                 });
-                return traversalEng.iterator(traversal).map(conceptMgr::conceptMap)
+                return traversalEng.relations(traversal).map(conceptMgr::conceptMap)
                         .map(conceptMap -> conceptMap.get(relationId).asRelation());
             }
 
@@ -639,8 +638,8 @@ public class Rule {
                                         assert constraint.asHas().attribute().isa().get().type().label().isPresent();
                                         assert constraint.asHas().attribute().value().size() == 1;
                                         return new Has.Explicit(constraint.asHas(), constraint.asHas().attribute().isa().get(),
-                                                                constraint.asHas().attribute().value().iterator().next(),
-                                                                rule);
+                                                constraint.asHas().attribute().value().iterator().next(),
+                                                rule);
                                     })).first();
                 }
 
@@ -658,8 +657,8 @@ public class Rule {
                     ValueConstraint<?> value = has().attribute().value().iterator().next();
                     if (!AttributeType.ValueType.of(value.value().getClass()).assignables().contains(attrTypeValueType)) {
                         throw TypeDBException.of(RULE_THEN_INVALID_VALUE_ASSIGNMENT, rule().getLabel(),
-                                                 value.value().getClass().getSimpleName(),
-                                                 attributeType.getValueType().getValueClass().getSimpleName());
+                                value.value().getClass().getSimpleName(),
+                                attributeType.getValueType().getValueClass().getSimpleName());
                     }
                 }
 
