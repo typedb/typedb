@@ -40,6 +40,9 @@ native_java_libraries(
     deps = [
         # Internal dependencies
         "//common:common",
+
+        # Vaticle Dependencies
+        "@vaticle_typedb_common//:common",
     ],
     native_libraries_deps = [
         "//concept:concept",

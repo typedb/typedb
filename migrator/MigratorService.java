@@ -17,26 +17,21 @@
 
 package com.vaticle.typedb.core.migrator;
 
+import com.vaticle.typedb.core.migrator.data.DataExporter;
+import com.vaticle.typedb.core.migrator.data.DataImporter;
 import com.vaticle.typedb.core.TypeDB;
-import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.migrator.proto.MigratorGrpc;
-import com.vaticle.typedb.core.migrator.proto.MigratorProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 
 public class MigratorService extends MigratorGrpc.MigratorImplBase {
-
     private static final Logger LOG = LoggerFactory.getLogger(MigratorService.class);
+
     private final TypeDB typedb;
     private final String version;
 
@@ -46,32 +41,15 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
     }
 
     @Override
-    public void exportData(MigratorProto.ExportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
+    public void exportData(MigratorProto.Export.Req request, StreamObserver<MigratorProto.Export.Progress> responseObserver) {
         DataExporter exporter = new DataExporter(typedb, request.getDatabase(), Paths.get(request.getFilename()), version);
-        runMigrator(exporter, responseObserver);
-    }
-
-    @Override
-    public void importData(MigratorProto.ImportData.Req request, StreamObserver<MigratorProto.Job.Res> responseObserver) {
-        Path file = Paths.get(request.getFilename());
-        DataImporter importer = new DataImporter(typedb, request.getDatabase(), file, request.getRemapLabelsMap(), version);
-        runMigrator(importer, responseObserver);
-    }
-
-    private void runMigrator(Migrator migrator, StreamObserver<MigratorProto.Job.Res> responseObserver) {
         try {
-            CompletableFuture<Void> migratorJob = CompletableFuture.runAsync(migrator::run);
-            try {
-                while (!migratorJob.isDone()) {
-                    Thread.sleep(1000);
-                    responseObserver.onNext(MigratorProto.Job.Res.newBuilder().setProgress(migrator.getProgress()).build());
-                }
-                migratorJob.get();
-            } catch (InterruptedException e) {
-                throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
-            } catch (ExecutionException e) {
-                throw e.getCause();
+            CompletableFuture<Void> migratorJob = CompletableFuture.runAsync(exporter::run);
+            while (!migratorJob.isDone()) {
+                Thread.sleep(1000);
+                responseObserver.onNext(exporter.getProgress());
             }
+            migratorJob.join();
             responseObserver.onCompleted();
         } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
@@ -79,11 +57,31 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
         }
     }
 
+    @Override
+    public void importData(MigratorProto.Import.Req request, StreamObserver<MigratorProto.Import.Progress> responseObserver) {
+        DataImporter importer = new DataImporter(typedb, request.getDatabase(), Paths.get(request.getFilename()),
+                request.getRemapLabelsMap(), version);
+        try {
+            CompletableFuture<Void> migratorJob = CompletableFuture.runAsync(importer::run);
+            while (!migratorJob.isDone()) {
+                Thread.sleep(1000);
+                responseObserver.onNext(importer.getProgress());
+            }
+            migratorJob.join();
+            responseObserver.onCompleted();
+        } catch (Throwable e) {
+            LOG.error(e.getMessage(), e);
+            responseObserver.onError(exception(e));
+        } finally {
+            importer.close();
+        }
+    }
+
     public static StatusRuntimeException exception(Throwable e) {
         if (e instanceof StatusRuntimeException) {
             return (StatusRuntimeException) e;
         } else {
-            return Status.INTERNAL.withDescription(e.getMessage() + " Please check server logs for the stack trace.").asRuntimeException();
+            return Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException();
         }
     }
 }

@@ -23,28 +23,35 @@ load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
 
-
 package(default_visibility = ["//visibility:private",])
 
 proto_library(
-    name = "migrator-proto",
-    srcs = [
-        "proto/data.proto",
-        "proto/migrator.proto"
-    ],
+    name = "migrator-protocol",
+    srcs = ["migrator.proto"],
+)
+
+proto_library(
+    name = "migrator-data",
+    srcs = ["data/data.proto"],
 )
 
 java_grpc_compile(
-    name = "migrator-grpc-src",
-    deps = ["migrator-proto"],
+    name = "migrator-protocol-src",
+    deps = ["migrator-protocol"],
+)
+
+java_grpc_compile(
+    name = "migrator-data-src",
+    deps = ["migrator-data"],
 )
 
 native_java_libraries(
     name = "migrator",
-    srcs = [":migrator-grpc-src"] + glob(["*.java", "*/*.java", "*/*/*.java"]),
+    srcs = [":migrator-protocol-src", ":migrator-data-src"] + glob(["*.java", "*/*.java", "*/*/*.java"]),
     deps = [
         # Internal dependencies
         "//common:common",
+        "//concurrent",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
@@ -63,7 +70,16 @@ native_java_libraries(
     native_libraries_deps = [
         "//:typedb",
         "//concept:concept",
-        "//logic:logic"
+        "//logic:logic",
+    ],
+    mac_deps = [
+        "@maven//:org_rocksdb_rocksdbjni_dev"
+    ],
+    linux_deps = [
+        "@maven//:org_rocksdb_rocksdbjni",
+    ],
+    windows_deps = [
+        "@maven//:org_rocksdb_rocksdbjni",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-migrator:{pom_version}"],
     visibility = ["//visibility:public"],

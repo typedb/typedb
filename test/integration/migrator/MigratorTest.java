@@ -22,7 +22,9 @@ import com.google.protobuf.Parser;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
-import com.vaticle.typedb.core.migrator.proto.DataProto;
+import com.vaticle.typedb.core.migrator.data.DataExporter;
+import com.vaticle.typedb.core.migrator.data.DataImporter;
+import com.vaticle.typedb.core.migrator.data.DataProto;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.server.Version;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -48,7 +50,7 @@ public class MigratorTest {
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
     private static final String database = "typedb";
-    private static final Path schemaPath = Paths.get("test/integration/migrator/schema.gql");
+    private static final Path schemaPath = Paths.get("test/integration/migrator/schema.tql");
     private final Path dataPath = Paths.get("test/integration/migrator/data.typedb");
     private final Path exportDataPath = Paths.get("test/integration/migrator/exported-data.typedb");
 
@@ -67,7 +69,7 @@ public class MigratorTest {
     @Test
     public void test_import_export_data() throws IOException {
         Util.resetDirectory(dataDir);
-        try (TypeDB typedb = RocksTypeDB.open(options)) {
+        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
             typedb.databases().create(database);
             String schema = new String(Files.readAllBytes(schemaPath), UTF_8);
             runSchema(typedb, schema);

@@ -84,9 +84,10 @@ public class ThingGraph {
     private final Storage.Data storage;
     private final TypeGraph typeGraph;
     private final KeyGenerator.Data.Buffered keyGenerator;
+    private final AttributesByIID attributesByIID;
     private final ConcurrentMap<VertexIID.Thing, ThingVertex.Write> thingsByIID;
     private final ConcurrentMap<VertexIID.Type, ConcurrentSkipListSet<ThingVertex.Write>> thingsByTypeIID;
-    private final AttributesByIID attributesByIID;
+    private final Map<VertexIID.Thing, VertexIID.Thing> committedIIDs;
     private final Statistics statistics;
     private boolean isModified;
 
@@ -95,9 +96,10 @@ public class ThingGraph {
         this.typeGraph = typeGraph;
         keyGenerator = new KeyGenerator.Data.Buffered();
         thingsByIID = new ConcurrentHashMap<>();
-        thingsByTypeIID = new ConcurrentHashMap<>();
         attributesByIID = new AttributesByIID();
+        thingsByTypeIID = new ConcurrentHashMap<>();
         statistics = new Statistics(typeGraph, storage);
+        committedIIDs = new HashMap<>();
     }
 
     public Storage.Data storage() {
@@ -438,6 +440,12 @@ public class ThingGraph {
         statistics.clear();
     }
 
+    public FunctionalIterator<Pair<ByteArray, ByteArray>> committedIIDs() {
+        return iterate(committedIIDs.entrySet())
+                .filter(committed -> !committed.getKey().encoding().equals(Encoding.Vertex.Thing.ROLE))
+                .map(entry -> new Pair<>(entry.getKey().bytes(), entry.getValue().bytes()));
+    }
+
     /**
      * Commits all the writes captured in this graph into storage.
      *
@@ -449,15 +457,14 @@ public class ThingGraph {
      * anyways, we don't need to parallelise the streams to commit the vertices.
      */
     public void commit() {
-        Map<VertexIID.Thing, VertexIID.Thing> bufferedToPersistedIIDs = new HashMap<>();
         iterate(thingsByIID.values()).filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).forEachRemaining(v -> {
             VertexIID.Thing newIID = generate(storage.dataKeyGenerator(), v.type().iid(), v.type().properLabel());
-            bufferedToPersistedIIDs.put(v.iid(), newIID);
+            committedIIDs.put(v.iid(), newIID);
             v.iid(newIID);
         }); // thingsByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(ThingVertex.Write::commit);
         attributesByIID.valuesIterator().forEachRemaining(AttributeVertex.Write::commit);
-        statistics.commit(bufferedToPersistedIIDs);
+        statistics.commit(committedIIDs);
 
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
     }

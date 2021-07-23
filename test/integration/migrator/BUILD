@@ -45,7 +45,7 @@ host_compatible_java_test(
         "//common/test:logback-test"
     ],
     resource_strip_prefix = "common/test",
-    data = [":schema.gql", "data.typedb"],
+    data = [":schema.tql", "data.typedb"],
     size = "large",
 )
 

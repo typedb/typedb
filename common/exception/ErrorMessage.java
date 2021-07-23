@@ -281,7 +281,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final ThingWrite THING_KEY_OVER =
                 new ThingWrite(5, "Attempted to assign a key of type '%s' onto a(n) '%s' that already has one.");
         public static final ThingWrite THING_KEY_TAKEN =
-                new ThingWrite(6, "Attempted to assign a key of type '%s' that had been taken by another '%s'.");
+                new ThingWrite(6, "Attempted to assign a key '%s' of type '%s' that had been taken by another '%s'.");
         public static final ThingWrite THING_KEY_MISSING =
                 new ThingWrite(7, "Attempted to commit a(n) '%s' that is missing key(s) of type(s): %s"); // don't put quotes around the last %s
         public static final ThingWrite THING_ROLE_UNPLAYED =
@@ -548,16 +548,28 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
     }
 
     public static class Migrator extends ErrorMessage {
+        public static final Migrator DATABASE_NOT_FOUND =
+                new Migrator(1, "The database '%s' was not found.");
         public static final Migrator FILE_NOT_FOUND =
-                new Migrator(1, "The specified file path '%s' could not be found.");
+                new Migrator(2, "The specified file path '%s' could not be found.");
         public static final Migrator FILE_NOT_READABLE =
-                new Migrator(2, "The specified file '%s' cannot be opened for read.");
+                new Migrator(3, "The specified file '%s' cannot be opened for read.");
         public static final Migrator FILE_NOT_WRITABLE =
-                new Migrator(3, "The specified file '%s' cannot be opened for write.");
+                new Migrator(4, "The specified file '%s' cannot be opened for write.");
         public static final Migrator TYPE_NOT_FOUND =
-                new Migrator(4, "The type '%s' (originally '%s') is not defined in the schema.");
+                new Migrator(5, "The type '%s' (originally '%s') is not defined in the schema.");
+        public static final Migrator ROLE_TYPE_NOT_FOUND =
+                new Migrator(6, "The role type '%s' (originally '%s') is not defined for relation type '%s. Please confirm schema was migrated correctly.");
+        public static final Migrator PLAYER_NOT_FOUND =
+                new Migrator(7, "A player for relation type '%s' was expected but not found.");
+        public static final Migrator NO_PLAYERS =
+                new Migrator(8, "The relation of type '%'s with original ID '%s' has no role players");
         public static final Migrator INVALID_DATA =
-                new Migrator(5, "The data being imported is invalid.");
+                new Migrator(9, "The data being imported is invalid.");
+        public static final Migrator MISSING_HEADER =
+                new Migrator(10, "The data being imported is invalid - the header is missing.");
+        public static final Migrator IMPORT_CHECKSUM_MISMATCH =
+                new Migrator(11, "The import has finished but mismatches the required checksums.");
 
         private static final String codePrefix = "MIG";
         private static final String messagePrefix = "Migrator failure";

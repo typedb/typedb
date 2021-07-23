@@ -39,7 +39,9 @@ import com.vaticle.typeql.lang.pattern.Pattern;
 import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -89,6 +91,7 @@ public class TypeGraph {
     private final Rules rules;
     private final Statistics statistics;
     private final Cache cache;
+    private final Map<VertexIID.Type, VertexIID.Type> committedIIDs;
     private final boolean isReadOnly;
     private boolean isModified;
 
@@ -103,6 +106,7 @@ public class TypeGraph {
         rules = new Rules();
         statistics = new Statistics();
         cache = new Cache();
+        committedIIDs = new HashMap<>();
         isModified = false;
     }
 
@@ -352,6 +356,12 @@ public class TypeGraph {
         return isModified;
     }
 
+    public FunctionalIterator<Pair<ByteArray, ByteArray>> committedIIDs() {
+        return iterate(committedIIDs.entrySet()).map(committed ->
+                new Pair<>(committed.getKey().bytes(), committed.getValue().bytes())
+        );
+    }
+
     /**
      * Commits all the writes captured in this graph into storage.
      *
@@ -363,9 +373,11 @@ public class TypeGraph {
      */
     public void commit() {
         assert storage.isSchema();
-        typesByIID.values().parallelStream().filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEach(
-                typeVertex -> typeVertex.iid(VertexIID.Type.generate(storage.asSchema().schemaKeyGenerator(), typeVertex.encoding()))
-        ); // typeByIID no longer contains valid mapping from IID to TypeVertex
+        iterate(typesByIID.values()).filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEachRemaining(v -> {
+            VertexIID.Type newIID = VertexIID.Type.generate(storage.asSchema().schemaKeyGenerator(), v.encoding());
+            committedIIDs.put(v.iid(), newIID);
+            v.iid(newIID);
+        }); // typeByIID no longer contains valid mapping from IID to TypeVertex
         typesByIID.values().forEach(TypeVertex::commit);
         rules.commit();
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again

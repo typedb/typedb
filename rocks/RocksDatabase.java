@@ -443,10 +443,13 @@ public class RocksDatabase implements TypeDB.Database {
                     deleteOpenedEvent(storage);
                 } else {
                     Map<RocksStorage.Data, Event> events = this.events.get(storage.snapshotEnd().get());
-                    assert events == null || events.get(storage) == null || events.get(storage) == Event.COMMITTED;
-                    if (events != null && events.get(storage) != null && isDeletable(storage)) {
-                        deleteCommittedEvent(storage);
-                        deleteOpenedEvent(storage);
+                    if (events != null) {
+                        Event event = events.get(storage);
+                        assert event == null || event == Event.COMMITTED;
+                        if (events.get(storage) != null && isDeletable(storage)) {
+                            deleteCommittedEvent(storage);
+                            deleteOpenedEvent(storage);
+                        }
                     }
                     cleanupCommitted();
                 }

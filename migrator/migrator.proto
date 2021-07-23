@@ -1,0 +1,71 @@
+/*
+ * Copyright (C) 2021 Vaticle
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
+// A migration service protocol to activate and monitor migrations remotely.
+// Backwards compatibility is currently not enforced on this protocol
+
+syntax = "proto3";
+
+option java_package = "com.vaticle.typedb.core.migrator";
+option java_outer_classname = "MigratorProto";
+
+package migrator;
+
+service Migrator {
+    rpc ExportData(Export.Req) returns (stream Export.Progress);
+    rpc ImportData(Import.Req) returns (stream Import.Progress);
+}
+
+message Export {
+    message Req {
+        string database = 1;
+        string filename = 2;
+    }
+
+    message Progress {
+        uint64 attributes_current = 1;
+        uint64 attributes = 2;
+        uint64 entities_current = 3;
+        uint64 entities = 4;
+        uint64 relations_current = 5;
+        uint64 relations = 6;
+    }
+}
+
+message Import {
+    message Req {
+        string database = 1;
+        string filename = 2;
+        map<string, string> remap_labels = 3;
+    }
+
+    message Progress {
+        bool initialising = 1;
+        uint64 attributes_current = 2;
+        uint64 attributes = 3;
+        uint64 entities_current = 4;
+        uint64 entities = 5;
+        uint64 relations_current = 6;
+        uint64 relations = 7;
+        uint64 ownerships_current = 8;
+        uint64 ownerships = 9;
+        uint64 roles_current = 10;
+        uint64 roles = 11;
+    }
+}
+

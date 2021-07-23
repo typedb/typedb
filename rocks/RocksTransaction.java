@@ -18,8 +18,11 @@
 
 package com.vaticle.typedb.core.rocks;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -183,6 +186,11 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
             return dataStorage;
         }
 
+        @Override
+        public FunctionalIterator<Pair<ByteArray, ByteArray>> committedIIDs() {
+            return graphMgr.schema().committedIIDs();
+        }
+
         /**
          * Commits any writes captured in the transaction into storage.
          *
@@ -321,6 +329,11 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
         void closeStorage() {
             session.database().cacheUnborrow(cache);
             dataStorage.close();
+        }
+
+        @Override
+        public FunctionalIterator<Pair<ByteArray, ByteArray>> committedIIDs() {
+            return graphMgr.data().committedIIDs();
         }
 
         /**
