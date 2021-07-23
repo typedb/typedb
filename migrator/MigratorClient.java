@@ -198,6 +198,21 @@ public class MigratorClient {
             linesPrinted = output.split("\n").length;
         }
 
+        String attributeProgress(long current, long attributes) {
+            return attributes == 0 ? String.format("Attribute: %d", current) :
+                    String.format("Attribute: %d/%d (%.1f%%)", current, attributes, 100.0 * current / attributes);
+        }
+
+        String entityProgress(long current, long entities) {
+            return entities == 0 ? String.format("Entity: %d", current) :
+                    String.format("Entity: %d/%d (%.1f%%)", current, entities, 100.0 * current / entities);
+        }
+
+        String relationProgress(long current, long relations) {
+            return relations == 0 ? String.format("Relation: %d", current) :
+                    String.format("Relation: %d/%d (%.1f%%)", current, relations, 100.0 * current / relations);
+        }
+
         private static class Import extends ProgressPrinter {
 
             private MigratorProto.Import.Progress prog;
@@ -210,10 +225,7 @@ public class MigratorClient {
             @Override
             String formattedProgress() {
                 StringBuilder progressStr = new StringBuilder();
-                progressStr.append(prog.getAttributes() == 0 ?
-                        String.format("Attribute: %d", prog.getAttributesCurrent()) :
-                        String.format("Attribute: %d/%d (%.1f%%)", prog.getAttributesCurrent(), prog.getAttributes(),
-                                100.0 * prog.getAttributesCurrent() / prog.getAttributes()));
+                progressStr.append(attributeProgress(prog.getAttributesCurrent(), prog.getAttributes()));
                 long currentThings = prog.getAttributesCurrent();
                 long things = prog.getAttributes();
                 if (!prog.getInitialising()) {
@@ -223,15 +235,9 @@ public class MigratorClient {
                             String.format("[ ownership: %d/%d (%.1f%%) ]", prog.getOwnershipsCurrent(),
                                     prog.getOwnerships(), 100.0 * prog.getOwnershipsCurrent() / prog.getOwnerships()));
                     progressStr.append("\n");
-                    progressStr.append(prog.getEntities() == 0 ?
-                            String.format("Entity: %d/%d", prog.getEntitiesCurrent(), prog.getEntities()) :
-                            String.format("Entity: %d/%d (%.1f%%)", prog.getEntitiesCurrent(), prog.getEntities(),
-                                    100.0 * prog.getEntitiesCurrent() / prog.getEntities()));
+                    progressStr.append(entityProgress(prog.getEntitiesCurrent(), prog.getEntities()));
                     progressStr.append("\n");
-                    progressStr.append(prog.getRelations() == 0 ?
-                            String.format("Relation: %d/%d", prog.getRelationsCurrent(), prog.getRelations()) :
-                            String.format("Relation: %d/%d (%.1f%%)", prog.getRelationsCurrent(), prog.getRelations(),
-                                    100.0 * prog.getRelationsCurrent() / prog.getRelations()));
+                    progressStr.append(relationProgress(prog.getRelationsCurrent(), prog.getRelations()));
                     progressStr.append(" ");
                     progressStr.append(prog.getRoles() == 0 ?
                             String.format("[ role: %d/%d ]", prog.getRolesCurrent(), prog.getRoles()) :
@@ -265,20 +271,11 @@ public class MigratorClient {
             @Override
             String formattedProgress() {
                 StringBuilder progressStr = new StringBuilder();
-                progressStr.append(prog.getAttributes() == 0 ?
-                        String.format("Attribute: %d", prog.getAttributesCurrent()) :
-                        String.format("Attribute: %d/%d (%.1f%%)", prog.getAttributesCurrent(), prog.getAttributes(),
-                                100.0 * prog.getAttributesCurrent() / prog.getAttributes()));
+                progressStr.append(attributeProgress(prog.getAttributesCurrent(), prog.getAttributes()));
                 progressStr.append("\n");
-                progressStr.append(prog.getEntities() == 0 ?
-                        String.format("Entity: %d", prog.getEntitiesCurrent()) :
-                        String.format("Entity: %d/%d (%.1f%%)", prog.getEntitiesCurrent(), prog.getEntities(),
-                                100.0 * prog.getEntitiesCurrent() / prog.getEntities()));
+                progressStr.append(entityProgress(prog.getEntitiesCurrent(), prog.getEntities()));
                 progressStr.append("\n");
-                progressStr.append(prog.getRelations() == 0 ?
-                        String.format("Relation: %d", prog.getRelationsCurrent()) :
-                        String.format("Relation: %d/%d (%.1f%%)", prog.getRelationsCurrent(), prog.getRelations(),
-                                100.0 * prog.getRelationsCurrent() / prog.getRelations()));
+                progressStr.append(relationProgress(prog.getRelationsCurrent(), prog.getRelations()));
                 progressStr.append("\n");
                 long currentThings = prog.getAttributesCurrent() + prog.getEntitiesCurrent() + prog.getRelationsCurrent();
                 long things = prog.getAttributes() + prog.getEntities() + prog.getRelations();
