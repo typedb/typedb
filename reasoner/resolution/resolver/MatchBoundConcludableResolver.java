@@ -49,7 +49,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 public class MatchBoundConcludableResolver extends BoundConcludableResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(MatchBoundConcludableResolver.class);
-    private final Set<Identifier.Variable.Retrievable> unboundVars;
+    private final boolean singleAnswerRequired;
 
     public MatchBoundConcludableResolver(Driver<BoundConcludableResolver> driver, Concludable concludable,
                                          ConceptMap bounds, Map<Driver<ConclusionResolver>, Rule> resolverRules,
@@ -58,7 +58,7 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
                                          ConceptManager conceptMgr, boolean resolutionTracing) {
         super(driver, concludable, bounds, resolverRules, applicableRules, registry, traversalEngine, conceptMgr,
               resolutionTracing);
-        this.unboundVars = unboundVars(concludable.pattern());
+        this.singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars());
     }
 
     @Override
@@ -72,9 +72,8 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         CachingRequestState<?, ConceptMap> requestState;
         assert cache.isConceptMapCache();
         if (exploringRequestState == null) {
-            boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
-            requestState = new ExploringRequestState(fromUpstream, cache.asConceptMapCache(), iteration,
-                                                     singleAnswerRequired);
+            requestState = new ExploringRequestState(fromUpstream, cache.asConceptMapCache(), iteration
+            );
             requestState.asExploration().downstreamManager().addDownstreams(ruleDownstreams(fromUpstream));
         } else {
             requestState = new RequestState(fromUpstream, cache.asConceptMapCache(), iteration, true);
@@ -82,9 +81,9 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         return requestState;
     }
 
-    private static Set<Identifier.Variable.Retrievable> unboundVars(Conjunction conjunction) {
+    private Set<Identifier.Variable.Retrievable> unboundVars() {
         Set<Identifier.Variable.Retrievable> missingBounds = new HashSet<>();
-        iterate(conjunction.variables()).filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
+        iterate(concludable.pattern().variables()).filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
             if (var.isType() && !var.asType().label().isPresent()) missingBounds.add(var.asType().id().asRetrievable());
             else if (var.isThing() && !var.asThing().iid().isPresent())
                 missingBounds.add(var.asThing().id().asRetrievable());
@@ -110,13 +109,11 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     private class ExploringRequestState extends RequestState implements Exploration {
 
         private final DownstreamManager downstreamManager;
-        private final boolean singleAnswerRequired;
 
         public ExploringRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache,
-                                     int iteration, boolean singleAnswerRequired) {
+                                     int iteration) {
             super(fromUpstream, answerCache, iteration, false);
             this.downstreamManager = new DownstreamManager();
-            this.singleAnswerRequired = singleAnswerRequired;
         }
 
         @Override
