@@ -45,6 +45,8 @@ import com.vaticle.typedb.core.reasoner.resolution.resolver.ConclusionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConditionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConjunctionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.DisjunctionResolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.ExplainBoundConcludableResolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.MatchBoundConcludableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.NegationResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RetrievableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
@@ -208,18 +210,25 @@ public class ResolverRegistry {
     public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(
             Concludable concludable, ConceptMap bounds, Map<Actor.Driver<ConclusionResolver>, Rule> resolverRules,
             LinkedHashMap<Actor.Driver<ConclusionResolver>, Set<Unifier>> applicableRules,
-            Actor.Driver<? extends Resolver<?>> root, int iteration) {
+            Actor.Driver<? extends Resolver<?>> root, int iteration, boolean explain) {
         LOG.debug("Register BoundConcludableResolver, pattern: {} bounds: {}", concludable.pattern(), bounds);
-        Actor.Driver<BoundConcludableResolver> resolver = Actor.driver(driver -> new BoundConcludableResolver(
-                driver, concludable, bounds, resolverRules, applicableRules, this, traversalEngine, conceptMgr, resolutionTracing
-        ), executorService);
+        Actor.Driver<BoundConcludableResolver> resolver;
+        if (explain) {
+            resolver = Actor.driver(driver -> new ExplainBoundConcludableResolver(
+                    driver, concludable, bounds, resolverRules, applicableRules, this, traversalEngine, conceptMgr,
+                    resolutionTracing), executorService);
+        } else {
+            resolver = Actor.driver(driver -> new MatchBoundConcludableResolver(
+                    driver, concludable, bounds, resolverRules, applicableRules, this, traversalEngine, conceptMgr,
+                    resolutionTracing), executorService);
+        }
         resolvers.add(resolver);
         reiterationQueryRespondents.computeIfAbsent(new Pair<>(root, iteration), r -> new HashSet<>()).add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
     }
-    // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
 
+    // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
     private synchronized ResolverView.MappedConcludable registerConcludable(Concludable concludable) {
         LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
         for (Map.Entry<Concludable, Actor.Driver<ConcludableResolver>> c : concludableResolvers.entrySet()) {

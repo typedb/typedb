@@ -18,9 +18,9 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.concept.ConceptManager;
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
@@ -42,10 +42,10 @@ public class RetrievableResolver extends Coordinator<RetrievableResolver, BoundR
     }
 
     @Override
-    Driver<BoundRetrievableResolver> getOrReplaceWorker(Driver<? extends Resolver<?>> root, ConceptMap bounds) {
-        return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(bounds, b -> {
-            LOG.debug("{}: Creating a new BoundRetrievableResolver for bounds: {}", name(), bounds);
-            return registry.registerBoundRetrievable(retrievable, bounds);
+    Driver<BoundRetrievableResolver> getOrReplaceWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial) {
+        return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(partial.conceptMap(), p -> {
+            LOG.debug("{}: Creating a new BoundRetrievableResolver for bounds: {}", name(), partial);
+            return registry.registerBoundRetrievable(retrievable, partial.conceptMap());
         });
     }
 

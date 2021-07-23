@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
@@ -71,7 +72,7 @@ public abstract class Coordinator<
             failToUpstream(fromUpstream, iteration);
         } else {
             ConceptMap bounds = fromUpstream.partialAnswer().conceptMap();
-            Driver<WORKER> worker = getOrReplaceWorker(root, bounds);
+            Driver<WORKER> worker = getOrReplaceWorker(root, fromUpstream.partialAnswer());
             // TODO: Re-enable subsumption when async bug is fixed
             // Optional<ConceptMap> subsumer = subsumptionTrackers.computeIfAbsent(
             //         root, r -> new SubsumptionTracker()).getSubsumer(bounds);
@@ -95,7 +96,7 @@ public abstract class Coordinator<
         workersByRoot.remove(root);
     }
 
-    abstract Driver<WORKER> getOrReplaceWorker(Driver<? extends Resolver<?>> root, ConceptMap bounds);
+    abstract Driver<WORKER> getOrReplaceWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial);
 
     @Override
     protected void receiveAnswer(Answer answer, int iteration) {

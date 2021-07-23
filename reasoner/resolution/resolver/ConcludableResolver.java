@@ -20,12 +20,12 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.ConceptManager;
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
@@ -59,11 +59,12 @@ public class ConcludableResolver extends Coordinator<ConcludableResolver, BoundC
     }
 
     @Override
-    Driver<BoundConcludableResolver> getOrReplaceWorker(Driver<? extends Resolver<?>> root, ConceptMap bounds) {
-        return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(bounds, b -> {
-            LOG.debug("{}: Creating a new BoundConcludableResolver for bounds: {}", name(), bounds);
+    Driver<BoundConcludableResolver> getOrReplaceWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial) {
+        return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(partial.conceptMap(), p -> {
+            LOG.debug("{}: Creating a new BoundConcludableResolver for bounds: {}", name(), partial);
             // TODO: We could use the bounds to prune the applicable rules further
-            return registry.registerBoundConcludable(concludable, bounds, resolverRules, applicableRules, root, iterationByRoot.get(root));
+            return registry.registerBoundConcludable(concludable, partial.conceptMap(), resolverRules, applicableRules, root,
+                                                     iterationByRoot.get(root), partial.asConcludable().isExplain());
         });
     }
 
