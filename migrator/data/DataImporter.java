@@ -34,10 +34,6 @@ import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.migrator.MigratorProto;
-import com.vaticle.typedb.core.migrator.data.DataProto;
-import com.vaticle.typedb.core.rocks.RocksSession;
-import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
@@ -68,6 +64,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.IMPORT_CHECKSUM_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.INVALID_DATA;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.MISSING_HEADER;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.NO_PLAYERS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.PLAYER_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.ROLE_TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.TYPE_NOT_FOUND;
@@ -75,76 +73,63 @@ import static com.vaticle.typedb.core.migrator.data.DataProto.Item.ItemCase.HEAD
 import static java.util.Comparator.reverseOrder;
 
 public class DataImporter {
-
     private static final Logger LOG = LoggerFactory.getLogger(DataImporter.class);
+
     private static final Parser<DataProto.Item> ITEM_PARSER = DataProto.Item.parser();
     private static final int BATCH_SIZE = 1000;
-    private final RocksSession session;
+    private final TypeDB.Session session;
     private final Executor importExecutor;
     private final Executor readerExecutor;
-    private final int parallelism;
-    private final Path dataFile;
+    private final int parallelisation;
 
+    private final Path dataFile;
     private final Map<String, String> remapLabels;
-    private final IDMapper idMapper;
+    private final IDMapper IDMapper;
     private final String version;
     private final Status status;
     private final ConcurrentSet<DataProto.Item.Relation> skippedRelations;
     private Checksum checksum;
 
-    // TODO should not use impl but interface instead
-    public DataImporter(RocksTypeDB typedb, String database, Path dataFile, Map<String, String> remapLabels, String version) {
+    public DataImporter(TypeDB typedb, String database, Path dataFile, Map<String, String> remapLabels, String version) {
         if (!Files.exists(dataFile)) throw TypeDBException.of(FILE_NOT_FOUND, dataFile);
         this.session = typedb.session(database, Arguments.Session.Type.DATA);
         this.dataFile = dataFile;
         this.remapLabels = remapLabels;
         this.version = version;
         assert com.vaticle.typedb.core.concurrent.executor.Executors.isInitialised();
-        // TODO call this a more consistent name
-        this.parallelism = com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
-        this.importExecutor = Executors.newFixedThreadPool(parallelism);
+        this.parallelisation = com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
+        this.importExecutor = Executors.newFixedThreadPool(parallelisation);
         this.readerExecutor = Executors.newSingleThreadExecutor();
-        this.idMapper = new IDMapper(database);
+        this.IDMapper = new IDMapper(database);
         this.skippedRelations = new ConcurrentSet<>();
         this.status = new Status();
     }
 
     public void run() {
         try {
-            readHeader();
-            new ParallelImport(AttributesAndChecksum::new).run();
-            new ParallelImport(EntitiesAndOwnerships::new).run();
-            new ParallelImport(CompleteRelations::new).run();
+            validateHeader();
+            new ParallelImport(AttributesAndChecksum::new).execute();
+            new ParallelImport(EntitiesAndOwnerships::new).execute();
+            new ParallelImport(CompleteRelations::new).execute();
             importSkippedRelations();
             if (!checksum.verify(status)) throw TypeDBException.of(IMPORT_CHECKSUM_MISMATCH);
         } finally {
-            LOG.info("Imported {} entities, {} attributes, {} relations ({} roles), {} ownerships",
-                    // TODO status should print itself as "Import status: " + status.toString()
-                    status.entityCount.get(),
-                    status.attributeCount.get(),
-                    status.relationCount.get(),
-                    status.roleCount.get(),
-                    status.ownershipCount.get());
+            LOG.info("Imported " + status.toString());
         }
     }
 
     public void close() {
         session.close();
-        idMapper.close();
+        IDMapper.close();
     }
 
-    // TODO call this validateHeader() and
-    // TODO and throw a more contextualised error
-    private void readHeader() {
+    private void validateHeader() {
         try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(dataFile))) {
             DataProto.Item item = ITEM_PARSER.parseDelimitedFrom(inputStream);
-            assert item.getItemCase().equals(HEADER);
+            if (!item.getItemCase().equals(HEADER)) throw TypeDBException.of(MISSING_HEADER);
             DataProto.Item.Header header = item.getHeader();
-            LOG.info("Importing {} from TypeDB {} to {} in TypeDB {}",
-                    header.getOriginalDatabase(),
-                    header.getTypedbVersion(),
-                    session.database().name(),
-                    version);
+            LOG.info("Importing {} from TypeDB {} to {} in TypeDB {}", header.getOriginalDatabase(),
+                    header.getTypedbVersion(), session.database().name(), version);
         } catch (IOException e) {
             throw TypeDBException.of(e);
         }
@@ -181,16 +166,16 @@ public class DataImporter {
             this.workerConstructor = workerConstructor;
         }
 
-        void run() {
-            BlockingQueue<DataProto.Item> items = readDataFile();
-            CompletableFuture<Void>[] workers = new CompletableFuture[parallelism];
-            for (int i = 0; i < parallelism; i++) {
+        void execute() {
+            BlockingQueue<DataProto.Item> items = asyncItemReader();
+            CompletableFuture<Void>[] workers = new CompletableFuture[parallelisation];
+            for (int i = 0; i < parallelisation; i++) {
                 workers[i] = CompletableFuture.runAsync(() -> workerConstructor.apply(items).run(), importExecutor);
             }
             CompletableFuture.allOf(workers).join();
         }
 
-        private BlockingQueue<DataProto.Item> readDataFile() {
+        private BlockingQueue<DataProto.Item> asyncItemReader() {
             BlockingQueue<DataProto.Item> queue = new ArrayBlockingQueue<>(1000);
             CompletableFuture.runAsync(() -> {
                 try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(dataFile))) {
@@ -208,16 +193,16 @@ public class DataImporter {
 
     private abstract class ImportWorker {
 
-        private final Map<ByteArray, String> bufferedIIDsToOriginalIds;
-        private final Map<String, ByteArray> originalIDsToBufferedIIDs;
         private final BlockingQueue<DataProto.Item> items;
-        RocksTransaction transaction;
+        private final Map<ByteArray, String> bufferedToOriginalIds;
+        private final Map<String, ByteArray> originalToBufferedIds;
+        TypeDB.Transaction transaction;
 
         ImportWorker(BlockingQueue<DataProto.Item> items) {
             this.items = items;
+            originalToBufferedIds = new HashMap<>();
+            bufferedToOriginalIds = new HashMap<>();
             transaction = session.transaction(Arguments.Transaction.Type.WRITE);
-            originalIDsToBufferedIIDs = new HashMap<>();
-            bufferedIIDsToOriginalIds = new HashMap<>();
         }
 
         abstract int importItem(DataProto.Item item);
@@ -242,19 +227,28 @@ public class DataImporter {
             }
         }
 
+        private void commitBatch() {
+            transaction.commit();
+            transaction.committedIIDs().forEachRemaining(pair ->
+                    IDMapper.put(bufferedToOriginalIds.get(pair.first()), pair.second())
+            );
+            bufferedToOriginalIds.clear();
+            originalToBufferedIds.clear();
+        }
+
         void recordCreated(ByteArray newIID, String originalID) {
-            assert !originalIDsToBufferedIIDs.containsKey(originalID) && !idMapper.contains(originalID);
-            bufferedIIDsToOriginalIds.put(newIID, originalID);
-            originalIDsToBufferedIIDs.put(originalID, newIID);
+            assert !originalToBufferedIds.containsKey(originalID) && !IDMapper.contains(originalID);
+            bufferedToOriginalIds.put(newIID, originalID);
+            originalToBufferedIds.put(originalID, newIID);
         }
 
         protected void recordAttributeCreated(ByteArray iid, String originalID) {
-            idMapper.put(originalID, iid);
+            IDMapper.put(originalID, iid);
         }
 
         Thing getImportedThing(String originalID) {
             ByteArray newIID;
-            if ((newIID = originalIDsToBufferedIIDs.get(originalID)) == null && (newIID = idMapper.get(originalID)) == null) {
+            if ((newIID = originalToBufferedIds.get(originalID)) == null && (newIID = IDMapper.get(originalID)) == null) {
                 throw TypeDBException.of(ILLEGAL_STATE);
             } else {
                 Thing thing = transaction.concepts().getThing(newIID);
@@ -264,30 +258,20 @@ public class DataImporter {
         }
 
         boolean isImported(String originalID) {
-            return originalIDsToBufferedIIDs.containsKey(originalID) || idMapper.contains(originalID);
+            return originalToBufferedIds.containsKey(originalID) || IDMapper.contains(originalID);
         }
 
-        int insertOwnerships(String originalId, List<DataProto.Item.OwnedAttribute> ownedMsgs) {
+        int insertOwnerships(String originalId, List<DataProto.Item.OwnedAttribute> ownerships) {
             Thing owner = getImportedThing(originalId);
-            int ownerships = 0;
-            for (DataProto.Item.OwnedAttribute ownedMsg : ownedMsgs) {
-                Thing attrThing = getImportedThing(ownedMsg.getId());
+            int count = 0;
+            for (DataProto.Item.OwnedAttribute ownership : ownerships) {
+                Thing attrThing = getImportedThing(ownership.getId());
                 assert attrThing != null;
                 owner.setHas(attrThing.asAttribute());
-                ownerships++;
+                count++;
             }
-            status.ownershipCount.addAndGet(ownerships);
-            return ownerships;
-        }
-
-        private void commitBatch() {
-            transaction.commit();
-            // TODO use .asData() to do the cast
-            ((RocksTransaction.Data) transaction).committedIIDs().forEachRemaining(pair -> {
-                idMapper.put(bufferedIIDsToOriginalIds.get(pair.first()), pair.second());
-            });
-            bufferedIIDsToOriginalIds.clear();
-            originalIDsToBufferedIIDs.clear();
+            status.ownershipCount.addAndGet(count);
+            return count;
         }
     }
 
@@ -313,36 +297,33 @@ public class DataImporter {
             }
         }
 
-        private void insertAttribute(TypeDB.Transaction transaction, DataProto.Item.Attribute attributeMsg) {
-            AttributeType attributeType = transaction.concepts().getAttributeType(relabel(attributeMsg.getLabel()));
-            if (attributeType != null) {
-                DataProto.ValueObject valueMsg = attributeMsg.getValue();
-                Attribute attribute;
-                switch (valueMsg.getValueCase()) {
-                    case STRING:
-                        attribute = attributeType.asString().put(valueMsg.getString());
-                        break;
-                    case BOOLEAN:
-                        attribute = attributeType.asBoolean().put(valueMsg.getBoolean());
-                        break;
-                    case LONG:
-                        attribute = attributeType.asLong().put(valueMsg.getLong());
-                        break;
-                    case DOUBLE:
-                        attribute = attributeType.asDouble().put(valueMsg.getDouble());
-                        break;
-                    case DATETIME:
-                        attribute = attributeType.asDateTime().put(
-                                Instant.ofEpochMilli(valueMsg.getDatetime()).atZone(ZoneId.of("Z")).toLocalDateTime());
-                        break;
-                    default:
-                        throw TypeDBException.of(INVALID_DATA);
-                }
-                recordAttributeCreated(attribute.getIID(), attributeMsg.getId());
-                status.attributeCount.incrementAndGet();
-            } else {
-                throw TypeDBException.of(TYPE_NOT_FOUND, relabel(attributeMsg.getLabel()), attributeMsg.getLabel());
+        private void insertAttribute(TypeDB.Transaction transaction, DataProto.Item.Attribute attrMsg) {
+            AttributeType type = transaction.concepts().getAttributeType(relabel(attrMsg.getLabel()));
+            if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, relabel(attrMsg.getLabel()), attrMsg.getLabel());
+            DataProto.ValueObject valueMsg = attrMsg.getValue();
+            Attribute attribute;
+            switch (valueMsg.getValueCase()) {
+                case STRING:
+                    attribute = type.asString().put(valueMsg.getString());
+                    break;
+                case BOOLEAN:
+                    attribute = type.asBoolean().put(valueMsg.getBoolean());
+                    break;
+                case LONG:
+                    attribute = type.asLong().put(valueMsg.getLong());
+                    break;
+                case DOUBLE:
+                    attribute = type.asDouble().put(valueMsg.getDouble());
+                    break;
+                case DATETIME:
+                    attribute = type.asDateTime().put(
+                            Instant.ofEpochMilli(valueMsg.getDatetime()).atZone(ZoneId.of("Z")).toLocalDateTime());
+                    break;
+                default:
+                    throw TypeDBException.of(INVALID_DATA);
             }
+            recordAttributeCreated(attribute.getIID(), attrMsg.getId());
+            status.attributeCount.incrementAndGet();
         }
     }
 
@@ -365,15 +346,12 @@ public class DataImporter {
             }
         }
 
-        private void insertEntity(TypeDB.Transaction transaction, DataProto.Item.Entity entityMsg) {
-            EntityType entityType = transaction.concepts().getEntityType(relabel(entityMsg.getLabel()));
-            if (entityType != null) {
-                Entity entity = entityType.create();
-                recordCreated(entity.getIID(), entityMsg.getId());
-                status.entityCount.incrementAndGet();
-            } else {
-                throw TypeDBException.of(TYPE_NOT_FOUND, relabel(entityMsg.getLabel()), entityMsg.getLabel());
-            }
+        private void insertEntity(TypeDB.Transaction transaction, DataProto.Item.Entity msg) {
+            EntityType type = transaction.concepts().getEntityType(relabel(msg.getLabel()));
+            if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, relabel(msg.getLabel()), msg.getLabel());
+            Entity entity = type.create();
+            recordCreated(entity.getIID(), msg.getId());
+            status.entityCount.incrementAndGet();
         }
     }
 
@@ -414,11 +392,11 @@ public class DataImporter {
             }
         }
 
-        private Optional<List<Pair<RoleType, Thing>>> getAllPlayers(RelationType relationType, DataProto.Item.Relation relationMsg) {
-            assert relationMsg.getRoleList().size() > 0;
+        private Optional<List<Pair<RoleType, Thing>>> getAllPlayers(RelationType type, DataProto.Item.Relation msg) {
+            if (msg.getRoleList().size() == 0) throw TypeDBException.of(NO_PLAYERS, msg.getId(), type.getLabel());
             List<Pair<RoleType, Thing>> players = new ArrayList<>();
-            for (DataProto.Item.Relation.Role roleMsg : relationMsg.getRoleList()) {
-                RoleType roleType = getRoleType(relationType, roleMsg);
+            for (DataProto.Item.Relation.Role roleMsg : msg.getRoleList()) {
+                RoleType roleType = getRoleType(type, roleMsg);
                 for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
                     if (!isImported(playerMessage.getId())) return Optional.empty();
                     else players.add(new Pair<>(roleType, getImportedThing(playerMessage.getId())));
@@ -430,23 +408,20 @@ public class DataImporter {
 
     private void importSkippedRelations() {
         try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-            skippedRelations.forEach(relationMsg -> {
-                RelationType relationType = transaction.concepts().getRelationType(relabel(relationMsg.getLabel()));
-                if (relationType == null) {
-                    throw TypeDBException.of(TYPE_NOT_FOUND, relabel(relationMsg.getLabel()), relationMsg.getLabel());
-                }
-                Relation relation = relationType.create();
-                idMapper.put(relationMsg.getId(), relation.getIID());
+            skippedRelations.forEach(msg -> {
+                RelationType relType = transaction.concepts().getRelationType(relabel(msg.getLabel()));
+                if (relType == null) throw TypeDBException.of(TYPE_NOT_FOUND, relabel(msg.getLabel()), msg.getLabel());
+                IDMapper.put(msg.getId(), relType.create().getIID());
             });
 
-            skippedRelations.forEach(relationMsg -> {
-                RelationType relationType = transaction.concepts().getRelationType(relabel(relationMsg.getLabel()));
-                Relation relation = transaction.concepts().getThing(idMapper.get(relationMsg.getId())).asRelation();
-                relationMsg.getRoleList().forEach(roleMsg -> {
-                    RoleType roleType = getRoleType(relationType, roleMsg);
+            skippedRelations.forEach(msg -> {
+                RelationType relType = transaction.concepts().getRelationType(relabel(msg.getLabel()));
+                Relation relation = transaction.concepts().getThing(IDMapper.get(msg.getId())).asRelation();
+                msg.getRoleList().forEach(roleMsg -> {
+                    RoleType roleType = getRoleType(relType, roleMsg);
                     for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
-                        Thing player = transaction.concepts().getThing(idMapper.get(playerMessage.getId()));
-                        if (player == null) throw TypeDBException.of(PLAYER_NOT_FOUND, relationType.getLabel());
+                        Thing player = transaction.concepts().getThing(IDMapper.get(playerMessage.getId()));
+                        if (player == null) throw TypeDBException.of(PLAYER_NOT_FOUND, relType.getLabel());
                         else relation.addPlayer(roleType, player);
                     }
                 });
@@ -536,6 +511,12 @@ public class DataImporter {
         private final AtomicLong attributeCount = new AtomicLong(0);
         private final AtomicLong ownershipCount = new AtomicLong(0);
         private final AtomicLong roleCount = new AtomicLong(0);
+
+        @Override
+        public String toString() {
+            return String.format("%d entities, %d attributes (%d ownerships), %d relations (%d roles)",
+                    entityCount.get(), attributeCount.get(), ownershipCount.get(), relationCount.get(), roleCount.get());
+        }
     }
 
     private static class Checksum {
@@ -555,10 +536,8 @@ public class DataImporter {
         }
 
         public boolean verify(Status status) {
-            return attributes == status.attributeCount.get() &&
-                    entities == status.entityCount.get() &&
-                    relations == status.relationCount.get() &&
-                    ownerships == status.ownershipCount.get() &&
+            return attributes == status.attributeCount.get() && entities == status.entityCount.get() &&
+                    relations == status.relationCount.get() && ownerships == status.ownershipCount.get() &&
                     roles == status.roleCount.get();
         }
     }

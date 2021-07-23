@@ -19,7 +19,7 @@ package com.vaticle.typedb.core.migrator;
 
 import com.vaticle.typedb.core.migrator.data.DataExporter;
 import com.vaticle.typedb.core.migrator.data.DataImporter;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.TypeDB;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -30,12 +30,12 @@ import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 
 public class MigratorService extends MigratorGrpc.MigratorImplBase {
-
     private static final Logger LOG = LoggerFactory.getLogger(MigratorService.class);
-    private final RocksTypeDB typedb;
+
+    private final TypeDB typedb;
     private final String version;
 
-    public MigratorService(RocksTypeDB typedb, String version) {
+    public MigratorService(TypeDB typedb, String version) {
         this.typedb = typedb;
         this.version = version;
     }
@@ -49,7 +49,7 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
                 Thread.sleep(1000);
                 responseObserver.onNext(exporter.getProgress());
             }
-            migratorJob.get();
+            migratorJob.join();
             responseObserver.onCompleted();
         } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
@@ -67,7 +67,7 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
                 Thread.sleep(1000);
                 responseObserver.onNext(importer.getProgress());
             }
-            migratorJob.get();
+            migratorJob.join();
             responseObserver.onCompleted();
         } catch (Throwable e) {
             LOG.error(e.getMessage(), e);

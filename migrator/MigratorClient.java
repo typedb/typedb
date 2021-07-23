@@ -142,44 +142,50 @@ public class MigratorClient {
     }
 
     private static abstract class ProgressPrinter {
-
         private static final String[] ANIM = new String[]{"-", "\\", "|", "/"};
-        private static final String STATUS_STARTING = "starting";
-        private static final String STATUS_IN_PROGRESS = "in progress";
-        private static final String STATUS_COMPLETED = "completed";
 
         private final Timer timer = new Timer();
-
-        String status = STATUS_STARTING;
-
         private int anim = 0;
-        private int lines = 0;
+        private int linesPrinted = 0;
+        Status status = Status.STARTING;
 
         public ProgressPrinter() {
             TimerTask task = new TimerTask() {
                 @Override
                 public void run() {
-                    step();
+                    print();
                 }
             };
             timer.scheduleAtFixedRate(task, 0, 100);
         }
 
         public void onCompleted() {
-            status = STATUS_COMPLETED;
-            step();
+            status = Status.COMPLETED;
             timer.cancel();
+            print();
         }
 
         abstract String type();
 
         abstract String formattedProgress();
 
-        private synchronized void step() {
-            StringBuilder builder = new StringBuilder();
-            builder.append(String.format("$x isa %s,\n    has status \"%s\";", type(), status));
+        enum Status {
+            STARTING("starting"),
+            IN_PROGRESS("in progress"),
+            COMPLETED("completed");
 
-            if (!status.equals(STATUS_STARTING)) {
+            private final String description;
+
+            Status(String description) {
+                this.description = description;
+            }
+        }
+
+        private synchronized void print() {
+            StringBuilder builder = new StringBuilder();
+            builder.append(String.format("$x isa %s,\n    has status \"%s\";", type(), status.description));
+
+            if (!status.equals(Status.STARTING)) {
                 builder.append("\n\n");
                 builder.append(formattedProgress());
                 builder.append(";");
@@ -188,9 +194,8 @@ public class MigratorClient {
             }
 
             String output = builder.toString();
-            System.out.println((lines > 0 ? "\033[" + lines + "F\033[J" : "") + output);
-
-            lines = output.split("\n").length;
+            System.out.println((linesPrinted > 0 ? "\033[" + linesPrinted + "F\033[J" : "") + output);
+            linesPrinted = output.split("\n").length;
         }
 
         private static class Import extends ProgressPrinter {
@@ -198,7 +203,7 @@ public class MigratorClient {
             private MigratorProto.Import.Progress prog;
 
             void onProgress(MigratorProto.Import.Progress progress) {
-                this.status = STATUS_IN_PROGRESS;
+                this.status = Status.IN_PROGRESS;
                 this.prog = progress;
             }
 
@@ -238,7 +243,7 @@ public class MigratorClient {
             private MigratorProto.Export.Progress prog;
 
             void onProgress(MigratorProto.Export.Progress progress) {
-                this.status = STATUS_IN_PROGRESS;
+                this.status = Status.IN_PROGRESS;
                 this.prog = progress;
             }
 

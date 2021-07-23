@@ -30,7 +30,6 @@ import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.TypeGraph;
-import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.query.QueryManager;
@@ -47,7 +46,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class RocksTransaction implements TypeDB.Transaction {
 
@@ -186,6 +184,11 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
         RocksStorage.Data dataStorage() {
             if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
             return dataStorage;
+        }
+
+        @Override
+        public FunctionalIterator<Pair<ByteArray, ByteArray>> committedIIDs() {
+            return graphMgr.schema().committedIIDs();
         }
 
         /**
@@ -328,10 +331,9 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
             dataStorage.close();
         }
 
+        @Override
         public FunctionalIterator<Pair<ByteArray, ByteArray>> committedIIDs() {
-            return iterate(graphMgr.data().committedIIDs().entrySet())
-                    .filter(entry -> !entry.getKey().encoding().equals(Encoding.Vertex.Thing.ROLE))
-                    .map(entry -> new Pair<>(entry.getKey().bytes(), entry.getValue().bytes()));
+            return graphMgr.data().committedIIDs();
         }
 
         /**

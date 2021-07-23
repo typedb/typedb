@@ -110,7 +110,7 @@ message Item {
         int64 relation_count = 3;
         int64 role_count = 4;
         int64 ownership_count = 5;
-        int64 key_ownership_count = 6;
+        // 6 was deleted and cannot be used until a breaking change occurs
     }
 }
 

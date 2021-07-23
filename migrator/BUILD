@@ -26,7 +26,7 @@ load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
 package(default_visibility = ["//visibility:private",])
 
 proto_library(
-    name = "migrator-proto",
+    name = "migrator-protocol",
     srcs = ["migrator.proto"],
 )
 
@@ -36,18 +36,18 @@ proto_library(
 )
 
 java_grpc_compile(
-    name = "migrator-grpc-src",
-    deps = ["migrator-proto"],
+    name = "migrator-protocol-src",
+    deps = ["migrator-protocol"],
 )
 
 java_grpc_compile(
-    name = "migrator-data-grpc-src",
+    name = "migrator-data-src",
     deps = ["migrator-data"],
 )
 
 native_java_libraries(
     name = "migrator",
-    srcs = [":migrator-grpc-src", ":migrator-data-grpc-src"] + glob(["*.java", "*/*.java", "*/*/*.java"]),
+    srcs = [":migrator-protocol-src", ":migrator-data-src"] + glob(["*.java", "*/*.java", "*/*/*.java"]),
     deps = [
         # Internal dependencies
         "//common:common",
@@ -71,7 +71,6 @@ native_java_libraries(
         "//:typedb",
         "//concept:concept",
         "//logic:logic",
-        "//rocks:rocks",
     ],
     mac_deps = [
         "@maven//:org_rocksdb_rocksdbjni_dev"

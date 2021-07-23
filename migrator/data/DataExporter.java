@@ -34,10 +34,12 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZoneId;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -45,23 +47,20 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.DATABASE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_NOT_WRITABLE;
+import static java.nio.charset.StandardCharsets.UTF_16;
 
 public class DataExporter {
-
     private static final Logger LOG = LoggerFactory.getLogger(DataExporter.class);
+    private static final Charset BYTES_ENCODING = UTF_16;
+
     private final TypeDB typedb;
     private final String database;
     private final Path filename;
     private final String version;
-    // TODO create status class
-    private final AtomicLong entityCount = new AtomicLong(0);
-    private final AtomicLong relationCount = new AtomicLong(0);
-    private final AtomicLong attributeCount = new AtomicLong(0);
-    private final AtomicLong ownershipCount = new AtomicLong(0);
-    private final AtomicLong roleCount = new AtomicLong(0);
-    private long totalEntityCount = 0;
-    private long totalAttributeCount = 0;
-    private long totalRelationCount = 0;
+    private final Status status;
+    private long totalEntityCount;
+    private long totalAttributeCount;
+    private long totalRelationCount;
 
     public DataExporter(TypeDB typedb, String database, Path filename, String version) {
         if (!typedb.databases().contains(database)) throw TypeDBException.of(DATABASE_NOT_FOUND, database);
@@ -69,66 +68,51 @@ public class DataExporter {
         this.database = database;
         this.filename = filename;
         this.version = version;
-    }
-
-    public MigratorProto.Export.Progress getProgress() {
-        return MigratorProto.Export.Progress.newBuilder()
-                        .setAttributesCurrent(attributeCount.get())
-                        .setEntitiesCurrent(entityCount.get())
-                        .setRelationsCurrent(relationCount.get())
-                        .setAttributes(totalAttributeCount)
-                        .setEntities(totalEntityCount)
-                        .setRelations(totalRelationCount)
-                        .build();
+        this.status = new Status();
     }
 
     public void run() {
         LOG.info("Exporting {} from TypeDB {}", database, version);
         try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(filename))) {
-            write(outputStream, header());
+            export(outputStream, header());
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA);
                  TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 totalEntityCount = tx.concepts().getRootEntityType().getInstancesCount();
                 totalAttributeCount = tx.concepts().getRootAttributeType().getInstancesCount();
                 totalRelationCount = tx.concepts().getRootRelationType().getInstancesCount();
 
-                List<Runnable> workers = new ArrayList<>();
-                // TODO extract each of the RHS of -> into a method
-                workers.add(() -> tx.concepts().getRootEntityType().getInstances().forEachRemaining(entity -> {
-                    DataProto.Item item = readEntity(entity);
-                    write(outputStream, item);
-                }));
-                workers.add(() -> tx.concepts().getRootRelationType().getInstances().forEachRemaining(relation -> {
-                    DataProto.Item item = readRelation(relation);
-                    write(outputStream, item);
-                }));
-                workers.add(() -> tx.concepts().getRootAttributeType().getInstances().forEachRemaining(attribute -> {
-                    DataProto.Item item = readAttribute(attribute);
-                    write(outputStream, item);
-                }));
-                workers.parallelStream().forEach(Runnable::run);
-
-                // TODO create a Status -> Checksum method
-                DataProto.Item checksums = DataProto.Item.newBuilder().setChecksums(
-                        DataProto.Item.Checksums.newBuilder()
-                                .setEntityCount(entityCount.get())
-                                .setAttributeCount(attributeCount.get())
-                                .setRelationCount(relationCount.get())
-                                .setRoleCount(roleCount.get())
-                                .setOwnershipCount(ownershipCount.get())
-                ).build();
-                write(outputStream, checksums);
+                List<Runnable> exporters = Arrays.asList(() -> exportEntities(tx, outputStream),
+                        () -> exportRelations(tx, outputStream), () -> exportAttributes(tx, outputStream));
+                exporters.parallelStream().forEach(Runnable::run);
+                export(outputStream, checksums());
             }
         } catch (IOException e) {
             throw TypeDBException.of(FILE_NOT_WRITABLE, filename.toString());
         }
-        // TODO print status.toString()
-        LOG.info("Exported {} entities, {} attributes, {} relations ({} roles), {} ownerships",
-                entityCount.get(),
-                attributeCount.get(),
-                relationCount.get(),
-                roleCount.get(),
-                ownershipCount.get());
+        LOG.info("Exported " + status.toString());
+    }
+
+    public MigratorProto.Export.Progress getProgress() {
+        return MigratorProto.Export.Progress.newBuilder()
+                .setAttributesCurrent(status.attributeCount.get())
+                .setEntitiesCurrent(status.entityCount.get())
+                .setRelationsCurrent(status.relationCount.get())
+                .setAttributes(totalAttributeCount)
+                .setEntities(totalEntityCount)
+                .setRelations(totalRelationCount)
+                .build();
+    }
+
+    private void exportEntities(TypeDB.Transaction tx, OutputStream out) {
+        tx.concepts().getRootEntityType().getInstances().forEachRemaining(entity -> export(out, entity(entity)));
+    }
+
+    private void exportAttributes(TypeDB.Transaction tx, OutputStream out) {
+        tx.concepts().getRootAttributeType().getInstances().forEachRemaining(attribute -> export(out, attribute(attribute)));
+    }
+
+    private void exportRelations(TypeDB.Transaction tx, OutputStream out) {
+        tx.concepts().getRootRelationType().getInstances().forEachRemaining(relation -> export(out, relation(relation)));
     }
 
     private DataProto.Item header() {
@@ -140,22 +124,22 @@ public class DataExporter {
         ).build();
     }
 
-    private DataProto.Item readEntity(Entity entity) {
-        entityCount.incrementAndGet();
+    private DataProto.Item entity(Entity entity) {
+        status.entityCount.incrementAndGet();
         DataProto.Item.Entity.Builder entityBuilder = DataProto.Item.Entity.newBuilder()
-                .setId(entity.getIID().toHexString())
+                .setId(entity.getIID().decodeString(BYTES_ENCODING))
                 .setLabel(entity.getType().getLabel().name());
         readOwnerships(entity).forEachRemaining(a -> {
-            ownershipCount.incrementAndGet();
+            status.ownershipCount.incrementAndGet();
             entityBuilder.addAttribute(a);
         });
         return DataProto.Item.newBuilder().setEntity(entityBuilder).build();
     }
 
-    private DataProto.Item readRelation(Relation relation) {
-        relationCount.incrementAndGet();
+    private DataProto.Item relation(Relation relation) {
+        status.relationCount.incrementAndGet();
         DataProto.Item.Relation.Builder relationBuilder = DataProto.Item.Relation.newBuilder()
-                .setId(relation.getIID().toHexString())
+                .setId(relation.getIID().decodeString(BYTES_ENCODING))
                 .setLabel(relation.getType().getLabel().name());
         Map<? extends RoleType, ? extends List<? extends Thing>> playersByRole = relation.getPlayersByRoleType();
         for (Map.Entry<? extends RoleType, ? extends List<? extends Thing>> rolePlayers : playersByRole.entrySet()) {
@@ -163,33 +147,33 @@ public class DataExporter {
             DataProto.Item.Relation.Role.Builder roleBuilder = DataProto.Item.Relation.Role.newBuilder()
                     .setLabel(role.getLabel().scopedName());
             for (Thing player : rolePlayers.getValue()) {
-                roleCount.incrementAndGet();
+                status.roleCount.incrementAndGet();
                 roleBuilder.addPlayer(DataProto.Item.Relation.Role.Player.newBuilder()
-                        .setId(player.getIID().toHexString()));
+                        .setId(player.getIID().decodeString(BYTES_ENCODING)));
             }
             relationBuilder.addRole(roleBuilder);
         }
         readOwnerships(relation).forEachRemaining(a -> {
-            ownershipCount.incrementAndGet();
+            status.ownershipCount.incrementAndGet();
             relationBuilder.addAttribute(a);
         });
         return DataProto.Item.newBuilder().setRelation(relationBuilder).build();
     }
 
-    private DataProto.Item readAttribute(Attribute attribute) {
-        attributeCount.incrementAndGet();
+    private DataProto.Item attribute(Attribute attribute) {
+        status.attributeCount.incrementAndGet();
         DataProto.Item.Attribute.Builder attributeBuilder = DataProto.Item.Attribute.newBuilder()
-                .setId(attribute.getIID().toHexString())
+                .setId(attribute.getIID().decodeString(BYTES_ENCODING))
                 .setLabel(attribute.getType().getLabel().name())
-                .setValue(readValue(attribute));
+                .setValue(value(attribute));
         readOwnerships(attribute).forEachRemaining(a -> {
-            ownershipCount.incrementAndGet();
+            status.ownershipCount.incrementAndGet();
             attributeBuilder.addAttribute(a);
         });
         return DataProto.Item.newBuilder().setAttribute(attributeBuilder).build();
     }
 
-    private DataProto.ValueObject.Builder readValue(Attribute attribute) {
+    private DataProto.ValueObject.Builder value(Attribute attribute) {
         DataProto.ValueObject.Builder valueObject = DataProto.ValueObject.newBuilder();
         if (attribute.isString()) {
             valueObject.setString(attribute.asString().getValue());
@@ -209,10 +193,36 @@ public class DataExporter {
 
     private FunctionalIterator<DataProto.Item.OwnedAttribute.Builder> readOwnerships(Thing thing) {
         return thing.getHas().map(attribute -> DataProto.Item.OwnedAttribute.newBuilder()
-                .setId(attribute.getIID().toHexString()));
+                .setId(attribute.getIID().decodeString(BYTES_ENCODING)));
     }
 
-    private synchronized void write(OutputStream outputStream, DataProto.Item item) {
+    private static class Status {
+
+        private final AtomicLong entityCount = new AtomicLong(0);
+        private final AtomicLong attributeCount = new AtomicLong(0);
+        private final AtomicLong ownershipCount = new AtomicLong(0);
+        private final AtomicLong relationCount = new AtomicLong(0);
+        private final AtomicLong roleCount = new AtomicLong(0);
+
+        @Override
+        public String toString() {
+            return String.format("%d entities, %d attributes (%d ownerships), %d relations (%d roles)",
+                    entityCount.get(), attributeCount.get(), ownershipCount.get(), relationCount.get(), roleCount.get());
+        }
+    }
+
+    private DataProto.Item checksums() {
+        return DataProto.Item.newBuilder().setChecksums(
+                DataProto.Item.Checksums.newBuilder()
+                        .setEntityCount(status.entityCount.get())
+                        .setAttributeCount(status.attributeCount.get())
+                        .setRelationCount(status.relationCount.get())
+                        .setRoleCount(status.roleCount.get())
+                        .setOwnershipCount(status.ownershipCount.get())
+        ).build();
+    }
+
+    private synchronized void export(OutputStream outputStream, DataProto.Item item) {
         try {
             item.writeDelimitedTo(outputStream);
         } catch (IOException e) {

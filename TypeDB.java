@@ -18,6 +18,9 @@
 
 package com.vaticle.typedb.core;
 
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -103,5 +106,7 @@ public interface TypeDB extends AutoCloseable {
         void rollback();
 
         void close();
+
+        FunctionalIterator<Pair<ByteArray, ByteArray>> committedIIDs();
     }
 }

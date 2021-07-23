@@ -562,10 +562,14 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Migrator(6, "The role type '%s' (originally '%s') is not defined for relation type '%s. Please confirm schema was migrated correctly.");
         public static final Migrator PLAYER_NOT_FOUND =
                 new Migrator(7, "A player for relation type '%s' was expected but not found.");
+        public static final Migrator NO_PLAYERS =
+                new Migrator(8, "The relation of type '%'s with original ID '%s' has no role players");
         public static final Migrator INVALID_DATA =
-                new Migrator(8, "The data being imported is invalid.");
+                new Migrator(9, "The data being imported is invalid.");
+        public static final Migrator MISSING_HEADER =
+                new Migrator(10, "The data being imported is invalid - the header is missing.");
         public static final Migrator IMPORT_CHECKSUM_MISMATCH =
-                new Migrator(9, "The import has finished but mismatches the required checksums.");
+                new Migrator(11, "The import has finished but mismatches the required checksums.");
 
         private static final String codePrefix = "MIG";
         private static final String messagePrefix = "Migrator failure";
