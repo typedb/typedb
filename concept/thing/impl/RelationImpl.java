@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.DELETE_ROLEPLAYER_NOT_PRESENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.RELATION_PLAYER_MISSING;
@@ -84,11 +85,11 @@ public class RelationImpl extends ThingImpl implements Relation {
     @Override
     public void removePlayer(RoleType roleType, Thing player) {
         validateIsNotDeleted();
-        FunctionalIterator<ThingVertex> role = writableVertex().outs().edge(
+        Optional<ThingVertex> role = writableVertex().outs().edge(
                 RELATING, PrefixIID.of(ROLE), ((RoleTypeImpl) roleType).vertex.iid()
-        ).to().filter(v -> v.ins().edge(PLAYING, ((ThingImpl) player).writableVertex()) != null);
-        if (role.hasNext()) {
-            RoleImpl.of(role.next()).delete();
+        ).to().filter(v -> v.ins().edge(PLAYING, ((ThingImpl) player).writableVertex()) != null).first();
+        if (role.isPresent()) {
+            RoleImpl.of(role.get()).delete();
             deleteIfNoPlayer();
         } else {
             throw exception(TypeDBException.of(DELETE_ROLEPLAYER_NOT_PRESENT, player.getType().getLabel(), roleType.getLabel().toString()));

@@ -38,14 +38,14 @@ public class RoleImpl {
     }
 
     void optimise() {
-        ThingVertex.Write relation = vertex.ins().edge(RELATING).from().next().toWrite();
-        ThingVertex.Write player = vertex.ins().edge(PLAYING).from().next().toWrite();
+        ThingVertex.Write relation = vertex.ins().edge(RELATING).from().first().get().toWrite();
+        ThingVertex.Write player = vertex.ins().edge(PLAYING).from().first().get().toWrite();
         relation.outs().put(ROLEPLAYER, player, vertex, vertex.isInferred());
     }
 
     public void delete() {
-        ThingVertex.Write relation = vertex.ins().edge(RELATING).from().next().toWrite();
-        ThingVertex.Write player = vertex.ins().edge(PLAYING).from().next().toWrite();
+        ThingVertex.Write relation = vertex.ins().edge(RELATING).from().first().get().toWrite();
+        ThingVertex.Write player = vertex.ins().edge(PLAYING).from().first().get().toWrite();
         relation.outs().edge(ROLEPLAYER, player, vertex).delete();
         vertex.delete();
     }
