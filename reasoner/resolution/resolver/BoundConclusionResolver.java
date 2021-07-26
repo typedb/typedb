@@ -123,10 +123,10 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         Request fromUpstream = fromUpstream(toDownstream);
         ConclusionRequestState<? extends AnswerState.Partial.Concludable<?>> requestState = this.requestStates.get(fromUpstream);
         if (!requestState.isComplete()) {
-            FunctionalIterator<Map<Identifier.Variable, Concept>> materialisations = conclusion
+            Optional<Map<Identifier.Variable, Concept>> materialisation = conclusion
                     .materialise(fromDownstream.answer().conceptMap(), traversalEngine, conceptMgr);
-            if (!materialisations.hasNext()) throw TypeDBException.of(ILLEGAL_STATE);
-            requestState.newMaterialisedAnswers(fromDownstream.answer(), materialisations);
+            materialisation.ifPresent(m -> requestState.newMaterialisation(fromDownstream.answer(), m));
+
         }
         sendAnswerOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
     }
@@ -209,13 +209,13 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     private static abstract class ConclusionRequestState<CONCLUDABLE extends AnswerState.Partial.Concludable<?>> extends RequestState {
 
         private final DownstreamManager downstreamManager;
-        protected FunctionalIterator<CONCLUDABLE> answerIterator;
+        protected FunctionalIterator<CONCLUDABLE> materialisation;
         private boolean complete;
 
         protected ConclusionRequestState(Request fromUpstream, int iteration) {
             super(fromUpstream, iteration);
             this.downstreamManager = new DownstreamManager();
-            this.answerIterator = Iterators.empty();
+            this.materialisation = Iterators.empty();
             this.complete = false;
         }
 
@@ -237,10 +237,9 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         protected abstract FunctionalIterator<CONCLUDABLE> toUpstream(AnswerState.Partial<?> fromDownstream,
                                                                       Map<Identifier.Variable, Concept> answer);
 
-        public void newMaterialisedAnswers(AnswerState.Partial<?> fromDownstream,
-                                           FunctionalIterator<Map<Identifier.Variable, Concept>> materialisations) {
-            this.answerIterator = this.answerIterator
-                    .link(materialisations.flatMap(m -> toUpstream(fromDownstream, m)));
+        public void newMaterialisation(AnswerState.Partial<?> fromDownstream,
+                                       Map<Identifier.Variable, Concept> materialisation) {
+            this.materialisation = this.materialisation.link(toUpstream(fromDownstream, materialisation));
         }
 
         private static class Rule extends ConclusionRequestState<AnswerState.Partial.Concludable.Match<?>> {
@@ -260,9 +259,10 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
             @Override
             public Optional<AnswerState.Partial.Concludable.Match<?>> nextAnswer() {
-                if (!answerIterator.hasNext()) return Optional.empty();
-                while (answerIterator.hasNext()) {
-                    AnswerState.Partial.Concludable.Match<?> ans = answerIterator.next();
+                // TODO Clean up now that materialisations aren't an iterator
+                if (!materialisation.hasNext()) return Optional.empty();
+                while (materialisation.hasNext()) {
+                    AnswerState.Partial.Concludable.Match<?> ans = materialisation.next();
                     if (!deduplicationSet.contains(ans.conceptMap())) {
                         deduplicationSet.add(ans.conceptMap());
                         return Optional.of(ans);
@@ -287,8 +287,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
             @Override
             public Optional<AnswerState.Partial.Concludable.Explain> nextAnswer() {
-                if (!answerIterator.hasNext()) return Optional.empty();
-                return Optional.of(answerIterator.next());
+                if (!materialisation.hasNext()) return Optional.empty();
+                return Optional.of(materialisation.next());
             }
         }
     }

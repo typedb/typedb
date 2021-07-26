@@ -193,6 +193,12 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
+    public boolean hasNonInferred(Attribute attribute) {
+        ThingEdge hasEdge = readableVertex().outs().edge(HAS, ((ThingImpl) attribute).readableVertex());
+        return hasEdge != null && !hasEdge.isInferred();
+    }
+
+    @Override
     public FunctionalIterator<? extends RoleType> getPlaying() {
         return readableVertex().outs().edge(PLAYING).to().map(ThingVertex::type)
                 .map(v -> RoleTypeImpl.of(readableVertex().graphs(), v));

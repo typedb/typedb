@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.logic;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
@@ -331,8 +330,8 @@ public class Rule {
          * @param conceptMgr   - used to insert the conclusion if it doesn't already exist
          * @return - all possible conclusions: there may be multiple preexisting satisfactory conclusions, we return all
          */
-        public abstract FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                                          ConceptManager conceptMgr);
+        public abstract Optional<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                                ConceptManager conceptMgr);
 
         public Rule rule() {
             return rule;
@@ -472,30 +471,64 @@ public class Rule {
             }
 
             @Override
-            public FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                                     ConceptManager conceptMgr) {
-                Identifier.Variable relationTypeIdentifier = isa().type().id();
+            public Optional<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                           ConceptManager conceptMgr) {
                 RelationType relationType = relationType(whenConcepts, conceptMgr);
-                FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> existingRelations = matchRelation(
-                        relationType, whenConcepts, traversalEng, conceptMgr
-                );
-                if (existingRelations.hasNext()) {
-                    return existingRelations.map(rel -> {
-                        Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
-                        thenConcepts.put(relationTypeIdentifier, relationType);
-                        thenConcepts.put(isa().owner().id(), rel);
-                        relation().players().forEach(rp -> {
-                            thenConcepts.putIfAbsent(rp.roleType().get().id(), getRole(rp, relationType, whenConcepts));
-                            thenConcepts.putIfAbsent(rp.player().id(), whenConcepts.get(rp.player().id()));
-                        });
-                        return thenConcepts;
-                    });
+                FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> existingRelations =
+                        matchRelation(relationType, whenConcepts, traversalEng, conceptMgr).filter(this::relationMatches);
+                if (!existingRelations.hasNext()) {
+                    return Optional.of(insert(relationType, whenConcepts));
                 } else {
-                    return insert(relationType, whenConcepts, conceptMgr);
+                    com.vaticle.typedb.core.concept.thing.Relation existing = existingRelations.next();
+                    assert !existingRelations.hasNext();
+                    Map<Identifier.Variable, Concept> map = new HashMap<>(whenConcepts.filter(retrievableIds()).concepts());
+                    map.put(relation.owner().id(), existing);
+                    return Optional.of(map);
                 }
             }
 
-            private FunctionalIterator<Map<Identifier.Variable, Concept>> insert(RelationType relationType, ConceptMap whenConcepts, ConceptManager conceptMgr) {
+            private boolean relationMatches(com.vaticle.typedb.core.concept.thing.Relation r) {
+                // TODO: verify whether the relation given can have been inserted from this rule's conclusion
+                return relation.players();
+            }
+
+            private FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> matchRelation(
+                    RelationType relationType, ConceptMap whenConcepts,
+                    TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                Identifier.Variable.Retrievable relationId = relation().owner().id();
+                RelationTraversal traversal = new RelationTraversal(relationId, set(relationType.getLabel())); // TODO include inheritance
+                relation().players().forEach(rp -> {
+                    Identifier.Variable.Retrievable playerId = rp.player().id();
+                    assert rp.roleType().isPresent() && rp.roleType().get().label().isPresent()
+                            && whenConcepts.contains(playerId);
+                    traversal.player(playerId, whenConcepts.get(playerId).asThing().getIID(),
+                                     set(getRole(rp, relationType, whenConcepts).getLabel())); // TODO include inheritance
+                });
+                return traversalEng.relations(traversal).map(conceptMgr::conceptMap)
+                        .map(conceptMap -> conceptMap.get(relationId).asRelation());
+            }
+
+            private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
+                if (isa().type().reference().isName()) {
+                    Reference.Name typeReference = isa().type().reference().asName();
+                    assert whenConcepts.contains(typeReference) && whenConcepts.get(typeReference).isRelationType();
+                    return whenConcepts.get(typeReference).asRelationType();
+                } else {
+                    assert isa().type().reference().isLabel();
+                    return conceptMgr.getRelationType(isa().type().label().get().label());
+                }
+            }
+
+            private RoleType getRole(RelationConstraint.RolePlayer rp, RelationType scope, ConceptMap whenConcepts) {
+                if (rp.roleType().get().reference().isName()) {
+                    return whenConcepts.get(rp.roleType().get().reference().asName()).asRoleType();
+                } else {
+                    assert rp.roleType().get().reference().isLabel();
+                    return scope.getRelates(rp.roleType().get().label().get().properLabel().name());
+                }
+            }
+
+            private Map<Identifier.Variable, Concept> insert(RelationType relationType, ConceptMap whenConcepts) {
                 Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                 thenConcepts.put(isa().type().id(), relationType);
                 com.vaticle.typedb.core.concept.thing.Relation relation = relationType.create(true);
@@ -507,7 +540,7 @@ public class Rule {
                     thenConcepts.putIfAbsent(rp.roleType().get().id(), role);
                     thenConcepts.putIfAbsent(rp.player().id(), player);
                 });
-                return Iterators.single(thenConcepts);
+                return thenConcepts;
             }
 
             @Override
@@ -555,42 +588,6 @@ public class Rule {
             @Override
             public Relation asRelation() {
                 return this;
-            }
-
-            private FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> matchRelation(
-                    RelationType relationType, ConceptMap whenConcepts,
-                    TraversalEngine traversalEng, ConceptManager conceptMgr) {
-                Identifier.Variable.Retrievable relationId = relation().owner().id();
-                RelationTraversal traversal = new RelationTraversal(relationId, set(relationType.getLabel())); // TODO include inheritance
-                relation().players().forEach(rp -> {
-                    Identifier.Variable.Retrievable playerId = rp.player().id();
-                    assert rp.roleType().isPresent() && rp.roleType().get().label().isPresent()
-                            && whenConcepts.contains(playerId);
-                    traversal.player(playerId, whenConcepts.get(playerId).asThing().getIID(),
-                            set(getRole(rp, relationType, whenConcepts).getLabel())); // TODO include inheritance
-                });
-                return traversalEng.relations(traversal).map(conceptMgr::conceptMap)
-                        .map(conceptMap -> conceptMap.get(relationId).asRelation());
-            }
-
-            private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
-                if (isa().type().reference().isName()) {
-                    Reference.Name typeReference = isa().type().reference().asName();
-                    assert whenConcepts.contains(typeReference) && whenConcepts.get(typeReference).isRelationType();
-                    return whenConcepts.get(typeReference).asRelationType();
-                } else {
-                    assert isa().type().reference().isLabel();
-                    return conceptMgr.getRelationType(isa().type().label().get().label());
-                }
-            }
-
-            private RoleType getRole(RelationConstraint.RolePlayer rp, RelationType scope, ConceptMap whenConcepts) {
-                if (rp.roleType().get().reference().isName()) {
-                    return whenConcepts.get(rp.roleType().get().reference().asName()).asRoleType();
-                } else {
-                    assert rp.roleType().get().reference().isLabel();
-                    return scope.getRelates(rp.roleType().get().label().get().properLabel().name());
-                }
             }
         }
 
@@ -663,22 +660,42 @@ public class Rule {
                 }
 
                 @Override
-                public FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                                         ConceptManager conceptMgr) {
+                public Optional<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                               ConceptManager conceptMgr) {
                     Identifier.Variable.Retrievable ownerId = has().owner().id();
                     assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
                     Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                     Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
                     Attribute attribute = putAttribute(conceptMgr);
-                    owner.setHas(attribute, true);
-                    TypeVariable declaredType = has().attribute().isa().get().type();
-                    Identifier.Variable declaredTypeId = declaredType.id();
-                    AttributeType attrType = conceptMgr.getAttributeType(declaredType.label().get().properLabel().name());
-                    assert attrType.equals(attribute.getType());
-                    thenConcepts.put(declaredTypeId, attrType);
-                    thenConcepts.put(has().attribute().id(), attribute);
-                    thenConcepts.put(has().owner().id(), owner);
-                    return Iterators.single(thenConcepts);
+                    if (owner.hasNonInferred(attribute)) return Optional.empty();
+                    else {
+                        owner.setHas(attribute, true);
+                        TypeVariable declaredType = has().attribute().isa().get().type();
+                        Identifier.Variable declaredTypeId = declaredType.id();
+                        AttributeType attrType = conceptMgr.getAttributeType(declaredType.label().get().properLabel().name());
+                        assert attrType.equals(attribute.getType());
+                        thenConcepts.put(declaredTypeId, attrType);
+                        thenConcepts.put(has().attribute().id(), attribute);
+                        thenConcepts.put(has().owner().id(), owner);
+                        return Optional.of(thenConcepts);
+                    }
+                }
+
+                private Attribute putAttribute(ConceptManager conceptMgr) {
+                    assert has().attribute().isa().isPresent()
+                            && has().attribute().isa().get().type().label().isPresent()
+                            && has().attribute().value().size() == 1
+                            && has().attribute().value().iterator().next().isValueIdentity();
+                    Label attributeTypeLabel = isa().type().label().get().properLabel();
+                    AttributeType attrType = conceptMgr.getAttributeType(attributeTypeLabel.name());
+                    assert attrType != null;
+                    ValueConstraint<?> value = has().attribute().value().iterator().next();
+                    if (attrType.isDateTime()) return attrType.asDateTime().put(value.asDateTime().value(), true);
+                    else if (attrType.isBoolean()) return attrType.asBoolean().put(value.asBoolean().value(), true);
+                    else if (attrType.isDouble()) return attrType.asDouble().put(value.asDouble().value(), true);
+                    else if (attrType.isLong()) return attrType.asLong().put(value.asLong().value(), true);
+                    else if (attrType.isString()) return attrType.asString().put(value.asString().value(), true);
+                    else throw TypeDBException.of(ILLEGAL_STATE);
                 }
 
                 @Override
@@ -746,23 +763,6 @@ public class Rule {
                     return value;
                 }
 
-                private Attribute putAttribute(ConceptManager conceptMgr) {
-                    assert has().attribute().isa().isPresent()
-                            && has().attribute().isa().get().type().label().isPresent()
-                            && has().attribute().value().size() == 1
-                            && has().attribute().value().iterator().next().isValueIdentity();
-                    Label attributeTypeLabel = isa().type().label().get().properLabel();
-                    AttributeType attrType = conceptMgr.getAttributeType(attributeTypeLabel.name());
-                    assert attrType != null;
-                    ValueConstraint<?> value = has().attribute().value().iterator().next();
-                    if (attrType.isDateTime()) return attrType.asDateTime().put(value.asDateTime().value(), true);
-                    else if (attrType.isBoolean()) return attrType.asBoolean().put(value.asBoolean().value(), true);
-                    else if (attrType.isDouble()) return attrType.asDouble().put(value.asDouble().value(), true);
-                    else if (attrType.isLong()) return attrType.asLong().put(value.asLong().value(), true);
-                    else if (attrType.isString()) return attrType.asString().put(value.asString().value(), true);
-                    else throw TypeDBException.of(ILLEGAL_STATE);
-                }
-
             }
 
             public static class Variable extends Has {
@@ -784,19 +784,22 @@ public class Rule {
                 }
 
                 @Override
-                public FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                                         ConceptManager conceptMgr) {
+                public Optional<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
+                                                                               ConceptManager conceptMgr) {
                     Identifier.Variable.Retrievable ownerId = has().owner().id();
                     assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
                     Thing owner = whenConcepts.get(ownerId).asThing();
-                    Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                     assert whenConcepts.contains(has().attribute().id())
                             && whenConcepts.get(has().attribute().id()).isAttribute();
                     Attribute attr = whenConcepts.get(has().attribute().id()).asAttribute();
-                    owner.setHas(attr, true);
-                    thenConcepts.put(has().attribute().id(), attr);
-                    thenConcepts.put(has().owner().id(), owner);
-                    return Iterators.single(thenConcepts);
+                    if (owner.hasNonInferred(attr)) return Optional.empty();
+                    else {
+                        owner.setHas(attr, true);
+                        Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
+                        thenConcepts.put(has().attribute().id(), attr);
+                        thenConcepts.put(has().owner().id(), owner);
+                        return Optional.of(thenConcepts);
+                    }
                 }
 
                 @Override
