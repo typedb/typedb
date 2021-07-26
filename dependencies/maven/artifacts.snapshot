@@ -16,8 +16,12 @@
 @maven//:com_google_code_gson_gson_2_8_6
 @maven//:com_google_errorprone_error_prone_annotations
 @maven//:com_google_errorprone_error_prone_annotations_2_4_0
+@maven//:com_google_guava_failureaccess
+@maven//:com_google_guava_failureaccess_1_0_1
 @maven//:com_google_guava_guava
-@maven//:com_google_guava_guava_23_0
+@maven//:com_google_guava_guava_30_1_jre
+@maven//:com_google_guava_listenablefuture
+@maven//:com_google_guava_listenablefuture_9999_0_empty_to_avoid_conflict_with_guava
 @maven//:com_google_http_client_google_http_client
 @maven//:com_google_http_client_google_http_client_1_34_2
 @maven//:com_google_j2objc_j2objc_annotations
