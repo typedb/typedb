@@ -1004,6 +1004,11 @@ public abstract class AnswerStateImpl implements AnswerState {
             }
 
             @Override
+            public Retrievable<P> with(ConceptMap extension) {
+                return new RetrievableImpl<>(filter, parent(), extendAnswer(extension), root());
+            }
+
+            @Override
             public boolean equals(Object o) {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;

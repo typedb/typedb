@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.resolution;
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.LogicManager;
@@ -28,12 +29,14 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundRetrievableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConcludableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConclusionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConditionResolver;
@@ -186,6 +189,16 @@ public class ResolverRegistry {
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return ResolverView.retrievable(resolver, retrievable.retrieves());
+    }
+
+    public Actor.Driver<BoundRetrievableResolver> registerBoundRetrievable(Retrievable retrievable, ConceptMap bounds) {
+        LOG.debug("Register BoundRetrievableResolver, pattern: {} bounds: {}", retrievable.pattern(), bounds);
+        Actor.Driver<BoundRetrievableResolver> resolver = Actor.driver(driver -> new BoundRetrievableResolver(
+                driver, retrievable, bounds, this, traversalEngine, conceptMgr, resolutionTracing
+        ), executorService);
+        resolvers.add(resolver);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return resolver;
     }
 
     // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
