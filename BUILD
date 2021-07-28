@@ -200,7 +200,7 @@ release_validate_deps(
 
 container_image(
     name = "assemble-docker",
-    base = "@openjdk_image//image",
+    base = "@vaticle_ubuntu_image//image",
     tars = [":assemble-linux-targz"],
     directory = "opt",
     workdir = "/opt/typedb-all-linux",

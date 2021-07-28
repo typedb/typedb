@@ -88,10 +88,10 @@ bazel_rules_docker_container_deps()
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 container_pull(
-  name = "openjdk_image",
+  name = "vaticle_ubuntu_image",
   registry = "index.docker.io",
-  repository = "library/openjdk",
-  tag = "11"
+  repository = "vaticle/ubuntu",
+  tag = "4ee548cea883c716055566847c4736a7ef791c38"
 )
 
 ######################################
