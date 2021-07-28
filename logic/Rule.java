@@ -40,6 +40,7 @@ import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
@@ -471,25 +472,52 @@ public class Rule {
             }
 
             @Override
-            public Optional<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                           ConceptManager conceptMgr) {
+            public Optional<Map<Identifier.Variable, Concept>> materialise(
+                    ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
                 RelationType relationType = relationType(whenConcepts, conceptMgr);
                 FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> existingRelations =
-                        matchRelation(relationType, whenConcepts, traversalEng, conceptMgr).filter(this::relationMatches);
+                        matchRelation(relationType, whenConcepts, traversalEng, conceptMgr);
                 if (!existingRelations.hasNext()) {
                     return Optional.of(insert(relationType, whenConcepts));
                 } else {
-                    com.vaticle.typedb.core.concept.thing.Relation existing = existingRelations.next();
-                    assert !existingRelations.hasNext();
-                    Map<Identifier.Variable, Concept> map = new HashMap<>(whenConcepts.filter(retrievableIds()).concepts());
-                    map.put(relation.owner().id(), existing);
-                    return Optional.of(map);
+                    while (existingRelations.hasNext()) {
+                        com.vaticle.typedb.core.concept.thing.Relation preexisting = existingRelations.next();
+                        if (!preexisting.isInferred()) return Optional.empty();
+                        else {
+                            if (insertable(preexisting, whenConcepts)) {
+                                return Optional.of(thenConcepts(preexisting, whenConcepts));
+                            }
+                        }
+                    }
+                    return Optional.empty();
                 }
             }
 
-            private boolean relationMatches(com.vaticle.typedb.core.concept.thing.Relation r) {
-                // TODO: verify whether the relation given can have been inserted from this rule's conclusion
-                return relation.players();
+            private boolean insertable(
+                    com.vaticle.typedb.core.concept.thing.Relation inserted, ConceptMap whenConcepts) {
+                if (isa.type().label().isPresent()) {
+                    if (!inserted.getType().getLabel().equals(isa.type().label().get().properLabel())) return false;
+                } else if (!inserted.getType().getLabel().equals(whenConcepts.get(isa.type().id().asRetrievable()).asType().getLabel())) return false;
+                Map<Label, Map<Concept, Integer>> relationMap = new HashMap<>();
+                relation.players().forEach(player -> {
+                    assert player.roleType().isPresent(); // Must be present to be insertable
+                    TypeVariable roleType = player.roleType().get();
+                    Label roleTypeLabel = roleType.label().map(LabelConstraint::properLabel)
+                            .orElseGet(() -> whenConcepts.get(roleType.id().asRetrievable()).asType().getLabel());
+                    Map<Concept, Integer> played = relationMap.computeIfAbsent(roleTypeLabel, p -> new HashMap<>());
+                    Concept playerConcept = whenConcepts.get(player.player().id());
+                    played.computeIfPresent(playerConcept, (p, count) -> count + 1);
+                    played.putIfAbsent(playerConcept, 1);
+                });
+                Map<Label, Map<Concept, Integer>> insertedMap = new HashMap<>();
+                inserted.getPlayersByRoleType().forEach((role, players) -> {
+                    players.forEach(player -> {
+                        Map<Concept, Integer> playerEntry = insertedMap.computeIfAbsent(role.getLabel(), r -> new HashMap<>());
+                        playerEntry.computeIfPresent(player, (p, count) -> count + 1);
+                        playerEntry.putIfAbsent(player, 1);
+                    });
+                });
+                return relationMap.equals(insertedMap);
             }
 
             private FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> matchRelation(
@@ -537,6 +565,21 @@ public class Rule {
                     RoleType role = getRole(rp, relationType, whenConcepts);
                     Thing player = whenConcepts.get(rp.player().id()).asThing();
                     relation.addPlayer(role, player, true);
+                    thenConcepts.putIfAbsent(rp.roleType().get().id(), role);
+                    thenConcepts.putIfAbsent(rp.player().id(), player);
+                });
+                return thenConcepts;
+            }
+
+            private Map<Identifier.Variable, Concept> thenConcepts(
+                    com.vaticle.typedb.core.concept.thing.Relation relation, ConceptMap whenConcepts) {
+                RelationType relationType = relation.getType();
+                Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
+                thenConcepts.put(isa().type().id(), relationType);
+                thenConcepts.put(isa().owner().id(), relation);
+                relation().players().forEach(rp -> {
+                    RoleType role = getRole(rp, relationType, whenConcepts);
+                    Thing player = whenConcepts.get(rp.player().id()).asThing();
                     thenConcepts.putIfAbsent(rp.roleType().get().id(), role);
                     thenConcepts.putIfAbsent(rp.player().id(), player);
                 });
@@ -660,8 +703,8 @@ public class Rule {
                 }
 
                 @Override
-                public Optional<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                               ConceptManager conceptMgr) {
+                public Optional<Map<Identifier.Variable, Concept>> materialise(
+                        ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr) {
                     Identifier.Variable.Retrievable ownerId = has().owner().id();
                     assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
                     Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
