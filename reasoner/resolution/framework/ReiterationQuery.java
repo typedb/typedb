@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor.Driver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.ConcludableResolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver;
 
 import java.util.function.Consumer;
 
@@ -50,18 +50,18 @@ public class ReiterationQuery {
     public static class Response {
 
         private final boolean reiterate;
-        private final Driver<ConcludableResolver> sender;
+        private final Driver<BoundConcludableResolver> sender;
 
-        private Response(Driver<ConcludableResolver> sender, boolean reiterate) {
+        private Response(Driver<BoundConcludableResolver> sender, boolean reiterate) {
             this.reiterate = reiterate;
             this.sender = sender;
         }
 
-        public static Response create(Driver<ConcludableResolver> driver, boolean reiterate) {
+        public static Response create(Driver<BoundConcludableResolver> driver, boolean reiterate) {
             return new Response(driver, reiterate);
         }
 
-        public Driver<ConcludableResolver> sender() {
+        public Driver<BoundConcludableResolver> sender() {
             return sender;
         }
 
