@@ -498,21 +498,21 @@ public class Rule {
                 if (isa.type().label().isPresent()) {
                     if (!inserted.getType().getLabel().equals(isa.type().label().get().properLabel())) return false;
                 } else if (!inserted.getType().getLabel().equals(whenConcepts.get(isa.type().id().asRetrievable()).asType().getLabel())) return false;
-                Map<Label, Map<Concept, Integer>> relationMap = new HashMap<>();
+                Map<String, Map<Concept, Integer>> relationMap = new HashMap<>();
                 relation.players().forEach(player -> {
                     assert player.roleType().isPresent(); // Must be present to be insertable
                     TypeVariable roleType = player.roleType().get();
-                    Label roleTypeLabel = roleType.label().map(LabelConstraint::properLabel)
-                            .orElseGet(() -> whenConcepts.get(roleType.id().asRetrievable()).asType().getLabel());
-                    Map<Concept, Integer> played = relationMap.computeIfAbsent(roleTypeLabel, p -> new HashMap<>());
+                    String descopedRoleTypeLabel = roleType.label().map(LabelConstraint::properLabel)
+                            .orElseGet(() -> whenConcepts.get(roleType.id().asRetrievable()).asType().getLabel()).name();
+                    Map<Concept, Integer> played = relationMap.computeIfAbsent(descopedRoleTypeLabel, p -> new HashMap<>());
                     Concept playerConcept = whenConcepts.get(player.player().id());
                     played.computeIfPresent(playerConcept, (p, count) -> count + 1);
                     played.putIfAbsent(playerConcept, 1);
                 });
-                Map<Label, Map<Concept, Integer>> insertedMap = new HashMap<>();
+                Map<String, Map<Concept, Integer>> insertedMap = new HashMap<>();
                 inserted.getPlayersByRoleType().forEach((role, players) -> {
                     players.forEach(player -> {
-                        Map<Concept, Integer> playerEntry = insertedMap.computeIfAbsent(role.getLabel(), r -> new HashMap<>());
+                        Map<Concept, Integer> playerEntry = insertedMap.computeIfAbsent(role.getLabel().name(), r -> new HashMap<>());
                         playerEntry.computeIfPresent(player, (p, count) -> count + 1);
                         playerEntry.putIfAbsent(player, 1);
                     });
