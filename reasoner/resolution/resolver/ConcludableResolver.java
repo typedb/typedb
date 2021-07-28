@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
@@ -44,9 +45,11 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -60,7 +63,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
 
     private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> applicableRules;
     private final Map<Driver<ConclusionResolver>, Rule> resolverRules;
-    private final com.vaticle.typedb.core.logic.resolvable.Concludable concludable;
+    private final Concludable concludable;
     private final LogicManager logicMgr;
     private final Map<Request, CachingRequestState<?, ConceptMap>> requestStates;
     private final Set<Identifier.Variable.Retrievable> unboundVars;
@@ -68,7 +71,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
     protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, AnswerCache<?, ConceptMap>>> cacheRegistersByRoot;
     protected final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
 
-    public ConcludableResolver(Driver<ConcludableResolver> driver, com.vaticle.typedb.core.logic.resolvable.Concludable concludable,
+    public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable,
                                ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                                LogicManager logicMgr, boolean resolutionTracing) {
         super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
@@ -255,7 +258,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                     ConcludableAnswerCache answerCache = new ConcludableAnswerCache(cacheRegister, answerFromUpstream);
                     cacheRegister.put(answerFromUpstream, answerCache);
                     requestState = new Explain(fromUpstream, answerCache, iteration);
-                    registerRules(fromUpstream, requestState.asExploration());
+                    requestState.asExploration().downstreamManager().addDownstreams(ruleDownstreams(fromUpstream));
                 } else if (cacheRegister.get(answerFromUpstream).isConcludableAnswerCache()) {
                     ConcludableAnswerCache answerCache = cacheRegister.get(answerFromUpstream).asConcludableAnswerCache();
                     requestState = new FollowingExplain(fromUpstream, answerCache, iteration);
@@ -266,7 +269,7 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                 ConcludableAnswerCache answerCache = new ConcludableAnswerCache(cacheRegister, answerFromUpstream);
                 cacheRegister.put(answerFromUpstream, answerCache);
                 requestState = new Explain(fromUpstream, answerCache, iteration);
-                registerRules(fromUpstream, requestState.asExploration());
+                requestState.asExploration().downstreamManager().addDownstreams(ruleDownstreams(fromUpstream));
             }
         } else if (fromUpstream.partialAnswer().asConcludable().isMatch()) {
             if (cacheRegister.containsKey(answerFromUpstream)) {
@@ -280,14 +283,14 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
                     throw TypeDBException.of(ILLEGAL_STATE);
                 }
             } else {
-                ConceptMapCache answerCache = new ConceptMapCache(cacheRegister, answerFromUpstream);
+                ConceptMapCache answerCache = new ConceptMapCache(cacheRegister, answerFromUpstream,
+                                                                  () -> traversalIterator(concludable.pattern(),
+                                                                                          answerFromUpstream));
                 cacheRegister.put(answerFromUpstream, answerCache);
-                if (!answerCache.completeIfSubsumerComplete()) {
-                    answerCache.addSource(traversalIterator(concludable.pattern(), answerFromUpstream));
-                }
+                answerCache.completeIfSubsumerComplete();
                 boolean singleAnswerRequired = answerFromUpstream.concepts().keySet().containsAll(unboundVars);
                 requestState = new Match(fromUpstream, answerCache, iteration, singleAnswerRequired);
-                registerRules(fromUpstream, requestState.asExploration());
+                requestState.asExploration().downstreamManager().addDownstreams(ruleDownstreams(fromUpstream));
             }
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
@@ -295,21 +298,21 @@ public class ConcludableResolver extends Resolver<ConcludableResolver> {
         return requestState;
     }
 
-    private void registerRules(Request fromUpstream, Exploration exploration) {
+    private List<Request> ruleDownstreams(Request fromUpstream) {
         // loop termination: when receiving a new request, we check if we have seen it before from this root query
         // if we have, we do not allow rules to be registered as possible downstreams
+        List<Request> downstreams = new ArrayList<>();
         Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
         for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
             Driver<ConclusionResolver> conclusionResolver = entry.getKey();
             for (Unifier unifier : entry.getValue()) {
                 Optional<? extends Partial.Conclusion<?, ?>> unified = partialAnswer.toDownstream(
                         unifier, resolverRules.get(conclusionResolver));
-                if (unified.isPresent()) {
-                    Request toDownstream = Request.create(driver(), conclusionResolver, unified.get());
-                    exploration.downstreamManager().addDownstream(toDownstream);
-                }
+                unified.ifPresent(
+                        conclusion -> downstreams.add(Request.create(driver(), conclusionResolver, conclusion)));
             }
         }
+        return downstreams;
     }
 
     private static Set<Identifier.Variable.Retrievable> unboundVars(Conjunction conjunction) {

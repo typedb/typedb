@@ -18,17 +18,11 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
-import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
-import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache.SubsumptionAnswerCache.ConceptMapCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.CachingRequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
@@ -38,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
@@ -47,18 +40,20 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
 
     private final Retrievable retrievable;
-    private final Map<Request, RetrievableRequestState> requestStates;
-    protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, AnswerCache<ConceptMap, ConceptMap>>> cacheRegistersByRoot;
-    protected final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
+    private final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, Driver<BoundRetrievableResolver>>> boundRetrievablesByRoot; // TODO: We would like these not to be by root. They need to be, for now, for reiteration purposes.
+    private final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
+    private final Map<Driver<? extends Resolver<?>>, SubsumptionTracker> subsumptionTrackers;
+    private final Map<Driver<? extends Resolver<?>>, Map<Request, Request>> requestMapByRoot;
 
     public RetrievableResolver(Driver<RetrievableResolver> driver, Retrievable retrievable, ResolverRegistry registry,
                                TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
         super(driver, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ")",
               registry, traversalEngine, conceptMgr, resolutionTracing);
         this.retrievable = retrievable;
-        this.requestStates = new HashMap<>();
-        this.cacheRegistersByRoot = new HashMap<>();
+        this.boundRetrievablesByRoot = new HashMap<>();
         this.iterationByRoot = new HashMap<>();
+        this.requestMapByRoot = new HashMap<>();  // TODO: We can do without this by specialising the message types
+        this.subsumptionTrackers = new HashMap<>();
     }
 
     @Override
@@ -69,32 +64,69 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
         iterationByRoot.putIfAbsent(root, iteration);
         if (iteration > iterationByRoot.get(root)) {
-            prepareNextIteration(fromUpstream.partialAnswer().root(), iteration);
+            prepareNextIteration(root, iteration);
         }
 
-        if (iteration < iterationByRoot.get(fromUpstream.partialAnswer().root())) {
+        if (iteration < iterationByRoot.get(root)) {
             // short circuit old iteration failed messages to upstream
             failToUpstream(fromUpstream, iteration);
         } else {
-            RetrievableRequestState requestState = getOrReplaceRequestState(fromUpstream, iteration);
-            assert iteration == requestState.iteration();
-            nextAnswer(fromUpstream, requestState, iteration);
+            ConceptMap bounds = fromUpstream.partialAnswer().conceptMap();
+            Driver<BoundRetrievableResolver> boundRetrievable = getOrReplaceBoundRetrievable(root, bounds);
+            // TODO: Re-enable subsumption when async bug is fixed
+            // Optional<ConceptMap> subsumer = subsumptionTrackers.computeIfAbsent(
+            //         root, r -> new SubsumptionTracker()).getSubsumer(bounds);
+            // // If there is a finished subsumer, let the BoundRetrievable know that it can go there for answers
+            // Request request = subsumer
+            //         .map(conceptMap -> Request.ToSubsumed.create(
+            //                 driver(), boundRetrievable, boundRetrievablesByRoot.get(root).get(conceptMap),
+            //                 fromUpstream.partialAnswer()))
+            //         .orElseGet(() -> Request.create(driver(), boundRetrievable, fromUpstream.partialAnswer()));
+            Request request = Request.create(driver(), boundRetrievable, fromUpstream.partialAnswer());
+            requestMapByRoot.computeIfAbsent(root, r -> new HashMap<>()).put(request, fromUpstream);
+            requestFromDownstream(request, fromUpstream, iteration);
         }
     }
 
     private void prepareNextIteration(Driver<? extends Resolver<?>> root, int iteration) {
         iterationByRoot.put(root, iteration);
-        cacheRegistersByRoot.get(root).clear();
+        boundRetrievablesByRoot.remove(root);
+        subsumptionTrackers.remove(root);
+        requestMapByRoot.remove(root);
+    }
+
+    private Driver<BoundRetrievableResolver> getOrReplaceBoundRetrievable(Driver<? extends Resolver<?>> root, ConceptMap bounds) {
+        return boundRetrievablesByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(bounds, b -> {
+            LOG.debug("{}: Creating a new BoundRetrievableResolver for bounds: {}", name(), bounds);
+            return registry.registerBoundRetrievable(retrievable, bounds);
+        });
     }
 
     @Override
     protected void receiveAnswer(Answer fromDownstream, int iteration) {
-        throw TypeDBException.of(ILLEGAL_STATE);
+        if (iteration < iterationByRoot.get(fromDownstream.answer().root())) {
+            // short circuit old iteration failed messages to upstream
+            failToUpstream(fromDownstream.sourceRequest(), iteration);
+        } else {
+            answerToUpstream(fromDownstream.answer(),
+                             requestMapByRoot.get(fromDownstream.answer().root()).get(fromDownstream.sourceRequest()),
+                             iteration);
+        }
     }
 
     @Override
-    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-        throw TypeDBException.of(ILLEGAL_STATE);
+    protected void receiveFail(Response.Fail fail, int iteration) {
+        if (iteration < iterationByRoot.get(fail.sourceRequest().partialAnswer().root())) {
+            // short circuit old iteration failed messages to upstream
+            failToUpstream(fail.sourceRequest(), iteration);
+        } else {
+            Request request = fail.sourceRequest();
+            subsumptionTrackers
+                    .computeIfAbsent(request.partialAnswer().root(), r -> new SubsumptionTracker())
+                    .addFinished(request.partialAnswer().conceptMap());
+            failToUpstream(requestMapByRoot.get(fail.sourceRequest().partialAnswer().root()).get(request),
+                           iteration);
+        }
     }
 
     @Override
@@ -102,56 +134,4 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private RetrievableRequestState getOrReplaceRequestState(Request fromUpstream, int iteration) {
-        if (!requestStates.containsKey(fromUpstream)) {
-            requestStates.put(fromUpstream, createRequestState(fromUpstream, iteration));
-        } else {
-            RetrievableRequestState requestState = this.requestStates.get(fromUpstream);
-
-            if (requestState.iteration() < iteration) {
-                // when the same request for the next iteration the first time, re-initialise required state
-                RetrievableRequestState requestStateNextIter = createRequestState(fromUpstream, iteration);
-                this.requestStates.put(fromUpstream, requestStateNextIter);
-            }
-        }
-        return requestStates.get(fromUpstream);
-    }
-
-    protected RetrievableRequestState createRequestState(Request fromUpstream, int iteration) {
-        LOG.debug("{}: Creating a new RequestState for iteration:{}, request: {}", name(), iteration, fromUpstream);
-        assert fromUpstream.partialAnswer().isRetrievable();
-        Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
-        cacheRegistersByRoot.putIfAbsent(root, new HashMap<>());
-        Map<ConceptMap, AnswerCache<ConceptMap, ConceptMap>> cacheRegister = cacheRegistersByRoot.get(root);
-        AnswerCache<ConceptMap, ConceptMap> answerCache = cacheRegister.computeIfAbsent(
-                fromUpstream.partialAnswer().conceptMap(), upstreamAns -> {
-                    ConceptMapCache newCache = new ConceptMapCache(cacheRegister, upstreamAns);
-                    if (!newCache.completeIfSubsumerComplete()) newCache.addSource(traversalIterator(retrievable.pattern(), upstreamAns));
-                    return newCache;
-                });
-        return new RetrievableRequestState(fromUpstream, answerCache, iteration);
-    }
-
-    private void nextAnswer(Request fromUpstream, RetrievableRequestState requestState, int iteration) {
-        Optional<Partial.Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(Partial::asCompound);
-        if (upstreamAnswer.isPresent()) {
-            answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
-        } else {
-            requestStates.get(fromUpstream).answerCache().setComplete();
-            failToUpstream(fromUpstream, iteration);
-        }
-    }
-
-    private static class RetrievableRequestState extends CachingRequestState<ConceptMap, ConceptMap> {
-
-        public RetrievableRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache, int iteration) {
-            super(fromUpstream, answerCache, iteration, false, false);
-        }
-
-        @Override
-        protected FunctionalIterator<? extends Partial<?>> toUpstream(ConceptMap answer) {
-            return Iterators.single(fromUpstream.partialAnswer().asRetrievable()
-                                            .aggregateToUpstream(answer));
-        }
-    }
 }

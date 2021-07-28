@@ -450,6 +450,8 @@ public interface AnswerState {
 
             P aggregateToUpstream(ConceptMap concepts);
 
+            Retrievable<P> with(ConceptMap extension);
+
             @Override
             default boolean isRetrievable() { return true; }
 

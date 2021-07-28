@@ -19,19 +19,29 @@
 package com.vaticle.typedb.core.common.poller;
 
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
-public interface Poller<T> {
+public class FilteredPoller<T> extends AbstractPoller<T> {
 
-    Optional<T> poll();
+    private final Poller<T> poller;
+    private final Predicate<T> predicate;
 
-    <U> Poller<U> flatMap(Function<T, Poller<U>> mappingFn);
+    public FilteredPoller(Poller<T> poller, Predicate<T> predicate) {
+        this.poller = poller;
+        this.predicate = predicate;
+    }
 
-    Poller<T> link(Poller<T> poller);
+    @Override
+    public Optional<T> poll() {
+        Optional<T> fromSource;
+        while ((fromSource = poller.poll()).isPresent()) {
+            if (predicate.test(fromSource.get())) return fromSource;
+        }
+        return Optional.empty();
+    }
 
-    Poller<T> filter(Predicate<T> predicate);
-
-    void recycle();
-
+    @Override
+    public void recycle() {
+        poller.recycle();
+    }
 }
