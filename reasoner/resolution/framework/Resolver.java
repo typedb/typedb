@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -106,6 +107,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         return requestRouter.get(toDownstream);
     }
 
+    // TODO: Rename to sendRequest or request
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name(), request);
         if (resolutionTracing) ResolutionTracer.get().request(this.name(), request.receiver().name(), iteration,
@@ -116,6 +118,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         receiver.execute(actor -> actor.receiveRequest(request, iteration));
     }
 
+    // TODO: Rename to sendResponse or respond
     protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
         assert answer.isPartial();
         Answer response = Answer.create(fromUpstream, answer.asPartial());
@@ -203,9 +206,12 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
             return downstreamSelector.next();
         }
 
+        public void addDownstreams(List<Request> downstreams) {
+            downstreams.forEach(this::addDownstream);
+        }
+
         public void addDownstream(Request request) {
             assert !(downstreams.contains(request)) : "downstream answer producer already contains this request";
-
             downstreams.add(request);
             downstreamSelector = downstreams.iterator();
         }

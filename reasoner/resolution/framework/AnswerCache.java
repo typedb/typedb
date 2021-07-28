@@ -20,9 +20,9 @@ package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.poller.AbstractPoller;
 import com.vaticle.typedb.core.common.poller.Poller;
-import com.vaticle.typedb.core.common.poller.Pollers;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
@@ -37,11 +37,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.poller.Pollers.poll;
 
 public abstract class AnswerCache<ANSWER, SUBSUMES> {
 
@@ -49,20 +50,27 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     private final Set<ANSWER> answersSet;
     protected boolean reiterateOnAnswerAdded;
     protected boolean requiresReiteration;
-    protected Poller<ANSWER> answerSource;
+    protected FunctionalIterator<ANSWER> answerSource;
     protected boolean complete;
     protected final Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister;
     protected final ConceptMap state;
+    private final Supplier<FunctionalIterator<ANSWER>> answerSourceSupplier;
+    private boolean sourceCleared;
+    private boolean sourceExhausted;
 
-    protected AnswerCache(Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister, ConceptMap state) {
+    protected AnswerCache(Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister, ConceptMap state,
+                          Supplier<FunctionalIterator<ANSWER>> answerSourceSupplier) {
         this.cacheRegister = cacheRegister;
         this.state = state;
-        this.answerSource = Pollers.empty();
+        this.answerSourceSupplier = answerSourceSupplier;
+        this.answerSource = null;
         this.answers = new ArrayList<>(); // TODO: Replace answer list and deduplication set with a bloom filter
         this.answersSet = new HashSet<>();
         this.reiterateOnAnswerAdded = false;
         this.requiresReiteration = false;
         this.complete = false;
+        this.sourceCleared = false;
+        this.sourceExhausted = false;
     }
 
     public void add(ANSWER answer) {
@@ -70,9 +78,10 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         if (addIfAbsent(answer) && reiterateOnAnswerAdded) requiresReiteration = true;
     }
 
-    public void addSource(FunctionalIterator<ANSWER> newAnswers) {
-        assert !isComplete();
-        answerSource = answerSource.link(poll(newAnswers));
+    public void clearSource() {
+        if (answerSource != null) answerSource.recycle();
+        answerSource = empty();
+        sourceCleared = true;
     }
 
     public Poller<ANSWER> reader(boolean isSubscriber) {
@@ -81,11 +90,20 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
 
     public void setComplete() {
         complete = true;
-        answerSource.recycle();
+        setSourceExhausted();
     }
 
     public boolean isComplete() {
         return complete;
+    }
+
+    public void setSourceExhausted() {
+        sourceExhausted = true;
+        if (answerSource != null) answerSource.recycle();
+    }
+
+    public boolean sourceExhausted() {
+        return sourceExhausted;
     }
 
     public boolean requiresReiteration() {
@@ -115,7 +133,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         } else if (index == answers.size()) {
             if (isComplete()) return Optional.empty();
             Optional<ANSWER> nextAnswer = searchForAnswer(index, isSubscriber);
-            if (!nextAnswer.isPresent() && isSubscriber) reiterateOnAnswerAdded = true;
+            if (nextAnswer.isEmpty() && isSubscriber) reiterateOnAnswerAdded = true;
             return nextAnswer;
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
@@ -123,17 +141,19 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     }
 
     protected Optional<ANSWER> searchForAnswer(int index, boolean mayReadOverEagerly) {
-        return searchUnexploredForAnswer();
+        return searchSourceForAnswer();
     }
 
-    protected Optional<ANSWER> searchUnexploredForAnswer() {
-        Optional<ANSWER> answer;
-        while ((answer = answerSource.poll()).isPresent()) {
-            if (addIfAbsent(answer.get())) {
+    protected Optional<ANSWER> searchSourceForAnswer() {
+        if (answerSource == null) answerSource = answerSourceSupplier.get();
+        while (answerSource.hasNext()) {
+            ANSWER answer = answerSource.next();
+            if (addIfAbsent(answer)) {
                 if (reiterateOnAnswerAdded) requiresReiteration = true;
-                return answer;
+                return Optional.of(answer);
             }
         }
+        if (!sourceCleared) setSourceExhausted();
         return Optional.empty();
     }
 
@@ -171,7 +191,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
     public static class ConcludableAnswerCache extends AnswerCache<Concludable<?>, ConceptMap> {
 
         public ConcludableAnswerCache(Map<ConceptMap, AnswerCache<?, ConceptMap>> cacheRegister, ConceptMap state) {
-            super(cacheRegister, state);
+            super(cacheRegister, state, Iterators::empty);
         }
 
         @Override
@@ -190,8 +210,9 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
 
         protected final Set<ConceptMap> subsumingConceptMaps;
 
-        protected SubsumptionAnswerCache(Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister, ConceptMap state) {
-            super(cacheRegister, state);
+        protected SubsumptionAnswerCache(Map<SUBSUMES, ? extends AnswerCache<?, SUBSUMES>> cacheRegister,
+                                         ConceptMap state, Supplier<FunctionalIterator<ANSWER>> answerSource) {
+            super(cacheRegister, state, answerSource);
             this.subsumingConceptMaps = subsumingConceptMaps(state);
         }
 
@@ -225,7 +246,7 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
             if (completeIfSubsumerComplete()) {
                 return get(index, mayReadOverEagerly);
             } else {
-                return searchUnexploredForAnswer();
+                return searchSourceForAnswer();
             }
         }
 
@@ -258,8 +279,8 @@ public abstract class AnswerCache<ANSWER, SUBSUMES> {
         public static class ConceptMapCache extends SubsumptionAnswerCache<ConceptMap, ConceptMap> {
 
             public ConceptMapCache(Map<ConceptMap, ? extends AnswerCache<?, ConceptMap>> cacheRegister,
-                                   ConceptMap state) {
-                super(cacheRegister, state);
+                                   ConceptMap state, Supplier<FunctionalIterator<ConceptMap>> answerSource) {
+                super(cacheRegister, state, answerSource);
             }
 
             @Override
