@@ -115,6 +115,11 @@ public class RetrievableResolver extends Resolver<RetrievableResolver> {
     }
 
     @Override
+    public void terminate(Throwable cause) {
+        super.terminate(cause);
+    }
+
+    @Override
     protected void receiveFail(Response.Fail fail, int iteration) {
         if (iteration < iterationByRoot.get(fail.sourceRequest().partialAnswer().root())) {
             // short circuit old iteration failed messages to upstream
