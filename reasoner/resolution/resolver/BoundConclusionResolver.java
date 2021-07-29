@@ -134,7 +134,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             Materialiser.Request request = Materialiser.Request.create(driver(), materialiser, conclusion,
                                                                        fromDownstream.answer());
             requestFromMaterialiser(request, fromUpstream, iteration);
-            requestState.incrementWaiting();
+            requestState.materialisationState().incrementCount();
         } else {
             sendAnswerOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
         }
@@ -157,10 +157,11 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         Optional<Map<Identifier.Variable, Concept>> materialisation = response.materialisation();
         materialisation.ifPresent(m -> requestState.newMaterialisation(response.partialAnswer(), m));
         sendAnswerOrSearchDownstreamOrFail(fromUpstream.first(), requestState, fromUpstream.second());
-        requestState.decrementWaiting();
-        if (!requestState.waiting()) {
-            requestState.queue().forEach(r -> sendAnswerOrSearchDownstreamOrFail(r.first(), requestState, r.second()));
-            requestState.emptyQueue();
+        ConclusionRequestState.MaterialisationState state = requestState.materialisationState();
+        state.decrementCount();
+        if (!state.waiting()) {
+            state.waitingRequests().forEach(r -> sendAnswerOrSearchDownstreamOrFail(r.first(), requestState, r.second()));
+            state.clear();
         }
     }
 
@@ -175,8 +176,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
         } else if (!requestState.isComplete() && requestState.downstreamManager().hasDownstream()) {
             requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
-        } else if (requestState.waiting()) {
-            requestState.addToQueue(fromUpstream, iteration);
+        } else if (requestState.materialisationState().waiting()) {
+            requestState.materialisationState().addToQueue(fromUpstream, iteration);
         } else {
             requestState.setComplete();
             failToUpstream(fromUpstream, iteration);
@@ -251,16 +252,15 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         private final DownstreamManager downstreamManager;
         protected FunctionalIterator<CONCLUDABLE> materialisation;
         private boolean complete;
-        private int waiting;
-        private final List<Pair<Request, Integer>> queue; // TODO: Will always be the same request, so can just hold an int instead
+        private final MaterialisationState materialisationState;
+
 
         protected ConclusionRequestState(Request fromUpstream, int iteration) {
             super(fromUpstream, iteration);
             this.downstreamManager = new DownstreamManager();
             this.materialisation = Iterators.empty();
             this.complete = false;
-            this.waiting = 0;
-            this.queue = new ArrayList<>();
+            this.materialisationState = new MaterialisationState();
         }
 
         public DownstreamManager downstreamManager() {
@@ -286,28 +286,42 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             this.materialisation = this.materialisation.link(toUpstream(fromDownstream, materialisation));
         }
 
-        public void addToQueue(Request fromUpstream, int iteration) {
-            queue.add(new Pair<>(fromUpstream, iteration));
+        private MaterialisationState materialisationState() {
+            return materialisationState;
         }
 
-        public List<Pair<Request, Integer>> queue() {
-            return queue;
-        }
+        private static class MaterialisationState {
+            private int waitedMaterialisations;
+            private final List<Pair<Request, Integer>> waitingRequests; // TODO: Will always be the same request, so can just hold an int instead
 
-        public void emptyQueue() {
-            queue.clear();
-        }
+            private MaterialisationState() {
+                this.waitedMaterialisations = 0;
+                this.waitingRequests = new ArrayList<>();
+            }
 
-        public boolean waiting() {
-            return waiting > 0;
-        }
+            public void addToQueue(Request fromUpstream, int iteration) {
+                waitingRequests.add(new Pair<>(fromUpstream, iteration));
+            }
 
-        public void incrementWaiting() {
-            waiting += 1;
-        }
+            public List<Pair<Request, Integer>> waitingRequests() {
+                return waitingRequests;
+            }
 
-        public void decrementWaiting() {
-            waiting -= 1;
+            public void clear() {
+                waitingRequests.clear();
+            }
+
+            public boolean waiting() {
+                return waitedMaterialisations > 0;
+            }
+
+            public void incrementCount() {
+                waitedMaterialisations += 1;
+            }
+
+            public void decrementCount() {
+                waitedMaterialisations -= 1;
+            }
         }
 
         private static class Rule extends ConclusionRequestState<Concludable.Match<?>> {
