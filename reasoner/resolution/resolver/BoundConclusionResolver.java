@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
@@ -140,6 +141,9 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     }
 
     private void requestFromMaterialiser(Materialiser.Request request, Request fromUpstream, int iteration) {
+        if (resolutionTracing) ResolutionTracer.get().request(
+                this.name(), request.receiver().name(), iteration,
+                request.partialAnswer().conceptMap().concepts().keySet().toString());
         materialiserRequestRouter.put(request, new Pair<>(fromUpstream, iteration));
         materialiser.execute(actor -> actor.receiveRequest(request));
     }

@@ -57,7 +57,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     protected final ResolverRegistry registry;
     protected final TraversalEngine traversalEngine;
     protected final ConceptManager conceptMgr;
-    private final boolean resolutionTracing;
+    protected final boolean resolutionTracing;
     private boolean terminated;
 
     protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
