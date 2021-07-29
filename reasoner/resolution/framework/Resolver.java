@@ -79,12 +79,12 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
             String code = ((TypeDBException) e).code().get();
             if (code.equals(RESOURCE_CLOSED.code())) {
                 LOG.debug("Resolver interrupted by resource close: {}", e.getMessage());
-                registry.terminateResolvers(e);
+                registry.terminate(e);
                 return;
             }
         }
         LOG.error("Actor exception", e);
-        registry.terminateResolvers(e);
+        registry.terminate(e);
     }
 
     public abstract void receiveRequest(Request fromUpstream, int iteration);
@@ -110,8 +110,9 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     // TODO: Rename to sendRequest or request
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name(), request);
-        if (resolutionTracing) ResolutionTracer.get().request(this.name(), request.receiver().name(), iteration,
-                                                              request.partialAnswer().conceptMap().concepts().keySet().toString());
+        if (resolutionTracing) ResolutionTracer.get().request(
+                this.name(), request.receiver().name(), iteration,
+                request.partialAnswer().conceptMap().concepts().keySet().toString());
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(request, fromUpstream);
         Driver<? extends Resolver<?>> receiver = request.receiver();

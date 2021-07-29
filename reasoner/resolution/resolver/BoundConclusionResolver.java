@@ -18,16 +18,17 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
@@ -38,8 +39,10 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -53,17 +56,21 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     private final ConceptMap bounds;
     private final Driver<ConditionResolver> conditionResolver;
     private final Rule.Conclusion conclusion;
-    private final Map<Request, ConclusionRequestState<? extends AnswerState.Partial.Concludable<?>>> requestStates;
+    private final Driver<Materialiser> materialiser;
+    private final Map<Request, ConclusionRequestState<? extends Concludable<?>>> requestStates;
+    private final Map<Materialiser.Request, Pair<Request, Integer>> materialiserRequestRouter;
 
     public BoundConclusionResolver(Driver<BoundConclusionResolver> driver, Rule.Conclusion conclusion, ConceptMap bounds,
-                                   Actor.Driver<ConditionResolver> conditionResolver,
-                                   ResolverRegistry registry, TraversalEngine traversalEngine,
+                                   Driver<ConditionResolver> conditionResolver,
+                                   Driver<Materialiser> materialiser, ResolverRegistry registry, TraversalEngine traversalEngine,
                                    ConceptManager conceptMgr, boolean resolutionTracing) {
         super(driver, initName(conclusion, bounds), registry, traversalEngine, conceptMgr, resolutionTracing);
         this.bounds = bounds;
         this.conditionResolver = conditionResolver;
         this.conclusion = conclusion;
+        this.materialiser = materialiser;
         this.requestStates = new HashMap<>();
+        this.materialiserRequestRouter = new HashMap<>();
     }
 
     private static String initName(Rule.Conclusion conclusion, ConceptMap bounds) {
@@ -121,14 +128,41 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (isTerminated()) return;
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        ConclusionRequestState<? extends AnswerState.Partial.Concludable<?>> requestState = this.requestStates.get(fromUpstream);
+        ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream);
         if (!requestState.isComplete()) {
-            Optional<Map<Identifier.Variable, Concept>> materialisation = conclusion
-                    .materialise(fromDownstream.answer().conceptMap(), traversalEngine, conceptMgr);
-            materialisation.ifPresent(m -> requestState.newMaterialisation(fromDownstream.answer(), m));
-
+            Materialiser.Request request = Materialiser.Request.create(driver(), materialiser, conclusion,
+                                                                       fromDownstream.answer());
+            requestFromMaterialiser(request, fromUpstream, iteration);
+            requestState.incrementWaiting();
+        } else {
+            sendAnswerOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
         }
-        sendAnswerOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
+    }
+
+    private void requestFromMaterialiser(Materialiser.Request request, Request fromUpstream, int iteration) {
+        materialiserRequestRouter.put(request, new Pair<>(fromUpstream, iteration));
+        materialiser.execute(actor -> actor.receiveRequest(request));
+    }
+
+    protected void receiveMaterialisation(Materialiser.Response response) {
+        if (isTerminated()) return;
+        Materialiser.Request toDownstream = response.sourceRequest();
+        Pair<Request, Integer> fromUpstream = fromUpstream(toDownstream);
+        ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream.first());
+        LOG.trace("{}: received materialisation response: {}", name(), response);
+        Optional<Map<Identifier.Variable, Concept>> materialisation = response.materialisation();
+        materialisation.ifPresent(m -> requestState.newMaterialisation(response.partialAnswer(), m));
+        sendAnswerOrSearchDownstreamOrFail(fromUpstream.first(), requestState, fromUpstream.second());
+        requestState.decrementWaiting();
+        if (!requestState.waiting()) {
+            requestState.queue().forEach(r -> sendAnswerOrSearchDownstreamOrFail(r.first(), requestState, r.second()));
+            requestState.emptyQueue();
+        }
+    }
+
+    protected Pair<Request, Integer> fromUpstream(Materialiser.Request toDownstream) {
+        assert materialiserRequestRouter.containsKey(toDownstream);
+        return materialiserRequestRouter.remove(toDownstream);
     }
 
     private void sendAnswerOrSearchDownstreamOrFail(Request fromUpstream, ConclusionRequestState<?> requestState, int iteration) {
@@ -137,6 +171,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
         } else if (!requestState.isComplete() && requestState.downstreamManager().hasDownstream()) {
             requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
+        } else if (requestState.waiting()) {
+            requestState.addToQueue(fromUpstream, iteration);
         } else {
             requestState.setComplete();
             failToUpstream(fromUpstream, iteration);
@@ -206,17 +242,21 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         return answers.map(ans -> partialAnswer.extend(ans).toDownstream(named));
     }
 
-    private static abstract class ConclusionRequestState<CONCLUDABLE extends AnswerState.Partial.Concludable<?>> extends RequestState {
+    private static abstract class ConclusionRequestState<CONCLUDABLE extends Concludable<?>> extends RequestState {
 
         private final DownstreamManager downstreamManager;
         protected FunctionalIterator<CONCLUDABLE> materialisation;
         private boolean complete;
+        private int waiting;
+        private final List<Pair<Request, Integer>> queue; // TODO: Will always be the same request, so can just hold an int instead
 
         protected ConclusionRequestState(Request fromUpstream, int iteration) {
             super(fromUpstream, iteration);
             this.downstreamManager = new DownstreamManager();
             this.materialisation = Iterators.empty();
             this.complete = false;
+            this.waiting = 0;
+            this.queue = new ArrayList<>();
         }
 
         public DownstreamManager downstreamManager() {
@@ -242,7 +282,31 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             this.materialisation = this.materialisation.link(toUpstream(fromDownstream, materialisation));
         }
 
-        private static class Rule extends ConclusionRequestState<AnswerState.Partial.Concludable.Match<?>> {
+        public boolean waiting() {
+            return waiting > 0;
+        }
+
+        public void addToQueue(Request fromUpstream, int iteration) {
+            queue.add(new Pair<>(fromUpstream, iteration));
+        }
+
+        public List<Pair<Request, Integer>> queue() {
+            return queue;
+        }
+
+        public void emptyQueue() {
+            queue.clear();
+        }
+
+        public void incrementWaiting() {
+            waiting += 1;
+        }
+
+        public void decrementWaiting() {
+            waiting -= 1;
+        }
+
+        private static class Rule extends ConclusionRequestState<Concludable.Match<?>> {
 
             private final Set<ConceptMap> deduplicationSet;
 
@@ -252,17 +316,17 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             }
 
             @Override
-            protected FunctionalIterator<AnswerState.Partial.Concludable.Match<?>> toUpstream(AnswerState.Partial<?> fromDownstream,
-                                                                                              Map<Identifier.Variable, Concept> answer) {
+            protected FunctionalIterator<Concludable.Match<?>> toUpstream(AnswerState.Partial<?> fromDownstream,
+                                                                          Map<Identifier.Variable, Concept> answer) {
                 return fromDownstream.asConclusion().asMatch().aggregateToUpstream(answer);
             }
 
             @Override
-            public Optional<AnswerState.Partial.Concludable.Match<?>> nextAnswer() {
+            public Optional<Concludable.Match<?>> nextAnswer() {
                 // TODO Clean up now that materialisations aren't an iterator
                 if (!materialisation.hasNext()) return Optional.empty();
                 while (materialisation.hasNext()) {
-                    AnswerState.Partial.Concludable.Match<?> ans = materialisation.next();
+                    Concludable.Match<?> ans = materialisation.next();
                     if (!deduplicationSet.contains(ans.conceptMap())) {
                         deduplicationSet.add(ans.conceptMap());
                         return Optional.of(ans);
@@ -273,20 +337,20 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
         }
 
-        private static class Explaining extends ConclusionRequestState<AnswerState.Partial.Concludable.Explain> {
+        private static class Explaining extends ConclusionRequestState<Concludable.Explain> {
 
             public Explaining(Request fromUpstream, int iteration) {
                 super(fromUpstream, iteration);
             }
 
             @Override
-            protected FunctionalIterator<AnswerState.Partial.Concludable.Explain> toUpstream(AnswerState.Partial<?> fromDownstream,
-                                                                                             Map<Identifier.Variable, Concept> answer) {
+            protected FunctionalIterator<Concludable.Explain> toUpstream(AnswerState.Partial<?> fromDownstream,
+                                                                         Map<Identifier.Variable, Concept> answer) {
                 return fromDownstream.asConclusion().asExplain().aggregateToUpstream(answer);
             }
 
             @Override
-            public Optional<AnswerState.Partial.Concludable.Explain> nextAnswer() {
+            public Optional<Concludable.Explain> nextAnswer() {
                 if (!materialisation.hasNext()) return Optional.empty();
                 return Optional.of(materialisation.next());
             }
