@@ -58,7 +58,6 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     protected final TraversalEngine traversalEngine;
     protected final ConceptManager conceptMgr;
     protected final boolean resolutionTracing;
-    private boolean terminated;
 
     protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
                        ConceptManager conceptMgr, boolean resolutionTracing) {
@@ -67,7 +66,6 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.resolutionTracing = resolutionTracing;
-        this.terminated = false;
         this.requestRouter = new HashMap<>();
         // Note: initialising downstream actors in constructor will create all actors ahead of time, so it is non-lazy
         // additionally, it can cause deadlock within ResolverRegistry as different threads initialise actors
@@ -92,13 +90,6 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
 
     protected abstract void receiveFail(Response.Fail fromDownstream, int iteration);
-
-    public void terminate(Throwable cause) {
-        LOG.debug("Resolver terminated. ", cause);
-        this.terminated = true;
-    }
-
-    public boolean isTerminated() { return terminated; }
 
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
 

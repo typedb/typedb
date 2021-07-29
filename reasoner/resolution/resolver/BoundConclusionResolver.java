@@ -286,10 +286,6 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             this.materialisation = this.materialisation.link(toUpstream(fromDownstream, materialisation));
         }
 
-        public boolean waiting() {
-            return waiting > 0;
-        }
-
         public void addToQueue(Request fromUpstream, int iteration) {
             queue.add(new Pair<>(fromUpstream, iteration));
         }
@@ -300,6 +296,10 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
         public void emptyQueue() {
             queue.clear();
+        }
+
+        public boolean waiting() {
+            return waiting > 0;
         }
 
         public void incrementWaiting() {

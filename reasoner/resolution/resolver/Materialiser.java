@@ -44,7 +44,6 @@ public class Materialiser extends Actor<Materialiser> {
     private final TraversalEngine traversalEngine;
     private final ConceptManager conceptMgr;
     private final boolean resolutionTracing;
-    private boolean terminated;
 
     public Materialiser(Driver<Materialiser> driver, ResolverRegistry registry, TraversalEngine traversalEngine,
                         ConceptManager conceptMgr, boolean resolutionTracing) {
@@ -53,11 +52,10 @@ public class Materialiser extends Actor<Materialiser> {
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.resolutionTracing = resolutionTracing;
-        this.terminated = false;
     }
 
     public void receiveRequest(Request request) {
-        if (terminated) return;
+        if (isTerminated()) return;
         Optional<Map<Identifier.Variable, Concept>> materialisation = request.conclusion()
                 .materialise(request.partialAnswer().conceptMap(), traversalEngine, conceptMgr);
         if (resolutionTracing) {
@@ -84,11 +82,6 @@ public class Materialiser extends Actor<Materialiser> {
         }
         LOG.error("Actor exception", e);
         registry.terminate(e);
-    }
-
-    public void terminate(Throwable cause) {
-        LOG.debug("Materialiser terminated. ", cause);
-        this.terminated = true;
     }
 
     public static class Request {
