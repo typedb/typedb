@@ -110,7 +110,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         constraints().forEach(constraint -> constraint.addTo(traversal));
     }
 
-    void constrain(ThingConstraint constraint) {
+    private void constrain(ThingConstraint constraint) {
         constraints.add(constraint);
         if (constraint.isIID()) {
             if (iidConstraint != null && !iidConstraint.equals(constraint)) {
