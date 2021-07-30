@@ -108,10 +108,6 @@ public class ResolverRegistry {
                 driver, this,  traversalEngine, conceptMgr, resolutionTracing), executorService);
     }
 
-    public Set<Actor.Driver<BoundConcludableResolver>> boundConcludables(Actor.Driver<? extends Resolver<?>> root, int iteration) {
-        return boundConcludables.computeIfAbsent(new Pair<>(root, iteration), p -> new HashSet<>());
-    }
-
     public void terminate(Throwable cause) {
         if (terminated.compareAndSet(false, true)) {
             resolvers.forEach(actor -> actor.execute(r -> r.terminate(cause)));
@@ -185,6 +181,18 @@ public class ResolverRegistry {
 
     }
 
+    public Actor.Driver<BoundConclusionResolver> registerBoundConclusion(
+            Rule.Conclusion conclusion, ConceptMap bounds, Actor.Driver<ConditionResolver> conditionResolver) {
+        LOG.debug("Register BoundConclusionResolver, pattern: {} bounds: {}", conclusion.conjunction(), bounds);
+        Actor.Driver<BoundConclusionResolver> resolver;
+        resolver = Actor.driver(driver -> new BoundConclusionResolver(
+                driver, conclusion, bounds, conditionResolver, materialiser, this, traversalEngine, conceptMgr,
+                resolutionTracing), executorService);
+        resolvers.add(resolver);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return resolver;
+    }
+
     public ResolverView registerResolvable(Resolvable<?> resolvable) {
         if (resolvable.isRetrievable()) {
             return registerRetrievable(resolvable.asRetrievable());
@@ -213,6 +221,26 @@ public class ResolverRegistry {
         return resolver;
     }
 
+    // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
+    private synchronized ResolverView.MappedConcludable registerConcludable(Concludable concludable) {
+        LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
+        for (Map.Entry<Concludable, Actor.Driver<ConcludableResolver>> c : concludableResolvers.entrySet()) {
+            // TODO: This needs to be optimised from a linear search to use an alpha hash
+            AlphaEquivalence alphaEquality = concludable.alphaEquals(c.getKey());
+            if (alphaEquality.isValid()) {
+                return ResolverView.concludable(c.getValue(), alphaEquality.asValid().idMapping());
+            }
+        }
+        Actor.Driver<ConcludableResolver> resolver = Actor.driver(driver -> new ConcludableResolver(
+                driver, concludable, this, traversalEngine,
+                conceptMgr, logicMgr, resolutionTracing
+        ), executorService);
+        concludableResolvers.put(concludable, resolver);
+        resolvers.add(resolver);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return ResolverView.concludable(resolver, identity(concludable));
+    }
+
     public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(
             Concludable concludable, ConceptMap bounds, Map<Actor.Driver<ConclusionResolver>, Rule> resolverRules,
             LinkedHashMap<Actor.Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers,
@@ -234,36 +262,8 @@ public class ResolverRegistry {
         return resolver;
     }
 
-    public Actor.Driver<BoundConclusionResolver> registerBoundConclusion(
-            Rule.Conclusion conclusion, ConceptMap bounds, Actor.Driver<ConditionResolver> conditionResolver) {
-        LOG.debug("Register BoundConclusionResolver, pattern: {} bounds: {}", conclusion.conjunction(), bounds);
-        Actor.Driver<BoundConclusionResolver> resolver;
-        resolver = Actor.driver(driver -> new BoundConclusionResolver(
-                driver, conclusion, bounds, conditionResolver, materialiser, this, traversalEngine, conceptMgr,
-                resolutionTracing), executorService);
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
-        return resolver;
-    }
-    // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
-
-    private synchronized ResolverView.MappedConcludable registerConcludable(Concludable concludable) {
-        LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
-        for (Map.Entry<Concludable, Actor.Driver<ConcludableResolver>> c : concludableResolvers.entrySet()) {
-            // TODO: This needs to be optimised from a linear search to use an alpha hash
-            AlphaEquivalence alphaEquality = concludable.alphaEquals(c.getKey());
-            if (alphaEquality.isValid()) {
-                return ResolverView.concludable(c.getValue(), alphaEquality.asValid().idMapping());
-            }
-        }
-        Actor.Driver<ConcludableResolver> resolver = Actor.driver(driver -> new ConcludableResolver(
-                driver, concludable, this, traversalEngine,
-                conceptMgr, logicMgr, resolutionTracing
-        ), executorService);
-        concludableResolvers.put(concludable, resolver);
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
-        return ResolverView.concludable(resolver, identity(concludable));
+    public Set<Actor.Driver<BoundConcludableResolver>> boundConcludables(Actor.Driver<? extends Resolver<?>> root, int iteration) {
+        return boundConcludables.computeIfAbsent(new Pair<>(root, iteration), p -> new HashSet<>());
     }
 
     public Actor.Driver<ConjunctionResolver.Nested> nested(Conjunction conjunction) {
