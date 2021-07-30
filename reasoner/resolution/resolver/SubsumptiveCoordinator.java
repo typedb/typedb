@@ -80,7 +80,7 @@ public abstract class SubsumptiveCoordinator<
             Driver<WORKER> worker = getOrReplaceWorker(root, fromUpstream.partialAnswer());
             // TODO: Re-enable subsumption when async bug is fixed
             // Optional<ConceptMap> subsumer = subsumptionTrackers.computeIfAbsent(
-            //         root, r -> new SubsumptionTracker()).getSubsumer(bounds);
+            //         root, r -> new SubsumptionTracker()).getFinishedSubsumer(bounds);
             // // If there is a finished subsumer, let the Worker know that it can go there for answers
             // Request request = subsumer
             //         .map(conceptMap -> Request.ToSubsumed.create(
@@ -109,9 +109,9 @@ public abstract class SubsumptiveCoordinator<
             // short circuit old iteration failed messages to upstream
             failToUpstream(answer.sourceRequest(), iteration);
         } else {
-            answerToUpstream(answer.answer(),
-                             requestMapByRoot.get(answer.answer().root()).get(answer.sourceRequest()),
-                             iteration);
+            answerToUpstream(
+                    answer.answer(), requestMapByRoot.get(answer.answer().root()).get(answer.sourceRequest()),
+                    iteration);
         }
     }
 
@@ -146,7 +146,7 @@ public abstract class SubsumptiveCoordinator<
             this.finishedStates.add(conceptMap);
         }
 
-        public Optional<ConceptMap> getSubsumer(ConceptMap unfinished) {
+        public Optional<ConceptMap> getFinishedSubsumer(ConceptMap unfinished) {
             if (finishedMapping.containsKey(unfinished)) return Optional.of(finishedMapping.get(unfinished));
             else {
                 Optional<ConceptMap> finishedSubsumer = findFinishedSubsumer(
