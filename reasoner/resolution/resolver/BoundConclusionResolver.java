@@ -40,10 +40,10 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -134,7 +134,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             Materialiser.Request request = Materialiser.Request.create(driver(), materialiser, conclusion,
                                                                        fromDownstream.answer());
             requestFromMaterialiser(request, fromUpstream, iteration);
-            requestState.materialisationState().incrementCount();
+            requestState.materialisationState().incrementWaited();
         } else {
             sendAnswerOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
         }
@@ -158,11 +158,10 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         materialisation.ifPresent(m -> requestState.newMaterialisation(response.partialAnswer(), m));
         sendAnswerOrSearchDownstreamOrFail(fromUpstream.first(), requestState, fromUpstream.second());
         ConclusionRequestState.MaterialisationState state = requestState.materialisationState();
-        state.decrementCount();
-        if (!state.waiting()) {
-            state.waitingRequests().forEach(r -> sendAnswerOrSearchDownstreamOrFail(r.first(), requestState, r.second()));
-            state.clear();
-        }
+        state.decrementWaited();
+        state.nextWaitingRequest().ifPresent(w -> {
+            sendAnswerOrSearchDownstreamOrFail(w.first(), requestState, w.second());
+        });
     }
 
     protected Pair<Request, Integer> fromUpstream(Materialiser.Request toDownstream) {
@@ -292,35 +291,35 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
         private static class MaterialisationState {
             private int waitedMaterialisations;
-            private final List<Pair<Request, Integer>> waitingRequests; // TODO: Will always be the same request, so can just hold an int instead
+            private final Deque<Pair<Request, Integer>> waitingRequests; // TODO: Will always be the same request, so can just hold an int instead
 
             private MaterialisationState() {
                 this.waitedMaterialisations = 0;
-                this.waitingRequests = new ArrayList<>();
+                this.waitingRequests = new ArrayDeque<>();
             }
 
             public void addToQueue(Request fromUpstream, int iteration) {
                 waitingRequests.add(new Pair<>(fromUpstream, iteration));
             }
 
-            public List<Pair<Request, Integer>> waitingRequests() {
-                return waitingRequests;
-            }
-
-            public void clear() {
-                waitingRequests.clear();
+            public Optional<Pair<Request, Integer>> nextWaitingRequest() {
+                if (waitingRequests.size() > 0) {
+                    return Optional.of(waitingRequests.pop());
+                } else {
+                    return Optional.empty();
+                }
             }
 
             public boolean waiting() {
                 return waitedMaterialisations > 0;
             }
 
-            public void incrementCount() {
-                waitedMaterialisations += 1;
+            public void decrementWaited() {
+                waitedMaterialisations -= 1;
             }
 
-            public void decrementCount() {
-                waitedMaterialisations -= 1;
+            public void incrementWaited() {
+                waitedMaterialisations += 1;
             }
         }
 
