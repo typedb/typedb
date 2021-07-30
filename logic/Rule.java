@@ -530,7 +530,7 @@ public class Rule {
                     assert rp.roleType().isPresent() && rp.roleType().get().label().isPresent()
                             && whenConcepts.contains(playerId);
                     traversal.player(playerId, whenConcepts.get(playerId).asThing().getIID(),
-                                     set(getRole(rp, relationType, whenConcepts).getLabel())); // TODO include inheritance
+                                     set(roleType(rp, relationType, whenConcepts).getLabel())); // TODO include inheritance
                 });
                 return traversalEng.relations(traversal).map(conceptMgr::conceptMap)
                         .map(conceptMap -> conceptMap.get(relationId).asRelation());
@@ -547,7 +547,7 @@ public class Rule {
                 }
             }
 
-            private RoleType getRole(RelationConstraint.RolePlayer rp, RelationType scope, ConceptMap whenConcepts) {
+            private RoleType roleType(RelationConstraint.RolePlayer rp, RelationType scope, ConceptMap whenConcepts) {
                 if (rp.roleType().get().reference().isName()) {
                     return whenConcepts.get(rp.roleType().get().reference().asName()).asRoleType();
                 } else {
@@ -562,7 +562,7 @@ public class Rule {
                 com.vaticle.typedb.core.concept.thing.Relation relation = relationType.create(true);
                 thenConcepts.put(isa().owner().id(), relation);
                 relation().players().forEach(rp -> {
-                    RoleType role = getRole(rp, relationType, whenConcepts);
+                    RoleType role = roleType(rp, relationType, whenConcepts);
                     Thing player = whenConcepts.get(rp.player().id()).asThing();
                     relation.addPlayer(role, player, true);
                     thenConcepts.putIfAbsent(rp.roleType().get().id(), role);
@@ -578,7 +578,7 @@ public class Rule {
                 thenConcepts.put(isa().type().id(), relationType);
                 thenConcepts.put(isa().owner().id(), relation);
                 relation().players().forEach(rp -> {
-                    RoleType role = getRole(rp, relationType, whenConcepts);
+                    RoleType role = roleType(rp, relationType, whenConcepts);
                     Thing player = whenConcepts.get(rp.player().id()).asThing();
                     thenConcepts.putIfAbsent(rp.roleType().get().id(), role);
                     thenConcepts.putIfAbsent(rp.player().id(), player);
