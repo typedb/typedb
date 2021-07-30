@@ -52,7 +52,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     private static final Logger LOG = LoggerFactory.getLogger(BoundConcludableResolver.class);
     private final Map<Driver<ConclusionResolver>, Rule> resolverRules;
-    private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> applicableRules;
+    private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers;
     private final Map<Request, CachingRequestState<?, ConceptMap>> requestStates;
     protected final Concludable concludable;
     protected final ConceptMap bounds;
@@ -61,7 +61,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     public BoundConcludableResolver(Driver<BoundConcludableResolver> driver, Concludable concludable, ConceptMap bounds,
                                     Map<Driver<ConclusionResolver>, Rule> resolverRules,
-                                    LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> applicableRules,
+                                    LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers,
                                     ResolverRegistry registry, TraversalEngine traversalEngine,
                                     ConceptManager conceptMgr, boolean resolutionTracing) {
         super(driver, BoundConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() +
@@ -69,15 +69,10 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         this.concludable = concludable;
         this.bounds = bounds;
         this.resolverRules = resolverRules;
-        this.applicableRules = applicableRules;
+        this.conclusionResolvers = conclusionResolvers;
         this.cache = createCache(concludable.pattern(), bounds);
         this.requestStates = new HashMap<>();
         this.exploringRequestState = null;
-    }
-
-    private static String initName(Concludable concludable, ConceptMap bounds) {
-        return BoundConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + " bounds: " +
-                bounds.toString() + ")";
     }
 
     abstract AnswerCache<?, ConceptMap> createCache(Conjunction conjunction, ConceptMap bounds);
@@ -227,7 +222,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         // if we have, we do not allow rules to be registered as possible downstreams
         List<Request> downstreams = new ArrayList<>();
         AnswerState.Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
-        for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry : applicableRules.entrySet()) {
+        for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry : conclusionResolvers.entrySet()) {
             Driver<ConclusionResolver> conclusionResolver = entry.getKey();
             for (Unifier unifier : entry.getValue()) {
                 Optional<? extends AnswerState.Partial.Conclusion<?, ?>> unified = partialAnswer.toDownstream(

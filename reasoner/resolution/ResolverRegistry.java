@@ -80,7 +80,7 @@ public class ResolverRegistry {
 
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
-    private final Map<Pair<Actor.Driver<? extends Resolver<?>>, Integer>, Set<Actor.Driver<BoundConcludableResolver>>> reiterationQueryRespondents;
+    private final Map<Pair<Actor.Driver<? extends Resolver<?>>, Integer>, Set<Actor.Driver<BoundConcludableResolver>>> boundConcludables;
     private final Map<Concludable, Actor.Driver<ConcludableResolver>> concludableResolvers;
     private final ConcurrentMap<Rule, Actor.Driver<ConditionResolver>> ruleConditions;
     private final ConcurrentMap<Rule, Actor.Driver<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
@@ -98,7 +98,7 @@ public class ResolverRegistry {
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
         this.concludableResolvers = new HashMap<>();
-        this.reiterationQueryRespondents = new HashMap<>();
+        this.boundConcludables = new HashMap<>();
         this.ruleConditions = new ConcurrentHashMap<>();
         this.ruleConclusions = new ConcurrentHashMap<>();
         this.resolvers = new ConcurrentSet<>();
@@ -108,8 +108,8 @@ public class ResolverRegistry {
                 driver, this,  traversalEngine, conceptMgr, resolutionTracing), executorService);
     }
 
-    public Set<Actor.Driver<BoundConcludableResolver>> reiterationQueryRespondents(Actor.Driver<? extends Resolver<?>> root, int iteration) {
-        return reiterationQueryRespondents.computeIfAbsent(new Pair<>(root, iteration), p -> new HashSet<>());
+    public Set<Actor.Driver<BoundConcludableResolver>> boundConcludables(Actor.Driver<? extends Resolver<?>> root, int iteration) {
+        return boundConcludables.computeIfAbsent(new Pair<>(root, iteration), p -> new HashSet<>());
     }
 
     public void terminate(Throwable cause) {
@@ -215,21 +215,21 @@ public class ResolverRegistry {
 
     public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(
             Concludable concludable, ConceptMap bounds, Map<Actor.Driver<ConclusionResolver>, Rule> resolverRules,
-            LinkedHashMap<Actor.Driver<ConclusionResolver>, Set<Unifier>> applicableRules,
+            LinkedHashMap<Actor.Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers,
             Actor.Driver<? extends Resolver<?>> root, int iteration, boolean explain) {
         LOG.debug("Register BoundConcludableResolver, pattern: {} bounds: {}", concludable.pattern(), bounds);
         Actor.Driver<BoundConcludableResolver> resolver;
         if (explain) {
             resolver = Actor.driver(driver -> new ExplainBoundConcludableResolver(
-                    driver, concludable, bounds, resolverRules, applicableRules, this, traversalEngine, conceptMgr,
+                    driver, concludable, bounds, resolverRules, conclusionResolvers, this, traversalEngine, conceptMgr,
                     resolutionTracing), executorService);
         } else {
             resolver = Actor.driver(driver -> new MatchBoundConcludableResolver(
-                    driver, concludable, bounds, resolverRules, applicableRules, this, traversalEngine, conceptMgr,
+                    driver, concludable, bounds, resolverRules, conclusionResolvers, this, traversalEngine, conceptMgr,
                     resolutionTracing), executorService);
         }
         resolvers.add(resolver);
-        reiterationQueryRespondents.computeIfAbsent(new Pair<>(root, iteration), r -> new HashSet<>()).add(resolver);
+        boundConcludables.computeIfAbsent(new Pair<>(root, iteration), r -> new HashSet<>()).add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
     }

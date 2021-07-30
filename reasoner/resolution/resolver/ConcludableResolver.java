@@ -41,7 +41,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
 
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
-    private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> applicableRules;
+    private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers;
     private final Map<Driver<ConclusionResolver>, Rule> resolverRules;
     private final Concludable concludable;
     private final LogicManager logicMgr;
@@ -53,7 +53,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
               registry, traversalEngine, conceptMgr, resolutionTracing);
         this.logicMgr = logicMgr;
         this.concludable = concludable;
-        this.applicableRules = new LinkedHashMap<>();
+        this.conclusionResolvers = new LinkedHashMap<>();
         this.resolverRules = new HashMap<>();
         this.isInitialised = false;
     }
@@ -63,8 +63,9 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
         return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundConcludableResolver for bounds: {}", name(), partial);
             // TODO: We could use the bounds to prune the applicable rules further
-            return registry.registerBoundConcludable(concludable, partial.conceptMap(), resolverRules, applicableRules, root,
-                                                     iterationByRoot.get(root), partial.asConcludable().isExplain());
+            return registry.registerBoundConcludable(
+                    concludable, partial.conceptMap(), resolverRules, conclusionResolvers, root,
+                    iterationByRoot.get(root), partial.asConcludable().isExplain());
         });
     }
 
@@ -76,8 +77,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
                     if (isTerminated()) return;
                     try {
                         Driver<ConclusionResolver> conclusionResolver = registry.registerConclusion(rule.conclusion());
-                        applicableRules.putIfAbsent(conclusionResolver, new HashSet<>());
-                        applicableRules.get(conclusionResolver).add(unifier);
+                        conclusionResolvers.computeIfAbsent(conclusionResolver, r -> new HashSet<>()).add(unifier);
                         resolverRules.put(conclusionResolver, rule);
                     } catch (TypeDBException e) {
                         terminate(e);

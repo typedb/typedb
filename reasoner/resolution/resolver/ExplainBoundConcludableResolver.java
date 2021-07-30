@@ -49,10 +49,10 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
 
     public ExplainBoundConcludableResolver(Driver<BoundConcludableResolver> driver, Concludable concludable,
                                            ConceptMap bounds, Map<Driver<ConclusionResolver>, Rule> resolverRules,
-                                           LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> applicableRules,
+                                           LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers,
                                            ResolverRegistry registry, TraversalEngine traversalEngine,
                                            ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(driver, concludable, bounds, resolverRules, applicableRules, registry, traversalEngine, conceptMgr,
+        super(driver, concludable, bounds, resolverRules, conclusionResolvers, registry, traversalEngine, conceptMgr,
               resolutionTracing);
     }
 
