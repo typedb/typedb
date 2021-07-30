@@ -30,8 +30,6 @@ import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.pattern.constraint.thing.IIDConstraint;
-import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConcludable;
@@ -78,15 +76,6 @@ public class Materialiser {
                 reiterateRules = reiterateRules || rule.materialise();
             }
         }
-    }
-
-    private FunctionalIterator<ConceptMap> traverse(Conjunction conjunction, ConceptMap bounds) {
-        Conjunction boundConjunction = conjunction.clone();
-        bounds.concepts().forEach((id, concept) -> {
-            Variable var = boundConjunction.variable(id);
-            var.asThing().constrain(new IIDConstraint(var.asThing(), concept.asThing().getIID()));
-        });
-        return traverse(boundConjunction);
     }
 
     private FunctionalIterator<ConceptMap> traverse(Conjunction conjunction) {
@@ -138,13 +127,9 @@ public class Materialiser {
         private boolean materialise() {
             // Get all the places where the rule condition is satisfied and materialise for each
             requiresReiteration = false;
-            traverse(rule.when()).forEachRemaining(conditionAns -> {
-                rule.conclusion().materialise(conditionAns, tx.traversal(), tx.concepts());
-                traverse(rule.conclusion().conjunction(), conditionAns.filter(rule.conclusion().retrievableIds()))
-                        .map(conclusionAns -> new ConceptMap(filterRetrievable(conclusionAns)))
-                        .filter(thenConcludable::isInferredAnswer)
-                        .forEachRemaining(ans -> record(conditionAns, ans));
-            });
+            traverse(rule.when()).forEachRemaining(conditionAns -> rule.conclusion().materialise(
+                    conditionAns, tx.traversal(), tx.concepts()
+            ).ifPresent(materialisation -> record(conditionAns, new ConceptMap(filterRetrievable(materialisation)))));
             return requiresReiteration;
         }
 
@@ -162,9 +147,9 @@ public class Materialiser {
             }
         }
 
-        private Map<Identifier.Variable.Retrievable, Concept> filterRetrievable(ConceptMap conceptMap) {
+        private Map<Identifier.Variable.Retrievable, Concept> filterRetrievable(Map<Identifier.Variable, Concept> concepts) {
             Map<Identifier.Variable.Retrievable, Concept> newMap = new HashMap<>();
-            conceptMap.concepts().forEach((var, concept) -> {
+            concepts.forEach((var, concept) -> {
                 if (var.isRetrievable()) newMap.put(var.asRetrievable(), concept);
             });
             return newMap;
