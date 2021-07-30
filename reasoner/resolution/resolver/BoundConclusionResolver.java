@@ -212,9 +212,9 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
         ConclusionRequestState<?> requestState;
         if (fromUpstream.partialAnswer().asConclusion().isExplain()) {
-            requestState = new ConclusionRequestState.Explaining(fromUpstream, iteration);
+            requestState = new ConclusionRequestState.Explain(fromUpstream, iteration);
         } else if (fromUpstream.partialAnswer().asConclusion().isMatch()) {
-            requestState = new ConclusionRequestState.Rule(fromUpstream, iteration);
+            requestState = new ConclusionRequestState.Match(fromUpstream, iteration);
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
@@ -323,11 +323,11 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             }
         }
 
-        private static class Rule extends ConclusionRequestState<Concludable.Match<?>> {
+        private static class Match extends ConclusionRequestState<Concludable.Match<?>> {
 
             private final Set<ConceptMap> deduplicationSet;
 
-            public Rule(Request fromUpstream, int iteration) {
+            private Match(Request fromUpstream, int iteration) {
                 super(fromUpstream, iteration);
                 this.deduplicationSet = new HashSet<>();
             }
@@ -352,9 +352,9 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             }
         }
 
-        private static class Explaining extends ConclusionRequestState<Concludable.Explain> {
+        private static class Explain extends ConclusionRequestState<Concludable.Explain> {
 
-            public Explaining(Request fromUpstream, int iteration) {
+            private Explain(Request fromUpstream, int iteration) {
                 super(fromUpstream, iteration);
             }
 
