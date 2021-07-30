@@ -61,8 +61,7 @@ public class ConclusionResolver extends Coordinator<ConclusionResolver, BoundCon
     Driver<BoundConclusionResolver> getOrReplaceWorker(Driver<? extends Resolver<?>> root, Partial<?> partial) {
         return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundConclusionResolver for bounds: {}", name(), partial);
-            return registry.registerBoundConclusion(conclusion, partial.conceptMap(), conditionResolver,
-                                                    partial.asConclusion().isExplain());
+            return registry.registerBoundConclusion(conclusion, partial.conceptMap(), conditionResolver);
         });
     }
 

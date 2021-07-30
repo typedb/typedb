@@ -235,21 +235,12 @@ public class ResolverRegistry {
     }
 
     public Actor.Driver<BoundConclusionResolver> registerBoundConclusion(
-            Rule.Conclusion conclusion, ConceptMap bounds, Actor.Driver<ConditionResolver> conditionResolver,
-            boolean explain) {
+            Rule.Conclusion conclusion, ConceptMap bounds, Actor.Driver<ConditionResolver> conditionResolver) {
         LOG.debug("Register BoundConclusionResolver, pattern: {} bounds: {}", conclusion.conjunction(), bounds);
         Actor.Driver<BoundConclusionResolver> resolver;
-        if (explain) {
-            // TODO: Use explain resolver
-            resolver = Actor.driver(driver -> new BoundConclusionResolver(
-                    driver, conclusion, bounds, conditionResolver, materialiser, this, traversalEngine, conceptMgr,
-                    resolutionTracing), executorService);
-        } else {
-            // TODO: Use match resolver
-            resolver = Actor.driver(driver -> new BoundConclusionResolver(
-                    driver, conclusion, bounds, conditionResolver, materialiser, this, traversalEngine, conceptMgr,
-                    resolutionTracing), executorService);
-        }
+        resolver = Actor.driver(driver -> new BoundConclusionResolver(
+                driver, conclusion, bounds, conditionResolver, materialiser, this, traversalEngine, conceptMgr,
+                resolutionTracing), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
