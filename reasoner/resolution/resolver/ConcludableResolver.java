@@ -37,7 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class ConcludableResolver extends Coordinator<ConcludableResolver, BoundConcludableResolver> {
+public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResolver, BoundConcludableResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 

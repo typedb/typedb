@@ -31,7 +31,7 @@ import java.util.HashMap;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class ConclusionResolver extends Coordinator<ConclusionResolver, BoundConclusionResolver> {
+public class ConclusionResolver extends SubsumptiveCoordinator<ConclusionResolver, BoundConclusionResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConclusionResolver.class);
 

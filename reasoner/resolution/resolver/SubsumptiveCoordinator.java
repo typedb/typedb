@@ -17,6 +17,7 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
+import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
@@ -27,17 +28,21 @@ import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
-public abstract class Coordinator<
-        RESOLVER extends Coordinator<RESOLVER, WORKER>,
+public abstract class SubsumptiveCoordinator<
+        RESOLVER extends SubsumptiveCoordinator<RESOLVER, WORKER>,
         WORKER extends Resolver<WORKER>> extends Resolver<RESOLVER> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Coordinator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SubsumptiveCoordinator.class);
     private final Map<Driver<? extends Resolver<?>>, SubsumptionTracker> subsumptionTrackers;
     private final Map<Driver<? extends Resolver<?>>, Map<Request, Request>> requestMapByRoot;
     protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, Driver<WORKER>>> workersByRoot; // TODO: We would like these not to be by root. They need to be, for now, for reiteration purposes.
@@ -45,8 +50,8 @@ public abstract class Coordinator<
     protected final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
     protected boolean isInitialised;
 
-    public Coordinator(Driver<RESOLVER> driver, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
-                       ConceptManager conceptMgr, boolean resolutionTracing) {
+    public SubsumptiveCoordinator(Driver<RESOLVER> driver, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
+                                  ConceptManager conceptMgr, boolean resolutionTracing) {
         super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing);
         this.isInitialised = false;
         this.workersByRoot = new HashMap<>();
@@ -125,4 +130,63 @@ public abstract class Coordinator<
         }
     }
 
+    static class SubsumptionTracker {
+
+        private final Map<ConceptMap, Set<ConceptMap>> subsumersMap;
+        private final Set<ConceptMap> finishedStates;
+        private final Map<ConceptMap, ConceptMap> finishedMapping;
+
+        public SubsumptionTracker() {
+            this.finishedStates = new HashSet<>();
+            this.subsumersMap = new HashMap<>();
+            this.finishedMapping = new HashMap<>();
+        }
+
+        public void addFinished(ConceptMap conceptMap) {
+            this.finishedStates.add(conceptMap);
+        }
+
+        public Optional<ConceptMap> getSubsumer(ConceptMap unfinished) {
+            if (finishedMapping.containsKey(unfinished)) return Optional.of(finishedMapping.get(unfinished));
+            else {
+                Optional<ConceptMap> finishedSubsumer = findFinishedSubsumer(
+                        subsumersMap.computeIfAbsent(unfinished, this::subsumingConceptMaps));
+                finishedSubsumer.ifPresent(finished -> finishedMapping.put(unfinished, finished));
+                return finishedSubsumer;
+            }
+        }
+
+        protected Optional<ConceptMap> findFinishedSubsumer(Set<ConceptMap> subsumers) {
+            for (ConceptMap subsumer : subsumers) {
+                // Gets the first complete cache we find. Getting the smallest could be more efficient.
+                if (finishedStates.contains(subsumer)) return Optional.of(subsumer);
+            }
+            return Optional.empty();
+        }
+
+        private Set<ConceptMap> subsumingConceptMaps(ConceptMap fromUpstream) {
+            Set<ConceptMap> subsumers = new HashSet<>();
+            Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>(fromUpstream.concepts());
+            powerSet(concepts.entrySet()).forEach(c -> subsumers.add(toConceptMap(c)));
+            subsumers.remove(fromUpstream);
+            return subsumers;
+        }
+
+        private <T> Set<Set<T>> powerSet(Set<T> set) {
+            Set<Set<T>> powerSet = new HashSet<>();
+            powerSet.add(set);
+            set.forEach(el -> {
+                Set<T> s = new HashSet<>(set);
+                s.remove(el);
+                powerSet.addAll(powerSet(s));
+            });
+            return powerSet;
+        }
+
+        private ConceptMap toConceptMap(Set<Map.Entry<Identifier.Variable.Retrievable, Concept>> conceptsEntrySet) {
+            HashMap<Identifier.Variable.Retrievable, Concept> map = new HashMap<>();
+            conceptsEntrySet.forEach(entry -> map.put(entry.getKey(), entry.getValue()));
+            return new ConceptMap(map);
+        }
+    }
 }

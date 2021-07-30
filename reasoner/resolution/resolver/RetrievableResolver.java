@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 
-public class RetrievableResolver extends Coordinator<RetrievableResolver, BoundRetrievableResolver> {
+public class RetrievableResolver extends SubsumptiveCoordinator<RetrievableResolver, BoundRetrievableResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
 
