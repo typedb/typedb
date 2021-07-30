@@ -204,11 +204,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     }
 
     public void receiveReiterationQuery(ReiterationQuery.Request request) {
-        driver().execute(actor -> actor.respondToReiterationQuery(request, cache.requiresReiteration()));
-    }
-
-    private void respondToReiterationQuery(ReiterationQuery.Request request, boolean reiterate) {
-        request.onResponse().accept(ReiterationQuery.Response.create(driver(), reiterate));
+        driver().execute(actor -> request.onResponse().accept(ReiterationQuery.Response.create(
+                actor.driver(), cache.requiresReiteration())));
     }
 
     @Override
