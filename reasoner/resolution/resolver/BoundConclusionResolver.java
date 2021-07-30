@@ -41,9 +41,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -212,31 +214,33 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
         ConclusionRequestState<?> requestState;
         if (fromUpstream.partialAnswer().asConclusion().isExplain()) {
-            requestState = new ConclusionRequestState.Explain(fromUpstream, iteration);
+            requestState = new ConclusionRequestState.Explain(fromUpstream, iteration, conditionDownstreams(fromUpstream));
         } else if (fromUpstream.partialAnswer().asConclusion().isMatch()) {
-            requestState = new ConclusionRequestState.Match(fromUpstream, iteration);
+            requestState = new ConclusionRequestState.Match(fromUpstream, iteration, conditionDownstreams(fromUpstream));
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
-        assert fromUpstream.partialAnswer().isConclusion();
-        AnswerState.Partial.Conclusion<?, ?> partialAnswer = fromUpstream.partialAnswer().asConclusion();
+        return requestState;
+    }
+
+    private List<Request> conditionDownstreams(Request fromUpstream) {
+        // TODO: Can there be more than one downstream Condition? If not reduce this return type from List to single
         // we do a extra traversal to expand the partial answer if we already have the concept that is meant to be generated
         // and if there's extra variables to be populated
-        if (!requestState.isComplete()) {
-            assert conclusion.retrievableIds().containsAll(partialAnswer.conceptMap().concepts().keySet());
-            if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.conceptMap().concepts().size() &&
-                    partialAnswer.conceptMap().concepts().containsKey(conclusion.generating().get().id())) {
-                FunctionalIterator<AnswerState.Partial.Compound<?, ?>> completedDownstreamAnswers = candidateAnswers(partialAnswer);
-                completedDownstreamAnswers.forEachRemaining(answer -> requestState.downstreamManager()
-                        .addDownstream(Request.create(driver(), conditionResolver, answer)));
-            } else {
-                Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-                AnswerState.Partial.Compound<?, ?> downstreamAnswer = partialAnswer.toDownstream(named);
-                requestState.downstreamManager().addDownstream(Request.create(driver(), conditionResolver, downstreamAnswer));
-            }
+        AnswerState.Partial.Conclusion<?, ?> partialAnswer = fromUpstream.partialAnswer().asConclusion();
+        assert fromUpstream.partialAnswer().isConclusion();
+        assert conclusion.retrievableIds().containsAll(partialAnswer.conceptMap().concepts().keySet());
+
+        List<Request> downstreams = new ArrayList<>();
+        if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.conceptMap().concepts().size() &&
+                partialAnswer.conceptMap().concepts().containsKey(conclusion.generating().get().id())) {
+            candidateAnswers(partialAnswer).forEachRemaining(answer -> downstreams.add(Request.create(driver(), conditionResolver, answer)));
+        } else {
+            Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
+            downstreams.add(Request.create(driver(), conditionResolver, partialAnswer.toDownstream(named)));
         }
-        return requestState;
+        return downstreams;
     }
 
     private FunctionalIterator<AnswerState.Partial.Compound<?, ?>> candidateAnswers(AnswerState.Partial.Conclusion<?, ?> partialAnswer) {
@@ -249,14 +253,14 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     private static abstract class ConclusionRequestState<CONCLUDABLE extends Concludable<?>> extends RequestState {
 
         private final DownstreamManager downstreamManager;
-        protected FunctionalIterator<CONCLUDABLE> materialisations;
-        private boolean complete;
         private final WaitedMaterialisations waitedMaterialisations;
+        private boolean complete;
+        protected FunctionalIterator<CONCLUDABLE> materialisations;
 
 
-        protected ConclusionRequestState(Request fromUpstream, int iteration) {
+        protected ConclusionRequestState(Request fromUpstream, int iteration, List<Request> conditionDownstreams) {
             super(fromUpstream, iteration);
-            this.downstreamManager = new DownstreamManager();
+            this.downstreamManager = new DownstreamManager(conditionDownstreams);
             this.materialisations = Iterators.empty();
             this.complete = false;
             this.waitedMaterialisations = new WaitedMaterialisations();
@@ -327,8 +331,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
             private final Set<ConceptMap> deduplicationSet;
 
-            private Match(Request fromUpstream, int iteration) {
-                super(fromUpstream, iteration);
+            private Match(Request fromUpstream, int iteration, List<Request> conditionDownstreams) {
+                super(fromUpstream, iteration, conditionDownstreams);
                 this.deduplicationSet = new HashSet<>();
             }
 
@@ -354,8 +358,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
         private static class Explain extends ConclusionRequestState<Concludable.Explain> {
 
-            private Explain(Request fromUpstream, int iteration) {
-                super(fromUpstream, iteration);
+            private Explain(Request fromUpstream, int iteration, List<Request> conditionDownstreams) {
+                super(fromUpstream, iteration, conditionDownstreams);
             }
 
             @Override
