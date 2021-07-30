@@ -40,6 +40,7 @@ import java.util.Optional;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver> {
+
     private final ConceptMapCache cache;
     private final Map<Request, RequestState> requestStates;
     private ConceptMap bounds;
