@@ -109,7 +109,6 @@ public class Materialiser {
 
     private class Rule {
         private final com.vaticle.typedb.core.logic.Rule rule;
-        private final Concludable thenConcludable;
         private final Map<ConceptMap, Materialisation> conditionAnsMaterialisations;
         private boolean requiresReiteration;
 
@@ -121,7 +120,6 @@ public class Materialiser {
             Set<Concludable> concludables = Concludable.create(this.rule.then());
             assert concludables.size() == 1;
             // Use a concludable for the conclusion for the convenience of its isInferredAnswer method
-            this.thenConcludable = iterate(concludables).next();
         }
 
         private boolean materialise() {
