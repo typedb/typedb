@@ -249,7 +249,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     private static abstract class ConclusionRequestState<CONCLUDABLE extends Concludable<?>> extends RequestState {
 
         private final DownstreamManager downstreamManager;
-        protected FunctionalIterator<CONCLUDABLE> materialisation;
+        protected FunctionalIterator<CONCLUDABLE> materialisations;
         private boolean complete;
         private final WaitedMaterialisations waitedMaterialisations;
 
@@ -257,7 +257,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         protected ConclusionRequestState(Request fromUpstream, int iteration) {
             super(fromUpstream, iteration);
             this.downstreamManager = new DownstreamManager();
-            this.materialisation = Iterators.empty();
+            this.materialisations = Iterators.empty();
             this.complete = false;
             this.waitedMaterialisations = new WaitedMaterialisations();
         }
@@ -282,7 +282,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
         public void newMaterialisation(AnswerState.Partial<?> fromDownstream,
                                        Map<Identifier.Variable, Concept> materialisation) {
-            this.materialisation = this.materialisation.link(toUpstream(fromDownstream, materialisation));
+            this.materialisations = this.materialisations.link(toUpstream(fromDownstream, materialisation));
         }
 
         private WaitedMaterialisations waitedMaterialisations() {
@@ -340,10 +340,9 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
             @Override
             public Optional<Concludable.Match<?>> nextAnswer() {
-                // TODO Clean up now that materialisations aren't an iterator
-                if (!materialisation.hasNext()) return Optional.empty();
-                while (materialisation.hasNext()) {
-                    Concludable.Match<?> ans = materialisation.next();
+                if (!materialisations.hasNext()) return Optional.empty();
+                while (materialisations.hasNext()) {
+                    Concludable.Match<?> ans = materialisations.next();
                     if (!deduplicationSet.contains(ans.conceptMap())) {
                         deduplicationSet.add(ans.conceptMap());
                         return Optional.of(ans);
@@ -351,7 +350,6 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
                 }
                 return Optional.empty();
             }
-
         }
 
         private static class Explaining extends ConclusionRequestState<Concludable.Explain> {
@@ -368,8 +366,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
             @Override
             public Optional<Concludable.Explain> nextAnswer() {
-                if (!materialisation.hasNext()) return Optional.empty();
-                return Optional.of(materialisation.next());
+                if (!materialisations.hasNext()) return Optional.empty();
+                return Optional.of(materialisations.next());
             }
         }
     }
