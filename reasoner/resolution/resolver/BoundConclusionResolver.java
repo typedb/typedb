@@ -67,18 +67,14 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
                                    Driver<ConditionResolver> conditionResolver,
                                    Driver<Materialiser> materialiser, ResolverRegistry registry, TraversalEngine traversalEngine,
                                    ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(driver, initName(conclusion, bounds), registry, traversalEngine, conceptMgr, resolutionTracing);
+        super(driver, BoundConclusionResolver.class.getSimpleName() + "(pattern: " + conclusion.conjunction() +
+                " bounds: " + bounds.toString() + ")", registry, traversalEngine, conceptMgr, resolutionTracing);
         this.bounds = bounds;
         this.conditionResolver = conditionResolver;
         this.conclusion = conclusion;
         this.materialiser = materialiser;
         this.requestStates = new HashMap<>();
         this.materialiserRequestRouter = new HashMap<>();
-    }
-
-    private static String initName(Rule.Conclusion conclusion, ConceptMap bounds) {
-        return BoundConclusionResolver.class.getSimpleName() + "(pattern: " + conclusion.conjunction() + " bounds: " +
-                bounds.toString() + ")";
     }
 
     @Override

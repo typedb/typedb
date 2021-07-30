@@ -64,7 +64,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                                     LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> applicableRules,
                                     ResolverRegistry registry, TraversalEngine traversalEngine,
                                     ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(driver, initName(concludable, bounds), registry, traversalEngine, conceptMgr, resolutionTracing);
+        super(driver, BoundConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() +
+                " bounds: " + bounds.toString() + ")", registry, traversalEngine, conceptMgr, resolutionTracing);
         this.concludable = concludable;
         this.bounds = bounds;
         this.resolverRules = resolverRules;
