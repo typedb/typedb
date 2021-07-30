@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
@@ -38,6 +39,7 @@ import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -47,38 +49,43 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
+import static org.junit.Assert.assertEquals;
 
 public class TraversalTest {
 
-    private static final Path dataDir = Paths.get("/Users/joshua/Documents/grakn-debug/jon-thompson/typedb-all-mac/server/data");// Paths.get(System.getProperty("user.dir")).resolve("query-test");
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("query-test");
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
-    private static String database = "tenancy";//"query-test";
+    private static String database = "query-test";
 
     private static RocksTypeDB typedb;
     private static RocksSession session;
 
     @BeforeClass
     public static void setup() throws IOException {
-//        Util.resetDirectory(dataDir);
+        Util.resetDirectory(dataDir);
         typedb = RocksTypeDB.open(options);
-//        typedb.databases().create(database);
-//        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
-//        try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-//            TypeQLDefine query = TypeQL.parseQuery("define " +
-//                                                           "person sub entity, " +
-//                                                           "  plays friendship:friend, " +
-//                                                           "  owns name @key; " +
-//                                                           "friendship sub relation, " +
-//                                                           "  relates friend, " +
-//                                                           "  owns ref @key; " +
-//                                                           "name sub attribute, value string; " +
-//                                                           "ref sub attribute, value long; "
-//            );
-//            transaction.query().define(query);
-//            transaction.commit();
-//        }
-//        session.close();
+        typedb.databases().create(database);
+        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
+        try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
+            TypeQLDefine query = TypeQL.parseQuery(
+                    "define " +
+                            "person sub entity, " +
+                            "  plays friendship:friend, " +
+                            "  owns name;" +
+                            "dog sub entity," +
+                            "  plays friendship:friend; " +
+                            "friendship sub relation, " +
+                            "  relates friend, " +
+                            "  owns ref;" +
+                            "name sub attribute, value string; "+
+                            "ref sub attribute, value long; "
+            );
+            transaction.query().define(query);
+            transaction.commit();
+        }
+        session.close();
     }
 
     @AfterClass
@@ -86,105 +93,87 @@ public class TraversalTest {
         typedb.close();
     }
 
+    /**
+     * This test is interesting because it invalidates a traversal optimisation we implemented called `SeekStack`
+     * where we backtrack all the way back to the cause of a branch/closure failure, skipping all the query vertices
+     * that are planned in the middle.
+     *
+     * However this test shows that it is possible to successfully do a closure, then do perform a branch failure
+     * that because of the Seek optimisation jumps too far back and fails to generate other closure candidates, and
+     * misses an answer.
+     **/
+    @Ignore
     @Test
-    public void test() {
+    public void backtrack_seeks_do_not_skip_answers() {
         session = typedb.session(database, Arguments.Session.Type.DATA);
-        /*
-        Parameters: {
-    	    values: {pair($_1, contains <STRING>)=[string: Bentsen], pair($_0, contains <STRING>)=[string: Mufti]}
+        // note: must insert in separate Tx's so that the relations are retrieved in a specific order later
+        try (RocksTransaction transaction = session.transaction(WRITE)) {
+            transaction.query().insert(TypeQL.parseQuery(
+                    "insert $x isa person; (friend: $x) isa friendship;").asInsert()
+            );
+            transaction.commit();
         }
-        vertices:
-		$_0 [thing] { hasIID: false, types: [name], predicates: [contains <STRING>] } (end)
-		$_1 [thing] { hasIID: false, types: [name], predicates: [contains <STRING>] } (end)
-		$neighbour [thing] { hasIID: false, types: [person, organisation, corporation], predicates: [] }
-		$neighbour_role [type] { labels: [tenancy:landlord, tenancy:tenant], abstract: false, value: [], regex: null }
-		$node [thing] { hasIID: false, types: [person], predicates: [] }
-		$node_role [type] { labels: [tenancy:landlord, tenancy:tenant], abstract: false, value: [], regex: null }
-		$relation [thing] { hasIID: false, types: [tenancy, subtenancy], predicates: [] }
-		$relation:$neighbour_role:$neighbour:1 [thing] { hasIID: false, types: [], predicates: [] }
-		$relation:$node_role:$node:1 [thing] { hasIID: false, types: [], predicates: [] }
-		$reltype [type] { labels: [tenancy], abstract: false, value: [], regex: null } (start)
-	    edges:
-		1: ($reltype *--[RELATES]--> $neighbour_role)
-		2: ($reltype *--[RELATES]--> $node_role)
-		3: ($reltype <--[ISA]--* $relation) { isTransitive: true }
-		4: ($neighbour_role <--[ISA]--* $relation:$neighbour_role:$neighbour:1) { isTransitive: true }
-		5: ($node_role <--[ISA]--* $relation:$node_role:$node:1) { isTransitive: true }
-		6: ($relation *--[RELATING]--> $relation:$neighbour_role:$neighbour:1)
-		7: ($relation *--[RELATING]--> $relation:$node_role:$node:1)
-		8: ($relation:$neighbour_role:$neighbour:1 <--[PLAYING]--* $neighbour)
-		9: ($relation:$node_role:$node:1 <--[PLAYING]--* $node)
-		10: ($neighbour *--[HAS]--> $_0)
-		11: ($node *--[HAS]--> $_1)
-         */
+        try (RocksTransaction transaction = session.transaction(WRITE)) {
+            transaction.query().insert(TypeQL.parseQuery("insert" +
+                    "$y isa dog; (friend: $y) isa friendship;").asInsert());
+            transaction.commit();
+        }
         try (RocksTransaction transaction = session.transaction(READ)) {
-            GraphProcedure.Builder proc = GraphProcedure.builder(11);
-            ProcedureVertex.Thing _0 = proc.anonymousThing(0);
-            _0.props().types(set(Label.of("name")));
-            _0.props().predicate(Predicate.Value.String.of(TypeQLToken.Predicate.SubString.CONTAINS));
+            /*
+            match
+            $rel ($role: $friend);
+            $friend isa dog;
+            $rel isa $rel-type;
+            $rel-type type friendship, relates $role;
+            $role type friendship:friend;
+            */
+            /*
+		    1: ($rel-type *--[RELATES]--> $role)
+		    2: ($rel-type <--[ISA]--* $rel) { isTransitive: true }
+		    3: ($role <--[ISA]--* $rel:$role:$friend:1) { isTransitive: true }
+		    4: ($rel *--[RELATING]--> $rel:$role:$friend:1)
+		    5: ($rel:$role:$friend:1 <--[PLAYING]--* $friend)
+      		*/
+            GraphProcedure.Builder proc = GraphProcedure.builder(5);
+            ProcedureVertex.Type rel_type = proc.namedType("rel-type", true);
+            rel_type.props().labels(set(Label.of("friendship")));
 
-            ProcedureVertex.Thing _1 = proc.anonymousThing(1);
-            _1.props().types(set(Label.of("name")));
-            _1.props().predicate(Predicate.Value.String.of(TypeQLToken.Predicate.SubString.CONTAINS));
+            ProcedureVertex.Type role_type = proc.namedType("role-type");
+            role_type.props().labels(set(Label.of("friend", "friendship")));
 
-            ProcedureVertex.Thing neighbour = proc.namedThing("neighbour");
-            neighbour.props().types(set(Label.of("person")));//, Label.of("organsation"), Label.of("corporation")));
+            ProcedureVertex.Thing rel = proc.namedThing("rel");
+            rel.props().types(set(Label.of("friendship")));
 
-            ProcedureVertex.Type neighbourRole = proc.namedType("neighbour_role");
-            neighbourRole.props().labels(set(Label.of("landlord", "tenancy")));//, Label.of("tenant", "tenancy") ));
+            ProcedureVertex.Thing friend = proc.namedThing("friend");
+            friend.props().types(set(Label.of("dog")));
 
-            ProcedureVertex.Thing node = proc.namedThing("node");
-            node.props().types(set(Label.of("person")));
+            ProcedureVertex.Thing role = proc.scopedThing(rel, role_type, friend, 0);
 
-            ProcedureVertex.Type nodeRole = proc.namedType("node_role");
-            nodeRole.props().labels(set(Label.of("tenant", "tenancy")));//, Label.of("landlord", "tenancy")));
-
-            ProcedureVertex.Thing relation = proc.namedThing("relation");
-            relation.props().types(set(Label.of("tenancy")));//, Label.of("subtenancy")));
-
-            ProcedureVertex.Thing neighborRoleInst = proc.scopedThing(relation, neighbourRole, neighbour, 1);
-
-            ProcedureVertex.Thing nodeRoleInst = proc.scopedThing(relation, nodeRole, node, 1);
-
-            ProcedureVertex.Type reltype = proc.namedType("reltype", true);
-            reltype.props().labels(set(Label.of("tenancy")));
-
-            proc.forwardRelates(1, reltype, neighbourRole);
-            proc.forwardRelates(2, reltype, nodeRole);
-            proc.backwardIsa(3, reltype, relation, true);
-            proc.backwardIsa(4, neighbourRole, neighborRoleInst, true);
-            proc.backwardIsa(5, nodeRole, nodeRoleInst, true);
-            proc.forwardRelating(6, relation, neighborRoleInst);
-            proc.forwardRelating(7, relation, nodeRoleInst);
-            proc.backwardPlaying(8, neighborRoleInst, neighbour);
-            proc.backwardPlaying(9, nodeRoleInst, node);
-            proc.forwardHas(10, neighbour, _0);
-            proc.forwardHas(11, node, _1);
+            proc.forwardRelates(1, rel_type, role_type );
+            proc.backwardIsa(2, rel_type, rel, true);
+            proc.backwardIsa(3, role_type, role, true);
+            proc.forwardRelating(4, rel, role);
+            proc.backwardPlaying(5, role, friend);
 
             Traversal.Parameters params = new Traversal.Parameters();
-            params.pushValue(_0.id().asVariable(), Predicate.Value.String.of(TypeQLToken.Predicate.SubString.CONTAINS),
-                    new Traversal.Parameters.Value("Mufti"));
-            params.pushValue(_1.id().asVariable(), Predicate.Value.String.of(TypeQLToken.Predicate.SubString.CONTAINS),
-                    new Traversal.Parameters.Value("Bentsen"));
 
             Set<Identifier.Variable.Retrievable> filter = set(
-                    node.id().asVariable().asRetrievable(),
-                    nodeRole.id().asVariable().asRetrievable(),
-                    relation.id().asVariable().asRetrievable(),
-                    neighbour.id().asVariable().asRetrievable(),
-                    neighbourRole.id().asVariable().asRetrievable()
+                    rel_type.id().asVariable().asRetrievable(),
+                    role_type.id().asVariable().asRetrievable(),
+                    rel.id().asVariable().asRetrievable(),
+                    friend.id().asVariable().asRetrievable()
             );
 
             GraphProcedure procedure = proc.build();
             FunctionalIterator<VertexMap> vertices = transaction.traversal().iterator(procedure, params, filter);
-            vertices.next();
+            assertEquals(1, vertices.count());
         }
     }
 
     @Test
     public void test_closure_backtrack_clears_scopes() {
         session = typedb.session(database, Arguments.Session.Type.SCHEMA);
-        try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery("define " +
                     "lastname sub attribute, value string; " +
                     "person sub entity, owns lastname; "
@@ -196,7 +185,7 @@ public class TraversalTest {
         session.close();
 
         session = typedb.session(database, Arguments.Session.Type.DATA);
-        try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLInsert query = TypeQL.parseQuery("insert " +
                     "$x isa person," +
                     "  has lastname \"Smith\"," +

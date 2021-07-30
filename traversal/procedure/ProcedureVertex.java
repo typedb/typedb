@@ -98,8 +98,7 @@ public abstract class ProcedureVertex<
     private Set<Integer> computeDependedEdgeOrders() {
         if (ins().isEmpty()) return set();
         else {
-            return link(single(branchEdge().order()), iterate(ins()).filter(inEdge -> inEdge.from().order() < order())
-                    .flatMap(inEdge -> iterate(inEdge.from().dependedEdgeOrders()))).toSet();
+            return set(branchEdge().from().dependedEdgeOrders(), branchEdge().order());
         }
     }
 
