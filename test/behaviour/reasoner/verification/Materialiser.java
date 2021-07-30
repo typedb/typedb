@@ -140,7 +140,6 @@ public class Materialiser {
             requiresReiteration = false;
             traverse(rule.when()).forEachRemaining(conditionAns -> {
                 rule.conclusion().materialise(conditionAns, tx.traversal(), tx.concepts());
-//                        .ifPresent(m -> requiresReiteration = true);
                 traverse(rule.conclusion().conjunction(), conditionAns.filter(rule.conclusion().retrievableIds()))
                         .map(conclusionAns -> new ConceptMap(filterRetrievable(conclusionAns)))
                         .filter(thenConcludable::isInferredAnswer)
