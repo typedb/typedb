@@ -43,7 +43,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     private final ConceptMapCache cache;
     private final Map<Request, RequestState> requestStates;
-    private ConceptMap bounds;
+    private final ConceptMap bounds;
 
     public BoundRetrievableResolver(Driver<BoundRetrievableResolver> driver, Retrievable retrievable, ConceptMap bounds,
                                     ResolverRegistry registry, TraversalEngine traversalEngine,
