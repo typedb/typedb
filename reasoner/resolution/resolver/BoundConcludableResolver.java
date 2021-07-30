@@ -51,11 +51,13 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 public abstract class BoundConcludableResolver extends Resolver<BoundConcludableResolver>  {
 
     private static final Logger LOG = LoggerFactory.getLogger(BoundConcludableResolver.class);
+
     private final Map<Driver<ConclusionResolver>, Rule> resolverRules;
     private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers;
     private final Map<Request, CachingRequestState<?, ConceptMap>> requestStates;
     protected final Concludable concludable;
     protected final ConceptMap bounds;
+
     protected AnswerCache<?, ConceptMap> cache;
     protected CachingRequestState<?, ConceptMap> exploringRequestState;
 
@@ -215,8 +217,6 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     }
 
     protected List<Request> ruleDownstreams(Request fromUpstream) {
-        // loop termination: when receiving a new request, we check if we have seen it before from this root query
-        // if we have, we do not allow rules to be registered as possible downstreams
         List<Request> downstreams = new ArrayList<>();
         AnswerState.Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
         for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry : conclusionResolvers.entrySet()) {
