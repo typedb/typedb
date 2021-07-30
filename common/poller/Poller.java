@@ -30,8 +30,6 @@ public interface Poller<T> {
 
     Poller<T> link(Poller<T> poller);
 
-    Poller<T> filter(Predicate<T> predicate);
-
     void recycle();
 
 }
