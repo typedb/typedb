@@ -257,7 +257,6 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         private boolean complete;
         protected FunctionalIterator<CONCLUDABLE> materialisations;
 
-
         protected ConclusionRequestState(Request fromUpstream, int iteration, List<Request> conditionDownstreams) {
             super(fromUpstream, iteration);
             this.downstreamManager = new DownstreamManager(conditionDownstreams);
