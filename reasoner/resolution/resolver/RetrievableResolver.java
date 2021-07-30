@@ -42,7 +42,7 @@ public class RetrievableResolver extends SubsumptiveCoordinator<RetrievableResol
     }
 
     @Override
-    Driver<BoundRetrievableResolver> getOrReplaceWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial) {
+    Driver<BoundRetrievableResolver> getOrCreateWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial) {
         return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundRetrievableResolver for bounds: {}", name(), partial);
             return registry.registerBoundRetrievable(retrievable, partial.conceptMap());

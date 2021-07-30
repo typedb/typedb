@@ -77,7 +77,7 @@ public abstract class SubsumptiveCoordinator<
             failToUpstream(fromUpstream, iteration);
         } else {
             ConceptMap bounds = fromUpstream.partialAnswer().conceptMap();
-            Driver<WORKER> worker = getOrReplaceWorker(root, fromUpstream.partialAnswer());
+            Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.partialAnswer());
             // TODO: Re-enable subsumption when async bug is fixed
             // Optional<ConceptMap> subsumer = subsumptionTrackers.computeIfAbsent(
             //         root, r -> new SubsumptionTracker()).getFinishedSubsumer(bounds);
@@ -101,7 +101,7 @@ public abstract class SubsumptiveCoordinator<
         workersByRoot.remove(root);
     }
 
-    abstract Driver<WORKER> getOrReplaceWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial);
+    abstract Driver<WORKER> getOrCreateWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial);
 
     @Override
     protected void receiveAnswer(Answer answer, int iteration) {

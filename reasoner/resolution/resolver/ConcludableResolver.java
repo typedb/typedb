@@ -59,7 +59,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
     }
 
     @Override
-    Driver<BoundConcludableResolver> getOrReplaceWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial) {
+    Driver<BoundConcludableResolver> getOrCreateWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial) {
         return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundConcludableResolver for bounds: {}", name(), partial);
             // TODO: We could use the bounds to prune the applicable rules further
