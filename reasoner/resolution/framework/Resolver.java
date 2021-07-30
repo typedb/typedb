@@ -197,6 +197,11 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
             this.downstreamSelector = downstreams.iterator();
         }
 
+        public DownstreamManager(List<Request> downstreams) {
+            this.downstreams = new LinkedHashSet<>(downstreams);
+            this.downstreamSelector = downstreams.iterator();
+        }
+
         public boolean hasDownstream() {
             return !downstreams.isEmpty();
         }
@@ -204,10 +209,6 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         public Request nextDownstream() {
             if (!downstreamSelector.hasNext()) downstreamSelector = downstreams.iterator();
             return downstreamSelector.next();
-        }
-
-        public void addDownstreams(List<Request> downstreams) {
-            downstreams.forEach(this::addDownstream);
         }
 
         public void addDownstream(Request request) {
