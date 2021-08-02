@@ -84,12 +84,6 @@ public abstract class ProcedureVertex<
         return isStartingVertex;
     }
 
-    public int order() {
-        assert branchEdge != null || isStartingVertex();
-        if (isStartingVertex()) return 0;
-        else return branchEdge().order();
-    }
-
     public Set<Integer> dependedEdgeOrders() {
         dependedEdgeOrders.compareAndSet(null, computeDependedEdgeOrders());
         return dependedEdgeOrders.get();
@@ -97,9 +91,7 @@ public abstract class ProcedureVertex<
 
     private Set<Integer> computeDependedEdgeOrders() {
         if (ins().isEmpty()) return set();
-        else {
-            return set(branchEdge().from().dependedEdgeOrders(), branchEdge().order());
-        }
+        else return set(branchEdge().from().dependedEdgeOrders(), branchEdge().order());
     }
 
     public ProcedureEdge<?, ?> branchEdge() {
