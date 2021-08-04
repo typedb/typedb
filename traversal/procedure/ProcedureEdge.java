@@ -34,6 +34,7 @@ import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
+import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
 import com.vaticle.typedb.core.traversal.iterator.GraphIterator;
@@ -225,7 +226,7 @@ public abstract class ProcedureEdge<
         }
     }
 
-    static abstract class Native<
+    public static abstract class Native<
             VERTEX_NATIVE_FROM extends ProcedureVertex<?, ?>, VERTEX_NATIVE_TO extends ProcedureVertex<?, ?>
             > extends ProcedureEdge<VERTEX_NATIVE_FROM, VERTEX_NATIVE_TO> {
 
@@ -333,12 +334,16 @@ public abstract class ProcedureEdge<
             }
         }
 
-        static abstract class Type extends Native<ProcedureVertex.Type, ProcedureVertex.Type> {
+        public static abstract class Type extends Native<ProcedureVertex.Type, ProcedureVertex.Type> {
 
             private Type(ProcedureVertex.Type from, ProcedureVertex.Type to, int order,
                          Encoding.Direction.Edge direction, Encoding.Edge encoding) {
                 super(from, to, order, direction, encoding);
             }
+
+            @Override
+            public abstract FunctionalIterator<TypeVertex> branch(GraphManager graphMgr, Vertex<?, ?> fromVertex,
+                                                                  Traversal.Parameters params);
 
             static Native.Type of(ProcedureVertex.Type from, ProcedureVertex.Type to,
                                   PlannerEdge.Native.Type.Directional edge) {
@@ -385,12 +390,12 @@ public abstract class ProcedureEdge<
 
                 static class Forward extends Sub {
 
-                    private Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isTransitive) {
+                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isTransitive) {
                         super(from, to, order, FORWARD, isTransitive);
                     }
 
                     @Override
-                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<TypeVertex> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, GraphTraversal.Parameters params) {
                         FunctionalIterator<TypeVertex> iterator = superTypes(fromVertex.asType());
                         return to.filter(iterator);
@@ -405,12 +410,12 @@ public abstract class ProcedureEdge<
 
                 static class Backward extends Sub {
 
-                    private Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isTransitive) {
+                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isTransitive) {
                         super(from, to, order, BACKWARD, isTransitive);
                     }
 
                     @Override
-                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<TypeVertex> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, GraphTraversal.Parameters params) {
                         assert fromVertex.isType();
                         FunctionalIterator<TypeVertex> iter;
@@ -471,7 +476,7 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromThingType() { return true; }
 
                     @Override
-                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<TypeVertex> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, GraphTraversal.Parameters params) {
                         assert fromVertex.isType();
                         return to.filter(ownedAttributeTypes(fromVertex.asType()));
@@ -512,7 +517,7 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromAttributeType() { return true; }
 
                     @Override
-                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<TypeVertex> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, GraphTraversal.Parameters params) {
                         assert fromVertex.isType();
                         return to.filter(ownersOfAttType(fromVertex.asType()));
@@ -556,7 +561,7 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromThingType() { return true; }
 
                     @Override
-                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<TypeVertex> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, GraphTraversal.Parameters params) {
                         assert fromVertex.isType();
                         return to.filter(playedRoleTypes(fromVertex.asType()));
@@ -571,7 +576,7 @@ public abstract class ProcedureEdge<
 
                 static class Backward extends Plays {
 
-                    private Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order) {
+                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order) {
                         super(from, to, order, BACKWARD);
                     }
 
@@ -585,7 +590,7 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromRoleType() { return true; }
 
                     @Override
-                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<TypeVertex> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, GraphTraversal.Parameters params) {
                         assert fromVertex.isType();
                         return to.filter(playersOfRoleType(fromVertex.asType()));
@@ -629,7 +634,7 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromRelationType() { return true; }
 
                     @Override
-                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<TypeVertex> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, GraphTraversal.Parameters params) {
                         assert fromVertex.isType();
                         return to.filter(relatedRoleTypes(fromVertex.asType()));
@@ -658,7 +663,7 @@ public abstract class ProcedureEdge<
                     public boolean onlyStartsFromRoleType() { return true; }
 
                     @Override
-                    public FunctionalIterator<? extends Vertex<?, ?>> branch(
+                    public FunctionalIterator<TypeVertex> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, GraphTraversal.Parameters params) {
                         assert fromVertex.isType();
                         return to.filter(relationsOfRoleType(fromVertex.asType()));

@@ -60,6 +60,19 @@ public abstract class Traversal {
         return parameters;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Traversal that = (Traversal) o;
+        return (this.structure.equals(that.structure) && this.parameters.equals(that.parameters);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.structure, this.parameters);
+    }
+
     public static class Parameters {
 
         private final Map<Identifier.Variable, VertexIID.Thing> iids;
