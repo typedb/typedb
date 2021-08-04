@@ -118,7 +118,7 @@ public abstract class ProcedureEdge<
     }
 
     public boolean isClosureEdge() {
-        return order() > to().branchEdge().order();
+        return to().isStartingVertex() || order() > to().branchEdge().order();
     }
 
     public boolean onlyStartsFromAttribute() { return false; }
@@ -152,8 +152,8 @@ public abstract class ProcedureEdge<
 
     public static class Equal extends ProcedureEdge<ProcedureVertex<?, ?>, ProcedureVertex<?, ?>> {
 
-        private Equal(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
-                      int order, Encoding.Direction.Edge direction) {
+        Equal(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
+              int order, Encoding.Direction.Edge direction) {
             super(from, to, order, direction, TypeQLToken.Predicate.Equality.EQ.toString());
         }
 
@@ -340,10 +340,6 @@ public abstract class ProcedureEdge<
                          Encoding.Direction.Edge direction, Encoding.Edge encoding) {
                 super(from, to, order, direction, encoding);
             }
-
-            @Override
-            public abstract FunctionalIterator<TypeVertex> branch(GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                                                                  Traversal.Parameters params);
 
             static Native.Type of(ProcedureVertex.Type from, ProcedureVertex.Type to,
                                   PlannerEdge.Native.Type.Directional edge) {

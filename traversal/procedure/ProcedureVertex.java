@@ -77,7 +77,7 @@ public abstract class ProcedureVertex<
     @Override
     public void in(ProcedureEdge<?, ?> edge) {
         super.in(edge);
-        if (branchEdge == null || edge.order() < branchEdge.order()) branchEdge = edge;
+        if (!isStartingVertex() && (iteratorEdge == null || edge.order() < iteratorEdge.order())) iteratorEdge = edge;
     }
 
     public boolean isStartingVertex() {
@@ -95,7 +95,7 @@ public abstract class ProcedureVertex<
     }
 
     public ProcedureEdge<?, ?> branchEdge() {
-        if (ins().isEmpty()) return null;
+        if (ins().isEmpty() || isStartingVertex()) return null;
         else return branchEdge;
     }
 

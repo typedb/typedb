@@ -18,27 +18,84 @@
 
 package com.vaticle.typedb.core.traversal;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.planner.Planner;
+import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import static com.vaticle.typedb.core.common.iterator.Iterators.cartesian;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static java.util.stream.Collectors.toList;
 
 public class TypeTraversal extends Traversal {
 
-    TypeTraversal() {
+    private final Set<Identifier.Variable.Retrievable> filter;
+
+    public TypeTraversal() {
         super();
+        this.filter = new HashSet<>();
     }
 
-    public void types(Identifier thing, Set<Label> labels) {
-        structure.thingVertex(thing).props().types(labels);
+    private FunctionalIterator<Structure> structures() {
+        return iterate(structure.asGraphs()).filter(p -> iterate(p.vertices()).anyMatch(
+                v -> v.id().isRetrievable() && filter.contains(v.id().asVariable().asRetrievable())
+        ));
+    }
+
+    @Override
+    FunctionalIterator<VertexMap> iterator(GraphManager graphMgr) {
+        List<Planner> planners = structures().map(Planner::create).toList();
+        if (planners.size() == 1) {
+            planners.get(0).tryOptimise(graphMgr, true);
+            return planners.get(0).procedure().iterator(graphMgr, parameters, filter);
+        } else {
+            return cartesian(planners.parallelStream().map(planner -> {
+                planner.tryOptimise(graphMgr, true);
+                return planner.procedure().iterator(graphMgr, parameters, filter);
+            }).collect(toList())).map(partialAnswers -> {
+                Map<Identifier.Variable.Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
+                partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
+                return VertexMap.of(combinedAnswers);
+            });
+        }
+    }
+
+    public void filter(Set<? extends Identifier.Variable.Retrievable> filter) {
+        assert iterate(filter).noneMatch(Identifier::isLabel);
+        this.filter.addAll(filter);
+    }
+
+    public Set<Identifier.Variable.Retrievable> filter() {
+        return filter;
+    }
+
+    public void labels(Identifier type, Set<Label> labels) {
+        structure.typeVertex(type).props().labels(labels);
+    }
+
+    public void labels(Identifier.Variable type, Label label) {
+        structure.typeVertex(type).props().labels(label);
+    }
+
+    public void equalTypes(Identifier.Variable type1, Identifier.Variable type2) {
+        structure.equalEdge(structure.typeVertex(type1), structure.typeVertex(type2));
     }
 
     public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, boolean isKey) {

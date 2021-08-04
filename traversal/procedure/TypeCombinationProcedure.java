@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.traversal.procedure;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.traversal.TypeTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
@@ -37,14 +38,11 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class TypeCombinationProcedure {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GraphProcedure.class);
-
     private final Map<Identifier, ProcedureVertex.Type> vertices;
-    private final ProcedureEdge.Native.Type[] edges;
+    private final ProcedureEdge<?, ?>[] edges;
 
     TypeCombinationProcedure(int edgeSize) {
         vertices = new HashMap<>();
@@ -66,20 +64,21 @@ public class TypeCombinationProcedure {
         return edges.length;
     }
 
-    public ProcedureEdge.Native.Type edge(int pos) {
+    public ProcedureEdge<?, ?> edge(int pos) {
+        assert pos > 0;
         return edges[pos - 1];
     }
 
     private ProcedureVertex.Type registerDFS(StructureVertex.Type structureVertex, Set<StructureEdge<?, ?>> visitedEdges) {
         if (vertices.containsKey(structureVertex.id())) return vertices.get(structureVertex.id());
-        ProcedureVertex.Type vertex = vertices.computeIfAbsent(structureVertex.id(), id -> new ProcedureVertex.Type(id, vertices.size() == 1));
+        ProcedureVertex.Type vertex = vertices.computeIfAbsent(structureVertex.id(), id -> new ProcedureVertex.Type(id, vertices.size() == 0));
         vertex.props(structureVertex.props());
         structureVertex.outs().forEach(structureEdge -> {
             if (!visitedEdges.contains(structureEdge)) {
                 visitedEdges.add(structureEdge);
                 int order = visitedEdges.size();
                 ProcedureVertex.Type end = registerDFS(structureEdge.to().asType(), visitedEdges);
-                registerOut(vertex, end, structureEdge.asNative(), order);
+                registerOut(vertex, end, structureEdge, order);
             }
         });
         structureVertex.ins().forEach(structureEdge -> {
@@ -87,60 +86,74 @@ public class TypeCombinationProcedure {
                 visitedEdges.add(structureEdge);
                 int order = visitedEdges.size();
                 ProcedureVertex.Type start = registerDFS(structureEdge.from().asType(), visitedEdges);
-                registerIn(vertex, start, structureEdge.asNative(), order);
+                registerIn(vertex, start, structureEdge, order);
             }
         });
         return vertex;
     }
 
-    private void registerOut(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge.Native<?, ?> structureEdge, int order) {
+    private void registerOut(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge, int order) {
         // TODO are these all forward, from -> to?
-        ProcedureEdge.Native.Type edge;
-        switch (structureEdge.encoding().asType()) {
-            case SUB:
-                edge = new ProcedureEdge.Native.Type.Sub.Forward(from.asType(), to.asType(), order, structureEdge.isTransitive());
-                break;
-            case OWNS:
-                edge =  new ProcedureEdge.Native.Type.Owns.Forward(from, to, order, false);
-                break;
-            case OWNS_KEY:
-                edge = new ProcedureEdge.Native.Type.Owns.Forward(from, to, order, true);
-                break;
-            case PLAYS:
-                edge = new ProcedureEdge.Native.Type.Plays.Forward(from, to, order);
-                break;
-            case RELATES:
-                edge = new ProcedureEdge.Native.Type.Relates.Forward(from, to,order);
-                break;
-            default:
-                throw TypeDBException.of(UNRECOGNISED_VALUE);
-        }
-        edges[order] = edge;
+        ProcedureEdge<?, ?> edge;
+        if (structureEdge.isNative()) {
+            switch (structureEdge.asNative().encoding().asType()) {
+                case SUB:
+                    edge = new ProcedureEdge.Native.Type.Sub.Forward(from.asType(), to.asType(), order, structureEdge.asNative().isTransitive());
+                    break;
+                case OWNS:
+                    edge = new ProcedureEdge.Native.Type.Owns.Forward(from, to, order, false);
+                    break;
+                case OWNS_KEY:
+                    edge = new ProcedureEdge.Native.Type.Owns.Forward(from, to, order, true);
+                    break;
+                case PLAYS:
+                    edge = new ProcedureEdge.Native.Type.Plays.Forward(from, to, order);
+                    break;
+                case RELATES:
+                    edge = new ProcedureEdge.Native.Type.Relates.Forward(from, to, order);
+                    break;
+                default:
+                    throw TypeDBException.of(UNRECOGNISED_VALUE);
+            }
+        } else if (structureEdge.isEqual()) {
+            edge = new ProcedureEdge.Equal(from, to, order, Encoding.Direction.Edge.FORWARD);
+        } else throw TypeDBException.of(ILLEGAL_STATE);
+        registerEdge(edge, order);
     }
 
-    private void registerIn(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge.Native<?, ?> structureEdge, int order) {
+    private void registerIn(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge, int order) {
         // TODO are these all backward, from <- to?
-        ProcedureEdge.Native.Type edge;
-        switch (structureEdge.encoding().asType()) {
-            case SUB:
-                edge = new ProcedureEdge.Native.Type.Sub.Backward(from.asType(), to.asType(), order, structureEdge.isTransitive());
-                break;
-            case OWNS:
-                edge =  new ProcedureEdge.Native.Type.Owns.Backward(from, to, order, false);
-                break;
-            case OWNS_KEY:
-                edge = new ProcedureEdge.Native.Type.Owns.Backward(from, to, order, true);
-                break;
-            case PLAYS:
-                edge = new ProcedureEdge.Native.Type.Plays.Backward(from, to, order);
-                break;
-            case RELATES:
-                edge = new ProcedureEdge.Native.Type.Relates.Backward(from, to,order);
-                break;
-            default:
-                throw TypeDBException.of(UNRECOGNISED_VALUE);
-        }
-        edges[order] = edge;
+        ProcedureEdge<?, ?> edge;
+        if (structureEdge.isNative()) {
+            switch (structureEdge.asNative().encoding().asType()) {
+                case SUB:
+                    edge = new ProcedureEdge.Native.Type.Sub.Backward(from.asType(), to.asType(), order, structureEdge.asNative().isTransitive());
+                    break;
+                case OWNS:
+                    edge = new ProcedureEdge.Native.Type.Owns.Backward(from, to, order, false);
+                    break;
+                case OWNS_KEY:
+                    edge = new ProcedureEdge.Native.Type.Owns.Backward(from, to, order, true);
+                    break;
+                case PLAYS:
+                    edge = new ProcedureEdge.Native.Type.Plays.Backward(from, to, order);
+                    break;
+                case RELATES:
+                    edge = new ProcedureEdge.Native.Type.Relates.Backward(from, to, order);
+                    break;
+                default:
+                    throw TypeDBException.of(UNRECOGNISED_VALUE);
+            }
+        } else if (structureEdge.isEqual()) {
+            edge = new ProcedureEdge.Equal(from, to, order, Encoding.Direction.Edge.BACKWARD);
+        } else throw TypeDBException.of(ILLEGAL_STATE);
+        registerEdge(edge, order);
+    }
+
+    private void registerEdge(ProcedureEdge<?, ?> edge, int order) {
+        edges[order - 1] = edge;
+        edge.from().out(edge);
+        edge.to().in(edge);
     }
 
     @Override
@@ -163,4 +176,5 @@ public class TypeCombinationProcedure {
         str.append("\n}");
         return str.toString();
     }
+
 }

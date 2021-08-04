@@ -20,9 +20,12 @@ package com.vaticle.typedb.core.traversal;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
@@ -60,12 +63,14 @@ public abstract class Traversal {
         return parameters;
     }
 
+    abstract FunctionalIterator<VertexMap> iterator(GraphManager graphMgr);
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Traversal that = (Traversal) o;
-        return (this.structure.equals(that.structure) && this.parameters.equals(that.parameters);
+        return this.structure.equals(that.structure) && this.parameters.equals(that.parameters);
     }
 
     @Override

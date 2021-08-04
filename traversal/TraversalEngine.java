@@ -23,10 +23,15 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.iterator.TypeCombination;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
+import com.vaticle.typedb.core.traversal.procedure.TypeCombinationProcedure;
 
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public class TraversalEngine {
@@ -55,13 +60,12 @@ public class TraversalEngine {
     }
 
     public FunctionalIterator<VertexMap> iterator(GraphTraversal traversal) {
-        return iterator(traversal, false);
+        traversal.initialise(cache);
+        return traversal.iterator(graphMgr);
     }
 
-    public FunctionalIterator<VertexMap> iterator(GraphTraversal traversal, boolean singleUse) {
-        if (singleUse) traversal.initialise();
-        else traversal.initialise(cache);
-        return traversal.iterator(graphMgr, singleUse);
+    public FunctionalIterator<VertexMap> iterator(TypeTraversal traversal) {
+        return traversal.iterator(graphMgr);
     }
 
     public FunctionalIterator<VertexMap> iterator(GraphProcedure procedure, GraphTraversal.Parameters params,
@@ -71,5 +75,9 @@ public class TraversalEngine {
 
     public FunctionalIterator<VertexMap> relations(RelationTraversal traversal) {
         return traversal.iterator(graphMgr);
+    }
+
+    public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(TypeTraversal traversal) {
+        return new TypeCombination(graphMgr, TypeCombinationProcedure.of(traversal), traversal.parameters(), traversal.filter()).get();
     }
 }

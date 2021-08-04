@@ -25,7 +25,6 @@ import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
@@ -50,8 +49,8 @@ import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
+import com.vaticle.typedb.core.traversal.TypeTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
-import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typeql.lang.common.TypeQLArg.ValueType;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 
@@ -86,7 +85,7 @@ public class TypeResolver {
     }
 
     public FunctionalIterator<Map<Identifier.Variable.Name, Label>> namedCombinations(Conjunction conjunction, boolean insertable) {
-        GraphTraversal resolverTraversal = new GraphTraversal();
+        TypeTraversal resolverTraversal = new TypeTraversal();
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, resolverTraversal, 0, insertable);
         resolverTraversal.filter(traversalBuilder.retrievedResolvers());
         return traversalEng.iterator(traversalBuilder.traversal()).map(vertexMap -> {
@@ -142,13 +141,13 @@ public class TypeResolver {
     }
 
     private void resolveVariableTypes(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
-        GraphTraversal resolverTraversal = new GraphTraversal();
+        TypeTraversal resolverTraversal = new TypeTraversal();
         TraversalBuilder traversalBuilder = builder(resolverTraversal, conjunction, scopingConjunctions, insertable);
         resolverTraversal.filter(traversalBuilder.retrievedResolvers());
-        Map<Identifier.Variable.Retrievable, Set<Label>> resolvedLabels = executeTypeResolvers(traversalBuilder);
-        if (resolvedLabels.isEmpty()) conjunction.setCoherent(false);
+        Optional<Map<Identifier.Variable.Retrievable, Set<Label>>> resolvedLabels = executeTypeResolvers(traversalBuilder);
+        if (!resolvedLabels.isPresent()) conjunction.setCoherent(false);
         else {
-            resolvedLabels.forEach((id, labels) -> traversalBuilder.getOriginalVariable(id).ifPresent(variable -> {
+            resolvedLabels.get().forEach((id, labels) -> traversalBuilder.getOriginalVariable(id).ifPresent(variable -> {
                 assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
                 variable.setResolvedTypes(labels);
             }));
@@ -159,7 +158,7 @@ public class TypeResolver {
         return iterate(conjunction.variables()).noneMatch(Variable::isThing);
     }
 
-    private TraversalBuilder builder(GraphTraversal traversal, Conjunction conjunction, List<Conjunction> scopingConjunctions,
+    private TraversalBuilder builder(TypeTraversal traversal, Conjunction conjunction, List<Conjunction> scopingConjunctions,
                                      boolean insertable) {
         TraversalBuilder currentBuilder;
         if (!scopingConjunctions.isEmpty()) {
@@ -181,35 +180,39 @@ public class TypeResolver {
         return currentBuilder;
     }
 
-    private Map<Identifier.Variable.Retrievable, Set<Label>> executeTypeResolvers(TraversalBuilder traversalBuilder) {
-        return logicCache.resolver().get(traversalBuilder.traversal().structure(), structure -> {
-            Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
-            traversalEng.iterator(traversalBuilder.traversal(), true)
-                    // TODO: This filter should not be needed if we enforce traversal only to return non-abstract
-                    .filter(result -> !containsAbstractThing(result, traversalBuilder))
-                    .forEachRemaining(
-                            result -> {
-                                assert iterate(result.map().values()).allMatch(Vertex::isType);
-                                result.forEach((id, vertex) -> {
-                                    Optional<Variable> originalVar = traversalBuilder.getOriginalVariable(id);
-                                    if (originalVar.isPresent()) {
-                                        Set<Label> labels = mapping.computeIfAbsent(id, (i) -> new HashSet<>());
-                                        labels.add(vertex.asType().properLabel());
-                                    }
-                                });
-                            }
-                    );
-            return mapping;
-        });
+    private Optional<Map<Identifier.Variable.Retrievable, Set<Label>>> executeTypeResolvers(TraversalBuilder traversalBuilder) {
+        return logicCache.resolver().get(traversalBuilder.traversal().structure(), structure ->
+                traversalEng.combination(traversalBuilder.traversal())
+                        // TODO: This filter should not be needed if we enforce traversal only to return non-abstract
+                        .map(result -> withoutAbstract(result, traversalBuilder))
+                        .map(result -> {
+                                    Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
+                                    result.forEach((id, types) -> {
+                                        Optional<Variable> originalVar = traversalBuilder.getOriginalVariable(id);
+                                        if (originalVar.isPresent()) {
+                                            Set<Label> labels = mapping.computeIfAbsent(id, (i) -> new HashSet<>());
+                                            types.forEach(vertex -> labels.add(vertex.properLabel()));
+                                        }
+                                    });
+                                    return mapping;
+                                }
+                        )
+        );
     }
 
-    private boolean containsAbstractThing(VertexMap resolvedTypes, TraversalBuilder traversalBuilder) {
-        for (Map.Entry<Identifier.Variable.Retrievable, Vertex<?, ?>> entry : resolvedTypes.map().entrySet()) {
+    private Map<Identifier.Variable.Retrievable, Set<TypeVertex>> withoutAbstract(
+            Map<Identifier.Variable.Retrievable, Set<TypeVertex>> resolvedTypes, TraversalBuilder traversalBuilder
+    ) {
+        Map<Identifier.Variable.Retrievable, Set<TypeVertex>> withoutAbstract = new HashMap<>();
+        for (Map.Entry<Identifier.Variable.Retrievable, Set<TypeVertex>> entry : resolvedTypes.entrySet()) {
             Identifier.Variable.Retrievable id = entry.getKey();
             Optional<Variable> var = traversalBuilder.getOriginalVariable(id);
-            if (entry.getValue().asType().isAbstract() && var.isPresent() && var.get().isThing()) return true;
+            Set<TypeVertex> types = withoutAbstract.computeIfAbsent(id, i -> new HashSet<>());
+            if (var.isPresent() && var.get().isThing()) {
+                iterate(entry.getValue()).filter(type -> !type.isAbstract()).forEachRemaining(types::add);
+            }
         }
-        return false;
+        return withoutAbstract;
     }
 
     private static class TraversalBuilder {
@@ -223,13 +226,13 @@ public class TypeResolver {
         private final Map<Identifier.Variable, Variable> resolverToOriginal;
         private final ConceptManager conceptMgr;
         private final Conjunction conjunction;
-        private final GraphTraversal traversal;
+        private final TypeTraversal traversal;
         private final boolean insertable;
         private boolean hasRootAttribute;
         private boolean hasRootThing;
         private int sysVarCounter;
 
-        TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr, GraphTraversal initialTraversal,
+        TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr, TypeTraversal initialTraversal,
                          int initialAnonymousVarCounter, boolean insertable) {
             this.conceptMgr = conceptMgr;
             this.conjunction = conjunction;
@@ -240,7 +243,7 @@ public class TypeResolver {
             this.sysVarCounter = initialAnonymousVarCounter;
             this.insertable = insertable;
             this.hasRootAttribute = false;
-            this.hasRootThing  = false;
+            this.hasRootThing = false;
             conjunction.variables().forEach(this::register);
         }
 
@@ -252,7 +255,7 @@ public class TypeResolver {
             return sysVarCounter;
         }
 
-        GraphTraversal traversal() {
+        TypeTraversal traversal() {
             return traversal;
         }
 
@@ -398,7 +401,7 @@ public class TypeResolver {
             for (RelationConstraint.RolePlayer rolePlayer : constraint.players()) {
                 TypeVariable playerResolver = register(rolePlayer.player());
                 TypeVariable roleResolver = register(rolePlayer.roleType().isPresent() ?
-                                                             rolePlayer.roleType().get() : new TypeVariable(newSystemId()));
+                        rolePlayer.roleType().get() : new TypeVariable(newSystemId()));
                 traversal.relates(resolver.id(), roleResolver.id());
                 traversal.plays(playerResolver.id(), roleResolver.id());
             }

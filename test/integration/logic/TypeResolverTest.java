@@ -706,7 +706,7 @@ public class TypeResolverTest {
         );
         TypeResolver typeResolver = transaction.logic().typeResolver();
 
-        String queryString = "match $x isa $t; $y isa $t; $x has man-name'bob'; $y has woman-name 'alice';";
+        String queryString = "match $x isa $t; $y isa $t; $x has man-name 'bob'; $y has woman-name 'alice';";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);

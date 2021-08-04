@@ -45,6 +45,7 @@ public class RelationTraversal extends Traversal {
         this.players = new HashSet<>();
     }
 
+    @Override
     FunctionalIterator<VertexMap> iterator(GraphManager graphMgr) {
         return new RelationIterator(this, graphMgr);
     }

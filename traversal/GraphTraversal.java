@@ -89,10 +89,6 @@ public class GraphTraversal extends Traversal {
         return filter;
     }
 
-    void initialise() {
-        planners = structures().map(Planner::create).toList();
-    }
-
     void initialise(TraversalCache cache) {
         planners = structures().map(s -> cache.get(s, Planner::create)).toList();
     }
@@ -103,14 +99,14 @@ public class GraphTraversal extends Traversal {
         ));
     }
 
-    FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, boolean singleUse) {
+    FunctionalIterator<VertexMap> iterator(GraphManager graphMgr) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
-            planners.get(0).tryOptimise(graphMgr, singleUse);
+            planners.get(0).tryOptimise(graphMgr, false);
             return planners.get(0).procedure().iterator(graphMgr, parameters, filter());
         } else {
             return cartesian(planners.parallelStream().map(planner -> {
-                planner.tryOptimise(graphMgr, singleUse);
+                planner.tryOptimise(graphMgr, false);
                 return planner.procedure().iterator(graphMgr, parameters, filter());
             }).collect(toList())).map(partialAnswers -> {
                 Map<Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
