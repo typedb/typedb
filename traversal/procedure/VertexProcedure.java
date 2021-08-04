@@ -38,7 +38,7 @@ import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 
-public class VertexProcedure implements Procedure {
+public class VertexProcedure implements PermutationProcedure {
 
     private static final Logger LOG = LoggerFactory.getLogger(VertexProcedure.class);
     private final ProcedureVertex<?, ?> vertex;

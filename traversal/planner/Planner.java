@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.traversal.planner;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.traversal.procedure.Procedure;
+import com.vaticle.typedb.core.traversal.procedure.PermutationProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -28,7 +28,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 
 public interface Planner {
 
-    Procedure procedure();
+    PermutationProcedure procedure();
 
     default void tryOptimise(GraphManager graphMgr, boolean singleUse) {
         if (isGraph()) this.asGraph().mayOptimise(graphMgr, singleUse);

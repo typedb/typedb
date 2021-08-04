@@ -535,7 +535,7 @@ public abstract class ProcedureEdge<
 
                 static class Forward extends Plays {
 
-                    private Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order) {
+                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order) {
                         super(from, to, order, FORWARD);
                     }
 

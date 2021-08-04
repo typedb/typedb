@@ -50,7 +50,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 
-public class GraphProcedure implements Procedure {
+public class GraphProcedure implements PermutationProcedure {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphProcedure.class);
 
