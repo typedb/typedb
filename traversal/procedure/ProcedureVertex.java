@@ -64,7 +64,7 @@ public abstract class ProcedureVertex<
 
     private final boolean isStartingVertex;
     private final AtomicReference<Set<Integer>> dependedEdgeOrders;
-    private ProcedureEdge<?, ?> iteratorEdge;
+    private ProcedureEdge<?, ?> branchEdge;
 
     ProcedureVertex(Identifier identifier, boolean isStartingVertex) {
         super(identifier);
@@ -77,7 +77,7 @@ public abstract class ProcedureVertex<
     @Override
     public void in(ProcedureEdge<?, ?> edge) {
         super.in(edge);
-        if (iteratorEdge == null || edge.order() < iteratorEdge.order()) iteratorEdge = edge;
+        if (branchEdge == null || edge.order() < branchEdge.order()) branchEdge = edge;
     }
 
     public boolean isStartingVertex() {
@@ -96,7 +96,7 @@ public abstract class ProcedureVertex<
 
     public ProcedureEdge<?, ?> branchEdge() {
         if (ins().isEmpty()) return null;
-        else return iteratorEdge;
+        else return branchEdge;
     }
 
     public ProcedureVertex.Thing asThing() {
@@ -134,10 +134,14 @@ public abstract class ProcedureVertex<
         }
 
         @Override
-        public boolean isThing() { return true; }
+        public boolean isThing() {
+            return true;
+        }
 
         @Override
-        public ProcedureVertex.Thing asThing() { return this; }
+        public ProcedureVertex.Thing asThing() {
+            return this;
+        }
 
         @Override
         public FunctionalIterator<? extends ThingVertex> iterator(GraphManager graphMgr, GraphTraversal.Parameters parameters) {
@@ -433,9 +437,13 @@ public abstract class ProcedureVertex<
         }
 
         @Override
-        public boolean isType() { return true; }
+        public boolean isType() {
+            return true;
+        }
 
         @Override
-        public ProcedureVertex.Type asType() { return this; }
+        public ProcedureVertex.Type asType() {
+            return this;
+        }
     }
 }

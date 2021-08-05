@@ -39,6 +39,7 @@ import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -48,6 +49,8 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
+import static org.junit.Assert.assertEquals;
 
 public class TraversalTest {
 
@@ -65,16 +68,19 @@ public class TraversalTest {
         typedb = RocksTypeDB.open(options);
         typedb.databases().create(database);
         session = typedb.session(database, Arguments.Session.Type.SCHEMA);
-        try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-            TypeQLDefine query = TypeQL.parseQuery("define " +
-                                                           "person sub entity, " +
-                                                           "  plays friendship:friend, " +
-                                                           "  owns name @key; " +
-                                                           "friendship sub relation, " +
-                                                           "  relates friend, " +
-                                                           "  owns ref @key; " +
-                                                           "name sub attribute, value string; " +
-                                                           "ref sub attribute, value long; "
+        try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
+            TypeQLDefine query = TypeQL.parseQuery(
+                    "define " +
+                            "person sub entity, " +
+                            "  plays friendship:friend, " +
+                            "  owns name;" +
+                            "dog sub entity," +
+                            "  plays friendship:friend; " +
+                            "friendship sub relation, " +
+                            "  relates friend, " +
+                            "  owns ref;" +
+                            "name sub attribute, value string; "+
+                            "ref sub attribute, value long; "
             );
             transaction.query().define(query);
             transaction.commit();
@@ -87,13 +93,90 @@ public class TraversalTest {
         typedb.close();
     }
 
+    /**
+     * This test is interesting because it invalidates a traversal optimisation we implemented called `SeekStack`
+     * where we backtrack all the way back to the cause of a branch/closure failure, skipping all the query vertices
+     * that are planned in the middle.
+     *
+     * However this test shows that it is possible to successfully do a closure, then do perform a branch failure
+     * that because of the Seek optimisation jumps too far back and fails to generate other closure candidates, and
+     * misses an answer.
+     **/
+    @Ignore
+    @Test
+    public void backtrack_seeks_do_not_skip_answers() {
+        session = typedb.session(database, Arguments.Session.Type.DATA);
+        // note: must insert in separate Tx's so that the relations are retrieved in a specific order later
+        try (RocksTransaction transaction = session.transaction(WRITE)) {
+            transaction.query().insert(TypeQL.parseQuery(
+                    "insert $x isa person; (friend: $x) isa friendship;").asInsert()
+            );
+            transaction.commit();
+        }
+        try (RocksTransaction transaction = session.transaction(WRITE)) {
+            transaction.query().insert(TypeQL.parseQuery("insert" +
+                    "$y isa dog; (friend: $y) isa friendship;").asInsert());
+            transaction.commit();
+        }
+        try (RocksTransaction transaction = session.transaction(READ)) {
+            /*
+            match
+            $rel ($role: $friend);
+            $friend isa dog;
+            $rel isa $rel-type;
+            $rel-type type friendship, relates $role;
+            $role type friendship:friend;
+            */
+            /*
+		    1: ($rel-type *--[RELATES]--> $role)
+		    2: ($rel-type <--[ISA]--* $rel) { isTransitive: true }
+		    3: ($role <--[ISA]--* $rel:$role:$friend:1) { isTransitive: true }
+		    4: ($rel *--[RELATING]--> $rel:$role:$friend:1)
+		    5: ($rel:$role:$friend:1 <--[PLAYING]--* $friend)
+      		*/
+            GraphProcedure.Builder proc = GraphProcedure.builder(5);
+            ProcedureVertex.Type rel_type = proc.namedType("rel-type", true);
+            rel_type.props().labels(set(Label.of("friendship")));
+
+            ProcedureVertex.Type role_type = proc.namedType("role-type");
+            role_type.props().labels(set(Label.of("friend", "friendship")));
+
+            ProcedureVertex.Thing rel = proc.namedThing("rel");
+            rel.props().types(set(Label.of("friendship")));
+
+            ProcedureVertex.Thing friend = proc.namedThing("friend");
+            friend.props().types(set(Label.of("dog")));
+
+            ProcedureVertex.Thing role = proc.scopedThing(rel, role_type, friend, 0);
+
+            proc.forwardRelates(1, rel_type, role_type );
+            proc.backwardIsa(2, rel_type, rel, true);
+            proc.backwardIsa(3, role_type, role, true);
+            proc.forwardRelating(4, rel, role);
+            proc.backwardPlaying(5, role, friend);
+
+            Traversal.Parameters params = new Traversal.Parameters();
+
+            Set<Identifier.Variable.Retrievable> filter = set(
+                    rel_type.id().asVariable().asRetrievable(),
+                    role_type.id().asVariable().asRetrievable(),
+                    rel.id().asVariable().asRetrievable(),
+                    friend.id().asVariable().asRetrievable()
+            );
+
+            GraphProcedure procedure = proc.build();
+            FunctionalIterator<VertexMap> vertices = transaction.traversal().iterator(procedure, params, filter);
+            assertEquals(1, vertices.count());
+        }
+    }
+
     @Test
     public void test_closure_backtrack_clears_scopes() {
         session = typedb.session(database, Arguments.Session.Type.SCHEMA);
-        try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery("define " +
-                                                           "lastname sub attribute, value string; " +
-                                                           "person sub entity, owns lastname; "
+                    "lastname sub attribute, value string; " +
+                    "person sub entity, owns lastname; "
 
             );
             transaction.query().define(query);
@@ -102,17 +185,17 @@ public class TraversalTest {
         session.close();
 
         session = typedb.session(database, Arguments.Session.Type.DATA);
-        try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLInsert query = TypeQL.parseQuery("insert " +
-                                                           "$x isa person," +
-                                                           "  has lastname \"Smith\"," +
-                                                           "  has name \"Alex\";" +
-                                                           "$y isa person," +
-                                                           "  has lastname \"Smith\"," +
-                                                           "  has name \"John\";" +
-                                                           "$r (friend: $x, friend: $y) isa friendship, has ref 1;" +
-                                                           "$r1 (friend: $x, friend: $y) isa friendship, has ref 2;" +
-                                                           "$reflexive (friend: $x, friend: $x) isa friendship, has ref 3;").asInsert();
+                    "$x isa person," +
+                    "  has lastname \"Smith\"," +
+                    "  has name \"Alex\";" +
+                    "$y isa person," +
+                    "  has lastname \"Smith\"," +
+                    "  has name \"John\";" +
+                    "$r (friend: $x, friend: $y) isa friendship, has ref 1;" +
+                    "$r1 (friend: $x, friend: $y) isa friendship, has ref 2;" +
+                    "$reflexive (friend: $x, friend: $x) isa friendship, has ref 3;").asInsert();
 
             transaction.query().insert(query);
             transaction.commit();
@@ -163,17 +246,17 @@ public class TraversalTest {
 
             GraphTraversal.Parameters params = new GraphTraversal.Parameters();
             params.pushValue(_0.id().asVariable(),
-                             Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ),
-                             new GraphTraversal.Parameters.Value("Alex"));
+                    Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ),
+                    new GraphTraversal.Parameters.Value("Alex"));
             params.pushValue(_1.id().asVariable(),
-                             Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ),
-                             new GraphTraversal.Parameters.Value("John"));
+                    Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ),
+                    new GraphTraversal.Parameters.Value("John"));
             params.pushValue(r1.id().asVariable(),
-                             Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG),
-                             new GraphTraversal.Parameters.Value(3L));
+                    Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG),
+                    new GraphTraversal.Parameters.Value(3L));
             params.pushValue(r2.id().asVariable(),
-                             Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG),
-                             new GraphTraversal.Parameters.Value(1L));
+                    Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG),
+                    new GraphTraversal.Parameters.Value(1L));
 
             /*
             edges:
@@ -215,6 +298,7 @@ public class TraversalTest {
             FunctionalIterator<VertexMap> vertices = transaction.traversal().iterator(procedure, params, filter);
             vertices.next();
         }
+        session.close();
     }
 
 }
