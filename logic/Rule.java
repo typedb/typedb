@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RelationType;
@@ -484,7 +485,7 @@ public class Rule {
                         com.vaticle.typedb.core.concept.thing.Relation preexisting = existingRelations.next();
                         if (!preexisting.isInferred()) return Optional.empty();
                         else {
-                            if (insertable(preexisting, whenConcepts)) {
+                            if (insertable(preexisting, conceptMgr, whenConcepts)) {
                                 return Optional.of(thenConcepts(preexisting, whenConcepts));
                             }
                         }
@@ -494,17 +495,16 @@ public class Rule {
             }
 
             private boolean insertable(
-                    com.vaticle.typedb.core.concept.thing.Relation inserted, ConceptMap whenConcepts) {
+                    com.vaticle.typedb.core.concept.thing.Relation inserted, ConceptManager conceptMgr, ConceptMap whenConcepts) {
                 if (isa.type().label().isPresent()) {
                     if (!inserted.getType().getLabel().equals(isa.type().label().get().properLabel())) return false;
                 } else if (!inserted.getType().getLabel().equals(whenConcepts.get(isa.type().id().asRetrievable()).asType().getLabel())) return false;
                 Map<String, Map<Concept, Integer>> relationMap = new HashMap<>();
                 relation.players().forEach(player -> {
-                    assert player.roleType().isPresent(); // Must be present to be insertable
-                    TypeVariable roleType = player.roleType().get();
-                    String descopedRoleTypeLabel = roleType.label().map(LabelConstraint::properLabel)
-                            .orElseGet(() -> whenConcepts.get(roleType.id().asRetrievable()).asType().getLabel()).name();
-                    Map<Concept, Integer> played = relationMap.computeIfAbsent(descopedRoleTypeLabel, p -> new HashMap<>());
+                    assert player.roleType().isPresent();
+                    RoleType roleType = roleType(player, relationType(whenConcepts, conceptMgr), whenConcepts);
+                    Map<Concept, Integer> played = relationMap.computeIfAbsent(
+                            roleType.getLabel().name(), p -> new HashMap<>());
                     Concept playerConcept = whenConcepts.get(player.player().id());
                     played.computeIfPresent(playerConcept, (p, count) -> count + 1);
                     played.putIfAbsent(playerConcept, 1);
