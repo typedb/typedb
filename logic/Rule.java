@@ -478,7 +478,7 @@ public class Rule {
                 FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> existingRelations =
                         matchRelation(relationType, whenConcepts, traversalEng, conceptMgr);
                 if (!existingRelations.hasNext()) {
-                    return Optional.of(insert(relationType, whenConcepts));
+                    return Optional.of(thenConcepts(insert(relationType, whenConcepts), whenConcepts));
                 } else {
                     while (existingRelations.hasNext()) {
                         com.vaticle.typedb.core.concept.thing.Relation preexisting = existingRelations.next();
@@ -556,19 +556,14 @@ public class Rule {
                 }
             }
 
-            private Map<Identifier.Variable, Concept> insert(RelationType relationType, ConceptMap whenConcepts) {
-                Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
-                thenConcepts.put(isa().type().id(), relationType);
+            private com.vaticle.typedb.core.concept.thing.Relation insert(RelationType relationType, ConceptMap whenConcepts) {
                 com.vaticle.typedb.core.concept.thing.Relation relation = relationType.create(true);
-                thenConcepts.put(isa().owner().id(), relation);
                 relation().players().forEach(rp -> {
                     RoleType role = roleType(rp, relationType, whenConcepts);
                     Thing player = whenConcepts.get(rp.player().id()).asThing();
                     relation.addPlayer(role, player, true);
-                    thenConcepts.putIfAbsent(rp.roleType().get().id(), role);
-                    thenConcepts.putIfAbsent(rp.player().id(), player);
                 });
-                return thenConcepts;
+                return relation;
             }
 
             private Map<Identifier.Variable, Concept> thenConcepts(
