@@ -57,22 +57,17 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(BoundConclusionResolver.class);
     private final ConceptMap bounds;
-    private final Driver<ConditionResolver> conditionResolver;
     private final Rule.Conclusion conclusion;
-    private final Driver<Materialiser> materialiser;
     private final Map<Request, ConclusionRequestState<? extends Concludable<?>>> requestStates;
     private final Map<Materialiser.Request, Pair<Request, Integer>> materialiserRequestRouter;
 
     public BoundConclusionResolver(Driver<BoundConclusionResolver> driver, Rule.Conclusion conclusion, ConceptMap bounds,
-                                   Driver<ConditionResolver> conditionResolver,
-                                   Driver<Materialiser> materialiser, ResolverRegistry registry, TraversalEngine traversalEngine,
+                                   ResolverRegistry registry, TraversalEngine traversalEngine,
                                    ConceptManager conceptMgr, boolean resolutionTracing) {
         super(driver, BoundConclusionResolver.class.getSimpleName() + "(pattern: " + conclusion.conjunction() +
                 " bounds: " + bounds.toString() + ")", registry, traversalEngine, conceptMgr, resolutionTracing);
         this.bounds = bounds;
-        this.conditionResolver = conditionResolver;
         this.conclusion = conclusion;
-        this.materialiser = materialiser;
         this.requestStates = new HashMap<>();
         this.materialiserRequestRouter = new HashMap<>();
     }
@@ -129,8 +124,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         Request fromUpstream = fromUpstream(toDownstream);
         ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream);
         if (!requestState.isComplete()) {
-            Materialiser.Request request = Materialiser.Request.create(driver(), materialiser, conclusion,
-                                                                       fromDownstream.answer());
+            Materialiser.Request request = Materialiser.Request.create(
+                    driver(), registry.materialiser(), conclusion, fromDownstream.answer());
             requestFromMaterialiser(request, fromUpstream, iteration);
             requestState.waitedMaterialisations().increment();
         } else {
@@ -143,7 +138,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
                 this.name(), request.receiver().name(), iteration,
                 request.partialAnswer().conceptMap().concepts().keySet().toString());
         materialiserRequestRouter.put(request, new Pair<>(fromUpstream, iteration));
-        materialiser.execute(actor -> actor.receiveRequest(request));
+        registry.materialiser().execute(actor -> actor.receiveRequest(request));
     }
 
     protected void receiveMaterialisation(Materialiser.Response response) {
@@ -231,10 +226,11 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         List<Request> downstreams = new ArrayList<>();
         if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.conceptMap().concepts().size() &&
                 partialAnswer.conceptMap().concepts().containsKey(conclusion.generating().get().id())) {
-            candidateAnswers(partialAnswer).forEachRemaining(answer -> downstreams.add(Request.create(driver(), conditionResolver, answer)));
+            candidateAnswers(partialAnswer).forEachRemaining(answer -> downstreams.add(
+                    Request.create(driver(), registry.conditionResolver(conclusion.rule()), answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-            downstreams.add(Request.create(driver(), conditionResolver, partialAnswer.toDownstream(named)));
+            downstreams.add(Request.create(driver(), registry.conditionResolver(conclusion.rule()), partialAnswer.toDownstream(named)));
         }
         return downstreams;
     }

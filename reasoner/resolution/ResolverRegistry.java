@@ -181,13 +181,10 @@ public class ResolverRegistry {
 
     }
 
-    public Actor.Driver<BoundConclusionResolver> registerBoundConclusion(
-            Rule.Conclusion conclusion, ConceptMap bounds, Actor.Driver<ConditionResolver> conditionResolver) {
+    public Actor.Driver<BoundConclusionResolver> registerBoundConclusion(Rule.Conclusion conclusion, ConceptMap bounds) {
         LOG.debug("Register BoundConclusionResolver, pattern: {} bounds: {}", conclusion.conjunction(), bounds);
-        Actor.Driver<BoundConclusionResolver> resolver;
-        resolver = Actor.driver(driver -> new BoundConclusionResolver(
-                driver, conclusion, bounds, conditionResolver, materialiser, this, traversalEngine, conceptMgr,
-                resolutionTracing), executorService);
+        Actor.Driver<BoundConclusionResolver> resolver = Actor.driver(driver -> new BoundConclusionResolver(
+                driver, conclusion, bounds, this, traversalEngine, conceptMgr, resolutionTracing), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
@@ -303,6 +300,14 @@ public class ResolverRegistry {
 
     public void setExecutorService(ActorExecutorGroup executorService) {
         this.executorService = executorService;
+    }
+
+    public Actor.Driver<Materialiser> materialiser() {
+        return materialiser;
+    }
+
+    public Actor.Driver<ConditionResolver> conditionResolver(Rule rule) {
+        return ruleConditions.get(rule);
     }
 
     public static abstract class ResolverView {
