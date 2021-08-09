@@ -88,8 +88,8 @@ public class ResolverRegistry {
     private final TraversalEngine traversalEngine;
     private final boolean resolutionTracing;
     private final AtomicBoolean terminated;
-    private ActorExecutorGroup executorService;
     private final Actor.Driver<Materialiser> materialiser;
+    private ActorExecutorGroup executorService;
 
     public ResolverRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                             LogicManager logicMgr, boolean resolutionTracing) {
