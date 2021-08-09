@@ -128,12 +128,12 @@ public class TraversalTest {
             $role type friendship:friend;
             */
             /*
-		    1: ($rel-type *--[RELATES]--> $role)
-		    2: ($rel-type <--[ISA]--* $rel) { isTransitive: true }
-		    3: ($role <--[ISA]--* $rel:$role:$friend:1) { isTransitive: true }
-		    4: ($rel *--[RELATING]--> $rel:$role:$friend:1)
-		    5: ($rel:$role:$friend:1 <--[PLAYING]--* $friend)
-      		*/
+                    1: ($rel-type *--[RELATES]--> $role)
+                    2: ($rel-type <--[ISA]--* $rel) { isTransitive: true }
+                    3: ($role <--[ISA]--* $rel:$role:$friend:1) { isTransitive: true }
+                    4: ($rel *--[RELATING]--> $rel:$role:$friend:1)
+                    5: ($rel:$role:$friend:1 <--[PLAYING]--* $friend)
+            */
             GraphProcedure.Builder proc = GraphProcedure.builder(5);
             ProcedureVertex.Type rel_type = proc.namedType("rel-type", true);
             rel_type.props().labels(set(Label.of("friendship")));
