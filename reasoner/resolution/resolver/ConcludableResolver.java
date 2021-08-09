@@ -42,7 +42,6 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
     private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers;
-    private final Map<Driver<ConclusionResolver>, Rule> resolverRules;
     private final Concludable concludable;
     private final LogicManager logicMgr;
 
@@ -54,7 +53,6 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
         this.logicMgr = logicMgr;
         this.concludable = concludable;
         this.conclusionResolvers = new LinkedHashMap<>();
-        this.resolverRules = new HashMap<>();
         this.isInitialised = false;
     }
 
@@ -64,7 +62,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
             LOG.debug("{}: Creating a new BoundConcludableResolver for bounds: {}", name(), partial);
             // TODO: We could use the bounds to prune the applicable rules further
             return registry.registerBoundConcludable(
-                    concludable, partial.conceptMap(), resolverRules, conclusionResolvers, root,
+                    concludable, partial.conceptMap(), root,
                     iterationByRoot.get(root), partial.asConcludable().isExplain());
         });
     }
@@ -78,12 +76,15 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
                     try {
                         Driver<ConclusionResolver> conclusionResolver = registry.registerConclusion(rule.conclusion());
                         conclusionResolvers.computeIfAbsent(conclusionResolver, r -> new HashSet<>()).add(unifier);
-                        resolverRules.put(conclusionResolver, rule);
                     } catch (TypeDBException e) {
                         terminate(e);
                     }
                 }));
         if (!isTerminated()) isInitialised = true;
+    }
+
+    Map<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers() {
+        return conclusionResolvers;
     }
 
 }

@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,8 +51,6 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     private static final Logger LOG = LoggerFactory.getLogger(BoundConcludableResolver.class);
 
-    private final Map<Driver<ConclusionResolver>, Rule> resolverRules;
-    private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers;
     private final Map<Request, CachingRequestState<?, ConceptMap>> requestStates;
     protected final Concludable concludable;
     protected final ConceptMap bounds;
@@ -62,16 +59,12 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     protected CachingRequestState<?, ConceptMap> exploringRequestState;
 
     public BoundConcludableResolver(Driver<BoundConcludableResolver> driver, Concludable concludable, ConceptMap bounds,
-                                    Map<Driver<ConclusionResolver>, Rule> resolverRules,
-                                    LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers,
                                     ResolverRegistry registry, TraversalEngine traversalEngine,
                                     ConceptManager conceptMgr, boolean resolutionTracing) {
         super(driver, BoundConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() +
                 " bounds: " + bounds.toString() + ")", registry, traversalEngine, conceptMgr, resolutionTracing);
         this.concludable = concludable;
         this.bounds = bounds;
-        this.resolverRules = resolverRules;
-        this.conclusionResolvers = conclusionResolvers;
         this.cache = createCache(concludable.pattern(), bounds);
         this.requestStates = new HashMap<>();
         this.exploringRequestState = null;
@@ -219,12 +212,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     protected List<Request> ruleDownstreams(Request fromUpstream) {
         List<Request> downstreams = new ArrayList<>();
         AnswerState.Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
-        for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry : conclusionResolvers.entrySet()) {
+        ConcludableResolver concludableResolver = registry.concludableResolvers(concludable).actor();  // TODO: Reaching through to the actor is not ideal
+        for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry:
+                concludableResolver.conclusionResolvers().entrySet()) {
             Driver<ConclusionResolver> conclusionResolver = entry.getKey();
+            Rule rule = conclusionResolver.actor().conclusion().rule();  // TODO: Reaching through to the actor is not ideal
             for (Unifier unifier : entry.getValue()) {
-                Optional<? extends AnswerState.Partial.Conclusion<?, ?>> unified = partialAnswer.toDownstream(
-                        unifier, resolverRules.get(conclusionResolver));
-                unified.ifPresent(
+                partialAnswer.toDownstream(unifier, rule).ifPresent(
                         conclusion -> downstreams.add(Request.create(driver(), conclusionResolver, conclusion)));
             }
         }

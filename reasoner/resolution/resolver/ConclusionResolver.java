@@ -68,4 +68,8 @@ public class ConclusionResolver extends SubsumptiveCoordinator<ConclusionResolve
     public String toString() {
         return name();
     }
+
+    public Rule.Conclusion conclusion() {
+        return conclusion;
+    }
 }

@@ -22,9 +22,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
-import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
@@ -38,22 +36,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(ExplainBoundConcludableResolver.class);
 
     public ExplainBoundConcludableResolver(Driver<BoundConcludableResolver> driver, Concludable concludable,
-                                           ConceptMap bounds, Map<Driver<ConclusionResolver>, Rule> resolverRules,
-                                           LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers,
-                                           ResolverRegistry registry, TraversalEngine traversalEngine,
-                                           ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(driver, concludable, bounds, resolverRules, conclusionResolvers, registry, traversalEngine, conceptMgr,
-              resolutionTracing);
+                                           ConceptMap bounds, ResolverRegistry registry,
+                                           TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                                           boolean resolutionTracing) {
+        super(driver, concludable, bounds, registry, traversalEngine, conceptMgr, resolutionTracing);
     }
 
     @Override

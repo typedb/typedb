@@ -31,7 +31,6 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
-import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
@@ -59,7 +58,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -229,9 +227,7 @@ public class ResolverRegistry {
             }
         }
         Actor.Driver<ConcludableResolver> resolver = Actor.driver(driver -> new ConcludableResolver(
-                driver, concludable, this, traversalEngine,
-                conceptMgr, logicMgr, resolutionTracing
-        ), executorService);
+                driver, concludable, this, traversalEngine, conceptMgr, logicMgr, resolutionTracing), executorService);
         concludableResolvers.put(concludable, resolver);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -239,19 +235,16 @@ public class ResolverRegistry {
     }
 
     public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(
-            Concludable concludable, ConceptMap bounds, Map<Actor.Driver<ConclusionResolver>, Rule> resolverRules,
-            LinkedHashMap<Actor.Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers,
+            Concludable concludable, ConceptMap bounds,
             Actor.Driver<? extends Resolver<?>> root, int iteration, boolean explain) {
         LOG.debug("Register BoundConcludableResolver, pattern: {} bounds: {}", concludable.pattern(), bounds);
         Actor.Driver<BoundConcludableResolver> resolver;
         if (explain) {
             resolver = Actor.driver(driver -> new ExplainBoundConcludableResolver(
-                    driver, concludable, bounds, resolverRules, conclusionResolvers, this, traversalEngine, conceptMgr,
-                    resolutionTracing), executorService);
+                    driver, concludable, bounds, this, traversalEngine, conceptMgr, resolutionTracing), executorService);
         } else {
             resolver = Actor.driver(driver -> new MatchBoundConcludableResolver(
-                    driver, concludable, bounds, resolverRules, conclusionResolvers, this, traversalEngine, conceptMgr,
-                    resolutionTracing), executorService);
+                    driver, concludable, bounds, this, traversalEngine, conceptMgr, resolutionTracing), executorService);
         }
         resolvers.add(resolver);
         boundConcludables.computeIfAbsent(new Pair<>(root, iteration), r -> new HashSet<>()).add(resolver);
@@ -308,6 +301,10 @@ public class ResolverRegistry {
 
     public Actor.Driver<ConditionResolver> conditionResolver(Rule rule) {
         return ruleConditions.get(rule);
+    }
+
+    public Actor.Driver<ConcludableResolver> concludableResolvers(Concludable concludable) {
+        return concludableResolvers.get(concludable);
     }
 
     public static abstract class ResolverView {
