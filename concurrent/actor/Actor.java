@@ -17,6 +17,9 @@
 
 package com.vaticle.typedb.core.concurrent.actor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -25,9 +28,11 @@ import java.util.function.Function;
 @ThreadSafe
 public abstract class Actor<ACTOR extends Actor<ACTOR>> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(Actor.class);
     private static final String ERROR_ACTOR_DRIVER_IS_NULL = "driver() must not be null.";
     private final Driver<ACTOR> driver;
     private final String name;
+    private boolean terminated;
 
     public static <A extends Actor<A>> Driver<A> driver(Function<Driver<A>, A> actorFn, ActorExecutorGroup service) {
         return new Driver<>(actorFn, service);
@@ -38,6 +43,7 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
     protected Actor(Driver<ACTOR> driver, String name) {
         this.driver = driver;
         this.name = name;
+        this.terminated = false;
     }
 
     protected Driver<ACTOR> driver() {
@@ -48,6 +54,13 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
     public String name() {
         return name;
     }
+
+    public void terminate(Throwable cause) {
+        LOG.debug("Actor terminated. ", cause);
+        this.terminated = true;
+    }
+
+    public boolean isTerminated() { return terminated; }
 
     public static class Driver<ACTOR extends Actor<ACTOR>> {
 

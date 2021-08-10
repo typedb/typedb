@@ -39,6 +39,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explai
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConclusionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundRetrievableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConcludableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConclusionResolver;
@@ -47,6 +48,7 @@ import com.vaticle.typedb.core.reasoner.resolution.resolver.ConjunctionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.DisjunctionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ExplainBoundConcludableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.MatchBoundConcludableResolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.Materialiser;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.NegationResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RetrievableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
@@ -87,6 +89,7 @@ public class ResolverRegistry {
     private final boolean resolutionTracing;
     private final AtomicBoolean terminated;
     private ActorExecutorGroup executorService;
+    private final Actor.Driver<Materialiser> materialiser;
 
     public ResolverRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                             LogicManager logicMgr, boolean resolutionTracing) {
@@ -101,15 +104,18 @@ public class ResolverRegistry {
         this.resolvers = new ConcurrentSet<>();
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
+        this.materialiser = Actor.driver(driver -> new Materialiser(
+                driver, this,  traversalEngine, conceptMgr, resolutionTracing), executorService);
     }
 
     public Set<Actor.Driver<BoundConcludableResolver>> reiterationQueryRespondents(Actor.Driver<? extends Resolver<?>> root, int iteration) {
         return reiterationQueryRespondents.computeIfAbsent(new Pair<>(root, iteration), p -> new HashSet<>());
     }
 
-    public void terminateResolvers(Throwable cause) {
+    public void terminate(Throwable cause) {
         if (terminated.compareAndSet(false, true)) {
             resolvers.forEach(actor -> actor.execute(r -> r.terminate(cause)));
+            materialiser.execute(r -> r.terminate(cause));
         }
     }
 
@@ -228,7 +234,19 @@ public class ResolverRegistry {
         return resolver;
     }
 
+    public Actor.Driver<BoundConclusionResolver> registerBoundConclusion(
+            Rule.Conclusion conclusion, ConceptMap bounds, Actor.Driver<ConditionResolver> conditionResolver) {
+        LOG.debug("Register BoundConclusionResolver, pattern: {} bounds: {}", conclusion.conjunction(), bounds);
+        Actor.Driver<BoundConclusionResolver> resolver;
+        resolver = Actor.driver(driver -> new BoundConclusionResolver(
+                driver, conclusion, bounds, conditionResolver, materialiser, this, traversalEngine, conceptMgr,
+                resolutionTracing), executorService);
+        resolvers.add(resolver);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return resolver;
+    }
     // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
+
     private synchronized ResolverView.MappedConcludable registerConcludable(Concludable concludable) {
         LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
         for (Map.Entry<Concludable, Actor.Driver<ConcludableResolver>> c : concludableResolvers.entrySet()) {

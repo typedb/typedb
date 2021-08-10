@@ -165,7 +165,7 @@ public class ReasonerTest {
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                txn.reasoner().resolverRegistry().terminateResolvers(new RuntimeException());
+                txn.reasoner().resolverRegistry().terminate(new RuntimeException());
                 try {
                     List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x isa is-still-good;").asMatch()).toList();
                 } catch (TypeDBException e) {

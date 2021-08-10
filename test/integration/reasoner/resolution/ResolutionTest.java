@@ -142,7 +142,7 @@ public class ResolutionTest {
                 }
 
                 Exception e = new RuntimeException();
-                registry.terminateResolvers(e);
+                registry.terminate(e);
                 Throwable receivedException = exceptions.poll(100, TimeUnit.MILLISECONDS);
                 assertEquals(e, receivedException);
             }

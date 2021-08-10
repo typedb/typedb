@@ -57,8 +57,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     protected final ResolverRegistry registry;
     protected final TraversalEngine traversalEngine;
     protected final ConceptManager conceptMgr;
-    private final boolean resolutionTracing;
-    private boolean terminated;
+    protected final boolean resolutionTracing;
 
     protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
                        ConceptManager conceptMgr, boolean resolutionTracing) {
@@ -67,7 +66,6 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.resolutionTracing = resolutionTracing;
-        this.terminated = false;
         this.requestRouter = new HashMap<>();
         // Note: initialising downstream actors in constructor will create all actors ahead of time, so it is non-lazy
         // additionally, it can cause deadlock within ResolverRegistry as different threads initialise actors
@@ -79,12 +77,12 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
             String code = ((TypeDBException) e).code().get();
             if (code.equals(RESOURCE_CLOSED.code())) {
                 LOG.debug("Resolver interrupted by resource close: {}", e.getMessage());
-                registry.terminateResolvers(e);
+                registry.terminate(e);
                 return;
             }
         }
         LOG.error("Actor exception", e);
-        registry.terminateResolvers(e);
+        registry.terminate(e);
     }
 
     public abstract void receiveRequest(Request fromUpstream, int iteration);
@@ -93,14 +91,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
 
     protected abstract void receiveFail(Response.Fail fromDownstream, int iteration);
 
-    public void terminate(Throwable cause) {
-        LOG.debug("Resolver terminated. ", cause);
-        this.terminated = true;
-    }
-
-    public boolean isTerminated() { return terminated; }
-
-    protected abstract void initialiseDownstreamResolvers();
+    protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
 
     protected Request fromUpstream(Request toDownstream) {
         assert requestRouter.containsKey(toDownstream);
@@ -110,8 +101,9 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     // TODO: Rename to sendRequest or request
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name(), request);
-        if (resolutionTracing) ResolutionTracer.get().request(this.name(), request.receiver().name(), iteration,
-                                                              request.partialAnswer().conceptMap().concepts().keySet().toString());
+        if (resolutionTracing) ResolutionTracer.get().request(
+                this.name(), request.receiver().name(), iteration,
+                request.partialAnswer().conceptMap().concepts().keySet().toString());
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(request, fromUpstream);
         Driver<? extends Resolver<?>> receiver = request.receiver();
