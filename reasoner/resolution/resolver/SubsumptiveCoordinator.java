@@ -46,7 +46,7 @@ public abstract class SubsumptiveCoordinator<
     private final Map<Driver<? extends Resolver<?>>, SubsumptionTracker> subsumptionTrackers;
     private final Map<Driver<? extends Resolver<?>>, Map<Request, Request>> requestMapByRoot;
     protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, Driver<WORKER>>> workersByRoot; // TODO: We would like these not to be by root. They need to be, for now, for reiteration purposes.
-    protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, AnswerCache<?, ConceptMap>>> cacheRegistersByRoot;
+    protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, AnswerCache<?>>> cacheRegistersByRoot;
     protected final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
     protected boolean isInitialised;
 

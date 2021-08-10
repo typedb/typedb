@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
-import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
@@ -51,12 +50,11 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     private static final Logger LOG = LoggerFactory.getLogger(BoundConcludableResolver.class);
 
-    private final Map<Request, CachingRequestState<?, ConceptMap>> requestStates;
+    private final Map<Request, CachingRequestState<?>> requestStates;
     protected final Concludable concludable;
     protected final ConceptMap bounds;
 
-    protected AnswerCache<?, ConceptMap> cache;
-    protected CachingRequestState<?, ConceptMap> exploringRequestState;
+    protected CachingRequestState<?> exploringRequestState;
 
     public BoundConcludableResolver(Driver<BoundConcludableResolver> driver, Concludable concludable, ConceptMap bounds,
                                     ResolverRegistry registry, TraversalEngine traversalEngine,
@@ -65,12 +63,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                 " bounds: " + bounds.toString() + ")", registry, traversalEngine, conceptMgr, resolutionTracing);
         this.concludable = concludable;
         this.bounds = bounds;
-        this.cache = createCache(concludable.pattern(), bounds);
         this.requestStates = new HashMap<>();
         this.exploringRequestState = null;
     }
-
-    abstract AnswerCache<?, ConceptMap> createCache(Conjunction conjunction, ConceptMap bounds);
 
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
@@ -113,7 +108,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     private void receiveDirectRequest(Request fromUpstream, int iteration) {
         assert fromUpstream.partialAnswer().isConcludable();
-        CachingRequestState<?, ConceptMap> requestState;
+        CachingRequestState<?> requestState;
         if (exploringRequestState == null) {
             requestState = createExploringRequestState(fromUpstream, iteration);
             exploringRequestState = requestState;
@@ -126,15 +121,15 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         sendAnswerOrSearchRulesOrFail(fromUpstream, iteration, requestState);
     }
 
-    abstract CachingRequestState<?, ConceptMap> createRequestState(Request fromUpstream, int iteration);
+    abstract CachingRequestState<?> createRequestState(Request fromUpstream, int iteration);
 
-    abstract CachingRequestState<?, ConceptMap> createExploringRequestState(Request fromUpstream, int iteration);
+    abstract CachingRequestState<?> createExploringRequestState(Request fromUpstream, int iteration);
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         if (isTerminated()) return;
         Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
-        CachingRequestState<?, ConceptMap> requestState = this.requestStates.get(fromUpstream);
+        CachingRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert requestState.isExploration();
         requestState.asExploration().newAnswer(fromDownstream.answer());
         sendAnswerOrSearchRulesOrFail(fromUpstream, iteration, requestState);
@@ -148,7 +143,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
 
-        CachingRequestState<?, ConceptMap> requestState = this.requestStates.get(fromUpstream);
+        CachingRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
         if (requestState.isExploration()) {
             requestState.asExploration().downstreamManager().removeDownstream(fromDownstream.sourceRequest());
@@ -156,7 +151,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         sendAnswerOrSearchRulesOrFail(fromUpstream, iteration, requestState);
     }
 
-    private void sendAnswerOrSearchRulesOrFail(Request fromUpstream, int iteration, CachingRequestState<?, ConceptMap> requestState) {
+    private void sendAnswerOrSearchRulesOrFail(Request fromUpstream, int iteration, CachingRequestState<?> requestState) {
         Optional<AnswerState.Partial.Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
         if (upstreamAnswer.isPresent()) {
             /*
@@ -200,8 +195,10 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     public void receiveReiterationQuery(ReiterationQuery.Request request) {
         driver().execute(actor -> request.onResponse().accept(ReiterationQuery.Response.create(
-                actor.driver(), cache.requiresReiteration())));
+                actor.driver(), cache().requiresReiteration())));
     }
+
+    protected abstract AnswerCache<?> cache();
 
     @Override
     public void terminate(Throwable cause) {
