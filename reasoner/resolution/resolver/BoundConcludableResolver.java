@@ -142,9 +142,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         CachingRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
-        if (requestState.isExploration()) {
-            requestState.asExploration().downstreamManager().removeDownstream(fromDownstream.sourceRequest());
-        }
+        assert requestState.isExploration();
+        requestState.asExploration().downstreamManager().removeDownstream(fromDownstream.sourceRequest());
         sendAnswerOrSearchRulesOrFail(fromUpstream, iteration, requestState);
     }
 
