@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
@@ -29,7 +28,6 @@ import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.CachingRequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.Exploration;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,9 +45,8 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     private final AnswerCache<ConceptMap> cache;
 
     public MatchBoundConcludableResolver(Driver<BoundConcludableResolver> driver, Concludable concludable,
-                                         ConceptMap bounds, ResolverRegistry registry, TraversalEngine traversalEngine,
-                                         ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(driver, concludable, bounds, registry, traversalEngine, conceptMgr, resolutionTracing);
+                                         ConceptMap bounds, ResolverRegistry registry) {
+        super(driver, concludable, bounds, registry);
         this.singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars());
         this.cache = new AnswerCache<>(() -> traversalIterator(concludable.pattern(), bounds));
     }

@@ -18,18 +18,14 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class ConclusionResolver extends SubsumptiveCoordinator<ConclusionResolver, BoundConclusionResolver> {
 
@@ -37,10 +33,8 @@ public class ConclusionResolver extends SubsumptiveCoordinator<ConclusionResolve
 
     private final Rule.Conclusion conclusion;
 
-    public ConclusionResolver(Driver<ConclusionResolver> driver, Rule.Conclusion conclusion, ResolverRegistry registry,
-                              TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(driver, ConclusionResolver.class.getSimpleName() + "(" + conclusion + ")",
-              registry, traversalEngine, conceptMgr, resolutionTracing);
+    public ConclusionResolver(Driver<ConclusionResolver> driver, Rule.Conclusion conclusion, ResolverRegistry registry) {
+        super(driver, ConclusionResolver.class.getSimpleName() + "(" + conclusion + ")", registry);
         this.conclusion = conclusion;
         this.isInitialised = false;
     }

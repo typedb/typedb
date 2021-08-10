@@ -19,15 +19,11 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.concept.ConceptManager;
-import com.vaticle.typedb.core.logic.LogicManager;
-import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,14 +39,10 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
 
     private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers;
     private final Concludable concludable;
-    private final LogicManager logicMgr;
 
-    public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable,
-                               ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                               LogicManager logicMgr, boolean resolutionTracing) {
+    public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable, ResolverRegistry registry) {
         super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
-              registry, traversalEngine, conceptMgr, resolutionTracing);
-        this.logicMgr = logicMgr;
+              registry);
         this.concludable = concludable;
         this.conclusionResolvers = new LinkedHashMap<>();
         this.isInitialised = false;
@@ -70,16 +62,18 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
     @Override
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
-        concludable.getApplicableRules(conceptMgr, logicMgr).forEachRemaining(rule -> concludable.getUnifiers(rule)
-                .forEachRemaining(unifier -> {
-                    if (isTerminated()) return;
-                    try {
-                        Driver<ConclusionResolver> conclusionResolver = registry.registerConclusion(rule.conclusion());
-                        conclusionResolvers.computeIfAbsent(conclusionResolver, r -> new HashSet<>()).add(unifier);
-                    } catch (TypeDBException e) {
-                        terminate(e);
-                    }
-                }));
+        concludable.getApplicableRules(registry.conceptManager(), registry.logicManager())
+                .forEachRemaining(rule -> concludable.getUnifiers(rule)
+                        .forEachRemaining(unifier -> {
+                            if (isTerminated()) return;
+                            try {
+                                Driver<ConclusionResolver> conclusionResolver =
+                                        registry.registerConclusion(rule.conclusion());
+                                conclusionResolvers.computeIfAbsent(conclusionResolver, r -> new HashSet<>()).add(unifier);
+                            } catch (TypeDBException e) {
+                                terminate(e);
+                            }
+                        }));
         if (!isTerminated()) isInitialised = true;
     }
 

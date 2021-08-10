@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
@@ -30,7 +29,6 @@ import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -45,10 +43,9 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     private final ConceptMap bounds;
 
     public BoundRetrievableResolver(Driver<BoundRetrievableResolver> driver, Retrievable retrievable, ConceptMap bounds,
-                                    ResolverRegistry registry, TraversalEngine traversalEngine,
-                                    ConceptManager conceptMgr, boolean resolutionTracing) {
+                                    ResolverRegistry registry) {
         super(driver, BoundRetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() +
-                " bounds: " + bounds.toString() + ")", registry, traversalEngine, conceptMgr, resolutionTracing);
+                " bounds: " + bounds.toString() + ")", registry);
         this.bounds = bounds;
         this.cache = new AnswerCache<>(() -> traversalIterator(retrievable.pattern(), bounds));
         this.requestStates = new HashMap<>();

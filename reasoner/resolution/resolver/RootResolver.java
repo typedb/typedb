@@ -18,8 +18,6 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.iterator.Iterators;
-import com.vaticle.typedb.core.concept.ConceptManager;
-import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
@@ -30,7 +28,6 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,10 +53,8 @@ public interface RootResolver<TOP extends Top> {
 
         public Conjunction(Driver<Conjunction> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction,
                            Consumer<Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
-                           ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                           LogicManager logicMgr, boolean resolutionTracing) {
-            super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")",
-                  registry, traversalEngine, conceptMgr, logicMgr, resolutionTracing);
+                           ResolverRegistry registry) {
+            super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", registry);
             this.conjunction = conjunction;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
@@ -74,7 +69,7 @@ public interface RootResolver<TOP extends Top> {
         @Override
         Set<Concludable> concludablesTriggeringRules() {
             return Iterators.iterate(Concludable.create(conjunction))
-                    .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext())
+                    .filter(c -> c.getApplicableRules(registry.conceptManager(), registry.logicManager()).hasNext())
                     .toSet();
         }
 
@@ -154,10 +149,9 @@ public interface RootResolver<TOP extends Top> {
 
         public Disjunction(Driver<Disjunction> driver, com.vaticle.typedb.core.pattern.Disjunction disjunction,
                            Consumer<Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
-                           ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                           boolean resolutionTracing) {
+                           ResolverRegistry registry) {
             super(driver, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction,
-                  registry, traversalEngine, conceptMgr, resolutionTracing);
+                  registry);
             this.onAnswer = onAnswer;
             this.onFail = onFail;
             this.onException = onException;
@@ -240,9 +234,8 @@ public interface RootResolver<TOP extends Top> {
 
         public Explain(Driver<Explain> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction,
                        Consumer<Top.Explain.Finished> onAnswer, Consumer<Integer> onFail,
-                       Consumer<Throwable> onException, ResolverRegistry registry, TraversalEngine traversalEngine,
-                       ConceptManager conceptMgr, LogicManager logicMgr, boolean resolutionTracing) {
-            super(driver, "Explain(" + conjunction + ")", registry, traversalEngine, conceptMgr, logicMgr, resolutionTracing);
+                       Consumer<Throwable> onException, ResolverRegistry registry) {
+            super(driver, "Explain(" + conjunction + ")", registry);
             this.conjunction = conjunction;
             this.onAnswer = onAnswer;
             this.onFail = onFail;
@@ -319,7 +312,7 @@ public interface RootResolver<TOP extends Top> {
         @Override
         Set<Concludable> concludablesTriggeringRules() {
             Set<Concludable> concludables = Iterators.iterate(Concludable.create(conjunction))
-                    .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext())
+                    .filter(c -> c.getApplicableRules(registry.conceptManager(), registry.logicManager()).hasNext())
                     .toSet();
             assert concludables.size() == 1;
             return concludables;

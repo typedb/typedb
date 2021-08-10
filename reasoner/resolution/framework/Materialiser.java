@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.resolution.resolver;
+package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
@@ -25,8 +25,7 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ReasonerActor;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConclusionResolver;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
@@ -42,24 +41,17 @@ public class Materialiser extends ReasonerActor<Materialiser> {
     private static final Logger LOG = LoggerFactory.getLogger(Materialiser.class);
 
     private final ResolverRegistry registry;
-    private final TraversalEngine traversalEngine;
-    private final ConceptManager conceptMgr;
-    private final boolean resolutionTracing;
 
-    public Materialiser(Driver<Materialiser> driver, ResolverRegistry registry, TraversalEngine traversalEngine,
-                        ConceptManager conceptMgr, boolean resolutionTracing) {
+    public Materialiser(Driver<Materialiser> driver, ResolverRegistry registry) {
         super(driver, Materialiser.class.getSimpleName());
         this.registry = registry;
-        this.traversalEngine = traversalEngine;
-        this.conceptMgr = conceptMgr;
-        this.resolutionTracing = resolutionTracing;
     }
 
     public void receiveRequest(Request request) {
         if (isTerminated()) return;
-        Optional<Map<Identifier.Variable, Concept>> materialisation = request.conclusion()
-                .materialise(request.partialAnswer().conceptMap(), traversalEngine, conceptMgr);
-        if (resolutionTracing) {
+        Optional<Map<Identifier.Variable, Concept>> materialisation = request.conclusion().materialise(
+                request.partialAnswer().conceptMap(), registry.traversalEngine(), registry.conceptManager());
+        if (registry.resolutionTracing()) {
             if (materialisation.isPresent()) {
                 ResolutionTracer.get().responseAnswer(
                         this.name(), request.sender().name(), -1, materialisation.get().keySet().toString());
@@ -131,7 +123,7 @@ public class Materialiser extends ReasonerActor<Materialiser> {
         }
     }
 
-    static class Response {
+    public static class Response {
 
         private final Request request;
         private final Map<Identifier.Variable, Concept> materialisation;

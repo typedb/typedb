@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -33,7 +32,6 @@ import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.CachingRequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,10 +55,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     protected CachingRequestState<?> exploringRequestState;
 
     public BoundConcludableResolver(Driver<BoundConcludableResolver> driver, Concludable concludable, ConceptMap bounds,
-                                    ResolverRegistry registry, TraversalEngine traversalEngine,
-                                    ConceptManager conceptMgr, boolean resolutionTracing) {
+                                    ResolverRegistry registry) {
         super(driver, BoundConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() +
-                " bounds: " + bounds.toString() + ")", registry, traversalEngine, conceptMgr, resolutionTracing);
+                " bounds: " + bounds.toString() + ")", registry);
         this.concludable = concludable;
         this.bounds = bounds;
         this.requestStates = new HashMap<>();

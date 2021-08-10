@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
@@ -29,7 +28,6 @@ import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.CachingRequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.Exploration;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,10 +40,8 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
     private final AnswerCache<AnswerState.Partial.Concludable<?>> cache;
 
     public ExplainBoundConcludableResolver(Driver<BoundConcludableResolver> driver, Concludable concludable,
-                                           ConceptMap bounds, ResolverRegistry registry,
-                                           TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                                           boolean resolutionTracing) {
-        super(driver, concludable, bounds, registry, traversalEngine, conceptMgr, resolutionTracing);
+                                           ConceptMap bounds, ResolverRegistry registry) {
+        super(driver, concludable, bounds, registry);
         this.cache = new AnswerCache<>(Iterators::empty); // TODO How is this working without doing traversal?
     }
 

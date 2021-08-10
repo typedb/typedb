@@ -18,7 +18,6 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.concept.Concept;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
@@ -27,7 +26,6 @@ import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,9 +48,8 @@ public abstract class SubsumptiveCoordinator<
     protected final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
     protected boolean isInitialised;
 
-    public SubsumptiveCoordinator(Driver<RESOLVER> driver, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
-                                  ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing);
+    public SubsumptiveCoordinator(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
+        super(driver, name, registry);
         this.isInitialised = false;
         this.workersByRoot = new HashMap<>();
         this.cacheRegistersByRoot = new HashMap<>();

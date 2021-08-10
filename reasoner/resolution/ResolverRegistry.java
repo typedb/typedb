@@ -47,7 +47,7 @@ import com.vaticle.typedb.core.reasoner.resolution.resolver.ConjunctionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.DisjunctionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ExplainBoundConcludableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.MatchBoundConcludableResolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.Materialiser;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Materialiser;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.NegationResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RetrievableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
@@ -103,7 +103,23 @@ public class ResolverRegistry {
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
         this.materialiser = Actor.driver(driver -> new Materialiser(
-                driver, this,  traversalEngine, conceptMgr, resolutionTracing), executorService);
+                driver, this), executorService);
+    }
+
+    public TraversalEngine traversalEngine() {
+        return traversalEngine;
+    }
+
+    public ConceptManager conceptManager() {
+        return conceptMgr;
+    }
+
+    public LogicManager logicManager() {
+        return logicMgr;
+    }
+
+    public boolean resolutionTracing() {
+        return resolutionTracing;
     }
 
     public void terminate(Throwable cause) {
@@ -117,9 +133,7 @@ public class ResolverRegistry {
                                                        Consumer<Integer> onFail, Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         Actor.Driver<RootResolver.Conjunction> resolver = Actor.driver(driver -> new RootResolver.Conjunction(
-                driver, conjunction, onAnswer, onFail, onException, this,
-                traversalEngine, conceptMgr, logicMgr, resolutionTracing
-        ), executorService);
+                driver, conjunction, onAnswer, onFail, onException, this), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
@@ -129,9 +143,7 @@ public class ResolverRegistry {
                                                        Consumer<Integer> onExhausted, Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         Actor.Driver<RootResolver.Disjunction> resolver = Actor.driver(driver -> new RootResolver.Disjunction(
-                driver, disjunction, onAnswer, onExhausted, onException,
-                this, traversalEngine, conceptMgr, resolutionTracing
-        ), executorService);
+                driver, disjunction, onAnswer, onExhausted, onException, this), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
@@ -139,9 +151,8 @@ public class ResolverRegistry {
 
     public ResolverView.FilteredNegation negated(Negated negated, Conjunction upstream) {
         LOG.debug("Creating Negation resolver for : {}", negated);
-        Actor.Driver<NegationResolver> negatedResolver = Actor.driver(driver -> new NegationResolver(
-                driver, negated, this, traversalEngine, conceptMgr, resolutionTracing
-        ), executorService);
+        Actor.Driver<NegationResolver> negatedResolver = Actor.driver(
+                driver -> new NegationResolver(driver, negated, this), executorService);
         resolvers.add(negatedResolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         Set<Variable.Retrievable> filter = filter(upstream, negated);
@@ -158,9 +169,7 @@ public class ResolverRegistry {
     public Actor.Driver<ConditionResolver> registerCondition(Rule.Condition ruleCondition) {
         LOG.debug("Register retrieval for rule condition actor: '{}'", ruleCondition);
         Actor.Driver<ConditionResolver> resolver = ruleConditions.computeIfAbsent(ruleCondition.rule(), (r) -> Actor.driver(
-                driver -> new ConditionResolver(driver, ruleCondition, this, traversalEngine,
-                                                conceptMgr, logicMgr, resolutionTracing), executorService
-        ));
+                driver -> new ConditionResolver(driver, ruleCondition, this), executorService));
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
@@ -170,19 +179,16 @@ public class ResolverRegistry {
     public Actor.Driver<ConclusionResolver> registerConclusion(Rule.Conclusion conclusion) {
         LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
         Actor.Driver<ConclusionResolver> resolver = ruleConclusions.computeIfAbsent(conclusion.rule(), r -> Actor.driver(
-                driver -> new ConclusionResolver(driver, conclusion, this,
-                                                 traversalEngine, conceptMgr, resolutionTracing), executorService
-        ));
+                driver -> new ConclusionResolver(driver, conclusion, this), executorService));
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
-
     }
 
     public Actor.Driver<BoundConclusionResolver> registerBoundConclusion(Rule.Conclusion conclusion, ConceptMap bounds) {
         LOG.debug("Register BoundConclusionResolver, pattern: {} bounds: {}", conclusion.conjunction(), bounds);
         Actor.Driver<BoundConclusionResolver> resolver = Actor.driver(driver -> new BoundConclusionResolver(
-                driver, conclusion, bounds, this, traversalEngine, conceptMgr, resolutionTracing), executorService);
+                driver, conclusion, bounds, this), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
@@ -198,9 +204,8 @@ public class ResolverRegistry {
 
     private ResolverView.FilteredRetrievable registerRetrievable(com.vaticle.typedb.core.logic.resolvable.Retrievable retrievable) {
         LOG.debug("Register RetrievableResolver: '{}'", retrievable.pattern());
-        Actor.Driver<RetrievableResolver> resolver = Actor.driver(driver -> new RetrievableResolver(
-                driver, retrievable, this, traversalEngine, conceptMgr, resolutionTracing
-        ), executorService);
+        Actor.Driver<RetrievableResolver> resolver = Actor.driver(
+                driver -> new RetrievableResolver(driver, retrievable, this), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return ResolverView.retrievable(resolver, retrievable.retrieves());
@@ -208,9 +213,8 @@ public class ResolverRegistry {
 
     public Actor.Driver<BoundRetrievableResolver> registerBoundRetrievable(Retrievable retrievable, ConceptMap bounds) {
         LOG.debug("Register BoundRetrievableResolver, pattern: {} bounds: {}", retrievable.pattern(), bounds);
-        Actor.Driver<BoundRetrievableResolver> resolver = Actor.driver(driver -> new BoundRetrievableResolver(
-                driver, retrievable, bounds, this, traversalEngine, conceptMgr, resolutionTracing
-        ), executorService);
+        Actor.Driver<BoundRetrievableResolver> resolver = Actor.driver(
+                driver -> new BoundRetrievableResolver(driver, retrievable, bounds, this), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
@@ -227,7 +231,7 @@ public class ResolverRegistry {
             }
         }
         Actor.Driver<ConcludableResolver> resolver = Actor.driver(driver -> new ConcludableResolver(
-                driver, concludable, this, traversalEngine, conceptMgr, logicMgr, resolutionTracing), executorService);
+                driver, concludable, this), executorService);
         concludableResolvers.put(concludable, resolver);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -240,11 +244,11 @@ public class ResolverRegistry {
         LOG.debug("Register BoundConcludableResolver, pattern: {} bounds: {}", concludable.pattern(), bounds);
         Actor.Driver<BoundConcludableResolver> resolver;
         if (explain) {
-            resolver = Actor.driver(driver -> new ExplainBoundConcludableResolver(
-                    driver, concludable, bounds, this, traversalEngine, conceptMgr, resolutionTracing), executorService);
+            resolver = Actor.driver(
+                    driver -> new ExplainBoundConcludableResolver(driver, concludable, bounds, this), executorService);
         } else {
-            resolver = Actor.driver(driver -> new MatchBoundConcludableResolver(
-                    driver, concludable, bounds, this, traversalEngine, conceptMgr, resolutionTracing), executorService);
+            resolver = Actor.driver(
+                    driver -> new MatchBoundConcludableResolver(driver, concludable, bounds, this), executorService);
         }
         resolvers.add(resolver);
         boundConcludables.computeIfAbsent(new Pair<>(root, iteration), r -> new HashSet<>()).add(resolver);
@@ -252,15 +256,15 @@ public class ResolverRegistry {
         return resolver;
     }
 
-    public Set<Actor.Driver<BoundConcludableResolver>> boundConcludables(Actor.Driver<? extends Resolver<?>> root, int iteration) {
+    public Set<Actor.Driver<BoundConcludableResolver>> boundConcludables(
+            Actor.Driver<? extends Resolver<?>> root, int iteration) {
         return boundConcludables.computeIfAbsent(new Pair<>(root, iteration), p -> new HashSet<>());
     }
 
     public Actor.Driver<ConjunctionResolver.Nested> nested(Conjunction conjunction) {
         LOG.debug("Creating Conjunction resolver for : {}", conjunction);
-        Actor.Driver<ConjunctionResolver.Nested> resolver = Actor.driver(driver -> new ConjunctionResolver.Nested(
-                driver, conjunction, this, traversalEngine, conceptMgr, logicMgr, resolutionTracing
-        ), executorService);
+        Actor.Driver<ConjunctionResolver.Nested> resolver = Actor.driver(
+                driver -> new ConjunctionResolver.Nested(driver, conjunction, this), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
@@ -268,9 +272,8 @@ public class ResolverRegistry {
 
     public Actor.Driver<DisjunctionResolver.Nested> nested(Disjunction disjunction) {
         LOG.debug("Creating Disjunction resolver for : {}", disjunction);
-        Actor.Driver<DisjunctionResolver.Nested> resolver = Actor.driver(driver -> new DisjunctionResolver.Nested(
-                driver, disjunction, this, traversalEngine, conceptMgr, resolutionTracing
-        ), executorService);
+        Actor.Driver<DisjunctionResolver.Nested> resolver = Actor.driver(
+                driver -> new DisjunctionResolver.Nested(driver, disjunction, this), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
@@ -282,10 +285,9 @@ public class ResolverRegistry {
 
     public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction, Consumer<Explain.Finished> requestAnswered,
                                                         Consumer<Integer> requestFailed, Consumer<Throwable> exception) {
-        Actor.Driver<RootResolver.Explain> resolver = Actor.driver(driver -> new RootResolver.Explain(
-                driver, conjunction, requestAnswered, requestFailed, exception,
-                this, traversalEngine, conceptMgr, logicMgr, resolutionTracing
-        ), executorService);
+        Actor.Driver<RootResolver.Explain> resolver = Actor.driver(
+                driver -> new RootResolver.Explain(
+                        driver, conjunction, requestAnswered, requestFailed, exception, this), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;

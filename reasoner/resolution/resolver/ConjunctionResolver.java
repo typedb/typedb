@@ -20,9 +20,7 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.Iterators;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
@@ -36,7 +34,6 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,17 +51,13 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     private static final Logger LOG = LoggerFactory.getLogger(ConjunctionResolver.class);
 
-    final LogicManager logicMgr;
     final Set<Resolvable<?>> resolvables;
     final Set<Negated> negateds;
     final Plans plans;
     final Map<Resolvable<?>, ResolverRegistry.ResolverView> downstreamResolvers;
 
-    protected ConjunctionResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry,
-                                  TraversalEngine traversalEngine, ConceptManager conceptMgr, LogicManager logicMgr,
-                                  boolean resolutionTracing) {
-        super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing);
-        this.logicMgr = logicMgr;
+    protected ConjunctionResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
+        super(driver, name, registry);
         this.resolvables = new HashSet<>();
         this.negateds = new HashSet<>();
         this.plans = new Plans();
@@ -288,18 +281,15 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
         private final Conjunction conjunction;
 
-        public Nested(Driver<Nested> driver, Conjunction conjunction,
-                      ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                      LogicManager logicMgr, boolean resolutionTracing) {
-            super(driver, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")",
-                  registry, traversalEngine, conceptMgr, logicMgr, resolutionTracing);
+        public Nested(Driver<Nested> driver, Conjunction conjunction, ResolverRegistry registry) {
+            super(driver, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")", registry);
             this.conjunction = conjunction;
         }
 
         @Override
         Set<Concludable> concludablesTriggeringRules() {
             return Iterators.iterate(Concludable.create(conjunction))
-                    .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext())
+                    .filter(c -> c.getApplicableRules(registry.conceptManager(), registry.logicManager()).hasNext())
                     .toSet();
         }
 
