@@ -78,7 +78,8 @@ public class Reasoner {
         this.logicMgr = logicMgr;
         this.defaultContext = new Context.Query(context, new Options.Query());
         this.defaultContext.producer(Either.first(EXHAUSTIVE));
-        this.resolverRegistry = new ResolverRegistry(actor(), traversalEng, conceptMgr, logicMgr, defaultContext.options().traceInference());
+        this.resolverRegistry = new ResolverRegistry(actor(), traversalEng, conceptMgr, logicMgr,
+                                                     defaultContext.options().traceInference());
         this.explainablesManager = new ExplainablesManager();
     }
 
@@ -149,7 +150,7 @@ public class Reasoner {
                                                             Set<Identifier.Variable.Retrievable> filter) {
         FunctionalIterator<ConceptMap> answers;
         FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
-        if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter, context));
+        if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter));
         else answers = produce(conjs.map(c -> producer(c, filter, context)).toList(), context.producer(), async1());
         if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
         return answers;
@@ -175,11 +176,11 @@ public class Reasoner {
     }
 
     private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
-        return iterator(bound(conjunction, bounds), set(), defaultContext);
+        return iterator(bound(conjunction, bounds), set());
     }
 
-    private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter,
-                                                    Context.Query context) {
+    private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction,
+                                                    Set<Identifier.Variable.Retrievable> filter) {
         if (!conjunction.isCoherent()) return Iterators.empty();
         if (conjunction.negations().isEmpty()) {
             return traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
