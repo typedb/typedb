@@ -57,9 +57,11 @@ public class AnswerCache<ANSWER> {
         this.sourceExhausted = false;
     }
 
-    public void add(ANSWER answer) {
+    public boolean add(ANSWER answer) {
         assert !isComplete();
-        if (addIfAbsent(answer) && reiterateOnAnswerAdded) requiresReiteration = true;
+        boolean isNew = addIfAbsent(answer);
+        if (isNew && reiterateOnAnswerAdded) requiresReiteration = true;
+        return isNew;
     }
 
     public void clearSource() {

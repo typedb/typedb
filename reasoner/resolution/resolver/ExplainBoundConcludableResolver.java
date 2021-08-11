@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
@@ -39,9 +38,9 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
 
     private final AnswerCache<AnswerState.Partial.Concludable<?>> cache;
 
-    public ExplainBoundConcludableResolver(Driver<BoundConcludableResolver> driver, Concludable concludable,
+    public ExplainBoundConcludableResolver(Driver<BoundConcludableResolver> driver, Driver<ConcludableResolver> parent,
                                            ConceptMap bounds, ResolverRegistry registry) {
-        super(driver, concludable, bounds, registry);
+        super(driver, parent, bounds, registry);
         this.cache = new AnswerCache<>(Iterators::empty); // TODO How is this working without doing traversal?
     }
 
@@ -105,8 +104,11 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
         }
 
         @Override
-        public void newAnswer(AnswerState.Partial<?> partial) {
-            if (!answerCache.isComplete()) answerCache.add(partial.asConcludable());
+        public boolean newAnswer(AnswerState.Partial<?> partial) {
+            if (!answerCache.isComplete()) {
+                return answerCache.add(partial.asConcludable());
+            }
+            return false;
         }
 
         @Override

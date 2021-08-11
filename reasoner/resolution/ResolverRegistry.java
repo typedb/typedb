@@ -104,8 +104,7 @@ public class ResolverRegistry {
         this.resolvers = new ConcurrentSet<>();
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
-        this.materialiser = Actor.driver(driver -> new Materialiser(
-                driver, this), executorService);
+        this.materialiser = Actor.driver(driver -> new Materialiser(driver, this), executorService);
     }
 
     public TraversalEngine traversalEngine() {
@@ -244,14 +243,15 @@ public class ResolverRegistry {
     public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(
             Concludable concludable, ConceptMap bounds,
             Actor.Driver<? extends Resolver<?>> root, int iteration, boolean explain) {
+        // TODO: Move this to the responsibility of the ConcludableResolver
         LOG.debug("Register BoundConcludableResolver, pattern: {} bounds: {}", concludable.pattern(), bounds);
         Actor.Driver<BoundConcludableResolver> resolver;
         if (explain) {
             resolver = Actor.driver(
-                    driver -> new ExplainBoundConcludableResolver(driver, concludable, bounds, this), executorService);
+                    driver -> new ExplainBoundConcludableResolver(driver, concludableResolver(concludable), bounds, this), executorService);
         } else {
             resolver = Actor.driver(
-                    driver -> new MatchBoundConcludableResolver(driver, concludable, bounds, this), executorService);
+                    driver -> new MatchBoundConcludableResolver(driver, concludableResolver(concludable), bounds, this), executorService);
         }
         resolvers.add(resolver);
         boundConcludables.computeIfAbsent(new Pair<>(root, iteration), r -> new HashSet<>()).add(resolver);
@@ -308,7 +308,7 @@ public class ResolverRegistry {
         return ruleConditions.get(rule);
     }
 
-    public Actor.Driver<ConcludableResolver> concludableResolvers(Concludable concludable) {
+    public Actor.Driver<ConcludableResolver> concludableResolver(Concludable concludable) {
         return concludableResolvers.get(concludable);
     }
 

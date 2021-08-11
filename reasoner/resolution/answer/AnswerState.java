@@ -342,6 +342,8 @@ public interface AnswerState {
 
             default Explain asExplain() { throw TypeDBException.of(ILLEGAL_CAST, this.getClass(), Explain.class); }
 
+            com.vaticle.typedb.core.logic.resolvable.Concludable concludable();
+
             interface Match<P extends Compound<P, ?>> extends Concludable<P>, Explainable {
 
                 @Override

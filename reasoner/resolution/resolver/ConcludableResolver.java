@@ -48,6 +48,10 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
         this.isInitialised = false;
     }
 
+    public Concludable concludable() {
+        return concludable;
+    }
+
     @Override
     Driver<BoundConcludableResolver> getOrCreateWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial) {
         return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(partial.conceptMap(), p -> {
@@ -80,5 +84,4 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
     Map<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers() {
         return conclusionResolvers;
     }
-
 }

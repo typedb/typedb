@@ -59,7 +59,7 @@ public abstract class RequestState {
 
     public interface Exploration {
 
-        void newAnswer(AnswerState.Partial<?> partial);
+        boolean newAnswer(AnswerState.Partial<?> partial);
 
         DownstreamManager downstreamManager();
 

@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
@@ -44,11 +43,12 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     private final boolean singleAnswerRequired;
     private final AnswerCache<ConceptMap> cache;
 
-    public MatchBoundConcludableResolver(Driver<BoundConcludableResolver> driver, Concludable concludable,
+    public MatchBoundConcludableResolver(Driver<BoundConcludableResolver> driver, Driver<ConcludableResolver> parent,
                                          ConceptMap bounds, ResolverRegistry registry) {
-        super(driver, concludable, bounds, registry);
+        super(driver, parent, bounds, registry);
         this.singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars());
-        this.cache = new AnswerCache<>(() -> traversalIterator(concludable.pattern(), bounds));
+        traversalIterator(parent.actor().concludable().pattern(), bounds);
+        this.cache = new AnswerCache<>(() -> traversalIterator(parent.actor().concludable().pattern(), bounds));
     }
 
     @Override
@@ -70,7 +70,7 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
 
     private Set<Identifier.Variable.Retrievable> unboundVars() {
         Set<Identifier.Variable.Retrievable> missingBounds = new HashSet<>();
-        iterate(concludable.pattern().variables()).filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
+        iterate(parent().actor().concludable().pattern().variables()).filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
             if (var.isType() && !var.asType().label().isPresent()) missingBounds.add(var.asType().id().asRetrievable());
             else if (var.isThing() && !var.asThing().iid().isPresent())
                 missingBounds.add(var.asThing().id().asRetrievable());
@@ -88,7 +88,7 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         @Override
         protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ConceptMap conceptMap) {
             return Iterators.single(fromUpstream.partialAnswer().asConcludable().asMatch().toUpstreamLookup(
-                    conceptMap, concludable.isInferredAnswer(conceptMap)));
+                    conceptMap, parent().actor().concludable().isInferredAnswer(conceptMap)));
         }
 
     }
@@ -119,8 +119,11 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         }
 
         @Override
-        public void newAnswer(AnswerState.Partial<?> partial) {
-            if (!answerCache.isComplete()) answerCache.add(partial.conceptMap());
+        public boolean newAnswer(AnswerState.Partial<?> partial) {
+            if (!answerCache.isComplete()) {
+                return answerCache.add(partial.conceptMap());
+            }
+            return false;
         }
 
         @Override
