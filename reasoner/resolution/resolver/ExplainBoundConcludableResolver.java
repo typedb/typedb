@@ -45,12 +45,6 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
-    protected CachingRequestState<?> createRequestState(Request fromUpstream, int iteration) {
-        LOG.debug("{}: Creating new request state for iteration{}, request: {}", name(), iteration, fromUpstream);
-        return new RequestState(fromUpstream, cache, iteration, true, true);
-    }
-
-    @Override
     CachingRequestState<?> createExploringRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating new exploring request state for iteration{}, request: {}", name(), iteration,
                   fromUpstream);
@@ -62,26 +56,11 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
         return cache;
     }
 
-    private static class RequestState extends CachingRequestState<AnswerState.Partial.Concludable<?>> {
-
-        public RequestState(Request fromUpstream,
-                            AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
-                            int iteration, boolean deduplicate, boolean isSubscriber) {
-            super(fromUpstream, answerCache, iteration, deduplicate, isSubscriber);
-        }
-
-        @Override
-        protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(
-                AnswerState.Partial.Concludable<?> partial) {
-            return Iterators.single(partial.asExplain().toUpstreamInferred());
-        }
-    }
-
-    private static class ExploringRequestState extends RequestState implements Exploration {
+    private static class ExploringRequestState extends CachingRequestState<AnswerState.Partial.Concludable<?>> implements Exploration {
 
         private final DownstreamManager downstreamManager;
 
-        public ExploringRequestState(Request fromUpstream,
+        private ExploringRequestState(Request fromUpstream,
                                      AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
                                      int iteration, List<Request> ruleDownstreams) {
             super(fromUpstream, answerCache, iteration, false, false);
@@ -116,6 +95,11 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
             return false;
         }
 
+        @Override
+        protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(
+                AnswerState.Partial.Concludable<?> partial) {
+            return Iterators.single(partial.asExplain().toUpstreamInferred());
+        }
     }
 
 }

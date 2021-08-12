@@ -135,8 +135,6 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         return Optional.empty();
     }
 
-    abstract CachingRequestState<?> createRequestState(Request fromUpstream, int iteration);
-
     abstract CachingRequestState<?> createExploringRequestState(Request fromUpstream, int iteration);
 
     @Override

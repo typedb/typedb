@@ -52,12 +52,6 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
-    protected CachingRequestState<?> createRequestState(Request fromUpstream, int iteration) {
-        LOG.debug("{}: Creating new request state for iteration{}, request: {}", name(), iteration, fromUpstream);
-        return new RequestState(fromUpstream, cache, iteration, true);
-    }
-
-    @Override
     CachingRequestState<?> createExploringRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating new exploring request state for iteration{}, request: {}", name(), iteration, fromUpstream);
         return new ExploringRequestState(fromUpstream, cache, iteration, ruleDownstreams(fromUpstream));
@@ -78,28 +72,13 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         return missingBounds;
     }
 
-    private class RequestState extends CachingRequestState<ConceptMap> {
-
-        public RequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration,
-                            boolean isSubscriber) {
-            super(fromUpstream, answerCache, iteration, true, isSubscriber);
-        }
-
-        @Override
-        protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ConceptMap conceptMap) {
-            return Iterators.single(fromUpstream.partialAnswer().asConcludable().asMatch().toUpstreamLookup(
-                    conceptMap, parent().actor().concludable().isInferredAnswer(conceptMap)));
-        }
-
-    }
-
-    private class ExploringRequestState extends RequestState implements Exploration {
+    private class ExploringRequestState extends CachingRequestState<ConceptMap> implements Exploration {
 
         private final DownstreamManager downstreamManager;
 
-        public ExploringRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache,
-                                     int iteration, List<Request> ruleDownstreams) {
-            super(fromUpstream, answerCache, iteration, false);
+        private ExploringRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration,
+                                      List<Request> ruleDownstreams) {
+            super(fromUpstream, answerCache, iteration, true, false);
             this.downstreamManager = new DownstreamManager(ruleDownstreams);
         }
 
@@ -129,6 +108,12 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         @Override
         public boolean singleAnswerRequired() {
             return singleAnswerRequired;
+        }
+
+        @Override
+        protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ConceptMap conceptMap) {
+            return Iterators.single(fromUpstream.partialAnswer().asConcludable().asMatch().toUpstreamLookup(
+                    conceptMap, parent().actor().concludable().isInferredAnswer(conceptMap)));
         }
     }
 }
