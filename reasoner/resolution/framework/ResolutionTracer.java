@@ -74,6 +74,10 @@ public final class ResolutionTracer {
         addMessage(sender, receiver, iteration, EdgeType.EXHAUSTED, "");
     }
 
+    public synchronized void responseBlocked(String sender, String receiver, int iteration) {
+         addMessage(sender, receiver, iteration, EdgeType.BLOCKED, "");
+    }
+
     private void addMessage(String sender, String receiver, int iteration, EdgeType edgeType, String conceptMap) {
         writeEdge(sender, receiver, iteration, edgeType.colour(), messageNumber, conceptMap);
         messageNumber++;
@@ -151,6 +155,7 @@ public final class ResolutionTracer {
 
     enum EdgeType {
         EXHAUSTED("red"),
+        BLOCKED("orange"),
         ANSWER("green"),
         REQUEST("blue");
 
