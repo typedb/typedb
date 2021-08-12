@@ -44,9 +44,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 
 public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends ReasonerActor<RESOLVER> {
@@ -190,16 +192,16 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     public static class DownstreamManager {
         private final LinkedHashSet<Request> downstreams;
-        private Iterator<Request> downstreamSelector;
+        private FunctionalIterator<Request> downstreamSelector;
 
         public DownstreamManager() {
             this.downstreams = new LinkedHashSet<>();
-            this.downstreamSelector = downstreams.iterator();
+            this.downstreamSelector = iterate(downstreams);
         }
 
         public DownstreamManager(List<Request> downstreams) {
             this.downstreams = new LinkedHashSet<>(downstreams);
-            this.downstreamSelector = downstreams.iterator();
+            this.downstreamSelector = iterate(downstreams);
         }
 
         public boolean hasDownstream() {
@@ -207,21 +209,26 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         }
 
         public Request nextDownstream() {
-            if (!downstreamSelector.hasNext()) downstreamSelector = downstreams.iterator();
+            if (!downstreamSelector.hasNext()) downstreamSelector = iterate(downstreams);
             return downstreamSelector.next();
+        }
+
+        public Optional<Request> nextDownstream(Set<Request> exclude) {
+            if (!downstreamSelector.hasNext()) downstreamSelector = iterate(downstreams);
+            return downstreamSelector.filter(d -> !exclude.contains(d)).first();
         }
 
         public void addDownstream(Request request) {
             assert !(downstreams.contains(request)) : "downstream answer producer already contains this request";
             downstreams.add(request);
-            downstreamSelector = downstreams.iterator();
+            downstreamSelector = iterate(downstreams);
         }
 
         public void removeDownstream(Request request) {
             boolean removed = downstreams.remove(request);
             // only update the iterator when removing an element, to avoid resetting and reusing first request too often
             // note: this is a large performance win when processing large batches of requests
-            if (removed) downstreamSelector = downstreams.iterator();
+            if (removed) downstreamSelector = iterate(downstreams);
         }
 
         public void clearDownstreams() {

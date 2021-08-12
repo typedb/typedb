@@ -48,11 +48,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     private static final Logger LOG = LoggerFactory.getLogger(BoundConcludableResolver.class);
 
-    private final Map<Request, ExploringRequestState<?>> requestStates;
-    private final Driver<ConcludableResolver> parent;
     protected final ConceptMap bounds;
+    private final Driver<ConcludableResolver> parent;
+    private final Map<Request, ExploringRequestState<?>> requestStates;
     private boolean requiresReiteration;
-    private final Set<Request> recursiveRequests;
+    private final Set<Request> blockedRequests;
+    private final Set<Request> blockedDownstreams;
+    private final Set<AnswerState.Partial.Concludable<?>> recursiveAnswerStates;
 
     public BoundConcludableResolver(Driver<BoundConcludableResolver> driver, Driver<ConcludableResolver> parent,
                                     ConceptMap bounds, ResolverRegistry registry) {
@@ -61,7 +63,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         this.bounds = bounds;
         this.requestStates = new HashMap<>();
         this.requiresReiteration = false;
-        this.recursiveRequests = new HashSet<>();
+        this.blockedRequests = new HashSet<>();
+        this.recursiveAnswerStates = new HashSet<>();
+        this.blockedDownstreams = new HashSet<>();
     }
 
     protected Driver<ConcludableResolver> parent() {
@@ -111,8 +115,10 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         assert fromUpstream.partialAnswer().isConcludable();
         ExploringRequestState<?> requestState;
 
-        if (isRecursion(fromUpstream.partialAnswer()).isPresent()) {
-            recursiveRequests.add(fromUpstream);
+        Optional<AnswerState.Partial.Concludable<?>> recursiveAnswerState = isRecursion(fromUpstream.partialAnswer());
+        if (recursiveAnswerState.isPresent()) {
+            blockedRequests.add(fromUpstream);
+            recursiveAnswerStates.add(recursiveAnswerState.get());
         }
 
         requestState = requestStates.computeIfAbsent(
@@ -143,8 +149,11 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         boolean ansIsNew = requestState.newAnswer(fromDownstream.answer());
-        if (!recursiveRequests.isEmpty() && ansIsNew) {
-            requiresReiteration = true;
+        if (!blockedRequests.isEmpty() && ansIsNew) {
+            requiresReiteration = true; // TODO: Obsolete
+            blockedDownstreams.clear();
+            blockedRequests.clear();
+            recursiveAnswerStates.clear();
         }
         sendAnswerOrSearchRulesOrFail(fromUpstream, iteration, requestState);
     }
@@ -160,6 +169,21 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
         requestState.downstreamManager().removeDownstream(fromDownstream.sourceRequest());
+        sendAnswerOrSearchRulesOrFail(fromUpstream, iteration, requestState);
+    }
+
+    @Override
+    protected void receiveBlocked(Response.Blocked fromDownstream, int iteration) {
+        LOG.trace("{}: received Fail: {}", name(), fromDownstream);
+        if (isTerminated()) return;
+
+        Request blockedDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = fromUpstream(blockedDownstream);
+
+        ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
+        assert iteration == requestState.iteration();
+
+        blockedDownstreams.add(blockedDownstream);
         sendAnswerOrSearchRulesOrFail(fromUpstream, iteration, requestState);
     }
 
@@ -180,9 +204,18 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             }
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
         } else {
-            if (!cache().isComplete() && !recursiveRequests.contains(fromUpstream)) {
+            if (!cache().isComplete() && !blockedRequests.contains(fromUpstream)) {
                 if (requestState.downstreamManager().hasDownstream()) {
-                    requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
+                    Optional<Request> nonblocked = requestState.downstreamManager().nextDownstream(blockedDownstreams);
+                    if (nonblocked.isPresent()) {
+                        requestFromDownstream(nonblocked.get(), fromUpstream, iteration);
+                    } else {
+                        if (upstreamFullyBlocked(fromUpstream)) {
+                            failToUpstream(fromUpstream, iteration);
+                        } else {
+                            blockToUpstream(fromUpstream, iteration);
+                        }
+                    }
                 } else {
                     cache().setComplete();
                     failToUpstream(fromUpstream, iteration);
@@ -191,6 +224,10 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                 failToUpstream(fromUpstream, iteration);
             }
         }
+    }
+
+    private boolean upstreamFullyBlocked(Request fromUpstream) {
+        return recursiveAnswerStates.contains(fromUpstream.partialAnswer().asConcludable());
     }
 
     private void requestFromSubsumer(Request.ToSubsumed fromUpstream, int iteration) {

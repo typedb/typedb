@@ -141,11 +141,12 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void requestFailed(Request failedRequest, int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
         if (options.traceInference()) ResolutionTracer.get().finish(failedRequest);
-        if (resolverRegistry.boundConcludables(rootResolver, iteration).size() == 0) {
-            finish();
-        } else if (!sentReiterationRequests && iteration == this.iteration) {
-            sendReiterationRequests();
-        }
+        finish();
+//        if (resolverRegistry.boundConcludables(rootResolver, iteration).size() == 0) {
+//            finish();
+//        } else if (!sentReiterationRequests && iteration == this.iteration) {
+//            sendReiterationRequests();
+//        }
     }
 
     private void finish() {
