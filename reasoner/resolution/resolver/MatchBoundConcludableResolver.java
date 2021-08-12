@@ -46,7 +46,6 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
                                          ConceptMap bounds, ResolverRegistry registry) {
         super(driver, parent, bounds, registry);
         this.singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars());
-        traversalIterator(parent.actor().concludable().pattern(), bounds);
         this.cache = new AnswerCache<>(() -> traversalIterator(parent.actor().concludable().pattern(), bounds));
     }
 
