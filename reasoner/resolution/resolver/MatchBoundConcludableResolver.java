@@ -62,10 +62,13 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
 
     private Set<Identifier.Variable.Retrievable> unboundVars() {
         Set<Identifier.Variable.Retrievable> missingBounds = new HashSet<>();
-        iterate(parent().actor().concludable().pattern().variables()).filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
-            if (var.isType() && !var.asType().label().isPresent()) missingBounds.add(var.asType().id().asRetrievable());
-            else if (var.isThing() && !var.asThing().iid().isPresent())
+        iterate(parent().actor().concludable().pattern().variables())
+                .filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
+            if (var.isType() && !var.asType().label().isPresent()) {
+                missingBounds.add(var.asType().id().asRetrievable());
+            } else if (var.isThing() && !var.asThing().iid().isPresent()) {
                 missingBounds.add(var.asThing().id().asRetrievable());
+            }
         });
         return missingBounds;
     }
