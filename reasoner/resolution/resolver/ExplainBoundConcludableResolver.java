@@ -45,10 +45,10 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
-    CachingRequestState<?> createExploringRequestState(Request fromUpstream, int iteration) {
+    ExploringRequestState<?> createExploringRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating new exploring request state for iteration{}, request: {}", name(), iteration,
                   fromUpstream);
-        return new ExploringRequestState(fromUpstream, cache, iteration, ruleDownstreams(fromUpstream));
+        return new ExplainRequestState(fromUpstream, cache, iteration, ruleDownstreams(fromUpstream));
     }
 
     @Override
@@ -56,38 +56,17 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
         return cache;
     }
 
-    private static class ExploringRequestState extends CachingRequestState<AnswerState.Partial.Concludable<?>> implements Exploration {
+    private static class ExplainRequestState extends ExploringRequestState<AnswerState.Partial.Concludable<?>>  {
 
-        private final DownstreamManager downstreamManager;
-
-        private ExploringRequestState(Request fromUpstream,
-                                     AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
-                                     int iteration, List<Request> ruleDownstreams) {
-            super(fromUpstream, answerCache, iteration, false, false);
-            this.downstreamManager = new DownstreamManager(ruleDownstreams);
+        private ExplainRequestState(Request fromUpstream,
+                                    AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
+                                    int iteration, List<Request> ruleDownstreams) {
+            super(fromUpstream, answerCache, iteration, ruleDownstreams, false, false);
         }
 
         @Override
-        public boolean isExploration() {
-            return true;
-        }
-
-        @Override
-        public Exploration asExploration() {
-            return this;
-        }
-
-        @Override
-        public DownstreamManager downstreamManager() {
-            return downstreamManager;
-        }
-
-        @Override
-        public boolean newAnswer(AnswerState.Partial<?> partial) {
-            if (!answerCache.isComplete()) {
-                return answerCache.add(partial.asConcludable());
-            }
-            return false;
+        AnswerState.Partial.Concludable<?> answerFromPartial(AnswerState.Partial<?> partial) {
+            return partial.asConcludable();
         }
 
         @Override

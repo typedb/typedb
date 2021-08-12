@@ -49,14 +49,6 @@ public abstract class RequestState {
         return iteration;
     }
 
-    public boolean isExploration() {
-        return false;
-    }
-
-    public Exploration asExploration() {
-        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Exploration.class));
-    }
-
     public interface Exploration {
 
         boolean newAnswer(AnswerState.Partial<?> partial);

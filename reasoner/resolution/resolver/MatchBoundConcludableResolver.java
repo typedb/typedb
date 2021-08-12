@@ -52,9 +52,9 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
-    CachingRequestState<?> createExploringRequestState(Request fromUpstream, int iteration) {
+    BoundConcludableResolver.ExploringRequestState<?> createExploringRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating new exploring request state for iteration{}, request: {}", name(), iteration, fromUpstream);
-        return new ExploringRequestState(fromUpstream, cache, iteration, ruleDownstreams(fromUpstream));
+        return new MatchRequestState(fromUpstream, cache, iteration, ruleDownstreams(fromUpstream));
     }
 
     @Override
@@ -72,37 +72,16 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         return missingBounds;
     }
 
-    private class ExploringRequestState extends CachingRequestState<ConceptMap> implements Exploration {
+    private class MatchRequestState extends ExploringRequestState<ConceptMap> implements Exploration {
 
-        private final DownstreamManager downstreamManager;
-
-        private ExploringRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration,
-                                      List<Request> ruleDownstreams) {
-            super(fromUpstream, answerCache, iteration, true, false);
-            this.downstreamManager = new DownstreamManager(ruleDownstreams);
+        private MatchRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration,
+                                  List<Request> ruleDownstreams) {
+            super(fromUpstream, answerCache, iteration, ruleDownstreams, true, false);
         }
 
         @Override
-        public boolean isExploration() {
-            return true;
-        }
-
-        @Override
-        public Exploration asExploration() {
-            return this;
-        }
-
-        @Override
-        public DownstreamManager downstreamManager() {
-            return downstreamManager;
-        }
-
-        @Override
-        public boolean newAnswer(AnswerState.Partial<?> partial) {
-            if (!answerCache.isComplete()) {
-                return answerCache.add(partial.conceptMap());
-            }
-            return false;
+        ConceptMap answerFromPartial(AnswerState.Partial<?> partial) {
+            return partial.conceptMap();
         }
 
         @Override

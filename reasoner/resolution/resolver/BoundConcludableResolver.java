@@ -48,7 +48,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     private static final Logger LOG = LoggerFactory.getLogger(BoundConcludableResolver.class);
 
-    private final Map<Request, CachingRequestState<?>> requestStates;
+    private final Map<Request, ExploringRequestState<?>> requestStates;
     private final Driver<ConcludableResolver> parent;
     protected final ConceptMap bounds;
     private boolean requiresReiteration;
@@ -109,7 +109,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     private void receiveDirectRequest(Request fromUpstream, int iteration) {
         assert fromUpstream.partialAnswer().isConcludable();
-        CachingRequestState<?> requestState;
+        ExploringRequestState<?> requestState;
 
         if (isRecursion(fromUpstream.partialAnswer()).isPresent()) {
             recursiveRequests.add(fromUpstream);
@@ -135,15 +135,14 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         return Optional.empty();
     }
 
-    abstract CachingRequestState<?> createExploringRequestState(Request fromUpstream, int iteration);
+    abstract ExploringRequestState<?> createExploringRequestState(Request fromUpstream, int iteration);
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         if (isTerminated()) return;
         Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
-        CachingRequestState<?> requestState = this.requestStates.get(fromUpstream);
-        assert requestState.isExploration();
-        boolean ansIsNew = requestState.asExploration().newAnswer(fromDownstream.answer());
+        ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
+        boolean ansIsNew = requestState.newAnswer(fromDownstream.answer());
         if (!recursiveRequests.isEmpty() && ansIsNew) {
             requiresReiteration = true;
         }
@@ -158,14 +157,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
 
-        CachingRequestState<?> requestState = this.requestStates.get(fromUpstream);
+        ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
-        assert requestState.isExploration();
-        requestState.asExploration().downstreamManager().removeDownstream(fromDownstream.sourceRequest());
+        requestState.downstreamManager().removeDownstream(fromDownstream.sourceRequest());
         sendAnswerOrSearchRulesOrFail(fromUpstream, iteration, requestState);
     }
 
-    private void sendAnswerOrSearchRulesOrFail(Request fromUpstream, int iteration, CachingRequestState<?> requestState) {
+    private void sendAnswerOrSearchRulesOrFail(Request fromUpstream, int iteration, ExploringRequestState<?> requestState) {
         Optional<AnswerState.Partial.Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
         if (upstreamAnswer.isPresent()) {
             /*
@@ -176,18 +174,17 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             forward them downstream (to parallelise searching for the single answer), and when the first one finds an answer,
             we respond for all N ahead of time. Then, when the rules actually return an answer to this concludable, we do nothing.
              */
-            if (requestState.isExploration() && requestState.asExploration().singleAnswerRequired()) {
-                requestState.asExploration().downstreamManager().clearDownstreams();
-                requestState.answerCache().setComplete();
+            if (requestState.singleAnswerRequired()) {
+                requestState.downstreamManager().clearDownstreams();
+                cache().setComplete();
             }
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
         } else {
-            RequestState.Exploration exploration;
-            if (requestState.isExploration() && !requestState.answerCache().isComplete() && !recursiveRequests.contains(fromUpstream)) {
-                if ((exploration = requestState.asExploration()).downstreamManager().hasDownstream()) {
-                    requestFromDownstream(exploration.downstreamManager().nextDownstream(), fromUpstream, iteration);
+            if (!cache().isComplete() && !recursiveRequests.contains(fromUpstream)) {
+                if (requestState.downstreamManager().hasDownstream()) {
+                    requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
                 } else {
-                    requestState.answerCache().setComplete(); // TODO: The cache should not be set as complete during recursion
+                    cache().setComplete();
                     failToUpstream(fromUpstream, iteration);
                 }
             } else {
@@ -233,6 +230,30 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             }
         }
         return downstreams;
+    }
+
+    protected static abstract class ExploringRequestState<ANSWER> extends CachingRequestState<ANSWER> implements RequestState.Exploration {
+
+        private final DownstreamManager downstreamManager;
+
+        protected ExploringRequestState(Request fromUpstream, AnswerCache<ANSWER> answerCache, int iteration,
+                                        List<Request> ruleDownstreams, boolean deduplicate, boolean isSubscriber) {
+            super(fromUpstream, answerCache, iteration, deduplicate, isSubscriber);
+            this.downstreamManager = new DownstreamManager(ruleDownstreams);
+        }
+
+        @Override
+        public DownstreamManager downstreamManager() {
+            return downstreamManager;
+        }
+
+        abstract ANSWER answerFromPartial(AnswerState.Partial<?> partial);
+
+        @Override
+        public boolean newAnswer(AnswerState.Partial<?> partial) {
+            return !answerCache.isComplete() && answerCache.add(answerFromPartial(partial));
+        }
+
     }
 
 }
