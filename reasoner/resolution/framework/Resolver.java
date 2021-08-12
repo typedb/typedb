@@ -81,6 +81,14 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected abstract void receiveFail(Response.Fail fromDownstream, int iteration);
 
+    protected void receiveBlocked(Response.Blocked fromDownstream, int iteration) {
+        LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
+        if (isTerminated()) return;
+        Request toDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = fromUpstream(toDownstream);
+        blockToUpstream(fromUpstream, iteration);
+    }
+
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
 
     protected Request fromUpstream(Request toDownstream) {
@@ -105,20 +113,30 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         assert answer.isPartial();
         Answer response = Answer.create(fromUpstream, answer.asPartial());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(
-                this.name(), fromUpstream.sender().name(), iteration,
-                response.asAnswer().answer().conceptMap().concepts().keySet().toString()
-        );
+        if (registry.resolutionTracing()) {
+            ResolutionTracer.get().responseAnswer(
+                    this.name(), fromUpstream.sender().name(), iteration,
+                    response.asAnswer().answer().conceptMap().concepts().keySet().toString());
+        }
         fromUpstream.sender().execute(actor -> actor.receiveAnswer(response, iteration));
     }
 
     protected void failToUpstream(Request fromUpstream, int iteration) {
         Response.Fail response = new Response.Fail(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(
-                this.name(), fromUpstream.sender().name(), iteration
-        );
+        if (registry.resolutionTracing()) {
+            ResolutionTracer.get().responseExhausted(this.name(), fromUpstream.sender().name(), iteration);
+        }
         fromUpstream.sender().execute(actor -> actor.receiveFail(response, iteration));
+    }
+
+    protected void blockToUpstream(Request fromUpstream, int iteration) {
+        Response.Blocked response = new Response.Blocked(fromUpstream);
+        LOG.trace("{} : Sending a new Response.Answer to upstream", name());
+        if (registry.resolutionTracing()) {
+            ResolutionTracer.get().responseBlocked(this.name(), fromUpstream.sender().name(), iteration);
+        }
+        fromUpstream.sender().execute(actor -> actor.receiveBlocked(response, iteration));
     }
 
     protected FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {

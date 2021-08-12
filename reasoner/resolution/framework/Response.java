@@ -140,4 +140,28 @@ public interface Response {
                     '}';
         }
     }
+
+    class Blocked implements Response {
+
+        private final Request sourceRequest;
+
+        public Blocked(Request sourceRequest) {
+            this.sourceRequest = sourceRequest;
+        }
+
+        @Override
+        public Request sourceRequest() {
+            return sourceRequest;
+        }
+
+        @Override
+        public boolean isAnswer() {
+            return false;
+        }
+
+        @Override
+        public boolean isFail() {
+            return false;
+        }
+    }
 }
