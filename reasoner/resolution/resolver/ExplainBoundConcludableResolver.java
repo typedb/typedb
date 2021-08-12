@@ -25,8 +25,6 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.CachingRequestState;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.Exploration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
