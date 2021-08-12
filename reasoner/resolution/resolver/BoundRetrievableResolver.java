@@ -136,7 +136,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     private static class BoundRequestState extends RequestState.CachingRequestState<ConceptMap> {
 
         public BoundRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
-            super(fromUpstream, answerCache, iteration, false, false);
+            super(fromUpstream, answerCache, iteration, false);
         }
 
         @Override
@@ -148,7 +148,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     private class SubsumerRequestState extends RequestState.CachingRequestState<ConceptMap> {
 
         public SubsumerRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
-            super(fromUpstream, answerCache, iteration, false, false);
+            super(fromUpstream, answerCache, iteration, false);
         }
 
         @Override

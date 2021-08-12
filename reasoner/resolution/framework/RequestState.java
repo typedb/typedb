@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.poller.Poller;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -29,8 +28,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.vaticle.typedb.common.util.Objects.className;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.poller.Pollers.poll;
 
 public abstract class RequestState {
@@ -62,17 +59,15 @@ public abstract class RequestState {
     public abstract static class CachingRequestState<ANSWER> extends RequestState {
 
         protected final AnswerCache<ANSWER> answerCache;
-        protected final boolean isSubscriber;
         protected Poller<? extends AnswerState.Partial<?>> cacheReader;
         protected final Set<ConceptMap> deduplicationSet;
 
         protected CachingRequestState(Request fromUpstream, AnswerCache<ANSWER> answerCache, int iteration,
-                                      boolean deduplicate, boolean isSubscriber) {
+                                      boolean deduplicate) {
             super(fromUpstream, iteration);
             this.answerCache = answerCache;
-            this.isSubscriber = isSubscriber;
             this.deduplicationSet = deduplicate ? new HashSet<>() : null;
-            this.cacheReader = answerCache.reader(isSubscriber).flatMap(
+            this.cacheReader = answerCache.reader().flatMap(
                     a -> poll(toUpstream(a).filter(
                             partial -> !deduplicate || !deduplicationSet.contains(partial.conceptMap()))));
         }
@@ -85,10 +80,6 @@ public abstract class RequestState {
         }
 
         protected abstract FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ANSWER answer);
-
-        public AnswerCache<ANSWER> answerCache() {
-            return answerCache;
-        }
 
     }
 

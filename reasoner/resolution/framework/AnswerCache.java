@@ -38,8 +38,6 @@ public class AnswerCache<ANSWER> {
     private final List<ANSWER> answers;
     private final Set<ANSWER> answersSet;
     private final Supplier<FunctionalIterator<ANSWER>> answerSourceSupplier;
-    private boolean reiterateOnAnswerAdded;
-    private boolean requiresReiteration;
     private FunctionalIterator<ANSWER> answerSource;
     private boolean complete;
     private boolean sourceCleared;
@@ -50,8 +48,6 @@ public class AnswerCache<ANSWER> {
         this.answerSource = null;
         this.answers = new ArrayList<>(); // TODO: Replace answer list and deduplication set with a bloom filter
         this.answersSet = new HashSet<>();
-        this.reiterateOnAnswerAdded = false;
-        this.requiresReiteration = false;
         this.complete = false;
         this.sourceCleared = false;
         this.sourceExhausted = false;
@@ -59,9 +55,7 @@ public class AnswerCache<ANSWER> {
 
     public boolean add(ANSWER answer) {
         assert !isComplete();
-        boolean isNew = addIfAbsent(answer);
-        if (isNew && reiterateOnAnswerAdded) requiresReiteration = true;
-        return isNew;
+        return addIfAbsent(answer);
     }
 
     public void clearSource() {
@@ -70,8 +64,8 @@ public class AnswerCache<ANSWER> {
         sourceCleared = true;
     }
 
-    public Poller<ANSWER> reader(boolean isSubscriber) {
-        return new Reader(isSubscriber);
+    public Poller<ANSWER> reader() {
+        return new Reader();
     }
 
     public void setComplete() {
@@ -92,10 +86,6 @@ public class AnswerCache<ANSWER> {
         return sourceExhausted;
     }
 
-    public boolean requiresReiteration() {
-        return requiresReiteration;
-    }
-
     private boolean addIfAbsent(ANSWER answer) {
         if (answersSet.contains(answer)) return false;
         answers.add(answer);
@@ -105,30 +95,26 @@ public class AnswerCache<ANSWER> {
 
     private class Reader extends AbstractPoller<ANSWER> {
 
-        private final boolean mayReadOverEagerly;
         private int index;
 
-        private Reader(boolean mayReadOverEagerly) {
-            this.mayReadOverEagerly = mayReadOverEagerly;
+        private Reader() {
             index = 0;
         }
 
         @Override
         public Optional<ANSWER> poll() {
-            Optional<ANSWER> nextAnswer = get(index, mayReadOverEagerly);
+            Optional<ANSWER> nextAnswer = get(index);
             if (nextAnswer.isPresent()) index++;
             return nextAnswer;
         }
 
-        private Optional<ANSWER> get(int index, boolean isSubscriber) {
+        private Optional<ANSWER> get(int index) {
             assert index >= 0;
             if (index < answers.size()) {
                 return Optional.of(answers.get(index));
             } else if (index == answers.size()) {
                 if (isComplete()) return Optional.empty();
-                Optional<ANSWER> nextAnswer = searchSourceForAnswer();
-                if (nextAnswer.isEmpty() && isSubscriber) reiterateOnAnswerAdded = true;
-                return nextAnswer;
+                else return searchSourceForAnswer();
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
@@ -138,10 +124,7 @@ public class AnswerCache<ANSWER> {
             if (answerSource == null) answerSource = answerSourceSupplier.get();
             while (answerSource.hasNext()) {
                 ANSWER answer = answerSource.next();
-                if (addIfAbsent(answer)) {
-                    if (reiterateOnAnswerAdded) requiresReiteration = true;
-                    return Optional.of(answer);
-                }
+                if (addIfAbsent(answer)) return Optional.of(answer);
             }
             if (!sourceCleared) setSourceExhausted();
             return Optional.empty();

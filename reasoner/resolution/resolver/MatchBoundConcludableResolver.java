@@ -75,7 +75,7 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
 
         private MatchRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration,
                                   List<Request> ruleDownstreams) {
-            super(fromUpstream, answerCache, iteration, ruleDownstreams, true, false);
+            super(fromUpstream, answerCache, iteration, ruleDownstreams, true);
         }
 
         @Override

@@ -237,8 +237,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         private final DownstreamManager downstreamManager;
 
         protected ExploringRequestState(Request fromUpstream, AnswerCache<ANSWER> answerCache, int iteration,
-                                        List<Request> ruleDownstreams, boolean deduplicate, boolean isSubscriber) {
-            super(fromUpstream, answerCache, iteration, deduplicate, isSubscriber);
+                                        List<Request> ruleDownstreams, boolean deduplicate) {
+            super(fromUpstream, answerCache, iteration, deduplicate);
             this.downstreamManager = new DownstreamManager(ruleDownstreams);
         }
 

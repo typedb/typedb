@@ -56,10 +56,9 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
 
     private static class ExplainRequestState extends ExploringRequestState<AnswerState.Partial.Concludable<?>>  {
 
-        private ExplainRequestState(Request fromUpstream,
-                                    AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
+        private ExplainRequestState(Request fromUpstream, AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
                                     int iteration, List<Request> ruleDownstreams) {
-            super(fromUpstream, answerCache, iteration, ruleDownstreams, false, false);
+            super(fromUpstream, answerCache, iteration, ruleDownstreams, false);
         }
 
         @Override
