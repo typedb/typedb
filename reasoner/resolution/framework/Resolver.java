@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.TraceId;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
@@ -50,7 +51,7 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer
 public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends ReasonerActor<RESOLVER> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
-    private final Map<Pair<Request, Integer>, Request> requestRouter;
+    private final Map<Pair<Request, TraceId>, Request> requestRouter;
     protected final ResolverRegistry registry;
 
     protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
@@ -92,8 +93,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
 
     protected Request fromUpstream(Request toDownstream) {
-        assert toDownstream.traceId() != -1;
-        Pair<Request, Integer> ds = new Pair<>(toDownstream, toDownstream.traceId());
+        assert toDownstream.traceId().rootId() != -1;
+        Pair<Request, TraceId> ds = new Pair<>(toDownstream, toDownstream.traceId());
         assert requestRouter.containsKey(ds);
         assert requestRouter.get(ds).traceId() == toDownstream.traceId();
         return requestRouter.get(ds);
@@ -103,7 +104,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name(), request);
         if (registry.resolutionTracing()) {
-            assert request.traceId() == fromUpstream.traceId() || request.traceId() == -1;
+            assert fromUpstream.traceId().rootId() != -1;
+            assert request.traceId() == fromUpstream.traceId() || request.traceId().rootId() == -1;
             request = request.withTraceId(fromUpstream.traceId());
             ResolutionTracer.get().request(request, iteration);
         }

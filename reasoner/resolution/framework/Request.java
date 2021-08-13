@@ -21,15 +21,17 @@ package com.vaticle.typedb.core.reasoner.resolution.framework;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.TraceId;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.TraceId.downstreamId;
 
 public class Request {
 
-    private final int traceId;
+    private final TraceId traceId;
     protected final Actor.Driver<? extends Resolver<?>> sender;
     protected final Actor.Driver<? extends Resolver<?>> receiver;
     protected final Partial<?> partialAnswer;
@@ -38,7 +40,7 @@ public class Request {
     private final int hash;
 
     private Request(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                    int traceId, Partial<?> partialAnswer, int planIndex) {
+                    TraceId traceId, Partial<?> partialAnswer, int planIndex) {
         this.sender = sender;
         this.receiver = receiver;
         this.traceId = traceId;
@@ -47,19 +49,23 @@ public class Request {
         this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer);
     }
 
-    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, int traceId, Partial<?> partialAnswer, int planIndex) {
-        return new Request(sender, receiver, traceId, partialAnswer, planIndex);
+    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer, int planIndex) {
+        return new Request(sender, receiver, downstreamId(), partialAnswer, planIndex);
     }
 
-    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, int traceId, Partial<?> partialAnswer) {
+    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
+        return new Request(sender, receiver, downstreamId(), partialAnswer, -1);
+    }
+
+    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, TraceId traceId, Partial<?> partialAnswer) {
         return new Request(sender, receiver, traceId, partialAnswer, -1);
     }
 
-    public static Request create(Actor.Driver<? extends Resolver<?>> receiver, int traceId, Partial<?> partialAnswer) {
+    public static Request create(Actor.Driver<? extends Resolver<?>> receiver, TraceId traceId, Partial<?> partialAnswer) {
         return new Request(null, receiver, traceId, partialAnswer, -1);
     }
 
-    public Request withTraceId(int newTraceId) {
+    public Request withTraceId(TraceId newTraceId) {
         return new Request(sender, receiver, newTraceId, partialAnswer, planIndex);
     }
 
@@ -119,7 +125,7 @@ public class Request {
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    public int traceId() {
+    public TraceId traceId() {
         return traceId;
     }
 
@@ -129,15 +135,16 @@ public class Request {
 
         private ToSubsumed(@Nullable Actor.Driver<? extends Resolver<?>> sender,
                            Actor.Driver<? extends Resolver<?>> receiver,
-                           @Nullable Actor.Driver<? extends Resolver<?>> subsumer, int traceId, Partial<?> partialAnswer,
-                           int planIndex) {
+                           @Nullable Actor.Driver<? extends Resolver<?>> subsumer, TraceId traceId,
+                           Partial<?> partialAnswer, int planIndex) {
             super(sender, receiver, traceId, partialAnswer, planIndex);
             this.subsumer = subsumer;
         }
 
         public static Request create(Actor.Driver<? extends Resolver<?>> sender,
                                      Actor.Driver<? extends Resolver<?>> receiver,
-                                     Actor.Driver<? extends Resolver<?>> subsumer, int traceId, Partial<?> partialAnswer) {
+                                     Actor.Driver<? extends Resolver<?>> subsumer, TraceId traceId,
+                                     Partial<?> partialAnswer) {
             return new ToSubsumed(sender, receiver, subsumer, traceId, partialAnswer, -1);
         }
 

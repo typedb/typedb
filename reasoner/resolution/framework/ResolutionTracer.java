@@ -29,9 +29,8 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -45,7 +44,7 @@ public final class ResolutionTracer {
 
     private static ResolutionTracer INSTANCE;
     private static Path logDir = null;
-    private static final Map<Integer, RootRequestTracer> rootRequestTracers = new HashMap<>();
+    private static final Map<TraceId, RootRequestTracer> rootRequestTracers = new HashMap<>();
 
     private ResolutionTracer(Path logDir) {
         ResolutionTracer.logDir = logDir;
@@ -111,8 +110,9 @@ public final class ResolutionTracer {
         addMessage(sender, receiver, request.traceId(), iteration, EdgeType.BLOCKED, "");
     }
 
-    private void addMessage(String sender, String receiver, int rootRequestId, int iteration, EdgeType edgeType, String conceptMap) {
-        rootRequestTracers.get(rootRequestId).addMessage(sender, receiver, iteration, edgeType, conceptMap);
+    private void addMessage(String sender, String receiver, TraceId traceId, int iteration, EdgeType edgeType,
+                            String conceptMap) {
+        rootRequestTracers.get(traceId).addMessage(sender, receiver, iteration, edgeType, conceptMap);
     }
 
     public synchronized void start(Request request) {
@@ -132,12 +132,12 @@ public final class ResolutionTracer {
     private static class RootRequestTracer {
 
         private final AtomicReference<Path> path = new AtomicReference<>(null);
-        private final int rootRequestNumber;
+        private final TraceId traceId;
         private int messageNumber = 0;
         private PrintWriter writer;
 
-        private RootRequestTracer(int rootRequestNumber) {
-            this.rootRequestNumber = rootRequestNumber;
+        private RootRequestTracer(TraceId traceId) {
+            this.traceId = traceId;
         }
 
         public void start() {
@@ -155,10 +155,10 @@ public final class ResolutionTracer {
 
         private void startFile() {
             write(String.format(
-                    "digraph request_%d {\n" +
+                    "digraph request_%d_%d {\n" +
                             "node [fontsize=12 fontname=arial width=0.5 shape=box style=filled]\n" +
                             "edge [fontsize=10 fontname=arial width=0.5]",
-                    rootRequestNumber));
+                    traceId.scopeId, traceId.rootId()));
         }
 
         public void finish() {
@@ -175,7 +175,7 @@ public final class ResolutionTracer {
         }
 
         private String filename() {
-            return String.format("resolution_trace_request_%d.dot", rootRequestNumber);
+            return String.format("resolution_trace_request_%d_%d.dot", traceId.scopeId(), traceId.rootId());
         }
 
         private void endFile() {
@@ -228,6 +228,47 @@ public final class ResolutionTracer {
 
         public String colour() {
             return colour;
+        }
+    }
+
+    public static class TraceId {
+
+        private final int scopeId;
+        private final int rootId;
+
+        private TraceId(int scopeId, int rootId) {
+            this.scopeId = scopeId;
+            this.rootId = rootId;
+        }
+
+        public static TraceId create(int scopeId, int rootRequestId) {
+            return new TraceId(scopeId, rootRequestId);
+        }
+
+        public static TraceId downstreamId() {
+            return new TraceId(-1, -1);  // TODO
+        }
+
+        public int rootId() {
+            return rootId;
+        }
+
+        public int scopeId() {
+            return scopeId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            TraceId traceId = (TraceId) o;
+            return scopeId == traceId.scopeId &&
+                    rootId == traceId.rootId;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(scopeId, rootId);
         }
     }
 
