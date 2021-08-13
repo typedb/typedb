@@ -90,7 +90,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
             Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
                     .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
-            Request request = Request.create(driver(), conjunctionResolver, -1, downstream);
+            Request request = Request.create(driver(), conjunctionResolver, downstream);
             requestState.downstreamManager().addDownstream(request);
         }
         return requestState;
@@ -107,7 +107,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
             Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
                     .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
-            Request request = Request.create(driver(), conjunctionResolver, -1, downstream);
+            Request request = Request.create(driver(), conjunctionResolver, downstream);
             requestStateNextIteration.downstreamManager().addDownstream(request);
         }
         return requestStateNextIteration;

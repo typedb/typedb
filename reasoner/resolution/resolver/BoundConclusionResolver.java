@@ -223,10 +223,10 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.conceptMap().concepts().size() &&
                 partialAnswer.conceptMap().concepts().containsKey(conclusion.generating().get().id())) {
             candidateAnswers(partialAnswer).forEachRemaining(answer -> downstreams.add(
-                    Request.create(driver(), registry.conditionResolver(conclusion.rule()), -1, answer)));
+                    Request.create(driver(), registry.conditionResolver(conclusion.rule()), answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-            downstreams.add(Request.create(driver(), registry.conditionResolver(conclusion.rule()), -1, partialAnswer.toDownstream(named)));
+            downstreams.add(Request.create(driver(), registry.conditionResolver(conclusion.rule()), partialAnswer.toDownstream(named)));
         }
         return downstreams;
     }

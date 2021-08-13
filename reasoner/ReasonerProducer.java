@@ -199,7 +199,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private Request createResolveRequest(int requestId) {
         Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        return Request.create(rootResolver, requestId, downstream);
+        return Request.create(rootResolver, ResolutionTracer.TraceId.create(System.identityHashCode(this), requestId), downstream);
     }
 
     private void requestAnswer() {

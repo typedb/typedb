@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.TraceId;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConclusionResolver;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
@@ -78,12 +79,12 @@ public class Materialiser extends ReasonerActor<Materialiser> {
 
         private final Driver<BoundConclusionResolver> sender;
         private final Actor.Driver<Materialiser> receiver;
-        private final int traceId;
+        private final TraceId traceId;
         private final Rule.Conclusion conclusion;
         private final AnswerState.Partial<?> partialAnswer;
 
         private Request(Driver<BoundConclusionResolver> sender, Driver<Materialiser> receiver,
-                        int traceId, Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
+                        TraceId traceId, Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
             this.sender = sender;
             this.receiver = receiver;
             this.traceId = traceId;
@@ -92,7 +93,7 @@ public class Materialiser extends ReasonerActor<Materialiser> {
         }
 
         public static Request create(Driver<BoundConclusionResolver> sender, Driver<Materialiser> receiver,
-                                     int traceId, Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
+                                     TraceId traceId, Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
             return new Request(sender, receiver, traceId, conclusion, partialAnswer);
         }
 
@@ -104,7 +105,7 @@ public class Materialiser extends ReasonerActor<Materialiser> {
             return partialAnswer;
         }
 
-        public int traceId() {
+        public TraceId traceId() {
             return traceId;
         }
 
