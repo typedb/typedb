@@ -488,7 +488,7 @@ public class ResolutionTest {
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
             Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
-            root.execute(actor -> actor.receiveRequest(Request.create(root, downstream), 0));
+            root.execute(actor -> actor.receiveRequest(Request.create(root, downstream, requestId), 0));
         }
         int answersFound = 0;
         int explainableAnswersFound = 0;

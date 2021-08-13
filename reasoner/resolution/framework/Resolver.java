@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
@@ -37,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +50,7 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer
 public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends ReasonerActor<RESOLVER> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
-    private final Map<Request, Request> requestRouter;
+    private final Map<Pair<Request, Integer>, Request> requestRouter;
     protected final ResolverRegistry registry;
 
     protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
@@ -92,20 +92,26 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
 
     protected Request fromUpstream(Request toDownstream) {
-        assert requestRouter.containsKey(toDownstream);
-        return requestRouter.get(toDownstream);
+        assert toDownstream.traceId() != -1;
+        Pair<Request, Integer> ds = new Pair<>(toDownstream, toDownstream.traceId());
+        assert requestRouter.containsKey(ds);
+        assert requestRouter.get(ds).traceId() == toDownstream.traceId();
+        return requestRouter.get(ds);
     }
 
     // TODO: Rename to sendRequest or request
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name(), request);
-        if (registry.resolutionTracing()) ResolutionTracer.get().request(
-                this.name(), request.receiver().name(), iteration,
-                request.partialAnswer().conceptMap().concepts().keySet().toString());
+        if (registry.resolutionTracing()) {
+            assert request.traceId() == fromUpstream.traceId() || request.traceId() == -1;
+            request = request.withTraceId(fromUpstream.traceId());
+            ResolutionTracer.get().request(request, iteration);
+        }
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
-        requestRouter.put(request, fromUpstream);
+        requestRouter.put(new Pair<>(request, request.traceId()), fromUpstream);
         Driver<? extends Resolver<?>> receiver = request.receiver();
-        receiver.execute(actor -> actor.receiveRequest(request, iteration));
+        Request finalRequest = request;
+        receiver.execute(actor -> actor.receiveRequest(finalRequest, iteration));
     }
 
     // TODO: Rename to sendResponse or respond
@@ -113,29 +119,21 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         assert answer.isPartial();
         Answer response = Answer.create(fromUpstream, answer.asPartial());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (registry.resolutionTracing()) {
-            ResolutionTracer.get().responseAnswer(
-                    this.name(), fromUpstream.sender().name(), iteration,
-                    response.asAnswer().answer().conceptMap().concepts().keySet().toString());
-        }
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(fromUpstream, iteration);
         fromUpstream.sender().execute(actor -> actor.receiveAnswer(response, iteration));
     }
 
     protected void failToUpstream(Request fromUpstream, int iteration) {
         Response.Fail response = new Response.Fail(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (registry.resolutionTracing()) {
-            ResolutionTracer.get().responseExhausted(this.name(), fromUpstream.sender().name(), iteration);
-        }
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(fromUpstream, iteration);
         fromUpstream.sender().execute(actor -> actor.receiveFail(response, iteration));
     }
 
     protected void blockToUpstream(Request fromUpstream, int iteration) {
         Response.Blocked response = new Response.Blocked(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (registry.resolutionTracing()) {
-            ResolutionTracer.get().responseBlocked(this.name(), fromUpstream.sender().name(), iteration);
-        }
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(fromUpstream, iteration);
         fromUpstream.sender().execute(actor -> actor.receiveBlocked(response, iteration));
     }
 

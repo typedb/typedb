@@ -54,14 +54,15 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final Options.Query options;
     private final ResolverRegistry resolverRegistry;
     private final ExplainablesManager explainablesManager;
-    private final Request resolveRequest;
     private final ReiterationQuery.Request reiterationRequest;
     private final int computeSize;
+    private final Set<Identifier.Variable.Retrievable> filter;
     private boolean done;
     private int iteration;
     private Queue<ConceptMap> queue;
     private Set<Actor.Driver<BoundConcludableResolver>> boundConcludables;
     private boolean requiresReiteration;
+    private int requestIdCounter;
     private boolean sentReiterationRequests;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
@@ -78,8 +79,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = this.resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        this.resolveRequest = Request.create(rootResolver, downstream);
+        this.filter = filter;
+        this.requestIdCounter = 0;
         this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
         this.sentReiterationRequests = false;
         this.requiresReiteration = false;
@@ -99,8 +100,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.rootResolver = this.resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        this.resolveRequest = Request.create(rootResolver, downstream);
+        this.filter = filter;
+        this.requestIdCounter = 0;
         this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
         this.sentReiterationRequests = false;
         this.requiresReiteration = false;
@@ -124,8 +125,8 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public void recycle() {}
 
     // note: root resolver calls this single-threaded, so is thread safe
-    private void requestAnswered(Finished answer) {
-        if (options.traceInference()) ResolutionTracer.get().finish();
+    private void requestAnswered(Request answeredRequest, Finished answer) {
+        if (options.traceInference()) ResolutionTracer.get().finish(answeredRequest);
         ConceptMap conceptMap = answer.conceptMap();
         if (options.explain() && !conceptMap.explainables().isEmpty()) {
             explainablesManager.setAndRecordExplainables(conceptMap);
@@ -136,9 +137,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestFailed(int iteration) {
+    private void requestFailed(Request failedRequest, int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
-        if (options.traceInference()) ResolutionTracer.get().finish();
+        if (options.traceInference()) ResolutionTracer.get().finish(failedRequest);
         if (resolverRegistry.boundConcludables(rootResolver, iteration).size() == 0) {
             finish();
         } else if (!sentReiterationRequests && iteration == this.iteration) {
@@ -196,8 +197,15 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         requestAnswer();
     }
 
+    private Request createResolveRequest(int requestId) {
+        Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
+        return Request.create(rootResolver, requestId, downstream);
+    }
+
     private void requestAnswer() {
-        if (options.traceInference()) ResolutionTracer.get().start();
+        Request resolveRequest = createResolveRequest(requestIdCounter);
+        if (options.traceInference()) ResolutionTracer.get().start(resolveRequest);
         rootResolver.execute(actor -> actor.receiveRequest(resolveRequest, iteration));
+        requestIdCounter += 1;
     }
 }

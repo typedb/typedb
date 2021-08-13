@@ -20,13 +20,11 @@ package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConclusionResolver;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,10 +51,9 @@ public class Materialiser extends ReasonerActor<Materialiser> {
                 request.partialAnswer().conceptMap(), registry.traversalEngine(), registry.conceptManager());
         if (registry.resolutionTracing()) {
             if (materialisation.isPresent()) {
-                ResolutionTracer.get().responseAnswer(
-                        this.name(), request.sender().name(), -1, materialisation.get().keySet().toString());
+                ResolutionTracer.get().responseAnswer(request, materialisation.get(), -1);
             } else {
-                ResolutionTracer.get().responseExhausted(this.name(), request.sender().name(), -1);
+                ResolutionTracer.get().responseExhausted(request, -1);
             }
         }
         Response response = new Response(request, materialisation.orElse(null), request.partialAnswer());
@@ -81,20 +78,22 @@ public class Materialiser extends ReasonerActor<Materialiser> {
 
         private final Driver<BoundConclusionResolver> sender;
         private final Actor.Driver<Materialiser> receiver;
+        private final int traceId;
         private final Rule.Conclusion conclusion;
         private final AnswerState.Partial<?> partialAnswer;
 
-        private Request(Actor.Driver<BoundConclusionResolver> sender, Actor.Driver<Materialiser> receiver,
-                        Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
+        private Request(Driver<BoundConclusionResolver> sender, Driver<Materialiser> receiver,
+                        int traceId, Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
             this.sender = sender;
             this.receiver = receiver;
+            this.traceId = traceId;
             this.conclusion = conclusion;
             this.partialAnswer = partialAnswer;
         }
 
-        public static Request create(Actor.Driver<BoundConclusionResolver> sender, Actor.Driver<Materialiser> receiver,
-                                     Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
-            return new Request(sender, receiver, conclusion, partialAnswer);
+        public static Request create(Driver<BoundConclusionResolver> sender, Driver<Materialiser> receiver,
+                                     int traceId, Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
+            return new Request(sender, receiver, traceId, conclusion, partialAnswer);
         }
 
         public Rule.Conclusion conclusion() {
@@ -103,6 +102,10 @@ public class Materialiser extends ReasonerActor<Materialiser> {
 
         public AnswerState.Partial<?> partialAnswer() {
             return partialAnswer;
+        }
+
+        public int traceId() {
+            return traceId;
         }
 
         @Override
