@@ -123,7 +123,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream);
         if (!requestState.isComplete()) {
             Materialiser.Request request = Materialiser.Request.create(
-                    driver(), registry.materialiser(), conclusion, fromDownstream.answer());
+                    driver(), registry.materialiser(), fromUpstream.traceId(), conclusion, fromDownstream.answer());
             requestFromMaterialiser(request, fromUpstream, iteration);
             requestState.waitedMaterialisations().increment();
         } else {
@@ -132,9 +132,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     }
 
     private void requestFromMaterialiser(Materialiser.Request request, Request fromUpstream, int iteration) {
-        if (registry.resolutionTracing()) ResolutionTracer.get().request(
-                this.name(), request.receiver().name(), iteration,
-                request.partialAnswer().conceptMap().concepts().keySet().toString());
+        if (registry.resolutionTracing()) ResolutionTracer.get().request(request, iteration);
         materialiserRequestRouter.put(request, new Pair<>(fromUpstream, iteration));
         registry.materialiser().execute(actor -> actor.receiveRequest(request));
     }
@@ -225,10 +223,10 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.conceptMap().concepts().size() &&
                 partialAnswer.conceptMap().concepts().containsKey(conclusion.generating().get().id())) {
             candidateAnswers(partialAnswer).forEachRemaining(answer -> downstreams.add(
-                    Request.create(driver(), registry.conditionResolver(conclusion.rule()), answer)));
+                    Request.create(driver(), registry.conditionResolver(conclusion.rule()), -1, answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-            downstreams.add(Request.create(driver(), registry.conditionResolver(conclusion.rule()), partialAnswer.toDownstream(named)));
+            downstreams.add(Request.create(driver(), registry.conditionResolver(conclusion.rule()), -1, partialAnswer.toDownstream(named)));
         }
         return downstreams;
     }

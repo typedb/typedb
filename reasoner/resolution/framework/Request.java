@@ -29,6 +29,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 
 public class Request {
 
+    private final int traceId;
     protected final Actor.Driver<? extends Resolver<?>> sender;
     protected final Actor.Driver<? extends Resolver<?>> receiver;
     protected final Partial<?> partialAnswer;
@@ -37,24 +38,29 @@ public class Request {
     private final int hash;
 
     private Request(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                    Partial<?> partialAnswer, int planIndex) {
+                    int traceId, Partial<?> partialAnswer, int planIndex) {
         this.sender = sender;
         this.receiver = receiver;
+        this.traceId = traceId;
         this.partialAnswer = partialAnswer;
         this.planIndex = planIndex;
         this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer);
     }
 
-    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer, int planIndex) {
-        return new Request(sender, receiver, partialAnswer, planIndex);
+    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, int traceId, Partial<?> partialAnswer, int planIndex) {
+        return new Request(sender, receiver, traceId, partialAnswer, planIndex);
     }
 
-    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
-        return new Request(sender, receiver, partialAnswer, -1);
+    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, int traceId, Partial<?> partialAnswer) {
+        return new Request(sender, receiver, traceId, partialAnswer, -1);
     }
 
-    public static Request create(Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
-        return new Request(null, receiver, partialAnswer, -1);
+    public static Request create(Actor.Driver<? extends Resolver<?>> receiver, int traceId, Partial<?> partialAnswer) {
+        return new Request(null, receiver, traceId, partialAnswer, -1);
+    }
+
+    public Request withTraceId(int newTraceId) {
+        return new Request(sender, receiver, newTraceId, partialAnswer, planIndex);
     }
 
     public Actor.Driver<? extends Resolver<?>> receiver() {
@@ -113,22 +119,26 @@ public class Request {
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
+    public int traceId() {
+        return traceId;
+    }
+
     public static class ToSubsumed extends Request {
 
         private final Actor.Driver<? extends Resolver<?>> subsumer;
 
         private ToSubsumed(@Nullable Actor.Driver<? extends Resolver<?>> sender,
                            Actor.Driver<? extends Resolver<?>> receiver,
-                           @Nullable Actor.Driver<? extends Resolver<?>> subsumer, Partial<?> partialAnswer,
+                           @Nullable Actor.Driver<? extends Resolver<?>> subsumer, int traceId, Partial<?> partialAnswer,
                            int planIndex) {
-            super(sender, receiver, partialAnswer, planIndex);
+            super(sender, receiver, traceId, partialAnswer, planIndex);
             this.subsumer = subsumer;
         }
 
         public static Request create(Actor.Driver<? extends Resolver<?>> sender,
                                      Actor.Driver<? extends Resolver<?>> receiver,
-                                     Actor.Driver<? extends Resolver<?>> subsumer, Partial<?> partialAnswer) {
-            return new ToSubsumed(sender, receiver, subsumer, partialAnswer, -1);
+                                     Actor.Driver<? extends Resolver<?>> subsumer, int traceId, Partial<?> partialAnswer) {
+            return new ToSubsumed(sender, receiver, subsumer, traceId, partialAnswer, -1);
         }
 
         public Actor.Driver<? extends Resolver<?>> subsumer() {
@@ -154,7 +164,7 @@ public class Request {
         private ToSubsumer(@Nullable Actor.Driver<? extends Resolver<?>> sender,
                            Actor.Driver<? extends Resolver<?>> receiver,
                            ToSubsumed toSubsumed, Partial<?> partialAnswer, int planIndex) {
-            super(sender, receiver, partialAnswer, planIndex);
+            super(sender, receiver, toSubsumed.traceId(), partialAnswer, planIndex);
             this.toSubsumed = toSubsumed;
         }
 

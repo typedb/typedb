@@ -41,20 +41,22 @@ public class ExplanationProducer implements Producer<Explanation> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ExplanationProducer.class);
 
+    private final ConceptMap bounds;
     private final ExplainablesManager explainablesManager;
     private final Options.Query options;
     private final Actor.Driver<RootResolver.Explain> explainer;
-    private final Request explainRequest;
     private final int computeSize;
     private final AtomicInteger required;
     private final AtomicInteger processing;
     private int iteration;
     private boolean requiresReiteration;
     private boolean done;
+    private int requestTraceIdCounter;
     private Queue<Explanation> queue;
 
     public ExplanationProducer(Conjunction conjunction, ConceptMap bounds, Options.Query options,
                                ResolverRegistry registry, ExplainablesManager explainablesManager) {
+        this.bounds = bounds;
         this.explainablesManager = explainablesManager;
         this.options = options;
         this.queue = null;
@@ -65,8 +67,8 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.processing = new AtomicInteger();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR : 1;
         this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
-        Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
-        this.explainRequest = Request.create(explainer, downstream);
+        this.requestTraceIdCounter = 0;
+
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -83,14 +85,21 @@ public class ExplanationProducer implements Producer<Explanation> {
         processing.addAndGet(toRequest);
     }
 
+    private Request createExplanationRequest(int explainRequestId) {
+        Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
+        return Request.create(explainer, explainRequestId, downstream);
+    }
+
     private void requestExplanation() {
-        if (options.traceInference()) ResolutionTracer.get().start();
+        Request explainRequest = createExplanationRequest(requestTraceIdCounter);
+        if (options.traceInference()) ResolutionTracer.get().start(explainRequest);
         explainer.execute(explainer -> explainer.receiveRequest(explainRequest, iteration));
+        requestTraceIdCounter += 1;
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestAnswered(Explain.Finished explainedAnswer) {
-        if (options.traceInference()) ResolutionTracer.get().finish();
+    private void requestAnswered(Request requestAnswered, Explain.Finished explainedAnswer) {
+        if (options.traceInference()) ResolutionTracer.get().finish(requestAnswered);
         Explanation explanation = explainedAnswer.explanation();
         explainablesManager.setAndRecordExplainables(explanation.conditionAnswer());
         queue.put(explanation);
@@ -99,9 +108,9 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestFailed(int iteration) {
+    private void requestFailed(Request failedRequest, int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
-        if (options.traceInference()) ResolutionTracer.get().finish();
+        if (options.traceInference()) ResolutionTracer.get().finish(failedRequest);
         if (!done && iteration == this.iteration && !mustReiterate()) {
             // query is completely terminated
             done = true;
@@ -131,7 +140,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     private void exception(Throwable e) {
-        if (options.traceInference()) ResolutionTracer.get().finish();
+        if (options.traceInference()) ResolutionTracer.get().exception();
         if (!done) {
             done = true;
             required.set(0);

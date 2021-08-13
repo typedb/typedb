@@ -18,6 +18,8 @@
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +28,10 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -38,11 +44,8 @@ public final class ResolutionTracer {
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionTracer.class);
 
     private static ResolutionTracer INSTANCE;
-    private static PrintWriter writer;
-    private static int rootRequestNumber = 0;
-    private static int messageNumber = 0;
     private static Path logDir = null;
-    private static final AtomicReference<Path> path = new AtomicReference<>(null);
+    private static final Map<Integer, RootRequestTracer> rootRequestTracers = new HashMap<>();
 
     private ResolutionTracer(Path logDir) {
         ResolutionTracer.logDir = logDir;
@@ -62,95 +65,153 @@ public final class ResolutionTracer {
         return INSTANCE;
     }
 
-    public synchronized void request(String sender, String receiver, int iteration, String conceptMap) {
-        addMessage(sender, receiver, iteration, EdgeType.REQUEST, conceptMap);
+    public synchronized void request(Request request, int iteration) {
+        String sender = request.sender().name();
+        String receiver = request.receiver().name();
+        String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
+        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.REQUEST, conceptMap);
     }
 
-    public synchronized void responseAnswer(String sender, String receiver, int iteration, String conceptMap) {
-        addMessage(sender, receiver, iteration, EdgeType.ANSWER, conceptMap);
+    public synchronized void request(Materialiser.Request request, int iteration) {
+        String sender = request.sender().name();
+        String receiver = request.receiver().name();
+        String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
+        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.REQUEST, conceptMap);
     }
 
-    public synchronized void responseExhausted(String sender, String receiver, int iteration) {
-        addMessage(sender, receiver, iteration, EdgeType.EXHAUSTED, "");
+    public void responseAnswer(Materialiser.Request request, Map<Identifier.Variable, Concept> materialisation, int iteration) {
+        String sender = request.sender().name();
+        String receiver = request.receiver().name();
+        String concepts = materialisation.keySet().toString();
+        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.ANSWER, concepts);
     }
 
-    public synchronized void responseBlocked(String sender, String receiver, int iteration) {
-         addMessage(sender, receiver, iteration, EdgeType.BLOCKED, "");
+    public synchronized void responseAnswer(Request request, int iteration) {
+        String sender = request.sender().name();
+        String receiver = request.receiver().name();
+        String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
+        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.ANSWER, conceptMap);
     }
 
-    private void addMessage(String sender, String receiver, int iteration, EdgeType edgeType, String conceptMap) {
-        writeEdge(sender, receiver, iteration, edgeType.colour(), messageNumber, conceptMap);
-        messageNumber++;
+    public synchronized void responseExhausted(Request request, int iteration) {
+        String sender = request.sender().name();
+        String receiver = request.receiver().name();
+        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.EXHAUSTED, "");
     }
 
-    private void writeEdge(String fromId, String toId, int iteration, String colour, int messageNumber, String conceptMap) {
-        write(String.format("%s -> %s [style=bold,label=%s,color=%s];",
-                            doubleQuotes(escapeNewlines(escapeDoubleQuotes(fromId))),
-                            doubleQuotes(escapeNewlines(escapeDoubleQuotes(toId))),
-                            doubleQuotes("m" + messageNumber + "_it" + iteration + "_" + conceptMap),
-                            doubleQuotes(colour)));
-
+    public synchronized void responseExhausted(Materialiser.Request request, int iteration) {
+        String sender = request.sender().name();
+        String receiver = request.receiver().name();
+        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.EXHAUSTED, "");
     }
 
-    private String escapeNewlines(String toFormat) {
-        return toFormat.replaceAll("\n", "\\\\l") + "\\l";
+    public synchronized void responseBlocked(Request request, int iteration) {
+        String sender = request.sender().name();
+        String receiver = request.receiver().name();
+        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.BLOCKED, "");
     }
 
-    private String escapeDoubleQuotes(String toFormat) {
-        return toFormat.replaceAll("\"", "\\\\\"");
+    private void addMessage(String sender, String receiver, int rootRequestId, int iteration, EdgeType edgeType, String conceptMap) {
+        rootRequestTracers.get(rootRequestId).addMessage(sender, receiver, iteration, edgeType, conceptMap);
     }
 
-    private String doubleQuotes(String toFormat) {
-        return "\"" + toFormat + "\"";
+    public synchronized void start(Request request) {
+        assert !rootRequestTracers.containsKey(request.traceId());
+        rootRequestTracers.put(request.traceId(), new RootRequestTracer(request.traceId()));
+        rootRequestTracers.get(request.traceId()).start();
     }
 
-    public synchronized void start() {
-        messageNumber = 0;
-        path.set(logDir.resolve(filename()));
-        try {
-            File file = path.get().toFile();
-            boolean ignore = file.getParentFile().mkdirs();
-            writer = new PrintWriter(file, "UTF-8");
-            startFile();
-        } catch (FileNotFoundException | UnsupportedEncodingException e) {
-            e.printStackTrace();
-            LOG.trace("Resolution tracing failed to start writing");
+    public synchronized void finish(Request request) {
+        rootRequestTracers.get(request.traceId()).finish();
+    }
+
+    public synchronized void exception() {
+        rootRequestTracers.forEach((r, t) -> t.finish());
+    }
+
+    private static class RootRequestTracer {
+
+        private final AtomicReference<Path> path = new AtomicReference<>(null);
+        private final int rootRequestNumber;
+        private int messageNumber = 0;
+        private PrintWriter writer;
+
+        private RootRequestTracer(int rootRequestNumber) {
+            this.rootRequestNumber = rootRequestNumber;
         }
-    }
 
-    private void startFile() {
-        write(String.format(
-                "digraph request_%d {\n" +
-                        "node [fontsize=12 fontname=arial width=0.5 shape=box style=filled]\n" +
-                        "edge [fontsize=10 fontname=arial width=0.5]",
-                rootRequestNumber));
-    }
-
-    private String filename() {
-        return String.format("resolution_trace_request_%d.dot", rootRequestNumber);
-    }
-
-    private void endFile() {
-        write("}");
-    }
-
-    private void write(String toWrite) {
-        if (writer == null) throw TypeDBException.of(REASONER_TRACING_CALL_TO_WRITE_BEFORE_START);
-        writer.println(toWrite);
-    }
-
-    public synchronized void finish() {
-        if (path.get() == null) throw TypeDBException.of(REASONER_TRACING_CALL_TO_FINISH_BEFORE_START);
-        endFile();
-        try {
-            LOG.debug("Resolution traces written to {}", path.get().toAbsolutePath());
-            writer.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-            LOG.debug("Resolution tracing failed to write to file");
+        public void start() {
+            path.set(logDir.resolve(filename()));
+            try {
+                File file = path.get().toFile();
+                boolean ignore = file.getParentFile().mkdirs();
+                writer = new PrintWriter(file, "UTF-8");
+                startFile();
+            } catch (FileNotFoundException | UnsupportedEncodingException e) {
+                e.printStackTrace();
+                LOG.trace("Resolution tracing failed to start writing");
+            }
         }
-        rootRequestNumber += 1;
-        path.set(null);
+
+        private void startFile() {
+            write(String.format(
+                    "digraph request_%d {\n" +
+                            "node [fontsize=12 fontname=arial width=0.5 shape=box style=filled]\n" +
+                            "edge [fontsize=10 fontname=arial width=0.5]",
+                    rootRequestNumber));
+        }
+
+        public void finish() {
+            if (path.get() == null) throw TypeDBException.of(REASONER_TRACING_CALL_TO_FINISH_BEFORE_START);
+            endFile();
+            try {
+                LOG.debug("Resolution traces written to {}", path.get().toAbsolutePath());
+                writer.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+                LOG.debug("Resolution tracing failed to write to file");
+            }
+            path.set(null);
+        }
+
+        private String filename() {
+            return String.format("resolution_trace_request_%d.dot", rootRequestNumber);
+        }
+
+        private void endFile() {
+            write("}");
+        }
+
+        private void write(String toWrite) {
+            if (writer == null) throw TypeDBException.of(REASONER_TRACING_CALL_TO_WRITE_BEFORE_START);
+            writer.println(toWrite);
+        }
+
+        private synchronized void addMessage(String sender, String receiver, int iteration, EdgeType edgeType, String conceptMap) {
+            writeEdge(sender, receiver, iteration, edgeType.colour(), messageNumber, conceptMap);
+            messageNumber++;
+        }
+
+        private void writeEdge(String fromId, String toId, int iteration, String colour, int messageNumber, String conceptMap) {
+            write(String.format("%s -> %s [style=bold,label=%s,color=%s];",
+                                doubleQuotes(escapeNewlines(escapeDoubleQuotes(fromId))),
+                                doubleQuotes(escapeNewlines(escapeDoubleQuotes(toId))),
+                                doubleQuotes("m" + messageNumber + "_it" + iteration + "_" + conceptMap),
+                                doubleQuotes(colour)));
+
+        }
+
+        private String escapeNewlines(String toFormat) {
+            return toFormat.replaceAll("\n", "\\\\l") + "\\l";
+        }
+
+        private String escapeDoubleQuotes(String toFormat) {
+            return toFormat.replaceAll("\"", "\\\\\"");
+        }
+
+        private String doubleQuotes(String toFormat) {
+            return "\"" + toFormat + "\"";
+        }
     }
 
     enum EdgeType {

@@ -129,7 +129,7 @@ public class ReiterationTest {
                 int[] doneInIteration = {0};
                 boolean[] receivedInferredAnswer = {false};
 
-                ResolutionTracer.get().start();
+                ResolutionTracer.get().start(resolveRequest);
                 Actor.Driver<RootResolver.Conjunction> root = registry.root(conjunction, answer -> {
                     if (iterate(answer.conceptMap().concepts().entrySet())
                             .map(e -> e.getValue().asThing().isInferred()).first().isPresent()) {
@@ -146,24 +146,24 @@ public class ReiterationTest {
                 // iteration 0
                 sendRootRequest(root, filter, iteration[0]);
                 answers.add(responses.take());
-                ResolutionTracer.get().finish();
+                ResolutionTracer.get().finish(failedRequest);
 
-                ResolutionTracer.get().start();
+                ResolutionTracer.get().start(resolveRequest);
                 sendRootRequest(root, filter, iteration[0]);
                 failed.take(); // Block and wait for an failed message
-                ResolutionTracer.get().finish();
+                ResolutionTracer.get().finish(failedRequest);
                 assertTrue(receivedInferredAnswer[0]);
                 assertEquals(1, doneInIteration[0]);
 
                 // iteration 1 onwards
                 for (int j = 0; j <= 100; j++) {
-                    ResolutionTracer.get().start();
+                    ResolutionTracer.get().start(resolveRequest);
                     sendRootRequest(root, filter, iteration[0]);
                     Match.Finished re = responses.poll(100, MILLISECONDS);
                     if (re == null) {
                         Integer ex = failed.poll(100, MILLISECONDS);
                         if (ex == null) {
-                            ResolutionTracer.get().finish();
+                            ResolutionTracer.get().finish(failedRequest);
                             fail();
                         }
                         // Reset the iteration
@@ -171,7 +171,7 @@ public class ReiterationTest {
                         receivedInferredAnswer[0] = false;
                         doneInIteration[0] = 0;
                     }
-                    ResolutionTracer.get().finish();
+                    ResolutionTracer.get().finish(failedRequest);
                 }
             } catch (TypeDBException e) {
                 e.printStackTrace();
@@ -183,7 +183,7 @@ public class ReiterationTest {
     private void sendRootRequest(Actor.Driver<RootResolver.Conjunction> root, Set<Identifier.Variable.Retrievable> filter, int iteration) {
         Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
         root.execute(actor -> actor.receiveRequest(
-                Request.create(root, downstream), iteration)
+                Request.create(root, downstream, requestId), iteration)
         );
     }
 

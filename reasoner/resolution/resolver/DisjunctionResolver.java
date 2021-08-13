@@ -90,7 +90,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
             Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
                     .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
-            Request request = Request.create(driver(), conjunctionResolver, downstream);
+            Request request = Request.create(driver(), conjunctionResolver, -1, downstream);
             requestState.downstreamManager().addDownstream(request);
         }
         return requestState;
@@ -98,7 +98,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
     @Override
     protected RequestState requestStateReiterate(Request fromUpstream, RequestState requestStatePrior,
-                                                  int newIteration) {
+                                                 int newIteration) {
         LOG.debug("{}: Updating RequestState for iteration '{}'", name(), newIteration);
 
         assert newIteration > requestStatePrior.iteration() && fromUpstream.partialAnswer().isCompound();
@@ -107,7 +107,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
             Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
                     .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
-            Request request = Request.create(driver(), conjunctionResolver, downstream);
+            Request request = Request.create(driver(), conjunctionResolver, -1, downstream);
             requestStateNextIteration.downstreamManager().addDownstream(request);
         }
         return requestStateNextIteration;

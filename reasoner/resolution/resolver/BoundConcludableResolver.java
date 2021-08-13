@@ -213,7 +213,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             Rule rule = conclusionResolver.actor().conclusion().rule();  // TODO: Reaching through to the actor is not ideal
             for (Unifier unifier : entry.getValue()) {
                 partialAnswer.toDownstream(unifier, rule).ifPresent(
-                        conclusion -> downstreams.add(Request.create(driver(), conclusionResolver, conclusion)));
+                        conclusion -> downstreams.add(Request.create(driver(), conclusionResolver, -1, conclusion)));
             }
         }
         return downstreams;

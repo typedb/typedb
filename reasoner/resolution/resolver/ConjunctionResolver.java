@@ -108,7 +108,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         Resolvable<?> nextResolvable = plan.get(nextResolverIndex);
         ResolverRegistry.ResolverView nextPlannedDownstream = downstreamResolvers.get(nextResolvable);
         final Partial<?> downstream = toDownstream(fromDownstream.answer().asCompound(), nextPlannedDownstream, nextResolvable);
-        Request downstreamRequest = Request.create(driver(), nextPlannedDownstream.resolver(), downstream, nextResolverIndex);
+        Request downstreamRequest = Request.create(driver(), nextPlannedDownstream.resolver(), -1, downstream, nextResolverIndex);
         requestFromDownstream(downstreamRequest, fromUpstream, iteration);
         // negated requests can be used twice in a parallel setting, and return the same answer twice
         if (!nextResolvable.isNegated() || (nextResolvable.isNegated() && !requestState.downstreamManager().contains(downstreamRequest))) {
@@ -167,27 +167,25 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         Plans.Plan plan = plans.create(fromUpstream, resolvables, negateds);
         assert !plan.isEmpty() && fromUpstream.partialAnswer().isCompound();
         RequestState requestState = requestStateNew(iteration);
-        initialiseRequestState(requestState, fromUpstream.partialAnswer().asCompound(), plan);
+        initialiseRequestState(requestState, fromUpstream, plan);
         return requestState;
     }
 
     @Override
-    protected RequestState requestStateReiterate(Request fromUpstream, RequestState requestStatePrior,
-                                                  int newIteration) {
+    protected RequestState requestStateReiterate(Request fromUpstream, RequestState requestStatePrior, int newIteration) {
         assert newIteration > requestStatePrior.iteration();
         LOG.debug("{}: Updating RequestState for iteration '{}'", name(), newIteration);
         Plans.Plan plan = plans.create(fromUpstream, resolvables, negateds);
         assert !plan.isEmpty() && fromUpstream.partialAnswer().isCompound();
         RequestState requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration);
-        initialiseRequestState(requestStateNextIteration, fromUpstream.partialAnswer().asCompound(), plan);
+        initialiseRequestState(requestStateNextIteration, fromUpstream, plan);
         return requestStateNextIteration;
     }
 
-    private void initialiseRequestState(RequestState requestState, Partial.Compound<?, ?> partialAnswer,
-                                        Plans.Plan plan) {
+    private void initialiseRequestState(RequestState requestState, Request fromUpstream, Plans.Plan plan) {
         ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
-        Partial<?> downstream = toDownstream(partialAnswer, childResolver, plan.get(0));
-        Request toDownstream = Request.create(driver(), childResolver.resolver(), downstream, 0);
+        Partial<?> downstream = toDownstream(fromUpstream.partialAnswer().asCompound(), childResolver, plan.get(0));
+        Request toDownstream = Request.create(driver(), childResolver.resolver(), -1, downstream, 0);
         requestState.downstreamManager().addDownstream(toDownstream);
     }
 

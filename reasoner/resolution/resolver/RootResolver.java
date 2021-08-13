@@ -34,25 +34,26 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public interface RootResolver<TOP extends Top> {
 
-    void submitAnswer(TOP answer);
+    void submitAnswer(Request fromUpstream, TOP answer);
 
-    void submitFail(int iteration);
+    void submitFail(Request fromUpstream, int iteration);
 
     class Conjunction extends ConjunctionResolver<Conjunction> implements RootResolver<Top.Match.Finished> {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
         private final com.vaticle.typedb.core.pattern.Conjunction conjunction;
-        private final Consumer<Finished> onAnswer;
-        private final Consumer<Integer> onFail;
+        private final BiConsumer<Request, Finished> onAnswer;
+        private final BiConsumer<Request, Integer> onFail;
         private final Consumer<Throwable> onException;
 
         public Conjunction(Driver<Conjunction> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction,
-                           Consumer<Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
+                           BiConsumer<Request, Finished> onAnswer, BiConsumer<Request, Integer> onFail, Consumer<Throwable> onException,
                            ResolverRegistry registry) {
             super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", registry);
             this.conjunction = conjunction;
@@ -80,26 +81,26 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        public void submitAnswer(Finished answer) {
+        public void submitAnswer(Request fromUpstream, Finished answer) {
             LOG.debug("Submitting answer: {}", answer);
-            onAnswer.accept(answer);
+            onAnswer.accept(fromUpstream, answer);
         }
 
         @Override
-        public void submitFail(int iteration) {
-            LOG.debug("Submitting fail in iteration: {}", iteration);
-            onFail.accept(iteration);
+        public void submitFail(Request fromUpstream, int iteration) {
+            LOG.debug("Submitting fail in iteration: {}", fromUpstream);
+            onFail.accept(fromUpstream, iteration);
         }
 
         @Override
         protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
             assert answer.isTop() && answer.asTop().isMatch() && answer.asTop().asMatch().isFinished();
-            submitAnswer(answer.asTop().asMatch().asFinished());
+            submitAnswer(fromUpstream, answer.asTop().asMatch().asFinished());
         }
 
         @Override
         protected void failToUpstream(Request fromUpstream, int iteration) {
-            submitFail(iteration);
+            submitFail(fromUpstream, iteration);
         }
 
         @Override
@@ -107,7 +108,7 @@ public interface RootResolver<TOP extends Top> {
             if (requestState.downstreamManager().hasDownstream()) {
                 requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
             } else {
-                submitFail(iteration);
+                submitFail(fromUpstream, iteration);
             }
         }
 
@@ -143,12 +144,12 @@ public interface RootResolver<TOP extends Top> {
     class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver<Finished> {
 
         private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
-        private final Consumer<Finished> onAnswer;
-        private final Consumer<Integer> onFail;
+        private final BiConsumer<Request, Finished> onAnswer;
+        private final BiConsumer<Request, Integer> onFail;
         private final Consumer<Throwable> onException;
 
         public Disjunction(Driver<Disjunction> driver, com.vaticle.typedb.core.pattern.Disjunction disjunction,
-                           Consumer<Finished> onAnswer, Consumer<Integer> onFail, Consumer<Throwable> onException,
+                           BiConsumer<Request, Finished> onAnswer, BiConsumer<Request, Integer> onFail, Consumer<Throwable> onException,
                            ResolverRegistry registry) {
             super(driver, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction,
                   registry);
@@ -169,30 +170,30 @@ public interface RootResolver<TOP extends Top> {
             if (requestState.downstreamManager().hasDownstream()) {
                 requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
             } else {
-                submitFail(iteration);
+                submitFail(fromUpstream, iteration);
             }
         }
 
         @Override
         protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
             assert answer.isTop() && answer.asTop().isMatch() && answer.asTop().asMatch().isFinished();
-            submitAnswer(answer.asTop().asMatch().asFinished());
+            submitAnswer(fromUpstream, answer.asTop().asMatch().asFinished());
         }
 
         @Override
         protected void failToUpstream(Request fromUpstream, int iteration) {
-            submitFail(iteration);
+            submitFail(fromUpstream, iteration);
         }
 
         @Override
-        public void submitAnswer(Finished answer) {
+        public void submitAnswer(Request fromUpstream, Finished answer) {
             LOG.debug("Submitting answer: {}", answer);
-            onAnswer.accept(answer);
+            onAnswer.accept(fromUpstream, answer);
         }
 
         @Override
-        public void submitFail(int iteration) {
-            onFail.accept(iteration);
+        public void submitFail(Request fromUpstream, int iteration) {
+            onFail.accept(fromUpstream, iteration);
         }
 
         @Override
@@ -226,14 +227,14 @@ public interface RootResolver<TOP extends Top> {
         private static final Logger LOG = LoggerFactory.getLogger(Explain.class);
 
         private final com.vaticle.typedb.core.pattern.Conjunction conjunction;
-        private final Consumer<Top.Explain.Finished> onAnswer;
-        private final Consumer<Integer> onFail;
+        private final BiConsumer<Request, Top.Explain.Finished> onAnswer;
+        private final BiConsumer<Request, Integer> onFail;
         private final Consumer<Throwable> onException;
 
         private final Set<Explanation> submittedExplanations;
 
         public Explain(Driver<Explain> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction,
-                       Consumer<Top.Explain.Finished> onAnswer, Consumer<Integer> onFail,
+                       BiConsumer<Request, Top.Explain.Finished> onAnswer, BiConsumer<Request, Integer> onFail,
                        Consumer<Throwable> onException, ResolverRegistry registry) {
             super(driver, "Explain(" + conjunction + ")", registry);
             this.conjunction = conjunction;
@@ -252,12 +253,12 @@ public interface RootResolver<TOP extends Top> {
         @Override
         protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
             assert answer.isTop() && answer.asTop().isExplain() && answer.asTop().asExplain().isFinished();
-            submitAnswer(answer.asTop().asExplain().asFinished());
+            submitAnswer(fromUpstream, answer.asTop().asExplain().asFinished());
         }
 
         @Override
         protected void failToUpstream(Request fromUpstream, int iteration) {
-            submitFail(iteration);
+            submitFail(fromUpstream, iteration);
         }
 
         @Override
@@ -265,19 +266,19 @@ public interface RootResolver<TOP extends Top> {
             if (requestState.downstreamManager().hasDownstream()) {
                 requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
             } else {
-                submitFail(iteration);
+                submitFail(fromUpstream, iteration);
             }
         }
 
         @Override
-        public void submitAnswer(Top.Explain.Finished answer) {
+        public void submitAnswer(Request fromUpstream, Top.Explain.Finished answer) {
             LOG.debug("Submitting answer: {}", answer);
-            onAnswer.accept(answer);
+            onAnswer.accept(fromUpstream, answer);
         }
 
         @Override
-        public void submitFail(int iteration) {
-            onFail.accept(iteration);
+        public void submitFail(Request fromUpstream, int iteration) {
+            onFail.accept(fromUpstream, iteration);
         }
 
         @Override
