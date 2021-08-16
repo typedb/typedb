@@ -103,16 +103,14 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     // TODO: Rename to sendRequest or request
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name(), request);
-        if (registry.resolutionTracing()) {
-            assert fromUpstream.traceId().rootId() != -1;
-            assert request.traceId() == fromUpstream.traceId() || request.traceId().rootId() == -1;
-            request = request.withTraceId(fromUpstream.traceId());
-            ResolutionTracer.get().request(request, iteration);
-        }
+        assert fromUpstream.traceId().rootId() != -1;
+        assert request.traceId() == fromUpstream.traceId() || request.traceId().rootId() == -1;
+        request = request.withTraceId(fromUpstream.traceId());
+        if (registry.resolutionTracing()) ResolutionTracer.get().request(request, iteration);
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
-        requestRouter.put(new Pair<>(request, request.traceId()), fromUpstream);
-        Driver<? extends Resolver<?>> receiver = request.receiver();
         Request finalRequest = request;
+        requestRouter.put(new Pair<>(finalRequest, finalRequest.traceId()), fromUpstream);
+        Driver<? extends Resolver<?>> receiver = finalRequest.receiver();
         receiver.execute(actor -> actor.receiveRequest(finalRequest, iteration));
     }
 
