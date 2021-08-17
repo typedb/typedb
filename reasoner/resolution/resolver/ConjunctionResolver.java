@@ -85,6 +85,10 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         Request fromUpstream = fromUpstream(toDownstream);
         RequestState requestState = requestStates.get(fromUpstream);
 
+        if (!requestState.deduplicationSet().contains(fromDownstream.answer().conceptMap())) {
+            requestState.downstreamManager().clearBlocked();
+        }
+
         Plans.Plan plan = plans.getActive(fromUpstream);
 
         // TODO: this is a bit of a hack, we want requests to a negation to be "single use", otherwise we can end up in an infinite loop

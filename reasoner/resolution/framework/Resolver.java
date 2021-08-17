@@ -235,5 +235,45 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         public boolean contains(Request downstreamRequest) {
             return downstreams.contains(downstreamRequest);
         }
+
+        public static class Blockable extends DownstreamManager {
+
+            private final Map<Request, Request> blocked;
+
+            public Blockable(List<Request> downstreams) {
+                super(downstreams);
+                this.blocked = new HashMap<>();
+            }
+
+            public Blockable() {
+                super();
+                this.blocked = new HashMap<>();
+            }
+
+            private Optional<Request> nextDownstream(Set<Request> exclude) {
+                if (!downstreamSelector.hasNext()) downstreamSelector = iterate(downstreams);
+                return downstreamSelector.filter(d -> !exclude.contains(d)).first();
+            }
+
+            public Optional<Request> nextUnblockedDownstream() {
+                if (!hasDownstream()) return Optional.empty();
+                else return nextDownstream(blocked.keySet());
+            }
+
+            public Optional<Request> nextDownstreamBlocker() {
+                if (!hasDownstream()) return Optional.empty();
+                Request ds = nextDownstream();
+                if (blocked.containsKey(ds)) return Optional.of(blocked.get(ds));
+                else return Optional.empty();
+            }
+
+            public void block(Request blockedDownstream, Request blocker) {
+                blocked.put(blockedDownstream, blocker);
+            }
+
+            public void clearBlocked() {
+                blocked.clear();
+            }
+        }
     }
 }

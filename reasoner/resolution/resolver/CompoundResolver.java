@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVER>> extends Resolver<RESOLVER> {
@@ -79,6 +80,24 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         nextAnswer(fromUpstream, requestState, iteration);
     }
 
+    @Override
+    protected void receiveBlocked(Response.Blocked fromDownstream, int iteration) {
+        LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
+        if (isTerminated()) return;
+        Request blockedDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = fromUpstream(blockedDownstream);
+        RequestState requestState = this.requestStates.get(fromUpstream);
+
+        requestState.downstreamManager().block(blockedDownstream, fromDownstream.blocker());
+
+        Optional<Request> unblocked;
+        if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
+            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
+        } else {
+            blockToUpstream(fromUpstream, fromDownstream.blocker(), iteration);
+        }
+    }
+
     private RequestState getOrUpdateRequestState(Request fromUpstream, int iteration) {
         if (!requestStates.containsKey(fromUpstream)) {
             requestStates.put(fromUpstream, requestStateCreate(fromUpstream, iteration));
@@ -102,7 +121,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     static class RequestState {
 
         private final int iteration;
-        private final DownstreamManager downstreamManager;
+        private final DownstreamManager.Blockable downstreamManager;
         private final Set<ConceptMap> deduplicationSet;
 
         public RequestState(int iteration) {
@@ -111,11 +130,11 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
 
         public RequestState(int iteration, Set<ConceptMap> produced) {
             this.iteration = iteration;
-            this.downstreamManager = new DownstreamManager();
+            this.downstreamManager = new DownstreamManager.Blockable();
             this.deduplicationSet = new HashSet<>(produced);
         }
 
-        public DownstreamManager downstreamManager() {
+        public DownstreamManager.Blockable downstreamManager() {
             return downstreamManager;
         }
 

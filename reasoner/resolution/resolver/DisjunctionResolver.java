@@ -58,6 +58,10 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         Request fromUpstream = fromUpstream(toDownstream);
         RequestState requestState = requestStates.get(fromUpstream);
 
+        if (!requestState.deduplicationSet().contains(fromDownstream.answer().conceptMap())) {
+            requestState.downstreamManager().clearBlocked();
+        }
+
         assert fromDownstream.answer().isCompound();
         AnswerState answer = toUpstreamAnswer(fromDownstream.answer().asCompound(), fromDownstream);
         boolean acceptedAnswer = tryAcceptUpstreamAnswer(answer, fromUpstream, iteration);

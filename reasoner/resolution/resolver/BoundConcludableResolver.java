@@ -57,8 +57,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     public BoundConcludableResolver(Driver<BoundConcludableResolver> driver, Driver<ConcludableResolver> parent,
                                     ConceptMap bounds, ResolverRegistry registry) {
-        super(driver, BoundConcludableResolver.class.getSimpleName() + "(" + parent.actor().concludable().toString() +
-                ", bounds: " + bounds.toString() + ")", registry);
+        super(driver, BoundConcludableResolver.class.getSimpleName() + "(pattern: " +
+                parent.actor().concludable().pattern() + ", bounds: " + bounds.concepts().toString() + ")", registry);
         this.parent = parent;
         this.bounds = bounds;
         this.requestStates = new HashMap<>();
@@ -124,7 +124,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         } else if (isRecursion(fromUpstream.partialAnswer()).isPresent()) {
             blockedRequests.put(fromUpstream, new RecursionBlock());
             blockToUpstream(fromUpstream, fromUpstream, iteration);
-        } else if ((unblocked = nextUnblockedDownstream(requestState)).isPresent()) {
+        } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
         } else if ((blocker = requestState.downstreamManager().nextDownstreamBlocker()).isPresent() && !blockerHadNoNewAnswer(blocker.get())) {
             blockToUpstream(fromUpstream, blocker.get(), iteration);
@@ -166,7 +166,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
-        } else if ((unblocked = nextUnblockedDownstream(requestState)).isPresent()) {
+        } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
         } else {
             cache().setComplete();
@@ -193,7 +193,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
-        } else if ((unblocked = nextUnblockedDownstream(requestState)).isPresent()) {
+        } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
         } else if ((blocker = requestState.downstreamManager().nextDownstreamBlocker()).isPresent() && !blockerHadNoNewAnswer(blocker.get())) {
             blockToUpstream(fromUpstream, blocker.get(), iteration);
@@ -222,7 +222,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
-        } else if ((unblocked = nextUnblockedDownstream(requestState)).isPresent()) {
+        } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
         } else if (requestState.downstreamManager().hasDownstream() && !blockerHadNoNewAnswer(fromDownstream.blocker())) {
             blockToUpstream(fromUpstream, fromDownstream.blocker(), iteration);
@@ -318,16 +318,16 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     protected static abstract class ExploringRequestState<ANSWER> extends CachingRequestState<ANSWER> implements RequestState.Exploration {
 
-        private final BlockableDownstreamManager downstreamManager;
+        private final DownstreamManager.Blockable downstreamManager;
 
         protected ExploringRequestState(Request fromUpstream, AnswerCache<ANSWER> answerCache, int iteration,
                                         List<Request> ruleDownstreams, boolean deduplicate) {
             super(fromUpstream, answerCache, iteration, deduplicate);
-            this.downstreamManager = new BlockableDownstreamManager(ruleDownstreams);
+            this.downstreamManager = new DownstreamManager.Blockable(ruleDownstreams);
         }
 
         @Override
-        public BlockableDownstreamManager downstreamManager() {
+        public DownstreamManager.Blockable downstreamManager() {
             return downstreamManager;
         }
 
@@ -338,39 +338,6 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             return !answerCache.isComplete() && answerCache.add(answerFromPartial(partial));
         }
 
-        public static class BlockableDownstreamManager extends DownstreamManager {
-
-            private final Map<Request, Request> blocked;
-
-            public BlockableDownstreamManager(List<Request> downstreams) {
-                super(downstreams);
-                this.blocked = new HashMap<>();
-            }
-
-            private Optional<Request> nextDownstream(Set<Request> exclude) {
-                if (!downstreamSelector.hasNext()) downstreamSelector = iterate(downstreams);
-                return downstreamSelector.filter(d -> !exclude.contains(d)).first();
-            }
-
-            public Optional<Request> nextUnblockedDownstream() {
-                return nextDownstream(blocked.keySet());
-            }
-
-            public Optional<Request> nextDownstreamBlocker() {
-                if (!hasDownstream()) return Optional.empty();
-                Request ds = nextDownstream();
-                if (blocked.containsKey(ds)) return Optional.of(blocked.get(ds));
-                else return Optional.empty();
-            }
-
-            public void block(Request blockedDownstream, Request blocker) {
-                blocked.put(blockedDownstream, blocker);
-            }
-
-            public void clearBlocked() {
-                blocked.clear();
-            }
-        }
     }
 
 }
