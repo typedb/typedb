@@ -78,33 +78,34 @@ public final class ResolutionTracer {
         addMessage(sender, receiver, request.traceId(), iteration, EdgeType.REQUEST, conceptMap);
     }
 
-    public void responseAnswer(Materialiser.Request request, Map<Identifier.Variable, Concept> materialisation, int iteration) {
+    public void responseAnswer(Materialiser.Response request, Map<Identifier.Variable, Concept> materialisation, int iteration) {
+        // Not static due to having one Materialiser
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         String concepts = materialisation.keySet().toString();
         addMessage(sender, receiver, request.traceId(), iteration, EdgeType.ANSWER, concepts);
     }
 
-    public synchronized void responseAnswer(Request request, int iteration) {
+    public synchronized void responseAnswer(Response.Answer request, int iteration) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
-        String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
+        String conceptMap = request.answer().conceptMap().concepts().keySet().toString();
         addMessage(sender, receiver, request.traceId(), iteration, EdgeType.ANSWER, conceptMap);
     }
 
-    public synchronized void responseExhausted(Request request, int iteration) {
+    public synchronized void responseExhausted(Response request, int iteration) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         addMessage(sender, receiver, request.traceId(), iteration, EdgeType.EXHAUSTED, "");
     }
 
-    public synchronized void responseExhausted(Materialiser.Request request, int iteration) {
+    public synchronized void responseExhausted(Materialiser.Response request, int iteration) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         addMessage(sender, receiver, request.traceId(), iteration, EdgeType.EXHAUSTED, "");
     }
 
-    public synchronized void responseBlocked(Request request, int iteration) {
+    public synchronized void responseBlocked(Response.Blocked request, int iteration) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         addMessage(sender, receiver, request.traceId(), iteration, EdgeType.BLOCKED, "");
