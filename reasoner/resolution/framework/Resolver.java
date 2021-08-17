@@ -119,21 +119,21 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         assert answer.isPartial();
         Answer response = Answer.create(fromUpstream, answer.asPartial());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(fromUpstream, iteration);
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(response, iteration);
         fromUpstream.sender().execute(actor -> actor.receiveAnswer(response, iteration));
     }
 
     protected void failToUpstream(Request fromUpstream, int iteration) {
         Response.Fail response = new Response.Fail(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(fromUpstream, iteration);
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(response, iteration);
         fromUpstream.sender().execute(actor -> actor.receiveFail(response, iteration));
     }
 
     protected void blockToUpstream(Request fromUpstream, int iteration) {
         Response.Blocked response = new Response.Blocked(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(fromUpstream, iteration);
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response, iteration);
         fromUpstream.sender().execute(actor -> actor.receiveBlocked(response, iteration));
     }
 

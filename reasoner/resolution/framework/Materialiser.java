@@ -50,14 +50,14 @@ public class Materialiser extends ReasonerActor<Materialiser> {
         if (isTerminated()) return;
         Optional<Map<Identifier.Variable, Concept>> materialisation = request.conclusion().materialise(
                 request.partialAnswer().conceptMap(), registry.traversalEngine(), registry.conceptManager());
+        Response response = new Response(request, materialisation.orElse(null), request.partialAnswer());
         if (registry.resolutionTracing()) {
             if (materialisation.isPresent()) {
-                ResolutionTracer.get().responseAnswer(request, materialisation.get(), -1);
+                ResolutionTracer.get().responseAnswer(response, materialisation.get(), -1);
             } else {
-                ResolutionTracer.get().responseExhausted(request, -1);
+                ResolutionTracer.get().responseExhausted(response, -1);
             }
         }
-        Response response = new Response(request, materialisation.orElse(null), request.partialAnswer());
         request.sender().execute(actor -> actor.receiveMaterialisation(response));
     }
 
@@ -137,6 +137,18 @@ public class Materialiser extends ReasonerActor<Materialiser> {
             this.request = request;
             this.materialisation = materialisation;
             this.partialAnswer = partialAnswer;
+        }
+
+        public Actor.Driver<Materialiser> sender() {
+            return sourceRequest().receiver();
+        }
+
+        public Driver<BoundConclusionResolver> receiver() {
+            return sourceRequest().sender();
+        }
+
+        public TraceId traceId() {
+            return sourceRequest().traceId();
         }
 
         public Optional<Map<Identifier.Variable, Concept>> materialisation() {

@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 
 import java.util.Objects;
@@ -39,6 +40,18 @@ public interface Response {
 
     default Fail asFail() {
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Fail.class));
+    }
+
+    default Actor.Driver<? extends Resolver<?>> receiver() {
+        return sourceRequest().sender();
+    }
+
+    default Actor.Driver<? extends Resolver<?>> sender() {
+        return sourceRequest().receiver();
+    }
+
+    default ResolutionTracer.TraceId traceId() {
+        return sourceRequest().traceId();
     }
 
     class Answer implements Response {
