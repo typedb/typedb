@@ -157,9 +157,11 @@ public interface Response {
     class Blocked implements Response {
 
         private final Request sourceRequest;
+        private final Request blocker;
 
-        public Blocked(Request sourceRequest) {
+        public Blocked(Request sourceRequest, Request blocker) {
             this.sourceRequest = sourceRequest;
+            this.blocker = blocker;
         }
 
         @Override
@@ -175,6 +177,10 @@ public interface Response {
         @Override
         public boolean isFail() {
             return false;
+        }
+
+        public Request blocker() {
+            return blocker;
         }
     }
 }

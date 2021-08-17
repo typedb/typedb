@@ -90,7 +90,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         if (isTerminated()) return;
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        blockToUpstream(fromUpstream, iteration);
+        blockToUpstream(fromUpstream, fromDownstream.blocker(), iteration);
     }
 
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
@@ -133,9 +133,10 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         fromUpstream.sender().execute(actor -> actor.receiveFail(response, iteration));
     }
 
-    protected void blockToUpstream(Request fromUpstream, int iteration) {
-        Response.Blocked response = new Response.Blocked(fromUpstream);
-        LOG.trace("{} : Sending a new Response.Answer to upstream", name());
+    protected void blockToUpstream(Request fromUpstream, Request blocker, int iteration) {
+        assert !fromUpstream.partialAnswer().parent().isTop();
+        Response.Blocked response = new Response.Blocked(fromUpstream, blocker);
+        LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response, iteration);
         fromUpstream.sender().execute(actor -> actor.receiveBlocked(response, iteration));
     }
@@ -191,8 +192,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     }
 
     public static class DownstreamManager {
-        private final LinkedHashSet<Request> downstreams;
-        private FunctionalIterator<Request> downstreamSelector;
+        protected final LinkedHashSet<Request> downstreams;
+        protected FunctionalIterator<Request> downstreamSelector;
 
         public DownstreamManager() {
             this.downstreams = new LinkedHashSet<>();
@@ -211,11 +212,6 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         public Request nextDownstream() {
             if (!downstreamSelector.hasNext()) downstreamSelector = iterate(downstreams);
             return downstreamSelector.next();
-        }
-
-        public Optional<Request> nextDownstream(Set<Request> exclude) {
-            if (!downstreamSelector.hasNext()) downstreamSelector = iterate(downstreams);
-            return downstreamSelector.filter(d -> !exclude.contains(d)).first();
         }
 
         public void addDownstream(Request request) {

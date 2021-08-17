@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ReiterationQuery;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
@@ -36,13 +37,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class BoundConcludableResolver extends Resolver<BoundConcludableResolver>  {
 
@@ -51,21 +52,18 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     protected final ConceptMap bounds;
     private final Driver<ConcludableResolver> parent;
     private final Map<Request, ExploringRequestState<?>> requestStates;
+    private final Map<Request, RecursionBlock> blockedRequests;
     private boolean requiresReiteration;
-    private final Set<Request> blockedRequests;
-    private final Set<Request> blockedDownstreams;
-    private final Set<AnswerState.Partial.Concludable<?>> recursiveAnswerStates;
 
     public BoundConcludableResolver(Driver<BoundConcludableResolver> driver, Driver<ConcludableResolver> parent,
                                     ConceptMap bounds, ResolverRegistry registry) {
-        super(driver, BoundConcludableResolver.class.getSimpleName() + "(bounds: " + bounds.toString() + ")", registry);
+        super(driver, BoundConcludableResolver.class.getSimpleName() + "(" + parent.actor().concludable().toString() +
+                ", bounds: " + bounds.toString() + ")", registry);
         this.parent = parent;
         this.bounds = bounds;
         this.requestStates = new HashMap<>();
         this.requiresReiteration = false;
-        this.blockedRequests = new HashSet<>();
-        this.recursiveAnswerStates = new HashSet<>();
-        this.blockedDownstreams = new HashSet<>();
+        this.blockedRequests = new HashMap<>();
     }
 
     protected Driver<ConcludableResolver> parent() {
@@ -113,22 +111,32 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     private void receiveDirectRequest(Request fromUpstream, int iteration) {
         assert fromUpstream.partialAnswer().isConcludable();
-        ExploringRequestState<?> requestState;
-
-        Optional<AnswerState.Partial.Concludable<?>> recursiveAnswerState = isRecursion(fromUpstream.partialAnswer());
-        if (recursiveAnswerState.isPresent()) {
-            blockedRequests.add(fromUpstream);
-            recursiveAnswerStates.add(recursiveAnswerState.get());
-        }
-
-        requestState = requestStates.computeIfAbsent(
+        ExploringRequestState<?> requestState = requestStates.computeIfAbsent(
                 fromUpstream, request -> createExploringRequestState(fromUpstream, iteration));
 
-        sendAnswerOrSearchRulesOrFail(fromUpstream, iteration, requestState);
+        Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
+        Optional<Request> unblocked;
+        Optional<Request> blocker;
+        if (upstreamAnswer.isPresent()) {
+            answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
+        } else if (cache().isComplete()) {
+            failToUpstream(fromUpstream, iteration);
+        } else if (isRecursion(fromUpstream.partialAnswer()).isPresent()) {
+            blockedRequests.put(fromUpstream, new RecursionBlock());
+            blockToUpstream(fromUpstream, fromUpstream, iteration);
+        } else if ((unblocked = nextUnblockedDownstream(requestState)).isPresent()) {
+            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
+        } else if ((blocker = requestState.downstreamManager().nextDownstreamBlocker()).isPresent() && !blockerHadNoNewAnswer(blocker.get())) {
+            blockToUpstream(fromUpstream, blocker.get(), iteration);
+        } else {
+            cache().setComplete();
+            failToUpstream(fromUpstream, iteration);
+        }
     }
 
-    private Optional<AnswerState.Partial.Concludable<?>> isRecursion(AnswerState.Partial<?> partialAnswer) {
-        AnswerState.Partial<?> a = partialAnswer;
+    private Optional<Partial.Concludable<?>> isRecursion(Partial<?> partialAnswer) {
+        // TODO Convert to boolean
+        Partial<?> a = partialAnswer;
         while (a.parent().isPartial()) {
             a = a.parent().asPartial();
             if (a.isConcludable()
@@ -148,14 +156,22 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         if (isTerminated()) return;
         Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
-        boolean ansIsNew = requestState.newAnswer(fromDownstream.answer());
-        if (!blockedRequests.isEmpty() && ansIsNew) {
-            requiresReiteration = true; // TODO: Obsolete
-            blockedDownstreams.clear();
-            blockedRequests.clear();
-            recursiveAnswerStates.clear();
+        if (requestState.newAnswer(fromDownstream.answer())) {
+            requestState.downstreamManager().clearBlocked();
+            blockedRequests.forEach((blocked, blocker) -> blocker.unblock());
         }
-        sendAnswerOrSearchRulesOrFail(fromUpstream, iteration, requestState);
+        Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
+        Optional<Request> unblocked;
+        if (upstreamAnswer.isPresent()) {
+            answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
+        } else if (cache().isComplete()) {
+            failToUpstream(fromUpstream, iteration);
+        } else if ((unblocked = nextUnblockedDownstream(requestState)).isPresent()) {
+            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
+        } else {
+            cache().setComplete();
+            failToUpstream(fromUpstream, iteration);
+        }
     }
 
     @Override
@@ -169,7 +185,22 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
         requestState.downstreamManager().removeDownstream(fromDownstream.sourceRequest());
-        sendAnswerOrSearchRulesOrFail(fromUpstream, iteration, requestState);
+
+        Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
+        Optional<Request> unblocked;
+        Optional<Request> blocker;
+        if (upstreamAnswer.isPresent()) {
+            answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
+        } else if (cache().isComplete()) {
+            failToUpstream(fromUpstream, iteration);
+        } else if ((unblocked = nextUnblockedDownstream(requestState)).isPresent()) {
+            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
+        } else if ((blocker = requestState.downstreamManager().nextDownstreamBlocker()).isPresent() && !blockerHadNoNewAnswer(blocker.get())) {
+            blockToUpstream(fromUpstream, blocker.get(), iteration);
+        } else {
+            cache().setComplete();
+            failToUpstream(fromUpstream, iteration);
+        }
     }
 
     @Override
@@ -182,52 +213,54 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
-
-        blockedDownstreams.add(blockedDownstream);
-        sendAnswerOrSearchRulesOrFail(fromUpstream, iteration, requestState);
-    }
-
-    private void sendAnswerOrSearchRulesOrFail(Request fromUpstream, int iteration, ExploringRequestState<?> requestState) {
-        Optional<AnswerState.Partial.Compound<?, ?>> upstreamAnswer = requestState.nextAnswer().map(AnswerState.Partial::asCompound);
+        if (!blockedRequests.containsKey(fromDownstream.blocker()) || blockedRequests.get(fromDownstream.blocker()).isBlocking()) {
+            requestState.downstreamManager().block(blockedDownstream, fromDownstream.blocker());
+        }
+        Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
+        Optional<Request> unblocked;
         if (upstreamAnswer.isPresent()) {
-            /*
-            When we only require 1 answer (eg. when the conjunction is already fully bound), we can short circuit
-            and prevent exploration of further rules.
-
-            One latency optimisation we could do here, is keep track of how many N repeated requests are received,
-            forward them downstream (to parallelise searching for the single answer), and when the first one finds an answer,
-            we respond for all N ahead of time. Then, when the rules actually return an answer to this concludable, we do nothing.
-             */
-            if (requestState.singleAnswerRequired()) {
-                requestState.downstreamManager().clearDownstreams();
-                cache().setComplete();
-            }
-            answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
+            answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
+        } else if (cache().isComplete()) {
+            failToUpstream(fromUpstream, iteration);
+        } else if ((unblocked = nextUnblockedDownstream(requestState)).isPresent()) {
+            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
+        } else if (requestState.downstreamManager().hasDownstream() && !blockerHadNoNewAnswer(fromDownstream.blocker())) {
+            blockToUpstream(fromUpstream, fromDownstream.blocker(), iteration);
         } else {
-            if (!cache().isComplete() && !blockedRequests.contains(fromUpstream)) {
-                if (requestState.downstreamManager().hasDownstream()) {
-                    Optional<Request> nonblocked = requestState.downstreamManager().nextDownstream(blockedDownstreams);
-                    if (nonblocked.isPresent()) {
-                        requestFromDownstream(nonblocked.get(), fromUpstream, iteration);
-                    } else {
-                        if (upstreamFullyBlocked(fromUpstream)) {
-                            failToUpstream(fromUpstream, iteration);
-                        } else {
-                            blockToUpstream(fromUpstream, iteration);
-                        }
-                    }
-                } else {
-                    cache().setComplete();
-                    failToUpstream(fromUpstream, iteration);
-                }
-            } else {
-                failToUpstream(fromUpstream, iteration);
-            }
+            cache().setComplete();
+            failToUpstream(fromUpstream, iteration);
         }
     }
 
-    private boolean upstreamFullyBlocked(Request fromUpstream) {
-        return recursiveAnswerStates.contains(fromUpstream.partialAnswer().asConcludable());
+    private static Optional<Partial.Compound<?, ?>> upstreamAnswer(ExploringRequestState<?> requestState) {
+        return requestState.nextAnswer().map(Partial::asCompound);
+    }
+
+    private boolean blockerHadNoNewAnswer(Request blocker) { //TODO: Rename
+        assert !blocker.receiver().equals(driver()) || blockedRequests.containsKey(blocker);
+        return blockedRequests.containsKey(blocker) && blockedRequests.get(blocker).isBlocking();
+    }
+
+    private static Optional<Request> nextUnblockedDownstream(ExploringRequestState<?> requestState) {
+        if (requestState.downstreamManager().hasDownstream()) {
+            return requestState.downstreamManager().nextUnblockedDownstream();
+        } else return Optional.empty();
+    }
+
+    protected void answerToUpstream(AnswerState answer, Request fromUpstream, ExploringRequestState<?> requestState, int iteration) {
+        /*
+        When we only require 1 answer (eg. when the conjunction is already fully bound), we can short circuit
+        and prevent exploration of further rules.
+
+        One latency optimisation we could do here, is keep track of how many N repeated requests are received,
+        forward them downstream (to parallelise searching for the single answer), and when the first one finds an answer,
+        we respond for all N ahead of time. Then, when the rules actually return an answer to this concludable, we do nothing.
+         */
+        if (requestState.singleAnswerRequired()) {
+            requestState.downstreamManager().clearDownstreams();
+            cache().setComplete();
+        }
+        answerToUpstream(answer, fromUpstream, iteration);
     }
 
     private void requestFromSubsumer(Request.ToSubsumed fromUpstream, int iteration) {
@@ -256,7 +289,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     protected List<Request> ruleDownstreams(Request fromUpstream) {
         List<Request> downstreams = new ArrayList<>();
-        AnswerState.Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
+        Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
         for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry:
                 parent().actor().conclusionResolvers().entrySet()) { // TODO: Reaching through to the actor is not ideal
             Driver<ConclusionResolver> conclusionResolver = entry.getKey();
@@ -269,28 +302,75 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         return downstreams;
     }
 
+    private static class RecursionBlock {
+
+        private boolean block = true;
+
+        private void unblock() {
+            block = false;
+        }
+
+        private boolean isBlocking() {
+            return block;
+        }
+
+    }
+
     protected static abstract class ExploringRequestState<ANSWER> extends CachingRequestState<ANSWER> implements RequestState.Exploration {
 
-        private final DownstreamManager downstreamManager;
+        private final BlockableDownstreamManager downstreamManager;
 
         protected ExploringRequestState(Request fromUpstream, AnswerCache<ANSWER> answerCache, int iteration,
                                         List<Request> ruleDownstreams, boolean deduplicate) {
             super(fromUpstream, answerCache, iteration, deduplicate);
-            this.downstreamManager = new DownstreamManager(ruleDownstreams);
+            this.downstreamManager = new BlockableDownstreamManager(ruleDownstreams);
         }
 
         @Override
-        public DownstreamManager downstreamManager() {
+        public BlockableDownstreamManager downstreamManager() {
             return downstreamManager;
         }
 
-        abstract ANSWER answerFromPartial(AnswerState.Partial<?> partial);
+        abstract ANSWER answerFromPartial(Partial<?> partial);
 
         @Override
-        public boolean newAnswer(AnswerState.Partial<?> partial) {
+        public boolean newAnswer(Partial<?> partial) {
             return !answerCache.isComplete() && answerCache.add(answerFromPartial(partial));
         }
 
+        public static class BlockableDownstreamManager extends DownstreamManager {
+
+            private final Map<Request, Request> blocked;
+
+            public BlockableDownstreamManager(List<Request> downstreams) {
+                super(downstreams);
+                this.blocked = new HashMap<>();
+            }
+
+            private Optional<Request> nextDownstream(Set<Request> exclude) {
+                if (!downstreamSelector.hasNext()) downstreamSelector = iterate(downstreams);
+                return downstreamSelector.filter(d -> !exclude.contains(d)).first();
+            }
+
+            public Optional<Request> nextUnblockedDownstream() {
+                return nextDownstream(blocked.keySet());
+            }
+
+            public Optional<Request> nextDownstreamBlocker() {
+                if (!hasDownstream()) return Optional.empty();
+                Request ds = nextDownstream();
+                if (blocked.containsKey(ds)) return Optional.of(blocked.get(ds));
+                else return Optional.empty();
+            }
+
+            public void block(Request blockedDownstream, Request blocker) {
+                blocked.put(blockedDownstream, blocker);
+            }
+
+            public void clearBlocked() {
+                blocked.clear();
+            }
+        }
     }
 
 }
