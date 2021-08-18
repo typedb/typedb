@@ -52,15 +52,6 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     }
 
     @Override
-    protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-        if (requestState.downstreamManager().hasDownstream()) {
-            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
-        } else {
-            failToUpstream(fromUpstream, iteration);
-        }
-    }
-
-    @Override
     protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
         assert partialAnswer.isCondition();
         return Optional.of(partialAnswer.asCondition().toUpstream());

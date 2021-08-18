@@ -68,9 +68,6 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     abstract Conjunction conjunction();
 
-    @Override
-    protected abstract void nextAnswer(Request fromUpstream, RequestState requestState, int iteration);
-
     abstract Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> fromDownstream);
 
     // TODO: Should be absorbed into nextAnswer
@@ -307,15 +304,6 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         @Override
         Conjunction conjunction() {
             return conjunction;
-        }
-
-        @Override
-        protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-            if (requestState.downstreamManager().hasDownstream()) {
-                requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
-            } else {
-                failToUpstream(fromUpstream, iteration);
-            }
         }
 
         @Override

@@ -104,15 +104,6 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-            if (requestState.downstreamManager().hasDownstream()) {
-                requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
-            } else {
-                submitFail(fromUpstream, iteration);
-            }
-        }
-
-        @Override
         protected Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer) {
             assert partialAnswer.isRoot() && partialAnswer.isMatch();
             return Optional.of(partialAnswer.asRoot().asMatch().toFinishedTop(conjunction));
@@ -151,15 +142,6 @@ public interface RootResolver<TOP extends Top> {
         public void terminate(Throwable cause) {
             super.terminate(cause);
             onException.accept(cause);
-        }
-
-        @Override
-        protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-            if (requestState.downstreamManager().hasDownstream()) {
-                requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
-            } else {
-                submitFail(fromUpstream, iteration);
-            }
         }
 
         @Override
@@ -247,15 +229,6 @@ public interface RootResolver<TOP extends Top> {
         @Override
         protected void failToUpstream(Request fromUpstream, int iteration) {
             submitFail(fromUpstream, iteration);
-        }
-
-        @Override
-        protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-            if (requestState.downstreamManager().hasDownstream()) {
-                requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
-            } else {
-                submitFail(fromUpstream, iteration);
-            }
         }
 
         @Override

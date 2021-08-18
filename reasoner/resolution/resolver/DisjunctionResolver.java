@@ -133,15 +133,6 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         }
 
         @Override
-        protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-            if (requestState.downstreamManager().hasDownstream()) {
-                requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
-            } else {
-                failToUpstream(fromUpstream, iteration);
-            }
-        }
-
-        @Override
         protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
             answerToUpstream(upstreamAnswer, fromUpstream, iteration);
             return true;

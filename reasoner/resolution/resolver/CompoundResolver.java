@@ -44,7 +44,13 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         this.isInitialised = false;
     }
 
-    protected abstract void nextAnswer(Request fromUpstream, RequestState requestState, int iteration);
+    protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
+        if (requestState.downstreamManager().hasDownstream()) {
+            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
+        } else {
+            failToUpstream(fromUpstream, iteration);
+        }
+    }
 
     @Override
     public void receiveRequest(Request fromUpstream, int iteration) {
