@@ -70,18 +70,6 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     abstract Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> fromDownstream);
 
-    // TODO: Should be absorbed into nextAnswer
-    boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
-        RequestState requestState = requestStates.get(fromUpstream);
-        if (!requestState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
-            requestState.deduplicationSet().add(upstreamAnswer.conceptMap());
-            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
@@ -91,10 +79,6 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         Request fromUpstream = fromUpstream(toDownstream);
         RequestState requestState = requestStates.get(fromUpstream);
 
-        if (!requestState.deduplicationSet().contains(fromDownstream.answer().conceptMap())) {
-            requestState.downstreamManager().clearBlocked();
-        }
-
         Plans.Plan plan = plans.getActive(fromUpstream);
 
         // TODO: this is a bit of a hack, we want requests to a negation to be "single use", otherwise we can end up in an infinite loop
@@ -103,12 +87,25 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         if (plan.get(toDownstream.planIndex()).isNegated()) requestState.downstreamManager().removeDownstream(toDownstream);
 
         Partial.Compound<?, ?> partialAnswer = fromDownstream.answer().asCompound();
+
+        // TODO: Do we need to clear the blocked downstreams here?
         if (plan.isLast(fromDownstream.planIndex())) {
             Optional<AnswerState> upstreamAnswer = toUpstreamAnswer(partialAnswer);
             boolean answerAccepted = upstreamAnswer.isPresent() && tryAcceptUpstreamAnswer(upstreamAnswer.get(), fromUpstream, iteration);
             if (!answerAccepted) nextAnswer(fromUpstream, requestState, iteration);
         } else {
             toNextChild(fromDownstream, iteration, fromUpstream, requestState, plan);
+        }
+    }
+
+    boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+        RequestState requestState = requestStates.get(fromUpstream);
+        if (!requestState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
+            requestState.deduplicationSet().add(upstreamAnswer.conceptMap());
+            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+            return true;
+        } else {
+            return false;
         }
     }
 

@@ -45,8 +45,12 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     }
 
     protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-        if (requestState.downstreamManager().hasDownstream()) {
-            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
+        Optional<Request> unblocked;
+        Optional<Request> blocker;
+        if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
+            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
+        } else if ((blocker = requestState.downstreamManager().nextDownstreamBlocker()).isPresent()) {
+            blockToUpstream(fromUpstream, blocker.get(), iteration);
         } else {
             failToUpstream(fromUpstream, iteration);
         }

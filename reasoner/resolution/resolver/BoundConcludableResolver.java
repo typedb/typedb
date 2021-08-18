@@ -213,9 +213,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
-        if (!blockedRequests.containsKey(fromDownstream.blocker()) || blockedRequests.get(fromDownstream.blocker()).isBlocking()) {
-            requestState.downstreamManager().block(blockedDownstream, fromDownstream.blocker());
-        }
+        requestState.downstreamManager().block(blockedDownstream, fromDownstream.blocker());
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
         Optional<Request> unblocked;
         if (upstreamAnswer.isPresent()) {

@@ -256,7 +256,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         }
 
         public DownstreamManager downstreamManager() {
-            return downstreamManager;
+            return downstreamManager;  // TODO: No need for a downstream manager to manage one downstream
         }
 
         public boolean isComplete() {
