@@ -37,13 +37,9 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public interface RootResolver<TOP extends Top> {
+public interface RootResolver {
 
-    void submitAnswer(Request fromUpstream, TOP answer);
-
-    void submitFail(Request fromUpstream, int iteration);
-
-    class Conjunction extends ConjunctionResolver<Conjunction> implements RootResolver<Top.Match.Finished> {
+    class Conjunction extends ConjunctionResolver<Conjunction> implements RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
@@ -81,26 +77,17 @@ public interface RootResolver<TOP extends Top> {
         }
 
         @Override
-        public void submitAnswer(Request fromUpstream, Finished answer) {
-            LOG.debug("Submitting answer: {}", answer);
-            onAnswer.accept(fromUpstream, answer);
-        }
-
-        @Override
-        public void submitFail(Request fromUpstream, int iteration) {
-            LOG.debug("Submitting fail in iteration: {}", fromUpstream);
-            onFail.accept(fromUpstream, iteration);
-        }
-
-        @Override
         protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
             assert answer.isTop() && answer.asTop().isMatch() && answer.asTop().asMatch().isFinished();
-            submitAnswer(fromUpstream, answer.asTop().asMatch().asFinished());
+            Finished finished = answer.asTop().asMatch().asFinished();
+            LOG.debug("Submitting answer: {}", finished);
+            onAnswer.accept(fromUpstream, finished);
         }
 
         @Override
         protected void failToUpstream(Request fromUpstream, int iteration) {
-            submitFail(fromUpstream, iteration);
+            LOG.debug("Submitting fail in iteration: {}", fromUpstream);
+            onFail.accept(fromUpstream, iteration);
         }
 
         @Override
@@ -120,7 +107,7 @@ public interface RootResolver<TOP extends Top> {
         }
     }
 
-    class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver<Finished> {
+    class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
         private final BiConsumer<Request, Finished> onAnswer;
@@ -147,22 +134,13 @@ public interface RootResolver<TOP extends Top> {
         @Override
         protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
             assert answer.isTop() && answer.asTop().isMatch() && answer.asTop().asMatch().isFinished();
-            submitAnswer(fromUpstream, answer.asTop().asMatch().asFinished());
+            Finished finished = answer.asTop().asMatch().asFinished();
+            LOG.debug("Submitting answer: {}", finished);
+            onAnswer.accept(fromUpstream, finished);
         }
 
         @Override
         protected void failToUpstream(Request fromUpstream, int iteration) {
-            submitFail(fromUpstream, iteration);
-        }
-
-        @Override
-        public void submitAnswer(Request fromUpstream, Finished answer) {
-            LOG.debug("Submitting answer: {}", answer);
-            onAnswer.accept(fromUpstream, answer);
-        }
-
-        @Override
-        public void submitFail(Request fromUpstream, int iteration) {
             onFail.accept(fromUpstream, iteration);
         }
 
@@ -192,7 +170,7 @@ public interface RootResolver<TOP extends Top> {
         }
     }
 
-    class Explain extends ConjunctionResolver<Explain> implements RootResolver<Top.Explain.Finished> {
+    class Explain extends ConjunctionResolver<Explain> implements RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Explain.class);
 
@@ -223,22 +201,13 @@ public interface RootResolver<TOP extends Top> {
         @Override
         protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
             assert answer.isTop() && answer.asTop().isExplain() && answer.asTop().asExplain().isFinished();
-            submitAnswer(fromUpstream, answer.asTop().asExplain().asFinished());
+            Top.Explain.Finished finished = answer.asTop().asExplain().asFinished();
+            LOG.debug("Submitting answer: {}", finished);
+            onAnswer.accept(fromUpstream, finished);
         }
 
         @Override
         protected void failToUpstream(Request fromUpstream, int iteration) {
-            submitFail(fromUpstream, iteration);
-        }
-
-        @Override
-        public void submitAnswer(Request fromUpstream, Top.Explain.Finished answer) {
-            LOG.debug("Submitting answer: {}", answer);
-            onAnswer.accept(fromUpstream, answer);
-        }
-
-        @Override
-        public void submitFail(Request fromUpstream, int iteration) {
             onFail.accept(fromUpstream, iteration);
         }
 
