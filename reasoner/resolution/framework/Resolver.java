@@ -133,9 +133,17 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         fromUpstream.sender().execute(actor -> actor.receiveFail(response, iteration));
     }
 
-    protected void blockToUpstream(Request fromUpstream, Request blocker, int iteration) {
+    protected void blockToUpstream(Request fromUpstream, Response.Blocked.Origin blocker, int iteration) {
         assert !fromUpstream.partialAnswer().parent().isTop();
         Response.Blocked response = new Response.Blocked(fromUpstream, blocker);
+        LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response, iteration);
+        fromUpstream.sender().execute(actor -> actor.receiveBlocked(response, iteration));
+    }
+
+    protected void blockToUpstream(Request fromUpstream, int numAnswersSeen, int iteration) {
+        assert !fromUpstream.partialAnswer().parent().isTop();
+        Response.Blocked response = new Response.Blocked.Origin(fromUpstream, numAnswersSeen);
         LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response, iteration);
         fromUpstream.sender().execute(actor -> actor.receiveBlocked(response, iteration));
@@ -238,7 +246,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
         public static class Blockable extends DownstreamManager {
 
-            private final Map<Request, Request> blocked;
+            private final Map<Request, Response.Blocked.Origin> blocked;
 
             public Blockable(List<Request> downstreams) {
                 super(downstreams);
@@ -260,19 +268,23 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
                 else return nextDownstream(blocked.keySet());
             }
 
-            public Optional<Request> nextDownstreamBlocker() {
+            public Optional<Response.Blocked.Origin> nextDownstreamBlocker() {
                 if (!hasDownstream()) return Optional.empty();
                 Request ds = nextDownstream();
                 if (blocked.containsKey(ds)) return Optional.of(blocked.get(ds));
                 else return Optional.empty();
             }
 
-            public void block(Request blockedDownstream, Request blocker) {
+            public void block(Request blockedDownstream, Response.Blocked.Origin blocker) {
                 blocked.put(blockedDownstream, blocker);
             }
 
             public void clearBlocked() {
                 blocked.clear();
+            }
+
+            public void clearBlocked(Request downstream) {
+                blocked.remove(downstream);
             }
         }
     }

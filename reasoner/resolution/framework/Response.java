@@ -157,11 +157,15 @@ public interface Response {
     class Blocked implements Response {
 
         private final Request sourceRequest;
-        private final Request blocker;
+        protected Origin blocker;
 
-        public Blocked(Request sourceRequest, Request blocker) {
+        public Blocked(Request sourceRequest, Origin blocker) {
             this.sourceRequest = sourceRequest;
             this.blocker = blocker;
+        }
+
+        private Blocked(Request sourceRequest) {
+            this.sourceRequest = sourceRequest;
         }
 
         @Override
@@ -179,8 +183,23 @@ public interface Response {
             return false;
         }
 
-        public Request blocker() {
+        public Origin blocker() {
             return blocker;
+        }
+
+        public static class Origin extends Blocked {
+
+            private final int numAnswersSeen;
+
+            public Origin(Request sourceRequest, int numAnswersSeen) {
+                super(sourceRequest);
+                this.blocker = this;
+                this.numAnswersSeen = numAnswersSeen;
+            }
+
+            public int numAnswersSeen() {
+                return numAnswersSeen;
+            }
         }
     }
 }

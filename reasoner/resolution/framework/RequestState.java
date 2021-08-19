@@ -79,6 +79,10 @@ public abstract class RequestState {
             return ans;
         }
 
+        public int numAnswersProduced() {
+            return deduplicationSet.size();
+        }
+
         protected abstract FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ANSWER answer);
 
     }

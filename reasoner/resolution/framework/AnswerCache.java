@@ -93,6 +93,10 @@ public class AnswerCache<ANSWER> {
         return true;
     }
 
+    public int size() {
+        return answersSet.size();
+    }
+
     private class Reader extends AbstractPoller<ANSWER> {
 
         private int index;

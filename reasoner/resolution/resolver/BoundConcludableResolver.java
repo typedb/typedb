@@ -43,7 +43,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class BoundConcludableResolver extends Resolver<BoundConcludableResolver>  {
 
@@ -52,7 +51,6 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     protected final ConceptMap bounds;
     private final Driver<ConcludableResolver> parent;
     private final Map<Request, ExploringRequestState<?>> requestStates;
-    private final Map<Request, RecursionBlock> blockedRequests;
     private boolean requiresReiteration;
 
     public BoundConcludableResolver(Driver<BoundConcludableResolver> driver, Driver<ConcludableResolver> parent,
@@ -63,7 +61,6 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         this.bounds = bounds;
         this.requestStates = new HashMap<>();
         this.requiresReiteration = false;
-        this.blockedRequests = new HashMap<>();
     }
 
     protected Driver<ConcludableResolver> parent() {
@@ -116,14 +113,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
         Optional<Request> unblocked;
-        Optional<Request> blocker;
+        Optional<Response.Blocked.Origin> blocker;
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
         } else if (isRecursion(fromUpstream.partialAnswer()).isPresent()) {
-            blockedRequests.put(fromUpstream, new RecursionBlock());
-            blockToUpstream(fromUpstream, fromUpstream, iteration);
+            blockToUpstream(fromUpstream, cache().size(), iteration);
         } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
         } else if ((blocker = requestState.downstreamManager().nextDownstreamBlocker()).isPresent() && !blockerHadNoNewAnswer(blocker.get())) {
@@ -158,7 +154,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         if (requestState.newAnswer(fromDownstream.answer())) {
             requestState.downstreamManager().clearBlocked();
-            blockedRequests.forEach((blocked, blocker) -> blocker.unblock());
+            // requestState.downstreamManager().clearBlocked(fromDownstream.sourceRequest());  // TODO: Try this
         }
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
         Optional<Request> unblocked;
@@ -188,7 +184,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
         Optional<Request> unblocked;
-        Optional<Request> blocker;
+        Optional<Response.Blocked.Origin> blocker;
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
@@ -213,16 +209,27 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
-        requestState.downstreamManager().block(blockedDownstream, fromDownstream.blocker());
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
+        if (fromDownstream.blocker().sender().equals(driver())) {
+            // TODO: Simplify if statements
+            if (fromDownstream.blocker().numAnswersSeen() == cache().size()) {
+                requestState.downstreamManager().block(blockedDownstream, fromDownstream.blocker());
+            } else {
+                assert upstreamAnswer.isPresent();
+            }
+        } else {
+            requestState.downstreamManager().block(blockedDownstream, fromDownstream.blocker());
+        }
         Optional<Request> unblocked;
+        Optional<Response.Blocked.Origin> blocker;
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
         } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
-        } else if (requestState.downstreamManager().hasDownstream() && !blockerHadNoNewAnswer(fromDownstream.blocker())) {
+//        } else if (requestState.downstreamManager().hasDownstream() && !blockerHadNoNewAnswer(fromDownstream.blocker())) {
+        } else if (!fromDownstream.blocker().sender().equals(driver())) {
             blockToUpstream(fromUpstream, fromDownstream.blocker(), iteration);
         } else {
             cache().setComplete();
@@ -234,9 +241,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         return requestState.nextAnswer().map(Partial::asCompound);
     }
 
-    private boolean blockerHadNoNewAnswer(Request blocker) { //TODO: Rename
-        assert !blocker.receiver().equals(driver()) || blockedRequests.containsKey(blocker);
-        return blockedRequests.containsKey(blocker) && blockedRequests.get(blocker).isBlocking();
+    private boolean blockerHadNoNewAnswer(Response.Blocked.Origin blocker) { //TODO: Rename
+        return blocker.sender().equals(driver()) && blocker.numAnswersSeen() <= cache().size();
     }
 
     private static Optional<Request> nextUnblockedDownstream(ExploringRequestState<?> requestState) {
@@ -333,6 +339,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         @Override
         public boolean newAnswer(Partial<?> partial) {
+            // TODO: Method internals are not specific to the requestState any more
             return !answerCache.isComplete() && answerCache.add(answerFromPartial(partial));
         }
 
