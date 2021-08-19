@@ -23,7 +23,9 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 
 import java.util.Objects;
+import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
@@ -157,11 +159,11 @@ public interface Response {
     class Blocked implements Response {
 
         private final Request sourceRequest;
-        protected Origin blocker;
+        protected Set<Origin> blockers;
 
-        public Blocked(Request sourceRequest, Origin blocker) {
+        public Blocked(Request sourceRequest, Set<Origin> blockers) {
             this.sourceRequest = sourceRequest;
-            this.blocker = blocker;
+            this.blockers = blockers;
         }
 
         private Blocked(Request sourceRequest) {
@@ -183,8 +185,8 @@ public interface Response {
             return false;
         }
 
-        public Origin blocker() {
-            return blocker;
+        public Set<Origin> blockers() {
+            return blockers;
         }
 
         public static class Origin extends Blocked {
@@ -193,7 +195,7 @@ public interface Response {
 
             public Origin(Request sourceRequest, int numAnswersSeen) {
                 super(sourceRequest);
-                this.blocker = this;
+                this.blockers = set(this);
                 this.numAnswersSeen = numAnswersSeen;
             }
 

@@ -43,6 +43,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class BoundConcludableResolver extends Resolver<BoundConcludableResolver>  {
 
@@ -110,20 +111,15 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         assert fromUpstream.partialAnswer().isConcludable();
         ExploringRequestState<?> requestState = requestStates.computeIfAbsent(
                 fromUpstream, request -> createExploringRequestState(fromUpstream, iteration));
-
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
-        Optional<Request> unblocked;
-        Optional<Response.Blocked.Origin> blocker;
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
         } else if (isRecursion(fromUpstream.partialAnswer()).isPresent()) {
-            blockToUpstream(fromUpstream, cache().size(), iteration);
-        } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
-            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
-        } else if ((blocker = requestState.downstreamManager().nextDownstreamBlocker()).isPresent() && !blockerHadNoNewAnswer(blocker.get())) {
-            blockToUpstream(fromUpstream, blocker.get(), iteration);
+            blockToUpstream(fromUpstream, requestState.numAnswersProduced(), iteration);
+        } else if (requestState.downstreamManager().hasDownstream()) {
+            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
         } else {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
@@ -153,21 +149,10 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         if (requestState.newAnswer(fromDownstream.answer())) {
-            requestState.downstreamManager().clearBlocked();
-            // requestState.downstreamManager().clearBlocked(fromDownstream.sourceRequest());  // TODO: Try this
+            // TODO: Logic for clearing blocks. Should clear those that it set itself, if they're outdated. Should it clear any others? Probably not now that we re-explore blocked.
+            requestState.downstreamManager().clearBlocked(driver(), requestState.numAnswersProduced());
         }
-        Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
-        Optional<Request> unblocked;
-        if (upstreamAnswer.isPresent()) {
-            answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
-        } else if (cache().isComplete()) {
-            failToUpstream(fromUpstream, iteration);
-        } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
-            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
-        } else {
-            cache().setComplete();
-            failToUpstream(fromUpstream, iteration);
-        }
+        answerUpstreamOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
     }
 
     @Override
@@ -182,17 +167,18 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         assert iteration == requestState.iteration();
         requestState.downstreamManager().removeDownstream(fromDownstream.sourceRequest());
 
+        answerUpstreamOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
+    }
+
+    private void answerUpstreamOrSearchDownstreamOrFail(Request fromUpstream, ExploringRequestState<?> requestState,
+                                                        int iteration) {
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
-        Optional<Request> unblocked;
-        Optional<Response.Blocked.Origin> blocker;
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
-        } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
-            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
-        } else if ((blocker = requestState.downstreamManager().nextDownstreamBlocker()).isPresent() && !blockerHadNoNewAnswer(blocker.get())) {
-            blockToUpstream(fromUpstream, blocker.get(), iteration);
+        } else if (requestState.downstreamManager().hasDownstream()) {
+            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
         } else {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
@@ -201,7 +187,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     @Override
     protected void receiveBlocked(Response.Blocked fromDownstream, int iteration) {
-        LOG.trace("{}: received Fail: {}", name(), fromDownstream);
+        LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
         Request blockedDownstream = fromDownstream.sourceRequest();
@@ -210,45 +196,30 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
-        if (fromDownstream.blocker().sender().equals(driver())) {
-            // TODO: Simplify if statements
-            if (fromDownstream.blocker().numAnswersSeen() == cache().size()) {
-                requestState.downstreamManager().block(blockedDownstream, fromDownstream.blocker());
-            } else {
-                assert upstreamAnswer.isPresent();
-            }
-        } else {
-            requestState.downstreamManager().block(blockedDownstream, fromDownstream.blocker());
-        }
+
+        Set<Response.Blocked.Origin> upToDateBlockers =
+                iterate(fromDownstream.blockers())
+                        .filter(blocker -> blocker.numAnswersSeen() == requestState.numAnswersProduced()).toSet();  // TODO: this logic is in two places
+        requestState.downstreamManager().block(blockedDownstream, upToDateBlockers);
+//        requestState.downstreamManager().clearBlocked(driver(), requestState.numAnswersProduced()); // TODO: We can do without this if we only block with non-outdated
+
         Optional<Request> unblocked;
-        Optional<Response.Blocked.Origin> blocker;
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
         } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
-//        } else if (requestState.downstreamManager().hasDownstream() && !blockerHadNoNewAnswer(fromDownstream.blocker())) {
-        } else if (!fromDownstream.blocker().sender().equals(driver())) {
-            blockToUpstream(fromUpstream, fromDownstream.blocker(), iteration);
-        } else {
+        } else if (requestState.downstreamManager().blocksAll(driver())) {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
+        } else {
+            blockToUpstream(fromUpstream, requestState.downstreamManager().blockers(), iteration);
         }
     }
 
     private static Optional<Partial.Compound<?, ?>> upstreamAnswer(ExploringRequestState<?> requestState) {
         return requestState.nextAnswer().map(Partial::asCompound);
-    }
-
-    private boolean blockerHadNoNewAnswer(Response.Blocked.Origin blocker) { //TODO: Rename
-        return blocker.sender().equals(driver()) && blocker.numAnswersSeen() <= cache().size();
-    }
-
-    private static Optional<Request> nextUnblockedDownstream(ExploringRequestState<?> requestState) {
-        if (requestState.downstreamManager().hasDownstream()) {
-            return requestState.downstreamManager().nextUnblockedDownstream();
-        } else return Optional.empty();
     }
 
     protected void answerToUpstream(AnswerState answer, Request fromUpstream, ExploringRequestState<?> requestState, int iteration) {
@@ -306,28 +277,16 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         return downstreams;
     }
 
-    private static class RecursionBlock {
-
-        private boolean block = true;
-
-        private void unblock() {
-            block = false;
-        }
-
-        private boolean isBlocking() {
-            return block;
-        }
-
-    }
-
     protected static abstract class ExploringRequestState<ANSWER> extends CachingRequestState<ANSWER> implements RequestState.Exploration {
 
         private final DownstreamManager.Blockable downstreamManager;
+        private int answerCount;
 
         protected ExploringRequestState(Request fromUpstream, AnswerCache<ANSWER> answerCache, int iteration,
                                         List<Request> ruleDownstreams, boolean deduplicate) {
             super(fromUpstream, answerCache, iteration, deduplicate);
             this.downstreamManager = new DownstreamManager.Blockable(ruleDownstreams);
+            this.answerCount = 0;
         }
 
         @Override
@@ -340,7 +299,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         @Override
         public boolean newAnswer(Partial<?> partial) {
             // TODO: Method internals are not specific to the requestState any more
-            return !answerCache.isComplete() && answerCache.add(answerFromPartial(partial));
+            boolean newAns = !answerCache.isComplete() && answerCache.add(answerFromPartial(partial));
+            if (newAns) answerCount += 1;
+            return newAns;
+        }
+
+        public int numAnswersProduced() {
+            return answerCount;
         }
 
     }

@@ -45,12 +45,8 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     }
 
     protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-        Optional<Request> unblocked;
-        Optional<Response.Blocked.Origin> blocker;
-        if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
-            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
-        } else if ((blocker = requestState.downstreamManager().nextDownstreamBlocker()).isPresent()) {
-            blockToUpstream(fromUpstream, blocker.get(), iteration);
+        if (requestState.downstreamManager().hasDownstream()) {
+            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
         } else {
             failToUpstream(fromUpstream, iteration);
         }
@@ -98,13 +94,13 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         Request fromUpstream = fromUpstream(blockedDownstream);
         RequestState requestState = this.requestStates.get(fromUpstream);
 
-        requestState.downstreamManager().block(blockedDownstream, fromDownstream.blocker());
+        requestState.downstreamManager().block(blockedDownstream, fromDownstream.blockers());
 
         Optional<Request> unblocked;
         if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
         } else {
-            blockToUpstream(fromUpstream, fromDownstream.blocker(), iteration);
+            blockToUpstream(fromUpstream, requestState.downstreamManager().blockers(), iteration);
         }
     }
 

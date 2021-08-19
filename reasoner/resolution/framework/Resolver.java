@@ -33,14 +33,16 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.TraceId;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -90,7 +92,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         if (isTerminated()) return;
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        blockToUpstream(fromUpstream, fromDownstream.blocker(), iteration);
+        blockToUpstream(fromUpstream, fromDownstream.blockers(), iteration);
     }
 
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
@@ -133,9 +135,9 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         fromUpstream.sender().execute(actor -> actor.receiveFail(response, iteration));
     }
 
-    protected void blockToUpstream(Request fromUpstream, Response.Blocked.Origin blocker, int iteration) {
+    protected void blockToUpstream(Request fromUpstream, Set<Response.Blocked.Origin> blockers, int iteration) {
         assert !fromUpstream.partialAnswer().parent().isTop();
-        Response.Blocked response = new Response.Blocked(fromUpstream, blocker);
+        Response.Blocked response = new Response.Blocked(fromUpstream, blockers);
         LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response, iteration);
         fromUpstream.sender().execute(actor -> actor.receiveBlocked(response, iteration));
@@ -200,17 +202,14 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     }
 
     public static class DownstreamManager {
-        protected final LinkedHashSet<Request> downstreams;
-        protected FunctionalIterator<Request> downstreamSelector;
+        protected final List<Request> downstreams;
 
         public DownstreamManager() {
-            this.downstreams = new LinkedHashSet<>();
-            this.downstreamSelector = iterate(downstreams);
+            this.downstreams = new ArrayList<>();
         }
 
         public DownstreamManager(List<Request> downstreams) {
-            this.downstreams = new LinkedHashSet<>(downstreams);
-            this.downstreamSelector = iterate(downstreams);
+            this.downstreams = downstreams;
         }
 
         public boolean hasDownstream() {
@@ -218,26 +217,20 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         }
 
         public Request nextDownstream() {
-            if (!downstreamSelector.hasNext()) downstreamSelector = iterate(downstreams);
-            return downstreamSelector.next();
+            return downstreams.get(0);
         }
 
         public void addDownstream(Request request) {
             assert !(downstreams.contains(request)) : "downstream answer producer already contains this request";
             downstreams.add(request);
-            downstreamSelector = iterate(downstreams);
         }
 
         public void removeDownstream(Request request) {
-            boolean removed = downstreams.remove(request);
-            // only update the iterator when removing an element, to avoid resetting and reusing first request too often
-            // note: this is a large performance win when processing large batches of requests
-            if (removed) downstreamSelector = iterate(downstreams);
+            downstreams.remove(request);
         }
 
         public void clearDownstreams() {
             downstreams.clear();
-            downstreamSelector = Iterators.empty();
         }
 
         public boolean contains(Request downstreamRequest) {
@@ -246,45 +239,67 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
         public static class Blockable extends DownstreamManager {
 
-            private final Map<Request, Response.Blocked.Origin> blocked;
+            private final Map<Request, Set<Response.Blocked.Origin>> blocked;
 
             public Blockable(List<Request> downstreams) {
                 super(downstreams);
-                this.blocked = new HashMap<>();
+                this.blocked = new LinkedHashMap<>();
             }
 
             public Blockable() {
-                super();
-                this.blocked = new HashMap<>();
-            }
-
-            private Optional<Request> nextDownstream(Set<Request> exclude) {
-                if (!downstreamSelector.hasNext()) downstreamSelector = iterate(downstreams);
-                return downstreamSelector.filter(d -> !exclude.contains(d)).first();
+                this.blocked = new LinkedHashMap<>();
             }
 
             public Optional<Request> nextUnblockedDownstream() {
-                if (!hasDownstream()) return Optional.empty();
-                else return nextDownstream(blocked.keySet());
+                if (hasDownstream()) return Optional.of(super.nextDownstream());
+                else return Optional.empty();
             }
 
-            public Optional<Response.Blocked.Origin> nextDownstreamBlocker() {
+            @Override
+            public Request nextDownstream() {
+                if (hasDownstream()) return super.nextDownstream();
+                else {
+                    Optional<Request> b = iterate(blocked.keySet()).first();
+                    assert b.isPresent();
+                    return b.get();
+                }
+            }
+
+            public Optional<Set<Response.Blocked.Origin>> nextDownstreamBlocker() {
                 if (!hasDownstream()) return Optional.empty();
                 Request ds = nextDownstream();
                 if (blocked.containsKey(ds)) return Optional.of(blocked.get(ds));
                 else return Optional.empty();
             }
 
-            public void block(Request blockedDownstream, Response.Blocked.Origin blocker) {
-                blocked.put(blockedDownstream, blocker);
+            public Set<Response.Blocked.Origin> blockers() {
+                return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
             }
 
-            public void clearBlocked() {
-                blocked.clear();
+            public void block(Request blockedDownstream, Set<Response.Blocked.Origin> blockers) {
+                blocked.computeIfAbsent(blockedDownstream, b -> new HashSet<>()).addAll(blockers);
+                downstreams.remove(blockedDownstream);
             }
 
-            public void clearBlocked(Request downstream) {
-                blocked.remove(downstream);
+            public void clearBlocked(Driver<BoundConcludableResolver> blockSender, int numAnswersProduced) {
+                blocked.forEach((downstream, blockers) -> {
+                    Set<Response.Blocked.Origin> newBlockers = iterate(blockers)
+                            .filter(blocker -> !blocker.sender().equals(blockSender) || blocker.numAnswersSeen() < numAnswersProduced)
+                            .toSet();
+                    blockers.clear();
+                    blockers.addAll(newBlockers);
+//                    iterate(blockers).filter(blocker -> blocker.sender().equals(blockSender) || blocker.numAnswersSeen() == numAnswersProduced).remove(); // TODO: Unsupported
+                });
+            }
+
+            public boolean blocksAll(Driver<BoundConcludableResolver> blockSender) {
+                return iterate(blocked.values())
+                        .filter(blockers -> iterate(blockers)
+                                .filter(blocker -> blocker.sender().equals(blockSender))
+                                .first()
+                                .isEmpty())
+                        .first()
+                        .isPresent();
             }
         }
     }
