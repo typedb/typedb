@@ -232,10 +232,6 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             downstreams.clear();
         }
 
-        public boolean contains(Request downstreamRequest) {
-            return downstreams.contains(downstreamRequest);
-        }
-
         public static class Blockable extends DownstreamManager {
 
             protected Map<Request, Set<Response.Blocked.Origin>> blocked;
@@ -247,6 +243,10 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             public Blockable(List<Request> downstreams) {
                 super(downstreams);
                 this.blocked = new LinkedHashMap<>();
+            }
+
+            public boolean contains(Request downstreamRequest) {
+                return downstreams.contains(downstreamRequest) || blocked.containsKey(downstreamRequest);
             }
 
             public Optional<Request> nextUnblockedDownstream() {
@@ -269,6 +269,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             }
 
             public void block(Request blockedDownstream, Response.Blocked.Origin blocker) {
+                assert downstreams.contains(blockedDownstream) || blocked.containsKey(blockedDownstream);
                 blocked.computeIfAbsent(blockedDownstream, b -> new HashSet<>()).add(blocker);
                 downstreams.remove(blockedDownstream);
             }

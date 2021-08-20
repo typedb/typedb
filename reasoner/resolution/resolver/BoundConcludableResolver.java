@@ -165,7 +165,6 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
         requestState.downstreamManager().removeDownstream(fromDownstream.sourceRequest());
-
         answerUpstreamOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
     }
 
@@ -194,11 +193,12 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
-        iterate(fromDownstream.blockers())
-                .filter(blocker -> !requestState.downstreamManager().isOutdated(blocker))
-                .toSet() // TODO: Goes away if we have .forEach() on iterator
-                .forEach(blocker -> requestState.downstreamManager().block(blockedDownstream, blocker));
-
+        if (requestState.downstreamManager().contains(blockedDownstream)) {
+            iterate(fromDownstream.blockers())
+                    .filter(blocker -> !requestState.downstreamManager().isOutdated(blocker))
+                    .toSet() // TODO: Goes away if we have .forEach() on iterator
+                    .forEach(blocker -> requestState.downstreamManager().block(blockedDownstream, blocker));
+        }
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
         Optional<Request> unblocked;
         if (upstreamAnswer.isPresent()) {
