@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
@@ -150,7 +151,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         if (requestState.newAnswer(fromDownstream.answer())) {
             // TODO: Logic for clearing blocks. Should clear those that it set itself, if they're outdated. Should it clear any others? Probably not now that we re-explore blocked.
-            requestState.downstreamManager().clearBlocked(driver(), requestState.numAnswersProduced());
+            requestState.downstreamManager().clearBlocked(requestState.numAnswersProduced());
         }
         answerUpstreamOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
     }
@@ -210,11 +211,11 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             failToUpstream(fromUpstream, iteration);
         } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
-        } else if (requestState.downstreamManager().blocksAll(driver())) {
+        } else if (requestState.downstreamManager().blocksAll()) {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
         } else {
-            blockToUpstream(fromUpstream, requestState.downstreamManager().blockersExcludeSender(driver()), iteration);
+            blockToUpstream(fromUpstream, requestState.downstreamManager().blockersExcludingThis(), iteration);
         }
     }
 
@@ -277,20 +278,20 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         return downstreams;
     }
 
-    protected static abstract class ExploringRequestState<ANSWER> extends CachingRequestState<ANSWER> implements RequestState.Exploration {
+    protected abstract class ExploringRequestState<ANSWER> extends CachingRequestState<ANSWER> implements RequestState.Exploration {
 
-        private final DownstreamManager.Blockable downstreamManager;
+        private final ConcludableDownstreamManager downstreamManager;
         private int answerCount;
 
         protected ExploringRequestState(Request fromUpstream, AnswerCache<ANSWER> answerCache, int iteration,
                                         List<Request> ruleDownstreams, boolean deduplicate) {
             super(fromUpstream, answerCache, iteration, deduplicate);
-            this.downstreamManager = new DownstreamManager.Blockable(ruleDownstreams);
+            this.downstreamManager = new ConcludableDownstreamManager(ruleDownstreams);
             this.answerCount = 0;
         }
 
         @Override
-        public DownstreamManager.Blockable downstreamManager() {
+        public ConcludableDownstreamManager downstreamManager() {
             return downstreamManager;
         }
 
@@ -306,6 +307,41 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         public int numAnswersProduced() {
             return answerCount;
+        }
+
+        class ConcludableDownstreamManager extends DownstreamManager.Blockable {
+
+            public ConcludableDownstreamManager(List<Request> ruleDownstreams) {
+                super(ruleDownstreams);
+            }
+
+            public void clearBlocked(int numAnswersProduced) {
+                blocked.forEach((downstream, blockers) -> {
+                    Set<Response.Blocked.Origin> newBlockers = iterate(blockers)
+                            .filter(blocker -> !blocker.sender().equals(driver()) || blocker.numAnswersSeen() < numAnswersProduced)
+                            .toSet();
+                    blockers.clear();
+                    blockers.addAll(newBlockers);
+//                    iterate(blockers).filter(blocker -> blocker.sender().equals(blockSender) || blocker.numAnswersSeen() == numAnswersProduced).remove(); // TODO: Unsupported
+                });
+            }
+
+            public Set<Response.Blocked.Origin> blockersExcludingThis() {
+                return iterate(blocked.values())
+                        .flatMap(Iterators::iterate)
+                        .filter(b -> !b.sender().equals(driver()))
+                        .toSet();
+            }
+
+            public boolean blocksAll() {
+                return iterate(blocked.values())
+                        .filter(blockers -> iterate(blockers)
+                                .filter(blocker -> blocker.sender().equals(driver()))
+                                .first()
+                                .isEmpty())
+                        .first()
+                        .isEmpty();
+            }
         }
 
     }

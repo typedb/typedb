@@ -33,7 +33,6 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.TraceId;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
@@ -239,14 +238,14 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
         public static class Blockable extends DownstreamManager {
 
-            private final Map<Request, Set<Response.Blocked.Origin>> blocked;
+            protected final Map<Request, Set<Response.Blocked.Origin>> blocked;
 
-            public Blockable(List<Request> downstreams) {
-                super(downstreams);
+            public Blockable() {
                 this.blocked = new LinkedHashMap<>();
             }
 
-            public Blockable() {
+            public Blockable(List<Request> downstreams) {
+                super(downstreams);
                 this.blocked = new LinkedHashMap<>();
             }
 
@@ -265,46 +264,13 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
                 }
             }
 
-            public Optional<Set<Response.Blocked.Origin>> nextDownstreamBlocker() {
-                if (!hasDownstream()) return Optional.empty();
-                Request ds = nextDownstream();
-                if (blocked.containsKey(ds)) return Optional.of(blocked.get(ds));
-                else return Optional.empty();
-            }
-
             public Set<Response.Blocked.Origin> blockers() {
                 return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
-            }
-
-            public Set<Response.Blocked.Origin> blockersExcludeSender(Driver<BoundConcludableResolver> blockSender) {
-                return iterate(blocked.values()).flatMap(Iterators::iterate)
-                        .filter(b -> !b.sender().equals(blockSender)).toSet();
             }
 
             public void block(Request blockedDownstream, Set<Response.Blocked.Origin> blockers) {
                 blocked.computeIfAbsent(blockedDownstream, b -> new HashSet<>()).addAll(blockers);
                 downstreams.remove(blockedDownstream);
-            }
-
-            public void clearBlocked(Driver<BoundConcludableResolver> blockSender, int numAnswersProduced) {
-                blocked.forEach((downstream, blockers) -> {
-                    Set<Response.Blocked.Origin> newBlockers = iterate(blockers)
-                            .filter(blocker -> !blocker.sender().equals(blockSender) || blocker.numAnswersSeen() < numAnswersProduced)
-                            .toSet();
-                    blockers.clear();
-                    blockers.addAll(newBlockers);
-//                    iterate(blockers).filter(blocker -> blocker.sender().equals(blockSender) || blocker.numAnswersSeen() == numAnswersProduced).remove(); // TODO: Unsupported
-                });
-            }
-
-            public boolean blocksAll(Driver<BoundConcludableResolver> blockSender) {
-                return iterate(blocked.values())
-                        .filter(blockers -> iterate(blockers)
-                                .filter(blocker -> blocker.sender().equals(blockSender))
-                                .first()
-                                .isEmpty())
-                        .first()
-                        .isEmpty();
             }
         }
     }

@@ -54,7 +54,7 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
         return cache;
     }
 
-    private static class ExplainRequestState extends ExploringRequestState<AnswerState.Partial.Concludable<?>>  {
+    private class ExplainRequestState extends ExploringRequestState<AnswerState.Partial.Concludable<?>>  {
 
         private ExplainRequestState(Request fromUpstream, AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
                                     int iteration, List<Request> ruleDownstreams) {

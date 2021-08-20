@@ -124,7 +124,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     abstract RequestState requestStateReiterate(Request fromUpstream, RequestState priorResponses, int iteration);
 
     // TODO: Align with the RequestState implementation used across the other resolvers
-    static class RequestState {
+    class RequestState {
 
         private final int iteration;
         private final DownstreamManager.Blockable downstreamManager;
