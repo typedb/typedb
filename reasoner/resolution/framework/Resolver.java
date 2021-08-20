@@ -238,7 +238,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
         public static class Blockable extends DownstreamManager {
 
-            protected final Map<Request, Set<Response.Blocked.Origin>> blocked;
+            protected Map<Request, Set<Response.Blocked.Origin>> blocked;
 
             public Blockable() {
                 this.blocked = new LinkedHashMap<>();
@@ -268,8 +268,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
                 return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
             }
 
-            public void block(Request blockedDownstream, Set<Response.Blocked.Origin> blockers) {
-                blocked.computeIfAbsent(blockedDownstream, b -> new HashSet<>()).addAll(blockers);
+            public void block(Request blockedDownstream, Response.Blocked.Origin blocker) {
+                blocked.computeIfAbsent(blockedDownstream, b -> new HashSet<>()).add(blocker);
                 downstreams.remove(blockedDownstream);
             }
         }

@@ -93,11 +93,9 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         Request blockedDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(blockedDownstream);
         RequestState requestState = this.requestStates.get(fromUpstream);
-
-        requestState.downstreamManager().block(blockedDownstream, fromDownstream.blockers());
-
-        Optional<Request> unblocked;
-        if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
+        fromDownstream.blockers().forEach(blocker -> requestState.downstreamManager().block(blockedDownstream, blocker));
+        Optional<Request> unblocked = requestState.downstreamManager().nextUnblockedDownstream();
+        if (unblocked.isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
         } else {
             blockToUpstream(fromUpstream, requestState.downstreamManager().blockers(), iteration);

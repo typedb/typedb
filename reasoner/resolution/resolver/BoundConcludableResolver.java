@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -149,10 +150,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         if (isTerminated()) return;
         Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
-        if (requestState.newAnswer(fromDownstream.answer())) {
-            // TODO: Logic for clearing blocks. Should clear those that it set itself, if they're outdated. Should it clear any others? Probably not now that we re-explore blocked.
-            requestState.downstreamManager().clearBlocked(requestState.numAnswersProduced());
-        }
+        if (requestState.newAnswer(fromDownstream.answer())) requestState.downstreamManager().clearOutdatedBlockers();
         answerUpstreamOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
     }
 
@@ -196,14 +194,12 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
+        iterate(fromDownstream.blockers())
+                .filter(blocker -> !requestState.downstreamManager().isOutdated(blocker))
+                .toSet() // TODO: Goes away if we have .forEach() on iterator
+                .forEach(blocker -> requestState.downstreamManager().block(blockedDownstream, blocker));
+
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
-
-        Set<Response.Blocked.Origin> upToDateBlockers =
-                iterate(fromDownstream.blockers())
-                        .filter(blocker -> blocker.numAnswersSeen() == requestState.numAnswersProduced()).toSet();  // TODO: this logic is in two places
-        requestState.downstreamManager().block(blockedDownstream, upToDateBlockers);
-//        requestState.downstreamManager().clearBlocked(driver(), requestState.numAnswersProduced()); // TODO: We can do without this if we only block with non-outdated
-
         Optional<Request> unblocked;
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
@@ -315,15 +311,20 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                 super(ruleDownstreams);
             }
 
-            public void clearBlocked(int numAnswersProduced) {
+            public void clearOutdatedBlockers() {
+                // TODO: Find the most idiomatic way to do this, ideally the map should be final
+                // TODO: .remove() is unsupported on iterators
+                Map<Request, Set<Response.Blocked.Origin>> newBlocked = new LinkedHashMap<>();
                 blocked.forEach((downstream, blockers) -> {
-                    Set<Response.Blocked.Origin> newBlockers = iterate(blockers)
-                            .filter(blocker -> !blocker.sender().equals(driver()) || blocker.numAnswersSeen() < numAnswersProduced)
-                            .toSet();
-                    blockers.clear();
-                    blockers.addAll(newBlockers);
-//                    iterate(blockers).filter(blocker -> blocker.sender().equals(blockSender) || blocker.numAnswersSeen() == numAnswersProduced).remove(); // TODO: Unsupported
+                    Set<Response.Blocked.Origin> newBlockers =
+                            iterate(blockers).filter(blocker -> !isOutdated(blocker)).toSet();
+                    if (!newBlockers.isEmpty()) newBlocked.put(downstream, newBlockers);
                 });
+                blocked = newBlocked;
+            }
+
+            public boolean isOutdated(Response.Blocked.Origin blocker) {
+                return blocker.sender().equals(driver()) && blocker.numAnswersSeen() < answerCount;
             }
 
             public Set<Response.Blocked.Origin> blockersExcludingThis() {
