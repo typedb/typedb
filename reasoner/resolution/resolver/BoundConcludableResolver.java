@@ -214,7 +214,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
         } else {
-            blockToUpstream(fromUpstream, requestState.downstreamManager().blockers(), iteration);
+            blockToUpstream(fromUpstream, requestState.downstreamManager().blockersExcludeSender(driver()), iteration);
         }
     }
 

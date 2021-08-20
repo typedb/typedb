@@ -276,6 +276,11 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
                 return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
             }
 
+            public Set<Response.Blocked.Origin> blockersExcludeSender(Driver<BoundConcludableResolver> blockSender) {
+                return iterate(blocked.values()).flatMap(Iterators::iterate)
+                        .filter(b -> !b.sender().equals(blockSender)).toSet();
+            }
+
             public void block(Request blockedDownstream, Set<Response.Blocked.Origin> blockers) {
                 blocked.computeIfAbsent(blockedDownstream, b -> new HashSet<>()).addAll(blockers);
                 downstreams.remove(blockedDownstream);
