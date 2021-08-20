@@ -299,7 +299,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
                                 .first()
                                 .isEmpty())
                         .first()
-                        .isPresent();
+                        .isEmpty();
             }
         }
     }
