@@ -114,17 +114,20 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         ExploringRequestState<?> requestState = requestStates.computeIfAbsent(
                 fromUpstream, request -> createExploringRequestState(fromUpstream, iteration));
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
+        Optional<Request> unblocked;
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
         } else if (isRecursion(fromUpstream.partialAnswer()).isPresent()) {
             blockToUpstream(fromUpstream, requestState.numAnswersProduced(), iteration);
-        } else if (requestState.downstreamManager().hasDownstream()) {
-            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
-        } else {
+        } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
+            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
+        } else if (requestState.downstreamManager().noneVisitable()) {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
+        } else {
+            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
         }
     }
 
@@ -171,15 +174,27 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     private void answerUpstreamOrSearchDownstreamOrFail(Request fromUpstream, ExploringRequestState<?> requestState,
                                                         int iteration) {
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
+        Optional<Request> unblocked;
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
-        } else if (requestState.downstreamManager().hasDownstream()) {
-            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
-        } else {
+//        } else if (requestState.downstreamManager().hasDownstream()) {
+//            // TODO: 2 problems:
+//            //  hasDownstream() doesn't check for blocked downstreams that we need to re-explore (ones that we didn't put there)
+//            //  When we clear blockedDownstreams, do we put them back in the downstreams list for sure?
+//            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
+//        } else {
+//            cache().setComplete();
+//            failToUpstream(fromUpstream, iteration);
+//        }
+        } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
+            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
+        } else if (requestState.downstreamManager().noneVisitable()) {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
+        } else {
+            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
         }
     }
 
@@ -207,11 +222,11 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             failToUpstream(fromUpstream, iteration);
         } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
-        } else if (requestState.downstreamManager().blocksAll()) {
+        } else if (requestState.downstreamManager().noneVisitable()) {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
         } else {
-            blockToUpstream(fromUpstream, requestState.downstreamManager().blockersExcludingThis(), iteration);
+            blockToUpstream(fromUpstream, requestState.downstreamManager().visitable(), iteration);
         }
     }
 
@@ -318,31 +333,35 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                 blocked.forEach((downstream, blockers) -> {
                     Set<Response.Blocked.Origin> newBlockers =
                             iterate(blockers).filter(blocker -> !isOutdated(blocker)).toSet();
-                    if (!newBlockers.isEmpty()) newBlocked.put(downstream, newBlockers);
+                    if (newBlockers.isEmpty()) downstreams.add(downstream);
+                    else newBlocked.put(downstream, newBlockers);
                 });
                 blocked = newBlocked;
             }
 
+            private boolean isVisitable(Response.Blocked.Origin blocker) {
+                return !blocker.sender().equals(driver());
+            }
+
             public boolean isOutdated(Response.Blocked.Origin blocker) {
-                return blocker.sender().equals(driver()) && blocker.numAnswersSeen() < answerCount;
+                ExploringRequestState<?> blockerRequestState = requestStates.get(blocker.sourceRequest());
+                return !isVisitable(blocker) && blocker.numAnswersSeen() < blockerRequestState.numAnswersProduced();
             }
 
-            public Set<Response.Blocked.Origin> blockersExcludingThis() {
-                return iterate(blocked.values())
-                        .flatMap(Iterators::iterate)
-                        .filter(b -> !b.sender().equals(driver()))
-                        .toSet();
+            public Set<Response.Blocked.Origin> visitable() {
+                return iterate(blocked.values()).flatMap(Iterators::iterate).filter(this::isVisitable).toSet();
             }
 
-            public boolean blocksAll() {
+            public boolean noneVisitable() {
                 return iterate(blocked.values())
                         .filter(blockers -> iterate(blockers)
-                                .filter(blocker -> blocker.sender().equals(driver()))
+                                .filter(blocker -> !isVisitable(blocker))
                                 .first()
                                 .isEmpty())
                         .first()
                         .isEmpty();
             }
+
         }
 
     }

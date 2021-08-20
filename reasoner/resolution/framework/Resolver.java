@@ -250,13 +250,18 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             }
 
             public Optional<Request> nextUnblockedDownstream() {
-                if (hasDownstream()) return Optional.of(super.nextDownstream());
+                if (super.hasDownstream()) return Optional.of(super.nextDownstream());
                 else return Optional.empty();
             }
 
             @Override
+            public boolean hasDownstream() {
+                return !downstreams.isEmpty() || !blocked.isEmpty();
+            }
+
+            @Override
             public Request nextDownstream() {
-                if (hasDownstream()) return super.nextDownstream();
+                if (super.hasDownstream()) return super.nextDownstream();
                 else {
                     Optional<Request> b = iterate(blocked.keySet()).first();
                     assert b.isPresent();

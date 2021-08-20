@@ -62,8 +62,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
     public BoundConclusionResolver(Driver<BoundConclusionResolver> driver, Rule.Conclusion conclusion,
                                    ConceptMap bounds, ResolverRegistry registry) {
-        super(driver, BoundConclusionResolver.class.getSimpleName() + "(pattern: " + conclusion.conjunction() +
-                " bounds: " + bounds.toString() + ")", registry);
+        super(driver, BoundConclusionResolver.class.getSimpleName() + "(" + conclusion +
+                ", bounds: " + bounds.toString() + ")", registry);
         this.bounds = bounds;
         this.conclusion = conclusion;
         this.requestStates = new HashMap<>();
