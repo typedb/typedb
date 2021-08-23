@@ -108,7 +108,6 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name(), request);
         assert fromUpstream.traceId().rootId() != -1;
-        assert request.traceId() == fromUpstream.traceId() || request.traceId().rootId() == -1;
         request = request.withTraceId(fromUpstream.traceId());
         if (registry.resolutionTracing()) ResolutionTracer.get().request(request, iteration);
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?

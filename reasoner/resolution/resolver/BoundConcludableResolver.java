@@ -120,7 +120,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
         } else if (isRecursion(fromUpstream.partialAnswer()).isPresent()) {
-            blockToUpstream(fromUpstream, requestState.numAnswersProduced(), iteration);
+            blockToUpstream(fromUpstream, cache().size(), iteration);
         } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
         } else if (requestState.downstreamManager().noneVisitable()) {
@@ -292,13 +292,11 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     protected abstract class ExploringRequestState<ANSWER> extends CachingRequestState<ANSWER> implements RequestState.Exploration {
 
         private final ConcludableDownstreamManager downstreamManager;
-        private int answerCount;
 
         protected ExploringRequestState(Request fromUpstream, AnswerCache<ANSWER> answerCache, int iteration,
                                         List<Request> ruleDownstreams, boolean deduplicate) {
             super(fromUpstream, answerCache, iteration, deduplicate);
             this.downstreamManager = new ConcludableDownstreamManager(ruleDownstreams);
-            this.answerCount = 0;
         }
 
         @Override
@@ -311,13 +309,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         @Override
         public boolean newAnswer(Partial<?> partial) {
             // TODO: Method internals are not specific to the requestState any more
-            boolean newAns = !answerCache.isComplete() && answerCache.add(answerFromPartial(partial));
-            if (newAns) answerCount += 1;
-            return newAns;
-        }
-
-        public int numAnswersProduced() {
-            return answerCount;
+            return !answerCache.isComplete() && answerCache.add(answerFromPartial(partial));
         }
 
         class ConcludableDownstreamManager extends DownstreamManager.Blockable {
@@ -344,8 +336,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             }
 
             public boolean isOutdated(Response.Blocked.Origin blocker) {
-                ExploringRequestState<?> blockerRequestState = requestStates.get(blocker.sourceRequest());
-                return !isVisitable(blocker) && blocker.numAnswersSeen() < blockerRequestState.numAnswersProduced();
+                return !isVisitable(blocker) && blocker.numAnswersSeen() < cache().size();
             }
 
             public Set<Response.Blocked.Origin> visitable() {
