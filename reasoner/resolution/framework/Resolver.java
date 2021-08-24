@@ -283,6 +283,11 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
                 blocked.computeIfAbsent(blockedDownstream, b -> new HashSet<>()).add(blocker);
                 downstreams.remove(blockedDownstream);
             }
+
+            public void unblock(Request downstream) {
+                blocked.remove(downstream);
+                downstreams.add(downstream);
+            }
         }
     }
 }

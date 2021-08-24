@@ -356,13 +356,6 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                         .first()
                         .isEmpty();
             }
-
-            public void unblock(Request downstream) {
-                blocked.remove(downstream);
-                downstreams.add(downstream);
-            }
         }
-
     }
-
 }
