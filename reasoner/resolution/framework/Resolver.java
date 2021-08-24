@@ -268,6 +268,12 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
                 }
             }
 
+            @Override
+            public void removeDownstream(Request request) {
+                downstreams.remove(request);
+                blocked.remove(request);
+            }
+
             public Set<Response.Blocked.Origin> blockers() {
                 return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
             }
