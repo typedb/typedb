@@ -127,7 +127,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
         } else {
-            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
+            Request downstream = requestState.downstreamManager().nextDownstream();
+            requestState.downstreamManager().unblock(downstream);
+            requestFromDownstream(downstream, fromUpstream, iteration);
         }
     }
 
@@ -194,7 +196,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
         } else {
-            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
+            Request downstream = requestState.downstreamManager().nextDownstream();
+            requestState.downstreamManager().unblock(downstream);
+            requestFromDownstream(downstream, fromUpstream, iteration);
         }
     }
 
@@ -353,6 +357,10 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                         .isEmpty();
             }
 
+            public void unblock(Request downstream) {
+                blocked.remove(downstream);
+                downstreams.add(downstream);
+            }
         }
 
     }
