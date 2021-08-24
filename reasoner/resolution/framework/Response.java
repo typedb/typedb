@@ -189,18 +189,59 @@ public interface Response {
             return blockers;
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Blocked blocked = (Blocked) o;
+            return sourceRequest.equals(blocked.sourceRequest) &&
+                    blockers.equals(blocked.blockers);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(sourceRequest, blockers);
+        }
+
         public static class Origin extends Blocked {
 
             private final int numAnswersSeen;
 
             public Origin(Request sourceRequest, int numAnswersSeen) {
                 super(sourceRequest);
-                this.blockers = set(this);
+                this.blockers = set();
                 this.numAnswersSeen = numAnswersSeen;
             }
 
             public int numAnswersSeen() {
                 return numAnswersSeen;
+            }
+
+            @Override
+            public Set<Origin> blockers() {
+                return set(this);
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                if (!super.equals(o)) return false;
+                Origin origin = (Origin) o;
+                return numAnswersSeen == origin.numAnswersSeen;
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(super.hashCode(), numAnswersSeen);
+            }
+
+            @Override
+            public String toString() {
+                return "Origin{" +
+                        "sourceRequest=" + sourceRequest().toString() +
+                        ", numAnswersSeen=" + numAnswersSeen +
+                        '}';
             }
         }
     }
