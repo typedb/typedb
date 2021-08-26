@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Co
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
 import com.vaticle.typedb.core.rocks.RocksSession;
@@ -136,7 +137,7 @@ public class ResolutionTest {
                 LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
                 Actor.Driver<RootResolver.Conjunction> root;
                 try {
-                    root = registry.root(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet(), exceptions::add);
+                    root = registry.root(conjunctionPattern, (r, f) -> responses.add(f), (r, iterDone) -> doneReceived.incrementAndGet(), exceptions::add);
                 } catch (TypeDBException e) {
                     fail();
                 }
@@ -455,7 +456,7 @@ public class ResolutionTest {
         AtomicLong doneReceived = new AtomicLong(0L);
         Actor.Driver<RootResolver.Disjunction> root;
         try {
-            root = registry.root(disjunction, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
+            root = registry.root(disjunction, (r, f) -> responses.add(f), (r, iterDone) -> doneReceived.incrementAndGet(), (throwable) -> fail());
         } catch (TypeDBException e) {
             fail();
             return;
@@ -473,7 +474,7 @@ public class ResolutionTest {
                 .forEachRemaining(filter::add);
         Actor.Driver<RootResolver.Conjunction> root;
         try {
-            root = registry.root(conjunction, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
+            root = registry.root(conjunction, (r, f) -> responses.add(f), (r, iterDone) -> doneReceived.incrementAndGet(), (throwable) -> fail());
         } catch (TypeDBException e) {
             fail();
             return;
@@ -488,7 +489,8 @@ public class ResolutionTest {
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
             Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
-            root.execute(actor -> actor.receiveRequest(Request.create(root, downstream, requestId), 0));
+            ResolutionTracer.TraceId traceId = ResolutionTracer.TraceId.create(0, i);
+            root.execute(actor -> actor.receiveRequest(Request.create(root, traceId, downstream), 0));
         }
         int answersFound = 0;
         int explainableAnswersFound = 0;
