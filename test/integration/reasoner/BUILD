@@ -102,36 +102,6 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-reiteration",
-    srcs = ["resolution/ReiterationTest.java", "resolution/Util.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.resolution.ReiterationTest",
-    native_libraries_deps = [
-        "//concept:concept",
-        "//logic:logic",
-        "//pattern:pattern",
-        "//reasoner:reasoner",
-        "//rocks:rocks",
-        "//traversal:traversal",
-        "//:typedb",
-    ],
-    deps = [
-        # Internal dependencies
-        "//common:common",
-        "//concurrent:concurrent",
-        "//test/integration/util",
-
-        # External dependencies from Vaticle
-        "@vaticle_typeql_lang_java//:typeql-lang",
-        "@vaticle_typedb_common//:common",
-    ],
-    resource_strip_prefix = "common/test",
-    resources = [
-        "//common/test:logback-test",
-    ],
-    size = "large"
-)
-
-host_compatible_java_test(
     name = "test-resolution-planner",
     srcs = ["resolution/PlannerTest.java", "resolution/Util.java"],
     test_class = "com.vaticle.typedb.core.reasoner.resolution.PlannerTest",
