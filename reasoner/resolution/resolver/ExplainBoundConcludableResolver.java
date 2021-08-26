@@ -20,65 +20,53 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
-import com.vaticle.typedb.core.logic.resolvable.Unifier;
-import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
-import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache.ConcludableAnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.CachingRequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.Exploration;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(ExplainBoundConcludableResolver.class);
 
+    private final AnswerCache<AnswerState.Partial.Concludable<?>> cache;
+
     public ExplainBoundConcludableResolver(Driver<BoundConcludableResolver> driver, Concludable concludable,
-                                           ConceptMap bounds, Map<Driver<ConclusionResolver>, Rule> resolverRules,
-                                           LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> applicableRules,
-                                           ResolverRegistry registry, TraversalEngine traversalEngine,
-                                           ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(driver, concludable, bounds, resolverRules, applicableRules, registry, traversalEngine, conceptMgr,
-              resolutionTracing);
+                                           ConceptMap bounds, ResolverRegistry registry) {
+        super(driver, concludable, bounds, registry);
+        this.cache = new AnswerCache<>(Iterators::empty); // TODO How is this working without doing traversal?
     }
 
     @Override
-    ConcludableAnswerCache createCache(Conjunction conjunction, ConceptMap bounds) {
-        return new ConcludableAnswerCache(new HashMap<>(), bounds); // TODO How is this working without doing traversal?
-    }
-
-    @Override
-    protected CachingRequestState<?, ConceptMap> createRequestState(Request fromUpstream, int iteration) {
+    protected CachingRequestState<?> createRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating new request state for iteration{}, request: {}", name(), iteration, fromUpstream);
-        return new RequestState(fromUpstream, cache.asConcludableAnswerCache(), iteration, true, true);
+        return new RequestState(fromUpstream, cache, iteration, true, true);
     }
 
     @Override
-    CachingRequestState<?, ConceptMap> createExploringRequestState(Request fromUpstream, int iteration) {
+    CachingRequestState<?> createExploringRequestState(Request fromUpstream, int iteration) {
         LOG.debug("{}: Creating new exploring request state for iteration{}, request: {}", name(), iteration,
                   fromUpstream);
-        return new ExploringRequestState(fromUpstream, cache.asConcludableAnswerCache(), iteration,
-                                         ruleDownstreams(fromUpstream));
+        return new ExploringRequestState(fromUpstream, cache, iteration, ruleDownstreams(fromUpstream));
     }
 
-    private static class RequestState extends CachingRequestState<AnswerState.Partial.Concludable<?>, ConceptMap> {
+    @Override
+    protected AnswerCache<AnswerState.Partial.Concludable<?>> cache() {
+        return cache;
+    }
+
+    private static class RequestState extends CachingRequestState<AnswerState.Partial.Concludable<?>> {
 
         public RequestState(Request fromUpstream,
-                            AnswerCache<AnswerState.Partial.Concludable<?>, ConceptMap> answerCache,
+                            AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
                             int iteration, boolean deduplicate, boolean isSubscriber) {
             super(fromUpstream, answerCache, iteration, deduplicate, isSubscriber);
         }
@@ -95,7 +83,7 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
         private final DownstreamManager downstreamManager;
 
         public ExploringRequestState(Request fromUpstream,
-                                     AnswerCache<AnswerState.Partial.Concludable<?>, ConceptMap> answerCache,
+                                     AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
                                      int iteration, List<Request> ruleDownstreams) {
             super(fromUpstream, answerCache, iteration, false, false);
             this.downstreamManager = new DownstreamManager(ruleDownstreams);

@@ -16,32 +16,28 @@
  *
  */
 
-package com.vaticle.typedb.core.common.poller;
+package com.vaticle.typedb.core.reasoner.resolution.framework;
 
-import java.util.Optional;
-import java.util.function.Predicate;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class FilteredPoller<T> extends AbstractPoller<T> {
+public abstract class ReasonerActor<ACTOR extends ReasonerActor<ACTOR>> extends Actor<ACTOR> {
 
-    private final Poller<T> poller;
-    private final Predicate<T> predicate;
+    private static final Logger LOG = LoggerFactory.getLogger(Actor.class);
 
-    public FilteredPoller(Poller<T> poller, Predicate<T> predicate) {
-        this.poller = poller;
-        this.predicate = predicate;
+    private boolean terminated;
+
+    protected ReasonerActor(Driver<ACTOR> driver, String name) {
+        super(driver, name);
+        this.terminated = false;
     }
 
-    @Override
-    public Optional<T> poll() {
-        Optional<T> fromSource;
-        while ((fromSource = poller.poll()).isPresent()) {
-            if (predicate.test(fromSource.get())) return fromSource;
-        }
-        return Optional.empty();
+    public void terminate(Throwable cause) {
+        LOG.debug("Actor terminated. ", cause);
+        this.terminated = true;
     }
 
-    @Override
-    public void recycle() {
-        poller.recycle();
-    }
+    public boolean isTerminated() { return terminated; }
+
 }

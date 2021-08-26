@@ -17,15 +17,12 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
-import com.vaticle.typedb.core.concept.ConceptManager;
-import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,11 +36,8 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
     private final Rule.Condition condition;
 
-    public ConditionResolver(Driver<ConditionResolver> driver, Rule.Condition condition, ResolverRegistry registry,
-                             TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                             LogicManager logicMgr, boolean resolutionTracing) {
-        super(driver, ConditionResolver.class.getSimpleName() + "(" + condition + ")",
-              registry, traversalEngine, conceptMgr, logicMgr, resolutionTracing);
+    public ConditionResolver(Driver<ConditionResolver> driver, Rule.Condition condition, ResolverRegistry registry) {
+        super(driver, ConditionResolver.class.getSimpleName() + "(" + condition + ")", registry);
         this.condition = condition;
     }
 
@@ -54,7 +48,7 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
     @Override
     Set<Concludable> concludablesTriggeringRules() {
-        return condition.concludablesTriggeringRules(conceptMgr, logicMgr);
+        return condition.concludablesTriggeringRules(registry.conceptManager(), registry.logicManager());
     }
 
     @Override

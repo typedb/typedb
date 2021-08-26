@@ -19,15 +19,11 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.concept.ConceptManager;
-import com.vaticle.typedb.core.logic.LogicManager;
-import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,53 +33,52 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class ConcludableResolver extends Coordinator<ConcludableResolver, BoundConcludableResolver> {
+public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResolver, BoundConcludableResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
-    private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> applicableRules;
-    private final Map<Driver<ConclusionResolver>, Rule> resolverRules;
+    private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers;
     private final Concludable concludable;
-    private final LogicManager logicMgr;
 
-    public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable,
-                               ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                               LogicManager logicMgr, boolean resolutionTracing) {
+    public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable, ResolverRegistry registry) {
         super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
-              registry, traversalEngine, conceptMgr, resolutionTracing);
-        this.logicMgr = logicMgr;
+              registry);
         this.concludable = concludable;
-        this.applicableRules = new LinkedHashMap<>();
-        this.resolverRules = new HashMap<>();
+        this.conclusionResolvers = new LinkedHashMap<>();
         this.isInitialised = false;
     }
 
     @Override
-    Driver<BoundConcludableResolver> getOrReplaceWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial) {
+    Driver<BoundConcludableResolver> getOrCreateWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial) {
         return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundConcludableResolver for bounds: {}", name(), partial);
             // TODO: We could use the bounds to prune the applicable rules further
-            return registry.registerBoundConcludable(concludable, partial.conceptMap(), resolverRules, applicableRules, root,
-                                                     iterationByRoot.get(root), partial.asConcludable().isExplain());
+            return registry.registerBoundConcludable(
+                    concludable, partial.conceptMap(), root,
+                    iterationByRoot.get(root), partial.asConcludable().isExplain());
         });
     }
 
     @Override
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
-        concludable.getApplicableRules(conceptMgr, logicMgr).forEachRemaining(rule -> concludable.getUnifiers(rule)
-                .forEachRemaining(unifier -> {
-                    if (isTerminated()) return;
-                    try {
-                        Driver<ConclusionResolver> conclusionResolver = registry.registerConclusion(rule.conclusion());
-                        applicableRules.putIfAbsent(conclusionResolver, new HashSet<>());
-                        applicableRules.get(conclusionResolver).add(unifier);
-                        resolverRules.put(conclusionResolver, rule);
-                    } catch (TypeDBException e) {
-                        terminate(e);
-                    }
-                }));
+        concludable.getApplicableRules(registry.conceptManager(), registry.logicManager())
+                .forEachRemaining(rule -> concludable.getUnifiers(rule)
+                        .forEachRemaining(unifier -> {
+                            if (isTerminated()) return;
+                            try {
+                                Driver<ConclusionResolver> conclusionResolver =
+                                        registry.registerConclusion(rule.conclusion());
+                                conclusionResolvers.computeIfAbsent(conclusionResolver, r -> new HashSet<>()).add(unifier);
+                            } catch (TypeDBException e) {
+                                terminate(e);
+                            }
+                        }));
         if (!isTerminated()) isInitialised = true;
+    }
+
+    Map<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers() {
+        return conclusionResolvers;
     }
 
 }

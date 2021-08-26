@@ -18,14 +18,12 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,10 +42,9 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     final com.vaticle.typedb.core.pattern.Disjunction disjunction;
 
     protected DisjunctionResolver(Driver<RESOLVER> driver, String name,
-                                  com.vaticle.typedb.core.pattern.Disjunction disjunction,
-                                  ResolverRegistry registry, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                                  boolean resolutionTracing) {
-        super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing);
+                                  com.vaticle.typedb.core.pattern.Disjunction disjunction, ResolverRegistry registry) {
+        // TODO: This class takes a pattern disjunction whereas nested disjunctions take a core disjunction
+        super(driver, name, registry);
         this.disjunction = disjunction;
         this.downstreamResolvers = new HashMap<>();
     }
@@ -118,7 +115,8 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
     abstract RequestState requestStateForIteration(RequestState requestStatePrior, int newIteration);
 
-    protected Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(Driver<ConjunctionResolver.Nested> conjunctionResolver) {
+    private static Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(
+            Driver<ConjunctionResolver.Nested> conjunctionResolver) {
         // TODO use a map from resolvable to resolvers, then we don't have to reach into the state and use the conjunction
         return iterate(conjunctionResolver.actor().conjunction().variables()).filter(v -> v.id().isRetrievable())
                 .map(v -> v.id().asRetrievable()).toSet();
@@ -126,10 +124,8 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
     public static class Nested extends DisjunctionResolver<Nested> {
 
-        public Nested(Driver<Nested> driver, Disjunction disjunction, ResolverRegistry registry,
-                      TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean explanations) {
-            super(driver, Nested.class.getSimpleName() + "(pattern: " + disjunction + ")", disjunction,
-                  registry, traversalEngine, conceptMgr, explanations);
+        public Nested(Driver<Nested> driver, Disjunction disjunction, ResolverRegistry registry) {
+            super(driver, Nested.class.getSimpleName() + "(pattern: " + disjunction + ")", disjunction, registry);
         }
 
         @Override

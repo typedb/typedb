@@ -108,16 +108,16 @@ public class Materialiser {
     }
 
     private class Rule {
-        private final com.vaticle.typedb.core.logic.Rule rule;
+        private final com.vaticle.typedb.core.logic.Rule logicRule;
         private final Map<ConceptMap, Materialisation> conditionAnsMaterialisations;
         private boolean requiresReiteration;
 
-        private Rule(com.vaticle.typedb.core.logic.Rule typeDBRule) {
-            this.rule = typeDBRule;
+        private Rule(com.vaticle.typedb.core.logic.Rule logicRule) {
+            this.logicRule = logicRule;
             this.requiresReiteration = false;
             this.conditionAnsMaterialisations = new HashMap<>();
 
-            Set<Concludable> concludables = Concludable.create(this.rule.then());
+            Set<Concludable> concludables = Concludable.create(this.logicRule.then());
             assert concludables.size() == 1;
             // Use a concludable for the conclusion for the convenience of its isInferredAnswer method
         }
@@ -125,14 +125,14 @@ public class Materialiser {
         private boolean materialise() {
             // Get all the places where the rule condition is satisfied and materialise for each
             requiresReiteration = false;
-            traverse(rule.when()).forEachRemaining(conditionAns -> rule.conclusion().materialise(
+            traverse(logicRule.when()).forEachRemaining(conditionAns -> logicRule.conclusion().materialise(
                     conditionAns, tx.traversal(), tx.concepts()
             ).ifPresent(materialisation -> record(conditionAns, new ConceptMap(filterRetrievable(materialisation)))));
             return requiresReiteration;
         }
 
         private void record(ConceptMap conditionAns, ConceptMap conclusionAns) {
-            Materialisation materialisation = Materialisation.create(rule, conditionAns, conclusionAns);
+            Materialisation materialisation = Materialisation.create(logicRule, conditionAns, conclusionAns);
             if (!conditionAnsMaterialisations.containsKey(conditionAns)) {
                 requiresReiteration = true;
                 conditionAnsMaterialisations.put(conditionAns, materialisation);
