@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -199,7 +200,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private Request createResolveRequest(int requestId) {
         Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        return Request.create(rootResolver, ResolutionTracer.TraceId.create(System.identityHashCode(this), requestId), downstream);
+        return Request.create(rootResolver, ResolutionTracer.TraceId.create(UUID.randomUUID().hashCode(), requestId), downstream);
     }
 
     private void requestAnswer() {
