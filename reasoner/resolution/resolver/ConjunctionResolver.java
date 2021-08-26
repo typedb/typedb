@@ -87,8 +87,6 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         if (plan.get(toDownstream.planIndex()).isNegated()) requestState.downstreamManager().removeDownstream(toDownstream);
 
         Partial.Compound<?, ?> partialAnswer = fromDownstream.answer().asCompound();
-
-        // TODO: Do we need to clear the blocked downstreams here?
         if (plan.isLast(fromDownstream.planIndex())) {
             Optional<AnswerState> upstreamAnswer = toUpstreamAnswer(partialAnswer);
             boolean answerAccepted = upstreamAnswer.isPresent() && tryAcceptUpstreamAnswer(upstreamAnswer.get(), fromUpstream, iteration);

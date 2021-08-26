@@ -117,8 +117,7 @@ public class AnswerCache<ANSWER> {
             if (index < answers.size()) {
                 return Optional.of(answers.get(index));
             } else if (index == answers.size()) {
-                if (isComplete()) return Optional.empty();
-                else return searchSourceForAnswer();
+                return isComplete() ? Optional.empty() : searchSourceForAnswer();
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }

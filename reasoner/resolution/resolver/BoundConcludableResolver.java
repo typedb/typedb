@@ -181,15 +181,6 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
-//        } else if (requestState.downstreamManager().hasDownstream()) {
-//            // TODO: 2 problems:
-//            //  hasDownstream() doesn't check for blocked downstreams that we need to re-explore (ones that we didn't put there)
-//            //  When we clear blockedDownstreams, do we put them back in the downstreams list for sure?
-//            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
-//        } else {
-//            cache().setComplete();
-//            failToUpstream(fromUpstream, iteration);
-//        }
         } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
         } else if (requestState.downstreamManager().noneVisitable()) {

@@ -109,7 +109,7 @@ public abstract class SubsumptiveCoordinator<
             failToUpstream(answer.sourceRequest(), iteration);
         } else {
             answerToUpstream(
-                    answer.answer(), requestMapByRoot.get(answer.answer().root()).get(new Pair<>(answer.sourceRequest(), answer.sourceRequest().traceId())),
+                    answer.answer(), requestMapByRoot.get(answer.answer().root()).get(new Pair<>(answer.sourceRequest(),answer.sourceRequest().traceId())),
                     iteration);
         }
     }

@@ -604,6 +604,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                 this.concludable = concludable;
             }
 
+            @Override
             public com.vaticle.typedb.core.logic.resolvable.Concludable concludable() {
                 return concludable;
             }
