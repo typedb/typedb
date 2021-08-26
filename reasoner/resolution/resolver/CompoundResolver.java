@@ -17,13 +17,11 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,9 +37,8 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     final Map<Request, RequestState> requestStates;
     boolean isInitialised;
 
-    protected CompoundResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry,
-                               TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(driver, name, registry, traversalEngine, conceptMgr, resolutionTracing);
+    protected CompoundResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
+        super(driver, name, registry);
         this.requestStates = new HashMap<>();
         this.isInitialised = false;
     }

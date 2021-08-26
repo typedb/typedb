@@ -18,30 +18,23 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-
-public class ConclusionResolver extends Coordinator<ConclusionResolver, BoundConclusionResolver> {
+public class ConclusionResolver extends SubsumptiveCoordinator<ConclusionResolver, BoundConclusionResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConclusionResolver.class);
 
     private final Rule.Conclusion conclusion;
-    private Driver<ConditionResolver> conditionResolver;
 
-    public ConclusionResolver(Driver<ConclusionResolver> driver, Rule.Conclusion conclusion, ResolverRegistry registry,
-                              TraversalEngine traversalEngine, ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(driver, ConclusionResolver.class.getSimpleName() + "(" + conclusion + ")",
-              registry, traversalEngine, conceptMgr, resolutionTracing);
+    public ConclusionResolver(Driver<ConclusionResolver> driver, Rule.Conclusion conclusion, ResolverRegistry registry) {
+        super(driver, ConclusionResolver.class.getSimpleName() + "(" + conclusion + ")", registry);
         this.conclusion = conclusion;
         this.isInitialised = false;
     }
@@ -50,7 +43,7 @@ public class ConclusionResolver extends Coordinator<ConclusionResolver, BoundCon
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
         try {
-            conditionResolver = registry.registerCondition(conclusion.rule().condition());
+            registry.registerCondition(conclusion.rule().condition());
             isInitialised = true;
         } catch (TypeDBException e) {
             terminate(e);
@@ -58,15 +51,19 @@ public class ConclusionResolver extends Coordinator<ConclusionResolver, BoundCon
     }
 
     @Override
-    Driver<BoundConclusionResolver> getOrReplaceWorker(Driver<? extends Resolver<?>> root, Partial<?> partial) {
+    Driver<BoundConclusionResolver> getOrCreateWorker(Driver<? extends Resolver<?>> root, Partial<?> partial) {
         return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundConclusionResolver for bounds: {}", name(), partial);
-            return registry.registerBoundConclusion(conclusion, partial.conceptMap(), conditionResolver);
+            return registry.registerBoundConclusion(conclusion, partial.conceptMap());
         });
     }
 
     @Override
     public String toString() {
         return name();
+    }
+
+    public Rule.Conclusion conclusion() {
+        return conclusion;
     }
 }

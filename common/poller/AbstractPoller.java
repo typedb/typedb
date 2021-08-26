@@ -41,9 +41,4 @@ public abstract class AbstractPoller<T> implements Poller<T> {
         return new LinkedPollers<>(list(this, poller));
     }
 
-    @Override
-    public Poller<T> filter(Predicate<T> predicate) {
-        return new FilteredPoller<>(this, predicate);
-    }
-
 }
