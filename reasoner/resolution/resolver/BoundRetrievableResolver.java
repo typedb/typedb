@@ -20,18 +20,15 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
-import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache.SubsumptionAnswerCache.ConceptMapCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,22 +37,18 @@ import java.util.Optional;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver> {
-    private final ConceptMapCache cache;
+
+    private final AnswerCache<ConceptMap> cache;
     private final Map<Request, RequestState> requestStates;
-    private ConceptMap bounds;
+    private final ConceptMap bounds;
 
     public BoundRetrievableResolver(Driver<BoundRetrievableResolver> driver, Retrievable retrievable, ConceptMap bounds,
-                                    ResolverRegistry registry, TraversalEngine traversalEngine,
-                                    ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(driver, initName(retrievable, bounds), registry, traversalEngine, conceptMgr, resolutionTracing);
+                                    ResolverRegistry registry) {
+        super(driver, BoundRetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() +
+                " bounds: " + bounds.toString() + ")", registry);
         this.bounds = bounds;
-        this.cache = new ConceptMapCache(new HashMap<>(), bounds, () -> traversalIterator(retrievable.pattern(), bounds));
+        this.cache = new AnswerCache<>(() -> traversalIterator(retrievable.pattern(), bounds));
         this.requestStates = new HashMap<>();
-    }
-
-    private static String initName(Retrievable retrievable, ConceptMap bounds) {
-        return BoundRetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() + " bounds: " +
-                bounds.toString() + ")";
     }
 
     @Override
@@ -140,9 +133,9 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private static class BoundRequestState extends RequestState.CachingRequestState<ConceptMap, ConceptMap> {
+    private static class BoundRequestState extends RequestState.CachingRequestState<ConceptMap> {
 
-        public BoundRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
+        public BoundRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
             super(fromUpstream, answerCache, iteration, false, false);
         }
 
@@ -152,9 +145,9 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         }
     }
 
-    private class SubsumerRequestState extends RequestState.CachingRequestState<ConceptMap, ConceptMap> {
+    private class SubsumerRequestState extends RequestState.CachingRequestState<ConceptMap> {
 
-        public SubsumerRequestState(Request fromUpstream, AnswerCache<ConceptMap, ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
+        public SubsumerRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
             super(fromUpstream, answerCache, iteration, false, false);
         }
 

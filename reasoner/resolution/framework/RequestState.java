@@ -67,14 +67,14 @@ public abstract class RequestState {
 
     }
 
-    public abstract static class CachingRequestState<ANSWER, SUBSUMES> extends RequestState {
+    public abstract static class CachingRequestState<ANSWER> extends RequestState {
 
-        protected final AnswerCache<ANSWER, SUBSUMES> answerCache;
+        protected final AnswerCache<ANSWER> answerCache;
         protected final boolean isSubscriber;
         protected Poller<? extends AnswerState.Partial<?>> cacheReader;
         protected final Set<ConceptMap> deduplicationSet;
 
-        protected CachingRequestState(Request fromUpstream, AnswerCache<ANSWER, SUBSUMES> answerCache, int iteration,
+        protected CachingRequestState(Request fromUpstream, AnswerCache<ANSWER> answerCache, int iteration,
                                       boolean deduplicate, boolean isSubscriber) {
             super(fromUpstream, iteration);
             this.answerCache = answerCache;
@@ -94,7 +94,7 @@ public abstract class RequestState {
 
         protected abstract FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ANSWER answer);
 
-        public AnswerCache<ANSWER, SUBSUMES> answerCache() {
+        public AnswerCache<ANSWER> answerCache() {
             return answerCache;
         }
 

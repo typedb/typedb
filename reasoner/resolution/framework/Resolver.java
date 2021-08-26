@@ -23,9 +23,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.Concept;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.concurrent.producer.Producers;
 import com.vaticle.typedb.core.pattern.Conjunction;
@@ -34,7 +32,6 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,22 +47,15 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 
-public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Actor<RESOLVER> {
+public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends ReasonerActor<RESOLVER> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
     private final Map<Request, Request> requestRouter;
     protected final ResolverRegistry registry;
-    protected final TraversalEngine traversalEngine;
-    protected final ConceptManager conceptMgr;
-    protected final boolean resolutionTracing;
 
-    protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry, TraversalEngine traversalEngine,
-                       ConceptManager conceptMgr, boolean resolutionTracing) {
+    protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
         super(driver, name);
         this.registry = registry;
-        this.traversalEngine = traversalEngine;
-        this.conceptMgr = conceptMgr;
-        this.resolutionTracing = resolutionTracing;
         this.requestRouter = new HashMap<>();
         // Note: initialising downstream actors in constructor will create all actors ahead of time, so it is non-lazy
         // additionally, it can cause deadlock within ResolverRegistry as different threads initialise actors
@@ -101,7 +91,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     // TODO: Rename to sendRequest or request
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name(), request);
-        if (resolutionTracing) ResolutionTracer.get().request(
+        if (registry.resolutionTracing()) ResolutionTracer.get().request(
                 this.name(), request.receiver().name(), iteration,
                 request.partialAnswer().conceptMap().concepts().keySet().toString());
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
@@ -115,7 +105,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         assert answer.isPartial();
         Answer response = Answer.create(fromUpstream, answer.asPartial());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (resolutionTracing) ResolutionTracer.get().responseAnswer(
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(
                 this.name(), fromUpstream.sender().name(), iteration,
                 response.asAnswer().answer().conceptMap().concepts().keySet().toString()
         );
@@ -125,7 +115,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     protected void failToUpstream(Request fromUpstream, int iteration) {
         Response.Fail response = new Response.Fail(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (resolutionTracing) ResolutionTracer.get().responseExhausted(
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(
                 this.name(), fromUpstream.sender().name(), iteration
         );
         fromUpstream.sender().execute(actor -> actor.receiveFail(response, iteration));
@@ -134,14 +124,15 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
     protected FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
         return compatibleBounds(conjunction, bounds).map(c -> {
             GraphTraversal traversal = boundTraversal(conjunction.traversal(), c);
-            return traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
+            return registry.traversalEngine().iterator(traversal).map(v -> registry.conceptManager().conceptMap(v));
         }).orElse(Iterators.empty());
     }
 
     protected Producer<ConceptMap> traversalProducer(Conjunction conjunction, ConceptMap bounds, int parallelisation) {
         return compatibleBounds(conjunction, bounds).map(b -> {
             GraphTraversal traversal = boundTraversal(conjunction.traversal(), b);
-            return traversalEngine.producer(traversal, Either.first(INCREMENTAL), parallelisation).map(conceptMgr::conceptMap);
+            return registry.traversalEngine().producer(traversal, Either.first(INCREMENTAL), parallelisation)
+                    .map(vertexMap -> registry.conceptManager().conceptMap(vertexMap));
         }).orElse(Producers.empty());
     }
 
@@ -169,7 +160,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         return Optional.of(new ConceptMap(newBounds));
     }
 
-    protected GraphTraversal boundTraversal(GraphTraversal traversal, ConceptMap bounds) {
+    protected static GraphTraversal boundTraversal(GraphTraversal traversal, ConceptMap bounds) {
         bounds.concepts().forEach((id, concept) -> {
             if (concept.isThing()) traversal.iid(id.asVariable(), concept.asThing().getIID());
             else {

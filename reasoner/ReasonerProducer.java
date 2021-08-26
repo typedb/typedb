@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.reasoner.resolution.framework.ReiterationQuery;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private boolean done;
     private int iteration;
     private Queue<ConceptMap> queue;
-    private Set<Actor.Driver<? extends Resolver<?>>> reiterationQueryRespondents;
+    private Set<Actor.Driver<BoundConcludableResolver>> boundConcludables;
     private boolean requiresReiteration;
     private boolean sentReiterationRequests;
 
@@ -138,7 +139,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void requestFailed(int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
         if (options.traceInference()) ResolutionTracer.get().finish();
-        if (resolverRegistry.reiterationQueryRespondents(rootResolver, iteration).size() == 0) {
+        if (resolverRegistry.boundConcludables(rootResolver, iteration).size() == 0) {
             finish();
         } else if (!sentReiterationRequests && iteration == this.iteration) {
             sendReiterationRequests();
@@ -163,19 +164,19 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void sendReiterationRequests() {
-        assert reiterationQueryRespondents == null || reiterationQueryRespondents.isEmpty();
+        assert boundConcludables == null || boundConcludables.isEmpty();
         sentReiterationRequests = true;
-        reiterationQueryRespondents = new HashSet<>(resolverRegistry.reiterationQueryRespondents(rootResolver, iteration));
-        resolverRegistry.reiterationQueryRespondents(rootResolver, iteration)
+        boundConcludables = new HashSet<>(resolverRegistry.boundConcludables(rootResolver, iteration));
+        resolverRegistry.boundConcludables(rootResolver, iteration)
                 .forEach(res -> res.execute(actor -> actor.receiveReiterationQuery(reiterationRequest)));
     }
 
     private synchronized void receiveReiterationResponse(ReiterationQuery.Response response) {
         if (response.reiterate()) requiresReiteration = true;
-        assert reiterationQueryRespondents.contains(response.sender());
-        reiterationQueryRespondents.remove(response.sender());
+        assert boundConcludables.contains(response.sender());
+        boundConcludables.remove(response.sender());
 
-        if (reiterationQueryRespondents.isEmpty()) {
+        if (boundConcludables.isEmpty()) {
             if (requiresReiteration) {
                 prepareNextIteration();
                 retryInNewIteration();

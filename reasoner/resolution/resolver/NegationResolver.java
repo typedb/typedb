@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
@@ -28,7 +27,6 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,11 +46,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
     private boolean isInitialised;
     private Driver<? extends Resolver<?>> downstream;
 
-    public NegationResolver(Driver<NegationResolver> driver, Negated negated, ResolverRegistry registry,
-                            TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                            boolean resolutionTracing) {
-        super(driver, NegationResolver.class.getSimpleName() + "(pattern: " + negated.pattern() + ")",
-              registry, traversalEngine, conceptMgr, resolutionTracing);
+    public NegationResolver(Driver<NegationResolver> driver, Negated negated, ResolverRegistry registry) {
+        super(driver, NegationResolver.class.getSimpleName() + "(pattern: " + negated.pattern() + ")", registry);
         this.negated = negated;
         this.boundsStates = new HashMap<>();
         this.isInitialised = false;

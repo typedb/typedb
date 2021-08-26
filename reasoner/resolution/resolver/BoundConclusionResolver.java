@@ -23,19 +23,18 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.Concept;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Concludable;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Materialiser;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,28 +56,18 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(BoundConclusionResolver.class);
     private final ConceptMap bounds;
-    private final Driver<ConditionResolver> conditionResolver;
     private final Rule.Conclusion conclusion;
-    private final Driver<Materialiser> materialiser;
     private final Map<Request, ConclusionRequestState<? extends Concludable<?>>> requestStates;
     private final Map<Materialiser.Request, Pair<Request, Integer>> materialiserRequestRouter;
 
-    public BoundConclusionResolver(Driver<BoundConclusionResolver> driver, Rule.Conclusion conclusion, ConceptMap bounds,
-                                   Driver<ConditionResolver> conditionResolver,
-                                   Driver<Materialiser> materialiser, ResolverRegistry registry, TraversalEngine traversalEngine,
-                                   ConceptManager conceptMgr, boolean resolutionTracing) {
-        super(driver, initName(conclusion, bounds), registry, traversalEngine, conceptMgr, resolutionTracing);
+    public BoundConclusionResolver(Driver<BoundConclusionResolver> driver, Rule.Conclusion conclusion,
+                                   ConceptMap bounds, ResolverRegistry registry) {
+        super(driver, BoundConclusionResolver.class.getSimpleName() + "(pattern: " + conclusion.conjunction() +
+                " bounds: " + bounds.toString() + ")", registry);
         this.bounds = bounds;
-        this.conditionResolver = conditionResolver;
         this.conclusion = conclusion;
-        this.materialiser = materialiser;
         this.requestStates = new HashMap<>();
         this.materialiserRequestRouter = new HashMap<>();
-    }
-
-    private static String initName(Rule.Conclusion conclusion, ConceptMap bounds) {
-        return BoundConclusionResolver.class.getSimpleName() + "(pattern: " + conclusion.conjunction() + " bounds: " +
-                bounds.toString() + ")";
     }
 
     @Override
@@ -133,8 +122,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         Request fromUpstream = fromUpstream(toDownstream);
         ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream);
         if (!requestState.isComplete()) {
-            Materialiser.Request request = Materialiser.Request.create(driver(), materialiser, conclusion,
-                                                                       fromDownstream.answer());
+            Materialiser.Request request = Materialiser.Request.create(
+                    driver(), registry.materialiser(), conclusion, fromDownstream.answer());
             requestFromMaterialiser(request, fromUpstream, iteration);
             requestState.waitedMaterialisations().increment();
         } else {
@@ -143,14 +132,14 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     }
 
     private void requestFromMaterialiser(Materialiser.Request request, Request fromUpstream, int iteration) {
-        if (resolutionTracing) ResolutionTracer.get().request(
+        if (registry.resolutionTracing()) ResolutionTracer.get().request(
                 this.name(), request.receiver().name(), iteration,
                 request.partialAnswer().conceptMap().concepts().keySet().toString());
         materialiserRequestRouter.put(request, new Pair<>(fromUpstream, iteration));
-        materialiser.execute(actor -> actor.receiveRequest(request));
+        registry.materialiser().execute(actor -> actor.receiveRequest(request));
     }
 
-    protected void receiveMaterialisation(Materialiser.Response response) {
+    public void receiveMaterialisation(Materialiser.Response response) {
         if (isTerminated()) return;
         Materialiser.Request toDownstream = response.sourceRequest();
         Pair<Request, Integer> fromUpstream = fromUpstream(toDownstream);
@@ -235,19 +224,22 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         List<Request> downstreams = new ArrayList<>();
         if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.conceptMap().concepts().size() &&
                 partialAnswer.conceptMap().concepts().containsKey(conclusion.generating().get().id())) {
-            candidateAnswers(partialAnswer).forEachRemaining(answer -> downstreams.add(Request.create(driver(), conditionResolver, answer)));
+            candidateAnswers(partialAnswer).forEachRemaining(answer -> downstreams.add(
+                    Request.create(driver(), registry.conditionResolver(conclusion.rule()), answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-            downstreams.add(Request.create(driver(), conditionResolver, partialAnswer.toDownstream(named)));
+            downstreams.add(Request.create(driver(), registry.conditionResolver(conclusion.rule()), partialAnswer.toDownstream(named)));
         }
         return downstreams;
     }
 
-    private FunctionalIterator<AnswerState.Partial.Compound<?, ?>> candidateAnswers(AnswerState.Partial.Conclusion<?, ?> partialAnswer) {
+    private FunctionalIterator<AnswerState.Partial.Compound<?, ?>> candidateAnswers(
+            AnswerState.Partial.Conclusion<?, ?> partialAnswer) {
         GraphTraversal traversal = boundTraversal(conclusion.conjunction().traversal(), partialAnswer.conceptMap());
-        FunctionalIterator<ConceptMap> answers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-        return answers.map(ans -> partialAnswer.extend(ans).toDownstream(named));
+        return registry.traversalEngine().iterator(traversal)
+                .map(v -> registry.conceptManager().conceptMap(v))
+                .map(ans -> partialAnswer.extend(ans).toDownstream(named));
     }
 
     private static abstract class ConclusionRequestState<CONCLUDABLE extends Concludable<?>> extends RequestState {
