@@ -271,6 +271,14 @@ public final class ResolutionTracer {
         public int hashCode() {
             return Objects.hash(scopeId, rootId);
         }
+
+        @Override
+        public String toString() {
+            return "TraceId{" +
+                    "scopeId=" + scopeId +
+                    ", rootId=" + rootId +
+                    '}';
+        }
     }
 
 }
