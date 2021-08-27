@@ -87,18 +87,18 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     }
 
     @Override
-    protected void receiveBlocked(Response.Blocked fromDownstream, int iteration) {
-        LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
+    protected void receiveCycle(Response.Cycle fromDownstream, int iteration) {
+        LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Request blockedDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(blockedDownstream);
+        Request cyclingDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = fromUpstream(cyclingDownstream);
         RequestState requestState = this.requestStates.get(fromUpstream);
-        fromDownstream.blockers().forEach(blocker -> requestState.downstreamManager().block(blockedDownstream, blocker));
+        fromDownstream.origins().forEach(origin -> requestState.downstreamManager().block(cyclingDownstream, origin));
         Optional<Request> unblocked = requestState.downstreamManager().nextUnblockedDownstream();
         if (unblocked.isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
         } else {
-            blockToUpstream(fromUpstream, requestState.downstreamManager().blockers(), iteration);
+            cycleToUpstream(fromUpstream, requestState.downstreamManager().blockers(), iteration);
         }
     }
 

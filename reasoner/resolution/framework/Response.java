@@ -156,17 +156,17 @@ public interface Response {
         }
     }
 
-    class Blocked implements Response {
+    class Cycle implements Response {
 
         private final Request sourceRequest;
-        protected Set<Origin> blockers;
+        protected Set<Origin> origins;
 
-        public Blocked(Request sourceRequest, Set<Origin> blockers) {
+        public Cycle(Request sourceRequest, Set<Origin> origins) {
             this.sourceRequest = sourceRequest;
-            this.blockers = blockers;
+            this.origins = origins;
         }
 
-        private Blocked(Request sourceRequest) {
+        private Cycle(Request sourceRequest) {
             this.sourceRequest = sourceRequest;
         }
 
@@ -185,31 +185,31 @@ public interface Response {
             return false;
         }
 
-        public Set<Origin> blockers() {
-            return blockers;
+        public Set<Origin> origins() {
+            return origins;
         }
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Blocked blocked = (Blocked) o;
-            return sourceRequest.equals(blocked.sourceRequest) &&
-                    blockers.equals(blocked.blockers);
+            Cycle cycle = (Cycle) o;
+            return sourceRequest.equals(cycle.sourceRequest) &&
+                    origins.equals(cycle.origins);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(sourceRequest, blockers);
+            return Objects.hash(sourceRequest, origins);
         }
 
-        public static class Origin extends Blocked {
+        public static class Origin extends Cycle {
 
             private final int numAnswersSeen;
 
             public Origin(Request sourceRequest, int numAnswersSeen) {
                 super(sourceRequest);
-                this.blockers = set();
+                this.origins = set();
                 this.numAnswersSeen = numAnswersSeen;
             }
 
@@ -218,7 +218,7 @@ public interface Response {
             }
 
             @Override
-            public Set<Origin> blockers() {
+            public Set<Origin> origins() {
                 return set(this);
             }
 

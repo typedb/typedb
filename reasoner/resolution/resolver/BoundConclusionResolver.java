@@ -132,14 +132,14 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     }
 
     @Override
-    protected void receiveBlocked(Response.Blocked fromDownstream, int iteration) {
-        LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
+    protected void receiveCycle(Response.Cycle fromDownstream, int iteration) {
+        LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
         ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream);
         if (requestState.waitedMaterialisations().waiting()) requestState.waitedMaterialisations().addWaitingRequest(fromUpstream, iteration);
-        else blockToUpstream(fromUpstream, fromDownstream.blockers(), iteration);
+        else cycleToUpstream(fromUpstream, fromDownstream.origins(), iteration);
     }
 
     private void requestFromMaterialiser(Materialiser.Request request, Request fromUpstream, int iteration) {

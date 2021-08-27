@@ -105,10 +105,10 @@ public final class ResolutionTracer {
         addMessage(sender, receiver, request.traceId(), iteration, EdgeType.EXHAUSTED, "");
     }
 
-    public synchronized void responseBlocked(Response.Blocked request, int iteration) {
+    public synchronized void responseCycle(Response.Cycle request, int iteration) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
-        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.BLOCKED, "");
+        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.CYCLE, "");
     }
 
     private void addMessage(String sender, String receiver, TraceId traceId, int iteration, EdgeType edgeType,
@@ -217,7 +217,7 @@ public final class ResolutionTracer {
 
     enum EdgeType {
         EXHAUSTED("red"),
-        BLOCKED("orange"),
+        CYCLE("orange"),
         ANSWER("green"),
         REQUEST("blue");
 

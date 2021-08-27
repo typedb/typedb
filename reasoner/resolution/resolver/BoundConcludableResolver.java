@@ -120,7 +120,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
         } else if (isRecursion(fromUpstream.partialAnswer()).isPresent()) {
-            blockToUpstream(fromUpstream, cache().size(), iteration);
+            cycleToUpstream(fromUpstream, cache().size(), iteration);
         } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
             requestFromDownstream(unblocked.get(), fromUpstream, iteration);
         } else if (requestState.downstreamManager().noneVisitable()) {
@@ -155,7 +155,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         if (isTerminated()) return;
         Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
-        if (requestState.newAnswer(fromDownstream.answer())) requestState.downstreamManager().clearOutdatedBlockers();
+        if (requestState.newAnswer(fromDownstream.answer())) requestState.downstreamManager().clearOutdatedBlocks();
         answerUpstreamOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
     }
 
@@ -194,20 +194,20 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     }
 
     @Override
-    protected void receiveBlocked(Response.Blocked fromDownstream, int iteration) {
-        LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
+    protected void receiveCycle(Response.Cycle fromDownstream, int iteration) {
+        LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Request blockedDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(blockedDownstream);
+        Request cyclingDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = fromUpstream(cyclingDownstream);
 
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
-        if (requestState.downstreamManager().contains(blockedDownstream)) {
-            iterate(fromDownstream.blockers())
+        if (requestState.downstreamManager().contains(cyclingDownstream)) {
+            iterate(fromDownstream.origins())
                     .filter(blocker -> !requestState.downstreamManager().isOutdated(blocker))
                     .toSet() // TODO: Goes away if we have .forEach() on iterator
-                    .forEach(blocker -> requestState.downstreamManager().block(blockedDownstream, blocker));
+                    .forEach(blocker -> requestState.downstreamManager().block(cyclingDownstream, blocker));
         }
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
         Optional<Request> unblocked;
@@ -221,7 +221,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
         } else {
-            blockToUpstream(fromUpstream, requestState.downstreamManager().visitable(), iteration);
+            cycleToUpstream(fromUpstream, requestState.downstreamManager().visitable(), iteration);
         }
     }
 
@@ -313,12 +313,12 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                 super(ruleDownstreams);
             }
 
-            public void clearOutdatedBlockers() {
+            public void clearOutdatedBlocks() {
                 // TODO: Find the most idiomatic way to do this, ideally the map should be final
                 // TODO: .remove() is unsupported on iterators
-                Map<Request, Set<Response.Blocked.Origin>> newBlocked = new LinkedHashMap<>();
+                Map<Request, Set<Response.Cycle.Origin>> newBlocked = new LinkedHashMap<>();
                 blocked.forEach((downstream, blockers) -> {
-                    Set<Response.Blocked.Origin> newBlockers =
+                    Set<Response.Cycle.Origin> newBlockers =
                             iterate(blockers).filter(blocker -> !isOutdated(blocker)).toSet();
                     if (newBlockers.isEmpty()) downstreams.add(downstream);
                     else newBlocked.put(downstream, newBlockers);
@@ -326,22 +326,22 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                 blocked = newBlocked;
             }
 
-            private boolean isVisitable(Response.Blocked.Origin blocker) {
-                return !blocker.sender().equals(driver());
+            private boolean isVisitable(Response.Cycle.Origin cycleOrigin) {
+                return !cycleOrigin.sender().equals(driver());
             }
 
-            public boolean isOutdated(Response.Blocked.Origin blocker) {
-                return !isVisitable(blocker) && blocker.numAnswersSeen() < cache().size();
+            public boolean isOutdated(Response.Cycle.Origin cycleOrigin) {
+                return !isVisitable(cycleOrigin) && cycleOrigin.numAnswersSeen() < cache().size();
             }
 
-            public Set<Response.Blocked.Origin> visitable() {
+            public Set<Response.Cycle.Origin> visitable() {
                 return iterate(blocked.values()).flatMap(Iterators::iterate).filter(this::isVisitable).toSet();
             }
 
             public boolean noneVisitable() {
                 return iterate(blocked.values())
-                        .filter(blockers -> iterate(blockers)
-                                .filter(blocker -> !isVisitable(blocker))
+                        .filter(cycleOrigins -> iterate(cycleOrigins)
+                                .filter(cycleOrigin -> !isVisitable(cycleOrigin))
                                 .first()
                                 .isEmpty())
                         .first()

@@ -86,12 +86,12 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected abstract void receiveFail(Response.Fail fromDownstream, int iteration);
 
-    protected void receiveBlocked(Response.Blocked fromDownstream, int iteration) {
-        LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
+    protected void receiveCycle(Response.Cycle fromDownstream, int iteration) {
+        LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
         Request toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = fromUpstream(toDownstream);
-        blockToUpstream(fromUpstream, fromDownstream.blockers(), iteration);
+        cycleToUpstream(fromUpstream, fromDownstream.origins(), iteration);
     }
 
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
@@ -133,20 +133,20 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         fromUpstream.sender().execute(actor -> actor.receiveFail(response, iteration));
     }
 
-    protected void blockToUpstream(Request fromUpstream, Set<Response.Blocked.Origin> blockers, int iteration) {
+    protected void cycleToUpstream(Request fromUpstream, Set<Response.Cycle.Origin> cycleOrigins, int iteration) {
         assert !fromUpstream.partialAnswer().parent().isTop();
-        Response.Blocked response = new Response.Blocked(fromUpstream, blockers);
-        LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
-        if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response, iteration);
-        fromUpstream.sender().execute(actor -> actor.receiveBlocked(response, iteration));
+        Response.Cycle response = new Response.Cycle(fromUpstream, cycleOrigins);
+        LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response, iteration);
+        fromUpstream.sender().execute(actor -> actor.receiveCycle(response, iteration));
     }
 
-    protected void blockToUpstream(Request fromUpstream, int numAnswersSeen, int iteration) {
+    protected void cycleToUpstream(Request fromUpstream, int numAnswersSeen, int iteration) {
         assert !fromUpstream.partialAnswer().parent().isTop();
-        Response.Blocked response = new Response.Blocked.Origin(fromUpstream, numAnswersSeen);
-        LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
-        if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response, iteration);
-        fromUpstream.sender().execute(actor -> actor.receiveBlocked(response, iteration));
+        Response.Cycle response = new Response.Cycle.Origin(fromUpstream, numAnswersSeen);
+        LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response, iteration);
+        fromUpstream.sender().execute(actor -> actor.receiveCycle(response, iteration));
     }
 
     protected FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
@@ -233,7 +233,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
         public static class Blockable extends DownstreamManager {
 
-            protected Map<Request, Set<Response.Blocked.Origin>> blocked;
+            protected Map<Request, Set<Response.Cycle.Origin>> blocked;
 
             public Blockable() {
                 this.blocked = new LinkedHashMap<>();
@@ -274,11 +274,11 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
                 blocked.remove(request);
             }
 
-            public Set<Response.Blocked.Origin> blockers() {
+            public Set<Response.Cycle.Origin> blockers() {
                 return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
             }
 
-            public void block(Request blockedDownstream, Response.Blocked.Origin blocker) {
+            public void block(Request blockedDownstream, Response.Cycle.Origin blocker) {
                 assert downstreams.contains(blockedDownstream) || blocked.containsKey(blockedDownstream);
                 blocked.computeIfAbsent(blockedDownstream, b -> new HashSet<>()).add(blocker);
                 downstreams.remove(blockedDownstream);
