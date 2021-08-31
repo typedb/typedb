@@ -19,162 +19,170 @@
 package com.vaticle.typedb.core.traversal.procedure;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.TypeTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class TypeCombinationProcedure {
 
-    private final Map<Identifier, ProcedureVertex.Type> vertices;
-    private final ProcedureEdge<?, ?>[] edges;
+    private final TypeTraversal traversal;
+    private final Identifier[] vertexOrder;
 
-    TypeCombinationProcedure(int edgeSize) {
-        vertices = new HashMap<>();
-        edges = new ProcedureEdge.Native.Type[edgeSize];
+    TypeCombinationProcedure(TypeTraversal traversal) {
+        this.traversal = traversal;
+        this.vertexOrder = iterate(traversal.structure().vertices()).filter(vertex -> !vertex.id().isLabel())
+                .map(TraversalVertex::id).toList().toArray(new Identifier[0]);
     }
 
     public static TypeCombinationProcedure of(TypeTraversal traversal) {
-        TypeCombinationProcedure procedure = new TypeCombinationProcedure(traversal.structure().edges().size());
-        Set<StructureEdge<?, ?>> visitedEdges = new HashSet<>();
-        procedure.registerDFS(traversal.structure().vertices().iterator().next().asType(), visitedEdges);
-        return procedure;
+        return new TypeCombinationProcedure(traversal);
     }
 
-    public ProcedureVertex.Type vertex(Identifier identifier) {
-        return vertices.get(identifier);
+    public VertexEvaluation begin() {
+        return new VertexEvaluation(0, new HashMap<>());
     }
 
-    public int edgeSize() {
-        return edges.length;
+    public int evaluationVertexCount() {
+        return vertexOrder.length;
     }
 
-    public ProcedureEdge<?, ?> edge(int pos) {
-        assert pos > 0;
-        return edges[pos - 1];
+    public int traversalVertexCount() {
+        return traversal.structure().vertices().size();
     }
 
-    private ProcedureVertex.Type registerDFS(StructureVertex.Type structureVertex, Set<StructureEdge<?, ?>> visitedEdges) {
-        if (vertices.containsKey(structureVertex.id())) return vertices.get(structureVertex.id());
-        ProcedureVertex.Type vertex = vertices.computeIfAbsent(structureVertex.id(), id -> new ProcedureVertex.Type(id, vertices.size() == 0));
-        vertex.props(structureVertex.props());
-        structureVertex.outs().forEach(structureEdge -> {
-            if (!visitedEdges.contains(structureEdge)) {
-                visitedEdges.add(structureEdge);
-                int order = visitedEdges.size();
-                ProcedureVertex.Type end = registerDFS(structureEdge.to().asType(), visitedEdges);
-                registerOut(vertex, end, structureEdge, order);
-            }
-        });
-        structureVertex.ins().forEach(structureEdge -> {
-            if (!visitedEdges.contains(structureEdge)) {
-                visitedEdges.add(structureEdge);
-                int order = visitedEdges.size();
-                ProcedureVertex.Type start = registerDFS(structureEdge.from().asType(), visitedEdges);
-                registerIn(vertex, start, structureEdge, order);
-            }
-        });
-        return vertex;
+    private int edgeSize() {
+        return traversal.structure().edges().size();
     }
 
-    private void registerOut(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge, int order) {
-        // TODO are these all forward, from -> to?
-        ProcedureEdge<?, ?> edge;
-        if (structureEdge.isNative()) {
-            switch (structureEdge.asNative().encoding().asType()) {
-                case SUB:
-                    edge = new ProcedureEdge.Native.Type.Sub.Forward(from.asType(), to.asType(), order, structureEdge.asNative().isTransitive());
-                    break;
-                case OWNS:
-                    edge = new ProcedureEdge.Native.Type.Owns.Forward(from, to, order, false);
-                    break;
-                case OWNS_KEY:
-                    edge = new ProcedureEdge.Native.Type.Owns.Forward(from, to, order, true);
-                    break;
-                case PLAYS:
-                    edge = new ProcedureEdge.Native.Type.Plays.Forward(from, to, order);
-                    break;
-                case RELATES:
-                    edge = new ProcedureEdge.Native.Type.Relates.Forward(from, to, order);
-                    break;
-                default:
-                    throw TypeDBException.of(UNRECOGNISED_VALUE);
-            }
-        } else if (structureEdge.isEqual()) {
-            edge = new ProcedureEdge.Equal(from, to, order, Encoding.Direction.Edge.FORWARD);
-        } else throw TypeDBException.of(ILLEGAL_STATE);
-        registerEdge(edge, order);
+    private StructureVertex.Type getVertex(int pos) {
+        return traversal.structure().typeVertex(vertexOrder[pos]);
     }
 
-    private void registerIn(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge, int order) {
-        // TODO are these all backward, from <- to?
-        ProcedureEdge<?, ?> edge;
-        if (structureEdge.isNative()) {
-            switch (structureEdge.asNative().encoding().asType()) {
-                case SUB:
-                    edge = new ProcedureEdge.Native.Type.Sub.Backward(from.asType(), to.asType(), order, structureEdge.asNative().isTransitive());
-                    break;
-                case OWNS:
-                    edge = new ProcedureEdge.Native.Type.Owns.Backward(from, to, order, false);
-                    break;
-                case OWNS_KEY:
-                    edge = new ProcedureEdge.Native.Type.Owns.Backward(from, to, order, true);
-                    break;
-                case PLAYS:
-                    edge = new ProcedureEdge.Native.Type.Plays.Backward(from, to, order);
-                    break;
-                case RELATES:
-                    edge = new ProcedureEdge.Native.Type.Relates.Backward(from, to, order);
-                    break;
-                default:
-                    throw TypeDBException.of(UNRECOGNISED_VALUE);
-            }
-        } else if (structureEdge.isEqual()) {
-            edge = new ProcedureEdge.Equal(from, to, order, Encoding.Direction.Edge.BACKWARD);
-        } else throw TypeDBException.of(ILLEGAL_STATE);
-        registerEdge(edge, order);
-    }
+    public class VertexEvaluation {
 
-    private void registerEdge(ProcedureEdge<?, ?> edge, int order) {
-        edges[order - 1] = edge;
-        edge.from().out(edge);
-        edge.to().in(edge);
-    }
+        private final int position;
+        private final Map<Identifier, Set<Label>> evaluatedTypes;
 
-    @Override
-    public String toString() {
-        StringBuilder str = new StringBuilder();
-        str.append("Type Combination Procedure: {");
-        List<ProcedureEdge<?, ?>> procedureEdges = Arrays.asList(edges);
-        procedureEdges.sort(Comparator.comparing(ProcedureEdge::order));
-        List<ProcedureVertex<?, ?>> procedureVertices = new ArrayList<>(vertices.values());
-        procedureVertices.sort(Comparator.comparing(v -> v.id().toString()));
-
-        str.append("\n\tvertices:");
-        for (ProcedureVertex<?, ?> v : procedureVertices) {
-            str.append("\n\t\t").append(v);
+        private VertexEvaluation(int position, Map<Identifier, Set<Label>> evaluatedTypes) {
+            this.position = position;
+            this.evaluatedTypes = evaluatedTypes;
         }
-        str.append("\n\tedges:");
-        for (ProcedureEdge<?, ?> e : procedureEdges) {
-            str.append("\n\t\t").append(e);
+
+        public Identifier evaluationId() {
+            return vertexOrder[position];
         }
-        str.append("\n}");
-        return str.toString();
+
+        public VertexEvaluation next(Set<TypeVertex> additionalEvaluatedTypes) {
+            assert !evaluatedTypes.containsKey(evaluationId()) && position + 1 < vertexOrder.length;
+            Map<Identifier, Set<Label>> evaluatedTypes = new HashMap<>(this.evaluatedTypes);
+            evaluatedTypes.put(evaluationId(), iterate(additionalEvaluatedTypes).map(TypeVertex::properLabel).toSet());
+            return new VertexEvaluation(position + 1, evaluatedTypes);
+        }
+
+        public GraphProcedure procedure() {
+            GraphProcedure.Builder builder = GraphProcedure.builder();
+            Set<StructureEdge<?, ?>> visitedEdges = new HashSet<>();
+            StructureVertex.Type start = getVertex(position);
+            registerDFS(start, visitedEdges, builder);
+            return builder.build();
+        }
+
+        private ProcedureVertex.Type registerDFS(StructureVertex.Type structureVertex, Set<StructureEdge<?, ?>> visitedEdges,
+                                                 GraphProcedure.Builder builder) {
+            boolean isStart = builder.vertices().size() == 0;
+            if (builder.containsVertex(structureVertex.id())) return builder.getType(structureVertex.id());
+            ProcedureVertex.Type vertex = builder.type(structureVertex.id(), isStart);
+            vertex.props(structureVertex.props());
+            if (evaluatedTypes.containsKey(vertex.id())) vertex.props().labels(evaluatedTypes.get(vertex.id()));
+            structureVertex.outs().forEach(structureEdge -> {
+                boolean toStart = builder.containsVertex(structureEdge.to().id()) && builder.getType(structureEdge.to().id()).isStartingVertex();
+                if (!visitedEdges.contains(structureEdge) && (!toStart || isStart)) {
+                    visitedEdges.add(structureEdge);
+                    int order = visitedEdges.size();
+                    ProcedureVertex.Type end = registerDFS(structureEdge.to().asType(), visitedEdges, builder);
+                    registerForwards(vertex, end, structureEdge, order, builder);
+                }
+            });
+            structureVertex.ins().forEach(structureEdge -> {
+                boolean fromStart = builder.containsVertex(structureEdge.from().id()) && builder.getType(structureEdge.from().id()).isStartingVertex();
+                if (!visitedEdges.contains(structureEdge) && (!fromStart || isStart)) {
+                    visitedEdges.add(structureEdge);
+                    int order = visitedEdges.size();
+                    ProcedureVertex.Type start = registerDFS(structureEdge.from().asType(), visitedEdges, builder);
+                    registerBackwards(vertex, start, structureEdge, order, builder);
+                }
+            });
+            return vertex;
+        }
+
+        private void registerForwards(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge,
+                                      int order, GraphProcedure.Builder builder) {
+            // TODO are these all forward, from -> to?
+            if (structureEdge.isNative()) {
+                switch (structureEdge.asNative().encoding().asType()) {
+                    case SUB:
+                        builder.forwardSub(order, from, to, structureEdge.asNative().isTransitive());
+                        break;
+                    case OWNS:
+                        builder.forwardOwns(order, from, to, false);
+                        break;
+                    case OWNS_KEY:
+                        builder.forwardOwns(order, from, to, true);
+                        break;
+                    case PLAYS:
+                        builder.forwardPlays(order, from, to);
+                        break;
+                    case RELATES:
+                        builder.forwardRelates(order, from, to);
+                        break;
+                    default:
+                        throw TypeDBException.of(UNRECOGNISED_VALUE);
+                }
+            } else if (structureEdge.isEqual()) {
+                builder.forwardEqual(order, from, to);
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        private void registerBackwards(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge, int order, GraphProcedure.Builder builder) {
+            // TODO are these all backward, from <- to?
+            if (structureEdge.isNative()) {
+                switch (structureEdge.asNative().encoding().asType()) {
+                    case SUB:
+                        builder.backwardSub(order, from, to, structureEdge.asNative().isTransitive());
+                        break;
+                    case OWNS:
+                        builder.backwardOwns(order, from, to, false);
+                        break;
+                    case OWNS_KEY:
+                        builder.backwardOwns(order, from, to, true);
+                        break;
+                    case PLAYS:
+                        builder.backwardPlays(order, from, to);
+                        break;
+                    case RELATES:
+                        builder.backwardRelates(order, from, to);
+                        break;
+                    default:
+                        throw TypeDBException.of(UNRECOGNISED_VALUE);
+                }
+            } else if (structureEdge.isEqual()) {
+                builder.backwardEqual(order, from, to);
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+        }
     }
+
 
 }

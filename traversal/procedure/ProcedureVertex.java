@@ -90,7 +90,7 @@ public abstract class ProcedureVertex<
     }
 
     private Set<Integer> computeDependedEdgeOrders() {
-        if (ins().isEmpty()) return set();
+        if (iterate(ins()).filter(e -> !e.isClosureEdge()).first().isEmpty()) return set();
         else return set(branchEdge().from().dependedEdgeOrders(), branchEdge().order());
     }
 

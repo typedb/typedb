@@ -183,7 +183,6 @@ public class TypeResolver {
     private Optional<Map<Identifier.Variable.Retrievable, Set<Label>>> executeTypeResolvers(TraversalBuilder traversalBuilder) {
         return logicCache.resolver().get(traversalBuilder.traversal().structure(), structure ->
                 traversalEng.combination(traversalBuilder.traversal())
-                        // TODO: This filter should not be needed if we enforce traversal only to return non-abstract
                         .map(result -> withoutAbstract(result, traversalBuilder))
                         .map(result -> {
                                     Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
@@ -210,7 +209,7 @@ public class TypeResolver {
             Set<TypeVertex> types = withoutAbstract.computeIfAbsent(id, i -> new HashSet<>());
             if (var.isPresent() && var.get().isThing()) {
                 iterate(entry.getValue()).filter(type -> !type.isAbstract()).forEachRemaining(types::add);
-            }
+            } else if (var.get().isType()) types.addAll(entry.getValue());
         }
         return withoutAbstract;
     }
@@ -365,10 +364,8 @@ public class TypeResolver {
         private void registerIsa(TypeVariable resolver, IsaConstraint isaConstraint) {
             if (!isaConstraint.isExplicit() && !insertable) {
                 traversal.sub(resolver.id(), register(isaConstraint.type()).id(), true);
-            } else if (isaConstraint.type().reference().isName()) {
+            } else if (isaConstraint.type().id().isName() || isaConstraint.type().id().isLabel()) {
                 traversal.equalTypes(resolver.id(), register(isaConstraint.type()).id());
-            } else if (isaConstraint.type().label().isPresent()) {
-                traversal.labels(resolver.id(), isaConstraint.type().label().get().properLabel());
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
@@ -458,7 +455,6 @@ public class TypeResolver {
                 hasRootThing = true;
             }
         }
-
 
         private Identifier.Variable newSystemId() {
             return Identifier.Variable.of(SystemReference.of(sysVarCounter++));

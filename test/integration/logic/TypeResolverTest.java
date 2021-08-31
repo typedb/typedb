@@ -120,7 +120,7 @@ public class TypeResolverTest {
         typeResolver.resolve(disjunction);
         assertTrue(disjunction.isCoherent());
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$_person", set("person"));
             put("$p", set());
             put("$a", set());
@@ -138,7 +138,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("person", "man", "woman"));
             put("$_person", set("person"));
         }};
@@ -155,7 +155,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("person"));
             put("$_person", set("person"));
         }};
@@ -176,7 +176,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expectedExhaustive = new HashMap<>() {{
             put("$p", set("mammal", "person", "man", "woman", "dog"));
             put("$q", set("mammal", "person", "man", "woman", "dog"));
             put("$_entity", set("entity"));
@@ -196,7 +196,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("person", "man", "woman", "dog"));
             put("$_name", set("name"));
             put("$_0", set("name"));
@@ -228,7 +228,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$a", set("nickname", "name"));
             put("$b", set("nickname", "name"));
         }};
@@ -260,7 +260,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expectedExhaustive = new HashMap<>() {{
             put("$a", set("name", "surname", "nickname", "middlename"));
             put("$b", set("name", "surname", "nickname", "middlename"));
             put("$c", set("name", "surname", "nickname", "middlename"));
@@ -280,7 +280,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("person", "man", "woman", "dog"));
             put("$a", set("name"));
             put("$_name", set("name"));
@@ -301,7 +301,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("triangle", "right-angled-triangle", "square"));
             put("$a", set("perimeter", "area", "label", "hypotenuse-length"));
             put("$_shape", set("shape"));
@@ -327,7 +327,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("person"));
             put("$a", set("name"));
         }};
@@ -349,7 +349,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("house-number", "length"));
             put("$y", set("house-number", "length"));
             put("$z", set("name"));
@@ -367,7 +367,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$yoko", set("woman"));
             put("$r", set("marriage"));
             put("$_marriage:wife", set("marriage:wife"));
@@ -387,7 +387,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$yoko", set("person", "man", "woman"));
             put("$role", set("marriage:husband", "marriage:wife", "marriage:spouse", "relation:role"));
             put("$r", set("marriage"));
@@ -407,7 +407,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$yoko", set("woman"));
             put("$r", set("marriage"));
             put("$m", set("marriage", "relation", "thing"));
@@ -445,7 +445,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$yoko", set("person", "woman", "man"));
             put("$john", set("man"));
             put("$role", set("hetero-marriage:husband", "marriage:spouse", "partnership:partner", "relation:role"));
@@ -468,7 +468,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$yoko", set("woman"));
             put("$_0", set("marriage"));
             put("$_relation:wife", set("marriage:wife"));
@@ -487,7 +487,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$yoko", set("man", "woman", "person"));
             put("$_0", set("marriage"));
             put("$_marriage", set("marriage"));
@@ -506,7 +506,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$yoko", set("person", "man", "woman"));
             put("$john", set("man"));
             put("$role", set("marriage:husband", "marriage:wife", "marriage:spouse", "relation:role"));
@@ -531,7 +531,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$a", set("name", "email"));
             put("$p", set("person"));
             put("$_person", set("person"));
@@ -551,7 +551,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("person", "man", "woman"));
             put("$_person", set("person"));
         }};
@@ -577,7 +577,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("man", "greek", "socrates"));
             put("$q", set("thing", "entity", "animal", "person", "man"));
             put("$_man", set("man"));
@@ -596,7 +596,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$t", set("shape"));
         }};
 
@@ -612,7 +612,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$john", set("person", "man", "woman"));
             put("$_0", set("marriage"));
             put("$_marriage:spouse", set("marriage:spouse"));
@@ -642,7 +642,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$a", set("person", "chair"));
             put("$b", set("person", "chair"));
             put("$c", set("leg-weight"));
@@ -666,7 +666,7 @@ public class TypeResolverTest {
 
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
-        Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expectedExhaustive = new HashMap<>() {{
             put("$a", set("unit"));
         }};
 
@@ -684,7 +684,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("animal", "mammal", "reptile", "tortoise", "person", "man", "woman", "dog", "name", "email",
                           "marriage", "triangle", "right-angled-triangle", "square", "perimeter", "area", "hypotenuse-length", "label"));
             put("$_thing", set("thing"));
@@ -711,7 +711,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expectedExhaustive = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expectedExhaustive = new HashMap<>() {{
             put("$x", set("man"));
             put("$y", set("woman"));
             put("$t", set("thing", "entity", "person"));
@@ -744,7 +744,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("person", "man", "greek", "socrates"));
             put("$y", set("person", "man", "greek", "socrates"));
             put("$z", set("person", "man", "greek", "socrates"));
@@ -793,7 +793,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$t", set("animal", "person"));
             put("$a", set("tortoise", "man"));
             put("$b", set("woman"));
@@ -811,7 +811,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$a", set("dog"));
             put("$_name", set("name"));
             put("$_label", set("label"));
@@ -851,7 +851,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("person"));
             put("$y", set("person"));
             put("$m", set("marriage", "hetero-marriage"));
@@ -869,7 +869,7 @@ public class TypeResolverTest {
 
         Disjunction relationDisjunction = createDisjunction(relationString);
         typeResolver.resolve(relationDisjunction);
-        Map<String, Set<String>> relationExpected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> relationExpected = new HashMap<>() {{
             put("$x", set("friendship", "employment"));
             put("$_relation", set("relation"));
         }};
@@ -878,7 +878,7 @@ public class TypeResolverTest {
         String attributeString = "match $x isa attribute;";
         Disjunction attributeDisjunction = createDisjunction(attributeString);
         typeResolver.resolve(attributeDisjunction);
-        Map<String, Set<String>> attributeExpected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> attributeExpected = new HashMap<>() {{
             put("$x", set("name", "age", "ref"));
             put("$_attribute", set("attribute"));
         }};
@@ -888,7 +888,7 @@ public class TypeResolverTest {
         String entityString = "match $x isa entity;";
         Disjunction entityDisjunction = createDisjunction(entityString);
         typeResolver.resolve(entityDisjunction);
-        Map<String, Set<String>> entityExpected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> entityExpected = new HashMap<>() {{
             put("$x", set("person", "company"));
             put("$_entity", set("entity"));
         }};
@@ -897,7 +897,7 @@ public class TypeResolverTest {
         String roleString = "match ($role: $x) isa relation;";
         Disjunction roleDisjunction = createDisjunction(roleString);
         typeResolver.resolve(roleDisjunction);
-        Map<String, Set<String>> roleExpected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> roleExpected = new HashMap<>() {{
             put("$role", set("friendship:friend", "employment:employer", "employment:employee", "relation:role"));
             put("$x", set("person", "company"));
             put("$_0", set("friendship", "employment"));
@@ -909,7 +909,7 @@ public class TypeResolverTest {
         Disjunction thingDisjunction = createDisjunction(thingString);
         typeResolver.resolve(thingDisjunction);
 
-        Map<String, Set<String>> thingExpected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> thingExpected = new HashMap<>() {{
             put("$x", set("person", "company", "friendship", "employment", "name", "age", "ref"));
             put("$_thing", set("thing"));
         }};
@@ -930,7 +930,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("perimeter", "area", "hypotenuse-length"));
             put("$y", set("perimeter", "area", "hypotenuse-length"));
             put("$z", set("perimeter", "area", "hypotenuse-length"));
@@ -965,7 +965,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("nickname", "name"));
             put("$y", set("nickname", "name"));
         }};
@@ -993,7 +993,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("person", "company", "friendship", "employment"));
             put("$y", set("name", "age", "ref"));
         }};
@@ -1009,7 +1009,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("name", "age", "ref"));
             put("$y", set("name", "age", "ref"));
         }};
@@ -1030,7 +1030,7 @@ public class TypeResolverTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("person"));
             put("$_0", set("name"));
             put("$_name", set("name"));
@@ -1070,7 +1070,7 @@ public class TypeResolverTest {
         TypeResolver typeResolver = transaction.logic().typeResolver();
         Disjunction disjunction = createDisjunction(queryString);
         typeResolver.resolve(disjunction);
-        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        HashMap<String, Set<String>> expected = new HashMap<>() {{
             put("$y", set("marriage", "relation", "thing"));
             put("$x", set("woman"));
             put("$role", set("marriage:wife"));
@@ -1163,7 +1163,7 @@ public class TypeResolverTest {
         String minimallyRestricted = "match $x isa person; not { ($x) isa marriage; };";
         Disjunction disjunction = createDisjunction(minimallyRestricted);
         transaction.logic().typeResolver().resolve(disjunction);
-        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+        HashMap<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("person", "woman"));
             put("$_0", set("marriage"));
             put("$_marriage", set("marriage"));
@@ -1174,7 +1174,7 @@ public class TypeResolverTest {
         String restricted = "match $x isa woman; not { ($x) isa marriage; };";
         Disjunction restrictedDisjunction = createDisjunction(restricted);
         transaction.logic().typeResolver().resolve(restrictedDisjunction);
-        expected = new HashMap<String, Set<String>>() {{
+        expected = new HashMap<>() {{
             put("$x", set("woman"));
             put("$_0", set("marriage"));
             put("$_marriage", set("marriage"));
