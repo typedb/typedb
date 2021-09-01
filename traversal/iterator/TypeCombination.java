@@ -18,10 +18,12 @@
 
 package com.vaticle.typedb.core.traversal.iterator;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
 import com.vaticle.typedb.core.traversal.procedure.TypeCombinationProcedure;
@@ -31,6 +33,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+
 public class TypeCombination {
 
     private final GraphManager graphMgr;
@@ -38,13 +42,16 @@ public class TypeCombination {
     private final Traversal.Parameters params;
     private final Map<Identifier, Set<TypeVertex>> answer;
     private final Set<Identifier.Variable.Retrievable> filter;
+    private final Set<Identifier.Variable.Retrievable> abstractDisallowed;
 
     public TypeCombination(GraphManager graphMgr, TypeCombinationProcedure procedure, Traversal.Parameters params,
-                           Set<Identifier.Variable.Retrievable> filter) {
+                           Set<Identifier.Variable.Retrievable> filter, Set<Identifier.Variable.Retrievable> abstractDisallowed) {
+        assert filter.containsAll(abstractDisallowed);
         this.graphMgr = graphMgr;
         this.procedure = procedure;
         this.params = params;
         this.filter = filter;
+        this.abstractDisallowed = abstractDisallowed;
         this.answer = new HashMap<>();
     }
 
@@ -67,11 +74,22 @@ public class TypeCombination {
         assert procedure.startVertex().isType();
         ProcedureVertex.Type start = procedure.startVertex().asType();
         if (this.procedure.traversalVertexCount() == 1) {
-            return start.iterator(graphMgr, params).toSet();
+            assert start.id().isRetrievable();
+            FunctionalIterator<TypeVertex> iterator = start.iterator(graphMgr, params);
+            if (abstractDisallowed.contains(start.id().asVariable().asRetrievable())) {
+                iterator = iterator.filter(type -> !type.isAbstract());
+            }
+            return iterator.toSet();
         } else {
             return start.iterator(graphMgr, params).filter(vertex ->
-                    new GraphIterator(graphMgr, vertex, procedure, params, filter).first().isPresent()).toSet();
+                    new GraphIterator(graphMgr, vertex, procedure, params, filter)
+                            .filter(vertexMap -> !containsDisallowedAbstract(vertexMap)).first().isPresent()).toSet();
         }
+    }
+
+    private boolean containsDisallowedAbstract(VertexMap vertexMap) {
+        return iterate(vertexMap.map().entrySet())
+                .anyMatch(entry -> abstractDisallowed.contains(entry.getKey()) && entry.getValue().asType().isAbstract());
     }
 
     private Map<Identifier.Variable.Retrievable, Set<TypeVertex>> filtered(Map<Identifier, Set<TypeVertex>> answer) {

@@ -251,7 +251,7 @@ public class GraphProcedure implements PermutationProcedure {
         public void registerEdge(ProcedureEdge<?, ?> edge) {
             mayExpandEdges(edge.order());
             assert edges.size() >= edge.order();
-            edges.add(edge.order() - 1, edge);
+            edges.set(edge.order() - 1, edge);
             edge.from().out(edge);
             edge.to().in(edge);
         }

@@ -77,7 +77,9 @@ public class TraversalEngine {
         return traversal.iterator(graphMgr);
     }
 
-    public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(TypeTraversal traversal) {
-        return new TypeCombination(graphMgr, TypeCombinationProcedure.of(traversal), traversal.parameters(), traversal.filter()).get();
+    public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(
+            TypeTraversal traversal, Set<Identifier.Variable.Retrievable> abstractDisallowed) {
+        return new TypeCombination(graphMgr, TypeCombinationProcedure.of(traversal), traversal.parameters(),
+                traversal.filter(), abstractDisallowed).get();
     }
 }

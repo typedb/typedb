@@ -182,8 +182,8 @@ public class TypeResolver {
 
     private Optional<Map<Identifier.Variable.Retrievable, Set<Label>>> executeTypeResolvers(TraversalBuilder traversalBuilder) {
         return logicCache.resolver().get(traversalBuilder.traversal().structure(), structure ->
-                traversalEng.combination(traversalBuilder.traversal())
-                        .map(result -> withoutAbstract(result, traversalBuilder))
+                traversalEng.combination(traversalBuilder.traversal(), disallowAbstract(traversalBuilder))
+//                        .map(result -> withoutAbstract(result, traversalBuilder))
                         .map(result -> {
                                     Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
                                     result.forEach((id, types) -> {
@@ -199,20 +199,28 @@ public class TypeResolver {
         );
     }
 
-    private Map<Identifier.Variable.Retrievable, Set<TypeVertex>> withoutAbstract(
-            Map<Identifier.Variable.Retrievable, Set<TypeVertex>> resolvedTypes, TraversalBuilder traversalBuilder
-    ) {
-        Map<Identifier.Variable.Retrievable, Set<TypeVertex>> withoutAbstract = new HashMap<>();
-        for (Map.Entry<Identifier.Variable.Retrievable, Set<TypeVertex>> entry : resolvedTypes.entrySet()) {
-            Identifier.Variable.Retrievable id = entry.getKey();
-            Optional<Variable> var = traversalBuilder.getOriginalVariable(id);
-            Set<TypeVertex> types = withoutAbstract.computeIfAbsent(id, i -> new HashSet<>());
-            if (var.isPresent() && var.get().isThing()) {
-                iterate(entry.getValue()).filter(type -> !type.isAbstract()).forEachRemaining(types::add);
-            } else if (var.get().isType()) types.addAll(entry.getValue());
-        }
-        return withoutAbstract;
+    private Set<Identifier.Variable.Retrievable> disallowAbstract(TraversalBuilder traversalBuilder) {
+        return iterate(traversalBuilder.resolverToOriginal.values()).filter(Variable::isThing)
+                .map(var -> {
+                    assert var.id().isRetrievable();
+                    return var.id().asRetrievable();
+                }).toSet();
     }
+
+//    private Map<Identifier.Variable.Retrievable, Set<TypeVertex>> withoutAbstract(
+//            Map<Identifier.Variable.Retrievable, Set<TypeVertex>> resolvedTypes, TraversalBuilder traversalBuilder
+//    ) {
+//        Map<Identifier.Variable.Retrievable, Set<TypeVertex>> withoutAbstract = new HashMap<>();
+//        for (Map.Entry<Identifier.Variable.Retrievable, Set<TypeVertex>> entry : resolvedTypes.entrySet()) {
+//            Identifier.Variable.Retrievable id = entry.getKey();
+//            Optional<Variable> var = traversalBuilder.getOriginalVariable(id);
+//            Set<TypeVertex> types = withoutAbstract.computeIfAbsent(id, i -> new HashSet<>());
+//            if (var.isPresent() && var.get().isThing()) {
+//                iterate(entry.getValue()).filter(type -> !type.isAbstract()).forEachRemaining(types::add);
+//            } else if (var.get().isType()) types.addAll(entry.getValue());
+//        }
+//        return withoutAbstract;
+//    }
 
     private static class TraversalBuilder {
 
