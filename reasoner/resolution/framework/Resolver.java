@@ -210,24 +210,24 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             this.downstreams = downstreams;
         }
 
-        public boolean hasDownstream() {
+        public boolean hasNext() {
             return !downstreams.isEmpty();
         }
 
-        public Request nextDownstream() {
+        public Request next() {
             return downstreams.get(0);
         }
 
-        public void addDownstream(Request request) {
+        public void add(Request request) {
             assert !(downstreams.contains(request)) : "downstream answer producer already contains this request";
             downstreams.add(request);
         }
 
-        public void removeDownstream(Request request) {
+        public void remove(Request request) {
             downstreams.remove(request);
         }
 
-        public void clearDownstreams() {
+        public void clear() {
             downstreams.clear();
         }
 
@@ -248,19 +248,22 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
                 return downstreams.contains(downstreamRequest) || blocked.containsKey(downstreamRequest);
             }
 
-            public Optional<Request> nextUnblockedDownstream() {
-                if (super.hasDownstream()) return Optional.of(super.nextDownstream());
-                else return Optional.empty();
+            public boolean hasNextUnblocked() {
+                return super.hasNext();
+            }
+
+            public Request nextUnblocked() {
+                return super.next();
             }
 
             @Override
-            public boolean hasDownstream() {
+            public boolean hasNext() {
                 return !downstreams.isEmpty() || !blocked.isEmpty();
             }
 
             @Override
-            public Request nextDownstream() {
-                if (super.hasDownstream()) return super.nextDownstream();
+            public Request next() {
+                if (super.hasNext()) return super.next();
                 else {
                     Optional<Request> b = iterate(blocked.keySet()).first();
                     assert b.isPresent();
@@ -269,7 +272,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             }
 
             @Override
-            public void removeDownstream(Request request) {
+            public void remove(Request request) {
                 downstreams.remove(request);
                 blocked.remove(request);
             }

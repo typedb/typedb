@@ -173,8 +173,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
-        } else if (!requestState.isComplete() && requestState.downstreamManager().hasDownstream()) {
-            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
+        } else if (!requestState.isComplete() && requestState.downstreamManager().hasNext()) {
+            requestFromDownstream(requestState.downstreamManager().next(), fromUpstream, iteration);
         } else if (requestState.waitedMaterialisations().waiting()) {
             requestState.waitedMaterialisations().addWaitingRequest(fromUpstream, iteration);
         } else {
@@ -198,7 +198,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             return;
         }
 
-        requestState.downstreamManager().removeDownstream(fromDownstream.sourceRequest());
+        requestState.downstreamManager().remove(fromDownstream.sourceRequest());
         sendAnswerOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
     }
 

@@ -84,7 +84,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         // TODO: this is a bit of a hack, we want requests to a negation to be "single use", otherwise we can end up in an infinite loop
         //  where the request to the negation never gets removed and we constantly re-request from it!
         //  this could be either implemented with a different response type: FinalAnswer, or splitting Request into ReusableRequest vs SingleRequest
-        if (plan.get(toDownstream.planIndex()).isNegated()) requestState.downstreamManager().removeDownstream(toDownstream);
+        if (plan.get(toDownstream.planIndex()).isNegated()) requestState.downstreamManager().remove(toDownstream);
 
         Partial.Compound<?, ?> partialAnswer = fromDownstream.answer().asCompound();
         if (plan.isLast(fromDownstream.planIndex())) {
@@ -117,7 +117,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         requestFromDownstream(downstreamRequest, fromUpstream, iteration);
         // negated requests can be used twice in a parallel setting, and return the same answer twice
         if (!nextResolvable.isNegated() || (nextResolvable.isNegated() && !requestState.downstreamManager().contains(downstreamRequest))) {
-            requestState.downstreamManager().addDownstream(downstreamRequest);
+            requestState.downstreamManager().add(downstreamRequest);
         }
     }
 
@@ -136,7 +136,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             return;
         }
 
-        requestState.downstreamManager().removeDownstream(fromDownstream.sourceRequest());
+        requestState.downstreamManager().remove(fromDownstream.sourceRequest());
         nextAnswer(fromUpstream, requestState, iteration);
     }
 
@@ -191,7 +191,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
         Partial<?> downstream = toDownstream(fromUpstream.partialAnswer().asCompound(), childResolver, plan.get(0));
         Request toDownstream = Request.create(driver(), childResolver.resolver(), downstream, 0);
-        requestState.downstreamManager().addDownstream(toDownstream);
+        requestState.downstreamManager().add(toDownstream);
     }
 
     private Partial<?> toDownstream(Partial.Compound<?, ?> partialAnswer, ResolverRegistry.ResolverView nextDownstream,

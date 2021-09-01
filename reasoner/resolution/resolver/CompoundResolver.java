@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVER>> extends Resolver<RESOLVER> {
@@ -45,8 +44,8 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     }
 
     protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
-        if (requestState.downstreamManager().hasDownstream()) {
-            requestFromDownstream(requestState.downstreamManager().nextDownstream(), fromUpstream, iteration);
+        if (requestState.downstreamManager().hasNext()) {
+            requestFromDownstream(requestState.downstreamManager().next(), fromUpstream, iteration);
         } else {
             failToUpstream(fromUpstream, iteration);
         }
@@ -82,7 +81,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
             failToUpstream(fromUpstream, iteration);
             return;
         }
-        requestState.downstreamManager().removeDownstream(fromDownstream.sourceRequest());
+        requestState.downstreamManager().remove(fromDownstream.sourceRequest());
         nextAnswer(fromUpstream, requestState, iteration);
     }
 
@@ -94,9 +93,8 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         Request fromUpstream = fromUpstream(cyclingDownstream);
         RequestState requestState = this.requestStates.get(fromUpstream);
         fromDownstream.origins().forEach(origin -> requestState.downstreamManager().block(cyclingDownstream, origin));
-        Optional<Request> unblocked = requestState.downstreamManager().nextUnblockedDownstream();
-        if (unblocked.isPresent()) {
-            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
+        if (requestState.downstreamManager().hasNextUnblocked()) {
+            requestFromDownstream(requestState.downstreamManager().nextUnblocked(), fromUpstream, iteration);
         } else {
             cycleToUpstream(fromUpstream, requestState.downstreamManager().blockers(), iteration);
         }

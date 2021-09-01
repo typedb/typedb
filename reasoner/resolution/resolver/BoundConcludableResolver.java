@@ -114,20 +114,19 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         ExploringRequestState<?> requestState = requestStates.computeIfAbsent(
                 fromUpstream, request -> createExploringRequestState(fromUpstream, iteration));
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
-        Optional<Request> unblocked;
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
         } else if (isRecursion(fromUpstream.partialAnswer()).isPresent()) {
             cycleToUpstream(fromUpstream, cache().size(), iteration);
-        } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
-            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
-        } else if (requestState.downstreamManager().noneVisitable()) {
+        } else if (requestState.downstreamManager().hasNextUnblocked()) {
+            requestFromDownstream(requestState.downstreamManager().nextUnblocked(), fromUpstream, iteration);
+        } else if (requestState.downstreamManager().allDownstreamsCycleToHere()) {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
         } else {
-            Request downstream = requestState.downstreamManager().nextDownstream();
+            Request downstream = requestState.downstreamManager().next();
             requestState.downstreamManager().unblock(downstream);
             requestFromDownstream(downstream, fromUpstream, iteration);
         }
@@ -169,25 +168,24 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
-        requestState.downstreamManager().removeDownstream(fromDownstream.sourceRequest());
+        requestState.downstreamManager().remove(fromDownstream.sourceRequest());
         answerUpstreamOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
     }
 
     private void answerUpstreamOrSearchDownstreamOrFail(Request fromUpstream, ExploringRequestState<?> requestState,
                                                         int iteration) {
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
-        Optional<Request> unblocked;
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
-        } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
-            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
-        } else if (requestState.downstreamManager().noneVisitable()) {
+        } else if (requestState.downstreamManager().hasNextUnblocked()) {
+            requestFromDownstream(requestState.downstreamManager().nextUnblocked(), fromUpstream, iteration);
+        } else if (requestState.downstreamManager().allDownstreamsCycleToHere()) {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
         } else {
-            Request downstream = requestState.downstreamManager().nextDownstream();
+            Request downstream = requestState.downstreamManager().next();
             requestState.downstreamManager().unblock(downstream);
             requestFromDownstream(downstream, fromUpstream, iteration);
         }
@@ -210,14 +208,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                     .forEach(blocker -> requestState.downstreamManager().block(cyclingDownstream, blocker));
         }
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
-        Optional<Request> unblocked;
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
-        } else if ((unblocked = requestState.downstreamManager().nextUnblockedDownstream()).isPresent()) {
-            requestFromDownstream(unblocked.get(), fromUpstream, iteration);
-        } else if (requestState.downstreamManager().noneVisitable()) {
+        } else if (requestState.downstreamManager().hasNextUnblocked()) {
+            requestFromDownstream(requestState.downstreamManager().nextUnblocked(), fromUpstream, iteration);
+        } else if (requestState.downstreamManager().allDownstreamsCycleToHere()) {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
         } else {
@@ -239,7 +236,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         we respond for all N ahead of time. Then, when the rules actually return an answer to this concludable, we do nothing.
          */
         if (requestState.singleAnswerRequired()) {
-            requestState.downstreamManager().clearDownstreams();
+            requestState.downstreamManager().clear();
             cache().setComplete();
         }
         answerToUpstream(answer, fromUpstream, iteration);
@@ -326,22 +323,22 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                 blocked = newBlocked;
             }
 
-            private boolean isVisitable(Response.Cycle.Origin cycleOrigin) {
-                return !cycleOrigin.sender().equals(driver());
+            private boolean originatedHere(Response.Cycle.Origin cycleOrigin) {
+                return cycleOrigin.sender().equals(driver());
             }
 
             public boolean isOutdated(Response.Cycle.Origin cycleOrigin) {
-                return !isVisitable(cycleOrigin) && cycleOrigin.numAnswersSeen() < cache().size();
+                return originatedHere(cycleOrigin) && cycleOrigin.numAnswersSeen() < cache().size();
             }
 
             public Set<Response.Cycle.Origin> visitable() {
-                return iterate(blocked.values()).flatMap(Iterators::iterate).filter(this::isVisitable).toSet();
+                return iterate(blocked.values()).flatMap(Iterators::iterate).filter(o -> !originatedHere(o)).toSet();
             }
 
-            public boolean noneVisitable() {
+            public boolean allDownstreamsCycleToHere() {
                 return iterate(blocked.values())
                         .filter(cycleOrigins -> iterate(cycleOrigins)
-                                .filter(cycleOrigin -> !isVisitable(cycleOrigin))
+                                .filter(this::originatedHere)
                                 .first()
                                 .isEmpty())
                         .first()
