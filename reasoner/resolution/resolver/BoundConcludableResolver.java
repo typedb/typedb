@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ReiterationQuery;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState;
@@ -126,7 +127,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
         } else {
-            Request downstream = requestState.downstreamManager().next();
+            Downstream downstream = requestState.downstreamManager().next();
             requestState.downstreamManager().unblock(downstream);
             requestFromDownstream(downstream, fromUpstream, iteration);
         }
@@ -168,7 +169,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
-        requestState.downstreamManager().remove(fromDownstream.sourceRequest());
+        requestState.downstreamManager().remove(Downstream.of(fromDownstream.sourceRequest()));
         answerUpstreamOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
     }
 
@@ -185,7 +186,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
         } else {
-            Request downstream = requestState.downstreamManager().next();
+            Downstream downstream = requestState.downstreamManager().next();
             requestState.downstreamManager().unblock(downstream);
             requestFromDownstream(downstream, fromUpstream, iteration);
         }
@@ -196,8 +197,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Request cyclingDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(cyclingDownstream);
+        Downstream cyclingDownstream = Downstream.of(fromDownstream.sourceRequest());
+        Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
 
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
@@ -266,8 +267,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         requestStates.clear();
     }
 
-    protected List<Request> ruleDownstreams(Request fromUpstream) {
-        List<Request> downstreams = new ArrayList<>();
+    protected List<Downstream> ruleDownstreams(Request fromUpstream) {
+        List<Downstream> downstreams = new ArrayList<>();
         Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
         for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry:
                 parent().actor().conclusionResolvers().entrySet()) { // TODO: Reaching through to the actor is not ideal
@@ -275,7 +276,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             Rule rule = conclusionResolver.actor().conclusion().rule();  // TODO: Reaching through to the actor is not ideal
             for (Unifier unifier : entry.getValue()) {
                 partialAnswer.toDownstream(unifier, rule).ifPresent(
-                        conclusion -> downstreams.add(Request.create(driver(), conclusionResolver, conclusion)));
+                        conclusion -> downstreams.add(Downstream.create(driver(), conclusionResolver, conclusion)));
             }
         }
         return downstreams;
@@ -286,7 +287,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         private final ConcludableDownstreamManager downstreamManager;
 
         protected ExploringRequestState(Request fromUpstream, AnswerCache<ANSWER> answerCache, int iteration,
-                                        List<Request> ruleDownstreams, boolean deduplicate) {
+                                        List<Downstream> ruleDownstreams, boolean deduplicate) {
             super(fromUpstream, answerCache, iteration, deduplicate);
             this.downstreamManager = new ConcludableDownstreamManager(ruleDownstreams);
         }
@@ -306,14 +307,14 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         class ConcludableDownstreamManager extends DownstreamManager.Blockable {
 
-            public ConcludableDownstreamManager(List<Request> ruleDownstreams) {
+            public ConcludableDownstreamManager(List<Downstream> ruleDownstreams) {
                 super(ruleDownstreams);
             }
 
             public void clearOutdatedBlocks() {
                 // TODO: Find the most idiomatic way to do this, ideally the map should be final
                 // TODO: .remove() is unsupported on iterators
-                Map<Request, Set<Response.Cycle.Origin>> newBlocked = new LinkedHashMap<>();
+                Map<Downstream, Set<Response.Cycle.Origin>> newBlocked = new LinkedHashMap<>();
                 blocked.forEach((downstream, blockers) -> {
                     Set<Response.Cycle.Origin> newBlockers =
                             iterate(blockers).filter(blocker -> !isOutdated(blocker)).toSet();

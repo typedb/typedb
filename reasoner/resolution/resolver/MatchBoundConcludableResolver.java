@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.Exploration;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -76,7 +77,7 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     private class MatchRequestState extends ExploringRequestState<ConceptMap> implements Exploration {
 
         private MatchRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration,
-                                  List<Request> ruleDownstreams) {
+                                  List<Downstream> ruleDownstreams) {
             super(fromUpstream, answerCache, iteration, ruleDownstreams, true);
         }
 

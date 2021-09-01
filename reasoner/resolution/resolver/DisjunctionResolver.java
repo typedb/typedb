@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -90,7 +91,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
             Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
                     .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
-            Request request = Request.create(driver(), conjunctionResolver, downstream);
+            Downstream request = Downstream.create(driver(), conjunctionResolver, downstream);
             requestState.downstreamManager().add(request);
         }
         return requestState;
@@ -107,7 +108,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
             Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
                     .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
-            Request request = Request.create(driver(), conjunctionResolver, downstream);
+            Downstream request = Downstream.create(driver(), conjunctionResolver, downstream);
             requestStateNextIteration.downstreamManager().add(request);
         }
         return requestStateNextIteration;

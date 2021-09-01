@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +58,7 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
     private class ExplainRequestState extends ExploringRequestState<AnswerState.Partial.Concludable<?>>  {
 
         private ExplainRequestState(Request fromUpstream, AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
-                                    int iteration, List<Request> ruleDownstreams) {
+                                    int iteration, List<Downstream> ruleDownstreams) {
             super(fromUpstream, answerCache, iteration, ruleDownstreams, false);
         }
 

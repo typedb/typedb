@@ -19,6 +19,7 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
@@ -72,8 +73,8 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         LOG.trace("{}: received Exhausted, with iter {}: {}", name(), iteration, fromDownstream);
         if (isTerminated()) return;
 
-        Request toDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(toDownstream);
+        Downstream toDownstream = Downstream.of(fromDownstream.sourceRequest());
+        Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         RequestState requestState = requestStates.get(fromUpstream);
 
         if (iteration < requestState.iteration()) {
@@ -81,7 +82,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
             failToUpstream(fromUpstream, iteration);
             return;
         }
-        requestState.downstreamManager().remove(fromDownstream.sourceRequest());
+        requestState.downstreamManager().remove(toDownstream);
         nextAnswer(fromUpstream, requestState, iteration);
     }
 
@@ -89,8 +90,8 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     protected void receiveCycle(Response.Cycle fromDownstream, int iteration) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Request cyclingDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(cyclingDownstream);
+        Downstream cyclingDownstream = Downstream.of(fromDownstream.sourceRequest());
+        Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         RequestState requestState = this.requestStates.get(fromUpstream);
         fromDownstream.origins().forEach(origin -> requestState.downstreamManager().block(cyclingDownstream, origin));
         if (requestState.downstreamManager().hasNextUnblocked()) {

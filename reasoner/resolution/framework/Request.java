@@ -49,6 +49,10 @@ public class Request {
         this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer);
     }
 
+    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, TraceId traceId, Partial<?> partialAnswer, int planIndex) {
+        return new Request(sender, receiver, traceId, partialAnswer, planIndex);
+    }
+
     public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer, int planIndex) {
         return new Request(sender, receiver, downstreamId(), partialAnswer, planIndex);
     }
@@ -63,10 +67,6 @@ public class Request {
 
     public static Request create(Actor.Driver<? extends Resolver<?>> receiver, TraceId traceId, Partial<?> partialAnswer) {
         return new Request(null, receiver, traceId, partialAnswer, -1);
-    }
-
-    public Request withTraceId(TraceId newTraceId) {
-        return new Request(sender, receiver, newTraceId, partialAnswer, planIndex);
     }
 
     public Actor.Driver<? extends Resolver<?>> receiver() {

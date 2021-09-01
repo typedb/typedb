@@ -105,16 +105,19 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     }
 
     // TODO: Rename to sendRequest or request
+    protected void requestFromDownstream(Downstream downstream, Request fromUpstream, int iteration) {
+        requestFromDownstream(downstream.toRequest(fromUpstream.traceId()), fromUpstream, iteration);
+    }
+
     protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
         LOG.trace("{} : Sending a new answer Request to downstream: {}", name(), request);
         assert fromUpstream.traceId().rootId() != -1;
-        request = request.withTraceId(fromUpstream.traceId());
+        assert request.traceId() == fromUpstream.traceId();
         if (registry.resolutionTracing()) ResolutionTracer.get().request(request, iteration);
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
-        Request finalRequest = request;
-        requestRouter.put(new Pair<>(finalRequest, finalRequest.traceId()), fromUpstream);
-        Driver<? extends Resolver<?>> receiver = finalRequest.receiver();
-        receiver.execute(actor -> actor.receiveRequest(finalRequest, iteration));
+        requestRouter.put(new Pair<>(request, request.traceId()), fromUpstream);
+        Driver<? extends Resolver<?>> receiver = request.receiver();
+        receiver.execute(actor -> actor.receiveRequest(request, iteration));
     }
 
     // TODO: Rename to sendResponse or respond
@@ -200,13 +203,13 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     }
 
     public static class DownstreamManager {
-        protected final List<Request> downstreams;
+        protected final List<Downstream> downstreams;
 
         public DownstreamManager() {
             this.downstreams = new ArrayList<>();
         }
 
-        public DownstreamManager(List<Request> downstreams) {
+        public DownstreamManager(List<Downstream> downstreams) {
             this.downstreams = downstreams;
         }
 
@@ -214,17 +217,17 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             return !downstreams.isEmpty();
         }
 
-        public Request next() {
+        public Downstream next() {
             return downstreams.get(0);
         }
 
-        public void add(Request request) {
-            assert !(downstreams.contains(request)) : "downstream answer producer already contains this request";
-            downstreams.add(request);
+        public void add(Downstream downstream) {
+            assert !(downstreams.contains(downstream)) : "downstream answer producer already contains this request";
+            downstreams.add(downstream);
         }
 
-        public void remove(Request request) {
-            downstreams.remove(request);
+        public void remove(Downstream downstream) {
+            downstreams.remove(downstream);
         }
 
         public void clear() {
@@ -233,26 +236,26 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
         public static class Blockable extends DownstreamManager {
 
-            protected Map<Request, Set<Response.Cycle.Origin>> blocked;
+            protected Map<Downstream, Set<Response.Cycle.Origin>> blocked;
 
             public Blockable() {
                 this.blocked = new LinkedHashMap<>();
             }
 
-            public Blockable(List<Request> downstreams) {
+            public Blockable(List<Downstream> downstreams) {
                 super(downstreams);
                 this.blocked = new LinkedHashMap<>();
             }
 
-            public boolean contains(Request downstreamRequest) {
-                return downstreams.contains(downstreamRequest) || blocked.containsKey(downstreamRequest);
+            public boolean contains(Downstream downstream) {
+                return downstreams.contains(downstream) || blocked.containsKey(downstream);
             }
 
             public boolean hasNextUnblocked() {
                 return super.hasNext();
             }
 
-            public Request nextUnblocked() {
+            public Downstream nextUnblocked() {
                 return super.next();
             }
 
@@ -262,32 +265,32 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             }
 
             @Override
-            public Request next() {
+            public Downstream next() {
                 if (super.hasNext()) return super.next();
                 else {
-                    Optional<Request> b = iterate(blocked.keySet()).first();
+                    Optional<Downstream> b = iterate(blocked.keySet()).first();
                     assert b.isPresent();
                     return b.get();
                 }
             }
 
             @Override
-            public void remove(Request request) {
-                downstreams.remove(request);
-                blocked.remove(request);
+            public void remove(Downstream downstream) {
+                downstreams.remove(downstream);
+                blocked.remove(downstream);
             }
 
             public Set<Response.Cycle.Origin> blockers() {
                 return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
             }
 
-            public void block(Request blockedDownstream, Response.Cycle.Origin blocker) {
-                assert downstreams.contains(blockedDownstream) || blocked.containsKey(blockedDownstream);
-                blocked.computeIfAbsent(blockedDownstream, b -> new HashSet<>()).add(blocker);
-                downstreams.remove(blockedDownstream);
+            public void block(Downstream blocked, Response.Cycle.Origin blocker) {
+                assert downstreams.contains(blocked) || this.blocked.containsKey(blocked);
+                this.blocked.computeIfAbsent(blocked, b -> new HashSet<>()).add(blocker);
+                downstreams.remove(blocked);
             }
 
-            public void unblock(Request downstream) {
+            public void unblock(Downstream downstream) {
                 blocked.remove(downstream);
                 downstreams.add(downstream);
             }

@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Concludable;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Materialiser;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState;
@@ -159,9 +160,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         sendAnswerOrSearchDownstreamOrFail(fromUpstream.first(), requestState, fromUpstream.second());
         ConclusionRequestState.WaitedMaterialisations state = requestState.waitedMaterialisations();
         state.decrement();
-        state.nextWaitingRequest().ifPresent(w -> {
-            sendAnswerOrSearchDownstreamOrFail(w.first(), requestState, w.second());
-        });
+        state.nextWaitingRequest().ifPresent(w -> sendAnswerOrSearchDownstreamOrFail(w.first(), requestState, w.second()));
     }
 
     protected Pair<Request, Integer> fromUpstream(Materialiser.Request toDownstream) {
@@ -198,7 +197,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             return;
         }
 
-        requestState.downstreamManager().remove(fromDownstream.sourceRequest());
+        requestState.downstreamManager().remove(Downstream.of(fromDownstream.sourceRequest()));
         sendAnswerOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
     }
 
@@ -222,7 +221,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         return requestState;
     }
 
-    private List<Request> conditionDownstreams(Request fromUpstream) {
+    private List<Downstream> conditionDownstreams(Request fromUpstream) {
         // TODO: Can there be more than one downstream Condition? If not reduce this return type from List to single
         // we do a extra traversal to expand the partial answer if we already have the concept that is meant to be generated
         // and if there's extra variables to be populated
@@ -230,14 +229,14 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         assert fromUpstream.partialAnswer().isConclusion();
         assert conclusion.retrievableIds().containsAll(partialAnswer.conceptMap().concepts().keySet());
 
-        List<Request> downstreams = new ArrayList<>();
+        List<Downstream> downstreams = new ArrayList<>();
         if (conclusion.generating().isPresent() && conclusion.retrievableIds().size() > partialAnswer.conceptMap().concepts().size() &&
                 partialAnswer.conceptMap().concepts().containsKey(conclusion.generating().get().id())) {
             candidateAnswers(partialAnswer).forEachRemaining(answer -> downstreams.add(
-                    Request.create(driver(), registry.conditionResolver(conclusion.rule()), answer)));
+                    Downstream.create(driver(), registry.conditionResolver(conclusion.rule()), answer)));
         } else {
             Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
-            downstreams.add(Request.create(driver(), registry.conditionResolver(conclusion.rule()), partialAnswer.toDownstream(named)));
+            downstreams.add(Downstream.create(driver(), registry.conditionResolver(conclusion.rule()), partialAnswer.toDownstream(named)));
         }
         return downstreams;
     }
@@ -258,7 +257,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         private boolean complete;
         protected FunctionalIterator<CONCLUDABLE> materialisations;
 
-        protected ConclusionRequestState(Request fromUpstream, int iteration, List<Request> conditionDownstreams) {
+        protected ConclusionRequestState(Request fromUpstream, int iteration, List<Downstream> conditionDownstreams) {
             super(fromUpstream, iteration);
             this.downstreamManager = new DownstreamManager(conditionDownstreams);
             this.materialisations = Iterators.empty();
@@ -331,7 +330,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
             private final Set<ConceptMap> deduplicationSet;
 
-            private Match(Request fromUpstream, int iteration, List<Request> conditionDownstreams) {
+            private Match(Request fromUpstream, int iteration, List<Downstream> conditionDownstreams) {
                 super(fromUpstream, iteration, conditionDownstreams);
                 this.deduplicationSet = new HashSet<>();
             }
@@ -358,7 +357,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
         private static class Explain extends ConclusionRequestState<Concludable.Explain> {
 
-            private Explain(Request fromUpstream, int iteration, List<Request> conditionDownstreams) {
+            private Explain(Request fromUpstream, int iteration, List<Downstream> conditionDownstreams) {
                 super(fromUpstream, iteration, conditionDownstreams);
             }
 
