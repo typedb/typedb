@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import org.slf4j.Logger;
@@ -104,8 +105,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         */
         assert fromUpstream.partialAnswer().isCompound();
         Compound.Nestable downstreamPartial = fromUpstream.partialAnswer().asCompound().filterToNestable(negated.retrieves());
-        Request request = Request.create(driver(), this.downstream, downstreamPartial);
-        requestFromDownstream(request, fromUpstream, 0);
+        requestFromDownstream(Downstream.create(driver(), this.downstream, downstreamPartial), fromUpstream, 0);
         boundsState.setRequested();
     }
 
