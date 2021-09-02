@@ -29,8 +29,8 @@ import java.util.Set;
 
 public class LogicCache {
 
-    private CommonCache<Structure, Optional<Map<Identifier.Variable.Retrievable, Set<Label>>>> typeResolverCache;
-    private CommonCache<String, Rule> ruleCache;
+    private final CommonCache<Structure, Optional<Map<Identifier.Variable.Retrievable, Set<Label>>>> typeResolverCache;
+    private final CommonCache<String, Rule> ruleCache;
 
     public LogicCache() {
         this.ruleCache = new CommonCache<>();

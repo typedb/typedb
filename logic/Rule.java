@@ -569,7 +569,7 @@ public class Rule {
                     traversal.player(playerId, whenConcepts.get(playerId).asThing().getIID(),
                             set(getRole(rp, relationType, whenConcepts).getLabel())); // TODO include inheritance
                 });
-                return traversalEng.relations(traversal).map(conceptMgr::conceptMap)
+                return traversalEng.iterator(traversal).map(conceptMgr::conceptMap)
                         .map(conceptMap -> conceptMap.get(relationId).asRelation());
             }
 

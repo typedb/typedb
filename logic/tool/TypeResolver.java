@@ -179,7 +179,7 @@ public class TypeResolver {
 
     private Optional<Map<Identifier.Variable.Retrievable, Set<Label>>> executeTypeResolvers(TraversalBuilder traversalBuilder) {
         return logicCache.resolver().get(traversalBuilder.traversal().structure(), structure ->
-                traversalEng.combination(traversalBuilder.traversal(), disallowAbstract(traversalBuilder))
+                traversalEng.combination(traversalBuilder.traversal(), concreteTypesOnly(traversalBuilder))
                         .map(result -> {
                                     Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
                                     result.forEach((id, types) -> {
@@ -195,7 +195,7 @@ public class TypeResolver {
         );
     }
 
-    private Set<Identifier.Variable.Retrievable> disallowAbstract(TraversalBuilder traversalBuilder) {
+    private Set<Identifier.Variable.Retrievable> concreteTypesOnly(TraversalBuilder traversalBuilder) {
         return iterate(traversalBuilder.resolverToOriginal.values()).filter(Variable::isThing)
                 .map(var -> {
                     assert var.id().isRetrievable();

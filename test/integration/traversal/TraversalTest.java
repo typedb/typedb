@@ -202,7 +202,7 @@ public class TraversalTest {
         }
 
         try (RocksTransaction transaction = session.transaction(READ)) {
-            GraphProcedure.Builder proc = GraphProcedure.builder(10);
+            GraphProcedure.Builder proc = GraphProcedure.builder();
             /*
             vertices:
             $_0 [thing] { hasIID: false, types: [name], predicates: [= <STRING>] } (end) // Alex
@@ -295,7 +295,7 @@ public class TraversalTest {
             );
 
             GraphProcedure procedure = proc.build();
-            FunctionalIterator<VertexMap> vertices = transaction.traversal().iterator(procedure, params, filter);
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
             vertices.next();
         }
         session.close();

@@ -32,111 +32,122 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class TypeCombinationProcedure {
+public class TypeCombinationProcedures {
 
     private final TypeTraversal traversal;
     private final Identifier[] vertexOrder;
 
-    TypeCombinationProcedure(TypeTraversal traversal) {
+    TypeCombinationProcedures(TypeTraversal traversal) {
         this.traversal = traversal;
-        this.vertexOrder = traversal.structure().vertices().stream().filter(
+        this.vertexOrder = vertexOrder(traversal);
+    }
+
+    public static TypeCombinationProcedures of(TypeTraversal traversal) {
+        return new TypeCombinationProcedures(traversal);
+    }
+
+    private static Identifier[] vertexOrder(TypeTraversal traversal) {
+        return traversal.structure().vertices().stream().filter(
                 vertex -> !vertex.id().isLabel() && traversal.filter().contains(vertex.id().asVariable().asRetrievable())
         ).sorted(Comparator.comparing(vertex -> {
             int labels = vertex.asType().props().labels().size();
             return labels > 0 ? labels : Integer.MAX_VALUE;
-        })).map(TraversalVertex::id).toArray(Identifier[]::new);;
+        })).map(TraversalVertex::id).toArray(Identifier[]::new);
     }
 
-    public static TypeCombinationProcedure of(TypeTraversal traversal) {
-        return new TypeCombinationProcedure(traversal);
+    public VertexCombinationProcedure first() {
+        return new VertexCombinationProcedure(0, new HashMap<>());
     }
 
-    public VertexEvaluation firstEvaluation() {
-        return new VertexEvaluation(0, new HashMap<>());
+    public VertexCombinationProcedure next(VertexCombinationProcedure previous, Set<TypeVertex> previousCombination) {
+        assert !previous.vertexTypes.containsKey(previous.vertexId()) && previous.position + 1 < vertexOrder.length;
+        Map<Identifier, Set<Label>> evaluatedTypes = new HashMap<>(previous.vertexTypes);
+        evaluatedTypes.put(previous.vertexId(), iterate(previousCombination).map(TypeVertex::properLabel).toSet());
+        return new VertexCombinationProcedure(previous.position + 1, evaluatedTypes);
     }
 
-    public VertexEvaluation nextEvaluation(VertexEvaluation previous, Set<TypeVertex> typesForPreviousVertex) {
-        assert !previous.evaluatedTypes.containsKey(previous.evaluationId()) && previous.position + 1 < vertexOrder.length;
-        Map<Identifier, Set<Label>> evaluatedTypes = new HashMap<>(previous.evaluatedTypes);
-        evaluatedTypes.put(previous.evaluationId(), iterate(typesForPreviousVertex).map(TypeVertex::properLabel).toSet());
-        return new VertexEvaluation(previous.position + 1, evaluatedTypes);
-    }
-
-    public int evaluationVertexCount() {
+    public int proceduresCount() {
         return vertexOrder.length;
     }
 
-    public int traversalVertexCount() {
-        return traversal.structure().vertices().size();
-    }
-
-    private StructureVertex.Type getVertex(int pos) {
-        return traversal.structure().typeVertex(vertexOrder[pos]);
-    }
-
-    public class VertexEvaluation {
+    public class VertexCombinationProcedure {
 
         private final int position;
-        private final Map<Identifier, Set<Label>> evaluatedTypes;
+        private final Map<Identifier, Set<Label>> vertexTypes;
 
-        private VertexEvaluation(int position, Map<Identifier, Set<Label>> evaluatedTypes) {
+        private VertexCombinationProcedure(int position, Map<Identifier, Set<Label>> vertexTypes) {
             this.position = position;
-            this.evaluatedTypes = evaluatedTypes;
+            this.vertexTypes = vertexTypes;
         }
 
-        public Identifier evaluationId() {
+        public Identifier vertexId() {
             return vertexOrder[position];
         }
 
-        public GraphProcedure procedure() {
+        public GraphProcedure permutationProcedure() {
             GraphProcedure.Builder builder = GraphProcedure.builder();
             Set<StructureEdge<?, ?>> visitedEdges = new HashSet<>();
-            StructureVertex.Type start = getVertex(position);
-            dfsProcedure(start, visitedEdges, builder);
+            StructureVertex.Type start = traversal.structure().typeVertex(vertexOrder[position]);
+            visitDfs(start, visitedEdges, builder);
             return builder.build();
         }
 
-        private ProcedureVertex.Type dfsProcedure(StructureVertex.Type structureVertex, Set<StructureEdge<?, ?>> visitedEdges,
-                                                  GraphProcedure.Builder builder) {
+        private ProcedureVertex.Type visitDfs(StructureVertex.Type structureVertex, Set<StructureEdge<?, ?>> visitedEdges,
+                                              GraphProcedure.Builder builder) {
             boolean isStart = builder.vertices().size() == 0;
             if (builder.containsVertex(structureVertex.id())) return builder.getType(structureVertex.id());
+            ProcedureVertex.Type procedureVertex = createVertex(structureVertex, isStart, builder);
+            visitOut(procedureVertex, structureVertex, builder, visitedEdges);
+            visitIn(procedureVertex, structureVertex, builder, visitedEdges);
+            return procedureVertex;
+        }
+
+        private ProcedureVertex.Type createVertex(StructureVertex.Type structureVertex, boolean isStart,
+                                                  GraphProcedure.Builder builder) {
             ProcedureVertex.Type vertex = builder.type(structureVertex.id(), isStart);
             vertex.props(new TraversalVertex.Properties.Type(structureVertex.props()));
-            if (evaluatedTypes.containsKey(vertex.id())) {
+            if (vertexTypes.containsKey(vertex.id())) {
                 vertex.props().clearLabels();
-                vertex.props().labels(evaluatedTypes.get(vertex.id()));
-            }
-            structureVertex.outs().forEach(structureEdge -> {
-                boolean toStart = builder.containsVertex(structureEdge.to().id())
-                        && builder.getType(structureEdge.to().id()).isStartingVertex();
-                if (!visitedEdges.contains(structureEdge) && (!toStart || isStart)) {
-                    visitedEdges.add(structureEdge);
-                    int order = visitedEdges.size();
-                    ProcedureVertex.Type end = dfsProcedure(structureEdge.to().asType(), visitedEdges, builder);
-                    registerForwards(vertex, end, structureEdge, order, builder);
-                }
-            });
-            structureVertex.ins().forEach(structureEdge -> {
-                boolean fromStart = builder.containsVertex(structureEdge.from().id())
-                        && builder.getType(structureEdge.from().id()).isStartingVertex();
-                if (!visitedEdges.contains(structureEdge) && (!fromStart || isStart)) {
-                    visitedEdges.add(structureEdge);
-                    int order = visitedEdges.size();
-                    ProcedureVertex.Type start = dfsProcedure(structureEdge.from().asType(), visitedEdges, builder);
-                    registerBackwards(vertex, start, structureEdge, order, builder);
-                }
-            });
+                vertex.props().labels(vertexTypes.get(vertex.id()));
+            };
             return vertex;
         }
 
-        private void registerForwards(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge,
-                                      int order, GraphProcedure.Builder builder) {
+        private void visitOut(ProcedureVertex.Type procedureVertex, StructureVertex.Type structureVertex,
+                              GraphProcedure.Builder builder, Set<StructureEdge<?, ?>> visitedEdges) {
+            structureVertex.outs().forEach(structureEdge -> {
+                boolean toStart = builder.containsVertex(structureEdge.to().id())
+                        && builder.getType(structureEdge.to().id()).isStartingVertex();
+                if (!visitedEdges.contains(structureEdge) && (!toStart || procedureVertex.isStartingVertex())) {
+                    visitedEdges.add(structureEdge);
+                    int order = visitedEdges.size();
+                    ProcedureVertex.Type end = visitDfs(structureEdge.to().asType(), visitedEdges, builder);
+                    createOut(procedureVertex, end, structureEdge, order, builder);
+                }
+            });
+        }
+
+        private void visitIn(ProcedureVertex.Type procedureVertex, StructureVertex.Type structureVertex,
+                             GraphProcedure.Builder builder, Set<StructureEdge<?, ?>> visitedEdges) {
+            structureVertex.ins().forEach(structureEdge -> {
+                boolean fromStart = builder.containsVertex(structureEdge.from().id())
+                        && builder.getType(structureEdge.from().id()).isStartingVertex();
+                if (!visitedEdges.contains(structureEdge) && (!fromStart || procedureVertex.isStartingVertex())) {
+                    visitedEdges.add(structureEdge);
+                    int order = visitedEdges.size();
+                    ProcedureVertex.Type start = visitDfs(structureEdge.from().asType(), visitedEdges, builder);
+                    createIn(procedureVertex, start, structureEdge, order, builder);
+                }
+            });
+        }
+
+        private void createOut(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge,
+                               int order, GraphProcedure.Builder builder) {
             if (structureEdge.isNative()) {
                 switch (structureEdge.asNative().encoding().asType()) {
                     case SUB:
@@ -162,7 +173,7 @@ public class TypeCombinationProcedure {
             } else throw TypeDBException.of(ILLEGAL_STATE);
         }
 
-        private void registerBackwards(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge, int order, GraphProcedure.Builder builder) {
+        private void createIn(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge, int order, GraphProcedure.Builder builder) {
             if (structureEdge.isNative()) {
                 switch (structureEdge.asNative().encoding().asType()) {
                     case SUB:

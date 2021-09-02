@@ -100,32 +100,19 @@ public class GraphTraversal extends Traversal {
     }
 
     FunctionalIterator<VertexMap> iterator(GraphManager graphMgr) {
-        assert !planners.isEmpty();
-        if (planners.size() == 1) {
-            planners.get(0).tryOptimise(graphMgr, false);
-            return planners.get(0).procedure().iterator(graphMgr, parameters, filter());
-        } else {
-            return cartesian(planners.parallelStream().map(planner -> {
-                planner.tryOptimise(graphMgr, false);
-                return planner.procedure().iterator(graphMgr, parameters, filter());
-            }).collect(toList())).map(partialAnswers -> {
-                Map<Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
-                partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
-                return VertexMap.of(combinedAnswers);
-            });
-        }
+        return iterator(graphMgr, planners, false, filter());
     }
 
     FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Either<Arguments.Query.Producer, Long> context,
-                                           int parallelisation, boolean extraPlanningTime) {
+                                           int parallelisation) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
-            planners.get(0).tryOptimise(graphMgr, extraPlanningTime);
+            planners.get(0).tryOptimise(graphMgr, false);
             return planners.get(0).procedure().producer(graphMgr, parameters, filter(), parallelisation);
         } else {
             Either<Arguments.Query.Producer, Long> nestedCtx = context.isFirst() ? context : Either.first(INCREMENTAL);
             return async(cartesian(planners.parallelStream().map(planner -> {
-                planner.tryOptimise(graphMgr, extraPlanningTime);
+                planner.tryOptimise(graphMgr, false);
                 return planner.procedure().producer(graphMgr, parameters, filter(), parallelisation);
             }).map(producer -> produce(producer, nestedCtx, async2())).collect(toList())).map(partialAnswers -> {
                 Map<Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();

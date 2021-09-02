@@ -361,7 +361,6 @@ public class TypeGraph {
         return tree(type, v -> v.ins().edge(SUB).from());
     }
 
-
     public Stream<TypeVertex> bufferedTypes() {
         return typesByIID.values().stream();
     }

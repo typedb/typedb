@@ -61,29 +61,18 @@ public class TypeTraversal extends Traversal {
 
     @Override
     FunctionalIterator<VertexMap> iterator(GraphManager graphMgr) {
-        List<Planner> planners = structures().map(Planner::create).toList();
-        if (planners.size() == 1) {
-            planners.get(0).tryOptimise(graphMgr, true);
-            return planners.get(0).procedure().iterator(graphMgr, parameters, filter);
-        } else {
-            return cartesian(planners.parallelStream().map(planner -> {
-                planner.tryOptimise(graphMgr, true);
-                return planner.procedure().iterator(graphMgr, parameters, filter);
-            }).collect(toList())).map(partialAnswers -> {
-                Map<Identifier.Variable.Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
-                partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
-                return VertexMap.of(combinedAnswers);
-            });
-        }
+        return iterator(graphMgr, structures().map(Planner::create).toList(), true, filter());
+    }
+
+
+
+    public Set<Identifier.Variable.Retrievable> filter() {
+        return filter;
     }
 
     public void filter(Set<? extends Identifier.Variable.Retrievable> filter) {
         assert iterate(filter).noneMatch(Identifier::isLabel);
         this.filter.addAll(filter);
-    }
-
-    public Set<Identifier.Variable.Retrievable> filter() {
-        return filter;
     }
 
     public void labels(Identifier type, Set<Label> labels) {

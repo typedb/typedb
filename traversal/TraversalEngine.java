@@ -24,12 +24,10 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
-import com.vaticle.typedb.core.traversal.iterator.TypeCombination;
-import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
-import com.vaticle.typedb.core.traversal.procedure.TypeCombinationProcedure;
+import com.vaticle.typedb.core.traversal.iterator.TypeCombinationGetter;
+import com.vaticle.typedb.core.traversal.procedure.TypeCombinationProcedures;
 
 import java.util.Map;
 import java.util.Optional;
@@ -51,13 +49,8 @@ public class TraversalEngine {
 
     public FunctionalProducer<VertexMap> producer(GraphTraversal traversal, Either<Arguments.Query.Producer, Long> context,
                                                   int parallelisation) {
-        return producer(traversal, context, parallelisation, false);
-    }
-
-    public FunctionalProducer<VertexMap> producer(GraphTraversal traversal, Either<Arguments.Query.Producer, Long> context,
-                                                  int parallelisation, boolean extraPlanningTime) {
         traversal.initialise(cache);
-        return traversal.producer(graphMgr, context, parallelisation, extraPlanningTime);
+        return traversal.producer(graphMgr, context, parallelisation);
     }
 
     public FunctionalIterator<VertexMap> iterator(GraphTraversal traversal) {
@@ -69,18 +62,13 @@ public class TraversalEngine {
         return traversal.iterator(graphMgr);
     }
 
-    public FunctionalIterator<VertexMap> iterator(GraphProcedure procedure, GraphTraversal.Parameters params,
-                                                  Set<Retrievable> filter) {
-        return procedure.iterator(graphMgr, params, filter);
-    }
-
-    public FunctionalIterator<VertexMap> relations(RelationTraversal traversal) {
+    public FunctionalIterator<VertexMap> iterator(RelationTraversal traversal) {
         return traversal.iterator(graphMgr);
     }
 
     public Optional<Map<Retrievable, Set<TypeVertex>>> combination(TypeTraversal traversal,
-                                                                   Set<Retrievable> abstractDisallowed) {
-        return new TypeCombination(graphMgr, TypeCombinationProcedure.of(traversal), traversal.parameters(),
-                traversal.filter(), abstractDisallowed).get();
+                                                                   Set<Retrievable> concreteTypesOnly) {
+        return new TypeCombinationGetter(graphMgr, TypeCombinationProcedures.of(traversal), traversal.parameters(),
+                traversal.filter(), concreteTypesOnly).get();
     }
 }
