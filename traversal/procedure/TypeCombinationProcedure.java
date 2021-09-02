@@ -27,10 +27,12 @@ import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
@@ -43,16 +45,27 @@ public class TypeCombinationProcedure {
 
     TypeCombinationProcedure(TypeTraversal traversal) {
         this.traversal = traversal;
-        this.vertexOrder = iterate(traversal.structure().vertices()).filter(vertex -> !vertex.id().isLabel())
-                .map(TraversalVertex::id).toList().toArray(new Identifier[0]);
+        this.vertexOrder = traversal.structure().vertices().stream().filter(
+                vertex -> !vertex.id().isLabel() && traversal.filter().contains(vertex.id().asVariable().asRetrievable())
+        ).sorted(Comparator.comparing(vertex -> {
+            int labels = vertex.asType().props().labels().size();
+            return labels > 0 ? labels : Integer.MAX_VALUE;
+        })).map(TraversalVertex::id).toArray(Identifier[]::new);;
     }
 
     public static TypeCombinationProcedure of(TypeTraversal traversal) {
         return new TypeCombinationProcedure(traversal);
     }
 
-    public VertexEvaluation begin() {
+    public VertexEvaluation firstEvaluation() {
         return new VertexEvaluation(0, new HashMap<>());
+    }
+
+    public VertexEvaluation nextEvaluation(VertexEvaluation previous, Set<TypeVertex> typesForPreviousVertex) {
+        assert !previous.evaluatedTypes.containsKey(previous.evaluationId()) && previous.position + 1 < vertexOrder.length;
+        Map<Identifier, Set<Label>> evaluatedTypes = new HashMap<>(previous.evaluatedTypes);
+        evaluatedTypes.put(previous.evaluationId(), iterate(typesForPreviousVertex).map(TypeVertex::properLabel).toSet());
+        return new VertexEvaluation(previous.position + 1, evaluatedTypes);
     }
 
     public int evaluationVertexCount() {
@@ -61,10 +74,6 @@ public class TypeCombinationProcedure {
 
     public int traversalVertexCount() {
         return traversal.structure().vertices().size();
-    }
-
-    private int edgeSize() {
-        return traversal.structure().edges().size();
     }
 
     private StructureVertex.Type getVertex(int pos) {
@@ -85,43 +94,41 @@ public class TypeCombinationProcedure {
             return vertexOrder[position];
         }
 
-        public VertexEvaluation next(Set<TypeVertex> additionalEvaluatedTypes) {
-            assert !evaluatedTypes.containsKey(evaluationId()) && position + 1 < vertexOrder.length;
-            Map<Identifier, Set<Label>> evaluatedTypes = new HashMap<>(this.evaluatedTypes);
-            evaluatedTypes.put(evaluationId(), iterate(additionalEvaluatedTypes).map(TypeVertex::properLabel).toSet());
-            return new VertexEvaluation(position + 1, evaluatedTypes);
-        }
-
         public GraphProcedure procedure() {
             GraphProcedure.Builder builder = GraphProcedure.builder();
             Set<StructureEdge<?, ?>> visitedEdges = new HashSet<>();
             StructureVertex.Type start = getVertex(position);
-            registerDFS(start, visitedEdges, builder);
+            dfsProcedure(start, visitedEdges, builder);
             return builder.build();
         }
 
-        private ProcedureVertex.Type registerDFS(StructureVertex.Type structureVertex, Set<StructureEdge<?, ?>> visitedEdges,
-                                                 GraphProcedure.Builder builder) {
+        private ProcedureVertex.Type dfsProcedure(StructureVertex.Type structureVertex, Set<StructureEdge<?, ?>> visitedEdges,
+                                                  GraphProcedure.Builder builder) {
             boolean isStart = builder.vertices().size() == 0;
             if (builder.containsVertex(structureVertex.id())) return builder.getType(structureVertex.id());
             ProcedureVertex.Type vertex = builder.type(structureVertex.id(), isStart);
-            vertex.props(structureVertex.props());
-            if (evaluatedTypes.containsKey(vertex.id())) vertex.props().labels(evaluatedTypes.get(vertex.id()));
+            vertex.props(new TraversalVertex.Properties.Type(structureVertex.props()));
+            if (evaluatedTypes.containsKey(vertex.id())) {
+                vertex.props().clearLabels();
+                vertex.props().labels(evaluatedTypes.get(vertex.id()));
+            }
             structureVertex.outs().forEach(structureEdge -> {
-                boolean toStart = builder.containsVertex(structureEdge.to().id()) && builder.getType(structureEdge.to().id()).isStartingVertex();
+                boolean toStart = builder.containsVertex(structureEdge.to().id())
+                        && builder.getType(structureEdge.to().id()).isStartingVertex();
                 if (!visitedEdges.contains(structureEdge) && (!toStart || isStart)) {
                     visitedEdges.add(structureEdge);
                     int order = visitedEdges.size();
-                    ProcedureVertex.Type end = registerDFS(structureEdge.to().asType(), visitedEdges, builder);
+                    ProcedureVertex.Type end = dfsProcedure(structureEdge.to().asType(), visitedEdges, builder);
                     registerForwards(vertex, end, structureEdge, order, builder);
                 }
             });
             structureVertex.ins().forEach(structureEdge -> {
-                boolean fromStart = builder.containsVertex(structureEdge.from().id()) && builder.getType(structureEdge.from().id()).isStartingVertex();
+                boolean fromStart = builder.containsVertex(structureEdge.from().id())
+                        && builder.getType(structureEdge.from().id()).isStartingVertex();
                 if (!visitedEdges.contains(structureEdge) && (!fromStart || isStart)) {
                     visitedEdges.add(structureEdge);
                     int order = visitedEdges.size();
-                    ProcedureVertex.Type start = registerDFS(structureEdge.from().asType(), visitedEdges, builder);
+                    ProcedureVertex.Type start = dfsProcedure(structureEdge.from().asType(), visitedEdges, builder);
                     registerBackwards(vertex, start, structureEdge, order, builder);
                 }
             });
@@ -130,7 +137,6 @@ public class TypeCombinationProcedure {
 
         private void registerForwards(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge,
                                       int order, GraphProcedure.Builder builder) {
-            // TODO are these all forward, from -> to?
             if (structureEdge.isNative()) {
                 switch (structureEdge.asNative().encoding().asType()) {
                     case SUB:
@@ -157,7 +163,6 @@ public class TypeCombinationProcedure {
         }
 
         private void registerBackwards(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge, int order, GraphProcedure.Builder builder) {
-            // TODO are these all backward, from <- to?
             if (structureEdge.isNative()) {
                 switch (structureEdge.asNative().encoding().asType()) {
                     case SUB:

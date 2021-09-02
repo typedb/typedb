@@ -100,7 +100,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public FunctionalIterator<RelationTypeImpl> getSubtypes() {
-        return super.getSubtypes(v -> of(graphMgr, v));
+        return graphMgr.schema().getSubtypes(vertex).map(v -> of(graphMgr, v));
     }
 
     @Override

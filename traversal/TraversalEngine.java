@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.iterator.TypeCombination;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
@@ -69,7 +70,7 @@ public class TraversalEngine {
     }
 
     public FunctionalIterator<VertexMap> iterator(GraphProcedure procedure, GraphTraversal.Parameters params,
-                                                  Set<Identifier.Variable.Retrievable> filter) {
+                                                  Set<Retrievable> filter) {
         return procedure.iterator(graphMgr, params, filter);
     }
 
@@ -77,8 +78,8 @@ public class TraversalEngine {
         return traversal.iterator(graphMgr);
     }
 
-    public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(
-            TypeTraversal traversal, Set<Identifier.Variable.Retrievable> abstractDisallowed) {
+    public Optional<Map<Retrievable, Set<TypeVertex>>> combination(TypeTraversal traversal,
+                                                                   Set<Retrievable> abstractDisallowed) {
         return new TypeCombination(graphMgr, TypeCombinationProcedure.of(traversal), traversal.parameters(),
                 traversal.filter(), abstractDisallowed).get();
     }

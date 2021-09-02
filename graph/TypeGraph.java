@@ -65,7 +65,12 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.OBJECT;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
@@ -110,12 +115,25 @@ public class TypeGraph {
         isModified = false;
     }
 
+
     static class Cache {
 
         private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownedAttributeTypes;
-
         private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownersOfAttributeTypes;
         private final ConcurrentMap<Label, Set<Label>> resolvedRoleTypeLabels;
+
+        private Set<Label> relations;
+        private Set<Label> roles;
+        private Set<Label> rolePlayers;
+        private Set<Label> rolesPlayed;
+        private Set<Label> attributes;
+        private Set<Label> attributesOwned;
+        private Set<Label> attributeOwners;
+        private Set<Label> stringAttributes;
+        private Set<Label> longAttributes;
+        private Set<Label> doubleAttributes;
+        private Set<Label> booleanAttributes;
+        private Set<Label> datetimeAttributes;
 
         Cache() {
             ownedAttributeTypes = new ConcurrentHashMap<>();
@@ -239,6 +257,110 @@ public class TypeGraph {
         if (isReadOnly) return cache.resolvedRoleTypeLabels.computeIfAbsent(scopedLabel, l -> fn.get());
         else return fn.get();
     }
+
+    public Set<Label> relations() {
+        if (cache.relations == null) {
+            cache.relations = getSubtypes(getType(RELATION.properLabel())).map(TypeVertex::properLabel).toSet();
+        }
+        return cache.relations;
+    }
+
+    public Set<Label> roles() {
+        if (cache.roles == null) {
+            cache.roles = getSubtypes(getType(ROLE.properLabel())).map(TypeVertex::properLabel).toSet();
+        }
+        return cache.roles;
+    }
+
+    public Set<Label> rolePlayers() {
+        if (cache.rolePlayers == null) {
+            cache.rolePlayers = getSubtypes(getType(THING.properLabel()))
+                    .filter(type -> type.outs().edge(Encoding.Edge.Type.PLAYS).to().first().isPresent())
+                    .flatMap(typePlayingRole -> getSubtypes(typePlayingRole).map(TypeVertex::properLabel)).toSet();
+        }
+        return cache.rolePlayers;
+    }
+
+    public Set<Label> rolesPlayed() {
+        if (cache.rolesPlayed == null) {
+            cache.rolesPlayed = getSubtypes(getType(ROLE.properLabel()))
+                    .filter(roleType -> roleType.ins().edge(Encoding.Edge.Type.PLAYS).from().first().isPresent())
+                    .map(TypeVertex::properLabel).toSet();
+        }
+        return cache.rolesPlayed;
+    }
+
+    public Set<Label> attributes() {
+        if (cache.attributes == null) {
+            cache.attributes = getSubtypes(getType(ATTRIBUTE.properLabel())).map(TypeVertex::properLabel).toSet();
+        }
+        return cache.attributes;
+    }
+
+    public Set<Label> attributeOwners() {
+        if (cache.attributeOwners == null) {
+            cache.attributeOwners = getSubtypes(getType(THING.properLabel()))
+                    .filter(type -> type.outs().edge(OWNS).to().first().isPresent() ||
+                            type.outs().edge(OWNS_KEY).to().first().isPresent())
+                    .flatMap(typeOwningAttr -> getSubtypes(typeOwningAttr).map(TypeVertex::properLabel)).toSet();
+        }
+        return cache.attributeOwners;
+    }
+
+    public Set<Label> attributesOwned() {
+        if (cache.attributesOwned == null) {
+            cache.attributesOwned = getSubtypes(getType(ATTRIBUTE.properLabel()))
+                    .filter(attrType -> attrType.ins().edge(OWNS).from().first().isPresent() ||
+                            attrType.ins().edge(OWNS_KEY).from().first().isPresent())
+                    .map(TypeVertex::properLabel).toSet();
+        }
+        return cache.attributesOwned;
+    }
+
+    public Set<Label> stringAttributes() {
+        if (cache.stringAttributes == null) {
+            cache.stringAttributes = getSubtypes(getType(ATTRIBUTE.properLabel()))
+                    .filter(type -> type.valueType().equals(STRING)).map(TypeVertex::properLabel).toSet();
+        }
+        return cache.stringAttributes;
+    }
+
+    public Set<Label> longAttributes() {
+        if (cache.longAttributes == null) {
+            cache.longAttributes = getSubtypes(getType(ATTRIBUTE.properLabel()))
+                    .filter(type -> type.valueType().equals(LONG)).map(TypeVertex::properLabel).toSet();
+        }
+        return cache.longAttributes;
+    }
+
+    public Set<Label> doubleAttributes() {
+        if (cache.doubleAttributes == null) {
+            cache.doubleAttributes = getSubtypes(getType(ATTRIBUTE.properLabel()))
+                    .filter(type -> type.valueType().equals(DOUBLE)).map(TypeVertex::properLabel).toSet();
+        }
+        return cache.doubleAttributes;
+    }
+
+    public Set<Label> booleanAttributes() {
+        if (cache.booleanAttributes == null) {
+            cache.booleanAttributes = getSubtypes(getType(ATTRIBUTE.properLabel()))
+                    .filter(type -> type.valueType().equals(BOOLEAN)).map(TypeVertex::properLabel).toSet();
+        }
+        return cache.booleanAttributes;
+    }
+
+    public Set<Label> datetimeAttributes() {
+        if (cache.datetimeAttributes == null) {
+            cache.datetimeAttributes = getSubtypes(getType(ATTRIBUTE.properLabel()))
+                    .filter(type -> type.valueType().equals(DATETIME)).map(TypeVertex::properLabel).toSet();
+        }
+        return cache.datetimeAttributes;
+    }
+
+    public FunctionalIterator<TypeVertex> getSubtypes(TypeVertex type) {
+        return tree(type, v -> v.ins().edge(SUB).from());
+    }
+
 
     public Stream<TypeVertex> bufferedTypes() {
         return typesByIID.values().stream();

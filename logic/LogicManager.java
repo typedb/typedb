@@ -59,7 +59,7 @@ public class LogicManager {
         this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
-        this.typeResolver = new TypeResolver(logicCache, traversalEng, conceptMgr);
+        this.typeResolver = new TypeResolver(logicCache, traversalEng, graphMgr);
     }
 
     GraphManager graph() { return graphMgr; }
