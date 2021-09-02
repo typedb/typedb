@@ -72,21 +72,21 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     }
 
     @Override
-    public void receiveRequest(Request.Visit fromUpstream, int iteration) {
+    public void receiveVisit(Request.Visit fromUpstream, int iteration) {
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (isTerminated()) return;
         if (fromUpstream.isToSubsumed()) {
             assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
-            receiveSubsumedRequest(fromUpstream.asToSubsumed(), iteration);
+            receiveSubsumed(fromUpstream.asToSubsumed(), iteration);
         } else if (fromUpstream.isToSubsumer()) {
-            receiveSubsumerRequest(fromUpstream.asToSubsumer(), iteration);
+            receiveSubsumer(fromUpstream.asToSubsumer(), iteration);
         } else {
             assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
-            receiveDirectRequest(fromUpstream, iteration);
+            receiveDirect(fromUpstream, iteration);
         }
     }
 
-    private void receiveSubsumedRequest(Request.Visit.ToSubsumed fromUpstream, int iteration) {
+    private void receiveSubsumed(Request.Visit.ToSubsumed fromUpstream, int iteration) {
         throw TypeDBException.of(ILLEGAL_STATE);
 //        RequestState requestState = requestStates.computeIfAbsent(
 //                fromUpstream, request -> new BoundRetrievableResolver.BoundRequestState(request, cache, iteration));
@@ -104,13 +104,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 //        }
     }
 
-    private void receiveSubsumerRequest(Request.Visit.ToSubsumer fromUpstream, int iteration) {
+    private void receiveSubsumer(Request.Visit.ToSubsumer fromUpstream, int iteration) {
         throw TypeDBException.of(ILLEGAL_STATE);
 //        sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
 //                fromUpstream, request -> new BoundRetrievableResolver.SubsumerRequestState(request, cache, iteration)));
     }
 
-    private void receiveDirectRequest(Request.Visit fromUpstream, int iteration) {
+    private void receiveDirect(Request.Visit fromUpstream, int iteration) {
         assert fromUpstream.partialAnswer().isConcludable();
         ExploringRequestState<?> requestState = requestStates.computeIfAbsent(
                 fromUpstream, request -> createExploringRequestState(fromUpstream, iteration));
@@ -119,7 +119,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
-        } else if (isRecursion(fromUpstream.partialAnswer()).isPresent()) {
+        } else if (isCycle(fromUpstream.partialAnswer()).isPresent()) {
             cycleToUpstream(fromUpstream, cache().size(), iteration);
         } else if (requestState.downstreamManager().hasNextUnblocked()) {
             requestFromDownstream(requestState.downstreamManager().nextUnblocked(), fromUpstream, iteration);
@@ -133,7 +133,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
     }
 
-    private Optional<Partial.Concludable<?>> isRecursion(Partial<?> partialAnswer) {
+    private Optional<Partial.Concludable<?>> isCycle(Partial<?> partialAnswer) {
         // TODO Convert to boolean
         Partial<?> a = partialAnswer;
         while (a.parent().isPartial()) {

@@ -202,7 +202,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private void requestAnswer() {
         Request.Visit resolveRequest = createResolveRequest(requestIdCounter);
         if (options.traceInference()) ResolutionTracer.get().start(resolveRequest);
-        rootResolver.execute(actor -> actor.receiveRequest(resolveRequest, iteration));
+        rootResolver.execute(actor -> actor.receiveVisit(resolveRequest, iteration));
         requestIdCounter += 1;
     }
 }

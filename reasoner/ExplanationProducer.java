@@ -93,7 +93,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     private void requestExplanation() {
         Request.Visit explainRequest = createExplanationRequest(requestTraceIdCounter);
         if (options.traceInference()) ResolutionTracer.get().start(explainRequest);
-        explainer.execute(explainer -> explainer.receiveRequest(explainRequest, iteration));
+        explainer.execute(explainer -> explainer.receiveVisit(explainRequest, iteration));
         requestTraceIdCounter += 1;
     }
 

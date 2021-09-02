@@ -490,7 +490,7 @@ public class ResolutionTest {
         for (int i = 0; i < n; i++) {
             Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
             ResolutionTracer.TraceId traceId = ResolutionTracer.TraceId.create(0, i);
-            root.execute(actor -> actor.receiveRequest(Request.Visit.create(root, traceId, downstream), 0));
+            root.execute(actor -> actor.receiveVisit(Request.Visit.create(root, traceId, downstream), 0));
         }
         int answersFound = 0;
         int explainableAnswersFound = 0;

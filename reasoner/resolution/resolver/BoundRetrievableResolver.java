@@ -52,7 +52,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     }
 
     @Override
-    public void receiveRequest(Request.Visit fromUpstream, int iteration) {
+    public void receiveVisit(Request.Visit fromUpstream, int iteration) {
         if (fromUpstream.isToSubsumed()) {
             assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
             receiveSubsumedRequest(fromUpstream.asToSubsumed(), iteration);

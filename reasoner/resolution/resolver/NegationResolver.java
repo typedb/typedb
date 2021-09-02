@@ -55,7 +55,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     @Override
-    public void receiveRequest(Request.Visit fromUpstream, int iteration) {
+    public void receiveVisit(Request.Visit fromUpstream, int iteration) {
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;

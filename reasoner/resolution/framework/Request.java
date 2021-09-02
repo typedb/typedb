@@ -34,7 +34,6 @@ public abstract class Request {
     protected final AnswerState.Partial<?> partialAnswer;
     protected final int planIndex;
     private final ResolutionTracer.TraceId traceId;
-    private final int hash;
 
     protected Request(ResolutionTracer.TraceId traceId, @Nullable Actor.Driver<? extends Resolver<?>> sender,
                       Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer, int planIndex) {
@@ -43,7 +42,6 @@ public abstract class Request {
         this.receiver = receiver;
         this.partialAnswer = partialAnswer;
         this.planIndex = planIndex;
-        this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer);
     }
 
     public Actor.Driver<? extends Resolver<?>> receiver() {
@@ -74,7 +72,7 @@ public abstract class Request {
 
     @Override
     public int hashCode() {
-        return hash;
+        return Objects.hash(this.sender, this.receiver, this.partialAnswer);
     }
 
     @Override
@@ -92,9 +90,12 @@ public abstract class Request {
 
     public static class Visit extends Request {
 
+        private final int hash;
+
         private Visit(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
                       ResolutionTracer.TraceId traceId, AnswerState.Partial<?> partialAnswer, int planIndex) {
             super(traceId, sender, receiver, partialAnswer, planIndex);
+            this.hash = super.hashCode();
         }
 
         public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, ResolutionTracer.TraceId traceId, AnswerState.Partial<?> partialAnswer, int planIndex) {
@@ -131,6 +132,11 @@ public abstract class Request {
 
         public ToSubsumer asToSubsumer() {
             throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
         }
 
         public static class ToSubsumed extends Visit {
@@ -200,5 +206,37 @@ public abstract class Request {
 
         }
 
+    }
+
+    public static class Revisit extends Request {
+
+        private final Response.Cycle.Origin cycle;
+        private final int hash;
+
+        protected Revisit(ResolutionTracer.TraceId traceId, Actor.Driver<? extends Resolver<?>> sender,
+                          Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer,
+                          int planIndex, Response.Cycle.Origin cycle) {
+            super(traceId, sender, receiver, partialAnswer, planIndex);
+            this.cycle = cycle;
+            this.hash = Objects.hash(super.hashCode(), cycle);
+        }
+
+        public Response.Cycle.Origin cycle() {
+            return cycle;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            Revisit revisit = (Revisit) o;
+            return cycle.equals(revisit.cycle);
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
     }
 }

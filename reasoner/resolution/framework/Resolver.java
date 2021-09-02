@@ -80,7 +80,9 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         registry.terminate(e);
     }
 
-    public abstract void receiveRequest(Request.Visit fromUpstream, int iteration);
+    public abstract void receiveVisit(Request.Visit fromUpstream, int iteration);
+
+    public abstract void receiveRevisit(Request.Revisit fromUpstream, int iteration);
 
     protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
 
@@ -117,7 +119,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(new Pair<>(request, request.traceId()), fromUpstream);
         Driver<? extends Resolver<?>> receiver = request.receiver();
-        receiver.execute(actor -> actor.receiveRequest(request, iteration));
+        receiver.execute(actor -> actor.receiveVisit(request, iteration));
     }
 
     // TODO: Rename to sendResponse or respond

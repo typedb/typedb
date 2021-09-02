@@ -72,7 +72,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     }
 
     @Override
-    public void receiveRequest(Request.Visit fromUpstream, int iteration) {
+    public void receiveVisit(Request.Visit fromUpstream, int iteration) {
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (isTerminated()) return;
         if (fromUpstream.isToSubsumed()) {
