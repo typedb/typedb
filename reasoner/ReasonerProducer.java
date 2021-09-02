@@ -126,7 +126,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     public void recycle() {}
 
     // note: root resolver calls this single-threaded, so is thread safe
-    private void requestAnswered(Request answeredRequest, Finished answer) {
+    private void requestAnswered(Request.Visit answeredRequest, Finished answer) {
         if (options.traceInference()) ResolutionTracer.get().finish(answeredRequest);
         ConceptMap conceptMap = answer.conceptMap();
         if (options.explain() && !conceptMap.explainables().isEmpty()) {
@@ -138,7 +138,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestFailed(Request failedRequest, int iteration) {
+    private void requestFailed(Request.Visit failedRequest, int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
         if (options.traceInference()) ResolutionTracer.get().finish(failedRequest);
         finish();
@@ -194,13 +194,13 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         requestAnswer();
     }
 
-    private Request createResolveRequest(int requestId) {
+    private Request.Visit createResolveRequest(int requestId) {
         Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        return Request.create(rootResolver, ResolutionTracer.TraceId.create(UUID.randomUUID().hashCode(), requestId), downstream);
+        return Request.Visit.create(rootResolver, ResolutionTracer.TraceId.create(UUID.randomUUID().hashCode(), requestId), downstream);
     }
 
     private void requestAnswer() {
-        Request resolveRequest = createResolveRequest(requestIdCounter);
+        Request.Visit resolveRequest = createResolveRequest(requestIdCounter);
         if (options.traceInference()) ResolutionTracer.get().start(resolveRequest);
         rootResolver.execute(actor -> actor.receiveRequest(resolveRequest, iteration));
         requestIdCounter += 1;

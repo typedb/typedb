@@ -55,8 +55,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     @Override
-    public void receiveRequest(Request fromUpstream, int iteration) {
-        LOG.trace("{}: received Request: {}", name(), fromUpstream);
+    public void receiveRequest(Request.Visit fromUpstream, int iteration) {
+        LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
 
@@ -93,7 +93,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         isInitialised = true;
     }
 
-    private void tryAnswer(Request fromUpstream, BoundsState boundsState) {
+    private void tryAnswer(Request.Visit fromUpstream, BoundsState boundsState) {
         // TODO: if we wanted to accelerate the searching of a negation counter example, we could send multiple
         //  requests into the sub system at once!
 
@@ -114,8 +114,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
         LOG.trace("{}: received Answer: {}, therefore is FAILED", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Request toDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(toDownstream);
+        Request.Visit toDownstream = fromDownstream.sourceRequest();
+        Request.Visit fromUpstream = fromUpstream(toDownstream);
         BoundsState boundsState = this.boundsStates.get(fromUpstream.partialAnswer().conceptMap());
         boundsState.setFailed();
         for (BoundsState.Awaiting awaiting : boundsState.awaiting) {
@@ -129,8 +129,8 @@ public class NegationResolver extends Resolver<NegationResolver> {
         LOG.trace("{}: Receiving Failed: {}, therefore is SATISFIED", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Request toDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(toDownstream);
+        Request.Visit toDownstream = fromDownstream.sourceRequest();
+        Request.Visit fromUpstream = fromUpstream(toDownstream);
         BoundsState boundsState = this.boundsStates.get(fromUpstream.partialAnswer().conceptMap());
 
         boundsState.setSatisfied();
@@ -140,7 +140,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         boundsState.clearAwaiting();
     }
 
-    private Partial<?> upstreamAnswer(Request fromUpstream) {
+    private Partial<?> upstreamAnswer(Request.Visit fromUpstream) {
         assert fromUpstream.partialAnswer().isCompound() && fromUpstream.partialAnswer().asCompound().isNestable();
         return fromUpstream.partialAnswer().asCompound().asNestable().toUpstream();
     }
@@ -155,7 +155,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
             this.status = Status.EMPTY;
         }
 
-        public void addAwaiting(Request request, int iteration) {
+        public void addAwaiting(Request.Visit request, int iteration) {
             awaiting.add(new Awaiting(request, iteration));
         }
 
@@ -170,10 +170,10 @@ public class NegationResolver extends Resolver<NegationResolver> {
         }
 
         private static class Awaiting {
-            final Request request;
+            final Request.Visit request;
             final int iterationRequested;
 
-            public Awaiting(Request request, int iteration) {
+            public Awaiting(Request.Visit request, int iteration) {
                 this.request = request;
                 this.iterationRequested = iteration;
             }

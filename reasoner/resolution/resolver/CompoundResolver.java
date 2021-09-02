@@ -35,7 +35,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
 
     private static final Logger LOG = LoggerFactory.getLogger(CompoundResolver.class);
 
-    final Map<Request, RequestState> requestStates;
+    final Map<Request.Visit, RequestState> requestStates;
     boolean isInitialised;
 
     protected CompoundResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
@@ -44,7 +44,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         this.isInitialised = false;
     }
 
-    protected void nextAnswer(Request fromUpstream, RequestState requestState, int iteration) {
+    protected void nextAnswer(Request.Visit fromUpstream, RequestState requestState, int iteration) {
         if (requestState.downstreamManager().hasNext()) {
             requestFromDownstream(requestState.downstreamManager().next(), fromUpstream, iteration);
         } else {
@@ -53,8 +53,8 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     }
 
     @Override
-    public void receiveRequest(Request fromUpstream, int iteration) {
-        LOG.trace("{}: received Request: {}", name(), fromUpstream);
+    public void receiveRequest(Request.Visit fromUpstream, int iteration) {
+        LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
 
@@ -74,7 +74,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         if (isTerminated()) return;
 
         Downstream toDownstream = Downstream.of(fromDownstream.sourceRequest());
-        Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
+        Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         RequestState requestState = requestStates.get(fromUpstream);
 
         if (iteration < requestState.iteration()) {
@@ -91,7 +91,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
         Downstream cyclingDownstream = Downstream.of(fromDownstream.sourceRequest());
-        Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
+        Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         RequestState requestState = this.requestStates.get(fromUpstream);
         fromDownstream.origins().forEach(origin -> requestState.downstreamManager().block(cyclingDownstream, origin));
         if (requestState.downstreamManager().hasNextUnblocked()) {
@@ -101,7 +101,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         }
     }
 
-    private RequestState getOrUpdateRequestState(Request fromUpstream, int iteration) {
+    private RequestState getOrUpdateRequestState(Request.Visit fromUpstream, int iteration) {
         if (!requestStates.containsKey(fromUpstream)) {
             requestStates.put(fromUpstream, requestStateCreate(fromUpstream, iteration));
         } else {
@@ -116,9 +116,9 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         return requestStates.get(fromUpstream);
     }
 
-    abstract RequestState requestStateCreate(Request fromUpstream, int iteration);
+    abstract RequestState requestStateCreate(Request.Visit fromUpstream, int iteration);
 
-    abstract RequestState requestStateReiterate(Request fromUpstream, RequestState priorResponses, int iteration);
+    abstract RequestState requestStateReiterate(Request.Visit fromUpstream, RequestState priorResponses, int iteration);
 
     // TODO: Align with the RequestState implementation used across the other resolvers
     static class RequestState {

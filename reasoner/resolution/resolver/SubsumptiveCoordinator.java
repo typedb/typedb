@@ -44,7 +44,7 @@ public abstract class SubsumptiveCoordinator<
 
     private static final Logger LOG = LoggerFactory.getLogger(SubsumptiveCoordinator.class);
     private final Map<Driver<? extends Resolver<?>>, SubsumptionTracker> subsumptionTrackers;
-    private final Map<Driver<? extends Resolver<?>>, Map<Pair<Request, TraceId>, Request>> requestMapByRoot;
+    private final Map<Driver<? extends Resolver<?>>, Map<Pair<Request.Visit, TraceId>, Request.Visit>> requestMapByRoot;
     protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, Driver<WORKER>>> workersByRoot; // TODO: We would like these not to be by root. They need to be, for now, for reiteration purposes.
     protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, AnswerCache<?>>> cacheRegistersByRoot;
     protected final Map<Driver<? extends Resolver<?>>, Integer> iterationByRoot;
@@ -61,8 +61,8 @@ public abstract class SubsumptiveCoordinator<
     }
 
     @Override
-    public void receiveRequest(Request fromUpstream, int iteration) {
-        LOG.trace("{}: received Request: {}", name(), fromUpstream);
+    public void receiveRequest(Request.Visit fromUpstream, int iteration) {
+        LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
 
@@ -81,12 +81,12 @@ public abstract class SubsumptiveCoordinator<
             // Optional<ConceptMap> subsumer = subsumptionTrackers.computeIfAbsent(
             //         root, r -> new SubsumptionTracker()).getFinishedSubsumer(bounds);
             // // If there is a finished subsumer, let the Worker know that it can go there for answers
-            // Request request = subsumer
-            //         .map(conceptMap -> Request.ToSubsumed.create(
+            // Visit request = subsumer
+            //         .map(conceptMap -> Visit.ToSubsumed.create(
             //                 driver(), worker, workersByRoot.get(root).get(conceptMap),
             //                 fromUpstream.partialAnswer()))
-            //         .orElseGet(() -> Request.create(driver(), worker, fromUpstream.partialAnswer()));
-            Request request = Request.create(driver(), worker, fromUpstream.traceId(), fromUpstream.partialAnswer());
+            //         .orElseGet(() -> Visit.create(driver(), worker, fromUpstream.partialAnswer()));
+            Request.Visit request = Request.Visit.create(driver(), worker, fromUpstream.traceId(), fromUpstream.partialAnswer());
             requestMapByRoot.computeIfAbsent(root, r -> new HashMap<>()).put(new Pair<>(request, request.traceId()), fromUpstream);
             requestFromDownstream(request, fromUpstream, iteration);
         }
@@ -120,7 +120,7 @@ public abstract class SubsumptiveCoordinator<
             // short circuit old iteration failed messages to upstream
             failToUpstream(fail.sourceRequest(), iteration);
         } else {
-            Request request = fail.sourceRequest();
+            Request.Visit request = fail.sourceRequest();
             subsumptionTrackers
                     .computeIfAbsent(request.partialAnswer().root(), r -> new SubsumptionTracker())
                     .addFinished(request.partialAnswer().conceptMap());

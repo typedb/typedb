@@ -20,8 +20,7 @@ package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.TraceId;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -29,44 +28,22 @@ import java.util.Objects;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.TraceId.downstreamId;
 
-public class Request {
-
-    private final TraceId traceId;
+public abstract class Request {
     protected final Actor.Driver<? extends Resolver<?>> sender;
     protected final Actor.Driver<? extends Resolver<?>> receiver;
-    protected final Partial<?> partialAnswer;
+    protected final AnswerState.Partial<?> partialAnswer;
     protected final int planIndex;
-
+    private final ResolutionTracer.TraceId traceId;
     private final int hash;
 
-    private Request(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                    TraceId traceId, Partial<?> partialAnswer, int planIndex) {
+    protected Request(ResolutionTracer.TraceId traceId, @Nullable Actor.Driver<? extends Resolver<?>> sender,
+                      Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer, int planIndex) {
+        this.traceId = traceId;
         this.sender = sender;
         this.receiver = receiver;
-        this.traceId = traceId;
         this.partialAnswer = partialAnswer;
         this.planIndex = planIndex;
         this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer);
-    }
-
-    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, TraceId traceId, Partial<?> partialAnswer, int planIndex) {
-        return new Request(sender, receiver, traceId, partialAnswer, planIndex);
-    }
-
-    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer, int planIndex) {
-        return new Request(sender, receiver, downstreamId(), partialAnswer, planIndex);
-    }
-
-    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
-        return new Request(sender, receiver, downstreamId(), partialAnswer, -1);
-    }
-
-    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, TraceId traceId, Partial<?> partialAnswer) {
-        return new Request(sender, receiver, traceId, partialAnswer, -1);
-    }
-
-    public static Request create(Actor.Driver<? extends Resolver<?>> receiver, TraceId traceId, Partial<?> partialAnswer) {
-        return new Request(null, receiver, traceId, partialAnswer, -1);
     }
 
     public Actor.Driver<? extends Resolver<?>> receiver() {
@@ -77,7 +54,7 @@ public class Request {
         return sender;
     }
 
-    public Partial<?> partialAnswer() {
+    public AnswerState.Partial<?> partialAnswer() {
         return partialAnswer;
     }
 
@@ -109,91 +86,119 @@ public class Request {
                 '}';
     }
 
-    public boolean isToSubsumed() {
-        return false;
-    }
-
-    public ToSubsumed asToSubsumed() {
-        throw TypeDBException.of(ILLEGAL_STATE);
-    }
-
-    public boolean isToSubsumer() {
-        return false;
-    }
-
-    public ToSubsumer asToSubsumer() {
-        throw TypeDBException.of(ILLEGAL_STATE);
-    }
-
-    public TraceId traceId() {
+    public ResolutionTracer.TraceId traceId() {
         return traceId;
     }
 
-    public static class ToSubsumed extends Request {
+    public static class Visit extends Request {
 
-        private final Actor.Driver<? extends Resolver<?>> subsumer;
-
-        private ToSubsumed(@Nullable Actor.Driver<? extends Resolver<?>> sender,
-                           Actor.Driver<? extends Resolver<?>> receiver,
-                           @Nullable Actor.Driver<? extends Resolver<?>> subsumer, TraceId traceId,
-                           Partial<?> partialAnswer, int planIndex) {
-            super(sender, receiver, traceId, partialAnswer, planIndex);
-            this.subsumer = subsumer;
+        private Visit(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                      ResolutionTracer.TraceId traceId, AnswerState.Partial<?> partialAnswer, int planIndex) {
+            super(traceId, sender, receiver, partialAnswer, planIndex);
         }
 
-        public static Request create(Actor.Driver<? extends Resolver<?>> sender,
-                                     Actor.Driver<? extends Resolver<?>> receiver,
-                                     Actor.Driver<? extends Resolver<?>> subsumer, TraceId traceId,
-                                     Partial<?> partialAnswer) {
-            return new ToSubsumed(sender, receiver, subsumer, traceId, partialAnswer, -1);
+        public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, ResolutionTracer.TraceId traceId, AnswerState.Partial<?> partialAnswer, int planIndex) {
+            return new Visit(sender, receiver, traceId, partialAnswer, planIndex);
         }
 
-        public Actor.Driver<? extends Resolver<?>> subsumer() {
-            return subsumer;
+        public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer, int planIndex) {
+            return new Visit(sender, receiver, downstreamId(), partialAnswer, planIndex);
         }
 
-        @Override
+        public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer) {
+            return new Visit(sender, receiver, downstreamId(), partialAnswer, -1);
+        }
+
+        public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, ResolutionTracer.TraceId traceId, AnswerState.Partial<?> partialAnswer) {
+            return new Visit(sender, receiver, traceId, partialAnswer, -1);
+        }
+
+        public static Visit create(Actor.Driver<? extends Resolver<?>> receiver, ResolutionTracer.TraceId traceId, AnswerState.Partial<?> partialAnswer) {
+            return new Visit(null, receiver, traceId, partialAnswer, -1);
+        }
+
         public boolean isToSubsumed() {
-            return true;
+            return false;
         }
 
-        @Override
         public ToSubsumed asToSubsumed() {
-            return this;
+            throw TypeDBException.of(ILLEGAL_STATE);
         }
 
-    }
-
-    public static class ToSubsumer extends Request {
-
-        private final ToSubsumed toSubsumed;
-
-        private ToSubsumer(@Nullable Actor.Driver<? extends Resolver<?>> sender,
-                           Actor.Driver<? extends Resolver<?>> receiver,
-                           ToSubsumed toSubsumed, Partial<?> partialAnswer, int planIndex) {
-            super(sender, receiver, toSubsumed.traceId(), partialAnswer, planIndex);
-            this.toSubsumed = toSubsumed;
-        }
-
-        public static ToSubsumer create(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<?
-                extends Resolver<?>> receiver, ToSubsumed toSubsumed, Partial<?> partialAnswer) {
-            return new ToSubsumer(sender, receiver, toSubsumed, partialAnswer, -1);
-        }
-
-        public ToSubsumed toSubsumed() {
-            return toSubsumed;
-        }
-
-        @Override
         public boolean isToSubsumer() {
-            return true;
+            return false;
         }
 
-        @Override
         public ToSubsumer asToSubsumer() {
-            return this;
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        public static class ToSubsumed extends Visit {
+
+            private final Actor.Driver<? extends Resolver<?>> subsumer;
+
+            private ToSubsumed(@Nullable Actor.Driver<? extends Resolver<?>> sender,
+                               Actor.Driver<? extends Resolver<?>> receiver,
+                               @Nullable Actor.Driver<? extends Resolver<?>> subsumer, ResolutionTracer.TraceId traceId,
+                               AnswerState.Partial<?> partialAnswer, int planIndex) {
+                super(sender, receiver, traceId, partialAnswer, planIndex);
+                this.subsumer = subsumer;
+            }
+
+            public static Visit create(Actor.Driver<? extends Resolver<?>> sender,
+                                       Actor.Driver<? extends Resolver<?>> receiver,
+                                       Actor.Driver<? extends Resolver<?>> subsumer, ResolutionTracer.TraceId traceId,
+                                       AnswerState.Partial<?> partialAnswer) {
+                return new ToSubsumed(sender, receiver, subsumer, traceId, partialAnswer, -1);
+            }
+
+            public Actor.Driver<? extends Resolver<?>> subsumer() {
+                return subsumer;
+            }
+
+            @Override
+            public boolean isToSubsumed() {
+                return true;
+            }
+
+            @Override
+            public ToSubsumed asToSubsumed() {
+                return this;
+            }
+
+        }
+
+        public static class ToSubsumer extends Visit {
+
+            private final ToSubsumed toSubsumed;
+
+            private ToSubsumer(@Nullable Actor.Driver<? extends Resolver<?>> sender,
+                               Actor.Driver<? extends Resolver<?>> receiver,
+                               ToSubsumed toSubsumed, AnswerState.Partial<?> partialAnswer, int planIndex) {
+                super(sender, receiver, toSubsumed.traceId(), partialAnswer, planIndex);
+                this.toSubsumed = toSubsumed;
+            }
+
+            public static ToSubsumer create(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<?
+                    extends Resolver<?>> receiver, ToSubsumed toSubsumed, AnswerState.Partial<?> partialAnswer) {
+                return new ToSubsumer(sender, receiver, toSubsumed, partialAnswer, -1);
+            }
+
+            public ToSubsumed toSubsumed() {
+                return toSubsumed;
+            }
+
+            @Override
+            public boolean isToSubsumer() {
+                return true;
+            }
+
+            @Override
+            public ToSubsumer asToSubsumer() {
+                return this;
+            }
+
         }
 
     }
-
 }

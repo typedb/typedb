@@ -55,7 +55,7 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer
 public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends ReasonerActor<RESOLVER> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
-    private final Map<Pair<Request, TraceId>, Request> requestRouter;
+    private final Map<Pair<Request.Visit, TraceId>, Request.Visit> requestRouter;
     protected final ResolverRegistry registry;
 
     protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
@@ -80,7 +80,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         registry.terminate(e);
     }
 
-    public abstract void receiveRequest(Request fromUpstream, int iteration);
+    public abstract void receiveRequest(Request.Visit fromUpstream, int iteration);
 
     protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
 
@@ -89,28 +89,28 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     protected void receiveCycle(Response.Cycle fromDownstream, int iteration) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Request toDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(toDownstream);
+        Request.Visit toDownstream = fromDownstream.sourceRequest();
+        Request.Visit fromUpstream = fromUpstream(toDownstream);
         cycleToUpstream(fromUpstream, fromDownstream.origins(), iteration);
     }
 
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
 
-    protected Request fromUpstream(Request toDownstream) {
+    protected Request.Visit fromUpstream(Request.Visit toDownstream) {
         assert toDownstream.traceId().rootId() != -1;
-        Pair<Request, TraceId> ds = new Pair<>(toDownstream, toDownstream.traceId());
+        Pair<Request.Visit, TraceId> ds = new Pair<>(toDownstream, toDownstream.traceId());
         assert requestRouter.containsKey(ds);
         assert requestRouter.get(ds).traceId() == toDownstream.traceId();
         return requestRouter.get(ds);
     }
 
     // TODO: Rename to sendRequest or request
-    protected void requestFromDownstream(Downstream downstream, Request fromUpstream, int iteration) {
+    protected void requestFromDownstream(Downstream downstream, Request.Visit fromUpstream, int iteration) {
         requestFromDownstream(downstream.toRequest(fromUpstream.traceId()), fromUpstream, iteration);
     }
 
-    protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
-        LOG.trace("{} : Sending a new answer Request to downstream: {}", name(), request);
+    protected void requestFromDownstream(Request.Visit request, Request.Visit fromUpstream, int iteration) {
+        LOG.trace("{} : Sending a new answer Visit to downstream: {}", name(), request);
         assert fromUpstream.traceId().rootId() != -1;
         assert request.traceId() == fromUpstream.traceId();
         if (registry.resolutionTracing()) ResolutionTracer.get().request(request, iteration);
@@ -121,7 +121,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     }
 
     // TODO: Rename to sendResponse or respond
-    protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
+    protected void answerToUpstream(AnswerState answer, Request.Visit fromUpstream, int iteration) {
         assert answer.isPartial();
         Answer response = Answer.create(fromUpstream, answer.asPartial());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
@@ -129,14 +129,14 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         fromUpstream.sender().execute(actor -> actor.receiveAnswer(response, iteration));
     }
 
-    protected void failToUpstream(Request fromUpstream, int iteration) {
+    protected void failToUpstream(Request.Visit fromUpstream, int iteration) {
         Response.Fail response = new Response.Fail(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(response, iteration);
         fromUpstream.sender().execute(actor -> actor.receiveFail(response, iteration));
     }
 
-    protected void cycleToUpstream(Request fromUpstream, Set<Response.Cycle.Origin> cycleOrigins, int iteration) {
+    protected void cycleToUpstream(Request.Visit fromUpstream, Set<Response.Cycle.Origin> cycleOrigins, int iteration) {
         assert !fromUpstream.partialAnswer().parent().isTop();
         Response.Cycle response = new Response.Cycle(fromUpstream, cycleOrigins);
         LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
@@ -144,7 +144,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         fromUpstream.sender().execute(actor -> actor.receiveCycle(response, iteration));
     }
 
-    protected void cycleToUpstream(Request fromUpstream, int numAnswersSeen, int iteration) {
+    protected void cycleToUpstream(Request.Visit fromUpstream, int numAnswersSeen, int iteration) {
         assert !fromUpstream.partialAnswer().parent().isTop();
         Response.Cycle response = new Response.Cycle.Origin(fromUpstream, numAnswersSeen);
         LOG.trace("{} : Sending a new Response.Cycle to upstream", name());

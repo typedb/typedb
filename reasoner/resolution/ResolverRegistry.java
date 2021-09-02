@@ -130,8 +130,8 @@ public class ResolverRegistry {
         }
     }
 
-    public Actor.Driver<RootResolver.Conjunction> root(Conjunction conjunction, BiConsumer<Request, Match.Finished> onAnswer,
-                                                       BiConsumer<Request, Integer> onFail, Consumer<Throwable> onException) {
+    public Actor.Driver<RootResolver.Conjunction> root(Conjunction conjunction, BiConsumer<Request.Visit, Match.Finished> onAnswer,
+                                                       BiConsumer<Request.Visit, Integer> onFail, Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         Actor.Driver<RootResolver.Conjunction> resolver = Actor.driver(driver -> new RootResolver.Conjunction(
                 driver, conjunction, onAnswer, onFail, onException, this), executorService);
@@ -140,8 +140,8 @@ public class ResolverRegistry {
         return resolver;
     }
 
-    public Actor.Driver<RootResolver.Disjunction> root(Disjunction disjunction, BiConsumer<Request, Match.Finished> onAnswer,
-                                                       BiConsumer<Request, Integer> onExhausted,
+    public Actor.Driver<RootResolver.Disjunction> root(Disjunction disjunction, BiConsumer<Request.Visit, Match.Finished> onAnswer,
+                                                       BiConsumer<Request.Visit, Integer> onExhausted,
                                                        Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         Actor.Driver<RootResolver.Disjunction> resolver = Actor.driver(driver -> new RootResolver.Disjunction(
@@ -286,8 +286,8 @@ public class ResolverRegistry {
         return conjunctionResolvable.retrieves().stream().collect(toMap(Function.identity(), Function.identity()));
     }
 
-    public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction, BiConsumer<Request, Explain.Finished> requestAnswered,
-                                                        BiConsumer<Request, Integer> requestFailed, Consumer<Throwable> exception) {
+    public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction, BiConsumer<Request.Visit, Explain.Finished> requestAnswered,
+                                                        BiConsumer<Request.Visit, Integer> requestFailed, Consumer<Throwable> exception) {
         Actor.Driver<RootResolver.Explain> resolver = Actor.driver(
                 driver -> new RootResolver.Explain(
                         driver, conjunction, requestAnswered, requestFailed, exception, this), executorService);

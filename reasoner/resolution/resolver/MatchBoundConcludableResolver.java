@@ -51,7 +51,7 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
-    BoundConcludableResolver.ExploringRequestState<?> createExploringRequestState(Request fromUpstream, int iteration) {
+    BoundConcludableResolver.ExploringRequestState<?> createExploringRequestState(Request.Visit fromUpstream, int iteration) {
         LOG.debug("{}: Creating new exploring request state for iteration{}, request: {}", name(), iteration, fromUpstream);
         return new MatchRequestState(fromUpstream, cache, iteration, ruleDownstreams(fromUpstream));
     }
@@ -76,7 +76,7 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
 
     private class MatchRequestState extends ExploringRequestState<ConceptMap> implements Exploration {
 
-        private MatchRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration,
+        private MatchRequestState(Request.Visit fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration,
                                   List<Downstream> ruleDownstreams) {
             super(fromUpstream, answerCache, iteration, ruleDownstreams, true);
         }

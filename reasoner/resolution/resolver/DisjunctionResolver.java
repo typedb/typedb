@@ -55,8 +55,8 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         LOG.trace("{}: received answer: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Request toDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(toDownstream);
+        Request.Visit toDownstream = fromDownstream.sourceRequest();
+        Request.Visit fromUpstream = fromUpstream(toDownstream);
         RequestState requestState = requestStates.get(fromUpstream);
 
         assert fromDownstream.answer().isCompound();
@@ -65,7 +65,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         if (!acceptedAnswer) nextAnswer(fromUpstream, requestState, iteration);
     }
 
-    protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration);
+    protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request.Visit fromUpstream, int iteration);
 
     protected abstract AnswerState toUpstreamAnswer(Compound<?, ?> answer, Response.Answer fromDownstream);
 
@@ -84,7 +84,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     }
 
     @Override
-    protected RequestState requestStateCreate(Request fromUpstream, int iteration) {
+    protected RequestState requestStateCreate(Request.Visit fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
         assert fromUpstream.partialAnswer().isCompound();
         RequestState requestState = new RequestState(iteration);
@@ -98,7 +98,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     }
 
     @Override
-    protected RequestState requestStateReiterate(Request fromUpstream, RequestState requestStatePrior,
+    protected RequestState requestStateReiterate(Request.Visit fromUpstream, RequestState requestStatePrior,
                                                  int newIteration) {
         LOG.debug("{}: Updating RequestState for iteration '{}'", name(), newIteration);
 
@@ -130,7 +130,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         }
 
         @Override
-        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request.Visit fromUpstream, int iteration) {
             answerToUpstream(upstreamAnswer, fromUpstream, iteration);
             return true;
         }

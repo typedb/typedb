@@ -32,10 +32,10 @@ import static com.vaticle.typedb.core.common.poller.Pollers.poll;
 
 public abstract class RequestState {
 
-    protected final Request fromUpstream;
+    protected final Request.Visit fromUpstream;
     private final int iteration;
 
-    protected RequestState(Request fromUpstream, int iteration) {
+    protected RequestState(Request.Visit fromUpstream, int iteration) {
         this.fromUpstream = fromUpstream;
         this.iteration = iteration;
     }
@@ -62,7 +62,7 @@ public abstract class RequestState {
         protected Poller<? extends AnswerState.Partial<?>> cacheReader;
         protected final Set<ConceptMap> deduplicationSet;
 
-        protected CachingRequestState(Request fromUpstream, AnswerCache<ANSWER> answerCache, int iteration,
+        protected CachingRequestState(Request.Visit fromUpstream, AnswerCache<ANSWER> answerCache, int iteration,
                                       boolean deduplicate) {
             super(fromUpstream, iteration);
             this.answerCache = answerCache;

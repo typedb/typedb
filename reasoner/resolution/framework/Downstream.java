@@ -50,12 +50,12 @@ public class Downstream {
         return new Downstream(sender, receiver, partialAnswer, -1);
     }
 
-    public static Downstream of(Request request) {
+    public static Downstream of(Request.Visit request) {
         return Downstream.create(request.sender(), request.receiver(), request.partialAnswer(), request.planIndex());
     }
 
-    public Request toRequest(ResolutionTracer.TraceId traceId) {
-        return Request.create(sender, receiver, traceId, partialAnswer, planIndex);
+    public Request.Visit toRequest(ResolutionTracer.TraceId traceId) {
+        return Request.Visit.create(sender, receiver, traceId, partialAnswer, planIndex);
     }
 
     public AnswerState.Partial<?> partialAnswer() {

@@ -64,7 +64,7 @@ public final class ResolutionTracer {
         return INSTANCE;
     }
 
-    public synchronized void request(Request request, int iteration) {
+    public synchronized void request(Request.Visit request, int iteration) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
@@ -116,13 +116,13 @@ public final class ResolutionTracer {
         rootRequestTracers.get(traceId).addMessage(sender, receiver, iteration, edgeType, conceptMap);
     }
 
-    public synchronized void start(Request request) {
+    public synchronized void start(Request.Visit request) {
         assert !rootRequestTracers.containsKey(request.traceId());
         rootRequestTracers.put(request.traceId(), new RootRequestTracer(request.traceId()));
         rootRequestTracers.get(request.traceId()).start();
     }
 
-    public synchronized void finish(Request request) {
+    public synchronized void finish(Request.Visit request) {
         rootRequestTracers.get(request.traceId()).finish();
     }
 

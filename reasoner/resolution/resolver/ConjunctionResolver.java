@@ -77,14 +77,14 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         if (isTerminated()) return;
 
         Downstream toDownstream = Downstream.of(fromDownstream.sourceRequest());
-        Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
+        Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         RequestState requestState = requestStates.get(fromUpstream);
 
         Plans.Plan plan = plans.getActive(fromUpstream);
 
         // TODO: this is a bit of a hack, we want requests to a negation to be "single use", otherwise we can end up in an infinite loop
         //  where the request to the negation never gets removed and we constantly re-request from it!
-        //  this could be either implemented with a different response type: FinalAnswer, or splitting Request into ReusableRequest vs SingleRequest
+        //  this could be either implemented with a different response type: FinalAnswer, or splitting Visit into ReusableRequest vs SingleRequest
         if (plan.get(toDownstream.planIndex()).isNegated()) requestState.downstreamManager().remove(toDownstream);
 
         Partial.Compound<?, ?> partialAnswer = fromDownstream.answer().asCompound();
@@ -97,7 +97,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
     }
 
-    boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream, int iteration) {
+    boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request.Visit fromUpstream, int iteration) {
         RequestState requestState = requestStates.get(fromUpstream);
         if (!requestState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
             requestState.deduplicationSet().add(upstreamAnswer.conceptMap());
@@ -108,7 +108,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
     }
 
-    private void toNextChild(Response.Answer fromDownstream, int iteration, Request fromUpstream,
+    private void toNextChild(Response.Answer fromDownstream, int iteration, Request.Visit fromUpstream,
                              RequestState requestState, Plans.Plan plan) {
         int nextResolverIndex = fromDownstream.planIndex() + 1;
         Resolvable<?> nextResolvable = plan.get(nextResolverIndex);
@@ -128,7 +128,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         if (isTerminated()) return;
 
         Downstream downstream = Downstream.of(fromDownstream.sourceRequest());
-        Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
+        Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         RequestState requestState = this.requestStates.get(fromUpstream);
 
         if (iteration < requestState.iteration()) {
@@ -168,7 +168,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     }
 
     @Override
-    protected RequestState requestStateCreate(Request fromUpstream, int iteration) {
+    protected RequestState requestStateCreate(Request.Visit fromUpstream, int iteration) {
         LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
         Plans.Plan plan = plans.create(fromUpstream, resolvables, negateds);
         assert !plan.isEmpty() && fromUpstream.partialAnswer().isCompound();
@@ -178,7 +178,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     }
 
     @Override
-    protected RequestState requestStateReiterate(Request fromUpstream, RequestState requestStatePrior, int newIteration) {
+    protected RequestState requestStateReiterate(Request.Visit fromUpstream, RequestState requestStatePrior, int newIteration) {
         assert newIteration > requestStatePrior.iteration();
         LOG.debug("{}: Updating RequestState for iteration '{}'", name(), newIteration);
         Plans.Plan plan = plans.create(fromUpstream, resolvables, negateds);
@@ -188,7 +188,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         return requestStateNextIteration;
     }
 
-    private void initialiseRequestState(RequestState requestState, Request fromUpstream, Plans.Plan plan) {
+    private void initialiseRequestState(RequestState requestState, Request.Visit fromUpstream, Plans.Plan plan) {
         ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
         Partial<?> downstream = toDownstream(fromUpstream.partialAnswer().asCompound(), childResolver, plan.get(0));
         requestState.downstreamManager().add(Downstream.create(driver(), childResolver.resolver(), downstream, 0));
@@ -215,7 +215,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     static class Plans {
         private final Map<ConceptMap, Plan> plans;
-        private final Map<Request, Plan> activePlans;
+        private final Map<Request.Visit, Plan> activePlans;
         private final Map<Resolvable<?>, Map<ConceptMap, Integer>> visitedWithBoundsCount;
 
         public Plans() {
@@ -224,7 +224,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             this.visitedWithBoundsCount = new HashMap<>();
         }
 
-        public Plan create(Request fromUpstream, Set<Resolvable<?>> resolvables, Set<Negated> negations) {
+        public Plan create(Request.Visit fromUpstream, Set<Resolvable<?>> resolvables, Set<Negated> negations) {
             ConceptMap bounds = fromUpstream.partialAnswer().conceptMap();
             updateCountsWithBounds(resolvables, bounds);
             Map<Resolvable<?>, Integer> visitCounts = getCountsForBounds(resolvables, bounds);
@@ -237,7 +237,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             return plan;
         }
 
-        public Plan getActive(Request fromUpstream) {
+        public Plan getActive(Request.Visit fromUpstream) {
             assert activePlans.containsKey(fromUpstream);
             return activePlans.get(fromUpstream);
         }

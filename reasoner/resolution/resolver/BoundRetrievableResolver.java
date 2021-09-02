@@ -39,7 +39,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver> {
 
     private final AnswerCache<ConceptMap> cache;
-    private final Map<Request, RequestState> requestStates;
+    private final Map<Request.Visit, RequestState> requestStates;
     private final ConceptMap bounds;
 
     public BoundRetrievableResolver(Driver<BoundRetrievableResolver> driver, Retrievable retrievable, ConceptMap bounds,
@@ -52,7 +52,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     }
 
     @Override
-    public void receiveRequest(Request fromUpstream, int iteration) {
+    public void receiveRequest(Request.Visit fromUpstream, int iteration) {
         if (fromUpstream.isToSubsumed()) {
             assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
             receiveSubsumedRequest(fromUpstream.asToSubsumed(), iteration);
@@ -64,7 +64,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         }
     }
 
-    private void receiveSubsumedRequest(Request.ToSubsumed fromUpstream, int iteration) {
+    private void receiveSubsumedRequest(Request.Visit.ToSubsumed fromUpstream, int iteration) {
         RequestState requestState = requestStates.computeIfAbsent(
                 fromUpstream, request -> new BoundRequestState(request, cache, iteration));
         if (cache.sourceExhausted()) {
@@ -81,19 +81,19 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         }
     }
 
-    private void receiveSubsumerRequest(Request.ToSubsumer fromUpstream, int iteration) {
+    private void receiveSubsumerRequest(Request.Visit.ToSubsumer fromUpstream, int iteration) {
         sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
                 fromUpstream, request -> new SubsumerRequestState(request, cache, iteration)));
     }
 
-    private void receiveDirectRequest(Request fromUpstream, int iteration) {
+    private void receiveDirectRequest(Request.Visit fromUpstream, int iteration) {
         sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
                 fromUpstream, request -> new BoundRequestState(request, cache, iteration)));
     }
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
-        Request.ToSubsumed fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
+        Request.Visit.ToSubsumed fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
         if (cache.sourceExhausted()) sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
         else {
             cache.add(fromDownstream.answer().conceptMap());
@@ -109,11 +109,11 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
         cache.setComplete();
-        Request fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
+        Request.Visit fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
         sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
     }
 
-    private void sendAnswerOrFail(Request fromUpstream, int iteration, RequestState requestState) {
+    private void sendAnswerOrFail(Request.Visit fromUpstream, int iteration, RequestState requestState) {
         Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
@@ -122,8 +122,8 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         }
     }
 
-    private void requestFromSubsumer(Request.ToSubsumed fromUpstream, int iteration) {
-        Request toSubsumer = Request.ToSubsumer.create(
+    private void requestFromSubsumer(Request.Visit.ToSubsumed fromUpstream, int iteration) {
+        Request.Visit toSubsumer = Request.Visit.ToSubsumer.create(
                 driver(), fromUpstream.subsumer(), fromUpstream, fromUpstream.partialAnswer());
         requestFromDownstream(toSubsumer, fromUpstream, iteration);
     }
@@ -135,7 +135,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     private static class BoundRequestState extends RequestState.CachingRequestState<ConceptMap> {
 
-        public BoundRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
+        public BoundRequestState(Request.Visit fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
             super(fromUpstream, answerCache, iteration, false);
         }
 
@@ -147,7 +147,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     private class SubsumerRequestState extends RequestState.CachingRequestState<ConceptMap> {
 
-        public SubsumerRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
+        public SubsumerRequestState(Request.Visit fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
             super(fromUpstream, answerCache, iteration, false);
         }
 

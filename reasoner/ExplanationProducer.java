@@ -85,20 +85,20 @@ public class ExplanationProducer implements Producer<Explanation> {
         processing.addAndGet(toRequest);
     }
 
-    private Request createExplanationRequest(int explainRequestId) {
+    private Request.Visit createExplanationRequest(int explainRequestId) {
         Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
-        return Request.create(explainer, ResolutionTracer.TraceId.create(System.identityHashCode(this), explainRequestId), downstream);
+        return Request.Visit.create(explainer, ResolutionTracer.TraceId.create(System.identityHashCode(this), explainRequestId), downstream);
     }
 
     private void requestExplanation() {
-        Request explainRequest = createExplanationRequest(requestTraceIdCounter);
+        Request.Visit explainRequest = createExplanationRequest(requestTraceIdCounter);
         if (options.traceInference()) ResolutionTracer.get().start(explainRequest);
         explainer.execute(explainer -> explainer.receiveRequest(explainRequest, iteration));
         requestTraceIdCounter += 1;
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestAnswered(Request requestAnswered, Explain.Finished explainedAnswer) {
+    private void requestAnswered(Request.Visit requestAnswered, Explain.Finished explainedAnswer) {
         if (options.traceInference()) ResolutionTracer.get().finish(requestAnswered);
         Explanation explanation = explainedAnswer.explanation();
         explainablesManager.setAndRecordExplainables(explanation.conditionAnswer());
@@ -108,7 +108,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestFailed(Request failedRequest, int iteration) {
+    private void requestFailed(Request.Visit failedRequest, int iteration) {
         LOG.trace("Failed to find answer to request in iteration: " + iteration);
         if (options.traceInference()) ResolutionTracer.get().finish(failedRequest);
         if (!done && iteration == this.iteration && !mustReiterate()) {

@@ -54,7 +54,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     protected final ConceptMap bounds;
     private final Driver<ConcludableResolver> parent;
-    private final Map<Request, ExploringRequestState<?>> requestStates;
+    private final Map<Request.Visit, ExploringRequestState<?>> requestStates;
     private boolean requiresReiteration;
 
     public BoundConcludableResolver(Driver<BoundConcludableResolver> driver, Driver<ConcludableResolver> parent,
@@ -72,8 +72,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     }
 
     @Override
-    public void receiveRequest(Request fromUpstream, int iteration) {
-        LOG.trace("{}: received Request: {}", name(), fromUpstream);
+    public void receiveRequest(Request.Visit fromUpstream, int iteration) {
+        LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (isTerminated()) return;
         if (fromUpstream.isToSubsumed()) {
             assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
@@ -86,7 +86,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
     }
 
-    private void receiveSubsumedRequest(Request.ToSubsumed fromUpstream, int iteration) {
+    private void receiveSubsumedRequest(Request.Visit.ToSubsumed fromUpstream, int iteration) {
         throw TypeDBException.of(ILLEGAL_STATE);
 //        RequestState requestState = requestStates.computeIfAbsent(
 //                fromUpstream, request -> new BoundRetrievableResolver.BoundRequestState(request, cache, iteration));
@@ -104,13 +104,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 //        }
     }
 
-    private void receiveSubsumerRequest(Request.ToSubsumer fromUpstream, int iteration) {
+    private void receiveSubsumerRequest(Request.Visit.ToSubsumer fromUpstream, int iteration) {
         throw TypeDBException.of(ILLEGAL_STATE);
 //        sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
 //                fromUpstream, request -> new BoundRetrievableResolver.SubsumerRequestState(request, cache, iteration)));
     }
 
-    private void receiveDirectRequest(Request fromUpstream, int iteration) {
+    private void receiveDirectRequest(Request.Visit fromUpstream, int iteration) {
         assert fromUpstream.partialAnswer().isConcludable();
         ExploringRequestState<?> requestState = requestStates.computeIfAbsent(
                 fromUpstream, request -> createExploringRequestState(fromUpstream, iteration));
@@ -148,12 +148,12 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         return Optional.empty();
     }
 
-    abstract ExploringRequestState<?> createExploringRequestState(Request fromUpstream, int iteration);
+    abstract ExploringRequestState<?> createExploringRequestState(Request.Visit fromUpstream, int iteration);
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         if (isTerminated()) return;
-        Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
+        Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         if (requestState.newAnswer(fromDownstream.answer())) requestState.downstreamManager().clearOutdatedBlocks();
         answerUpstreamOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
@@ -164,8 +164,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         LOG.trace("{}: received Fail: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Request toDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(toDownstream);
+        Request.Visit toDownstream = fromDownstream.sourceRequest();
+        Request.Visit fromUpstream = fromUpstream(toDownstream);
 
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
@@ -173,7 +173,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         answerUpstreamOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
     }
 
-    private void answerUpstreamOrSearchDownstreamOrFail(Request fromUpstream, ExploringRequestState<?> requestState,
+    private void answerUpstreamOrSearchDownstreamOrFail(Request.Visit fromUpstream, ExploringRequestState<?> requestState,
                                                         int iteration) {
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
         if (upstreamAnswer.isPresent()) {
@@ -198,7 +198,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         if (isTerminated()) return;
 
         Downstream cyclingDownstream = Downstream.of(fromDownstream.sourceRequest());
-        Request fromUpstream = fromUpstream(fromDownstream.sourceRequest());
+        Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
 
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
@@ -227,7 +227,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         return requestState.nextAnswer().map(Partial::asCompound);
     }
 
-    protected void answerToUpstream(AnswerState answer, Request fromUpstream, ExploringRequestState<?> requestState, int iteration) {
+    protected void answerToUpstream(AnswerState answer, Request.Visit fromUpstream, ExploringRequestState<?> requestState, int iteration) {
         /*
         When we only require 1 answer (eg. when the conjunction is already fully bound), we can short circuit
         and prevent exploration of further rules.
@@ -243,9 +243,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         answerToUpstream(answer, fromUpstream, iteration);
     }
 
-    private void requestFromSubsumer(Request.ToSubsumed fromUpstream, int iteration) {
-        Request toSubsumer = Request.ToSubsumer.create(driver(), fromUpstream.subsumer(),
-                                                       fromUpstream, fromUpstream.partialAnswer());
+    private void requestFromSubsumer(Request.Visit.ToSubsumed fromUpstream, int iteration) {
+        Request.Visit toSubsumer = Request.Visit.ToSubsumer.create(driver(), fromUpstream.subsumer(),
+                                                                   fromUpstream, fromUpstream.partialAnswer());
         requestFromDownstream(toSubsumer, fromUpstream, iteration);
     }
 
@@ -267,7 +267,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         requestStates.clear();
     }
 
-    protected List<Downstream> ruleDownstreams(Request fromUpstream) {
+    protected List<Downstream> ruleDownstreams(Request.Visit fromUpstream) {
         List<Downstream> downstreams = new ArrayList<>();
         Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
         for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry:
@@ -286,7 +286,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         private final ConcludableDownstreamManager downstreamManager;
 
-        protected ExploringRequestState(Request fromUpstream, AnswerCache<ANSWER> answerCache, int iteration,
+        protected ExploringRequestState(Request.Visit fromUpstream, AnswerCache<ANSWER> answerCache, int iteration,
                                         List<Downstream> ruleDownstreams, boolean deduplicate) {
             super(fromUpstream, answerCache, iteration, deduplicate);
             this.downstreamManager = new ConcludableDownstreamManager(ruleDownstreams);

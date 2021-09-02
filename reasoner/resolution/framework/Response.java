@@ -30,7 +30,7 @@ import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public interface Response {
-    Request sourceRequest();
+    Request.Visit sourceRequest();
 
     boolean isAnswer();
 
@@ -57,20 +57,20 @@ public interface Response {
     }
 
     class Answer implements Response {
-        private final Request sourceRequest;
+        private final Request.Visit sourceRequest;
         private final Partial<?> answer;
 
-        private Answer(Request sourceRequest, Partial<?> answer) {
+        private Answer(Request.Visit sourceRequest, Partial<?> answer) {
             this.sourceRequest = sourceRequest;
             this.answer = answer;
         }
 
-        public static Answer create(Request sourceRequest, Partial<?> answer) {
+        public static Answer create(Request.Visit sourceRequest, Partial<?> answer) {
             return new Answer(sourceRequest, answer);
         }
 
         @Override
-        public Request sourceRequest() {
+        public Request.Visit sourceRequest() {
             return sourceRequest;
         }
 
@@ -121,14 +121,14 @@ public interface Response {
     }
 
     class Fail implements Response {
-        private final Request sourceRequest;
+        private final Request.Visit sourceRequest;
 
-        public Fail(Request sourceRequest) {
+        public Fail(Request.Visit sourceRequest) {
             this.sourceRequest = sourceRequest;
         }
 
         @Override
-        public Request sourceRequest() {
+        public Request.Visit sourceRequest() {
             return sourceRequest;
         }
 
@@ -158,20 +158,20 @@ public interface Response {
 
     class Cycle implements Response {
 
-        private final Request sourceRequest;
+        private final Request.Visit sourceRequest;
         protected Set<Origin> origins;
 
-        public Cycle(Request sourceRequest, Set<Origin> origins) {
+        public Cycle(Request.Visit sourceRequest, Set<Origin> origins) {
             this.sourceRequest = sourceRequest;
             this.origins = origins;
         }
 
-        private Cycle(Request sourceRequest) {
+        private Cycle(Request.Visit sourceRequest) {
             this.sourceRequest = sourceRequest;
         }
 
         @Override
-        public Request sourceRequest() {
+        public Request.Visit sourceRequest() {
             return sourceRequest;
         }
 
@@ -207,7 +207,7 @@ public interface Response {
 
             private final int numAnswersSeen;
 
-            public Origin(Request sourceRequest, int numAnswersSeen) {
+            public Origin(Request.Visit sourceRequest, int numAnswersSeen) {
                 super(sourceRequest);
                 this.origins = set();
                 this.numAnswersSeen = numAnswersSeen;

@@ -44,7 +44,7 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
-    ExploringRequestState<?> createExploringRequestState(Request fromUpstream, int iteration) {
+    ExploringRequestState<?> createExploringRequestState(Request.Visit fromUpstream, int iteration) {
         LOG.debug("{}: Creating new exploring request state for iteration{}, request: {}", name(), iteration,
                   fromUpstream);
         return new ExplainRequestState(fromUpstream, cache, iteration, ruleDownstreams(fromUpstream));
@@ -57,7 +57,7 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
 
     private class ExplainRequestState extends ExploringRequestState<AnswerState.Partial.Concludable<?>>  {
 
-        private ExplainRequestState(Request fromUpstream, AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
+        private ExplainRequestState(Request.Visit fromUpstream, AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
                                     int iteration, List<Downstream> ruleDownstreams) {
             super(fromUpstream, answerCache, iteration, ruleDownstreams, false);
         }
