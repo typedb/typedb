@@ -116,6 +116,14 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     }
 
     @Override
+    protected void receiveRevisit(Request.Revisit fromUpstream, int iteration) {
+        ConclusionRequestState<? extends Concludable<?>> requestState = requestStates.get(fromUpstream.visit());
+        requestState.downstreamManager().unblock(fromUpstream.cycle());
+        sendAnswerOrSearchDownstreamOrFail(fromUpstream.visit(), requestState, iteration);
+    }
+
+
+    @Override
     protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
         if (isTerminated()) return;
@@ -136,9 +144,10 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     protected void receiveCycle(Response.Cycle fromDownstream, int iteration) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Request.Visit toDownstream = fromDownstream.sourceRequest();
-        Request.Visit fromUpstream = fromUpstream(toDownstream);
+        Downstream downstream = Downstream.of(fromDownstream.sourceRequest());
+        Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream);
+        iterate(fromDownstream.origins()).forEachRemaining(o -> requestState.downstreamManager().block(downstream, o));
         if (requestState.waitedMaterialisations().waiting()) requestState.waitedMaterialisations().addWaitingRequest(fromUpstream, iteration);
         else cycleToUpstream(fromUpstream, fromDownstream.origins(), iteration);
     }
@@ -252,20 +261,20 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
     private static abstract class ConclusionRequestState<CONCLUDABLE extends Concludable<?>> extends RequestState {
 
-        private final DownstreamManager downstreamManager;
+        private final DownstreamManager.Blockable downstreamManager;
         private final WaitedMaterialisations waitedMaterialisations;
         private boolean complete;
         protected FunctionalIterator<CONCLUDABLE> materialisations;
 
         protected ConclusionRequestState(Request.Visit fromUpstream, int iteration, List<Downstream> conditionDownstreams) {
             super(fromUpstream, iteration);
-            this.downstreamManager = new DownstreamManager(conditionDownstreams);
+            this.downstreamManager = new DownstreamManager.Blockable(conditionDownstreams);
             this.materialisations = Iterators.empty();
             this.complete = false;
             this.waitedMaterialisations = new WaitedMaterialisations();
         }
 
-        public DownstreamManager downstreamManager() {
+        public DownstreamManager.Blockable downstreamManager() {
             return downstreamManager;
         }
 

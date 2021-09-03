@@ -69,6 +69,23 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     }
 
     @Override
+    protected void receiveRevisit(Request.Revisit fromUpstream, int iteration) {
+        LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
+        assert isInitialised;
+        if (isTerminated()) return;
+
+        RequestState requestState = requestStates.get(fromUpstream.visit());
+        requestState.downstreamManager().unblock(fromUpstream.cycle());
+        if (iteration < requestState.iteration()) {
+            // short circuit if the request came from a prior iteration
+            failToUpstream(fromUpstream.visit(), iteration);
+        } else {
+            assert iteration == requestState.iteration();
+            nextAnswer(fromUpstream.visit(), requestState, iteration);
+        }
+    }
+
+    @Override
     protected void receiveFail(Response.Fail fromDownstream, int iteration) {
         LOG.trace("{}: received Exhausted, with iter {}: {}", name(), iteration, fromDownstream);
         if (isTerminated()) return;

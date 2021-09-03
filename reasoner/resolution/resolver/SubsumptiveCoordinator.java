@@ -92,6 +92,39 @@ public abstract class SubsumptiveCoordinator<
         }
     }
 
+    @Override
+    public void receiveRevisit(Request.Revisit fromUpstream, int iteration) {
+        LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
+        assert isInitialised;
+        if (isTerminated()) return;
+
+        Driver<? extends Resolver<?>> root = fromUpstream.visit().partialAnswer().root();
+        assert iterationByRoot.get(root) == iteration;
+        if (iteration > iterationByRoot.get(root)) {
+            prepareNextIteration(root, iteration);
+        }
+        if (iteration < iterationByRoot.get(root)) {
+            // short circuit if the request came from a prior iteration
+            failToUpstream(fromUpstream.visit(), iteration);
+        } else {
+            ConceptMap bounds = fromUpstream.visit().partialAnswer().conceptMap();
+            Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.visit().partialAnswer());
+            // TODO: Re-enable subsumption when async bug is fixed
+            // Optional<ConceptMap> subsumer = subsumptionTrackers.computeIfAbsent(
+            //         root, r -> new SubsumptionTracker()).getFinishedSubsumer(bounds);
+            // // If there is a finished subsumer, let the Worker know that it can go there for answers
+            // Visit request = subsumer
+            //         .map(conceptMap -> Visit.ToSubsumed.create(
+            //                 driver(), worker, workersByRoot.get(root).get(conceptMap),
+            //                 fromUpstream.partialAnswer()))
+            //         .orElseGet(() -> Visit.create(driver(), worker, fromUpstream.partialAnswer()));
+            Request.Visit visit = Request.Visit.create(driver(), worker, fromUpstream.visit().traceId(), fromUpstream.visit().partialAnswer());
+            Request.Revisit revisit = Request.Revisit.create(visit, fromUpstream.cycle());
+            assert requestMapByRoot.get(root).get(new Pair<>(visit, visit.traceId())).equals(fromUpstream.visit());
+            requestFromDownstream(revisit, fromUpstream, iteration);
+        }
+    }
+
     private void prepareNextIteration(Driver<? extends Resolver<?>> root, int iteration) {
         iterationByRoot.put(root, iteration);
         cacheRegistersByRoot.remove(root);

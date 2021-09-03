@@ -64,6 +64,11 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         }
     }
 
+    @Override
+    protected void receiveRevisit(Request.Revisit fromUpstream, int iteration) {
+        receiveVisit(fromUpstream.visit(), iteration);
+    }
+
     private void receiveSubsumedRequest(Request.Visit.ToSubsumed fromUpstream, int iteration) {
         RequestState requestState = requestStates.computeIfAbsent(
                 fromUpstream, request -> new BoundRequestState(request, cache, iteration));

@@ -77,6 +77,11 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     @Override
+    protected void receiveRevisit(Request.Revisit fromUpstream, int iteration) {
+        receiveVisit(fromUpstream.visit(), iteration);
+    }
+
+    @Override
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
 

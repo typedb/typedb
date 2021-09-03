@@ -123,13 +123,33 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             cycleToUpstream(fromUpstream, cache().size(), iteration);
         } else if (requestState.downstreamManager().hasNextUnblocked()) {
             requestFromDownstream(requestState.downstreamManager().nextUnblocked(), fromUpstream, iteration);
-        } else if (requestState.downstreamManager().allDownstreamsCycleToHere()) {
+        } else if (requestState.downstreamManager().allDownstreamsCycleToHereOnly()) {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
         } else {
-            Downstream downstream = requestState.downstreamManager().next();
-            requestState.downstreamManager().unblock(downstream);
-            requestFromDownstream(downstream, fromUpstream, iteration);
+            cycleToUpstream(fromUpstream, requestState.downstreamManager().cyclesNotOriginatingHere(), iteration);
+        }
+    }
+
+    @Override
+    protected void receiveRevisit(Request.Revisit fromUpstream, int iteration) {
+        assert fromUpstream.visit().partialAnswer().isConcludable();
+        ExploringRequestState<?> requestState = requestStates.get(fromUpstream.visit());
+        Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
+        requestState.downstreamManager().unblock(fromUpstream.cycle());
+        if (upstreamAnswer.isPresent()) {
+            answerToUpstream(upstreamAnswer.get(), fromUpstream.visit(), requestState, iteration);
+        } else if (cache().isComplete()) {
+            failToUpstream(fromUpstream.visit(), iteration);
+        } else if (isCycle(fromUpstream.visit().partialAnswer()).isPresent()) {
+            cycleToUpstream(fromUpstream.visit(), cache().size(), iteration);
+        } else if (requestState.downstreamManager().hasNextUnblocked()) {
+            requestFromDownstream(requestState.downstreamManager().nextUnblocked(), fromUpstream, iteration);
+        } else if (requestState.downstreamManager().allDownstreamsCycleToHereOnly()) {
+            cache().setComplete();
+            failToUpstream(fromUpstream.visit(), iteration);
+        } else {
+            cycleToUpstream(fromUpstream.visit(), requestState.downstreamManager().cyclesNotOriginatingHere(), iteration);
         }
     }
 
@@ -155,7 +175,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         if (isTerminated()) return;
         Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
-        if (requestState.newAnswer(fromDownstream.answer())) requestState.downstreamManager().clearOutdatedBlocks();
+        if (requestState.newAnswer(fromDownstream.answer())) requestState.downstreamManager().unblockOutdated(); // TODO: This needs to trigger the creation of a Revisit Request somehow.
         answerUpstreamOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
     }
 
@@ -182,13 +202,11 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             failToUpstream(fromUpstream, iteration);
         } else if (requestState.downstreamManager().hasNextUnblocked()) {
             requestFromDownstream(requestState.downstreamManager().nextUnblocked(), fromUpstream, iteration);
-        } else if (requestState.downstreamManager().allDownstreamsCycleToHere()) {
+        } else if (requestState.downstreamManager().allDownstreamsCycleToHereOnly()) {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
         } else {
-            Downstream downstream = requestState.downstreamManager().next();
-            requestState.downstreamManager().unblock(downstream);
-            requestFromDownstream(downstream, fromUpstream, iteration);
+            cycleToUpstream(fromUpstream, requestState.downstreamManager().cyclesNotOriginatingHere(), iteration);
         }
     }
 
@@ -215,11 +233,11 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             failToUpstream(fromUpstream, iteration);
         } else if (requestState.downstreamManager().hasNextUnblocked()) {
             requestFromDownstream(requestState.downstreamManager().nextUnblocked(), fromUpstream, iteration);
-        } else if (requestState.downstreamManager().allDownstreamsCycleToHere()) {
+        } else if (requestState.downstreamManager().allDownstreamsCycleToHereOnly()) {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
         } else {
-            cycleToUpstream(fromUpstream, requestState.downstreamManager().visitable(), iteration);
+            cycleToUpstream(fromUpstream, requestState.downstreamManager().cyclesNotOriginatingHere(), iteration);
         }
     }
 
@@ -311,7 +329,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                 super(ruleDownstreams);
             }
 
-            public void clearOutdatedBlocks() {
+            public void unblockOutdated() {
                 // TODO: Find the most idiomatic way to do this, ideally the map should be final
                 // TODO: .remove() is unsupported on iterators
                 Map<Downstream, Set<Response.Cycle.Origin>> newBlocked = new LinkedHashMap<>();
@@ -332,16 +350,16 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                 return originatedHere(cycleOrigin) && cycleOrigin.numAnswersSeen() < cache().size();
             }
 
-            public Set<Response.Cycle.Origin> visitable() {
+            public Set<Response.Cycle.Origin> cyclesNotOriginatingHere() {
                 return iterate(blocked.values()).flatMap(Iterators::iterate).filter(o -> !originatedHere(o)).toSet();
             }
 
-            public boolean allDownstreamsCycleToHere() {
+            public boolean allDownstreamsCycleToHereOnly() {
                 return iterate(blocked.values())
                         .filter(cycleOrigins -> iterate(cycleOrigins)
-                                .filter(this::originatedHere)
+                                .filter(o -> !originatedHere(o))
                                 .first()
-                                .isEmpty())
+                                .isPresent())
                         .first()
                         .isEmpty();
             }

@@ -82,7 +82,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     public abstract void receiveVisit(Request.Visit fromUpstream, int iteration);
 
-    public abstract void receiveRevisit(Request.Revisit fromUpstream, int iteration);
+    protected abstract void receiveRevisit(Request.Revisit fromUpstream, int iteration);
 
     protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
 
@@ -108,7 +108,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     // TODO: Rename to sendRequest or request
     protected void requestFromDownstream(Downstream downstream, Request.Visit fromUpstream, int iteration) {
-        requestFromDownstream(downstream.toRequest(fromUpstream.traceId()), fromUpstream, iteration);
+        requestFromDownstream(downstream.toVisit(fromUpstream.traceId()), fromUpstream, iteration);
     }
 
     protected void requestFromDownstream(Request.Visit request, Request.Visit fromUpstream, int iteration) {
@@ -118,8 +118,22 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         if (registry.resolutionTracing()) ResolutionTracer.get().request(request, iteration);
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(new Pair<>(request, request.traceId()), fromUpstream);
-        Driver<? extends Resolver<?>> receiver = request.receiver();
-        receiver.execute(actor -> actor.receiveVisit(request, iteration));
+        request.receiver().execute(actor -> actor.receiveVisit(request, iteration));
+    }
+
+    protected void requestFromDownstream(Downstream downstream, Request.Revisit fromUpstream, int iteration) {
+        requestFromDownstream(downstream.toRevisit(fromUpstream.visit().traceId(), fromUpstream.cycle()), fromUpstream, iteration);
+    }
+
+    protected void requestFromDownstream(Request.Revisit toRevisit, Request.Revisit fromUpstream, int iteration) {
+        Request.Visit downstream = toRevisit.visit();
+        LOG.trace("{} : Sending a new answer Visit to downstream: {}", name(), downstream);
+        assert fromUpstream.visit().traceId().rootId() != -1;
+        assert downstream.traceId() == fromUpstream.visit().traceId();
+        if (registry.resolutionTracing()) ResolutionTracer.get().request(downstream, iteration);
+        assert requestRouter.containsKey(new Pair<>(downstream, downstream.traceId()));
+        assert requestRouter.get(new Pair<>(downstream, downstream.traceId())).equals(fromUpstream.visit());
+        downstream.receiver().execute(actor -> actor.receiveVisit(downstream, iteration));
     }
 
     // TODO: Rename to sendResponse or respond
@@ -286,15 +300,21 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
                 return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
             }
 
-            public void block(Downstream blocked, Response.Cycle.Origin blocker) {
+            public void block(Downstream blocked, Response.Cycle.Origin blocker) { // TODO Should take a set
                 assert downstreams.contains(blocked) || this.blocked.containsKey(blocked);
                 this.blocked.computeIfAbsent(blocked, b -> new HashSet<>()).add(blocker);
                 downstreams.remove(blocked);
             }
 
-            public void unblock(Downstream downstream) {
-                blocked.remove(downstream);
-                downstreams.add(downstream);
+            public void unblock(Response.Cycle.Origin cycleOrigin) {
+                blocked.forEach((downstream, blockingCycles) -> {
+                    // TODO: Actually add this to a set of Downstreams that will create Revisit requests
+                    blockingCycles.remove(cycleOrigin);
+                    if (blockingCycles.isEmpty()) {
+                        blocked.remove(downstream);
+                        downstreams.add(downstream);
+                    }
+                });
             }
         }
     }
