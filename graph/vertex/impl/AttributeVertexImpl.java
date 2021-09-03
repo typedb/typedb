@@ -255,11 +255,13 @@ public abstract class AttributeVertexImpl {
     public static abstract class Write<VALUE> extends ThingVertexImpl.Write implements AttributeVertex.Write<VALUE> {
 
         private final VertexIID.Attribute<VALUE> attributeIID;
+        private boolean isInferred;
         private java.lang.Boolean isPersisted;
 
         Write(ThingGraph graph, VertexIID.Attribute<VALUE> iid, boolean isInferred) {
             super(graph, iid);
             this.attributeIID = iid;
+            this.isInferred = isInferred;
             this.isPersisted = null;
         }
 
@@ -311,6 +313,16 @@ public abstract class AttributeVertexImpl {
                 // TODO: implement for ValueType.TEXT
                 return null;
             }
+        }
+
+        @Override
+        public void isInferred(boolean isInferred) {
+            this.isInferred = isInferred;
+        }
+
+        @Override
+        public boolean isInferred() {
+            return isInferred;
         }
 
         public boolean isPersisted() {
