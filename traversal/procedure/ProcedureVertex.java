@@ -64,7 +64,7 @@ public abstract class ProcedureVertex<
 
     private final boolean isStartingVertex;
     private final AtomicReference<Set<Integer>> dependedEdgeOrders;
-    private ProcedureEdge<?, ?> branchEdge;
+    private ProcedureEdge<?, ?> iteratorEdge;
 
     ProcedureVertex(Identifier identifier, boolean isStartingVertex) {
         super(identifier);
@@ -96,7 +96,7 @@ public abstract class ProcedureVertex<
 
     public ProcedureEdge<?, ?> branchEdge() {
         if (ins().isEmpty() || isStartingVertex()) return null;
-        else return branchEdge;
+        else return iteratorEdge;
     }
 
     public ProcedureVertex.Thing asThing() {

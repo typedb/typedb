@@ -134,7 +134,7 @@ public class TraversalTest {
                     4: ($rel *--[RELATING]--> $rel:$role:$friend:1)
                     5: ($rel:$role:$friend:1 <--[PLAYING]--* $friend)
             */
-            GraphProcedure.Builder proc = GraphProcedure.builder(5);
+            GraphProcedure.Builder proc = GraphProcedure.builder();
             ProcedureVertex.Type rel_type = proc.namedType("rel-type", true);
             rel_type.props().labels(set(Label.of("friendship")));
 
@@ -149,7 +149,7 @@ public class TraversalTest {
 
             ProcedureVertex.Thing role = proc.scopedThing(rel, role_type, friend, 0);
 
-            proc.forwardRelates(1, rel_type, role_type );
+            proc.forwardRelates(1, rel_type, role_type);
             proc.backwardIsa(2, rel_type, rel, true);
             proc.backwardIsa(3, role_type, role, true);
             proc.forwardRelating(4, rel, role);
@@ -165,7 +165,7 @@ public class TraversalTest {
             );
 
             GraphProcedure procedure = proc.build();
-            FunctionalIterator<VertexMap> vertices = transaction.traversal().iterator(procedure, params, filter);
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
             assertEquals(1, vertices.count());
         }
     }

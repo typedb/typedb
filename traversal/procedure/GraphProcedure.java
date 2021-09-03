@@ -376,22 +376,6 @@ public class GraphProcedure implements PermutationProcedure {
             return edge;
         }
 
-        public ProcedureEdge.Native.Type.Relates.Forward forwardRelates(
-                int order, ProcedureVertex.Type relationType, ProcedureVertex.Type roleType) {
-            ProcedureEdge.Native.Type.Relates.Forward edge =
-                    new ProcedureEdge.Native.Type.Relates.Forward(relationType, roleType, order);
-            registerEdge(edge);
-            return edge;
-        }
-
-        public ProcedureEdge.Native.Type.Relates.Backward backwardRelates(
-                int order, ProcedureVertex.Type roleType, ProcedureVertex.Type relationType) {
-            ProcedureEdge.Native.Type.Relates.Backward edge =
-                    new ProcedureEdge.Native.Type.Relates.Backward(roleType, relationType, order);
-            registerEdge(edge);
-            return edge;
-        }
-
         public ProcedureEdge.Equal forwardEqual(int order, ProcedureVertex.Type from, ProcedureVertex.Type to) {
             ProcedureEdge.Equal edge = new ProcedureEdge.Equal(from, to, order, Encoding.Direction.Edge.FORWARD);
             registerEdge(edge);
@@ -421,21 +405,20 @@ public class GraphProcedure implements PermutationProcedure {
         }
 
         public ProcedureEdge.Native.Type.Relates.Forward forwardRelates(
-                int order, ProcedureVertex.Type relation, ProcedureVertex.Type playerType) {
+                int order, ProcedureVertex.Type relationType, ProcedureVertex.Type roleType) {
             ProcedureEdge.Native.Type.Relates.Forward edge =
-                    new ProcedureEdge.Native.Type.Relates.Forward(relation, playerType, order);
+                    new ProcedureEdge.Native.Type.Relates.Forward(relationType, roleType, order);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Type.Relates.Backward backwardRelates(
-                int order, ProcedureVertex.Type playerType, ProcedureVertex.Type relation) {
+                int order, ProcedureVertex.Type roleType, ProcedureVertex.Type relationType) {
             ProcedureEdge.Native.Type.Relates.Backward edge =
-                    new ProcedureEdge.Native.Type.Relates.Backward(playerType, relation, order);
+                    new ProcedureEdge.Native.Type.Relates.Backward(roleType, relationType, order);
             registerEdge(edge);
             return edge;
         }
-
 
         public ProcedureEdge.Native.Thing.Has.Forward forwardHas(
                 int order, ProcedureVertex.Thing owner, ProcedureVertex.Thing attribute) {
