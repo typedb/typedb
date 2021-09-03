@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 
 import java.util.Objects;
+import java.util.Set;
 
 public class Downstream {
     protected final Actor.Driver<? extends Resolver<?>> sender;
@@ -31,7 +32,7 @@ public class Downstream {
 
     private final int hash;
 
-    private Downstream(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+    protected Downstream(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
                        AnswerState.Partial<?> partialAnswer, int planIndex) {
         this.sender = sender;
         this.receiver = receiver;
@@ -58,8 +59,8 @@ public class Downstream {
         return Request.Visit.create(sender, receiver, traceId, partialAnswer, planIndex);
     }
 
-    public Request.Revisit toRevisit(ResolutionTracer.TraceId traceId, Response.Cycle.Origin cycle) {
-        return Request.Revisit.create(toVisit(traceId), cycle);
+    public Request.Revisit toRevisit(ResolutionTracer.TraceId traceId, Set<Response.Cycle.Origin> cycles) {
+        return Request.Revisit.create(toVisit(traceId), cycles);
     }
 
     public AnswerState.Partial<?> partialAnswer() {

@@ -45,8 +45,10 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     }
 
     protected void nextAnswer(Request.Visit fromUpstream, RequestState requestState, int iteration) {
-        if (requestState.downstreamManager().hasNext()) {
-            requestFromDownstream(requestState.downstreamManager().next(), fromUpstream, iteration);
+        if (requestState.downstreamManager().hasNextVisit()) {
+            requestFromDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
+        } else if (requestState.downstreamManager().hasNextRevisit()) {
+            requestFromDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
         } else {
             failToUpstream(fromUpstream, iteration);
         }
@@ -75,7 +77,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         if (isTerminated()) return;
 
         RequestState requestState = requestStates.get(fromUpstream.visit());
-        requestState.downstreamManager().unblock(fromUpstream.cycle());
+        requestState.downstreamManager().unblock(fromUpstream.cycles());
         if (iteration < requestState.iteration()) {
             // short circuit if the request came from a prior iteration
             failToUpstream(fromUpstream.visit(), iteration);
@@ -110,9 +112,13 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         Downstream cyclingDownstream = Downstream.of(fromDownstream.sourceRequest());
         Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         RequestState requestState = this.requestStates.get(fromUpstream);
-        fromDownstream.origins().forEach(origin -> requestState.downstreamManager().block(cyclingDownstream, origin));
-        if (requestState.downstreamManager().hasNextUnblocked()) {
-            requestFromDownstream(requestState.downstreamManager().nextUnblocked(), fromUpstream, iteration);
+        if (requestState.downstreamManager().contains(cyclingDownstream)) {
+            requestState.downstreamManager().block(cyclingDownstream, fromDownstream.origins());
+        }
+        if (requestState.downstreamManager().hasNextVisit()) {
+            requestFromDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
+        } else if (requestState.downstreamManager().hasNextRevisit()) {
+            requestFromDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
         } else {
             cycleToUpstream(fromUpstream, requestState.downstreamManager().blockers(), iteration);
         }
@@ -141,7 +147,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     static class RequestState {
 
         private final int iteration;
-        private final DownstreamManager.Blockable downstreamManager;
+        private final DownstreamManager downstreamManager;
         private final Set<ConceptMap> deduplicationSet;
 
         public RequestState(int iteration) {
@@ -150,11 +156,11 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
 
         public RequestState(int iteration, Set<ConceptMap> produced) {
             this.iteration = iteration;
-            this.downstreamManager = new DownstreamManager.Blockable();
+            this.downstreamManager = new DownstreamManager();
             this.deduplicationSet = new HashSet<>(produced);
         }
 
-        public DownstreamManager.Blockable downstreamManager() {
+        public DownstreamManager downstreamManager() {
             return downstreamManager;
         }
 

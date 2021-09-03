@@ -118,7 +118,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     @Override
     protected void receiveRevisit(Request.Revisit fromUpstream, int iteration) {
         ConclusionRequestState<? extends Concludable<?>> requestState = requestStates.get(fromUpstream.visit());
-        requestState.downstreamManager().unblock(fromUpstream.cycle());
+        requestState.downstreamManager().unblock(fromUpstream.cycles());
         sendAnswerOrSearchDownstreamOrFail(fromUpstream.visit(), requestState, iteration);
     }
 
@@ -147,9 +147,12 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         Downstream downstream = Downstream.of(fromDownstream.sourceRequest());
         Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream);
-        iterate(fromDownstream.origins()).forEachRemaining(o -> requestState.downstreamManager().block(downstream, o));
-        if (requestState.waitedMaterialisations().waiting()) requestState.waitedMaterialisations().addWaitingRequest(fromUpstream, iteration);
-        else cycleToUpstream(fromUpstream, fromDownstream.origins(), iteration);
+        if (requestState.downstreamManager().contains(downstream)) {
+            requestState.downstreamManager().block(downstream, fromDownstream.origins());
+        }
+        if (requestState.waitedMaterialisations().waiting()) {
+            requestState.waitedMaterialisations().addWaitingRequest(fromUpstream, iteration);
+        } else cycleToUpstream(fromUpstream, fromDownstream.origins(), iteration);
     }
 
     private void requestFromMaterialiser(Materialiser.Request request, Request.Visit fromUpstream, int iteration) {
@@ -181,8 +184,10 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
-        } else if (!requestState.isComplete() && requestState.downstreamManager().hasNext()) {
-            requestFromDownstream(requestState.downstreamManager().next(), fromUpstream, iteration);
+        } else if (!requestState.isComplete() && requestState.downstreamManager().hasNextVisit()) {
+            requestFromDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
+        } else if (!requestState.isComplete() && requestState.downstreamManager().hasNextRevisit()) {
+            requestFromDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
         } else if (requestState.waitedMaterialisations().waiting()) {
             requestState.waitedMaterialisations().addWaitingRequest(fromUpstream, iteration);
         } else {
@@ -261,20 +266,20 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
     private static abstract class ConclusionRequestState<CONCLUDABLE extends Concludable<?>> extends RequestState {
 
-        private final DownstreamManager.Blockable downstreamManager;
+        private final DownstreamManager downstreamManager;
         private final WaitedMaterialisations waitedMaterialisations;
         private boolean complete;
         protected FunctionalIterator<CONCLUDABLE> materialisations;
 
         protected ConclusionRequestState(Request.Visit fromUpstream, int iteration, List<Downstream> conditionDownstreams) {
             super(fromUpstream, iteration);
-            this.downstreamManager = new DownstreamManager.Blockable(conditionDownstreams);
+            this.downstreamManager = new DownstreamManager(conditionDownstreams);
             this.materialisations = Iterators.empty();
             this.complete = false;
             this.waitedMaterialisations = new WaitedMaterialisations();
         }
 
-        public DownstreamManager.Blockable downstreamManager() {
+        public DownstreamManager downstreamManager() {
             return downstreamManager;
         }
 

@@ -121,18 +121,14 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         request.receiver().execute(actor -> actor.receiveVisit(request, iteration));
     }
 
-    protected void requestFromDownstream(Downstream downstream, Request.Revisit fromUpstream, int iteration) {
-        requestFromDownstream(downstream.toRevisit(fromUpstream.visit().traceId(), fromUpstream.cycle()), fromUpstream, iteration);
-    }
-
-    protected void requestFromDownstream(Request.Revisit toRevisit, Request.Revisit fromUpstream, int iteration) {
+    protected void requestFromDownstream(Request.Revisit toRevisit, Request.Visit fromUpstream, int iteration) {
         Request.Visit downstream = toRevisit.visit();
         LOG.trace("{} : Sending a new answer Visit to downstream: {}", name(), downstream);
-        assert fromUpstream.visit().traceId().rootId() != -1;
-        assert downstream.traceId() == fromUpstream.visit().traceId();
+        assert fromUpstream.traceId().rootId() != -1;
+        assert downstream.traceId() == fromUpstream.traceId();
         if (registry.resolutionTracing()) ResolutionTracer.get().request(downstream, iteration);
         assert requestRouter.containsKey(new Pair<>(downstream, downstream.traceId()));
-        assert requestRouter.get(new Pair<>(downstream, downstream.traceId())).equals(fromUpstream.visit());
+        assert requestRouter.get(new Pair<>(downstream, downstream.traceId())).equals(fromUpstream);
         downstream.receiver().execute(actor -> actor.receiveVisit(downstream, iteration));
     }
 
@@ -219,103 +215,82 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     }
 
     public static class DownstreamManager {
-        protected final List<Downstream> downstreams;
+        protected final List<Downstream> visit;
+        protected Map<Downstream, Set<Response.Cycle.Origin>> revisit;
+        protected Map<Downstream, Set<Response.Cycle.Origin>> blocked;
 
         public DownstreamManager() {
-            this.downstreams = new ArrayList<>();
+            this.visit = new ArrayList<>();
+            this.revisit = new LinkedHashMap<>();
+            this.blocked = new LinkedHashMap<>();
         }
 
-        public DownstreamManager(List<Downstream> downstreams) {
-            this.downstreams = downstreams;
+        public DownstreamManager(List<Downstream> visit) {
+            this.visit = visit;
+            this.revisit = new LinkedHashMap<>();
+            this.blocked = new LinkedHashMap<>();
         }
 
-        public boolean hasNext() {
-            return !downstreams.isEmpty();
+        public Request.Visit nextVisit(Request.Visit fromUpstream) {
+            return visit.get(0).toVisit(fromUpstream.traceId());
         }
 
-        public Downstream next() {
-            return downstreams.get(0);
+        public Request.Revisit nextRevisit(Request.Visit fromUpstream) {
+            Optional<Downstream> r = iterate(revisit.keySet()).first();
+            assert r.isPresent();
+            return r.get().toRevisit(fromUpstream.traceId(), revisit.get(r.get()));
+        }
+
+        public boolean hasNextVisit() {
+            return !visit.isEmpty();
+        }
+
+        public boolean hasNextRevisit() {
+            return !revisit.isEmpty();
+        }
+
+        public boolean contains(Downstream downstream) {
+            return visit.contains(downstream) || revisit.containsKey(downstream) || blocked.containsKey(downstream);
         }
 
         public void add(Downstream downstream) {
-            assert !(downstreams.contains(downstream)) : "downstream answer producer already contains this request";
-            downstreams.add(downstream);
+            assert !(visit.contains(downstream)) : "downstream answer producer already contains this request";
+            visit.add(downstream);
         }
 
         public void remove(Downstream downstream) {
-            downstreams.remove(downstream);
+            visit.remove(downstream);
+            revisit.remove(downstream);
+            blocked.remove(downstream);
         }
 
         public void clear() {
-            downstreams.clear();
+            visit.clear();
+            revisit.clear();
+            blocked.clear();
         }
 
-        public static class Blockable extends DownstreamManager {
-
-            protected Map<Downstream, Set<Response.Cycle.Origin>> blocked;
-
-            public Blockable() {
-                this.blocked = new LinkedHashMap<>();
-            }
-
-            public Blockable(List<Downstream> downstreams) {
-                super(downstreams);
-                this.blocked = new LinkedHashMap<>();
-            }
-
-            public boolean contains(Downstream downstream) {
-                return downstreams.contains(downstream) || blocked.containsKey(downstream);
-            }
-
-            public boolean hasNextUnblocked() {
-                return super.hasNext();
-            }
-
-            public Downstream nextUnblocked() {
-                return super.next();
-            }
-
-            @Override
-            public boolean hasNext() {
-                return !downstreams.isEmpty() || !blocked.isEmpty();
-            }
-
-            @Override
-            public Downstream next() {
-                if (super.hasNext()) return super.next();
-                else {
-                    Optional<Downstream> b = iterate(blocked.keySet()).first();
-                    assert b.isPresent();
-                    return b.get();
-                }
-            }
-
-            @Override
-            public void remove(Downstream downstream) {
-                downstreams.remove(downstream);
-                blocked.remove(downstream);
-            }
-
-            public Set<Response.Cycle.Origin> blockers() {
-                return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
-            }
-
-            public void block(Downstream blocked, Response.Cycle.Origin blocker) { // TODO Should take a set
-                assert downstreams.contains(blocked) || this.blocked.containsKey(blocked);
-                this.blocked.computeIfAbsent(blocked, b -> new HashSet<>()).add(blocker);
-                downstreams.remove(blocked);
-            }
-
-            public void unblock(Response.Cycle.Origin cycleOrigin) {
-                blocked.forEach((downstream, blockingCycles) -> {
-                    // TODO: Actually add this to a set of Downstreams that will create Revisit requests
-                    blockingCycles.remove(cycleOrigin);
-                    if (blockingCycles.isEmpty()) {
-                        blocked.remove(downstream);
-                        downstreams.add(downstream);
-                    }
-                });
-            }
+        public Set<Response.Cycle.Origin> blockers() {
+            return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
         }
+
+        public void block(Downstream toBlock, Set<Response.Cycle.Origin> blockers) {
+            assert contains(toBlock);
+            visit.remove(toBlock);
+            if (revisit.containsKey(toBlock)) revisit.get(toBlock).removeAll(blockers);
+            blocked.computeIfAbsent(toBlock, b -> new HashSet<>()).addAll(blockers);
+        }
+
+        public void unblock(Set<Response.Cycle.Origin> revisit) {
+            blocked.forEach((downstream, blockers) -> {
+                assert !visit.contains(downstream);
+                Set<Response.Cycle.Origin> blockersToRevisit = new HashSet<>(revisit);
+                blockersToRevisit.retainAll(blockers);
+                this.revisit.computeIfAbsent(downstream, o -> new HashSet<>()).addAll(blockersToRevisit);
+                blockers.removeAll(blockersToRevisit);
+                if (blockers.isEmpty()) blocked.remove(downstream);
+            });
+        }
+
     }
 }

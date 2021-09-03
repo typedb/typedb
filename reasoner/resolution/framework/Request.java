@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
+import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.TraceId.downstreamId;
@@ -195,40 +196,40 @@ public interface Request {
             }
 
         }
-
     }
 
     class Revisit implements Request {
 
         private final Visit visit;
-        private final Response.Cycle.Origin cycle;
+        private final Set<Response.Cycle.Origin> cycles;
         private final int hash;
 
-        protected Revisit(Visit visit, Response.Cycle.Origin cycle) {
+        protected Revisit(Visit visit, Set<Response.Cycle.Origin> cycles) {
             this.visit = visit;
-            this.cycle = cycle;
-            this.hash = Objects.hash(super.hashCode(), cycle);
+            this.cycles = cycles;
+            this.hash = Objects.hash(super.hashCode(), cycles);
         }
 
-        public static Revisit create(Visit visit, Response.Cycle.Origin cycle) {
-            return new Revisit(visit, cycle);
+        public static Revisit create(Visit visit, Set<Response.Cycle.Origin> cycles) {
+            return new Revisit(visit, cycles);
         }
 
         public Visit visit() {
             return visit;
         }
 
-        public Response.Cycle.Origin cycle() {
-            return cycle;
+        public Set<Response.Cycle.Origin> cycles() {
+            return cycles;
         }
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            if (!super.equals(o)) return false;
             Revisit revisit = (Revisit) o;
-            return cycle.equals(revisit.cycle);
+            return hash == revisit.hash &&
+                    visit.equals(revisit.visit) &&
+                    cycles.equals(revisit.cycles);
         }
 
         @Override
@@ -240,7 +241,8 @@ public interface Request {
         public String toString() {
             return "Revisit{" +
                     "visit=" + visit +
-                    ", cycle=" + cycle +
+                    ", cycles=" + cycles +
+                    ", hash=" + hash +
                     '}';
         }
     }
