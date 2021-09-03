@@ -72,7 +72,7 @@ public abstract class ProcedureVertex<
         this.dependedEdgeOrders = new AtomicReference<>(null);
     }
 
-    public abstract FunctionalIterator<? extends VERTEX> iterator(GraphManager graphMgr, GraphTraversal.Parameters parameters);
+    public abstract FunctionalIterator<? extends VERTEX> iterator(GraphManager graphMgr, GraphTraversal.Unrestricted.Parameters parameters);
 
     @Override
     public void in(ProcedureEdge<?, ?> edge) {
@@ -144,7 +144,7 @@ public abstract class ProcedureVertex<
         }
 
         @Override
-        public FunctionalIterator<? extends ThingVertex> iterator(GraphManager graphMgr, GraphTraversal.Parameters parameters) {
+        public FunctionalIterator<? extends ThingVertex> iterator(GraphManager graphMgr, GraphTraversal.Unrestricted.Parameters parameters) {
             assert isStartingVertex();
             if (props().hasIID()) return iterateAndFilterFromIID(graphMgr, parameters);
             else if (!props().types().isEmpty()) return iterateAndFilterFromTypes(graphMgr, parameters);
@@ -156,7 +156,7 @@ public abstract class ProcedureVertex<
         }
 
         FunctionalIterator<? extends ThingVertex> filter(FunctionalIterator<? extends ThingVertex> iterator,
-                                                         GraphTraversal.Parameters params) {
+                                                         GraphTraversal.Unrestricted.Parameters params) {
             if (props().hasIID()) iterator = filterIID(iterator, params);
             if (!props().types().isEmpty()) iterator = filterTypes(iterator);
             if (!props().predicates().isEmpty()) iterator = filterPredicates(filterAttributes(iterator), params);
@@ -180,7 +180,7 @@ public abstract class ProcedureVertex<
         }
 
         private FunctionalIterator<? extends AttributeVertex<?>> iterateAndFilterFromAttributes(
-                GraphManager graph, GraphTraversal.Parameters parameters) {
+                GraphManager graph, GraphTraversal.Unrestricted.Parameters parameters) {
             FunctionalIterator<? extends AttributeVertex<?>> iter;
             FunctionalIterator<TypeVertex> attTypes;
 
@@ -209,7 +209,7 @@ public abstract class ProcedureVertex<
             return tree(rootType, t -> t.ins().edge(SUB).from()).flatMap(t -> graphMgr.data().getReadable(t));
         }
 
-        FunctionalIterator<? extends ThingVertex> iterateAndFilterFromIID(GraphManager graphMgr, GraphTraversal.Parameters parameters) {
+        FunctionalIterator<? extends ThingVertex> iterateAndFilterFromIID(GraphManager graphMgr, GraphTraversal.Unrestricted.Parameters parameters) {
             assert props().hasIID() && id().isVariable();
             Identifier.Variable id = id().asVariable();
             FunctionalIterator<? extends ThingVertex> iter = single(graphMgr.data().getReadable(parameters.getIID(id))).noNulls();
@@ -219,7 +219,7 @@ public abstract class ProcedureVertex<
         }
 
         FunctionalIterator<? extends ThingVertex> iterateAndFilterFromTypes(GraphManager graphMgr,
-                                                                            GraphTraversal.Parameters parameters) {
+                                                                            GraphTraversal.Unrestricted.Parameters parameters) {
             assert !props().types().isEmpty();
             FunctionalIterator<? extends ThingVertex> iter;
             Optional<Predicate.Value<?>> eq = iterate(props().predicates()).filter(p -> p.operator().equals(EQ)).first();
@@ -239,12 +239,12 @@ public abstract class ProcedureVertex<
         }
 
         FunctionalIterator<? extends ThingVertex> filterIID(FunctionalIterator<? extends ThingVertex> iterator,
-                                                            GraphTraversal.Parameters parameters) {
+                                                            GraphTraversal.Unrestricted.Parameters parameters) {
             return iterator.filter(v -> v.iid().equals(parameters.getIID(id().asVariable())));
         }
 
         FunctionalIterator<ThingEdge> filterIIDOnEdge(FunctionalIterator<ThingEdge> iterator,
-                                                      GraphTraversal.Parameters parameters, boolean isForward) {
+                                                      GraphTraversal.Unrestricted.Parameters parameters, boolean isForward) {
             Function<ThingEdge, ThingVertex> fn = e -> isForward ? e.to() : e.from();
             return iterator.filter(e -> fn.apply(e).iid().equals(parameters.getIID(id().asVariable())));
         }
@@ -259,19 +259,19 @@ public abstract class ProcedureVertex<
         }
 
         FunctionalIterator<? extends AttributeVertex<?>> filterPredicates(FunctionalIterator<? extends AttributeVertex<?>> iterator,
-                                                                          GraphTraversal.Parameters parameters) {
+                                                                          GraphTraversal.Unrestricted.Parameters parameters) {
             return filterPredicates(iterator, parameters, null);
         }
 
         FunctionalIterator<? extends AttributeVertex<?>> filterPredicates(FunctionalIterator<? extends AttributeVertex<?>> iterator,
-                                                                          GraphTraversal.Parameters parameters,
+                                                                          GraphTraversal.Unrestricted.Parameters parameters,
                                                                           @Nullable Predicate.Value<?> exclude) {
             // TODO: should we throw an exception if the user asserts a value predicate on a non-attribute?
             // TODO: should we throw an exception if the user assert a value non-comparable value types?
             assert id().isVariable();
             for (Predicate.Value<?> predicate : props().predicates()) {
                 if (Objects.equals(predicate, exclude)) continue;
-                for (GraphTraversal.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
+                for (GraphTraversal.Unrestricted.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
                     iterator = iterator.filter(a -> predicate.apply(a, value));
                 }
             }
@@ -279,12 +279,12 @@ public abstract class ProcedureVertex<
         }
 
         FunctionalIterator<ThingEdge> filterPredicatesOnEdge(FunctionalIterator<ThingEdge> iterator,
-                                                             GraphTraversal.Parameters parameters, boolean isForward) {
+                                                             GraphTraversal.Unrestricted.Parameters parameters, boolean isForward) {
             assert id().isVariable();
             Function<ThingEdge, ThingVertex> fn = e -> isForward ? e.to() : e.from();
             iterator = iterator.filter(e -> fn.apply(e).isAttribute());
             for (Predicate.Value<?> predicate : props().predicates()) {
-                for (GraphTraversal.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
+                for (GraphTraversal.Unrestricted.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
                     iterator = iterator.filter(e -> predicate.apply(fn.apply(e).asAttribute(), value));
                 }
             }
@@ -292,7 +292,7 @@ public abstract class ProcedureVertex<
         }
 
         FunctionalIterator<? extends AttributeVertex<?>> iteratorOfAttributesWithTypes(
-                GraphManager graphMgr, GraphTraversal.Parameters params, Predicate.Value<?> eq) {
+                GraphManager graphMgr, GraphTraversal.Unrestricted.Parameters params, Predicate.Value<?> eq) {
             FunctionalIterator<TypeVertex> attributeTypes = iterate(props().types().iterator())
                     .map(l -> graphMgr.schema().getType(l)).noNulls()
                     .map(t -> {
@@ -304,16 +304,16 @@ public abstract class ProcedureVertex<
 
         FunctionalIterator<? extends AttributeVertex<?>> iteratorOfAttributes(
                 GraphManager graphMgr, FunctionalIterator<TypeVertex> attributeTypes,
-                GraphTraversal.Parameters parameters, Predicate.Value<?> eqPredicate) {
+                GraphTraversal.Unrestricted.Parameters parameters, Predicate.Value<?> eqPredicate) {
             // TODO: should we throw an exception if the user asserts 2 values for a given vertex?
             assert id().isVariable();
-            Set<GraphTraversal.Parameters.Value> values = parameters.getValues(id().asVariable(), eqPredicate);
+            Set<GraphTraversal.Unrestricted.Parameters.Value> values = parameters.getValues(id().asVariable(), eqPredicate);
             assert values.size() == 1;
             return attributeTypes.map(t -> attributeVertex(graphMgr, t, values.iterator().next())).noNulls();
         }
 
         private AttributeVertex<?> attributeVertex(GraphManager graphMgr, TypeVertex type,
-                                                   GraphTraversal.Parameters.Value value) {
+                                                   GraphTraversal.Unrestricted.Parameters.Value value) {
             assert type.isAttributeType();
             switch (type.valueType()) {
                 case BOOLEAN:
@@ -348,7 +348,7 @@ public abstract class ProcedureVertex<
         }
 
         @Override
-        public FunctionalIterator<TypeVertex> iterator(GraphManager graphMgr, GraphTraversal.Parameters parameters) {
+        public FunctionalIterator<TypeVertex> iterator(GraphManager graphMgr, GraphTraversal.Unrestricted.Parameters parameters) {
             assert isStartingVertex() && id().isVariable();
             FunctionalIterator<TypeVertex> iterator = null;
 

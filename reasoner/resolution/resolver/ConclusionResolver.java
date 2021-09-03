@@ -193,7 +193,7 @@ public class ConclusionResolver extends Resolver<ConclusionResolver> {
     }
 
     private FunctionalIterator<Partial.Compound<?, ?>> candidateAnswers(Partial.Conclusion<?, ?> partialAnswer) {
-        GraphTraversal traversal = boundTraversal(conclusion.conjunction().traversal(), partialAnswer.conceptMap());
+        GraphTraversal.Unrestricted traversal = boundTraversal(conclusion.conjunction().traversal(), partialAnswer.conceptMap());
         FunctionalIterator<ConceptMap> answers = traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
         return answers.map(ans -> partialAnswer.extend(ans).toDownstream(named));

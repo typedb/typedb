@@ -245,7 +245,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     }
 
     @Override
-    public void addTo(GraphTraversal traversal) {
+    public void addTo(GraphTraversal.Unrestricted traversal) {
         // TODO: create vertex properties first, then the vertex itself, then edges
         //       that way, we can make properties to be 'final' objects that are
         //       included in equality and hashCode of vertices

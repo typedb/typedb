@@ -59,7 +59,7 @@ public class HasConstraint extends ThingConstraint implements AlphaEquivalent<Ha
     }
 
     @Override
-    public void addTo(GraphTraversal traversal) {
+    public void addTo(GraphTraversal.Unrestricted traversal) {
         traversal.has(owner.id(), attribute.id());
     }
 

@@ -47,18 +47,18 @@ public class TraversalEngine {
         return graphMgr;
     }
 
-    public FunctionalProducer<VertexMap> producer(GraphTraversal traversal, Either<Arguments.Query.Producer, Long> context,
+    public FunctionalProducer<VertexMap> producer(GraphTraversal.Unrestricted traversal, Either<Arguments.Query.Producer, Long> context,
                                                   int parallelisation) {
         traversal.initialise(cache);
         return traversal.producer(graphMgr, context, parallelisation);
     }
 
-    public FunctionalIterator<VertexMap> iterator(GraphTraversal traversal) {
+    public FunctionalIterator<VertexMap> iterator(GraphTraversal.Unrestricted traversal) {
         traversal.initialise(cache);
         return traversal.iterator(graphMgr);
     }
 
-    public FunctionalIterator<VertexMap> iterator(TypeTraversal traversal) {
+    public FunctionalIterator<VertexMap> iterator(GraphTraversal.Type traversal) {
         return traversal.iterator(graphMgr);
     }
 
@@ -66,9 +66,8 @@ public class TraversalEngine {
         return traversal.iterator(graphMgr);
     }
 
-    public Optional<Map<Retrievable, Set<TypeVertex>>> combination(TypeTraversal traversal,
+    public Optional<Map<Retrievable, Set<TypeVertex>>> combination(GraphTraversal.Type traversal,
                                                                    Set<Retrievable> concreteTypesOnly) {
-        return new TypeCombinationGetter(graphMgr, TypeCombinationProcedures.of(traversal), traversal.parameters(),
-                traversal.filter(), concreteTypesOnly).get();
+        return traversal.combination(graphMgr, concreteTypesOnly);
     }
 }

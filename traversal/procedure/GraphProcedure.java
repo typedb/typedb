@@ -169,7 +169,7 @@ public class GraphProcedure implements PermutationProcedure {
     }
 
     @Override
-    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Parameters params,
+    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Unrestricted.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
         if (LOG.isDebugEnabled()) {
             LOG.debug(params.toString());
@@ -183,7 +183,7 @@ public class GraphProcedure implements PermutationProcedure {
     }
 
     @Override
-    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Parameters params,
+    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Unrestricted.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter) {
         if (LOG.isDebugEnabled()) {
             LOG.debug(params.toString());

@@ -86,7 +86,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
     }
 
     @Override
-    public void addTo(GraphTraversal traversal) {
+    public void addTo(GraphTraversal.Unrestricted traversal) {
         for (RolePlayer rolePlayer : rolePlayers) {
             ThingVariable player = rolePlayer.player();
             int rep = rolePlayer.repetition();

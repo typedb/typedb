@@ -82,7 +82,7 @@ public class OwnsConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(GraphTraversal traversal) {
+    public void addTo(GraphTraversal.Unrestricted traversal) {
         if (overridden().isPresent()) throw TypeDBException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
         traversal.owns(owner.id(), attributeType.id(), isKey);
     }

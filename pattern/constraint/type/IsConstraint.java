@@ -56,7 +56,7 @@ public class IsConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(GraphTraversal traversal) {
+    public void addTo(GraphTraversal.Unrestricted traversal) {
         traversal.equalTypes(owner.id(), variable.id());
     }
 

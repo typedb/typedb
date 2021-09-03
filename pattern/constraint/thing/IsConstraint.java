@@ -56,7 +56,7 @@ public class IsConstraint extends ThingConstraint {
     }
 
     @Override
-    public void addTo(GraphTraversal traversal) {
+    public void addTo(GraphTraversal.Unrestricted traversal) {
         traversal.equalThings(owner.id(), variable.id());
     }
 

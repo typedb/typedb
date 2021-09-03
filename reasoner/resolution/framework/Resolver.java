@@ -138,14 +138,14 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
 
     protected FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
         return compatibleBounds(conjunction, bounds).map(c -> {
-            GraphTraversal traversal = boundTraversal(conjunction.traversal(), c);
+            GraphTraversal.Unrestricted traversal = boundTraversal(conjunction.traversal(), c);
             return traversalEngine.iterator(traversal).map(conceptMgr::conceptMap);
         }).orElse(Iterators.empty());
     }
 
     protected Producer<ConceptMap> traversalProducer(Conjunction conjunction, ConceptMap bounds, int parallelisation) {
         return compatibleBounds(conjunction, bounds).map(b -> {
-            GraphTraversal traversal = boundTraversal(conjunction.traversal(), b);
+            GraphTraversal.Unrestricted traversal = boundTraversal(conjunction.traversal(), b);
             return traversalEngine.producer(traversal, Either.first(INCREMENTAL), parallelisation).map(conceptMgr::conceptMap);
         }).orElse(Producers.empty());
     }
@@ -174,7 +174,7 @@ public abstract class Resolver<RESOLVER extends Resolver<RESOLVER>> extends Acto
         return Optional.of(new ConceptMap(newBounds));
     }
 
-    protected GraphTraversal boundTraversal(GraphTraversal traversal, ConceptMap bounds) {
+    protected GraphTraversal.Unrestricted boundTraversal(GraphTraversal.Unrestricted traversal, ConceptMap bounds) {
         bounds.concepts().forEach((id, concept) -> {
             if (concept.isThing()) traversal.iid(id.asVariable(), concept.asThing().getIID());
             else {

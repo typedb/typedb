@@ -167,15 +167,15 @@ public class Conjunction implements Pattern, Cloneable {
         return negations;
     }
 
-    public GraphTraversal traversal(Set<? extends Retrievable> filter) {
-        GraphTraversal traversal = new GraphTraversal();
+    public GraphTraversal.Unrestricted traversal(Set<? extends Retrievable> filter) {
+        GraphTraversal.Unrestricted traversal = new GraphTraversal.Unrestricted();
         variableSet.forEach(variable -> variable.addTo(traversal));
         assert iterate(filter).allMatch(variableMap::containsKey);
         traversal.filter(filter);
         return traversal;
     }
 
-    public GraphTraversal traversal() {
+    public GraphTraversal.Unrestricted traversal() {
         return traversal(new HashSet<>());
     }
 

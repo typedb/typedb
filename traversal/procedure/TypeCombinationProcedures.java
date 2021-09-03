@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.traversal.procedure;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-import com.vaticle.typedb.core.traversal.TypeTraversal;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
@@ -39,19 +39,19 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class TypeCombinationProcedures {
 
-    private final TypeTraversal traversal;
+    private final GraphTraversal.Type traversal;
     private final Identifier[] vertexOrder;
 
-    TypeCombinationProcedures(TypeTraversal traversal) {
+    TypeCombinationProcedures(GraphTraversal.Type traversal) {
         this.traversal = traversal;
         this.vertexOrder = vertexOrder(traversal);
     }
 
-    public static TypeCombinationProcedures of(TypeTraversal traversal) {
+    public static TypeCombinationProcedures of(GraphTraversal.Type traversal) {
         return new TypeCombinationProcedures(traversal);
     }
 
-    private static Identifier[] vertexOrder(TypeTraversal traversal) {
+    private static Identifier[] vertexOrder(GraphTraversal.Type traversal) {
         return traversal.structure().vertices().stream().filter(
                 vertex -> !vertex.id().isLabel() && traversal.filter().contains(vertex.id().asVariable().asRetrievable())
         ).sorted(Comparator.comparing(vertex -> {

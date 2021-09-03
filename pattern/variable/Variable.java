@@ -57,7 +57,7 @@ public abstract class Variable implements Pattern {
         return identifier.reference();
     }
 
-    public abstract void addTo(GraphTraversal traversal);
+    public abstract void addTo(GraphTraversal.Unrestricted traversal);
 
     public boolean isType() {
         return false;
