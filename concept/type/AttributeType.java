@@ -80,6 +80,8 @@ public interface AttributeType extends ThingType {
         DATETIME(Encoding.ValueType.DATETIME);
 
         private final Encoding.ValueType encoding;
+        private Set<ValueType> comparables;
+        private Set<ValueType> assignables;
 
         ValueType(Encoding.ValueType encoding) {
             this.encoding = encoding;
@@ -125,11 +127,13 @@ public interface AttributeType extends ThingType {
         }
 
         public Set<ValueType> comparables() {
-            return iterate(encoding.comparables()).map(ValueType::of).toSet();
+            if (comparables == null) comparables = iterate(encoding.comparables()).map(ValueType::of).toSet();
+            return comparables;
         }
 
         public Set<ValueType> assignables() {
-            return iterate(encoding.assignables()).map(ValueType::of).toSet();
+            if (assignables == null) assignables = iterate(encoding.assignables()).map(ValueType::of).toSet();
+            return assignables;
         }
 
     }

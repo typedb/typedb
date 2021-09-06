@@ -132,41 +132,65 @@ public class Matcher {
 
     private FunctionalIterator<ConceptMap> sort(FunctionalIterator<ConceptMap> answers, Sortable.Sorting sorting) {
         // TODO: Replace this temporary implementation of TypeQL Match Sort query with a native sorting traversal
-        Reference.Name var = sorting.var().reference().asName();
+        List<Reference.Name> vars = iterate(sorting.vars()).map(var -> var.reference().asName()).toList();
+        Comparator<List<Attribute>> multiComparator = multiComparator(vars.size());
         Comparator<ConceptMap> comparator = (answer1, answer2) -> {
-            Attribute att1, att2;
-            try {
-                att1 = answer1.get(var).asAttribute();
-                att2 = answer2.get(var).asAttribute();
-            } catch (TypeDBException e) {
-                if (e.code().isPresent() || e.code().get().equals(INVALID_THING_CASTING.code())) {
-                    throw TypeDBException.of(SORT_VARIABLE_NOT_ATTRIBUTE, var);
-                } else {
-                    throw e;
+            List<Attribute> attributes1 = new ArrayList<>(vars.size());
+            List<Attribute> attributes2 = new ArrayList<>(vars.size());
+            for (Reference.Name var : vars) {
+                try {
+                    attributes1.add(answer1.get(var).asAttribute());
+                    attributes2.add(answer2.get(var).asAttribute());
+                } catch (TypeDBException e) {
+                    if (e.code().isPresent() || e.code().get().equals(INVALID_THING_CASTING.code())) {
+                        throw TypeDBException.of(SORT_VARIABLE_NOT_ATTRIBUTE, var);
+                    } else {
+                        throw e;
+                    }
                 }
             }
-
-            if (!att1.getType().getValueType().comparables().contains(att2.getType().getValueType())) {
-                throw TypeDBException.of(SORT_ATTRIBUTE_NOT_COMPARABLE, var);
-            }
-            if (att1.isString()) {
-                return att1.asString().getValue().compareToIgnoreCase(att2.asString().getValue());
-            } else if (att1.isBoolean()) {
-                return att1.asBoolean().getValue().compareTo(att2.asBoolean().getValue());
-            } else if (att1.isLong() && att2.isLong()) {
-                return att1.asLong().getValue().compareTo(att2.asLong().getValue());
-            } else if (att1.isDouble() || att2.isDouble()) {
-                Double double1 = att1.isLong() ? att1.asLong().getValue() : att1.asDouble().getValue();
-                Double double2 = att2.isLong() ? att2.asLong().getValue() : att2.asDouble().getValue();
-                return double1.compareTo(double2);
-            } else if (att1.isDateTime()) {
-                return (att1.asDateTime().getValue()).compareTo(att2.asDateTime().getValue());
-            } else {
-                throw TypeDBException.of(ILLEGAL_STATE);
-            }
+            if (!isComparable(attributes1, attributes2)) throw TypeDBException.of(SORT_ATTRIBUTE_NOT_COMPARABLE, vars);
+            return multiComparator.compare(attributes1, attributes2);
         };
         comparator = (sorting.order() == TypeQLArg.Order.DESC) ? comparator.reversed() : comparator;
         return iterate(answers.stream().sorted(comparator).iterator());
+    }
+
+    private boolean isComparable(List<Attribute> attrs1, List<Attribute> attrs2) {
+        assert attrs1.size() == attrs2.size();
+        for (int i = 0; i < attrs1.size(); i++) {
+            if (!attrs1.get(i).getType().getValueType().comparables().contains(attrs2.get(i).getType().getValueType())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private Comparator<List<Attribute>> multiComparator(int n) {
+        Comparator<List<Attribute>> comparator = Comparator.comparing((attrs) -> attrs.get(0), this::compareAttribute);
+        for (int i = 1; i < n; i++) {
+            int index = i;
+            comparator = comparator.thenComparing((attrs) -> attrs.get(index), this::compareAttribute);
+        }
+        return comparator;
+    }
+
+    private int compareAttribute(Attribute att1, Attribute att2) {
+        if (att1.isString()) {
+            return att1.asString().getValue().compareToIgnoreCase(att2.asString().getValue());
+        } else if (att1.isBoolean()) {
+            return att1.asBoolean().getValue().compareTo(att2.asBoolean().getValue());
+        } else if (att1.isLong() && att2.isLong()) {
+            return att1.asLong().getValue().compareTo(att2.asLong().getValue());
+        } else if (att1.isDouble() || att2.isDouble()) {
+            Double double1 = att1.isLong() ? att1.asLong().getValue() : att1.asDouble().getValue();
+            Double double2 = att2.isLong() ? att2.asLong().getValue() : att2.asDouble().getValue();
+            return double1.compareTo(double2);
+        } else if (att1.isDateTime()) {
+            return (att1.asDateTime().getValue()).compareTo(att2.asDateTime().getValue());
+        } else {
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
     }
 
     public static class Aggregator {
@@ -348,7 +372,9 @@ public class Matcher {
 
                 @Override
                 public BinaryOperator<MedianCalculator> combiner() {
-                    return (t, u) -> { throw TypeDBException.of(ILLEGAL_OPERATION); };
+                    return (t, u) -> {
+                        throw TypeDBException.of(ILLEGAL_OPERATION);
+                    };
                 }
 
                 @Override
@@ -414,7 +440,9 @@ public class Matcher {
 
                 @Override
                 public BinaryOperator<STDCalculator> combiner() {
-                    return (t, u) -> { throw TypeDBException.of(ILLEGAL_OPERATION); };
+                    return (t, u) -> {
+                        throw TypeDBException.of(ILLEGAL_OPERATION);
+                    };
                 }
 
                 @Override
