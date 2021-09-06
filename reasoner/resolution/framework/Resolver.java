@@ -126,9 +126,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         assert fromUpstream.traceId().rootId() != -1;
         assert downstream.traceId() == fromUpstream.traceId();
         if (registry.resolutionTracing()) ResolutionTracer.get().revisit(downstream, iteration);
-        assert requestRouter.containsKey(new Pair<>(downstream, downstream.traceId()));
-        assert requestRouter.get(new Pair<>(downstream, downstream.traceId())).equals(fromUpstream);
-        downstream.receiver().execute(actor -> actor.receiveVisit(downstream, iteration));
+        requestRouter.put(new Pair<>(downstream, downstream.traceId()), fromUpstream);
+        downstream.receiver().execute(actor -> actor.receiveRevisit(toRevisit, iteration));
     }
 
     // TODO: Rename to sendResponse or respond
@@ -248,6 +247,10 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             return !revisit.isEmpty();
         }
 
+        public boolean hasNextBlocked() {
+            return !blocked.isEmpty();
+        }
+
         public boolean contains(Downstream downstream) {
             return visit.contains(downstream) || revisit.containsKey(downstream) || blocked.containsKey(downstream);
         }
@@ -277,20 +280,28 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             assert !blockers.isEmpty();
             assert contains(toBlock);
             visit.remove(toBlock);
-            if (revisit.containsKey(toBlock)) revisit.get(toBlock).removeAll(blockers);
+            if (revisit.containsKey(toBlock)) {
+                revisit.get(toBlock).removeAll(blockers);
+                if (revisit.get(toBlock).size() == 0) revisit.remove(toBlock);
+            }
             blocked.computeIfAbsent(toBlock, b -> new HashSet<>()).addAll(blockers);
         }
 
         public void unblock(Set<Response.Cycle.Origin> revisit) {
-            blocked.forEach((downstream, blockers) -> {
-                assert !visit.contains(downstream);
-                Set<Response.Cycle.Origin> blockersToRevisit = new HashSet<>(revisit);
-                blockersToRevisit.retainAll(blockers);
-                this.revisit.computeIfAbsent(downstream, o -> new HashSet<>()).addAll(blockersToRevisit);
-                blockers.removeAll(blockersToRevisit);
-                if (blockers.isEmpty()) blocked.remove(downstream);
-            });
+            if (!revisit.isEmpty()) {
+                Set<Downstream> toRemove = new HashSet<>();
+                blocked.forEach((downstream, blockers) -> {
+                    assert !visit.contains(downstream);
+                    Set<Response.Cycle.Origin> blockersToRevisit = new HashSet<>(revisit);
+                    blockersToRevisit.retainAll(blockers);
+                    if (!blockersToRevisit.isEmpty()) {
+                        this.revisit.computeIfAbsent(downstream, o -> new HashSet<>()).addAll(blockersToRevisit);
+                        blockers.removeAll(blockersToRevisit);
+                        if (blockers.isEmpty()) toRemove.add(downstream);
+                    }
+                });
+                toRemove.forEach(r -> blocked.remove(r));
+            }
         }
-
     }
 }

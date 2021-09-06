@@ -65,6 +65,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private boolean requiresReiteration;
     private int requestIdCounter;
     private boolean sentReiterationRequests;
+    private int id;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
@@ -85,6 +86,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
         this.sentReiterationRequests = false;
         this.requiresReiteration = false;
+        this.id = abs(UUID.randomUUID().hashCode());
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -106,6 +108,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
         this.sentReiterationRequests = false;
         this.requiresReiteration = false;
+        this.id = abs(UUID.randomUUID().hashCode());
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -123,7 +126,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     @Override
-    public void recycle() {}
+    public void recycle() {
+        this.id = abs(UUID.randomUUID().hashCode());
+    }
 
     // note: root resolver calls this single-threaded, so is thread safe
     private void requestAnswered(Request.Visit answeredRequest, Finished answer) {

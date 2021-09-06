@@ -111,15 +111,28 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     }
 
     private void receiveDirectRequest(Request.Visit fromUpstream, int iteration) {
-        requestStates.computeIfAbsent(fromUpstream, r -> createRequestState(fromUpstream, iteration));
-        sendAnswerOrSearchDownstreamOrFail(fromUpstream, requestStates.get(fromUpstream), iteration);
+        ConclusionRequestState<? extends Concludable<?>> requestState = requestStates.computeIfAbsent(
+                fromUpstream, r -> createRequestState(fromUpstream, iteration));
+        if (!sendAnswerOrSearchDownstream(fromUpstream, requestState, iteration)) {
+            if (requestState.waitedMaterialisations().waiting()) {
+                requestState.waitedMaterialisations().addWaitingVisit(fromUpstream, iteration);
+            } else {
+                cycleOrFail(fromUpstream, requestState, iteration);
+            }
+        }
     }
 
     @Override
     protected void receiveRevisit(Request.Revisit fromUpstream, int iteration) {
         ConclusionRequestState<? extends Concludable<?>> requestState = requestStates.get(fromUpstream.visit());
         requestState.downstreamManager().unblock(fromUpstream.cycles());
-        sendAnswerOrSearchDownstreamOrFail(fromUpstream.visit(), requestState, iteration);
+        if (!sendAnswerOrSearchDownstream(fromUpstream.visit(), requestState, iteration)) {
+            if (requestState.waitedMaterialisations().waiting()) {
+                requestState.waitedMaterialisations().addWaitingRevisit(fromUpstream, iteration);
+            } else {
+                cycleOrFail(fromUpstream.visit(), requestState, iteration);
+            }
+        }
     }
 
 
@@ -136,7 +149,9 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             requestFromMaterialiser(request, fromUpstream, iteration);
             requestState.waitedMaterialisations().increment();
         } else {
-            sendAnswerOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
+            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState, iteration)) {
+                cycleOrFail(fromUpstream, requestState, iteration);
+            }
         }
     }
 
@@ -147,12 +162,16 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         Downstream downstream = Downstream.of(fromDownstream.sourceRequest());
         Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream);
-        if (requestState.downstreamManager().contains(downstream)) {
-            requestState.downstreamManager().block(downstream, fromDownstream.origins());
-        }
         if (requestState.waitedMaterialisations().waiting()) {
-            requestState.waitedMaterialisations().addWaitingRequest(fromUpstream, iteration);
-        } else cycleToUpstream(fromUpstream, fromDownstream.origins(), iteration);
+            requestState.waitedMaterialisations().addWaitingCycle(fromDownstream, iteration);
+        } else {
+            if (requestState.downstreamManager().contains(downstream)) {
+                requestState.downstreamManager().block(downstream, fromDownstream.origins());
+            }
+            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState, iteration)) {
+                cycleOrFail(fromUpstream, requestState, iteration);
+            }
+        }
     }
 
     private void requestFromMaterialiser(Materialiser.Request request, Request.Visit fromUpstream, int iteration) {
@@ -169,10 +188,27 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         LOG.trace("{}: received materialisation response: {}", name(), response);
         Optional<Map<Identifier.Variable, Concept>> materialisation = response.materialisation();
         materialisation.ifPresent(m -> requestState.newMaterialisation(response.partialAnswer(), m));
-        sendAnswerOrSearchDownstreamOrFail(fromUpstream.first(), requestState, fromUpstream.second());
+        Request.Visit fromUpstream1 = fromUpstream.first();
+        int iteration = fromUpstream.second();
+        if (!sendAnswerOrSearchDownstream(fromUpstream1, requestState, iteration)) {
+            cycleOrFail(fromUpstream1, requestState, iteration);
+        }
         ConclusionRequestState.WaitedMaterialisations state = requestState.waitedMaterialisations();
         state.decrement();
-        state.nextWaitingRequest().ifPresent(w -> sendAnswerOrSearchDownstreamOrFail(w.first(), requestState, w.second()));
+        if (!state.waiting()) {
+            while (state.hasNextWaitingVisit()) {
+                Pair<Request.Visit, Integer> visit = state.nextWaitingVisit();
+                receiveVisit(visit.first(), visit.second());
+            }
+            while (state.hasNextWaitingCycle()) {
+                Pair<Response.Cycle, Integer> cycle = state.nextWaitingCycle();
+                receiveCycle(cycle.first(), cycle.second());
+            }
+            while (state.hasNextWaitingRevisit()) {
+                Pair<Request.Revisit, Integer> revisit = state.nextWaitingRevisit();
+                receiveRevisit(revisit.first(), revisit.second());
+            }
+        }
     }
 
     protected Pair<Request.Visit, Integer> fromUpstream(Materialiser.Request toDownstream) {
@@ -180,7 +216,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         return materialiserRequestRouter.remove(toDownstream);
     }
 
-    private void sendAnswerOrSearchDownstreamOrFail(Request.Visit fromUpstream, ConclusionRequestState<?> requestState, int iteration) {
+    private boolean sendAnswerOrSearchDownstream(Request.Visit fromUpstream, ConclusionRequestState<?> requestState, int iteration) {
         Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
@@ -188,8 +224,15 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
         } else if (!requestState.isComplete() && requestState.downstreamManager().hasNextRevisit()) {
             revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
-        } else if (requestState.waitedMaterialisations().waiting()) {
-            requestState.waitedMaterialisations().addWaitingRequest(fromUpstream, iteration);
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    private void cycleOrFail(Request.Visit fromUpstream, ConclusionRequestState<?> requestState, int iteration) {
+        if (requestState.downstreamManager().hasNextBlocked()) {
+            cycleToUpstream(fromUpstream, requestState.downstreamManager().blockers(), iteration);
         } else {
             requestState.setComplete();
             failToUpstream(fromUpstream, iteration);
@@ -212,7 +255,9 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         }
 
         requestState.downstreamManager().remove(Downstream.of(fromDownstream.sourceRequest()));
-        sendAnswerOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
+        if (!sendAnswerOrSearchDownstream(fromUpstream, requestState, iteration)) {
+            cycleOrFail(fromUpstream, requestState, iteration);
+        }
     }
 
     @Override
@@ -308,23 +353,51 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
         private static class WaitedMaterialisations {
             private int waitedMaterialisations;
-            private final Deque<Pair<Request.Visit, Integer>> waitingRequests; // TODO: Will always be the same request, so can just hold an int instead once iteration is gone
+            private final Deque<Pair<Request.Visit, Integer>> waitingVisits;
+            private final Deque<Pair<Request.Revisit, Integer>> waitingRevisits;
+            private final Deque<Pair<Response.Cycle, Integer>> waitingCycles;
 
             private WaitedMaterialisations() {
                 this.waitedMaterialisations = 0;
-                this.waitingRequests = new ArrayDeque<>();
+                this.waitingVisits = new ArrayDeque<>();
+                this.waitingRevisits = new ArrayDeque<>();
+                this.waitingCycles = new ArrayDeque<>();
             }
 
-            public void addWaitingRequest(Request.Visit fromUpstream, int iteration) {
-                waitingRequests.add(new Pair<>(fromUpstream, iteration));
+            public void addWaitingVisit(Request.Visit fromUpstream, int iteration) {
+                waitingVisits.add(new Pair<>(fromUpstream, iteration));
             }
 
-            public Optional<Pair<Request.Visit, Integer>> nextWaitingRequest() {
-                if (waitingRequests.size() > 0) {
-                    return Optional.of(waitingRequests.pop());
-                } else {
-                    return Optional.empty();
-                }
+            public void addWaitingRevisit(Request.Revisit fromUpstream, int iteration) {
+                waitingRevisits.add(new Pair<>(fromUpstream, iteration));
+            }
+
+            public void addWaitingCycle(Response.Cycle fromDownstream, int iteration) {
+                waitingCycles.add(new Pair<>(fromDownstream, iteration));
+            }
+
+            public boolean hasNextWaitingVisit() {
+                return waitingVisits.size() > 0;
+            }
+
+            public Pair<Request.Visit, Integer> nextWaitingVisit() {
+                return waitingVisits.pop();
+            }
+
+            public boolean hasNextWaitingRevisit() {
+                return waitingRevisits.size() > 0;
+            }
+
+            public Pair<Request.Revisit, Integer> nextWaitingRevisit() {
+                return waitingRevisits.pop();
+            }
+
+            public boolean hasNextWaitingCycle() {
+                return waitingCycles.size() > 0;
+            }
+
+            public Pair<Response.Cycle, Integer> nextWaitingCycle() {
+                return waitingCycles.pop();
             }
 
             public boolean waiting() {

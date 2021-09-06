@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -227,9 +226,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         ExploringRequestState<?> requestState = this.requestStates.get(fromUpstream);
         assert iteration == requestState.iteration();
         if (requestState.downstreamManager().contains(cyclingDownstream)) {
-            Set<Response.Cycle.Origin> blockers = iterate(fromDownstream.origins())
-                    .filter(blocker -> !requestState.downstreamManager().isOutdated(blocker)).toSet();
-            if (!blockers.isEmpty()) requestState.downstreamManager().block(cyclingDownstream, blockers);
+            requestState.downstreamManager().block(cyclingDownstream, fromDownstream.origins());
+            requestState.downstreamManager().unblockOutdated();
         }
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
         if (upstreamAnswer.isPresent()) {
@@ -337,16 +335,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             }
 
             public void unblockOutdated() {
-                // TODO: Find the most idiomatic way to do this, ideally the map should be final
-                // TODO: .remove() is unsupported on iterators
-                Map<Downstream, Set<Response.Cycle.Origin>> newBlocked = new LinkedHashMap<>();
-                blocked.forEach((downstream, blockers) -> {
-                    Set<Response.Cycle.Origin> newBlockers =
-                            iterate(blockers).filter(blocker -> !isOutdated(blocker)).toSet();
-                    if (newBlockers.isEmpty()) visit.add(downstream);
-                    else newBlocked.put(downstream, newBlockers);
-                });
-                blocked = newBlocked;
+                unblock(iterate(blocked.values()).flatMap(origins -> iterate(origins).filter(this::isOutdated)).toSet());
             }
 
             private boolean originatedHere(Response.Cycle.Origin cycleOrigin) {

@@ -120,7 +120,7 @@ public abstract class SubsumptiveCoordinator<
             //         .orElseGet(() -> Visit.create(driver(), worker, fromUpstream.partialAnswer()));
             Request.Visit visit = Request.Visit.create(driver(), worker, fromUpstream.visit().traceId(), fromUpstream.visit().partialAnswer());
             Request.Revisit revisit = Request.Revisit.create(visit, fromUpstream.cycles());
-            assert requestMapByRoot.get(root).get(new Pair<>(visit, visit.traceId())).equals(fromUpstream.visit());
+            requestMapByRoot.computeIfAbsent(root, r -> new HashMap<>()).put(new Pair<>(visit, visit.traceId()), fromUpstream.visit());
             revisitDownstream(revisit, fromUpstream.visit(), iteration);
         }
     }
