@@ -130,7 +130,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     private void requestFromSubsumer(Request.Visit.ToSubsumed fromUpstream, int iteration) {
         Request.Visit toSubsumer = Request.Visit.ToSubsumer.create(
                 driver(), fromUpstream.subsumer(), fromUpstream, fromUpstream.partialAnswer());
-        requestFromDownstream(toSubsumer, fromUpstream, iteration);
+        visitDownstream(toSubsumer, fromUpstream, iteration);
     }
 
     @Override

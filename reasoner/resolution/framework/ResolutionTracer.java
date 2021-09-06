@@ -64,18 +64,25 @@ public final class ResolutionTracer {
         return INSTANCE;
     }
 
-    public synchronized void request(Request.Visit request, int iteration) {
+    public synchronized void visit(Request.Visit request, int iteration) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.REQUEST, conceptMap);
+        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.VISIT, conceptMap);
     }
 
-    public synchronized void request(Materialiser.Request request, int iteration) {
+    public synchronized void visit(Materialiser.Request request, int iteration) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.REQUEST, conceptMap);
+        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.VISIT, conceptMap);
+    }
+
+    public void revisit(Request.Visit request, int iteration) {
+        String sender = request.sender().name();
+        String receiver = request.receiver().name();
+        String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
+        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.REVISIT, conceptMap);
     }
 
     public void responseAnswer(Materialiser.Response request, Map<Identifier.Variable, Concept> materialisation, int iteration) {
@@ -219,7 +226,8 @@ public final class ResolutionTracer {
         EXHAUSTED("red"),
         CYCLE("orange"),
         ANSWER("green"),
-        REQUEST("blue");
+        VISIT("blue"),
+        REVISIT("purple");
 
         private final String colour;
 
@@ -275,8 +283,8 @@ public final class ResolutionTracer {
         @Override
         public String toString() {
             return "TraceId{" +
-                    "scopeId=" + scopeId +
-                    ", rootId=" + rootId +
+                    "rootId=" + rootId +
+                    ", scopeId=" + scopeId +
                     '}';
         }
     }

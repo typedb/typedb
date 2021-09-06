@@ -46,9 +46,9 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
 
     protected void nextAnswer(Request.Visit fromUpstream, RequestState requestState, int iteration) {
         if (requestState.downstreamManager().hasNextVisit()) {
-            requestFromDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
+            visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
         } else if (requestState.downstreamManager().hasNextRevisit()) {
-            requestFromDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
+            revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
         } else {
             failToUpstream(fromUpstream, iteration);
         }
@@ -116,9 +116,9 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
             requestState.downstreamManager().block(cyclingDownstream, fromDownstream.origins());
         }
         if (requestState.downstreamManager().hasNextVisit()) {
-            requestFromDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
+            visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
         } else if (requestState.downstreamManager().hasNextRevisit()) {
-            requestFromDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
+            revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
         } else {
             cycleToUpstream(fromUpstream, requestState.downstreamManager().blockers(), iteration);
         }

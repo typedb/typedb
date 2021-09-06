@@ -156,7 +156,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     }
 
     private void requestFromMaterialiser(Materialiser.Request request, Request.Visit fromUpstream, int iteration) {
-        if (registry.resolutionTracing()) ResolutionTracer.get().request(request, iteration);
+        if (registry.resolutionTracing()) ResolutionTracer.get().visit(request, iteration);
         materialiserRequestRouter.put(request, new Pair<>(fromUpstream, iteration));
         registry.materialiser().execute(actor -> actor.receiveRequest(request));
     }
@@ -185,9 +185,9 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
         } else if (!requestState.isComplete() && requestState.downstreamManager().hasNextVisit()) {
-            requestFromDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
+            visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
         } else if (!requestState.isComplete() && requestState.downstreamManager().hasNextRevisit()) {
-            requestFromDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
+            revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
         } else if (requestState.waitedMaterialisations().waiting()) {
             requestState.waitedMaterialisations().addWaitingRequest(fromUpstream, iteration);
         } else {

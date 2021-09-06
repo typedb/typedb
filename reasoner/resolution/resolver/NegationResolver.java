@@ -110,7 +110,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         */
         assert fromUpstream.partialAnswer().isCompound();
         Compound.Nestable downstreamPartial = fromUpstream.partialAnswer().asCompound().filterToNestable(negated.retrieves());
-        requestFromDownstream(Downstream.create(driver(), this.downstream, downstreamPartial), fromUpstream, 0);
+        visitDownstream(Downstream.create(driver(), this.downstream, downstreamPartial), fromUpstream, 0);
         boundsState.setRequested();
     }
 

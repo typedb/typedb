@@ -88,7 +88,7 @@ public abstract class SubsumptiveCoordinator<
             //         .orElseGet(() -> Visit.create(driver(), worker, fromUpstream.partialAnswer()));
             Request.Visit request = Request.Visit.create(driver(), worker, fromUpstream.traceId(), fromUpstream.partialAnswer());
             requestMapByRoot.computeIfAbsent(root, r -> new HashMap<>()).put(new Pair<>(request, request.traceId()), fromUpstream);
-            requestFromDownstream(request, fromUpstream, iteration);
+            visitDownstream(request, fromUpstream, iteration);
         }
     }
 
@@ -121,7 +121,7 @@ public abstract class SubsumptiveCoordinator<
             Request.Visit visit = Request.Visit.create(driver(), worker, fromUpstream.visit().traceId(), fromUpstream.visit().partialAnswer());
             Request.Revisit revisit = Request.Revisit.create(visit, fromUpstream.cycles());
             assert requestMapByRoot.get(root).get(new Pair<>(visit, visit.traceId())).equals(fromUpstream.visit());
-            requestFromDownstream(revisit, fromUpstream.visit(), iteration);
+            revisitDownstream(revisit, fromUpstream.visit(), iteration);
         }
     }
 

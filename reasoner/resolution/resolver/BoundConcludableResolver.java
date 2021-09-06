@@ -122,9 +122,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         } else if (isCycle(fromUpstream.partialAnswer()).isPresent()) { // TODO: We can cache this on the requestState
             cycleToUpstream(fromUpstream, cache().size(), iteration);
         } else if (requestState.downstreamManager().hasNextVisit()) {
-            requestFromDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
+            visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
         } else if (requestState.downstreamManager().hasNextRevisit()) {
-            requestFromDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
+            revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
         } else if (requestState.downstreamManager().allDownstreamsCycleToHereOnly()) {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
@@ -146,9 +146,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         } else if (isCycle(fromUpstream.visit().partialAnswer()).isPresent()) {
             cycleToUpstream(fromUpstream.visit(), cache().size(), iteration);
         } else if (requestState.downstreamManager().hasNextVisit()) {
-            requestFromDownstream(requestState.downstreamManager().nextVisit(fromUpstream.visit()), fromUpstream.visit(), iteration);
+            visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream.visit()), fromUpstream.visit(), iteration);
         } else if (requestState.downstreamManager().hasNextRevisit()) {
-            requestFromDownstream(requestState.downstreamManager().nextRevisit(fromUpstream.visit()), fromUpstream.visit(), iteration);
+            revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream.visit()), fromUpstream.visit(), iteration);
         } else if (requestState.downstreamManager().allDownstreamsCycleToHereOnly()) {
             cache().setComplete();
             failToUpstream(fromUpstream.visit(), iteration);
@@ -205,9 +205,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
         } else if (requestState.downstreamManager().hasNextVisit()) {
-            requestFromDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
+            visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
         } else if (requestState.downstreamManager().hasNextRevisit()) {
-            requestFromDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
+            revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
         } else if (requestState.downstreamManager().allDownstreamsCycleToHereOnly()) {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
@@ -229,7 +229,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         if (requestState.downstreamManager().contains(cyclingDownstream)) {
             Set<Response.Cycle.Origin> blockers = iterate(fromDownstream.origins())
                     .filter(blocker -> !requestState.downstreamManager().isOutdated(blocker)).toSet();
-            requestState.downstreamManager().block(cyclingDownstream, blockers);
+            if (!blockers.isEmpty()) requestState.downstreamManager().block(cyclingDownstream, blockers);
         }
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
         if (upstreamAnswer.isPresent()) {
@@ -237,9 +237,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         } else if (cache().isComplete()) {
             failToUpstream(fromUpstream, iteration);
         } else if (requestState.downstreamManager().hasNextVisit()) {
-            requestFromDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
+            visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
         } else if (requestState.downstreamManager().hasNextRevisit()) {
-            requestFromDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
+            revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
         } else if (requestState.downstreamManager().allDownstreamsCycleToHereOnly()) {
             cache().setComplete();
             failToUpstream(fromUpstream, iteration);
@@ -271,7 +271,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     private void requestFromSubsumer(Request.Visit.ToSubsumed fromUpstream, int iteration) {
         Request.Visit toSubsumer = Request.Visit.ToSubsumer.create(driver(), fromUpstream.subsumer(),
                                                                    fromUpstream, fromUpstream.partialAnswer());
-        requestFromDownstream(toSubsumer, fromUpstream, iteration);
+        visitDownstream(toSubsumer, fromUpstream, iteration);
     }
 
     @Override
