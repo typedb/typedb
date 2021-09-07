@@ -280,10 +280,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             assert !blockers.isEmpty();
             assert contains(toBlock);
             visit.remove(toBlock);
-            if (revisit.containsKey(toBlock)) {
-                revisit.get(toBlock).removeAll(blockers);
-                if (revisit.get(toBlock).size() == 0) revisit.remove(toBlock);
-            }
+            revisit.remove(toBlock);
             blocked.computeIfAbsent(toBlock, b -> new HashSet<>()).addAll(blockers);
         }
 
