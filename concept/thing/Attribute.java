@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 
-public interface Attribute extends Thing {
+public interface Attribute extends Thing, Comparable<Attribute> {
 
     /**
      * Get the immediate {@code AttributeType} in which this this {@code Attribute} is an instance of.

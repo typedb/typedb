@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -129,6 +130,11 @@ public interface AttributeType extends ThingType {
         public Set<ValueType> comparables() {
             if (comparables == null) comparables = iterate(encoding.comparables()).map(ValueType::of).toSet();
             return comparables;
+        }
+
+        public Comparator<Object> comparator(ValueType other) {
+            assert comparables().contains(other);
+            return encoding.comparator(other.encoding);
         }
 
         public Set<ValueType> assignables() {

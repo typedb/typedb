@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -50,6 +51,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
@@ -57,7 +60,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.AGGREGATE_ATTRIBUTE_NOT_NUMBER;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.ATTRIBUTES_NOT_COMPARABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_VARIABLE_NOT_ATTRIBUTE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
@@ -132,12 +135,12 @@ public class Matcher {
 
     private FunctionalIterator<ConceptMap> sort(FunctionalIterator<ConceptMap> answers, Sortable.Sorting sorting) {
         // TODO: Replace this temporary implementation of TypeQL Match Sort query with a native sorting traversal
-        List<Reference.Name> vars = iterate(sorting.vars()).map(var -> var.reference().asName()).toList();
-        Comparator<List<Attribute>> multiComparator = multiComparator(vars.size());
+        List<Reference.Name> sortVars = iterate(sorting.vars()).map(var -> var.reference().asName()).toList();
+        Comparator<List<Attribute>> multiComparator = multiComparator(sortVars.size());
         Comparator<ConceptMap> comparator = (answer1, answer2) -> {
-            List<Attribute> attributes1 = new ArrayList<>(vars.size());
-            List<Attribute> attributes2 = new ArrayList<>(vars.size());
-            for (Reference.Name var : vars) {
+            List<Attribute> attributes1 = new ArrayList<>(sortVars.size());
+            List<Attribute> attributes2 = new ArrayList<>(sortVars.size());
+            for (Reference.Name var : sortVars) {
                 try {
                     attributes1.add(answer1.get(var).asAttribute());
                     attributes2.add(answer2.get(var).asAttribute());
@@ -149,48 +152,18 @@ public class Matcher {
                     }
                 }
             }
-            if (!isComparable(attributes1, attributes2)) throw TypeDBException.of(SORT_ATTRIBUTE_NOT_COMPARABLE, vars);
             return multiComparator.compare(attributes1, attributes2);
         };
         comparator = (sorting.order() == TypeQLArg.Order.DESC) ? comparator.reversed() : comparator;
         return iterate(answers.stream().sorted(comparator).iterator());
     }
 
-    private boolean isComparable(List<Attribute> attrs1, List<Attribute> attrs2) {
-        assert attrs1.size() == attrs2.size();
-        for (int i = 0; i < attrs1.size(); i++) {
-            if (!attrs1.get(i).getType().getValueType().comparables().contains(attrs2.get(i).getType().getValueType())) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     private Comparator<List<Attribute>> multiComparator(int n) {
-        Comparator<List<Attribute>> comparator = Comparator.comparing((attrs) -> attrs.get(0), this::compareAttribute);
-        for (int i = 1; i < n; i++) {
-            int index = i;
-            comparator = comparator.thenComparing((attrs) -> attrs.get(index), this::compareAttribute);
-        }
-        return comparator;
-    }
-
-    private int compareAttribute(Attribute att1, Attribute att2) {
-        if (att1.isString()) {
-            return att1.asString().getValue().compareToIgnoreCase(att2.asString().getValue());
-        } else if (att1.isBoolean()) {
-            return att1.asBoolean().getValue().compareTo(att2.asBoolean().getValue());
-        } else if (att1.isLong() && att2.isLong()) {
-            return att1.asLong().getValue().compareTo(att2.asLong().getValue());
-        } else if (att1.isDouble() || att2.isDouble()) {
-            Double double1 = att1.isLong() ? att1.asLong().getValue() : att1.asDouble().getValue();
-            Double double2 = att2.isLong() ? att2.asLong().getValue() : att2.asDouble().getValue();
-            return double1.compareTo(double2);
-        } else if (att1.isDateTime()) {
-            return (att1.asDateTime().getValue()).compareTo(att2.asDateTime().getValue());
-        } else {
-            throw TypeDBException.of(ILLEGAL_STATE);
-        }
+        Optional<Comparator<List<Attribute>>> comparator = IntStream.range(0, n)
+                .mapToObj(i -> Comparator.comparing((List<Attribute> attrs) -> attrs.get(i), Attribute::compareTo))
+                .reduce(Comparator::thenComparing);
+        assert comparator.isPresent();
+        return comparator.get();
     }
 
     public static class Aggregator {

@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import java.time.LocalDateTime;
 
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.ATTRIBUTES_NOT_COMPARABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.HAS;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
@@ -41,6 +42,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {
 
     AttributeVertex<VALUE> attributeVertex;
+    AttributeTypeImpl attributeType;
 
     private AttributeImpl(AttributeVertex<VALUE> vertex) {
         super(vertex);
@@ -68,6 +70,14 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     public abstract VALUE getValue();
 
     @Override
+    public int compareTo(Attribute o) {
+        AttributeImpl<?> other = (AttributeImpl<?>) o;
+        if (getType().getValueType().comparables().contains(other.getType().getValueType())) {
+            return getType().getValueType().comparator(other.getType().getValueType()).compare(getValue(), other.getValue());
+        } else throw TypeDBException.of(ATTRIBUTES_NOT_COMPARABLE, this, other);
+    }
+
+    @Override
     protected AttributeVertex.Write<VALUE> writableVertex() {
         if (!attributeVertex.isWrite()) attributeVertex = attributeVertex.toWrite();
         return attributeVertex.asWrite();
@@ -75,7 +85,8 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public AttributeTypeImpl getType() {
-        return AttributeTypeImpl.of(readableVertex().graphs(), readableVertex().type());
+        if (attributeType == null) attributeType = AttributeTypeImpl.of(readableVertex().graphs(), readableVertex().type());
+        return attributeType;
     }
 
     @Override
