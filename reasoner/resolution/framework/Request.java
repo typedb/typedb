@@ -38,7 +38,6 @@ public interface Request {
         protected final AnswerState.Partial<?> partialAnswer;
         protected final int planIndex;
         private final ResolutionTracer.TraceId traceId;
-        private final int hash;
 
         protected Visit(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
                         ResolutionTracer.TraceId traceId, AnswerState.Partial<?> partialAnswer, int planIndex) {
@@ -47,7 +46,6 @@ public interface Request {
             this.receiver = receiver;
             this.partialAnswer = partialAnswer;
             this.planIndex = planIndex;
-            this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer);
         }
 
         public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, ResolutionTracer.TraceId traceId, AnswerState.Partial<?> partialAnswer, int planIndex) {
@@ -102,7 +100,7 @@ public interface Request {
 
         @Override
         public int hashCode() {
-            return hash;
+            return Objects.hash(this.sender, this.receiver, this.partialAnswer);
         }
 
         @Override
@@ -202,12 +200,10 @@ public interface Request {
 
         private final Visit visit;
         private final Set<Response.Cycle.Origin> cycles;
-        private final int hash;
 
         protected Revisit(Visit visit, Set<Response.Cycle.Origin> cycles) {
             this.visit = visit;
             this.cycles = cycles;
-            this.hash = Objects.hash(super.hashCode(), cycles);
         }
 
         public static Revisit create(Visit visit, Set<Response.Cycle.Origin> cycles) {
@@ -227,14 +223,13 @@ public interface Request {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Revisit revisit = (Revisit) o;
-            return hash == revisit.hash &&
-                    visit.equals(revisit.visit) &&
+            return visit.equals(revisit.visit) &&
                     cycles.equals(revisit.cycles);
         }
 
         @Override
         public int hashCode() {
-            return hash;
+            return Objects.hash(visit, cycles);
         }
 
         @Override
@@ -242,7 +237,6 @@ public interface Request {
             return "Revisit{" +
                     "visit=" + visit +
                     ", cycles=" + cycles +
-                    ", hash=" + hash +
                     '}';
         }
     }
