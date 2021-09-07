@@ -44,6 +44,8 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.lang.Math.abs;
+
 @ThreadSafe
 public class ReasonerProducer implements Producer<ConceptMap> {
 
@@ -201,7 +203,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private Request.Visit createResolveRequest(int requestId) {
         Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        return Request.Visit.create(rootResolver, ResolutionTracer.TraceId.create(UUID.randomUUID().hashCode(), requestId), downstream);
+        return Request.Visit.create(rootResolver, ResolutionTracer.TraceId.create(id, requestId), downstream);
     }
 
     private void requestAnswer() {
