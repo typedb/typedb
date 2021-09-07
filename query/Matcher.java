@@ -52,15 +52,12 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.AGGREGATE_ATTRIBUTE_NOT_NUMBER;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.ATTRIBUTES_NOT_COMPARABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_VARIABLE_NOT_ATTRIBUTE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
@@ -345,9 +342,7 @@ public class Matcher {
 
                 @Override
                 public BinaryOperator<MedianCalculator> combiner() {
-                    return (t, u) -> {
-                        throw TypeDBException.of(ILLEGAL_OPERATION);
-                    };
+                    return (t, u) -> { throw TypeDBException.of(ILLEGAL_OPERATION); };
                 }
 
                 @Override
@@ -413,9 +408,7 @@ public class Matcher {
 
                 @Override
                 public BinaryOperator<STDCalculator> combiner() {
-                    return (t, u) -> {
-                        throw TypeDBException.of(ILLEGAL_OPERATION);
-                    };
+                    return (t, u) -> { throw TypeDBException.of(ILLEGAL_OPERATION); };
                 }
 
                 @Override
