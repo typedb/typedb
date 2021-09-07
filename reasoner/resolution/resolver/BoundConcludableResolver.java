@@ -335,7 +335,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             }
 
             public void unblockOutdated() {
-                unblock(iterate(blocked.values()).flatMap(origins -> iterate(origins).filter(this::isOutdated)).toSet());
+                Set<Response.Cycle.Origin> outdated =
+                        iterate(blocked.values()).flatMap(origins -> iterate(origins).filter(this::isOutdated)).toSet();
+                if (!outdated.isEmpty()) unblock(outdated);
             }
 
             private boolean originatedHere(Response.Cycle.Origin cycleOrigin) {

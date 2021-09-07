@@ -284,21 +284,20 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             blocked.computeIfAbsent(toBlock, b -> new HashSet<>()).addAll(blockers);
         }
 
-        public void unblock(Set<Response.Cycle.Origin> revisit) {
-            if (!revisit.isEmpty()) {
-                Set<Downstream> toRemove = new HashSet<>();
-                blocked.forEach((downstream, blockers) -> {
-                    assert !visit.contains(downstream);
-                    Set<Response.Cycle.Origin> blockersToRevisit = new HashSet<>(revisit);
-                    blockersToRevisit.retainAll(blockers);
-                    if (!blockersToRevisit.isEmpty()) {
-                        this.revisit.computeIfAbsent(downstream, o -> new HashSet<>()).addAll(blockersToRevisit);
-                        blockers.removeAll(blockersToRevisit);
-                        if (blockers.isEmpty()) toRemove.add(downstream);
-                    }
-                });
-                toRemove.forEach(r -> blocked.remove(r));
-            }
+        public void unblock(Set<Response.Cycle.Origin> rev) {
+            assert !rev.isEmpty();
+            Set<Downstream> toRemove = new HashSet<>();
+            blocked.forEach((downstream, blockers) -> {
+                assert !visit.contains(downstream);
+                Set<Response.Cycle.Origin> blockersToRevisit = new HashSet<>(rev);
+                blockersToRevisit.retainAll(blockers);
+                if (!blockersToRevisit.isEmpty()) {
+                    this.revisit.computeIfAbsent(downstream, o -> new HashSet<>()).addAll(blockersToRevisit);
+                    blockers.removeAll(blockersToRevisit);
+                    if (blockers.isEmpty()) toRemove.add(downstream);
+                }
+            });
+            toRemove.forEach(r -> blocked.remove(r));
         }
     }
 }
