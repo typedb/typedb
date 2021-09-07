@@ -113,10 +113,10 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     private void receiveDirectRequest(Request.Visit fromUpstream, int iteration) {
         ConclusionRequestState<? extends Concludable<?>> requestState = requestStates.computeIfAbsent(
                 fromUpstream, r -> createRequestState(fromUpstream, iteration));
-        if (!sendAnswerOrSearchDownstream(fromUpstream, requestState, iteration)) {
-            if (requestState.materialisationsCounter().nonZero()) {
-                requestState.replayBuffer().addVisit(fromUpstream, iteration);
-            } else {
+        if (requestState.materialisationsCounter().nonZero()) {
+            requestState.replayBuffer().addVisit(fromUpstream, iteration);
+        } else {
+            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState, iteration)) {
                 cycleOrFail(fromUpstream, requestState, iteration);
             }
         }
@@ -125,11 +125,11 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     @Override
     protected void receiveRevisit(Request.Revisit fromUpstream, int iteration) {
         ConclusionRequestState<? extends Concludable<?>> requestState = requestStates.get(fromUpstream.visit());
-        requestState.downstreamManager().unblock(fromUpstream.cycles());
-        if (!sendAnswerOrSearchDownstream(fromUpstream.visit(), requestState, iteration)) {
-            if (requestState.materialisationsCounter().nonZero()) {
-                requestState.replayBuffer().addRevisit(fromUpstream, iteration);
-            } else {
+        if (requestState.materialisationsCounter().nonZero()) {
+            requestState.replayBuffer().addRevisit(fromUpstream, iteration);
+        } else {
+            requestState.downstreamManager().unblock(fromUpstream.cycles());
+            if (!sendAnswerOrSearchDownstream(fromUpstream.visit(), requestState, iteration)) {
                 cycleOrFail(fromUpstream.visit(), requestState, iteration);
             }
         }
