@@ -116,6 +116,20 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         }
     }
 
+    public static class Client extends ErrorMessage {
+        public static final Client CLIENT_NOT_FOUND =
+                new Client(1, "Client with UUID '%s' does not exist.");
+        public static final Client CLIENT_CLOSED =
+                new Client(2, "Attempted to open a session from closed client.");
+
+        private static final String codePrefix = "CLI";
+        private static final String messagePrefix = "Invalid Client Operation";
+
+        Client(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
+        }
+    }
+
     public static class Database extends ErrorMessage {
         public static final Database DATABASE_MANAGER_CLOSED =
                 new Database(1, "Attempted to use database manager when it has been closed.");

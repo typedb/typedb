@@ -39,15 +39,15 @@ public class SessionService implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
 
     private final ConcurrentSet<TransactionService> transactionServices;
-    private final TypeDBService typeDBSvc;
+    private final ClientService clientSvc;
     private final Options.Session options;
     private final TypeDB.Session session;
     private final ReadWriteLock accessLock;
     private final AtomicBoolean isOpen;
     private ScheduledFuture<?> idleTimeoutTask;
 
-    public SessionService(TypeDBService typeDBSvc, TypeDB.Session session, Options.Session options) {
-        this.typeDBSvc = typeDBSvc;
+    public SessionService(ClientService clientSvc, TypeDB.Session session, Options.Session options) {
+        this.clientSvc = clientSvc;
         this.session = session;
         this.options = options;
         this.accessLock = new StampedLock().asReadWriteLock();
@@ -68,7 +68,7 @@ public class SessionService implements AutoCloseable {
         }
     }
 
-    void remove(TransactionService transactionSvc) {
+    void unregister(TransactionService transactionSvc) {
         transactionServices.remove(transactionSvc);
         mayStartIdleTimeout();
     }
@@ -120,7 +120,7 @@ public class SessionService implements AutoCloseable {
             if (isOpen.compareAndSet(true, false)) {
                 transactionServices.forEach(TransactionService::close);
                 session.close();
-                typeDBSvc.remove(this);
+                clientSvc.sessionUnregister(UUID());
             }
         } finally {
             accessLock.writeLock().unlock();
@@ -133,7 +133,7 @@ public class SessionService implements AutoCloseable {
             if (isOpen.compareAndSet(true, false)) {
                 transactionServices.forEach(tr -> tr.close(error));
                 session.close();
-                typeDBSvc.remove(this);
+                clientSvc.sessionUnregister(UUID());
             }
         } finally {
             accessLock.writeLock().unlock();

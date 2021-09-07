@@ -55,6 +55,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.continueTraceOnThread;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Client.CLIENT_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.EMPTY_TRANSACTION_REQUEST;
@@ -183,7 +184,8 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         if (isTransactionOpen.get()) throw TypeDBException.of(TRANSACTION_ALREADY_OPENED);
         TransactionProto.Transaction.Open.Req openReq = request.getOpenReq();
         networkLatencyMillis = Math.min(openReq.getNetworkLatencyMillis(), MAX_NETWORK_LATENCY_MILLIS);
-        sessionSvc = sessionService(typeDBSvc, openReq);
+        ClientService clientSvc = clientService(typeDBSvc, openReq);
+        sessionSvc = sessionService(clientSvc, openReq);
         sessionSvc.register(this);
         transaction = transaction(sessionSvc, openReq);
         services = new Services();
@@ -191,9 +193,16 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         isTransactionOpen.set(true);
     }
 
-    private static SessionService sessionService(TypeDBService typeDBSvc, TransactionProto.Transaction.Open.Req req) {
+    private static ClientService clientService(TypeDBService typeDBSvc, TransactionProto.Transaction.Open.Req req) {
+        UUID clientID = byteStringAsUUID(req.getClientId());
+        ClientService clientSvc = typeDBSvc.client(clientID);
+        if (clientSvc == null) throw TypeDBException.of(CLIENT_NOT_FOUND, clientID);
+        return clientSvc;
+    }
+
+    private static SessionService sessionService(ClientService clientSvc, TransactionProto.Transaction.Open.Req req) {
         UUID sessionID = byteStringAsUUID(req.getSessionId());
-        SessionService sessionSvc = typeDBSvc.session(sessionID);
+        SessionService sessionSvc = clientSvc.sessionGet(sessionID);
         if (sessionSvc == null) throw TypeDBException.of(SESSION_NOT_FOUND, sessionID);
         return sessionSvc;
     }
@@ -272,7 +281,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         if (isRPCAlive.compareAndSet(true, false)) {
             if (isTransactionOpen.compareAndSet(true, false)) {
                 transaction.close();
-                sessionSvc.remove(this);
+                sessionSvc.unregister(this);
             }
             responder.onCompleted();
         }
@@ -282,7 +291,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         if (isRPCAlive.compareAndSet(true, false)) {
             if (isTransactionOpen.compareAndSet(true, false)) {
                 transaction.close();
-                sessionSvc.remove(this);
+                sessionSvc.unregister(this);
             }
             responder.onError(ResponseBuilder.exception(error));
             // TODO: We should restrict the type of errors that we log.

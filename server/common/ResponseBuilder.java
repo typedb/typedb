@@ -35,6 +35,7 @@ import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
 import com.vaticle.typedb.protocol.AnswerProto;
+import com.vaticle.typedb.protocol.ClientProto;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabase;
 import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabaseManager;
@@ -106,15 +107,27 @@ public class ResponseBuilder {
         }
     }
 
+    public static class Client {
+
+        public static ClientProto.Client.Open.Res openRes(UUID clientID) {
+            return ClientProto.Client.Open.Res.newBuilder().setClientId(UUIDAsByteString(clientID)).build();
+        }
+
+        public static ClientProto.Client.Pulse.Res pulseRes(boolean isAlive) {
+            return ClientProto.Client.Pulse.Res.newBuilder().setAlive(isAlive).build();
+        }
+
+        public static ClientProto.Client.Close.Res closeRes() {
+            return ClientProto.Client.Close.Res.newBuilder().build();
+        }
+
+    }
+
     public static class Session {
 
         public static SessionProto.Session.Open.Res openRes(UUID sessionID, int durationMillis) {
             return SessionProto.Session.Open.Res.newBuilder().setSessionId(UUIDAsByteString(sessionID))
                     .setServerDurationMillis(durationMillis).build();
-        }
-
-        public static SessionProto.Session.Pulse.Res pulseRes(boolean isAlive) {
-            return SessionProto.Session.Pulse.Res.newBuilder().setAlive(isAlive).build();
         }
 
         public static SessionProto.Session.Close.Res closeRes() {
