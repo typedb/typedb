@@ -71,42 +71,6 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     public void receiveVisit(Request.Visit fromUpstream) {
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (isTerminated()) return;
-        if (fromUpstream.isToSubsumed()) {
-            assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
-            receiveSubsumed(fromUpstream.asToSubsumed());
-        } else if (fromUpstream.isToSubsumer()) {
-            receiveSubsumer(fromUpstream.asToSubsumer());
-        } else {
-            assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
-            receiveDirect(fromUpstream);
-        }
-    }
-
-    private void receiveSubsumed(Request.Visit.ToSubsumed fromUpstream) {
-        throw TypeDBException.of(ILLEGAL_STATE);
-//        RequestState requestState = requestStates.computeIfAbsent(
-//                fromUpstream, request -> new BoundRetrievableResolver.BoundRequestState(request, cache, iteration));
-//        if (cache.sourceExhausted()) {
-//            sendAnswerOrFail(fromUpstream, iteration, requestState);
-//        } else {
-//            cache.clearSource();
-//            Optional<? extends AnswerState.Partial<?>> upstreamAnswer;
-//            upstreamAnswer = requestState.nextAnswer();
-//            if (upstreamAnswer.isPresent()) {
-//                answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
-//            } else {
-//                requestFromSubsumer(fromUpstream, iteration);
-//            }
-//        }
-    }
-
-    private void receiveSubsumer(Request.Visit.ToSubsumer fromUpstream) {
-        throw TypeDBException.of(ILLEGAL_STATE);
-//        sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
-//                fromUpstream, request -> new BoundRetrievableResolver.SubsumerRequestState(request, cache, iteration)));
-    }
-
-    private void receiveDirect(Request.Visit fromUpstream) {
         assert fromUpstream.partialAnswer().isConcludable();
         ExploringRequestState<?> requestState = requestStates.computeIfAbsent(
                 fromUpstream, request -> createExploringRequestState(fromUpstream));
