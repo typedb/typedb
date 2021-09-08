@@ -196,25 +196,6 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         answerUpstreamOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
     }
 
-    private void answerUpstreamOrSearchDownstreamOrFail(Request.Visit fromUpstream, ExploringRequestState<?> requestState,
-                                                        int iteration) {
-        Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
-        if (upstreamAnswer.isPresent()) {
-            answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
-        } else if (cache().isComplete()) {
-            failToUpstream(fromUpstream, iteration);
-        } else if (requestState.downstreamManager().hasNextVisit()) {
-            visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
-        } else if (requestState.downstreamManager().hasNextRevisit()) {
-            revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
-        } else if (requestState.downstreamManager().allDownstreamsCycleToHereOnly()) {
-            cache().setComplete();
-            failToUpstream(fromUpstream, iteration);
-        } else {
-            cycleToUpstream(fromUpstream, requestState.downstreamManager().cyclesNotOriginatingHere(), iteration);
-        }
-    }
-
     @Override
     protected void receiveCycle(Response.Cycle fromDownstream, int iteration) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
@@ -229,6 +210,11 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             requestState.downstreamManager().block(cyclingDownstream, fromDownstream.origins());
             requestState.downstreamManager().unblockOutdated();
         }
+        answerUpstreamOrSearchDownstreamOrFail(fromUpstream, requestState, iteration);
+    }
+
+    private void answerUpstreamOrSearchDownstreamOrFail(Request.Visit fromUpstream, ExploringRequestState<?> requestState,
+                                                        int iteration) {
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState, iteration);
