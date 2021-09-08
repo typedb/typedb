@@ -44,7 +44,7 @@ public final class ResolutionTracer {
 
     private static ResolutionTracer INSTANCE;
     private static Path logDir = null;
-    private static final Map<TraceId, RootRequestTracer> rootRequestTracers = new HashMap<>();
+    private static final Map<Trace, RootRequestTracer> rootRequestTracers = new HashMap<>();
 
     private ResolutionTracer(Path logDir) {
         ResolutionTracer.logDir = logDir;
@@ -68,21 +68,21 @@ public final class ResolutionTracer {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, request.traceId(), EdgeType.VISIT, conceptMap);
+        addMessage(sender, receiver, request.trace(), EdgeType.VISIT, conceptMap);
     }
 
     public synchronized void visit(Materialiser.Request request) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, request.traceId(), EdgeType.VISIT, conceptMap);
+        addMessage(sender, receiver, request.trace(), EdgeType.VISIT, conceptMap);
     }
 
     public void revisit(Request.Visit request) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, request.traceId(), EdgeType.REVISIT, conceptMap);
+        addMessage(sender, receiver, request.trace(), EdgeType.REVISIT, conceptMap);
     }
 
     public void responseAnswer(Materialiser.Response request, Map<Identifier.Variable, Concept> materialisation) {
@@ -90,47 +90,47 @@ public final class ResolutionTracer {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         String concepts = materialisation.keySet().toString();
-        addMessage(sender, receiver, request.traceId(), EdgeType.ANSWER, concepts);
+        addMessage(sender, receiver, request.trace(), EdgeType.ANSWER, concepts);
     }
 
     public synchronized void responseAnswer(Response.Answer request) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         String conceptMap = request.answer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, request.traceId(), EdgeType.ANSWER, conceptMap);
+        addMessage(sender, receiver, request.trace(), EdgeType.ANSWER, conceptMap);
     }
 
     public synchronized void responseExhausted(Response request) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
-        addMessage(sender, receiver, request.traceId(), EdgeType.EXHAUSTED, "");
+        addMessage(sender, receiver, request.trace(), EdgeType.EXHAUSTED, "");
     }
 
     public synchronized void responseExhausted(Materialiser.Response request) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
-        addMessage(sender, receiver, request.traceId(), EdgeType.EXHAUSTED, "");
+        addMessage(sender, receiver, request.trace(), EdgeType.EXHAUSTED, "");
     }
 
     public synchronized void responseCycle(Response.Cycle request) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
-        addMessage(sender, receiver, request.traceId(), EdgeType.CYCLE, "");
+        addMessage(sender, receiver, request.trace(), EdgeType.CYCLE, "");
     }
 
-    private void addMessage(String sender, String receiver, TraceId traceId, EdgeType edgeType,
+    private void addMessage(String sender, String receiver, Trace trace, EdgeType edgeType,
                             String conceptMap) {
-        rootRequestTracers.get(traceId).addMessage(sender, receiver, edgeType, conceptMap);
+        rootRequestTracers.get(trace).addMessage(sender, receiver, edgeType, conceptMap);
     }
 
     public synchronized void start(Request.Visit request) {
-        assert !rootRequestTracers.containsKey(request.traceId());
-        rootRequestTracers.put(request.traceId(), new RootRequestTracer(request.traceId()));
-        rootRequestTracers.get(request.traceId()).start();
+        assert !rootRequestTracers.containsKey(request.trace());
+        rootRequestTracers.put(request.trace(), new RootRequestTracer(request.trace()));
+        rootRequestTracers.get(request.trace()).start();
     }
 
     public synchronized void finish(Request.Visit request) {
-        rootRequestTracers.get(request.traceId()).finish();
+        rootRequestTracers.get(request.trace()).finish();
     }
 
     public synchronized void exception() {
@@ -140,12 +140,12 @@ public final class ResolutionTracer {
     private static class RootRequestTracer {
 
         private final AtomicReference<Path> path = new AtomicReference<>(null);
-        private final TraceId traceId;
+        private final Trace trace;
         private int messageNumber = 0;
         private PrintWriter writer;
 
-        private RootRequestTracer(TraceId traceId) {
-            this.traceId = traceId;
+        private RootRequestTracer(Trace trace) {
+            this.trace = trace;
         }
 
         public void start() {
@@ -166,7 +166,7 @@ public final class ResolutionTracer {
                     "digraph request_%d_%d {\n" +
                             "node [fontsize=12 fontname=arial width=0.5 shape=box style=filled]\n" +
                             "edge [fontsize=10 fontname=arial width=0.5]",
-                    traceId.scopeId, traceId.rootId()));
+                    trace.scope, trace.root()));
         }
 
         public void finish() {
@@ -183,7 +183,7 @@ public final class ResolutionTracer {
         }
 
         private String filename() {
-            return String.format("resolution_trace_request_%d_%d.dot", traceId.scopeId(), traceId.rootId());
+            return String.format("resolution_trace_request_%d_%d.dot", trace.scope(), trace.root());
         }
 
         private void endFile() {
@@ -240,51 +240,51 @@ public final class ResolutionTracer {
         }
     }
 
-    public static class TraceId {
+    public static class Trace {
 
-        private final int scopeId;
-        private final int rootId;
+        private final int scope;
+        private final int root;
 
-        private TraceId(int scopeId, int rootId) {
-            this.scopeId = scopeId;
-            this.rootId = rootId;
+        private Trace(int scope, int root) {
+            this.scope = scope;
+            this.root = root;
         }
 
-        public static TraceId create(int scopeId, int rootRequestId) {
-            return new TraceId(scopeId, rootRequestId);
+        public static Trace create(int scope, int rootRequestId) {
+            return new Trace(scope, rootRequestId);
         }
 
-        public static TraceId downstreamId() {
-            return new TraceId(-1, -1);  // TODO
+        public static Trace downstream() {
+            return new Trace(-1, -1);  // TODO
         }
 
-        public int rootId() {
-            return rootId;
+        public int root() {
+            return root;
         }
 
-        public int scopeId() {
-            return scopeId;
+        public int scope() {
+            return scope;
         }
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            TraceId traceId = (TraceId) o;
-            return scopeId == traceId.scopeId &&
-                    rootId == traceId.rootId;
+            Trace trace = (Trace) o;
+            return scope == trace.scope &&
+                    root == trace.root;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(scopeId, rootId);
+            return Objects.hash(scope, root);
         }
 
         @Override
         public String toString() {
-            return "TraceId{" +
-                    "rootId=" + rootId +
-                    ", scopeId=" + scopeId +
+            return "Trace{" +
+                    "root=" + root +
+                    ", scope=" + scope +
                     '}';
         }
     }

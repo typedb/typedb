@@ -32,7 +32,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.TraceId;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
@@ -57,7 +57,7 @@ import static com.vaticle.typedb.core.common.poller.Pollers.poll;
 public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends ReasonerActor<RESOLVER> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
-    private final Map<Pair<Request.Visit, TraceId>, Request.Visit> requestRouter;
+    private final Map<Pair<Request.Visit, Trace>, Request.Visit> requestRouter;
     protected final ResolverRegistry registry;
 
     protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
@@ -101,34 +101,34 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
 
     protected Request.Visit fromUpstream(Request.Visit toDownstream) {
-        assert toDownstream.traceId().rootId() != -1;
-        Pair<Request.Visit, TraceId> ds = new Pair<>(toDownstream, toDownstream.traceId());
+        assert toDownstream.trace().root() != -1;
+        Pair<Request.Visit, ResolutionTracer.Trace> ds = new Pair<>(toDownstream, toDownstream.trace());
         assert requestRouter.containsKey(ds);
-        assert requestRouter.get(ds).traceId() == toDownstream.traceId();
+        assert requestRouter.get(ds).trace() == toDownstream.trace();
         return requestRouter.get(ds);
     }
 
     protected void visitDownstream(Downstream downstream, Request.Visit fromUpstream) {
-        visitDownstream(downstream.toVisit(fromUpstream.traceId()), fromUpstream);
+        visitDownstream(downstream.toVisit(fromUpstream.trace()), fromUpstream);
     }
 
     protected void visitDownstream(Request.Visit request, Request.Visit fromUpstream) {
         LOG.trace("{} : Sending a new Visit request to downstream: {}", name(), request);
-        assert fromUpstream.traceId().rootId() != -1;
-        assert request.traceId() == fromUpstream.traceId();
+        assert fromUpstream.trace().root() != -1;
+        assert request.trace() == fromUpstream.trace();
         if (registry.resolutionTracing()) ResolutionTracer.get().visit(request);
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
-        requestRouter.put(new Pair<>(request, request.traceId()), fromUpstream);
+        requestRouter.put(new Pair<>(request, request.trace()), fromUpstream);
         request.receiver().execute(actor -> actor.receiveVisit(request));
     }
 
     protected void revisitDownstream(Request.Revisit toRevisit, Request.Visit fromUpstream) {
         Request.Visit downstream = toRevisit.visit();
         LOG.trace("{} : Sending a new Revisit request to downstream: {}", name(), downstream);
-        assert fromUpstream.traceId().rootId() != -1;
-        assert downstream.traceId() == fromUpstream.traceId();
+        assert fromUpstream.trace().root() != -1;
+        assert downstream.trace() == fromUpstream.trace();
         if (registry.resolutionTracing()) ResolutionTracer.get().revisit(downstream);
-        requestRouter.put(new Pair<>(downstream, downstream.traceId()), fromUpstream);
+        requestRouter.put(new Pair<>(downstream, downstream.trace()), fromUpstream);
         downstream.receiver().execute(actor -> actor.receiveRevisit(toRevisit));
     }
 
@@ -284,13 +284,13 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         }
 
         public Request.Visit nextVisit(Request.Visit fromUpstream) {
-            return visits.get(0).toVisit(fromUpstream.traceId());
+            return visits.get(0).toVisit(fromUpstream.trace());
         }
 
         public Request.Revisit nextRevisit(Request.Visit fromUpstream) {
             Optional<Downstream> downstream = iterate(revisits.keySet()).first();
             assert downstream.isPresent();
-            return downstream.get().toRevisit(fromUpstream.traceId(), revisits.get(downstream.get()));
+            return downstream.get().toRevisit(fromUpstream.trace(), revisits.get(downstream.get()));
         }
 
         public boolean hasNextVisit() {

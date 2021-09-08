@@ -154,7 +154,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private Request.Visit createResolveRequest(int requestId) {
         Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        return Request.Visit.create(rootResolver, ResolutionTracer.TraceId.create(id, requestId), downstream);
+        return Request.Visit.create(rootResolver, ResolutionTracer.Trace.create(id, requestId), downstream);
     }
 
     private void requestAnswer() {

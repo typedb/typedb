@@ -52,8 +52,8 @@ public interface Response {
         return sourceRequest().receiver();
     }
 
-    default ResolutionTracer.TraceId traceId() {
-        return sourceRequest().traceId();
+    default ResolutionTracer.Trace trace() {
+        return sourceRequest().trace();
     }
 
     class Answer implements Response {

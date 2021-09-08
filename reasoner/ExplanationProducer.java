@@ -83,7 +83,7 @@ public class ExplanationProducer implements Producer<Explanation> {
 
     private Request.Visit createExplanationRequest(int explainRequestId) {
         Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
-        return Request.Visit.create(explainer, ResolutionTracer.TraceId.create(System.identityHashCode(this), explainRequestId), downstream);
+        return Request.Visit.create(explainer, ResolutionTracer.Trace.create(System.identityHashCode(this), explainRequestId), downstream);
     }
 
     private void requestExplanation() {

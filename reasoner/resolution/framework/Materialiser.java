@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.TraceId;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConclusionResolver;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
@@ -79,22 +79,22 @@ public class Materialiser extends ReasonerActor<Materialiser> {
 
         private final Driver<BoundConclusionResolver> sender;
         private final Actor.Driver<Materialiser> receiver;
-        private final TraceId traceId;
+        private final Trace trace;
         private final Rule.Conclusion conclusion;
         private final AnswerState.Partial<?> partialAnswer;
 
         private Request(Driver<BoundConclusionResolver> sender, Driver<Materialiser> receiver,
-                        TraceId traceId, Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
+                        ResolutionTracer.Trace trace, Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
             this.sender = sender;
             this.receiver = receiver;
-            this.traceId = traceId;
+            this.trace = trace;
             this.conclusion = conclusion;
             this.partialAnswer = partialAnswer;
         }
 
         public static Request create(Driver<BoundConclusionResolver> sender, Driver<Materialiser> receiver,
-                                     TraceId traceId, Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
-            return new Request(sender, receiver, traceId, conclusion, partialAnswer);
+                                     Trace trace, Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
+            return new Request(sender, receiver, trace, conclusion, partialAnswer);
         }
 
         public Rule.Conclusion conclusion() {
@@ -105,8 +105,8 @@ public class Materialiser extends ReasonerActor<Materialiser> {
             return partialAnswer;
         }
 
-        public TraceId traceId() {
-            return traceId;
+        public Trace trace() {
+            return trace;
         }
 
         @Override
@@ -147,8 +147,8 @@ public class Materialiser extends ReasonerActor<Materialiser> {
             return sourceRequest().sender();
         }
 
-        public TraceId traceId() {
-            return sourceRequest().traceId();
+        public Trace trace() {
+            return sourceRequest().trace();
         }
 
         public Optional<Map<Identifier.Variable, Concept>> materialisation() {

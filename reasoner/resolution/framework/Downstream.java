@@ -55,12 +55,12 @@ public class Downstream {
         return Downstream.create(request.sender(), request.receiver(), request.partialAnswer(), request.planIndex());
     }
 
-    public Request.Visit toVisit(ResolutionTracer.TraceId traceId) {
-        return Request.Visit.create(sender, receiver, traceId, partialAnswer, planIndex);
+    public Request.Visit toVisit(ResolutionTracer.Trace trace) {
+        return Request.Visit.create(sender, receiver, trace, partialAnswer, planIndex);
     }
 
-    public Request.Revisit toRevisit(ResolutionTracer.TraceId traceId, Set<Response.Cycle.Origin> cycles) {
-        return Request.Revisit.create(toVisit(traceId), cycles);
+    public Request.Revisit toRevisit(ResolutionTracer.Trace trace, Set<Response.Cycle.Origin> cycles) {
+        return Request.Revisit.create(toVisit(trace), cycles);
     }
 
     public AnswerState.Partial<?> partialAnswer() {

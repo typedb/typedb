@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.TraceId.downstreamId;
+import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace.downstream;
 
 public interface Request {
 
@@ -37,35 +37,35 @@ public interface Request {
         protected final Actor.Driver<? extends Resolver<?>> receiver;
         protected final AnswerState.Partial<?> partialAnswer;
         protected final int planIndex;
-        private final ResolutionTracer.TraceId traceId;
+        private final ResolutionTracer.Trace trace;
 
         protected Visit(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                        ResolutionTracer.TraceId traceId, AnswerState.Partial<?> partialAnswer, int planIndex) {
-            this.traceId = traceId;
+                        ResolutionTracer.Trace trace, AnswerState.Partial<?> partialAnswer, int planIndex) {
+            this.trace = trace;
             this.sender = sender;
             this.receiver = receiver;
             this.partialAnswer = partialAnswer;
             this.planIndex = planIndex;
         }
 
-        public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, ResolutionTracer.TraceId traceId, AnswerState.Partial<?> partialAnswer, int planIndex) {
-            return new Visit(sender, receiver, traceId, partialAnswer, planIndex);
+        public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, ResolutionTracer.Trace trace, AnswerState.Partial<?> partialAnswer, int planIndex) {
+            return new Visit(sender, receiver, trace, partialAnswer, planIndex);
         }
 
         public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer, int planIndex) {
-            return new Visit(sender, receiver, downstreamId(), partialAnswer, planIndex);
+            return new Visit(sender, receiver, downstream(), partialAnswer, planIndex);
         }
 
         public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer) {
-            return new Visit(sender, receiver, downstreamId(), partialAnswer, -1);
+            return new Visit(sender, receiver, downstream(), partialAnswer, -1);
         }
 
-        public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, ResolutionTracer.TraceId traceId, AnswerState.Partial<?> partialAnswer) {
-            return new Visit(sender, receiver, traceId, partialAnswer, -1);
+        public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, ResolutionTracer.Trace trace, AnswerState.Partial<?> partialAnswer) {
+            return new Visit(sender, receiver, trace, partialAnswer, -1);
         }
 
-        public static Visit create(Actor.Driver<? extends Resolver<?>> receiver, ResolutionTracer.TraceId traceId, AnswerState.Partial<?> partialAnswer) {
-            return new Visit(null, receiver, traceId, partialAnswer, -1);
+        public static Visit create(Actor.Driver<? extends Resolver<?>> receiver, ResolutionTracer.Trace trace, AnswerState.Partial<?> partialAnswer) {
+            return new Visit(null, receiver, trace, partialAnswer, -1);
         }
 
         public Actor.Driver<? extends Resolver<?>> receiver() {
@@ -84,8 +84,8 @@ public interface Request {
             return planIndex;
         }
 
-        public ResolutionTracer.TraceId traceId() {
-            return traceId;
+        public ResolutionTracer.Trace trace() {
+            return trace;
         }
 
         @Override
@@ -134,17 +134,17 @@ public interface Request {
 
             private ToSubsumed(@Nullable Actor.Driver<? extends Resolver<?>> sender,
                                Actor.Driver<? extends Resolver<?>> receiver,
-                               @Nullable Actor.Driver<? extends Resolver<?>> subsumer, ResolutionTracer.TraceId traceId,
+                               @Nullable Actor.Driver<? extends Resolver<?>> subsumer, ResolutionTracer.Trace trace,
                                AnswerState.Partial<?> partialAnswer, int planIndex) {
-                super(sender, receiver, traceId, partialAnswer, planIndex);
+                super(sender, receiver, trace, partialAnswer, planIndex);
                 this.subsumer = subsumer;
             }
 
             public static Visit create(Actor.Driver<? extends Resolver<?>> sender,
                                        Actor.Driver<? extends Resolver<?>> receiver,
-                                       Actor.Driver<? extends Resolver<?>> subsumer, ResolutionTracer.TraceId traceId,
+                                       Actor.Driver<? extends Resolver<?>> subsumer, ResolutionTracer.Trace trace,
                                        AnswerState.Partial<?> partialAnswer) {
-                return new ToSubsumed(sender, receiver, subsumer, traceId, partialAnswer, -1);
+                return new ToSubsumed(sender, receiver, subsumer, trace, partialAnswer, -1);
             }
 
             public Actor.Driver<? extends Resolver<?>> subsumer() {
@@ -170,7 +170,7 @@ public interface Request {
             private ToSubsumer(@Nullable Actor.Driver<? extends Resolver<?>> sender,
                                Actor.Driver<? extends Resolver<?>> receiver,
                                ToSubsumed toSubsumed, AnswerState.Partial<?> partialAnswer, int planIndex) {
-                super(sender, receiver, toSubsumed.traceId(), partialAnswer, planIndex);
+                super(sender, receiver, toSubsumed.trace(), partialAnswer, planIndex);
                 this.toSubsumed = toSubsumed;
             }
 

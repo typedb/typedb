@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.TraceId;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
@@ -44,7 +44,7 @@ public abstract class SubsumptiveCoordinator<
 
     private static final Logger LOG = LoggerFactory.getLogger(SubsumptiveCoordinator.class);
     private final Map<Driver<? extends Resolver<?>>, SubsumptionTracker> subsumptionTrackers;
-    private final Map<Driver<? extends Resolver<?>>, Map<Pair<Request.Visit, TraceId>, Request.Visit>> requestMapByRoot;
+    private final Map<Driver<? extends Resolver<?>>, Map<Pair<Request.Visit, ResolutionTracer.Trace>, Request.Visit>> requestMapByRoot;
     protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, Driver<WORKER>>> workersByRoot; // TODO: We would like these not to be by root. They need to be, for now, for reiteration purposes.
     protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, AnswerCache<?>>> cacheRegistersByRoot;
     protected boolean isInitialised;
@@ -76,8 +76,8 @@ public abstract class SubsumptiveCoordinator<
         //                 driver(), worker, workersByRoot.get(root).get(conceptMap),
         //                 fromUpstream.partialAnswer()))
         //         .orElseGet(() -> Visit.create(driver(), worker, fromUpstream.partialAnswer()));
-        Request.Visit request = Request.Visit.create(driver(), worker, fromUpstream.traceId(), fromUpstream.partialAnswer());
-        requestMapByRoot.computeIfAbsent(root, r -> new HashMap<>()).put(new Pair<>(request, request.traceId()), fromUpstream);
+        Request.Visit request = Request.Visit.create(driver(), worker, fromUpstream.trace(), fromUpstream.partialAnswer());
+        requestMapByRoot.computeIfAbsent(root, r -> new HashMap<>()).put(new Pair<>(request, request.trace()), fromUpstream);
         visitDownstream(request, fromUpstream);
     }
 
@@ -99,9 +99,9 @@ public abstract class SubsumptiveCoordinator<
         //                 driver(), worker, workersByRoot.get(root).get(conceptMap),
         //                 fromUpstream.partialAnswer()))
         //         .orElseGet(() -> Visit.create(driver(), worker, fromUpstream.partialAnswer()));
-        Request.Visit visit = Request.Visit.create(driver(), worker, fromUpstream.visit().traceId(), fromUpstream.visit().partialAnswer());
+        Request.Visit visit = Request.Visit.create(driver(), worker, fromUpstream.visit().trace(), fromUpstream.visit().partialAnswer());
         Request.Revisit revisit = Request.Revisit.create(visit, fromUpstream.cycles());
-        requestMapByRoot.computeIfAbsent(root, r -> new HashMap<>()).put(new Pair<>(visit, visit.traceId()), fromUpstream.visit());
+        requestMapByRoot.computeIfAbsent(root, r -> new HashMap<>()).put(new Pair<>(visit, visit.trace()), fromUpstream.visit());
         revisitDownstream(revisit, fromUpstream.visit());
     }
 
@@ -110,7 +110,7 @@ public abstract class SubsumptiveCoordinator<
     @Override
     protected void receiveAnswer(Answer answer) {
         answerToUpstream(
-                answer.answer(), requestMapByRoot.get(answer.answer().root()).get(new Pair<>(answer.sourceRequest(),answer.sourceRequest().traceId()))
+                answer.answer(), requestMapByRoot.get(answer.answer().root()).get(new Pair<>(answer.sourceRequest(),answer.sourceRequest().trace()))
         );
     }
 
@@ -120,7 +120,7 @@ public abstract class SubsumptiveCoordinator<
         subsumptionTrackers
                 .computeIfAbsent(request.partialAnswer().root(), r -> new SubsumptionTracker())
                 .addFinished(request.partialAnswer().conceptMap());
-        failToUpstream(requestMapByRoot.get(fail.sourceRequest().partialAnswer().root()).get(new Pair<>(request, request.traceId())));
+        failToUpstream(requestMapByRoot.get(fail.sourceRequest().partialAnswer().root()).get(new Pair<>(request, request.trace())));
     }
 
     static class SubsumptionTracker {
