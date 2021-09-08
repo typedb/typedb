@@ -55,6 +55,12 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
+    CycleRequestState<?> createCycleRequestState(Request.Visit fromUpstream) {
+        LOG.debug("{}: Creating new cycle request state for request: {}", name(), fromUpstream);
+        return new CycleRequestState<>(fromUpstream, cache(), true, new MatchUpstream(), singleAnswerRequired);
+    }
+
+    @Override
     protected AnswerCache<ConceptMap> cache() {
         return cache;
     }

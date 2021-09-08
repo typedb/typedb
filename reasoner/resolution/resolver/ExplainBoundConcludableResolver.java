@@ -48,6 +48,12 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
+    CycleRequestState<?> createCycleRequestState(Request.Visit fromUpstream) {
+        LOG.debug("{}: Creating new cycle request state for request: {}", name(), fromUpstream);
+        return new CycleRequestState<>(fromUpstream, cache(), false, new ExplainUpstream(), false);
+    }
+
+    @Override
     protected AnswerCache<AnswerState.Partial.Concludable<?>> cache() {
         return cache;
     }

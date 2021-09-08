@@ -222,6 +222,10 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             this.fromUpstream = fromUpstream;
         }
 
+        public Request.Visit fromUpstream() {
+            return fromUpstream;
+        }
+
         public abstract Optional<? extends AnswerState.Partial<?>> nextAnswer();
 
         public interface Exploration {
