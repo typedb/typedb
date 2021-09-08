@@ -73,8 +73,9 @@ public class GraphProcedure implements PermutationProcedure {
         return procedure;
     }
 
-    public static GraphProcedure.Builder builder() {
-        return new Builder();
+    public static GraphProcedure.Builder builder(int edgeSize) {
+        GraphProcedure procedure = new GraphProcedure(edgeSize);
+        return procedure.new Builder();
     }
 
     public Stream<ProcedureVertex<?, ?>> vertices() {
@@ -217,68 +218,11 @@ public class GraphProcedure implements PermutationProcedure {
         return str.toString();
     }
 
-    public static class Builder { // TODO: to be completed
-
-        private final Map<Identifier, ProcedureVertex<?, ?>> vertices;
-        private final List<ProcedureEdge<?, ?>> edges;
-
-        public Builder() {
-            this.vertices = new HashMap<>();
-            this.edges = new ArrayList<>();
-        }
+    public class Builder {
 
         public GraphProcedure build() {
             assert iterate(edges).noneMatch(Objects::isNull);
-            GraphProcedure graphProcedure = new GraphProcedure(edges.size());
-            graphProcedure.vertices.putAll(vertices);
-            for (int i = 0; i < edges.size(); i++) {
-                graphProcedure.edges[i] = edges.get(i);
-            }
-            return graphProcedure;
-
-
-            // TODO
-//            for (ProcedureEdge<?, ?> edge : edges) assert edge != null;
-//            vertices.values().forEach(v -> {
-//                if (v.isType()) v.asType().props(v.asType().props());
-//            });
-        }
-
-        public Collection<ProcedureVertex<?, ?>> vertices() {
-            return vertices.values();
-        }
-
-        public void registerEdge(ProcedureEdge<?, ?> edge) {
-            mayExpandEdges(edge.order());
-            assert edges.size() >= edge.order();
-            edges.set(edge.order() - 1, edge);
-            edge.from().out(edge);
-            edge.to().in(edge);
-        }
-
-        private void mayExpandEdges(int position) {
-            for (int i = edges.size(); i < position; i++) edges.add(null);
-        }
-
-        public boolean containsVertex(Identifier id) {
-            return vertices.containsKey(id);
-        }
-
-        public ProcedureVertex.Type getType(Identifier id) {
-            assert vertices.containsKey(id) && vertices.get(id).isType();
-            return vertices.get(id).asType();
-        }
-
-        private ProcedureVertex.Thing thingVertex(Identifier identifier, boolean isStart) {
-            return vertices.computeIfAbsent(identifier, id -> new ProcedureVertex.Thing(id, isStart)).asThing();
-        }
-
-        private ProcedureVertex.Type typeVertex(Identifier identifier, boolean isStart) {
-            return vertices.computeIfAbsent(identifier, id -> new ProcedureVertex.Type(id, isStart)).asType();
-        }
-
-        public ProcedureVertex.Type type(Identifier id, boolean isStart) {
-            return typeVertex(id, isStart);
+            return GraphProcedure.this;
         }
 
         public ProcedureVertex.Type labelledType(String label) {

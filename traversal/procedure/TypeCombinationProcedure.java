@@ -49,37 +49,6 @@ public class TypeCombinationProcedure {
         return new TypeCombinationProcedure(traversal);
     }
 
-    private static class ReachableGraph {
-
-        private final Map<Identifier, ProcedureVertex.Type> vertices;
-        private final Map<ProcedureVertex.Type, Set<ProcedureEdge<?, ?>>> forwardEdges;
-        private final Map<ProcedureVertex.Type, Set<ProcedureEdge<?, ?>>> reverseEdges;
-
-        ReachableGraph() {
-            this.vertices = new HashMap<>();
-            this.forwardEdges = new HashMap<>();
-            this.reverseEdges = new HashMap<>();
-        }
-
-        public boolean nonTerminal(ProcedureVertex.Type vertex) {
-            return forwardEdges.containsKey(vertex);
-        }
-
-        public Set<ProcedureVertex.Type> terminals() {
-            Set<ProcedureVertex.Type> terminals = new HashSet<>(reverseEdges.keySet());
-            terminals.removeAll(forwardEdges.keySet());
-            return terminals;
-        }
-
-        private ProcedureVertex.Type vertex(StructureVertex.Type sv, boolean isStart) {
-            return vertices.computeIfAbsent(sv.id(), id -> {
-                ProcedureVertex.Type vertex = new ProcedureVertex.Type(id, isStart);
-                vertex.props(sv.props());
-                return vertex;
-            });
-        }
-    }
-
     private void computeForwardBackward() {
         for (Structure structure : traversal.structure().asGraphs()) {
             StructureVertex.Type startVertex = structure.vertices().iterator().next().asType();
@@ -230,4 +199,36 @@ public class TypeCombinationProcedure {
         edge.from().out(edge);
         edge.to().in(edge);
     }
+
+    private static class ReachableGraph {
+
+        private final Map<Identifier, ProcedureVertex.Type> vertices;
+        private final Map<ProcedureVertex.Type, Set<ProcedureEdge<?, ?>>> forwardEdges;
+        private final Map<ProcedureVertex.Type, Set<ProcedureEdge<?, ?>>> reverseEdges;
+
+        ReachableGraph() {
+            this.vertices = new HashMap<>();
+            this.forwardEdges = new HashMap<>();
+            this.reverseEdges = new HashMap<>();
+        }
+
+        public boolean nonTerminal(ProcedureVertex.Type vertex) {
+            return forwardEdges.containsKey(vertex);
+        }
+
+        public Set<ProcedureVertex.Type> terminals() {
+            Set<ProcedureVertex.Type> terminals = new HashSet<>(reverseEdges.keySet());
+            terminals.removeAll(forwardEdges.keySet());
+            return terminals;
+        }
+
+        private ProcedureVertex.Type vertex(StructureVertex.Type sv, boolean isStart) {
+            return vertices.computeIfAbsent(sv.id(), id -> {
+                ProcedureVertex.Type vertex = new ProcedureVertex.Type(id, isStart);
+                vertex.props(sv.props());
+                return vertex;
+            });
+        }
+    }
+
 }

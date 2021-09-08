@@ -205,7 +205,6 @@ public class TypeResolverTest {
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
 
-
     @Test
     public void has_with_cycle() throws IOException {
         define_custom_schema(

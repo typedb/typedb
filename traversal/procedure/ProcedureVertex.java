@@ -64,7 +64,7 @@ public abstract class ProcedureVertex<
 
     private final boolean isStartingVertex;
     private final AtomicReference<Set<Integer>> dependedEdgeOrders;
-    private ProcedureEdge<?, ?> iteratorEdge;
+    private ProcedureEdge<?, ?> branchEdge;
 
     ProcedureVertex(Identifier identifier, boolean isStartingVertex) {
         super(identifier);
@@ -77,7 +77,7 @@ public abstract class ProcedureVertex<
     @Override
     public void in(ProcedureEdge<?, ?> edge) {
         super.in(edge);
-        if (!isStartingVertex() && (iteratorEdge == null || edge.order() < iteratorEdge.order())) iteratorEdge = edge;
+        if (branchEdge == null || edge.order() < branchEdge.order()) branchEdge = edge;
     }
 
     public boolean isStartingVertex() {
@@ -90,7 +90,7 @@ public abstract class ProcedureVertex<
     }
 
     private Set<Integer> computeDependedEdgeOrders() {
-        if (iterate(ins()).filter(e -> !e.isClosureEdge()).first().isEmpty()) return set();
+        if (ins().isEmpty()) return set();
         else return set(branchEdge().from().dependedEdgeOrders(), branchEdge().order());
     }
 

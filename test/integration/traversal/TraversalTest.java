@@ -134,7 +134,7 @@ public class TraversalTest {
                     4: ($rel *--[RELATING]--> $rel:$role:$friend:1)
                     5: ($rel:$role:$friend:1 <--[PLAYING]--* $friend)
             */
-            GraphProcedure.Builder proc = GraphProcedure.builder();
+            GraphProcedure.Builder proc = GraphProcedure.builder(5);
             ProcedureVertex.Type rel_type = proc.namedType("rel-type", true);
             rel_type.props().labels(set(Label.of("friendship")));
 
@@ -149,7 +149,7 @@ public class TraversalTest {
 
             ProcedureVertex.Thing role = proc.scopedThing(rel, role_type, friend, 0);
 
-            proc.forwardRelates(1, rel_type, role_type);
+            proc.forwardRelates(1, rel_type, role_type );
             proc.backwardIsa(2, rel_type, rel, true);
             proc.backwardIsa(3, role_type, role, true);
             proc.forwardRelating(4, rel, role);
@@ -202,7 +202,7 @@ public class TraversalTest {
         }
 
         try (RocksTransaction transaction = session.transaction(READ)) {
-            GraphProcedure.Builder proc = GraphProcedure.builder();
+            GraphProcedure.Builder proc = GraphProcedure.builder(10);
             /*
             vertices:
             $_0 [thing] { hasIID: false, types: [name], predicates: [= <STRING>] } (end) // Alex
