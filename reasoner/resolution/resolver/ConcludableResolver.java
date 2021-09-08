@@ -57,9 +57,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
         return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundConcludableResolver for bounds: {}", name(), partial);
             // TODO: We could use the bounds to prune the applicable rules further
-            return registry.registerBoundConcludable(
-                    concludable, partial.conceptMap(), root,
-                    iterationByRoot.get(root), partial.asConcludable().isExplain());
+            return registry.registerBoundConcludable(concludable, partial.conceptMap(), partial.asConcludable().isExplain());
         });
     }
 

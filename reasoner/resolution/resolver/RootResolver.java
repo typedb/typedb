@@ -45,11 +45,11 @@ public interface RootResolver {
 
         private final com.vaticle.typedb.core.pattern.Conjunction conjunction;
         private final BiConsumer<Request.Visit, Finished> onAnswer;
-        private final BiConsumer<Request.Visit, Integer> onFail;
+        private final Consumer<Request.Visit> onFail;
         private final Consumer<Throwable> onException;
 
         public Conjunction(Driver<Conjunction> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction,
-                           BiConsumer<Request.Visit, Finished> onAnswer, BiConsumer<Request.Visit, Integer> onFail, Consumer<Throwable> onException,
+                           BiConsumer<Request.Visit, Finished> onAnswer, Consumer<Request.Visit> onFail, Consumer<Throwable> onException,
                            ResolverRegistry registry) {
             super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", registry);
             this.conjunction = conjunction;
@@ -77,7 +77,7 @@ public interface RootResolver {
         }
 
         @Override
-        protected void answerToUpstream(AnswerState answer, Request.Visit fromUpstream, int iteration) {
+        protected void answerToUpstream(AnswerState answer, Request.Visit fromUpstream) {
             assert answer.isTop() && answer.asTop().isMatch() && answer.asTop().asMatch().isFinished();
             Finished finished = answer.asTop().asMatch().asFinished();
             LOG.debug("Submitting answer: {}", finished);
@@ -85,9 +85,9 @@ public interface RootResolver {
         }
 
         @Override
-        protected void failToUpstream(Request.Visit fromUpstream, int iteration) {
-            LOG.debug("Submitting fail in iteration: {}", fromUpstream);
-            onFail.accept(fromUpstream, iteration);
+        protected void failToUpstream(Request.Visit fromUpstream) {
+            LOG.debug("Submitting fail for request: {}", fromUpstream);
+            onFail.accept(fromUpstream);
         }
 
         @Override
@@ -97,26 +97,22 @@ public interface RootResolver {
         }
 
         @Override
-        RequestState requestStateNew(int iteration) {
-            return new RequestState(iteration);
+        RequestState requestStateNew() {
+            return new RequestState();
         }
 
-        @Override
-        RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
-            return new RequestState(iteration, requestStatePrior.deduplicationSet());
-        }
     }
 
     class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
         private final BiConsumer<Request.Visit, Finished> onAnswer;
-        private final BiConsumer<Request.Visit, Integer> onFail;
+        private final Consumer<Request.Visit> onFail;
         private final Consumer<Throwable> onException;
 
         public Disjunction(Driver<Disjunction> driver, com.vaticle.typedb.core.pattern.Disjunction disjunction,
-                           BiConsumer<Request.Visit, Finished> onAnswer, BiConsumer<Request.Visit, Integer> onFail, Consumer<Throwable> onException,
-                           ResolverRegistry registry) {
+                           BiConsumer<Request.Visit, Finished> onAnswer, Consumer<Request.Visit> onFail,
+                           Consumer<Throwable> onException, ResolverRegistry registry) {
             super(driver, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction,
                   registry);
             this.onAnswer = onAnswer;
@@ -132,7 +128,7 @@ public interface RootResolver {
         }
 
         @Override
-        protected void answerToUpstream(AnswerState answer, Request.Visit fromUpstream, int iteration) {
+        protected void answerToUpstream(AnswerState answer, Request.Visit fromUpstream) {
             assert answer.isTop() && answer.asTop().isMatch() && answer.asTop().asMatch().isFinished();
             Finished finished = answer.asTop().asMatch().asFinished();
             LOG.debug("Submitting answer: {}", finished);
@@ -140,16 +136,16 @@ public interface RootResolver {
         }
 
         @Override
-        protected void failToUpstream(Request.Visit fromUpstream, int iteration) {
-            onFail.accept(fromUpstream, iteration);
+        protected void failToUpstream(Request.Visit fromUpstream) {
+            onFail.accept(fromUpstream);
         }
 
         @Override
-        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request.Visit fromUpstream, int iteration) {
+        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request.Visit fromUpstream) {
             RequestState requestState = requestStates.get(fromUpstream);
             if (!requestState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
                 requestState.deduplicationSet().add(upstreamAnswer.conceptMap());
-                answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+                answerToUpstream(upstreamAnswer, fromUpstream);
                 return true;
             } else {
                 return false;
@@ -164,10 +160,6 @@ public interface RootResolver {
             return partialAnswer.asRoot().asMatch().toFinishedTop(patternAnswered);
         }
 
-        @Override
-        protected RequestState requestStateForIteration(RequestState requestStatePrior, int newIteration) {
-            return new RequestState(newIteration, requestStatePrior.deduplicationSet());
-        }
     }
 
     class Explain extends ConjunctionResolver<Explain> implements RootResolver {
@@ -176,13 +168,13 @@ public interface RootResolver {
 
         private final com.vaticle.typedb.core.pattern.Conjunction conjunction;
         private final BiConsumer<Request.Visit, Top.Explain.Finished> onAnswer;
-        private final BiConsumer<Request.Visit, Integer> onFail;
+        private final Consumer<Request.Visit> onFail;
         private final Consumer<Throwable> onException;
 
         private final Set<Explanation> submittedExplanations;
 
         public Explain(Driver<Explain> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction,
-                       BiConsumer<Request.Visit, Top.Explain.Finished> onAnswer, BiConsumer<Request.Visit, Integer> onFail,
+                       BiConsumer<Request.Visit, Top.Explain.Finished> onAnswer, Consumer<Request.Visit> onFail,
                        Consumer<Throwable> onException, ResolverRegistry registry) {
             super(driver, "Explain(" + conjunction + ")", registry);
             this.conjunction = conjunction;
@@ -199,7 +191,7 @@ public interface RootResolver {
         }
 
         @Override
-        protected void answerToUpstream(AnswerState answer, Request.Visit fromUpstream, int iteration) {
+        protected void answerToUpstream(AnswerState answer, Request.Visit fromUpstream) {
             assert answer.isTop() && answer.asTop().isExplain() && answer.asTop().asExplain().isFinished();
             Top.Explain.Finished finished = answer.asTop().asExplain().asFinished();
             LOG.debug("Submitting answer: {}", finished);
@@ -207,8 +199,8 @@ public interface RootResolver {
         }
 
         @Override
-        protected void failToUpstream(Request.Visit fromUpstream, int iteration) {
-            onFail.accept(fromUpstream, iteration);
+        protected void failToUpstream(Request.Visit fromUpstream) {
+            onFail.accept(fromUpstream);
         }
 
         @Override
@@ -218,12 +210,12 @@ public interface RootResolver {
         }
 
         @Override
-        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request.Visit fromUpstream, int iteration) {
+        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request.Visit fromUpstream) {
             assert upstreamAnswer.isTop() && upstreamAnswer.asTop().isExplain() && upstreamAnswer.asTop().asExplain().isFinished();
             Top.Explain.Finished finished = upstreamAnswer.asTop().asExplain().asFinished();
             if (!submittedExplanations.contains(finished.explanation())) {
                 submittedExplanations.add(finished.explanation());
-                answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+                answerToUpstream(upstreamAnswer, fromUpstream);
                 return true;
             } else {
                 return false;
@@ -231,13 +223,8 @@ public interface RootResolver {
         }
 
         @Override
-        RequestState requestStateNew(int iteration) {
-            return new RequestState(iteration);
-        }
-
-        @Override
-        RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
-            return new RequestState(iteration, requestStatePrior.deduplicationSet());
+        RequestState requestStateNew() {
+            return new RequestState();
         }
 
         @Override

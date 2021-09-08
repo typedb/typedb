@@ -137,7 +137,7 @@ public class ResolutionTest {
                 LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
                 Actor.Driver<RootResolver.Conjunction> root;
                 try {
-                    root = registry.root(conjunctionPattern, (r, f) -> responses.add(f), (r, iterDone) -> doneReceived.incrementAndGet(), exceptions::add);
+                    root = registry.root(conjunctionPattern, (r, f) -> responses.add(f), (r) -> doneReceived.incrementAndGet(), exceptions::add);
                 } catch (TypeDBException e) {
                     fail();
                 }
@@ -456,7 +456,7 @@ public class ResolutionTest {
         AtomicLong doneReceived = new AtomicLong(0L);
         Actor.Driver<RootResolver.Disjunction> root;
         try {
-            root = registry.root(disjunction, (r, f) -> responses.add(f), (r, iterDone) -> doneReceived.incrementAndGet(), (throwable) -> fail());
+            root = registry.root(disjunction, (r, f) -> responses.add(f), (r) -> doneReceived.incrementAndGet(), (throwable) -> fail());
         } catch (TypeDBException e) {
             fail();
             return;
@@ -474,7 +474,7 @@ public class ResolutionTest {
                 .forEachRemaining(filter::add);
         Actor.Driver<RootResolver.Conjunction> root;
         try {
-            root = registry.root(conjunction, (r, f) -> responses.add(f), (r, iterDone) -> doneReceived.incrementAndGet(), (throwable) -> fail());
+            root = registry.root(conjunction, (r, f) -> responses.add(f), (r) -> doneReceived.incrementAndGet(), (throwable) -> fail());
         } catch (TypeDBException e) {
             fail();
             return;
@@ -490,7 +490,7 @@ public class ResolutionTest {
         for (int i = 0; i < n; i++) {
             Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
             ResolutionTracer.TraceId traceId = ResolutionTracer.TraceId.create(0, i);
-            root.execute(actor -> actor.receiveVisit(Request.Visit.create(root, traceId, downstream), 0));
+            root.execute(actor -> actor.receiveVisit(Request.Visit.create(root, traceId, downstream)));
         }
         int answersFound = 0;
         int explainableAnswersFound = 0;

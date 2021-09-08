@@ -64,63 +64,63 @@ public final class ResolutionTracer {
         return INSTANCE;
     }
 
-    public synchronized void visit(Request.Visit request, int iteration) {
+    public synchronized void visit(Request.Visit request) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.VISIT, conceptMap);
+        addMessage(sender, receiver, request.traceId(), EdgeType.VISIT, conceptMap);
     }
 
-    public synchronized void visit(Materialiser.Request request, int iteration) {
+    public synchronized void visit(Materialiser.Request request) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.VISIT, conceptMap);
+        addMessage(sender, receiver, request.traceId(), EdgeType.VISIT, conceptMap);
     }
 
-    public void revisit(Request.Visit request, int iteration) {
+    public void revisit(Request.Visit request) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.REVISIT, conceptMap);
+        addMessage(sender, receiver, request.traceId(), EdgeType.REVISIT, conceptMap);
     }
 
-    public void responseAnswer(Materialiser.Response request, Map<Identifier.Variable, Concept> materialisation, int iteration) {
+    public void responseAnswer(Materialiser.Response request, Map<Identifier.Variable, Concept> materialisation) {
         // Not static due to having one Materialiser
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         String concepts = materialisation.keySet().toString();
-        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.ANSWER, concepts);
+        addMessage(sender, receiver, request.traceId(), EdgeType.ANSWER, concepts);
     }
 
-    public synchronized void responseAnswer(Response.Answer request, int iteration) {
+    public synchronized void responseAnswer(Response.Answer request) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
         String conceptMap = request.answer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.ANSWER, conceptMap);
+        addMessage(sender, receiver, request.traceId(), EdgeType.ANSWER, conceptMap);
     }
 
-    public synchronized void responseExhausted(Response request, int iteration) {
+    public synchronized void responseExhausted(Response request) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
-        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.EXHAUSTED, "");
+        addMessage(sender, receiver, request.traceId(), EdgeType.EXHAUSTED, "");
     }
 
-    public synchronized void responseExhausted(Materialiser.Response request, int iteration) {
+    public synchronized void responseExhausted(Materialiser.Response request) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
-        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.EXHAUSTED, "");
+        addMessage(sender, receiver, request.traceId(), EdgeType.EXHAUSTED, "");
     }
 
-    public synchronized void responseCycle(Response.Cycle request, int iteration) {
+    public synchronized void responseCycle(Response.Cycle request) {
         String sender = request.sender().name();
         String receiver = request.receiver().name();
-        addMessage(sender, receiver, request.traceId(), iteration, EdgeType.CYCLE, "");
+        addMessage(sender, receiver, request.traceId(), EdgeType.CYCLE, "");
     }
 
-    private void addMessage(String sender, String receiver, TraceId traceId, int iteration, EdgeType edgeType,
+    private void addMessage(String sender, String receiver, TraceId traceId, EdgeType edgeType,
                             String conceptMap) {
-        rootRequestTracers.get(traceId).addMessage(sender, receiver, iteration, edgeType, conceptMap);
+        rootRequestTracers.get(traceId).addMessage(sender, receiver, edgeType, conceptMap);
     }
 
     public synchronized void start(Request.Visit request) {
@@ -195,16 +195,16 @@ public final class ResolutionTracer {
             writer.println(toWrite);
         }
 
-        private synchronized void addMessage(String sender, String receiver, int iteration, EdgeType edgeType, String conceptMap) {
-            writeEdge(sender, receiver, iteration, edgeType.colour(), messageNumber, conceptMap);
+        private synchronized void addMessage(String sender, String receiver, EdgeType edgeType, String conceptMap) {
+            writeEdge(sender, receiver, edgeType.colour(), messageNumber, conceptMap);
             messageNumber++;
         }
 
-        private void writeEdge(String fromId, String toId, int iteration, String colour, int messageNumber, String conceptMap) {
+        private void writeEdge(String fromId, String toId, String colour, int messageNumber, String conceptMap) {
             write(String.format("%s -> %s [style=bold,label=%s,color=%s];",
                                 doubleQuotes(escapeNewlines(escapeDoubleQuotes(fromId))),
                                 doubleQuotes(escapeNewlines(escapeDoubleQuotes(toId))),
-                                doubleQuotes("m" + messageNumber + "_it" + iteration + "_" + conceptMap),
+                                doubleQuotes("m" + messageNumber + "_" + conceptMap),
                                 doubleQuotes(colour)));
 
         }

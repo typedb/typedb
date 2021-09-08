@@ -51,7 +51,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     }
 
     @Override
-    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
+    protected void receiveAnswer(Response.Answer fromDownstream) {
         LOG.trace("{}: received answer: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
@@ -61,11 +61,11 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
         assert fromDownstream.answer().isCompound();
         AnswerState answer = toUpstreamAnswer(fromDownstream.answer().asCompound(), fromDownstream);
-        boolean acceptedAnswer = tryAcceptUpstreamAnswer(answer, fromUpstream, iteration);
-        if (!acceptedAnswer) nextAnswer(fromUpstream, requestState, iteration);
+        boolean acceptedAnswer = tryAcceptUpstreamAnswer(answer, fromUpstream);
+        if (!acceptedAnswer) nextAnswer(fromUpstream, requestState);
     }
 
-    protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request.Visit fromUpstream, int iteration);
+    protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request.Visit fromUpstream);
 
     protected abstract AnswerState toUpstreamAnswer(Compound<?, ?> answer, Response.Answer fromDownstream);
 
@@ -84,10 +84,10 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     }
 
     @Override
-    protected RequestState requestStateCreate(Request.Visit fromUpstream, int iteration) {
+    protected RequestState requestStateCreate(Request.Visit fromUpstream) {
         LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
         assert fromUpstream.partialAnswer().isCompound();
-        RequestState requestState = new RequestState(iteration);
+        RequestState requestState = new RequestState();
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
             Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
                     .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
@@ -96,25 +96,6 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         }
         return requestState;
     }
-
-    @Override
-    protected RequestState requestStateReiterate(Request.Visit fromUpstream, RequestState requestStatePrior,
-                                                 int newIteration) {
-        LOG.debug("{}: Updating RequestState for iteration '{}'", name(), newIteration);
-
-        assert newIteration > requestStatePrior.iteration() && fromUpstream.partialAnswer().isCompound();
-
-        RequestState requestStateNextIteration = requestStateForIteration(requestStatePrior, newIteration);
-        for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
-            Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
-                    .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
-            Downstream request = Downstream.create(driver(), conjunctionResolver, downstream);
-            requestStateNextIteration.downstreamManager().add(request);
-        }
-        return requestStateNextIteration;
-    }
-
-    abstract RequestState requestStateForIteration(RequestState requestStatePrior, int newIteration);
 
     private static Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(
             Driver<ConjunctionResolver.Nested> conjunctionResolver) {
@@ -130,8 +111,8 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         }
 
         @Override
-        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request.Visit fromUpstream, int iteration) {
-            answerToUpstream(upstreamAnswer, fromUpstream, iteration);
+        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request.Visit fromUpstream) {
+            answerToUpstream(upstreamAnswer, fromUpstream);
             return true;
         }
 
@@ -139,11 +120,6 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         protected AnswerState toUpstreamAnswer(Compound<?, ?> answer, Response.Answer fromDownstream) {
             assert answer.isNestable();
             return answer.asNestable().toUpstream();
-        }
-
-        @Override
-        protected RequestState requestStateForIteration(RequestState requestStatePrior, int newIteration) {
-            return new RequestState(newIteration);
         }
 
     }

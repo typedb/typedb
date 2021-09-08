@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.resolution;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -58,7 +57,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -80,7 +78,6 @@ public class ResolverRegistry {
 
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
-    private final Map<Pair<Actor.Driver<? extends Resolver<?>>, Integer>, Set<Actor.Driver<BoundConcludableResolver>>> boundConcludables;
     private final Map<Concludable, Actor.Driver<ConcludableResolver>> concludableResolvers;
     private final ConcurrentMap<Rule, Actor.Driver<ConditionResolver>> ruleConditions;
     private final ConcurrentMap<Rule, Actor.Driver<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
@@ -98,7 +95,6 @@ public class ResolverRegistry {
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
         this.concludableResolvers = new HashMap<>();
-        this.boundConcludables = new HashMap<>();
         this.ruleConditions = new ConcurrentHashMap<>();
         this.ruleConclusions = new ConcurrentHashMap<>();
         this.resolvers = new ConcurrentSet<>();
@@ -131,7 +127,7 @@ public class ResolverRegistry {
     }
 
     public Actor.Driver<RootResolver.Conjunction> root(Conjunction conjunction, BiConsumer<Request.Visit, Match.Finished> onAnswer,
-                                                       BiConsumer<Request.Visit, Integer> onFail, Consumer<Throwable> onException) {
+                                                       Consumer<Request.Visit> onFail, Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         Actor.Driver<RootResolver.Conjunction> resolver = Actor.driver(driver -> new RootResolver.Conjunction(
                 driver, conjunction, onAnswer, onFail, onException, this), executorService);
@@ -141,7 +137,7 @@ public class ResolverRegistry {
     }
 
     public Actor.Driver<RootResolver.Disjunction> root(Disjunction disjunction, BiConsumer<Request.Visit, Match.Finished> onAnswer,
-                                                       BiConsumer<Request.Visit, Integer> onExhausted,
+                                                       Consumer<Request.Visit> onExhausted,
                                                        Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         Actor.Driver<RootResolver.Disjunction> resolver = Actor.driver(driver -> new RootResolver.Disjunction(
@@ -161,7 +157,7 @@ public class ResolverRegistry {
         return ResolverView.negation(negatedResolver, filter);
     }
 
-    private Set<Variable.Retrievable> filter(Conjunction scope, Negated inner) {
+    private static Set<Variable.Retrievable> filter(Conjunction scope, Negated inner) {
         return scope.variables().stream()
                 .filter(var -> var.id().isRetrievable() && inner.retrieves().contains(var.id().asRetrievable()))
                 .map(var -> var.id().asRetrievable())
@@ -240,9 +236,8 @@ public class ResolverRegistry {
         return ResolverView.concludable(resolver, identity(concludable));
     }
 
-    public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(
-            Concludable concludable, ConceptMap bounds,
-            Actor.Driver<? extends Resolver<?>> root, int iteration, boolean explain) {
+    public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(Concludable concludable, ConceptMap bounds,
+                                                                           boolean explain) {
         // TODO: Move this to the responsibility of the ConcludableResolver
         LOG.debug("Register BoundConcludableResolver, pattern: {} bounds: {}", concludable.pattern(), bounds);
         Actor.Driver<BoundConcludableResolver> resolver;
@@ -254,14 +249,8 @@ public class ResolverRegistry {
                     driver -> new MatchBoundConcludableResolver(driver, concludableResolver(concludable), bounds, this), executorService);
         }
         resolvers.add(resolver);
-        boundConcludables.computeIfAbsent(new Pair<>(root, iteration), r -> new HashSet<>()).add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
-    }
-
-    public Set<Actor.Driver<BoundConcludableResolver>> boundConcludables(
-            Actor.Driver<? extends Resolver<?>> root, int iteration) {
-        return boundConcludables.computeIfAbsent(new Pair<>(root, iteration), p -> new HashSet<>());
     }
 
     public Actor.Driver<ConjunctionResolver.Nested> nested(Conjunction conjunction) {
@@ -286,8 +275,9 @@ public class ResolverRegistry {
         return conjunctionResolvable.retrieves().stream().collect(toMap(Function.identity(), Function.identity()));
     }
 
-    public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction, BiConsumer<Request.Visit, Explain.Finished> requestAnswered,
-                                                        BiConsumer<Request.Visit, Integer> requestFailed, Consumer<Throwable> exception) {
+    public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction,
+                                                        BiConsumer<Request.Visit, Explain.Finished> requestAnswered,
+                                                        Consumer<Request.Visit> requestFailed, Consumer<Throwable> exception) {
         Actor.Driver<RootResolver.Explain> resolver = Actor.driver(
                 driver -> new RootResolver.Explain(
                         driver, conjunction, requestAnswered, requestFailed, exception, this), executorService);

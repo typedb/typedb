@@ -57,13 +57,8 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     }
 
     @Override
-    RequestState requestStateNew(int iteration) {
-        return new RequestState(iteration);
-    }
-
-    @Override
-    RequestState requestStateForIteration(RequestState requestStatePrior, int iteration) {
-        return new RequestState(iteration);
+    RequestState requestStateNew() {
+        return new RequestState();
     }
 
     @Override

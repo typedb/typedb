@@ -48,8 +48,6 @@ public class ExplanationProducer implements Producer<Explanation> {
     private final int computeSize;
     private final AtomicInteger required;
     private final AtomicInteger processing;
-    private int iteration;
-    private boolean requiresReiteration;
     private boolean done;
     private int requestTraceIdCounter;
     private Queue<Explanation> queue;
@@ -60,8 +58,6 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.explainablesManager = explainablesManager;
         this.options = options;
         this.queue = null;
-        this.iteration = 0;
-        this.requiresReiteration = false;
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
@@ -93,7 +89,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     private void requestExplanation() {
         Request.Visit explainRequest = createExplanationRequest(requestTraceIdCounter);
         if (options.traceInference()) ResolutionTracer.get().start(explainRequest);
-        explainer.execute(explainer -> explainer.receiveVisit(explainRequest, iteration));
+        explainer.execute(explainer -> explainer.receiveVisit(explainRequest));
         requestTraceIdCounter += 1;
     }
 
@@ -108,35 +104,19 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestFailed(Request.Visit failedRequest, int iteration) {
-        LOG.trace("Failed to find answer to request in iteration: " + iteration);
+    private void requestFailed(Request.Visit failedRequest) {
+        LOG.trace("Failed to find answer to request {}", failedRequest);
         if (options.traceInference()) ResolutionTracer.get().finish(failedRequest);
-        if (!done && iteration == this.iteration && !mustReiterate()) {
+        finish();
+    }
+
+    private void finish() {
+        if (!done) {
             // query is completely terminated
             done = true;
             queue.done();
             required.set(0);
-            return;
         }
-
-        if (!done) {
-            if (iteration == this.iteration) prepareNextIteration();
-            assert iteration < this.iteration;
-            retryInNewIteration();
-        }
-    }
-
-    private boolean mustReiterate() {
-        return requiresReiteration;
-    }
-
-    private void prepareNextIteration() {
-        iteration++;
-        requiresReiteration = false;
-    }
-
-    private void retryInNewIteration() {
-        requestExplanation();
     }
 
     private void exception(Throwable e) {

@@ -52,85 +52,85 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     }
 
     @Override
-    public void receiveVisit(Request.Visit fromUpstream, int iteration) {
+    public void receiveVisit(Request.Visit fromUpstream) {
         if (fromUpstream.isToSubsumed()) {
             assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
-            receiveSubsumedRequest(fromUpstream.asToSubsumed(), iteration);
+            receiveSubsumedRequest(fromUpstream.asToSubsumed());
         } else if (fromUpstream.isToSubsumer()) {
-            receiveSubsumerRequest(fromUpstream.asToSubsumer(), iteration);
+            receiveSubsumerRequest(fromUpstream.asToSubsumer());
         } else {
             assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
-            receiveDirectRequest(fromUpstream, iteration);
+            receiveDirectRequest(fromUpstream);
         }
     }
 
     @Override
-    protected void receiveRevisit(Request.Revisit fromUpstream, int iteration) {
-        receiveVisit(fromUpstream.visit(), iteration);
+    protected void receiveRevisit(Request.Revisit fromUpstream) {
+        receiveVisit(fromUpstream.visit());
     }
 
-    private void receiveSubsumedRequest(Request.Visit.ToSubsumed fromUpstream, int iteration) {
+    private void receiveSubsumedRequest(Request.Visit.ToSubsumed fromUpstream) {
         RequestState requestState = requestStates.computeIfAbsent(
-                fromUpstream, request -> new BoundRequestState(request, cache, iteration));
+                fromUpstream, request -> new BoundRequestState(request, cache));
         if (cache.sourceExhausted()) {
-            sendAnswerOrFail(fromUpstream, iteration, requestState);
+            sendAnswerOrFail(fromUpstream, requestState);
         } else {
             cache.clearSource();
             Optional<? extends AnswerState.Partial<?>> upstreamAnswer;
             upstreamAnswer = requestState.nextAnswer();
             if (upstreamAnswer.isPresent()) {
-                answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
+                answerToUpstream(upstreamAnswer.get(), fromUpstream);
             } else {
-                requestFromSubsumer(fromUpstream, iteration);
+                requestFromSubsumer(fromUpstream);
             }
         }
     }
 
-    private void receiveSubsumerRequest(Request.Visit.ToSubsumer fromUpstream, int iteration) {
-        sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
-                fromUpstream, request -> new SubsumerRequestState(request, cache, iteration)));
+    private void receiveSubsumerRequest(Request.Visit.ToSubsumer fromUpstream) {
+        sendAnswerOrFail(fromUpstream, requestStates.computeIfAbsent(
+                fromUpstream, request -> new SubsumerRequestState(request, cache)));
     }
 
-    private void receiveDirectRequest(Request.Visit fromUpstream, int iteration) {
-        sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
-                fromUpstream, request -> new BoundRequestState(request, cache, iteration)));
+    private void receiveDirectRequest(Request.Visit fromUpstream) {
+        sendAnswerOrFail(fromUpstream, requestStates.computeIfAbsent(
+                fromUpstream, request -> new BoundRequestState(request, cache)));
     }
 
     @Override
-    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
+    protected void receiveAnswer(Response.Answer fromDownstream) {
         Request.Visit.ToSubsumed fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
-        if (cache.sourceExhausted()) sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
+        if (cache.sourceExhausted()) sendAnswerOrFail(fromUpstream, requestStates.get(fromUpstream));
         else {
             cache.add(fromDownstream.answer().conceptMap());
             Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestStates.get(fromUpstream).nextAnswer();
             if (upstreamAnswer.isPresent()) {
-                answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
+                answerToUpstream(upstreamAnswer.get(), fromUpstream);
             } else {
-                requestFromSubsumer(fromUpstream, iteration);
+                requestFromSubsumer(fromUpstream);
             }
         }
     }
 
     @Override
-    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
+    protected void receiveFail(Response.Fail fromDownstream) {
         cache.setComplete();
         Request.Visit fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
-        sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
+        sendAnswerOrFail(fromUpstream, requestStates.get(fromUpstream));
     }
 
-    private void sendAnswerOrFail(Request.Visit fromUpstream, int iteration, RequestState requestState) {
+    private void sendAnswerOrFail(Request.Visit fromUpstream, RequestState requestState) {
         Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
-            answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
+            answerToUpstream(upstreamAnswer.get(), fromUpstream);
         } else {
-            failToUpstream(fromUpstream, iteration);
+            failToUpstream(fromUpstream);
         }
     }
 
-    private void requestFromSubsumer(Request.Visit.ToSubsumed fromUpstream, int iteration) {
+    private void requestFromSubsumer(Request.Visit.ToSubsumed fromUpstream) {
         Request.Visit toSubsumer = Request.Visit.ToSubsumer.create(
                 driver(), fromUpstream.subsumer(), fromUpstream, fromUpstream.partialAnswer());
-        visitDownstream(toSubsumer, fromUpstream, iteration);
+        visitDownstream(toSubsumer, fromUpstream);
     }
 
     @Override
@@ -140,8 +140,8 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     private static class BoundRequestState extends RequestState.CachingRequestState<ConceptMap> {
 
-        public BoundRequestState(Request.Visit fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
-            super(fromUpstream, answerCache, iteration, false);
+        public BoundRequestState(Request.Visit fromUpstream, AnswerCache<ConceptMap> answerCache) {
+            super(fromUpstream, answerCache, false);
         }
 
         @Override
@@ -152,8 +152,8 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     private class SubsumerRequestState extends RequestState.CachingRequestState<ConceptMap> {
 
-        public SubsumerRequestState(Request.Visit fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
-            super(fromUpstream, answerCache, iteration, false);
+        public SubsumerRequestState(Request.Visit fromUpstream, AnswerCache<ConceptMap> answerCache) {
+            super(fromUpstream, answerCache, false);
         }
 
         @Override

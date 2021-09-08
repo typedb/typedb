@@ -80,20 +80,20 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         registry.terminate(e);
     }
 
-    public abstract void receiveVisit(Request.Visit fromUpstream, int iteration);
+    public abstract void receiveVisit(Request.Visit fromUpstream);
 
-    protected abstract void receiveRevisit(Request.Revisit fromUpstream, int iteration);
+    protected abstract void receiveRevisit(Request.Revisit fromUpstream);
 
-    protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
+    protected abstract void receiveAnswer(Answer fromDownstream);
 
-    protected abstract void receiveFail(Response.Fail fromDownstream, int iteration);
+    protected abstract void receiveFail(Response.Fail fromDownstream);
 
-    protected void receiveCycle(Response.Cycle fromDownstream, int iteration) {
+    protected void receiveCycle(Response.Cycle fromDownstream) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
         Request.Visit toDownstream = fromDownstream.sourceRequest();
         Request.Visit fromUpstream = fromUpstream(toDownstream);
-        cycleToUpstream(fromUpstream, fromDownstream.origins(), iteration);
+        cycleToUpstream(fromUpstream, fromDownstream.origins());
     }
 
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
@@ -106,60 +106,60 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         return requestRouter.get(ds);
     }
 
-    protected void visitDownstream(Downstream downstream, Request.Visit fromUpstream, int iteration) {
-        visitDownstream(downstream.toVisit(fromUpstream.traceId()), fromUpstream, iteration);
+    protected void visitDownstream(Downstream downstream, Request.Visit fromUpstream) {
+        visitDownstream(downstream.toVisit(fromUpstream.traceId()), fromUpstream);
     }
 
-    protected void visitDownstream(Request.Visit request, Request.Visit fromUpstream, int iteration) {
+    protected void visitDownstream(Request.Visit request, Request.Visit fromUpstream) {
         LOG.trace("{} : Sending a new Visit request to downstream: {}", name(), request);
         assert fromUpstream.traceId().rootId() != -1;
         assert request.traceId() == fromUpstream.traceId();
-        if (registry.resolutionTracing()) ResolutionTracer.get().visit(request, iteration);
+        if (registry.resolutionTracing()) ResolutionTracer.get().visit(request);
         // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
         requestRouter.put(new Pair<>(request, request.traceId()), fromUpstream);
-        request.receiver().execute(actor -> actor.receiveVisit(request, iteration));
+        request.receiver().execute(actor -> actor.receiveVisit(request));
     }
 
-    protected void revisitDownstream(Request.Revisit toRevisit, Request.Visit fromUpstream, int iteration) {
+    protected void revisitDownstream(Request.Revisit toRevisit, Request.Visit fromUpstream) {
         Request.Visit downstream = toRevisit.visit();
         LOG.trace("{} : Sending a new Revisit request to downstream: {}", name(), downstream);
         assert fromUpstream.traceId().rootId() != -1;
         assert downstream.traceId() == fromUpstream.traceId();
-        if (registry.resolutionTracing()) ResolutionTracer.get().revisit(downstream, iteration);
+        if (registry.resolutionTracing()) ResolutionTracer.get().revisit(downstream);
         requestRouter.put(new Pair<>(downstream, downstream.traceId()), fromUpstream);
-        downstream.receiver().execute(actor -> actor.receiveRevisit(toRevisit, iteration));
+        downstream.receiver().execute(actor -> actor.receiveRevisit(toRevisit));
     }
 
     // TODO: Rename to sendResponse or respond
-    protected void answerToUpstream(AnswerState answer, Request.Visit fromUpstream, int iteration) {
+    protected void answerToUpstream(AnswerState answer, Request.Visit fromUpstream) {
         assert answer.isPartial();
         Answer response = Answer.create(fromUpstream, answer.asPartial());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(response, iteration);
-        fromUpstream.sender().execute(actor -> actor.receiveAnswer(response, iteration));
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(response);
+        fromUpstream.sender().execute(actor -> actor.receiveAnswer(response));
     }
 
-    protected void failToUpstream(Request.Visit fromUpstream, int iteration) {
+    protected void failToUpstream(Request.Visit fromUpstream) {
         Response.Fail response = new Response.Fail(fromUpstream);
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(response, iteration);
-        fromUpstream.sender().execute(actor -> actor.receiveFail(response, iteration));
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(response);
+        fromUpstream.sender().execute(actor -> actor.receiveFail(response));
     }
 
-    protected void cycleToUpstream(Request.Visit fromUpstream, Set<Response.Cycle.Origin> cycleOrigins, int iteration) {
+    protected void cycleToUpstream(Request.Visit fromUpstream, Set<Response.Cycle.Origin> cycleOrigins) {
         assert !fromUpstream.partialAnswer().parent().isTop();
         Response.Cycle response = new Response.Cycle(fromUpstream, cycleOrigins);
         LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
-        if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response, iteration);
-        fromUpstream.sender().execute(actor -> actor.receiveCycle(response, iteration));
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response);
+        fromUpstream.sender().execute(actor -> actor.receiveCycle(response));
     }
 
-    protected void cycleToUpstream(Request.Visit fromUpstream, int numAnswersSeen, int iteration) {
+    protected void cycleToUpstream(Request.Visit fromUpstream, int numAnswersSeen) {
         assert !fromUpstream.partialAnswer().parent().isTop();
         Response.Cycle response = new Response.Cycle.Origin(fromUpstream, numAnswersSeen);
         LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
-        if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response, iteration);
-        fromUpstream.sender().execute(actor -> actor.receiveCycle(response, iteration));
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response);
+        fromUpstream.sender().execute(actor -> actor.receiveCycle(response));
     }
 
     protected FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {

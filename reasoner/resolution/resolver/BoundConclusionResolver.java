@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
@@ -59,7 +58,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     private final ConceptMap bounds;
     private final Rule.Conclusion conclusion;
     private final Map<Request.Visit, ConclusionRequestState<? extends Concludable<?>>> requestStates;
-    private final Map<Materialiser.Request, Pair<Request.Visit, Integer>> materialiserRequestRouter;
+    private final Map<Materialiser.Request, Request.Visit> materialiserRequestRouter;
 
     public BoundConclusionResolver(Driver<BoundConclusionResolver> driver, Rule.Conclusion conclusion,
                                    ConceptMap bounds, ResolverRegistry registry) {
@@ -72,21 +71,21 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     }
 
     @Override
-    public void receiveVisit(Request.Visit fromUpstream, int iteration) {
+    public void receiveVisit(Request.Visit fromUpstream) {
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (isTerminated()) return;
         if (fromUpstream.isToSubsumed()) {
             assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
-            receiveSubsumedRequest(fromUpstream.asToSubsumed(), iteration);
+            receiveSubsumedRequest(fromUpstream.asToSubsumed());
         } else if (fromUpstream.isToSubsumer()) {
-            receiveSubsumerRequest(fromUpstream.asToSubsumer(), iteration);
+            receiveSubsumerRequest(fromUpstream.asToSubsumer());
         } else {
             assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
-            receiveDirectRequest(fromUpstream, iteration);
+            receiveDirectRequest(fromUpstream);
         }
     }
 
-    private void receiveSubsumedRequest(Request.Visit.ToSubsumed fromUpstream, int iteration) {
+    private void receiveSubsumedRequest(Request.Visit.ToSubsumed fromUpstream) {
         throw TypeDBException.of(ILLEGAL_STATE);
 //        RequestState requestState = requestStates.computeIfAbsent(
 //                fromUpstream, request -> new BoundRequestState(request, cache, iteration));
@@ -104,40 +103,40 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 //        }
     }
 
-    private void receiveSubsumerRequest(Request.Visit.ToSubsumer fromUpstream, int iteration) {
+    private void receiveSubsumerRequest(Request.Visit.ToSubsumer fromUpstream) {
         throw TypeDBException.of(ILLEGAL_STATE);
 //        sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
 //                fromUpstream, request -> new SubsumerRequestState(request, cache, iteration)));
     }
 
-    private void receiveDirectRequest(Request.Visit fromUpstream, int iteration) {
+    private void receiveDirectRequest(Request.Visit fromUpstream) {
         ConclusionRequestState<? extends Concludable<?>> requestState = requestStates.computeIfAbsent(
-                fromUpstream, r -> createRequestState(fromUpstream, iteration));
+                fromUpstream, r -> createRequestState(fromUpstream));
         if (requestState.materialisationsCounter().nonZero()) {
-            requestState.replayBuffer().addVisit(fromUpstream, iteration);
+            requestState.replayBuffer().addVisit(fromUpstream);
         } else {
-            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState, iteration)) {
-                cycleOrFail(fromUpstream, requestState, iteration);
+            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState)) {
+                cycleOrFail(fromUpstream, requestState);
             }
         }
     }
 
     @Override
-    protected void receiveRevisit(Request.Revisit fromUpstream, int iteration) {
+    protected void receiveRevisit(Request.Revisit fromUpstream) {
         ConclusionRequestState<? extends Concludable<?>> requestState = requestStates.get(fromUpstream.visit());
         if (requestState.materialisationsCounter().nonZero()) {
-            requestState.replayBuffer().addRevisit(fromUpstream, iteration);
+            requestState.replayBuffer().addRevisit(fromUpstream);
         } else {
             requestState.downstreamManager().unblock(fromUpstream.cycles());
-            if (!sendAnswerOrSearchDownstream(fromUpstream.visit(), requestState, iteration)) {
-                cycleOrFail(fromUpstream.visit(), requestState, iteration);
+            if (!sendAnswerOrSearchDownstream(fromUpstream.visit(), requestState)) {
+                cycleOrFail(fromUpstream.visit(), requestState);
             }
         }
     }
 
 
     @Override
-    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
+    protected void receiveAnswer(Response.Answer fromDownstream) {
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
         if (isTerminated()) return;
         Request.Visit toDownstream = fromDownstream.sourceRequest();
@@ -146,36 +145,36 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (!requestState.isComplete()) {
             Materialiser.Request request = Materialiser.Request.create(
                     driver(), registry.materialiser(), fromUpstream.traceId(), conclusion, fromDownstream.answer());
-            requestFromMaterialiser(request, fromUpstream, iteration);
+            requestFromMaterialiser(request, fromUpstream);
             requestState.materialisationsCounter().increment();
         } else {
-            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState, iteration)) {
-                cycleOrFail(fromUpstream, requestState, iteration);
+            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState)) {
+                cycleOrFail(fromUpstream, requestState);
             }
         }
     }
 
     @Override
-    protected void receiveCycle(Response.Cycle fromDownstream, int iteration) {
+    protected void receiveCycle(Response.Cycle fromDownstream) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
         Downstream downstream = Downstream.of(fromDownstream.sourceRequest());
         Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
         ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream);
         if (requestState.materialisationsCounter().nonZero()) {
-            requestState.replayBuffer().addCycle(fromDownstream, iteration);
+            requestState.replayBuffer().addCycle(fromDownstream);
         } else {
             if (requestState.downstreamManager().contains(downstream)) {
                 requestState.downstreamManager().block(downstream, fromDownstream.origins());
             }
-            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState, iteration)) {
-                cycleOrFail(fromUpstream, requestState, iteration);
+            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState)) {
+                cycleOrFail(fromUpstream, requestState);
             }
         }
     }
 
     @Override
-    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
+    protected void receiveFail(Response.Fail fromDownstream) {
         LOG.trace("{}: received Fail: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
@@ -183,68 +182,62 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         Request.Visit fromUpstream = fromUpstream(toDownstream);
         ConclusionRequestState<?> requestState = this.requestStates.get(fromUpstream);
 
-        if (iteration < requestState.iteration()) {
-            // short circuit old iteration fail messages to upstream
-            failToUpstream(fromUpstream, iteration);
-            return;
-        }
-
         if (requestState.materialisationsCounter().nonZero()) {
-            requestState.replayBuffer().addFail(fromDownstream, iteration);
+            requestState.replayBuffer().addFail(fromDownstream);
         } else {
             requestState.downstreamManager().remove(Downstream.of(fromDownstream.sourceRequest()));
-            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState, iteration)) {
-                cycleOrFail(fromUpstream, requestState, iteration);
+            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState)) {
+                cycleOrFail(fromUpstream, requestState);
             }
         }
     }
 
-    private void requestFromMaterialiser(Materialiser.Request request, Request.Visit fromUpstream, int iteration) {
-        if (registry.resolutionTracing()) ResolutionTracer.get().visit(request, iteration);
-        materialiserRequestRouter.put(request, new Pair<>(fromUpstream, iteration));
+    private void requestFromMaterialiser(Materialiser.Request request, Request.Visit fromUpstream) {
+        if (registry.resolutionTracing()) ResolutionTracer.get().visit(request);
+        materialiserRequestRouter.put(request, fromUpstream);
         registry.materialiser().execute(actor -> actor.receiveRequest(request));
     }
 
     public void receiveMaterialisation(Materialiser.Response response) {
         if (isTerminated()) return;
         Materialiser.Request toDownstream = response.sourceRequest();
-        Pair<Request.Visit, Integer> fromUpstream = fromUpstream(toDownstream);
-        ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream.first());
+        Request.Visit fromUpstream = fromUpstream(toDownstream);
+        ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream);
         LOG.trace("{}: received materialisation response: {}", name(), response);
         Optional<Map<Identifier.Variable, Concept>> materialisation = response.materialisation();
         materialisation.ifPresent(m -> requestState.newMaterialisation(response.partialAnswer(), m));
-        if (!sendAnswerOrSearchDownstream(fromUpstream.first(), requestState, fromUpstream.second())) {
-            cycleOrFail(fromUpstream.first(), requestState, fromUpstream.second());
+        if (!sendAnswerOrSearchDownstream(fromUpstream, requestState)) {
+            cycleOrFail(fromUpstream, requestState);
         }
         requestState.materialisationsCounter().decrement();
         if (!requestState.materialisationsCounter().nonZero()) requestState.replayBuffer().replay();
     }
 
-    protected Pair<Request.Visit, Integer> fromUpstream(Materialiser.Request toDownstream) {
+    protected Request.Visit fromUpstream(Materialiser.Request toDownstream) {
         assert materialiserRequestRouter.containsKey(toDownstream);
         return materialiserRequestRouter.remove(toDownstream);
     }
 
-    private boolean sendAnswerOrSearchDownstream(Request.Visit fromUpstream, ConclusionRequestState<?> requestState, int iteration) {
+    private boolean sendAnswerOrSearchDownstream(Request.Visit fromUpstream, ConclusionRequestState<?> requestState) {
         Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
-            answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
+            answerToUpstream(upstreamAnswer.get(), fromUpstream);
         } else if (!requestState.isComplete() && requestState.downstreamManager().hasNextVisit()) {
-            visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream, iteration);
+            visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream);
         } else if (!requestState.isComplete() && requestState.downstreamManager().hasNextRevisit()) {
-            revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream, iteration);
+            revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream);
         } else {
             return false;
         }
         return true;
     }
 
-    private void cycleOrFail(Request.Visit fromUpstream, ConclusionRequestState<?> requestState, int iteration) {
+    private void cycleOrFail(Request.Visit fromUpstream, ConclusionRequestState<?> requestState) {
         if (requestState.downstreamManager().hasNextBlocked()) {
-            cycleToUpstream(fromUpstream, requestState.downstreamManager().blockers(), iteration);
+            cycleToUpstream(fromUpstream, requestState.downstreamManager().blockers());
         } else {
             requestState.setComplete();
-            failToUpstream(fromUpstream, iteration);
+            failToUpstream(fromUpstream);
         }
     }
 
@@ -253,14 +246,14 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private ConclusionRequestState<?> createRequestState(Request.Visit fromUpstream, int iteration) {
+    private ConclusionRequestState<?> createRequestState(Request.Visit fromUpstream) {
         LOG.debug("{}: Creating a new ConclusionResponse for request: {}", name(), fromUpstream);
 
         ConclusionRequestState<?> requestState;
         if (fromUpstream.partialAnswer().asConclusion().isExplain()) {
-            requestState = new ConclusionRequestState.Explain(fromUpstream, iteration, conditionDownstreams(fromUpstream), new ReplayBuffer());
+            requestState = new ConclusionRequestState.Explain(fromUpstream, conditionDownstreams(fromUpstream), new ReplayBuffer());
         } else if (fromUpstream.partialAnswer().asConclusion().isMatch()) {
-            requestState = new ConclusionRequestState.Match(fromUpstream, iteration, conditionDownstreams(fromUpstream), new ReplayBuffer());
+            requestState = new ConclusionRequestState.Match(fromUpstream, conditionDownstreams(fromUpstream), new ReplayBuffer());
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
@@ -299,10 +292,10 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
     private class ReplayBuffer {
         private final Deque<Class<?>> replayOrder;
-        private final Deque<Pair<Request.Visit, Integer>> visits;
-        private final Deque<Pair<Request.Revisit, Integer>> revisits;
-        private final Deque<Pair<Response.Cycle, Integer>> cycles;
-        private final Deque<Pair<Response.Fail, Integer>> fails;
+        private final Deque<Request.Visit> visits;
+        private final Deque<Request.Revisit> revisits;
+        private final Deque<Response.Cycle> cycles;
+        private final Deque<Response.Fail> fails;
 
         private ReplayBuffer() {
             this.replayOrder = new ArrayDeque<>();
@@ -315,39 +308,30 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         public void replay() {
             while (replayOrder.size() > 0) {
                 Class<?> nextMessageType = replayOrder.pop();
-                if (nextMessageType.equals(Request.Visit.class)) {
-                    Pair<Request.Visit, Integer> visit = visits.pop();
-                    receiveVisit(visit.first(), visit.second());
-                } else if (nextMessageType.equals(Response.Cycle.class)) {
-                    Pair<Response.Cycle, Integer> cycle = cycles.pop();
-                    receiveCycle(cycle.first(), cycle.second());
-                } else if (nextMessageType.equals(Request.Revisit.class)) {
-                    Pair<Request.Revisit, Integer> revisit = revisits.pop();
-                    receiveRevisit(revisit.first(), revisit.second());
-                } else if (nextMessageType.equals(Response.Fail.class)) {
-                    Pair<Response.Fail, Integer> revisit = fails.pop();
-                    receiveFail(revisit.first(), revisit.second());
-                }
+                if (nextMessageType.equals(Request.Visit.class)) receiveVisit(visits.pop());
+                else if (nextMessageType.equals(Response.Cycle.class)) receiveCycle(cycles.pop());
+                else if (nextMessageType.equals(Request.Revisit.class)) receiveRevisit(revisits.pop());
+                else if (nextMessageType.equals(Response.Fail.class)) receiveFail(fails.pop());
             }
         }
 
-        public void addVisit(Request.Visit fromUpstream, int iteration) {
-            visits.add(new Pair<>(fromUpstream, iteration));
+        public void addVisit(Request.Visit fromUpstream) {
+            visits.add(fromUpstream);
             replayOrder.add(Request.Visit.class);
         }
 
-        public void addRevisit(Request.Revisit fromUpstream, int iteration) {
-            revisits.add(new Pair<>(fromUpstream, iteration));
+        public void addRevisit(Request.Revisit fromUpstream) {
+            revisits.add(fromUpstream);
             replayOrder.add(Request.Revisit.class);
         }
 
-        public void addCycle(Response.Cycle fromDownstream, int iteration) {
-            cycles.add(new Pair<>(fromDownstream, iteration));
+        public void addCycle(Response.Cycle fromDownstream) {
+            cycles.add(fromDownstream);
             replayOrder.add(Response.Cycle.class);
         }
 
-        public void addFail(Response.Fail fromDownstream, int iteration) {
-            fails.add(new Pair<>(fromDownstream, iteration));
+        public void addFail(Response.Fail fromDownstream) {
+            fails.add(fromDownstream);
             replayOrder.add(Response.Fail.class);
         }
     }
@@ -360,8 +344,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         private boolean complete;
         protected FunctionalIterator<CONCLUDABLE> materialisations;
 
-        protected ConclusionRequestState(Request.Visit fromUpstream, int iteration, List<Downstream> conditionDownstreams, ReplayBuffer replayBuffer) {
-            super(fromUpstream, iteration);
+        protected ConclusionRequestState(Request.Visit fromUpstream, List<Downstream> conditionDownstreams, ReplayBuffer replayBuffer) {
+            super(fromUpstream);
             this.downstreamManager = new DownstreamManager(conditionDownstreams);
             this.materialisations = Iterators.empty();
             this.complete = false;
@@ -424,9 +408,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
             private final Set<ConceptMap> deduplicationSet;
 
-            private Match(Request.Visit fromUpstream, int iteration, List<Downstream> conditionDownstreams,
-                          ReplayBuffer replayBuffer) {
-                super(fromUpstream, iteration, conditionDownstreams, replayBuffer);
+            private Match(Request.Visit fromUpstream, List<Downstream> conditionDownstreams, ReplayBuffer replayBuffer) {
+                super(fromUpstream, conditionDownstreams, replayBuffer);
                 this.deduplicationSet = new HashSet<>();
             }
 
@@ -452,9 +435,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
         private static class Explain extends ConclusionRequestState<Concludable.Explain> {
 
-            private Explain(Request.Visit fromUpstream, int iteration, List<Downstream> conditionDownstreams,
-                            ReplayBuffer replayBuffer) {
-                super(fromUpstream, iteration, conditionDownstreams, replayBuffer);
+            private Explain(Request.Visit fromUpstream, List<Downstream> conditionDownstreams, ReplayBuffer replayBuffer) {
+                super(fromUpstream, conditionDownstreams, replayBuffer);
             }
 
             @Override

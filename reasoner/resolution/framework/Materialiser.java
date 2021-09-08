@@ -53,9 +53,9 @@ public class Materialiser extends ReasonerActor<Materialiser> {
         Response response = new Response(request, materialisation.orElse(null), request.partialAnswer());
         if (registry.resolutionTracing()) {
             if (materialisation.isPresent()) {
-                ResolutionTracer.get().responseAnswer(response, materialisation.get(), -1);
+                ResolutionTracer.get().responseAnswer(response, materialisation.get());
             } else {
-                ResolutionTracer.get().responseExhausted(response, -1);
+                ResolutionTracer.get().responseExhausted(response);
             }
         }
         request.sender().execute(actor -> actor.receiveMaterialisation(response));
