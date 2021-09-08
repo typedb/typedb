@@ -96,7 +96,7 @@ public abstract class ProcedureVertex<
 
     public ProcedureEdge<?, ?> branchEdge() {
         if (ins().isEmpty() || isStartingVertex()) return null;
-        else return iteratorEdge;
+        else return branchEdge;
     }
 
     public ProcedureVertex.Thing asThing() {
