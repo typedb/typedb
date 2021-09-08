@@ -24,14 +24,12 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -52,7 +50,8 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     @Override
     BoundConcludableResolver.ExploringRequestState<?> createExploringRequestState(Request.Visit fromUpstream) {
         LOG.debug("{}: Creating new exploring request state for request: {}", name(), fromUpstream);
-        return new MatchRequestState(fromUpstream, cache, ruleDownstreams(fromUpstream));
+        return new ExploringRequestState<>(fromUpstream, cache(), ruleDownstreams(fromUpstream), true,
+                                           new MatchUpstream(), singleAnswerRequired);
     }
 
     @Override
@@ -73,12 +72,7 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         return missingBounds;
     }
 
-    private class MatchRequestState extends ExploringRequestState<ConceptMap> implements RequestState.Exploration {
-
-        private MatchRequestState(Request.Visit fromUpstream, AnswerCache<ConceptMap> answerCache,
-                                  List<Downstream> ruleDownstreams) {
-            super(fromUpstream, answerCache, ruleDownstreams, true);
-        }
+    private class MatchUpstream extends UpstreamBehaviour<ConceptMap> {
 
         @Override
         ConceptMap answerFromPartial(AnswerState.Partial<?> partial) {
@@ -86,12 +80,7 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         }
 
         @Override
-        public boolean singleAnswerRequired() {
-            return singleAnswerRequired;
-        }
-
-        @Override
-        protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ConceptMap conceptMap) {
+        FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Visit fromUpstream, ConceptMap conceptMap) {
             return Iterators.single(fromUpstream.partialAnswer().asConcludable().asMatch().toUpstreamLookup(
                     conceptMap, parent().actor().concludable().isInferredAnswer(conceptMap)));
         }

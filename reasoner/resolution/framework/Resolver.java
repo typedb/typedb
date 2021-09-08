@@ -214,6 +214,54 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         return traversal;
     }
 
+    public abstract static class RequestState {
+
+        protected final Request.Visit fromUpstream;
+
+        protected RequestState(Request.Visit fromUpstream) {
+            this.fromUpstream = fromUpstream;
+        }
+
+        public abstract Optional<? extends AnswerState.Partial<?>> nextAnswer();
+
+        public interface Exploration {
+
+            boolean newAnswer(AnswerState.Partial<?> partial);
+
+            DownstreamManager downstreamManager();
+
+            boolean singleAnswerRequired();
+
+        }
+
+    }
+
+    public abstract static class CachingRequestState<ANSWER> extends RequestState {
+
+        protected final AnswerCache<ANSWER> answerCache;
+        protected Poller<? extends AnswerState.Partial<?>> cacheReader;
+        protected final Set<ConceptMap> deduplicationSet;
+
+        protected CachingRequestState(Request.Visit fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate) {
+            super(fromUpstream);
+            this.answerCache = answerCache;
+            this.deduplicationSet = deduplicate ? new HashSet<>() : null;
+            this.cacheReader = answerCache.reader().flatMap(
+                    a -> poll(toUpstream(a).filter(
+                            partial -> !deduplicate || !deduplicationSet.contains(partial.conceptMap()))));
+        }
+
+        @Override
+        public Optional<? extends AnswerState.Partial<?>> nextAnswer() {
+            Optional<? extends AnswerState.Partial<?>> ans = cacheReader.poll();
+            if (ans.isPresent() && deduplicationSet != null) deduplicationSet.add(ans.get().conceptMap());
+            return ans;
+        }
+
+        protected abstract FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ANSWER answer);
+
+    }
+
     public static class DownstreamManager {
         protected final List<Downstream> visit;
         protected Map<Downstream, Set<Response.Cycle.Origin>> revisit;
@@ -301,53 +349,5 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             });
             toRemove.forEach(r -> blocked.remove(r));
         }
-    }
-
-    public abstract static class RequestState {
-
-        protected final Request.Visit fromUpstream;
-
-        protected RequestState(Request.Visit fromUpstream) {
-            this.fromUpstream = fromUpstream;
-        }
-
-        public abstract Optional<? extends AnswerState.Partial<?>> nextAnswer();
-
-        public interface Exploration {
-
-            boolean newAnswer(AnswerState.Partial<?> partial);
-
-            DownstreamManager downstreamManager();
-
-            boolean singleAnswerRequired();
-
-        }
-
-    }
-
-    public abstract static class CachingRequestState<ANSWER> extends RequestState {
-
-        protected final AnswerCache<ANSWER> answerCache;
-        protected Poller<? extends AnswerState.Partial<?>> cacheReader;
-        protected final Set<ConceptMap> deduplicationSet;
-
-        protected CachingRequestState(Request.Visit fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate) {
-            super(fromUpstream);
-            this.answerCache = answerCache;
-            this.deduplicationSet = deduplicate ? new HashSet<>() : null;
-            this.cacheReader = answerCache.reader().flatMap(
-                    a -> poll(toUpstream(a).filter(
-                            partial -> !deduplicate || !deduplicationSet.contains(partial.conceptMap()))));
-        }
-
-        @Override
-        public Optional<? extends AnswerState.Partial<?>> nextAnswer() {
-            Optional<? extends AnswerState.Partial<?>> ans = cacheReader.poll();
-            if (ans.isPresent() && deduplicationSet != null) deduplicationSet.add(ans.get().conceptMap());
-            return ans;
-        }
-
-        protected abstract FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ANSWER answer);
-
     }
 }

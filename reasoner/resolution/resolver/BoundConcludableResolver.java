@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
@@ -52,8 +53,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     private final Driver<ConcludableResolver> parent;
     private final Map<Request.Visit, ExploringRequestState<?>> requestStates;
 
-    public BoundConcludableResolver(Driver<BoundConcludableResolver> driver, Driver<ConcludableResolver> parent,
-                                    ConceptMap bounds, ResolverRegistry registry) {
+    protected BoundConcludableResolver(Driver<BoundConcludableResolver> driver, Driver<ConcludableResolver> parent,
+                                       ConceptMap bounds, ResolverRegistry registry) {
         super(driver, BoundConcludableResolver.class.getSimpleName() + "(pattern: " +
                 parent.actor().concludable().pattern() + ", bounds: " + bounds.concepts().toString() + ")", registry);
         this.parent = parent;
@@ -70,8 +71,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (isTerminated()) return;
         assert fromUpstream.partialAnswer().isConcludable();
-        ExploringRequestState<?> requestState = requestStates.computeIfAbsent(
-                fromUpstream, request -> createExploringRequestState(fromUpstream));
+        ExploringRequestState<?> requestState = getOrCreateRequestState(fromUpstream);
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream, requestState);
@@ -91,10 +91,19 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
     }
 
+    private ExploringRequestState<?> getOrCreateRequestState(Request.Visit fromUpstream) {
+        return requestStates.computeIfAbsent(
+                fromUpstream, request -> createExploringRequestState(fromUpstream));
+    }
+
+    private ExploringRequestState<?> getOrCreateRequestState(Request.Revisit fromUpstream) {
+        return requestStates.get(fromUpstream.visit());
+    }
+
     @Override
     protected void receiveRevisit(Request.Revisit fromUpstream) {
         assert fromUpstream.visit().partialAnswer().isConcludable();
-        ExploringRequestState<?> requestState = requestStates.get(fromUpstream.visit());
+        ExploringRequestState<?> requestState = getOrCreateRequestState(fromUpstream);
         Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer(requestState);
         requestState.downstreamManager().unblock(fromUpstream.cycles());
         if (upstreamAnswer.isPresent()) {
@@ -188,7 +197,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
     }
 
-    private static Optional<Partial.Compound<?, ?>> upstreamAnswer(ExploringRequestState<?> requestState) {
+    private static Optional<Partial.Compound<?, ?>> upstreamAnswer(RequestState requestState) {
         return requestState.nextAnswer().map(Partial::asCompound);
     }
 
@@ -206,12 +215,6 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             cache().setComplete();
         }
         answerToUpstream(answer, fromUpstream);
-    }
-
-    private void requestFromSubsumer(Request.Visit.ToSubsumed fromUpstream) {
-        Request.Visit toSubsumer = Request.Visit.ToSubsumer.create(driver(), fromUpstream.subsumer(),
-                                                                   fromUpstream, fromUpstream.partialAnswer());
-        visitDownstream(toSubsumer, fromUpstream);
     }
 
     @Override
@@ -242,14 +245,27 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         return downstreams;
     }
 
-    protected abstract class ExploringRequestState<ANSWER> extends CachingRequestState<ANSWER> implements RequestState.Exploration {
+    protected abstract static class UpstreamBehaviour<ANSWER> {
+
+        abstract ANSWER answerFromPartial(Partial<?> partial);
+
+        abstract FunctionalIterator<? extends Partial<?>> toUpstream(Request.Visit fromUpstream, ANSWER partial);
+
+    }
+
+    protected class ExploringRequestState<ANSWER> extends CachingRequestState<ANSWER> implements RequestState.Exploration {
 
         private final ConcludableDownstreamManager downstreamManager;
+        private final UpstreamBehaviour<ANSWER> upstreamBehaviour;
+        private final boolean singleAnswerRequired;
 
         protected ExploringRequestState(Request.Visit fromUpstream, AnswerCache<ANSWER> answerCache,
-                                        List<Downstream> ruleDownstreams, boolean deduplicate) {
+                                        List<Downstream> ruleDownstreams, boolean deduplicate,
+                                        UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate);
             this.downstreamManager = new ConcludableDownstreamManager(ruleDownstreams);
+            this.upstreamBehaviour = upstreamBehaviour;
+            this.singleAnswerRequired = singleAnswerRequired;
         }
 
         @Override
@@ -257,12 +273,20 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             return downstreamManager;
         }
 
-        abstract ANSWER answerFromPartial(Partial<?> partial);
+        @Override
+        public boolean singleAnswerRequired() {
+            return singleAnswerRequired;
+        }
 
         @Override
         public boolean newAnswer(Partial<?> partial) {
             // TODO: Method internals are not specific to the requestState any more
-            return !answerCache.isComplete() && answerCache.add(answerFromPartial(partial));
+            return !answerCache.isComplete() && answerCache.add(upstreamBehaviour.answerFromPartial(partial));
+        }
+
+        @Override
+        protected FunctionalIterator<? extends Partial<?>> toUpstream(ANSWER answer) {
+            return upstreamBehaviour.toUpstream(fromUpstream, answer);
         }
 
         class ConcludableDownstreamManager extends DownstreamManager {

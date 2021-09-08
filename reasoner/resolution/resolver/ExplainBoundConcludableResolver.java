@@ -24,12 +24,9 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
 
@@ -46,7 +43,8 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
     @Override
     ExploringRequestState<?> createExploringRequestState(Request.Visit fromUpstream) {
         LOG.debug("{}: Creating new exploring request state for request: {}", name(), fromUpstream);
-        return new ExplainRequestState(fromUpstream, cache, ruleDownstreams(fromUpstream));
+        return new ExploringRequestState<>(fromUpstream, cache(), ruleDownstreams(fromUpstream), false,
+                                           new ExplainUpstream(), false);
     }
 
     @Override
@@ -54,13 +52,7 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
         return cache;
     }
 
-    private class ExplainRequestState extends ExploringRequestState<AnswerState.Partial.Concludable<?>>  {
-
-        private ExplainRequestState(Request.Visit fromUpstream,
-                                    AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
-                                    List<Downstream> ruleDownstreams) {
-            super(fromUpstream, answerCache, ruleDownstreams, false);
-        }
+    private static class ExplainUpstream extends UpstreamBehaviour<AnswerState.Partial.Concludable<?>> {
 
         @Override
         AnswerState.Partial.Concludable<?> answerFromPartial(AnswerState.Partial<?> partial) {
@@ -68,13 +60,7 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
         }
 
         @Override
-        public boolean singleAnswerRequired() {
-            return false;
-        }
-
-        @Override
-        protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(
-                AnswerState.Partial.Concludable<?> partial) {
+        FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Visit fromUpstream, AnswerState.Partial.Concludable<?> partial) {
             return Iterators.single(partial.asExplain().toUpstreamInferred());
         }
     }
