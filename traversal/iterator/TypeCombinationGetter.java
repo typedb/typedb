@@ -29,6 +29,8 @@ import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
 import com.vaticle.typedb.core.traversal.procedure.TypeCombinationProcedure;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -86,7 +88,8 @@ public class TypeCombinationGetter {
 
     private Status forward(Identifier startId) {
         Queue<ProcedureVertex.Type> vertices = new LinkedList<>();
-        vertices.add(procedure.start(startId));
+        ProcedureVertex.Type start = procedure.start(startId);
+        if (procedure.nonTerminal(startId, start)) vertices.add(start);
         ProcedureVertex.Type from;
         boolean changed = false;
         while (!vertices.isEmpty()) {

@@ -673,7 +673,6 @@ public class TypeResolverTest {
         assertEquals(expectedExhaustive, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
 
-
     @Test
     public void all_things_is_empty_set() throws IOException {
         define_standard_schema("basic-schema");
