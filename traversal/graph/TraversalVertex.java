@@ -184,13 +184,6 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 valueTypes = new HashSet<>();
             }
 
-            public Type(Type toClone) {
-                labels = new HashSet<>(toClone.labels);
-                valueTypes = new HashSet<>(toClone.valueTypes);
-                isAbstract = toClone.isAbstract;
-                regex = toClone.regex;
-            }
-
             public void clearLabels() {
                 labels.clear();
             }
