@@ -30,7 +30,6 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Co
 import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Materialiser;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;

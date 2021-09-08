@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 
@@ -138,7 +137,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private static class BoundRequestState extends RequestState.CachingRequestState<ConceptMap> {
+    private static class BoundRequestState extends CachingRequestState<ConceptMap> {
 
         public BoundRequestState(Request.Visit fromUpstream, AnswerCache<ConceptMap> answerCache) {
             super(fromUpstream, answerCache, false);
@@ -150,7 +149,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         }
     }
 
-    private class SubsumerRequestState extends RequestState.CachingRequestState<ConceptMap> {
+    private class SubsumerRequestState extends CachingRequestState<ConceptMap> {
 
         public SubsumerRequestState(Request.Visit fromUpstream, AnswerCache<ConceptMap> answerCache) {
             super(fromUpstream, answerCache, false);

@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.Exploration;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +73,7 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         return missingBounds;
     }
 
-    private class MatchRequestState extends ExploringRequestState<ConceptMap> implements Exploration {
+    private class MatchRequestState extends ExploringRequestState<ConceptMap> implements RequestState.Exploration {
 
         private MatchRequestState(Request.Visit fromUpstream, AnswerCache<ConceptMap> answerCache,
                                   List<Downstream> ruleDownstreams) {

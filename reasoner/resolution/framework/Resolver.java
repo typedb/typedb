@@ -23,6 +23,7 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.poller.Poller;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
@@ -51,6 +52,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
+import static com.vaticle.typedb.core.common.poller.Pollers.poll;
 
 public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends ReasonerActor<RESOLVER> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
@@ -299,5 +301,53 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             });
             toRemove.forEach(r -> blocked.remove(r));
         }
+    }
+
+    public abstract static class RequestState {
+
+        protected final Request.Visit fromUpstream;
+
+        protected RequestState(Request.Visit fromUpstream) {
+            this.fromUpstream = fromUpstream;
+        }
+
+        public abstract Optional<? extends AnswerState.Partial<?>> nextAnswer();
+
+        public interface Exploration {
+
+            boolean newAnswer(AnswerState.Partial<?> partial);
+
+            DownstreamManager downstreamManager();
+
+            boolean singleAnswerRequired();
+
+        }
+
+    }
+
+    public abstract static class CachingRequestState<ANSWER> extends RequestState {
+
+        protected final AnswerCache<ANSWER> answerCache;
+        protected Poller<? extends AnswerState.Partial<?>> cacheReader;
+        protected final Set<ConceptMap> deduplicationSet;
+
+        protected CachingRequestState(Request.Visit fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate) {
+            super(fromUpstream);
+            this.answerCache = answerCache;
+            this.deduplicationSet = deduplicate ? new HashSet<>() : null;
+            this.cacheReader = answerCache.reader().flatMap(
+                    a -> poll(toUpstream(a).filter(
+                            partial -> !deduplicate || !deduplicationSet.contains(partial.conceptMap()))));
+        }
+
+        @Override
+        public Optional<? extends AnswerState.Partial<?>> nextAnswer() {
+            Optional<? extends AnswerState.Partial<?>> ans = cacheReader.poll();
+            if (ans.isPresent() && deduplicationSet != null) deduplicationSet.add(ans.get().conceptMap());
+            return ans;
+        }
+
+        protected abstract FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ANSWER answer);
+
     }
 }
