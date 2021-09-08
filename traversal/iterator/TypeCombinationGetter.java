@@ -49,6 +49,8 @@ public class TypeCombinationGetter {
     private final Set<Retrievable> filter;
     private final Set<Retrievable> concreteTypesOnly;
 
+    private enum Status { CHANGED, UNCHANGED, EMPTY }
+
     private TypeCombinationGetter(GraphManager graphMgr, TypeCombinationProcedure procedure, Traversal.Parameters params,
                                   Set<Retrievable> filter, Set<Retrievable> concreteTypesOnly) {
         assert filter.containsAll(concreteTypesOnly);
@@ -67,16 +69,27 @@ public class TypeCombinationGetter {
     }
 
     public Optional<Map<Retrievable, Set<TypeVertex>>> combination() {
-        if (!forward()) return Optional.empty();
-        if (!backward()) return Optional.empty();
+        initialise();
+        Status status = Status.CHANGED;
+        while (status == Status.CHANGED) {
+            status = forward();
+            if (status == Status.EMPTY) return Optional.empty();
+            status = backward();
+            if (status == Status.EMPTY) return Optional.empty();
+        }
         return Optional.of(filtered(combination));
     }
 
-    private boolean forward() {
-        Queue<ProcedureVertex.Type> vertices = new LinkedList<>();
+    private void initialise() {
         ProcedureVertex.Type from = procedure.startVertex();
         record(from.id(), vertexIter(from).toSet());
-        vertices.add(from);
+    }
+
+    private Status forward() {
+        Queue<ProcedureVertex.Type> vertices = new LinkedList<>();
+        vertices.add(procedure.startVertex());
+        ProcedureVertex.Type from;
+        boolean changed = false;
         while (!vertices.isEmpty()) {
             from = vertices.remove();
             for (ProcedureEdge<?, ?> procedureEdge : procedure.forwardEdges(from)) {
@@ -85,17 +98,20 @@ public class TypeCombinationGetter {
                 for (TypeVertex type : combination.get(from.id())) {
                     branchIter(procedureEdge, type).forEachRemaining(toTypes::add);
                 }
-                record(procedureEdge.to().id(), toTypes);
-                if (combination.get(procedureEdge.to().id()).isEmpty()) return false;
-                if (procedure.hasEdges(procedureEdge.to().asType())) vertices.add(procedureEdge.to().asType());
+                changed = record(procedureEdge.to().id(), toTypes) || changed;
+                if (combination.get(procedureEdge.to().id()).isEmpty()) return Status.EMPTY;
+                if (procedure.nonTerminal(procedureEdge.to().asType()) && !from.equals(procedureEdge.to())) {
+                    vertices.add(procedureEdge.to().asType());
+                }
             }
         }
-        return true;
+        return changed ? Status.CHANGED : Status.UNCHANGED;
     }
 
-    private boolean backward() {
+    private Status backward() {
         Queue<ProcedureVertex.Type> vertices = new LinkedList<>(procedure.terminals());
         ProcedureVertex.Type from;
+        boolean changed = false;
         while (!vertices.isEmpty()) {
             from = vertices.remove();
             for (ProcedureEdge<?, ?> procedureEdge : procedure.reverseEdges(from)) {
@@ -105,18 +121,20 @@ public class TypeCombinationGetter {
                 for (TypeVertex type : combination.get(from.id())) {
                     branchIter(procedureEdge, type).forEachRemaining(toTypes::add);
                 }
-                record(procedureEdge.to().id(), toTypes);
-                if (combination.get(procedureEdge.to().id()).isEmpty()) return false;
+                changed = record(procedureEdge.to().id(), toTypes) || changed;
+                if (combination.get(procedureEdge.to().id()).isEmpty()) return Status.EMPTY;
                 if (!procedureEdge.to().isStartingVertex()) vertices.add(procedureEdge.to().asType());
             }
         }
-        return true;
+        return changed ? Status.CHANGED : Status.UNCHANGED;
     }
 
-    private void record(Identifier identifier, Set<TypeVertex> types) {
+    private boolean record(Identifier identifier, Set<TypeVertex> types) {
         Set<TypeVertex> vertices = combination.computeIfAbsent(identifier, (id) -> new HashSet<>());
+        int sizeBefore = vertices.size();
         if (vertices.isEmpty()) vertices.addAll(types);
         else vertices.retainAll(types);
+        return vertices.size() != sizeBefore;
     }
 
     private FunctionalIterator<TypeVertex> vertexIter(ProcedureVertex.Type vertex) {
@@ -135,58 +153,6 @@ public class TypeCombinationGetter {
         return iterator;
     }
 
-
-    //        assert procedure.proceduresCount() > 0;
-//        TypeCombinationProcedure.VertexCombinationProcedure combinationProcedure = procedure.first();
-//        evaluateCombination(combinationProcedure.permutationProcedure());
-//        if (!combination.containsKey(combinationProcedure.vertexId())) return Optional.empty();
-//        for (int i = 1; i < procedure.proceduresCount(); i++) {
-//            combinationProcedure = procedure.next(combinationProcedure, combination.get(combinationProcedure.vertexId()));
-//            evaluateCombination(combinationProcedure.permutationProcedure());
-//            if (!combination.containsKey(combinationProcedure.vertexId())) return Optional.empty();
-//        }
-//        return Optional.of(filtered(combination));
-//    }
-//
-//    private void evaluateCombination(GraphProcedure procedure) {
-//        if (procedure.edgesCount() == 0) evaluateVertex(procedure.startVertex().asType());
-//        else evaluateGraph(procedure);
-//    }
-//
-//    private void evaluateVertex(ProcedureVertex.Type vertex) {
-//        assert vertex.id().isRetrievable();
-//        FunctionalIterator<TypeVertex> iterator = vertex.iterator(graphMgr, params);
-//        if (concreteTypesOnly.contains(vertex.id().asVariable().asRetrievable())) {
-//            iterator = iterator.filter(type -> !type.isAbstract());
-//        }
-//        if (iterator.hasNext()) {
-//            Set<TypeVertex> types = combination.computeIfAbsent(vertex.id(), i -> new HashSet<>());
-//            iterator.forEachRemaining(types::add);
-//        }
-//    }
-//
-//    private void evaluateGraph(GraphProcedure procedure) {
-//        ProcedureVertex.Type start = procedure.startVertex().asType();
-//        boolean combinationPartiallyEvaluated = combination.containsKey(start.id());
-//        recordCombination(start.iterator(graphMgr, params)
-//                .filter(typeVertex -> !combinationPartiallyEvaluated || !combination.get(start.id()).contains(typeVertex))
-//                .map(vertex -> new GraphIterator(graphMgr, vertex, procedure, params, filter)
-//                        .filter(vertexMap -> !containsDisallowedAbstract(vertexMap)).first()
-//                ).filter(Optional::isPresent).map(Optional::get));
-//    }
-//
-//    private void recordCombination(FunctionalIterator<VertexMap> combinationIter) {
-//        combinationIter.forEachRemaining(vertexMap -> vertexMap.forEach((id, vertex) -> {
-//            Set<TypeVertex> types = combination.computeIfAbsent(id, i -> new HashSet<>());
-//            types.add(vertex.asType());
-//        }));
-//    }
-//
-//    private boolean containsDisallowedAbstract(VertexMap vertexMap) {
-//        return iterate(vertexMap.map().entrySet())
-//                .anyMatch(entry -> concreteTypesOnly.contains(entry.getKey()) && entry.getValue().asType().isAbstract());
-//    }
-//
     private Map<Retrievable, Set<TypeVertex>> filtered(Map<Identifier, Set<TypeVertex>> answer) {
         Map<Retrievable, Set<TypeVertex>> filtered = new HashMap<>();
         answer.forEach((id, vertices) -> {

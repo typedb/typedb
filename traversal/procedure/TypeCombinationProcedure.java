@@ -36,14 +36,12 @@ public class TypeCombinationProcedure {
     private final GraphTraversal.Type traversal;
     private final Map<ProcedureVertex.Type, Set<ProcedureEdge<?, ?>>> forwardEdges;
     private final Map<ProcedureVertex.Type, Set<ProcedureEdge<?, ?>>> reverseEdges;
-    private final Set<ProcedureVertex.Type> terminals;
     private ProcedureVertex.Type startVertex;
 
     TypeCombinationProcedure(GraphTraversal.Type traversal) {
         this.traversal = traversal;
         this.forwardEdges = new HashMap<>();
         this.reverseEdges = new HashMap<>();
-        this.terminals = new HashSet<>();
         computeForwardBackward();
     }
 
@@ -61,11 +59,13 @@ public class TypeCombinationProcedure {
         return startVertex;
     }
 
-    public boolean hasEdges(ProcedureVertex.Type vertex) {
-        return !terminals.contains(vertex);
+    public boolean nonTerminal(ProcedureVertex.Type vertex) {
+        return forwardEdges.containsKey(vertex);
     }
 
     public Set<ProcedureVertex.Type> terminals() {
+        Set<ProcedureVertex.Type> terminals = new HashSet<>(reverseEdges.keySet());
+        terminals.removeAll(forwardEdges.keySet());
         return terminals;
     }
 
@@ -83,8 +83,7 @@ public class TypeCombinationProcedure {
         ProcedureVertex.Type procedureVertex = vertex(structureVertex, isStart, builder);
         Set<StructureVertex.Type> next = visitOut(procedureVertex, structureVertex, builder, visitedEdges);
         next.addAll(visitIn(procedureVertex, structureVertex, builder, visitedEdges));
-        if (next.isEmpty()) terminals.add(procedureVertex);
-        else next.forEach(vertex -> visitBfs(vertex, visitedEdges, builder));
+        next.forEach(vertex -> visitBfs(vertex, visitedEdges, builder));
         return procedureVertex;
     }
 

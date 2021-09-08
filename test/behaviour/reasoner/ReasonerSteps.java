@@ -59,7 +59,7 @@ public class ReasonerSteps {
     public static Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logsDir);
     public static RocksSession session;
     public static RocksTransaction reasoningTx;
-    public static String DATABASE = "typedb";
+    public static String DATABASE = "typedb-reasoner-test";
     private static CorrectnessVerifier correctnessVerifier;
     private static TypeQLMatch typeQLQuery;
     private static List<ConceptMap> answers;
