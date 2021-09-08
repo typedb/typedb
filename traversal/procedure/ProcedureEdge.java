@@ -50,6 +50,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNSUPPORTED_OPERATION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
@@ -149,6 +150,8 @@ public abstract class ProcedureEdge<
         }
     }
 
+    public abstract ProcedureEdge<?,?> reverse();
+
     public static class Equal extends ProcedureEdge<ProcedureVertex<?, ?>, ProcedureVertex<?, ?>> {
 
         Equal(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
@@ -175,6 +178,12 @@ public abstract class ProcedureEdge<
                                  Vertex<?, ?> toVertex, GraphTraversal.Unrestricted.Parameters params) {
             assert fromVertex != null && toVertex != null;
             return fromVertex.equals(toVertex);
+        }
+
+        @Override
+        public ProcedureEdge<?, ?> reverse() {
+            Encoding.Direction.Edge reverseDirection = direction().isForward() ? BACKWARD : FORWARD;
+            return new Equal(to, from, order(), reverseDirection);
         }
     }
 
@@ -222,6 +231,11 @@ public abstract class ProcedureEdge<
             assert fromVertex.isThing() && fromVertex.asThing().isAttribute() &&
                     toVertex.isThing() && toVertex.asThing().isAttribute();
             return predicate.apply(fromVertex.asThing().asAttribute(), toVertex.asThing().asAttribute());
+        }
+
+        @Override
+        public ProcedureEdge<?, ?> reverse() {
+            throw TypeDBException.of(UNSUPPORTED_OPERATION);
         }
     }
 
@@ -274,6 +288,11 @@ public abstract class ProcedureEdge<
             @Override
             public String toString() {
                 return super.toString() + String.format(" { isTransitive: %s }", isTransitive);
+            }
+
+            @Override
+            public ProcedureEdge<?, ?> reverse() {
+                throw TypeDBException.of(UNSUPPORTED_OPERATION);
             }
 
             static class Forward extends Isa<ProcedureVertex.Thing, ProcedureVertex.Type> {
@@ -401,6 +420,11 @@ public abstract class ProcedureEdge<
                                              GraphTraversal.Unrestricted.Parameters params) {
                         return superTypes(fromVertex.asType()).anyMatch(v -> v.equals(toVertex.asType()));
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Sub.Backward(to, from, order(), isTransitive);
+                    }
                 }
 
                 static class Backward extends Sub {
@@ -424,6 +448,11 @@ public abstract class ProcedureEdge<
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              GraphTraversal.Unrestricted.Parameters params) {
                         return superTypes(toVertex.asType()).anyMatch(v -> v.equals(fromVertex.asType()));
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Sub.Forward(to, from, order(), isTransitive);
                     }
                 }
             }
@@ -482,6 +511,11 @@ public abstract class ProcedureEdge<
                                              GraphTraversal.Unrestricted.Parameters params) {
                         return ownedAttributeTypes(fromVertex.asType()).anyMatch(at -> at.equals(toVertex.asType()));
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Owns.Backward(to, from, order(), isKey);
+                    }
                 }
 
                 static class Backward extends Owns {
@@ -522,6 +556,11 @@ public abstract class ProcedureEdge<
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              GraphTraversal.Unrestricted.Parameters params) {
                         return ownersOfAttType(fromVertex.asType()).anyMatch(o -> o.equals(toVertex.asType()));
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Owns.Forward(to, from, order(), isKey);
                     }
                 }
             }
@@ -567,6 +606,11 @@ public abstract class ProcedureEdge<
                                              GraphTraversal.Unrestricted.Parameters params) {
                         return playedRoleTypes(fromVertex.asType()).anyMatch(rt -> rt.equals(toVertex.asType()));
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Plays.Backward(to, from, order());
+                    }
                 }
 
                 static class Backward extends Plays {
@@ -595,6 +639,11 @@ public abstract class ProcedureEdge<
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              GraphTraversal.Unrestricted.Parameters params) {
                         return playersOfRoleType(fromVertex.asType()).anyMatch(p -> p.equals(toVertex.asType()));
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Plays.Forward(to, from, order());
                     }
                 }
             }
@@ -640,6 +689,11 @@ public abstract class ProcedureEdge<
                                              GraphTraversal.Unrestricted.Parameters params) {
                         return relatedRoleTypes(fromVertex.asType()).anyMatch(rt -> rt.equals(toVertex.asType()));
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Relates.Backward(to, from, order());
+                    }
                 }
 
                 static class Backward extends Relates {
@@ -668,6 +722,11 @@ public abstract class ProcedureEdge<
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              GraphTraversal.Unrestricted.Parameters params) {
                         return relationsOfRoleType(fromVertex.asType()).anyMatch(rel -> rel.equals(toVertex.asType()));
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Relates.Forward(to, from, order());
                     }
                 }
             }
@@ -701,6 +760,11 @@ public abstract class ProcedureEdge<
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
+            }
+
+            @Override
+            public ProcedureEdge<?, ?> reverse() {
+                throw TypeDBException.of(UNSUPPORTED_OPERATION);
             }
 
             FunctionalIterator<? extends ThingVertex> backwardBranchToIIDFiltered(

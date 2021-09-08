@@ -26,8 +26,6 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
-import com.vaticle.typedb.core.traversal.iterator.TypeCombinationGetter;
-import com.vaticle.typedb.core.traversal.procedure.TypeCombinationProcedures;
 
 import java.util.Map;
 import java.util.Optional;
