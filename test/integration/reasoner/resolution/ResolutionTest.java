@@ -31,7 +31,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Co
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
 import com.vaticle.typedb.core.rocks.RocksSession;
@@ -58,6 +58,7 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedConjunction;
 import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedDisjunction;
+import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced.trace;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.fail;
@@ -489,8 +490,8 @@ public class ResolutionTest {
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         for (int i = 0; i < n; i++) {
             Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
-            ResolutionTracer.Trace trace = ResolutionTracer.Trace.create(0, i);
-            root.execute(actor -> actor.receiveVisit(Request.Visit.create(root, trace, downstream)));
+            Trace trace = Trace.create(0, i);
+            root.execute(actor -> actor.receiveVisit(trace(Request.Visit.create(root, downstream), trace)));
         }
         int answersFound = 0;
         int explainableAnswersFound = 0;

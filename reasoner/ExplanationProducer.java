@@ -30,12 +30,17 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced.trace;
+import static java.lang.Math.abs;
 
 public class ExplanationProducer implements Producer<Explanation> {
 
@@ -51,6 +56,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     private boolean done;
     private int requestTraceIdCounter;
     private Queue<Explanation> queue;
+    private int id;
 
     public ExplanationProducer(Conjunction conjunction, ConceptMap bounds, Options.Query options,
                                ResolverRegistry registry, ExplainablesManager explainablesManager) {
@@ -64,8 +70,13 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR : 1;
         this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.requestTraceIdCounter = 0;
+        this.id = id();
 
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
+    }
+
+    private int id() {
+        return abs(System.identityHashCode(this));
     }
 
     @Override
@@ -81,20 +92,20 @@ public class ExplanationProducer implements Producer<Explanation> {
         processing.addAndGet(toRequest);
     }
 
-    private Request.Visit createExplanationRequest(int explainRequestId) {
+    private Traced<Request.Visit> createExplanationRequest(int explainRequestId) {
         Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
-        return Request.Visit.create(explainer, ResolutionTracer.Trace.create(System.identityHashCode(this), explainRequestId), downstream);
+        return trace(Request.Visit.create(explainer, downstream), Trace.create(id, explainRequestId));
     }
 
     private void requestExplanation() {
-        Request.Visit explainRequest = createExplanationRequest(requestTraceIdCounter);
+        Traced<Request.Visit> explainRequest = createExplanationRequest(requestTraceIdCounter);
         if (options.traceInference()) ResolutionTracer.get().start(explainRequest);
         explainer.execute(explainer -> explainer.receiveVisit(explainRequest));
         requestTraceIdCounter += 1;
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestAnswered(Request.Visit requestAnswered, Explain.Finished explainedAnswer) {
+    private void requestAnswered(Traced<Request> requestAnswered, Explain.Finished explainedAnswer) {
         if (options.traceInference()) ResolutionTracer.get().finish(requestAnswered);
         Explanation explanation = explainedAnswer.explanation();
         explainablesManager.setAndRecordExplainables(explanation.conditionAnswer());
@@ -104,7 +115,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestFailed(Request.Visit failedRequest) {
+    private void requestFailed(Traced<Request> failedRequest) {
         LOG.trace("Failed to find answer to request {}", failedRequest);
         if (options.traceInference()) ResolutionTracer.get().finish(failedRequest);
         finish();
@@ -131,6 +142,6 @@ public class ExplanationProducer implements Producer<Explanation> {
 
     @Override
     public void recycle() {
-
+        id = id();
     }
 }

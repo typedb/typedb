@@ -30,6 +30,8 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match.
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
@@ -41,6 +43,7 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced.trace;
 import static java.lang.Math.abs;
 
 @ThreadSafe
@@ -94,8 +97,12 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         assert computeSize > 0;
         this.filter = filter;
         this.requestIdCounter = 0;
-        this.id = abs(UUID.randomUUID().hashCode());
+        this.id = id();
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
+    }
+
+    private int id() {
+        return abs(System.identityHashCode(this));
     }
 
     @Override
@@ -113,11 +120,11 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     @Override
     public void recycle() {
-        this.id = abs(UUID.randomUUID().hashCode());
+        this.id = id();
     }
 
     // note: root resolver calls this single-threaded, so is thread safe
-    private void requestAnswered(Request.Visit answeredRequest, Finished answer) {
+    private void requestAnswered(Traced<Request> answeredRequest, Finished answer) {
         if (options.traceInference()) ResolutionTracer.get().finish(answeredRequest);
         ConceptMap conceptMap = answer.conceptMap();
         if (options.explain() && !conceptMap.explainables().isEmpty()) {
@@ -129,7 +136,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestFailed(Request.Visit failedRequest) {
+    private void requestFailed(Traced<Request> failedRequest) {
         LOG.trace("Failed to find answer to request {}", failedRequest);
         if (options.traceInference()) ResolutionTracer.get().finish(failedRequest);
         finish();
@@ -152,13 +159,13 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         }
     }
 
-    private Request.Visit createResolveRequest(int requestId) {
+    private Traced<Request.Visit> createResolveRequest(int requestId) {
         Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        return Request.Visit.create(rootResolver, ResolutionTracer.Trace.create(id, requestId), downstream);
+        return trace(Request.Visit.create(rootResolver, downstream), Trace.create(id, requestId));
     }
 
     private void requestAnswer() {
-        Request.Visit resolveRequest = createResolveRequest(requestIdCounter);
+        Traced<Request.Visit> resolveRequest = createResolveRequest(requestIdCounter);
         if (options.traceInference()) ResolutionTracer.get().start(resolveRequest);
         rootResolver.execute(actor -> actor.receiveVisit(resolveRequest));
         requestIdCounter += 1;

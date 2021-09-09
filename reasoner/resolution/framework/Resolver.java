@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.common.collection.Either;
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
@@ -32,7 +31,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
@@ -53,11 +52,12 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 import static com.vaticle.typedb.core.common.poller.Pollers.poll;
+import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced.trace;
 
 public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends ReasonerActor<RESOLVER> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
-    private final Map<Pair<Request.Visit, Trace>, Request.Visit> requestRouter;
+    private final Map<Traced<Request>, Traced<Request>> requestRouter;
     protected final ResolverRegistry registry;
 
     protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
@@ -82,86 +82,98 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         registry.terminate(e);
     }
 
-    public abstract void receiveVisit(Request.Visit fromUpstream);
+    public abstract void receiveVisit(Traced<Request.Visit> fromUpstream);
 
-    protected abstract void receiveRevisit(Request.Revisit fromUpstream);
+    protected abstract void receiveRevisit(Traced<Request.Revisit> fromUpstream);
 
-    protected abstract void receiveAnswer(Answer fromDownstream);
+    protected abstract void receiveAnswer(Traced<Answer> fromDownstream);
 
-    protected abstract void receiveFail(Response.Fail fromDownstream);
+    protected abstract void receiveFail(Traced<Response.Fail> fromDownstream);
 
-    protected void receiveCycle(Response.Cycle fromDownstream) {
+    protected void receiveCycle(Traced<Response.Cycle> fromDownstream) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Request.Visit toDownstream = fromDownstream.sourceRequest();
-        Request.Visit fromUpstream = fromUpstream(toDownstream);
-        cycleToUpstream(fromUpstream, fromDownstream.origins());
+        Traced<Request> toDownstream = trace(fromDownstream.message().sourceRequest(), fromDownstream.trace());
+        Traced<Request> fromUpstream = fromUpstream(toDownstream);
+        cycleToUpstream(fromUpstream, fromDownstream.message().origins());
     }
 
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
 
-    protected Request.Visit fromUpstream(Request.Visit toDownstream) {
+    protected Traced<Request> fromUpstream(Traced<Request> toDownstream) {
         assert toDownstream.trace().root() != -1;
-        Pair<Request.Visit, ResolutionTracer.Trace> ds = new Pair<>(toDownstream, toDownstream.trace());
-        assert requestRouter.containsKey(ds);
-        assert requestRouter.get(ds).trace() == toDownstream.trace();
-        return requestRouter.get(ds);
+        assert requestRouter.containsKey(toDownstream);
+        assert requestRouter.get(toDownstream).trace() == toDownstream.trace();
+        return requestRouter.get(toDownstream);
     }
 
-    protected void visitDownstream(Downstream downstream, Request.Visit fromUpstream) {
-        visitDownstream(downstream.toVisit(fromUpstream.trace()), fromUpstream);
+    protected Traced<Request> upstreamTracedRequest(Traced<? extends Response> response) {
+        return fromUpstream(trace(response.message().sourceRequest(), response.trace()));
     }
 
-    protected void visitDownstream(Request.Visit request, Request.Visit fromUpstream) {
-        LOG.trace("{} : Sending a new Visit request to downstream: {}", name(), request);
+    protected Request.Visit upstreamVisit(Traced<? extends Response> response) {
+        return fromUpstream(trace(response.message().sourceRequest(), response.trace())).message().visit();
+    }
+
+    protected static Traced<Request> tracedFromUpstream(Traced<? extends Request> fromUpstream) {
+        // TODO: Hacks the casting
+        return Traced.trace(fromUpstream.message(), fromUpstream.trace());
+    }
+
+    protected void visitDownstream(Downstream downstream, Traced<Request> fromUpstream) {
+        visitDownstream(downstream.toVisit(), fromUpstream);
+    }
+
+    protected void visitDownstream(Request.Visit visit, Traced<Request> fromUpstream) {
+        LOG.trace("{} : Sending a new Visit request to downstream: {}", name(), visit);
         assert fromUpstream.trace().root() != -1;
-        assert request.trace() == fromUpstream.trace();
-        if (registry.resolutionTracing()) ResolutionTracer.get().visit(request);
-        // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
-        requestRouter.put(new Pair<>(request, request.trace()), fromUpstream);
-        request.receiver().execute(actor -> actor.receiveVisit(request));
+        Traced<Request.Visit> tracedVisit = trace(visit, fromUpstream.trace());
+        Traced<Request> tracedRequest = trace(visit, fromUpstream.trace());
+        if (registry.resolutionTracing()) ResolutionTracer.get().visit(tracedVisit);
+        requestRouter.put(tracedRequest, tracedFromUpstream(fromUpstream));
+        visit.receiver().execute(actor -> actor.receiveVisit(tracedVisit));
     }
 
-    protected void revisitDownstream(Request.Revisit toRevisit, Request.Visit fromUpstream) {
-        Request.Visit downstream = toRevisit.visit();
-        LOG.trace("{} : Sending a new Revisit request to downstream: {}", name(), downstream);
+    protected void revisitDownstream(Request.Revisit revisit, Traced<Request> fromUpstream) {
+        LOG.trace("{} : Sending a new Revisit request to downstream: {}", name(), revisit);
         assert fromUpstream.trace().root() != -1;
-        assert downstream.trace() == fromUpstream.trace();
-        if (registry.resolutionTracing()) ResolutionTracer.get().revisit(downstream);
-        requestRouter.put(new Pair<>(downstream, downstream.trace()), fromUpstream);
-        downstream.receiver().execute(actor -> actor.receiveRevisit(toRevisit));
+        Traced<Request.Revisit> tracedRevisit = trace(revisit, fromUpstream.trace());
+        Traced<Request> tracedRequest = trace(revisit, fromUpstream.trace());  // TODO
+        if (registry.resolutionTracing()) ResolutionTracer.get().revisit(tracedRevisit);
+        requestRouter.put(tracedRequest, fromUpstream);
+        revisit.visit().receiver().execute(actor -> actor.receiveRevisit(tracedRevisit));
     }
 
-    // TODO: Rename to sendResponse or respond
-    protected void answerToUpstream(AnswerState answer, Request.Visit fromUpstream) {
+    protected void answerToUpstream(AnswerState answer, Traced<Request> fromUpstream) {
         assert answer.isPartial();
-        Answer response = Answer.create(fromUpstream, answer.asPartial());
+        Traced<Answer> response = trace(Answer.create(fromUpstream.message().visit(), answer.asPartial()), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(response);
-        fromUpstream.sender().execute(actor -> actor.receiveAnswer(response));
+        fromUpstream.message().visit().sender().execute(actor -> actor.receiveAnswer(response));
     }
 
-    protected void failToUpstream(Request.Visit fromUpstream) {
-        Response.Fail response = new Response.Fail(fromUpstream);
+    protected void failToUpstream(Traced<Request> fromUpstream) {
+        Traced<Response.Fail> response = trace(new Response.Fail(fromUpstream.message().visit()), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(response);
-        fromUpstream.sender().execute(actor -> actor.receiveFail(response));
+        fromUpstream.message().visit().sender().execute(actor -> actor.receiveFail(response));
     }
 
-    protected void cycleToUpstream(Request.Visit fromUpstream, Set<Response.Cycle.Origin> cycleOrigins) {
-        assert !fromUpstream.partialAnswer().parent().isTop();
-        Response.Cycle response = new Response.Cycle(fromUpstream, cycleOrigins);
+    protected void cycleToUpstream(Traced<Request> fromUpstream, Set<Response.Cycle.Origin> cycleOrigins) {
+        assert !fromUpstream.message().visit().partialAnswer().parent().isTop();
+        Traced<Response.Cycle> response = trace(new Response.Cycle(fromUpstream.message().visit(), cycleOrigins), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response);
-        fromUpstream.sender().execute(actor -> actor.receiveCycle(response));
+        fromUpstream.message().visit().sender().execute(actor -> actor.receiveCycle(response));
     }
 
-    protected void cycleToUpstream(Request.Visit fromUpstream, int numAnswersSeen) {
-        assert !fromUpstream.partialAnswer().parent().isTop();
-        Response.Cycle response = new Response.Cycle.Origin(fromUpstream, numAnswersSeen);
+    protected void cycleToUpstream(Traced<Request> fromUpstream, int numAnswersSeen) {
+        assert !fromUpstream.message().visit().partialAnswer().parent().isTop();
+        Traced<Response.Cycle> response = trace(
+                new Response.Cycle.Origin(fromUpstream.message().visit(), numAnswersSeen), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response);
-        fromUpstream.sender().execute(actor -> actor.receiveCycle(response));
+        fromUpstream.message().visit().sender().execute(actor -> actor.receiveCycle(response));
     }
 
     protected FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
@@ -283,14 +295,14 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             this.blocked = new LinkedHashMap<>();
         }
 
-        public Request.Visit nextVisit(Request.Visit fromUpstream) {
-            return visits.get(0).toVisit(fromUpstream.trace());
+        public Request.Visit nextVisit() {
+            return visits.get(0).toVisit();
         }
 
-        public Request.Revisit nextRevisit(Request.Visit fromUpstream) {
+        public Request.Revisit nextRevisit() {
             Optional<Downstream> downstream = iterate(revisits.keySet()).first();
             assert downstream.isPresent();
-            return downstream.get().toRevisit(fromUpstream.trace(), revisits.get(downstream.get()));
+            return downstream.get().toRevisit(revisits.get(downstream.get()));
         }
 
         public boolean hasNextVisit() {

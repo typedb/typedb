@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
@@ -38,13 +39,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced.trace;
+
 public abstract class SubsumptiveCoordinator<
         RESOLVER extends SubsumptiveCoordinator<RESOLVER, WORKER>,
         WORKER extends Resolver<WORKER>> extends Resolver<RESOLVER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(SubsumptiveCoordinator.class);
-    private final Map<Driver<? extends Resolver<?>>, SubsumptionTracker> subsumptionTrackers;
-    private final Map<Driver<? extends Resolver<?>>, Map<Pair<Request.Visit, ResolutionTracer.Trace>, Request.Visit>> requestMapByRoot;
     protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, Driver<WORKER>>> workersByRoot; // TODO: We would like these not to be by root. They need to be, for now, for reiteration purposes.
     protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, AnswerCache<?>>> cacheRegistersByRoot;
     protected boolean isInitialised;
@@ -54,73 +55,41 @@ public abstract class SubsumptiveCoordinator<
         this.isInitialised = false;
         this.workersByRoot = new HashMap<>();
         this.cacheRegistersByRoot = new HashMap<>();
-        this.requestMapByRoot = new HashMap<>();
-        this.subsumptionTrackers = new HashMap<>();
     }
 
     @Override
-    public void receiveVisit(Request.Visit fromUpstream) {
+    public void receiveVisit(Traced<Request.Visit> fromUpstream) {
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
-
-        Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
-        ConceptMap bounds = fromUpstream.partialAnswer().conceptMap();
-        Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.partialAnswer());
-        // TODO: Re-enable subsumption when async bug is fixed
-        // Optional<ConceptMap> subsumer = subsumptionTrackers.computeIfAbsent(
-        //         root, r -> new SubsumptionTracker()).getFinishedSubsumer(bounds);
-        // // If there is a finished subsumer, let the Worker know that it can go there for answers
-        // Visit request = subsumer
-        //         .map(conceptMap -> Visit.ToSubsumed.create(
-        //                 driver(), worker, workersByRoot.get(root).get(conceptMap),
-        //                 fromUpstream.partialAnswer()))
-        //         .orElseGet(() -> Visit.create(driver(), worker, fromUpstream.partialAnswer()));
-        Request.Visit request = Request.Visit.create(driver(), worker, fromUpstream.trace(), fromUpstream.partialAnswer());
-        requestMapByRoot.computeIfAbsent(root, r -> new HashMap<>()).put(new Pair<>(request, request.trace()), fromUpstream);
-        visitDownstream(request, fromUpstream);
+        Driver<? extends Resolver<?>> root = fromUpstream.message().partialAnswer().root();
+        Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.message().partialAnswer());
+        Request.Visit request = Request.Visit.create(driver(), worker, fromUpstream.message().partialAnswer());
+        visitDownstream(request, tracedFromUpstream(fromUpstream));
     }
 
     @Override
-    public void receiveRevisit(Request.Revisit fromUpstream) {
+    public void receiveRevisit(Traced<Request.Revisit> fromUpstream) {
         LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
         assert isInitialised;
         if (isTerminated()) return;
-
-        Driver<? extends Resolver<?>> root = fromUpstream.visit().partialAnswer().root();
-        ConceptMap bounds = fromUpstream.visit().partialAnswer().conceptMap();
-        Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.visit().partialAnswer());
-        // TODO: Re-enable subsumption when async bug is fixed
-        // Optional<ConceptMap> subsumer = subsumptionTrackers.computeIfAbsent(
-        //         root, r -> new SubsumptionTracker()).getFinishedSubsumer(bounds);
-        // // If there is a finished subsumer, let the Worker know that it can go there for answers
-        // Visit request = subsumer
-        //         .map(conceptMap -> Visit.ToSubsumed.create(
-        //                 driver(), worker, workersByRoot.get(root).get(conceptMap),
-        //                 fromUpstream.partialAnswer()))
-        //         .orElseGet(() -> Visit.create(driver(), worker, fromUpstream.partialAnswer()));
-        Request.Visit visit = Request.Visit.create(driver(), worker, fromUpstream.visit().trace(), fromUpstream.visit().partialAnswer());
-        Request.Revisit revisit = Request.Revisit.create(visit, fromUpstream.cycles());
-        requestMapByRoot.computeIfAbsent(root, r -> new HashMap<>()).put(new Pair<>(visit, visit.trace()), fromUpstream.visit());
-        revisitDownstream(revisit, fromUpstream.visit());
+        Driver<? extends Resolver<?>> root = fromUpstream.message().visit().partialAnswer().root();
+        Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.message().visit().partialAnswer());
+        Request.Visit visit = Request.Visit.create(driver(), worker, fromUpstream.message().visit().partialAnswer());
+        Request.Revisit revisit = Request.Revisit.create(visit, fromUpstream.message().cycles());
+        revisitDownstream(revisit, tracedFromUpstream(fromUpstream));
     }
 
     abstract Driver<WORKER> getOrCreateWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial);
 
     @Override
-    protected void receiveAnswer(Answer answer) {
-        answerToUpstream(
-                answer.answer(), requestMapByRoot.get(answer.answer().root()).get(new Pair<>(answer.sourceRequest(),answer.sourceRequest().trace()))
-        );
+    protected void receiveAnswer(Traced<Answer> answer) {
+        answerToUpstream(answer.message().answer(), upstreamTracedRequest(answer));
     }
 
     @Override
-    protected void receiveFail(Response.Fail fail) {
-        Request.Visit request = fail.sourceRequest();
-        subsumptionTrackers
-                .computeIfAbsent(request.partialAnswer().root(), r -> new SubsumptionTracker())
-                .addFinished(request.partialAnswer().conceptMap());
-        failToUpstream(requestMapByRoot.get(fail.sourceRequest().partialAnswer().root()).get(new Pair<>(request, request.trace())));
+    protected void receiveFail(Traced<Response.Fail> fail) {
+        failToUpstream(upstreamTracedRequest(fail));
     }
 
     static class SubsumptionTracker {

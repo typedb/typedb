@@ -34,6 +34,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced.trace;
 
 public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<RESOLVER>> extends CompoundResolver<RESOLVER> {
 
@@ -72,33 +74,34 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     abstract Optional<AnswerState> toUpstreamAnswer(Partial.Compound<?, ?> fromDownstream);
 
     @Override
-    protected void receiveAnswer(Response.Answer fromDownstream) {
+    protected void receiveAnswer(Traced<Response.Answer> fromDownstream) {
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Downstream toDownstream = Downstream.of(fromDownstream.sourceRequest());
-        Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
-        RequestState requestState = requestStates.get(fromUpstream);
+        Downstream toDownstream = Downstream.of(fromDownstream.message().sourceRequest());
+        Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
+        Request.Visit upstreamVisit = fromUpstream.message().visit();
+        RequestState requestState = requestStates.get(upstreamVisit);
 
-        Plans.Plan plan = plans.getActive(fromUpstream);
+        Plans.Plan plan = plans.getActive(upstreamVisit);
 
         // TODO: this is a bit of a hack, we want requests to a negation to be "single use", otherwise we can end up in an infinite loop
         //  where the request to the negation never gets removed and we constantly re-request from it!
         //  this could be either implemented with a different response type: FinalAnswer, or splitting Visit into ReusableRequest vs SingleRequest
         if (plan.get(toDownstream.planIndex()).isNegated()) requestState.downstreamManager().remove(toDownstream);
 
-        Partial.Compound<?, ?> partialAnswer = fromDownstream.answer().asCompound();
-        if (plan.isLast(fromDownstream.planIndex())) {
+        Partial.Compound<?, ?> partialAnswer = fromDownstream.message().answer().asCompound();
+        if (plan.isLast(fromDownstream.message().planIndex())) {
             Optional<AnswerState> upstreamAnswer = toUpstreamAnswer(partialAnswer);
             boolean answerAccepted = upstreamAnswer.isPresent() && tryAcceptUpstreamAnswer(upstreamAnswer.get(), fromUpstream);
-            if (!answerAccepted) nextAnswer(fromUpstream, requestState);
+            if (!answerAccepted) nextAnswer(trace(upstreamVisit, fromDownstream.trace()), requestState);
         } else {
-            toNextChild(fromDownstream, fromUpstream, requestState, plan);
+            toNextChild(fromDownstream, upstreamVisit, requestState, plan);
         }
     }
 
-    boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request.Visit fromUpstream) {
-        RequestState requestState = requestStates.get(fromUpstream);
+    boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Traced<Request> fromUpstream) {
+        RequestState requestState = requestStates.get(fromUpstream.message().visit());
         if (!requestState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
             requestState.deduplicationSet().add(upstreamAnswer.conceptMap());
             answerToUpstream(upstreamAnswer, fromUpstream);
@@ -108,14 +111,14 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
     }
 
-    private void toNextChild(Response.Answer fromDownstream, Request.Visit fromUpstream,
+    private void toNextChild(Traced<Response.Answer> fromDownstream, Request.Visit fromUpstream,
                              RequestState requestState, Plans.Plan plan) {
-        int nextResolverIndex = fromDownstream.planIndex() + 1;
+        int nextResolverIndex = fromDownstream.message().planIndex() + 1;
         Resolvable<?> nextResolvable = plan.get(nextResolverIndex);
         ResolverRegistry.ResolverView nextPlannedDownstream = downstreamResolvers.get(nextResolvable);
-        final Partial<?> downstreamAns = toDownstream(fromDownstream.answer().asCompound(), nextPlannedDownstream, nextResolvable);
+        final Partial<?> downstreamAns = toDownstream(fromDownstream.message().answer().asCompound(), nextPlannedDownstream, nextResolvable);
         Downstream downstream = Downstream.create(driver(), nextPlannedDownstream.resolver(), downstreamAns, nextResolverIndex);
-        visitDownstream(downstream, fromUpstream);
+        visitDownstream(downstream, trace(fromUpstream, fromDownstream.trace()));
         // negated requests can be used twice in a parallel setting, and return the same answer twice
         if (!nextResolvable.isNegated() || (nextResolvable.isNegated() && !requestState.downstreamManager().contains(downstream))) {
             requestState.downstreamManager().add(downstream);
@@ -123,13 +126,13 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     }
 
     @Override
-    protected void receiveFail(Response.Fail fromDownstream) {
+    protected void receiveFail(Traced<Response.Fail> fromDownstream) {
         LOG.trace("{}: Receiving Exhausted: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Downstream downstream = Downstream.of(fromDownstream.sourceRequest());
-        Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
-        RequestState requestState = this.requestStates.get(fromUpstream);
+        Downstream downstream = Downstream.of(fromDownstream.message().sourceRequest());
+        Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
+        RequestState requestState = this.requestStates.get(fromUpstream.message().visit());
         requestState.downstreamManager().remove(downstream);
         nextAnswer(fromUpstream, requestState);
     }

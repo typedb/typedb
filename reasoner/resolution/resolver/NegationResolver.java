@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import org.slf4j.Logger;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced.trace;
 
 public class NegationResolver extends Resolver<NegationResolver> {
 
@@ -56,12 +58,12 @@ public class NegationResolver extends Resolver<NegationResolver> {
     }
 
     @Override
-    public void receiveVisit(Request.Visit fromUpstream) {
+    public void receiveVisit(Traced<Request.Visit> fromUpstream) {
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
 
-        BoundsState boundsState = this.boundsStates.computeIfAbsent(fromUpstream.partialAnswer().conceptMap(),
+        BoundsState boundsState = this.boundsStates.computeIfAbsent(fromUpstream.message().partialAnswer().conceptMap(),
                                                                     (cm) -> new BoundsState());
         if (boundsState.status.isEmpty()) {
             boundsState.addAwaiting(fromUpstream);
@@ -69,17 +71,17 @@ public class NegationResolver extends Resolver<NegationResolver> {
         } else if (boundsState.status.isRequested()) {
             boundsState.addAwaiting(fromUpstream);
         } else if (boundsState.status.isSatisfied()) {
-            answerToUpstream(upstreamAnswer(fromUpstream), fromUpstream);
+            answerToUpstream(upstreamAnswer(fromUpstream.message()), tracedFromUpstream(fromUpstream));
         } else if (boundsState.status.isFailed()) {
-            failToUpstream(fromUpstream);
+            failToUpstream(tracedFromUpstream(fromUpstream));
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
     @Override
-    protected void receiveRevisit(Request.Revisit fromUpstream) {
-        receiveVisit(fromUpstream.visit());
+    protected void receiveRevisit(Traced<Request.Revisit> fromUpstream) {
+        receiveVisit(trace(fromUpstream.message().visit(), fromUpstream.trace()));
     }
 
     @Override
@@ -99,42 +101,37 @@ public class NegationResolver extends Resolver<NegationResolver> {
         isInitialised = true;
     }
 
-    private void tryAnswer(Request.Visit fromUpstream, BoundsState boundsState) {
+    private void tryAnswer(Traced<Request.Visit> fromUpstream, BoundsState boundsState) {
         // TODO: if we wanted to accelerate the searching of a negation counter example, we could send multiple
         //  requests into the sub system at once!
-        assert fromUpstream.partialAnswer().isCompound();
-        Compound.Nestable downstreamPartial = fromUpstream.partialAnswer().asCompound().filterToNestable(negated.retrieves());
-        visitDownstream(Downstream.create(driver(), this.downstream, downstreamPartial), fromUpstream);
+        assert fromUpstream.message().partialAnswer().isCompound();
+        Compound.Nestable downstreamPartial = fromUpstream.message().partialAnswer().asCompound().filterToNestable(negated.retrieves());
+        visitDownstream(Downstream.create(driver(), this.downstream, downstreamPartial), tracedFromUpstream(fromUpstream));
         boundsState.setRequested();
     }
 
     @Override
-    protected void receiveAnswer(Response.Answer fromDownstream) {
+    protected void receiveAnswer(Traced<Response.Answer> fromDownstream) {
         LOG.trace("{}: received Answer: {}, therefore is FAILED", name(), fromDownstream);
         if (isTerminated()) return;
-
-        Request.Visit toDownstream = fromDownstream.sourceRequest();
-        Request.Visit fromUpstream = fromUpstream(toDownstream);
-        BoundsState boundsState = this.boundsStates.get(fromUpstream.partialAnswer().conceptMap());
+        Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
+        BoundsState boundsState = this.boundsStates.get(fromUpstream.message().visit().partialAnswer().conceptMap());
         boundsState.setFailed();
         for (BoundsState.Awaiting awaiting : boundsState.awaiting) {
-            failToUpstream(awaiting.request);
+            failToUpstream(tracedFromUpstream(awaiting.request));
         }
         boundsState.clearAwaiting();
     }
 
     @Override
-    protected void receiveFail(Response.Fail fromDownstream) {
+    protected void receiveFail(Traced<Response.Fail> fromDownstream) {
         LOG.trace("{}: Receiving Failed: {}, therefore is SATISFIED", name(), fromDownstream);
         if (isTerminated()) return;
-
-        Request.Visit toDownstream = fromDownstream.sourceRequest();
-        Request.Visit fromUpstream = fromUpstream(toDownstream);
-        BoundsState boundsState = this.boundsStates.get(fromUpstream.partialAnswer().conceptMap());
-
+        Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
+        BoundsState boundsState = this.boundsStates.get(fromUpstream.message().visit().partialAnswer().conceptMap());
         boundsState.setSatisfied();
         for (BoundsState.Awaiting awaiting : boundsState.awaiting) {
-            answerToUpstream(upstreamAnswer(awaiting.request), awaiting.request);
+            answerToUpstream(upstreamAnswer(awaiting.request.message()), tracedFromUpstream(awaiting.request));
         }
         boundsState.clearAwaiting();
     }
@@ -154,7 +151,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
             this.status = Status.EMPTY;
         }
 
-        public void addAwaiting(Request.Visit request) {
+        public void addAwaiting(Traced<Request.Visit> request) {
             awaiting.add(new Awaiting(request));
         }
 
@@ -169,9 +166,9 @@ public class NegationResolver extends Resolver<NegationResolver> {
         }
 
         private static class Awaiting {
-            final Request.Visit request;
+            final Traced<Request.Visit> request;
 
-            public Awaiting(Request.Visit request) {
+            public Awaiting(Traced<Request.Visit> request) {
                 this.request = request;
             }
         }

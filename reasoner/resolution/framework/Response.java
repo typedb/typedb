@@ -52,10 +52,6 @@ public interface Response {
         return sourceRequest().receiver();
     }
 
-    default ResolutionTracer.Trace trace() {
-        return sourceRequest().trace();
-    }
-
     class Answer implements Response {
         private final Request.Visit sourceRequest;
         private final Partial<?> answer;

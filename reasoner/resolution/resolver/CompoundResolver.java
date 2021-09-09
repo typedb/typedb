@@ -21,6 +21,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import org.slf4j.Logger;
@@ -44,11 +45,11 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         this.isInitialised = false;
     }
 
-    protected void nextAnswer(Request.Visit fromUpstream, RequestState requestState) {
+    protected void nextAnswer(Traced<Request> fromUpstream, RequestState requestState) {
         if (requestState.downstreamManager().hasNextVisit()) {
-            visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream), fromUpstream);
+            visitDownstream(requestState.downstreamManager().nextVisit(), fromUpstream);
         } else if (requestState.downstreamManager().hasNextRevisit()) {
-            revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream), fromUpstream);
+            revisitDownstream(requestState.downstreamManager().nextRevisit(), fromUpstream);
         } else if (requestState.downstreamManager().hasNextBlocked()) {
             cycleToUpstream(fromUpstream, requestState.downstreamManager().blockers());
         } else {
@@ -57,46 +58,44 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     }
 
     @Override
-    public void receiveVisit(Request.Visit fromUpstream) {
+    public void receiveVisit(Traced<Request.Visit> fromUpstream) {
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
-        RequestState requestState = requestStates.computeIfAbsent(fromUpstream, this::requestStateCreate);
-        nextAnswer(fromUpstream, requestState);
+        RequestState requestState = requestStates.computeIfAbsent(fromUpstream.message(), this::requestStateCreate);
+        nextAnswer(tracedFromUpstream(fromUpstream), requestState);
     }
 
     @Override
-    protected void receiveRevisit(Request.Revisit fromUpstream) {
+    protected void receiveRevisit(Traced<Request.Revisit> fromUpstream) {
         LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
         assert isInitialised;
         if (isTerminated()) return;
-
-        RequestState requestState = requestStates.get(fromUpstream.visit());
-        requestState.downstreamManager().unblock(fromUpstream.cycles());
-        nextAnswer(fromUpstream.visit(), requestState);
+        RequestState requestState = requestStates.get(fromUpstream.message().visit());
+        requestState.downstreamManager().unblock(fromUpstream.message().cycles());
+        nextAnswer(tracedFromUpstream(fromUpstream), requestState);
     }
 
     @Override
-    protected void receiveFail(Response.Fail fromDownstream) {
+    protected void receiveFail(Traced<Response.Fail> fromDownstream) {
         LOG.trace("{}: received Exhausted from {}", name(), fromDownstream);
         if (isTerminated()) return;
-
-        Downstream toDownstream = Downstream.of(fromDownstream.sourceRequest());
-        Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
-        RequestState requestState = requestStates.get(fromUpstream);
+        Downstream toDownstream = Downstream.of(fromDownstream.message().sourceRequest());
+        Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
+        RequestState requestState = requestStates.get(fromUpstream.message().visit());
         requestState.downstreamManager().remove(toDownstream);
         nextAnswer(fromUpstream, requestState);
     }
 
     @Override
-    protected void receiveCycle(Response.Cycle fromDownstream) {
+    protected void receiveCycle(Traced<Response.Cycle> fromDownstream) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Downstream cyclingDownstream = Downstream.of(fromDownstream.sourceRequest());
-        Request.Visit fromUpstream = fromUpstream(fromDownstream.sourceRequest());
-        RequestState requestState = this.requestStates.get(fromUpstream);
+        Downstream cyclingDownstream = Downstream.of(fromDownstream.message().sourceRequest());
+        Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
+        RequestState requestState = this.requestStates.get(fromUpstream.message().visit());
         if (requestState.downstreamManager().contains(cyclingDownstream)) {
-            requestState.downstreamManager().block(cyclingDownstream, fromDownstream.origins());
+            requestState.downstreamManager().block(cyclingDownstream, fromDownstream.message().origins());
         }
         nextAnswer(fromUpstream, requestState);
     }
@@ -125,5 +124,6 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         public Set<ConceptMap> deduplicationSet() {
             return deduplicationSet;
         }
+
     }
 }

@@ -64,10 +64,10 @@ public final class ResolutionTracer {
         return INSTANCE;
     }
 
-    public synchronized void visit(Request.Visit request) {
-        String sender = request.sender().name();
-        String receiver = request.receiver().name();
-        String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
+    public synchronized void visit(Traced<Request.Visit> request) {
+        String sender = request.message().sender().name();
+        String receiver = request.message().receiver().name();
+        String conceptMap = request.message().partialAnswer().conceptMap().concepts().keySet().toString();
         addMessage(sender, receiver, request.trace(), EdgeType.VISIT, conceptMap);
     }
 
@@ -78,10 +78,10 @@ public final class ResolutionTracer {
         addMessage(sender, receiver, request.trace(), EdgeType.VISIT, conceptMap);
     }
 
-    public void revisit(Request.Visit request) {
-        String sender = request.sender().name();
-        String receiver = request.receiver().name();
-        String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
+    public void revisit(Traced<Request.Revisit> request) {
+        String sender = request.message().visit().sender().name();
+        String receiver = request.message().visit().receiver().name();
+        String conceptMap = request.message().visit().partialAnswer().conceptMap().concepts().keySet().toString();
         addMessage(sender, receiver, request.trace(), EdgeType.REVISIT, conceptMap);
     }
 
@@ -93,29 +93,29 @@ public final class ResolutionTracer {
         addMessage(sender, receiver, request.trace(), EdgeType.ANSWER, concepts);
     }
 
-    public synchronized void responseAnswer(Response.Answer request) {
-        String sender = request.sender().name();
-        String receiver = request.receiver().name();
-        String conceptMap = request.answer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, request.trace(), EdgeType.ANSWER, conceptMap);
+    public synchronized void responseAnswer(Traced<Response.Answer> response) {
+        String sender = response.message().sender().name();
+        String receiver = response.message().receiver().name();
+        String conceptMap = response.message().answer().conceptMap().concepts().keySet().toString();
+        addMessage(sender, receiver, response.trace(), EdgeType.ANSWER, conceptMap);
     }
 
-    public synchronized void responseExhausted(Response request) {
-        String sender = request.sender().name();
-        String receiver = request.receiver().name();
-        addMessage(sender, receiver, request.trace(), EdgeType.EXHAUSTED, "");
+    public synchronized void responseExhausted(Traced<Response.Fail> response) {
+        String sender = response.message().sender().name();
+        String receiver = response.message().receiver().name();
+        addMessage(sender, receiver, response.trace(), EdgeType.EXHAUSTED, "");
     }
 
-    public synchronized void responseExhausted(Materialiser.Response request) {
-        String sender = request.sender().name();
-        String receiver = request.receiver().name();
-        addMessage(sender, receiver, request.trace(), EdgeType.EXHAUSTED, "");
+    public synchronized void responseExhausted(Materialiser.Response response) {
+        String sender = response.sender().name();
+        String receiver = response.receiver().name();
+        addMessage(sender, receiver, response.trace(), EdgeType.EXHAUSTED, "");
     }
 
-    public synchronized void responseCycle(Response.Cycle request) {
-        String sender = request.sender().name();
-        String receiver = request.receiver().name();
-        addMessage(sender, receiver, request.trace(), EdgeType.CYCLE, "");
+    public synchronized void responseCycle(Traced<Response.Cycle> response) {
+        String sender = response.message().sender().name();
+        String receiver = response.message().receiver().name();
+        addMessage(sender, receiver, response.trace(), EdgeType.CYCLE, "");
     }
 
     private void addMessage(String sender, String receiver, Trace trace, EdgeType edgeType,
@@ -123,13 +123,13 @@ public final class ResolutionTracer {
         rootRequestTracers.get(trace).addMessage(sender, receiver, edgeType, conceptMap);
     }
 
-    public synchronized void start(Request.Visit request) {
+    public synchronized void start(Traced<Request.Visit> request) {
         assert !rootRequestTracers.containsKey(request.trace());
         rootRequestTracers.put(request.trace(), new RootRequestTracer(request.trace()));
         rootRequestTracers.get(request.trace()).start();
     }
 
-    public synchronized void finish(Request.Visit request) {
+    public synchronized void finish(Traced<Request> request) {
         rootRequestTracers.get(request.trace()).finish();
     }
 
@@ -289,4 +289,42 @@ public final class ResolutionTracer {
         }
     }
 
+    public static class Traced<MESSAGE> {
+
+        private final MESSAGE message;
+        private final Trace trace;
+        private final int hash;
+
+        Traced(MESSAGE message, Trace trace) {
+            this.message = message;
+            this.trace = trace;
+            this.hash = Objects.hash(message, trace);
+        }
+
+        public static <MESSAGE> Traced<MESSAGE> trace(MESSAGE message, Trace trace) {
+            return new Traced<>(message, trace);
+        }
+
+        public MESSAGE message() {
+            return message;
+        }
+
+        public Trace trace() {
+            return trace;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Traced<?> traced = (Traced<?>) o;
+            return message.equals(traced.message) &&
+                    trace.equals(traced.trace);
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+    }
 }
