@@ -140,6 +140,70 @@ public class TypeGraph {
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
             resolvedRoleTypeLabels = new ConcurrentHashMap<>();
         }
+
+        public void replace(Label original, Label replacement) {
+            if (original.scope().isPresent()) {
+                Set<Label> removed = resolvedRoleTypeLabels.remove(original);
+                if (removed != null) resolvedRoleTypeLabels.put(replacement, removed);
+                resolvedRoleTypeLabels.forEach((l, resolved) -> replace(resolved, original, replacement));
+            }
+            replace(relations, original, replacement);
+            replace(roles, original, replacement);
+            replace(rolePlayers, original, replacement);
+            replace(rolesPlayed, original, replacement);
+            replace(attributes, original, replacement);
+            replace(attributesOwned, original, replacement);
+            replace(attributeOwners, original, replacement);
+            replace(stringAttributes, original, replacement);
+            replace(longAttributes, original, replacement);
+            replace(doubleAttributes, original, replacement);
+            replace(booleanAttributes, original, replacement);
+            replace(datetimeAttributes, original, replacement);
+        }
+        
+        private void replace(Set<Label> labels, Label original, Label replacement) {
+            if (labels != null && labels.contains(original)) {
+                labels.remove(original);
+                labels.add(replacement);
+            }
+        }
+
+        public void remove(Label label) {
+            if (label.scope().isPresent()) {
+                resolvedRoleTypeLabels.remove(label);
+                resolvedRoleTypeLabels.forEach((l, resolved) -> resolved.remove(label));
+            }
+            if (relations != null) relations.remove(label);
+            if (roles != null) roles.remove(label);
+            if (rolePlayers != null) rolePlayers.remove(label);
+            if (rolesPlayed != null) rolesPlayed.remove(label);
+            if (attributes != null) attributes.remove(label);
+            if (attributesOwned != null) attributesOwned.remove(label);
+            if (attributeOwners != null) attributeOwners.remove(label);
+            if (stringAttributes != null) stringAttributes.remove(label);
+            if (longAttributes != null) longAttributes.remove(label);
+            if (doubleAttributes != null) doubleAttributes.remove(label);
+            if (booleanAttributes != null) booleanAttributes.remove(label);
+            if (datetimeAttributes != null) datetimeAttributes.remove(label);
+        }
+
+        public void clear() {
+            ownedAttributeTypes.clear();
+            ownersOfAttributeTypes.clear();
+            resolvedRoleTypeLabels.clear();
+            relations = null;
+            roles = null;
+            rolePlayers = null;
+            rolesPlayed = null;
+            attributes = null;
+            attributesOwned = null;
+            attributeOwners = null;
+            stringAttributes = null;
+            longAttributes = null;
+            doubleAttributes = null;
+            booleanAttributes = null;
+            datetimeAttributes = null;
+        }
     }
 
     private static ReadWriteLock newReadWriteLock() {
@@ -429,6 +493,7 @@ public class TypeGraph {
                     this, VertexIID.Type.generate(keyGenerator, encoding), label, scope
             ));
             typesByIID.put(typeVertex.iid(), typeVertex);
+            cache.clear();
             return typeVertex;
         } finally {
             singleLabelLocks.get(scopedLabel).writeLock().unlock();
@@ -448,6 +513,7 @@ public class TypeGraph {
             if (type != null) throw TypeDBException.of(INVALID_SCHEMA_WRITE, newScopedLabel);
             typesByLabel.remove(oldScopedLabel);
             typesByLabel.put(newScopedLabel, vertex);
+            cache.replace(oldScope == null ? Label.of(oldLabel) : Label.of(oldLabel, oldScope), vertex.properLabel());
             return vertex;
         } finally {
             multiLabelLock.writeLock().unlock();
@@ -463,6 +529,7 @@ public class TypeGraph {
 
             typesByLabel.remove(vertex.scopedLabel());
             typesByIID.remove(vertex.iid());
+            cache.remove(vertex.properLabel());
         } finally {
             singleLabelLocks.get(vertex.scopedLabel()).writeLock().unlock();
             multiLabelLock.readLock().unlock();
