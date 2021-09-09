@@ -167,7 +167,7 @@ public class TypeResolver {
 
     private Optional<Map<Identifier.Variable.Retrievable, Set<Label>>> executeTypeResolvers(TraversalBuilder traversalBuilder) {
         return logicCache.resolver().get(traversalBuilder.traversal().structure(), structure ->
-                traversalEng.combination(traversalBuilder.traversal(), concreteTypesOnly(traversalBuilder)).map(result -> {
+                traversalEng.combination(traversalBuilder.traversal(), thingVariableIds(traversalBuilder)).map(result -> {
                             Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
                             result.forEach((id, types) -> {
                                 Optional<Variable> originalVar = traversalBuilder.getOriginalVariable(id);
@@ -182,7 +182,7 @@ public class TypeResolver {
         );
     }
 
-    private Set<Identifier.Variable.Retrievable> concreteTypesOnly(TraversalBuilder traversalBuilder) {
+    private Set<Identifier.Variable.Retrievable> thingVariableIds(TraversalBuilder traversalBuilder) {
         return iterate(traversalBuilder.resolverToOriginal.values()).filter(Variable::isThing).map(var -> {
             assert var.id().isRetrievable();
             return var.id().asRetrievable();
