@@ -135,14 +135,14 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         @Override
-        FunctionalIterator<VertexMap> iterator(GraphManager graphMgr) {
-            return iterator(graphMgr, structures().map(Planner::create).toList(), true, filter());
+        FunctionalIterator<VertexMap> permutation(GraphManager graphMgr) {
+            return permutation(graphMgr, structures().map(Planner::create).toList(), true, filter());
         }
 
         public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(
-                GraphManager graphMgr, Set<Identifier.Variable.Retrievable> concreteTypesOnly) {
+                GraphManager graphMgr, Set<Identifier.Variable.Retrievable> concreteVarIds) {
             return TypeCombinationGetter.get(graphMgr, TypeCombinationProcedure.of(this), parameters(), filter(),
-                    concreteTypesOnly);
+                    concreteVarIds);
         }
 
         @Override
@@ -171,8 +171,8 @@ public abstract class GraphTraversal extends Traversal {
             planners = structures().map(s -> cache.get(s, Planner::create)).toList();
         }
 
-        FunctionalIterator<VertexMap> iterator(GraphManager graphMgr) {
-            return iterator(graphMgr, planners, false, filter());
+        FunctionalIterator<VertexMap> permutation(GraphManager graphMgr) {
+            return permutation(graphMgr, planners, false, filter());
         }
 
         FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Either<Arguments.Query.Producer, Long> context,

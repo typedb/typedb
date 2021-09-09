@@ -68,9 +68,10 @@ public abstract class Traversal {
         return parameters;
     }
 
-    abstract FunctionalIterator<VertexMap> iterator(GraphManager graphMgr);
+    abstract FunctionalIterator<VertexMap> permutation(GraphManager graphMgr);
 
-    FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, List<Planner> planners, boolean singleUse, Set<Identifier.Variable.Retrievable> filter) {
+    FunctionalIterator<VertexMap> permutation(GraphManager graphMgr, List<Planner> planners, boolean singleUse,
+                                              Set<Identifier.Variable.Retrievable> filter) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.get(0).tryOptimise(graphMgr, singleUse);

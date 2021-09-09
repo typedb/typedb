@@ -29,8 +29,6 @@ import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
 import com.vaticle.typedb.core.traversal.procedure.TypeCombinationProcedure;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -46,18 +44,18 @@ public class TypeCombinationGetter {
     private final Traversal.Parameters params;
     private final Map<Identifier, Set<TypeVertex>> combination;
     private final Set<Retrievable> filter;
-    private final Set<Retrievable> concreteTypesOnly;
+    private final Set<Retrievable> concreteVarIds;
 
     private enum Status { CHANGED, UNCHANGED, EMPTY }
 
     private TypeCombinationGetter(GraphManager graphMgr, TypeCombinationProcedure procedure, Traversal.Parameters params,
-                                  Set<Retrievable> filter, Set<Retrievable> concreteTypesOnly) {
-        assert filter.containsAll(concreteTypesOnly);
+                                  Set<Retrievable> filter, Set<Retrievable> concreteVarIds) {
+        assert filter.containsAll(concreteVarIds);
         this.graphMgr = graphMgr;
         this.procedure = procedure;
         this.params = params;
         this.filter = filter;
-        this.concreteTypesOnly = concreteTypesOnly;
+        this.concreteVarIds = concreteVarIds;
         this.combination = new HashMap<>();
     }
 
@@ -141,7 +139,7 @@ public class TypeCombinationGetter {
 
     private FunctionalIterator<TypeVertex> vertexIter(ProcedureVertex.Type vertex) {
         FunctionalIterator<TypeVertex> iterator = vertex.iterator(graphMgr, params);
-        if (vertex.id().isRetrievable() && concreteTypesOnly.contains(vertex.id().asVariable().asRetrievable())) {
+        if (vertex.id().isRetrievable() && concreteVarIds.contains(vertex.id().asVariable().asRetrievable())) {
             iterator = iterator.filter(type -> !type.isAbstract());
         }
         return iterator;
@@ -149,7 +147,7 @@ public class TypeCombinationGetter {
 
     private FunctionalIterator<TypeVertex> branchIter(ProcedureEdge<?, ?> edge, TypeVertex vertex) {
         FunctionalIterator<TypeVertex> iterator = edge.branch(graphMgr, vertex, params).map(Vertex::asType);
-        if (edge.to().id().isRetrievable() && concreteTypesOnly.contains(edge.to().id().asVariable().asRetrievable())) {
+        if (edge.to().id().isRetrievable() && concreteVarIds.contains(edge.to().id().asVariable().asRetrievable())) {
            iterator = iterator.filter(type -> !type.isAbstract());
         }
         return iterator;
