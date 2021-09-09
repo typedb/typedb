@@ -81,11 +81,11 @@ public class TypeResolver {
         this.graphMgr = graphMgr;
     }
 
-    public FunctionalIterator<Map<Identifier.Variable.Name, Label>> namedCombinations(Conjunction conjunction, boolean insertable) {
-        GraphTraversal.Type resolverTraversal = new GraphTraversal.Type();
-        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, graphMgr, resolverTraversal, 0, insertable);
-        resolverTraversal.filter(traversalBuilder.retrievedResolvers());
-        return traversalEng.iterator(traversalBuilder.traversal()).map(vertexMap -> {
+    public FunctionalIterator<Map<Identifier.Variable.Name, Label>> permutations(Conjunction conjunction, boolean insertable) {
+        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
+        GraphTraversal.Type traversal = traversalBuilder.traversal();
+        traversal.filter(traversalBuilder.retrievedResolvers());
+        return traversalEng.iterator(traversal).map(vertexMap -> {
             Map<Identifier.Variable.Name, Label> mapping = new HashMap<>();
             vertexMap.forEach((id, vertex) -> {
                 assert vertex.isType();
@@ -138,13 +138,13 @@ public class TypeResolver {
     }
 
     private void resolveVariableTypes(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
-        GraphTraversal.Type resolverTraversal = new GraphTraversal.Type();
-        TraversalBuilder traversalBuilder = builder(resolverTraversal, conjunction, scopingConjunctions, insertable);
-        resolverTraversal.filter(traversalBuilder.retrievedResolvers());
-        Optional<Map<Identifier.Variable.Retrievable, Set<Label>>> resolvedLabels = executeTypeResolvers(traversalBuilder);
+        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
+        TraversalBuilder scopedBuilder = withScoping(traversalBuilder, scopingConjunctions, insertable);
+        scopedBuilder.traversal().filter(scopedBuilder.retrievedResolvers());
+        Optional<Map<Identifier.Variable.Retrievable, Set<Label>>> resolvedLabels = executeTypeResolvers(scopedBuilder);
         if (resolvedLabels.isEmpty()) conjunction.setCoherent(false);
         else {
-            resolvedLabels.get().forEach((id, labels) -> traversalBuilder.getOriginalVariable(id).ifPresent(variable -> {
+            resolvedLabels.get().forEach((id, labels) -> scopedBuilder.getOriginalVariable(id).ifPresent(variable -> {
                 assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
                 variable.setResolvedTypes(labels);
             }));
@@ -155,24 +155,17 @@ public class TypeResolver {
         return iterate(conjunction.variables()).noneMatch(Variable::isThing);
     }
 
-    private TraversalBuilder builder(GraphTraversal.Type traversal, Conjunction conjunction, List<Conjunction> scopingConjunctions,
-                                     boolean insertable) {
-        TraversalBuilder currentBuilder;
+    private TraversalBuilder withScoping(TraversalBuilder builder, List<Conjunction> scopingConjunctions, boolean insertable) {
+        TraversalBuilder currentBuilder = builder;
         if (!scopingConjunctions.isEmpty()) {
-            Set<Reference.Name> names = iterate(conjunction.variables()).filter(v -> v.reference().isName())
+            Set<Reference.Name> names = iterate(builder.conjunction.variables()).filter(v -> v.reference().isName())
                     .map(v -> v.reference().asName()).toSet();
-            currentBuilder = new TraversalBuilder(scopingConjunctions.get(0), graphMgr, traversal, 0, insertable);
-            for (int i = 1; i < scopingConjunctions.size(); i++) {
-                Conjunction scoping = scopingConjunctions.get(i);
-                if (iterate(scoping.variables()).noneMatch(v -> v.reference().isName() && names.contains(v.reference().asName()))) {
-                    // skip any scoping conjunctions without a named variable in common
-                    continue;
+            for (Conjunction scoping : scopingConjunctions) {
+                // only include conjunctions with a variable in common
+                if (iterate(scoping.variables()).anyMatch(v -> v.reference().isName() && names.contains(v.reference().asName()))) {
+                    currentBuilder = new TraversalBuilder(scoping, currentBuilder, insertable, graphMgr);
                 }
-                currentBuilder = new TraversalBuilder(scoping, graphMgr, traversal, currentBuilder.sysVarCounter(), insertable);
             }
-            currentBuilder = new TraversalBuilder(conjunction, graphMgr, traversal, currentBuilder.sysVarCounter(), insertable);
-        } else {
-            currentBuilder = new TraversalBuilder(conjunction, graphMgr, traversal, 0, insertable);
         }
         return currentBuilder;
     }
@@ -220,20 +213,29 @@ public class TypeResolver {
         private boolean hasRootThing;
         private int sysVarCounter;
 
-        TraversalBuilder(Conjunction conjunction, GraphManager graphMgr, GraphTraversal.Type initialTraversal,
-                         int initialAnonymousVarCounter, boolean insertable) {
+        TraversalBuilder(Conjunction conjunction, boolean insertable, GraphManager graphMgr) {
+            this(conjunction, new GraphTraversal.Type(), 0, insertable, graphMgr);
+        }
+
+        TraversalBuilder(Conjunction conjunction, TraversalBuilder scopingTraversal, boolean insertable, GraphManager graphMgr) {
+            this(conjunction, scopingTraversal.traversal(), scopingTraversal.sysVarCounter(), insertable, graphMgr);
+        }
+
+        private TraversalBuilder(Conjunction conjunction, GraphTraversal.Type initialTraversal, int initialSysVarCounter,
+                                 boolean insertable, GraphManager graphMgr) {
             this.graphMgr = graphMgr;
             this.conjunction = conjunction;
             this.traversal = initialTraversal;
             this.resolverToOriginal = new HashMap<>();
             this.originalToResolver = new HashMap<>();
             this.resolverValueTypes = new HashMap<>();
-            this.sysVarCounter = initialAnonymousVarCounter;
+            this.sysVarCounter = initialSysVarCounter;
             this.insertable = insertable;
             this.hasRootAttribute = false;
             this.hasRootThing = false;
             conjunction.variables().forEach(this::register);
         }
+
 
         public Set<Identifier.Variable.Retrievable> retrievedResolvers() {
             return iterate(resolverToOriginal.keySet()).filter(Identifier::isRetrievable).map(Identifier.Variable::asRetrievable).toSet();
