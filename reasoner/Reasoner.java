@@ -108,7 +108,7 @@ public class Reasoner {
     }
 
     public FunctionalIterator<ConceptMap> execute(Disjunction disjunction, TypeQLMatch.Modifiers modifiers, Context.Query context) {
-        logicMgr.typeResolver().resolve(disjunction);
+        logicMgr.typeResolver().resolveDisjunction(disjunction);
 
         if (!disjunction.isCoherent()) {
             Set<Conjunction> causes = incoherentConjunctions(disjunction);

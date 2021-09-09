@@ -91,7 +91,7 @@ public class Materialiser {
     public Map<Conjunction, FunctionalIterator<ConceptMap>> query(TypeQLMatch inferenceQuery) {
         // TODO: How do we handle disjunctions inside negations and negations in general?
         Disjunction disjunction = Disjunction.create(inferenceQuery.conjunction().normalise());
-        tx.logic().typeResolver().resolve(disjunction);
+        tx.logic().typeResolver().resolveDisjunction(disjunction);
         HashMap<Conjunction, FunctionalIterator<ConceptMap>> conjunctionAnswers = new HashMap<>();
         disjunction.conjunctions().forEach(conjunction -> conjunctionAnswers.put(conjunction, traverse(conjunction)));
         return conjunctionAnswers;

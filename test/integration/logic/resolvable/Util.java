@@ -35,7 +35,7 @@ public class Util {
     public static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
         Disjunction disjunction = Disjunction.create(TypeQL.parsePattern(query).asConjunction().normalise());
         assert disjunction.conjunctions().size() == 1;
-        logicMgr.typeResolver().resolve(disjunction);
+        logicMgr.typeResolver().resolveDisjunction(disjunction);
         return disjunction.conjunctions().get(0);
     }
 

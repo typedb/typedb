@@ -201,13 +201,13 @@ public class Rule {
             throw TypeDBException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
         }
 
-        logicMgr.typeResolver().resolve(when);
+        logicMgr.typeResolver().resolveDisjunction(when);
         return when.conjunctions().get(0);
     }
 
     private Conjunction thenPattern(com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
-        logicMgr.typeResolver().resolveVariables(conj, true);
+        logicMgr.typeResolver().resolveConjunction(conj, true);
         return conj;
     }
 
@@ -401,8 +401,8 @@ public class Rule {
         }
 
         private void validateInsertable(LogicManager logicMgr) {
-            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeResolver().permutations(rule.when, false);
-            Set<Map<Identifier.Variable.Name, Label>> allowedThenCombinations = logicMgr.typeResolver().permutations(rule.then, true).toSet();
+            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeResolver().typePermutations(rule.when, false);
+            Set<Map<Identifier.Variable.Name, Label>> allowedThenCombinations = logicMgr.typeResolver().typePermutations(rule.then, true).toSet();
 
             whenCombinations.forEachRemaining(nameLabelMap -> {
                 if (allowedThenCombinations.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))

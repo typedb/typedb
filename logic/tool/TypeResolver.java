@@ -48,6 +48,7 @@ import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Name;
 import com.vaticle.typeql.lang.common.TypeQLArg.ValueType;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 
@@ -81,12 +82,12 @@ public class TypeResolver {
         this.graphMgr = graphMgr;
     }
 
-    public FunctionalIterator<Map<Identifier.Variable.Name, Label>> permutations(Conjunction conjunction, boolean insertable) {
+    public FunctionalIterator<Map<Name, Label>> typePermutations(Conjunction conjunction, boolean insertable) {
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
         GraphTraversal.Type traversal = traversalBuilder.traversal();
         traversal.filter(traversalBuilder.retrievedResolvers());
         return traversalEng.iterator(traversal).map(vertexMap -> {
-            Map<Identifier.Variable.Name, Label> mapping = new HashMap<>();
+            Map<Name, Label> mapping = new HashMap<>();
             vertexMap.forEach((id, vertex) -> {
                 assert vertex.isType();
                 traversalBuilder.getOriginalVariable(id).map(Variable::id).filter(Identifier::isName)
@@ -96,48 +97,43 @@ public class TypeResolver {
         });
     }
 
-    public void resolveVariableLabels(Conjunction conjunction) {
-        iterate(conjunction.variables()).filter(v -> v.isType() && v.asType().label().isPresent())
-                .forEachRemaining(typeVar -> {
-                    Label label = typeVar.asType().label().get().properLabel();
-                    if (label.scope().isPresent()) {
-                        String scope = label.scope().get();
-                        Set<Label> labels = traversalEng.graph().schema().resolveRoleTypeLabels(label);
-                        if (labels.isEmpty()) throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, label.name(), scope);
-                        typeVar.addResolvedTypes(labels);
-                    } else {
-                        TypeVertex type = traversalEng.graph().schema().getType(label);
-                        if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, label);
-                        typeVar.addResolvedType(label);
-                    }
-                });
+    public void resolveLabels(Conjunction conj) {
+        iterate(conj.variables()).filter(v -> v.isType() && v.asType().label().isPresent()).forEachRemaining(typeVar -> {
+            Label label = typeVar.asType().label().get().properLabel();
+            if (label.scope().isPresent()) {
+                String scope = label.scope().get();
+                Set<Label> labels = traversalEng.graph().schema().resolveRoleTypeLabels(label);
+                if (labels.isEmpty()) throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, label.name(), scope);
+                typeVar.addResolvedTypes(labels);
+            } else {
+                TypeVertex type = traversalEng.graph().schema().getType(label);
+                if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, label);
+                typeVar.addResolvedType(label);
+            }
+        });
     }
 
-    public void resolve(Disjunction disjunction) {
-        resolve(disjunction, new LinkedList<>());
+    public void resolveDisjunction(Disjunction disjunction) {
+        resolveDisjunction(disjunction, new LinkedList<>());
     }
 
-    private void resolve(Disjunction disjunction, List<Conjunction> scopingConjunctions) {
-        disjunction.conjunctions().forEach(conjunction -> resolve(conjunction, scopingConjunctions));
+    private void resolveDisjunction(Disjunction disjunction, List<Conjunction> scopingConjunctions) {
+        disjunction.conjunctions().forEach(conjunction -> {
+            resolveConjunction(conjunction, scopingConjunctions, false);
+            for (Negation negation : conjunction.negations()) {
+                resolveDisjunction(negation.disjunction(), list(scopingConjunctions, conjunction));
+            }
+        });
     }
 
-    private void resolve(Conjunction conjunction, List<Conjunction> scopingConjunctions) {
-        resolveVariables(conjunction, scopingConjunctions, false);
-        for (Negation negation : conjunction.negations()) {
-            resolve(negation.disjunction(), list(scopingConjunctions, conjunction));
-        }
+    public void resolveConjunction(Conjunction conjunction, boolean insertable) {
+        resolveConjunction(conjunction, list(), insertable);
     }
 
-    public void resolveVariables(Conjunction conjunction, boolean insertable) {
-        resolveVariables(conjunction, list(), insertable);
-    }
+    private void resolveConjunction(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
+        resolveLabels(conjunction);
+        if (isSchemaQuery(conjunction)) return;
 
-    private void resolveVariables(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
-        resolveVariableLabels(conjunction);
-        if (!isSchemaQuery(conjunction)) resolveVariableTypes(conjunction, scopingConjunctions, insertable);
-    }
-
-    private void resolveVariableTypes(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
         TraversalBuilder scopedBuilder = withScoping(traversalBuilder, scopingConjunctions, insertable);
         scopedBuilder.traversal().filter(scopedBuilder.retrievedResolvers());
@@ -172,28 +168,26 @@ public class TypeResolver {
 
     private Optional<Map<Identifier.Variable.Retrievable, Set<Label>>> executeTypeResolvers(TraversalBuilder traversalBuilder) {
         return logicCache.resolver().get(traversalBuilder.traversal().structure(), structure ->
-                traversalEng.combination(traversalBuilder.traversal(), concreteTypesOnly(traversalBuilder))
-                        .map(result -> {
-                                    Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
-                                    result.forEach((id, types) -> {
-                                        Optional<Variable> originalVar = traversalBuilder.getOriginalVariable(id);
-                                        if (originalVar.isPresent()) {
-                                            Set<Label> labels = mapping.computeIfAbsent(id, (i) -> new HashSet<>());
-                                            types.forEach(vertex -> labels.add(vertex.properLabel()));
-                                        }
-                                    });
-                                    return mapping;
+                traversalEng.combination(traversalBuilder.traversal(), concreteTypesOnly(traversalBuilder)).map(result -> {
+                            Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
+                            result.forEach((id, types) -> {
+                                Optional<Variable> originalVar = traversalBuilder.getOriginalVariable(id);
+                                if (originalVar.isPresent()) {
+                                    Set<Label> labels = mapping.computeIfAbsent(id, (i) -> new HashSet<>());
+                                    types.forEach(vertex -> labels.add(vertex.properLabel()));
                                 }
-                        )
+                            });
+                            return mapping;
+                        }
+                )
         );
     }
 
     private Set<Identifier.Variable.Retrievable> concreteTypesOnly(TraversalBuilder traversalBuilder) {
-        return iterate(traversalBuilder.resolverToOriginal.values()).filter(Variable::isThing)
-                .map(var -> {
-                    assert var.id().isRetrievable();
-                    return var.id().asRetrievable();
-                }).toSet();
+        return iterate(traversalBuilder.resolverToOriginal.values()).filter(Variable::isThing).map(var -> {
+            assert var.id().isRetrievable();
+            return var.id().asRetrievable();
+        }).toSet();
     }
 
     private static class TraversalBuilder {
