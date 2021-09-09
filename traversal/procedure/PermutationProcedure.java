@@ -29,9 +29,9 @@ import java.util.Set;
 
 public interface PermutationProcedure {
 
-    FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Unrestricted.Parameters params,
+    FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
                                            Set<Identifier.Variable.Retrievable> filter, int parallelisation);
 
-    FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Unrestricted.Parameters params,
+    FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
                                            Set<Identifier.Variable.Retrievable> filter);
 }

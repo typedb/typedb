@@ -88,7 +88,7 @@ public class VertexProcedure implements PermutationProcedure {
     }
 
     @Override
-    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Unrestricted.Parameters params,
+    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
@@ -96,7 +96,7 @@ public class VertexProcedure implements PermutationProcedure {
     }
 
     @Override
-    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Unrestricted.Parameters params,
+    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());

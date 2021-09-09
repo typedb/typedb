@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -170,7 +169,7 @@ public class GraphProcedure implements PermutationProcedure {
     }
 
     @Override
-    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Unrestricted.Parameters params,
+    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
         if (LOG.isDebugEnabled()) {
             LOG.debug(params.toString());
@@ -184,7 +183,7 @@ public class GraphProcedure implements PermutationProcedure {
     }
 
     @Override
-    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Unrestricted.Parameters params,
+    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter) {
         if (LOG.isDebugEnabled()) {
             LOG.debug(params.toString());

@@ -52,7 +52,7 @@ public class RegexConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(GraphTraversal.Unrestricted traversal) {
+    public void addTo(GraphTraversal.Thing traversal) {
         traversal.regex(owner.id(), regex.pattern());
     }
 

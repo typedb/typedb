@@ -102,7 +102,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     }
 
     @Override
-    public void addTo(GraphTraversal.Unrestricted traversal) {
+    public void addTo(GraphTraversal.Thing traversal) {
         // TODO: create vertex properties first, then the vertex itself, then edges
         //       that way, we can make properties to be 'final' objects that are
         //       included in equality and hashCode of vertices

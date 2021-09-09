@@ -45,13 +45,13 @@ public class TraversalEngine {
         return graphMgr;
     }
 
-    public FunctionalProducer<VertexMap> producer(GraphTraversal.Unrestricted traversal, Either<Arguments.Query.Producer, Long> context,
+    public FunctionalProducer<VertexMap> producer(GraphTraversal.Thing traversal, Either<Arguments.Query.Producer, Long> context,
                                                   int parallelisation) {
         traversal.initialise(cache);
         return traversal.producer(graphMgr, context, parallelisation);
     }
 
-    public FunctionalIterator<VertexMap> iterator(GraphTraversal.Unrestricted traversal) {
+    public FunctionalIterator<VertexMap> iterator(GraphTraversal.Thing traversal) {
         traversal.initialise(cache);
         return traversal.iterator(graphMgr);
     }

@@ -157,12 +157,12 @@ public abstract class GraphTraversal extends Traversal {
         }
     }
 
-    public static class Unrestricted extends GraphTraversal {
+    public static class Thing extends GraphTraversal {
 
         private List<Planner> planners;
         private boolean modifiable;
 
-        public Unrestricted() {
+        public Thing() {
             super();
             modifiable = true;
         }
@@ -320,7 +320,7 @@ public abstract class GraphTraversal extends Traversal {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Unrestricted that = (Unrestricted) o;
+            Thing that = (Thing) o;
 
             // We compare this.filter() instead of this.filter, as the property is dynamically calculated
             return (this.structure.equals(that.structure) &&

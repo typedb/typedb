@@ -86,7 +86,7 @@ public class PlaysConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(GraphTraversal.Unrestricted traversal) {
+    public void addTo(GraphTraversal.Thing traversal) {
         if (overridden().isPresent()) throw TypeDBException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
         traversal.plays(owner.id(), roleType.id());
     }
