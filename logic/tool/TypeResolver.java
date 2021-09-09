@@ -134,13 +134,11 @@ public class TypeResolver {
         resolveLabels(conjunction);
         if (isSchemaQuery(conjunction)) return;
 
-        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
-        TraversalBuilder scopedBuilder = withScoping(traversalBuilder, scopingConjunctions, insertable);
-        scopedBuilder.traversal().filter(scopedBuilder.retrievedResolvers());
-        Optional<Map<Identifier.Variable.Retrievable, Set<Label>>> resolvedLabels = executeTypeResolvers(scopedBuilder);
+        TraversalBuilder builder = builder(conjunction, scopingConjunctions, graphMgr, insertable);
+        Optional<Map<Identifier.Variable.Retrievable, Set<Label>>> resolvedLabels = executeTypeResolvers(builder);
         if (resolvedLabels.isEmpty()) conjunction.setCoherent(false);
         else {
-            resolvedLabels.get().forEach((id, labels) -> scopedBuilder.getOriginalVariable(id).ifPresent(variable -> {
+            resolvedLabels.get().forEach((id, labels) -> builder.getOriginalVariable(id).ifPresent(variable -> {
                 assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
                 variable.setResolvedTypes(labels);
             }));
@@ -151,10 +149,10 @@ public class TypeResolver {
         return iterate(conjunction.variables()).noneMatch(Variable::isThing);
     }
 
-    private TraversalBuilder withScoping(TraversalBuilder builder, List<Conjunction> scopingConjunctions, boolean insertable) {
-        TraversalBuilder currentBuilder = builder;
+    private TraversalBuilder builder(Conjunction conjunction, List<Conjunction> scopingConjunctions, GraphManager graphMgr, boolean insertable) {
+        TraversalBuilder currentBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
         if (!scopingConjunctions.isEmpty()) {
-            Set<Reference.Name> names = iterate(builder.conjunction.variables()).filter(v -> v.reference().isName())
+            Set<Reference.Name> names = iterate(currentBuilder.conjunction.variables()).filter(v -> v.reference().isName())
                     .map(v -> v.reference().asName()).toSet();
             for (Conjunction scoping : scopingConjunctions) {
                 // only include conjunctions with a variable in common
@@ -163,6 +161,7 @@ public class TypeResolver {
                 }
             }
         }
+        currentBuilder.traversal().filter(currentBuilder.retrievedResolvers());
         return currentBuilder;
     }
 
