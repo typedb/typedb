@@ -52,14 +52,6 @@ public interface Request {
             return new Visit(sender, receiver, partialAnswer, planIndex);
         }
 
-        public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer) {
-            return new Visit(sender, receiver, partialAnswer, -1);
-        }
-
-        public static Visit create(Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer) {
-            return new Visit(null, receiver, partialAnswer, -1);
-        }
-
         public Actor.Driver<? extends Resolver<?>> receiver() {
             return receiver;
         }

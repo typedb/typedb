@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.RequestFactory;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
@@ -64,8 +65,9 @@ public abstract class SubsumptiveCoordinator<
         if (isTerminated()) return;
         Driver<? extends Resolver<?>> root = fromUpstream.message().partialAnswer().root();
         Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.message().partialAnswer());
-        Request.Visit request = Request.Visit.create(driver(), worker, fromUpstream.message().partialAnswer());
-        visitDownstream(request, tracedFromUpstream(fromUpstream));
+        RequestFactory requestFactory = RequestFactory.create(driver(), worker, fromUpstream.message().partialAnswer());
+        Request.Visit visit = requestFactory.createVisit(fromUpstream.trace());
+        visitDownstream(visit, tracedFromUpstream(fromUpstream));
     }
 
     @Override
@@ -75,8 +77,8 @@ public abstract class SubsumptiveCoordinator<
         if (isTerminated()) return;
         Driver<? extends Resolver<?>> root = fromUpstream.message().visit().partialAnswer().root();
         Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.message().visit().partialAnswer());
-        Request.Visit visit = Request.Visit.create(driver(), worker, fromUpstream.message().visit().partialAnswer());
-        Request.Revisit revisit = Request.Revisit.create(visit, fromUpstream.message().cycles());
+        RequestFactory requestFactory = RequestFactory.create(driver(), worker, fromUpstream.message().visit().partialAnswer());
+        Request.Revisit revisit = requestFactory.createRevisit(fromUpstream.trace(), fromUpstream.message().cycles());
         revisitDownstream(revisit, tracedFromUpstream(fromUpstream));
     }
 
