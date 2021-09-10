@@ -121,88 +121,66 @@ public class TypeGraph {
         private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownedAttributeTypes;
         private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownersOfAttributeTypes;
         private final ConcurrentMap<Label, Set<Label>> resolvedRoleTypeLabels;
-
-        private Set<Label> relations;
-        private Set<Label> roles;
-        private Set<Label> rolePlayers;
-        private Set<Label> rolesPlayed;
-        private Set<Label> attributes;
-        private Set<Label> attributesOwned;
-        private Set<Label> attributeOwners;
-        private Set<Label> stringAttributes;
-        private Set<Label> longAttributes;
-        private Set<Label> doubleAttributes;
-        private Set<Label> booleanAttributes;
-        private Set<Label> datetimeAttributes;
+        private final ConcurrentMap<Encoding.ValueType, Set<TypeVertex>> valueAttributeTypes;
+        private Set<TypeVertex> entityTypes;
+        private Set<TypeVertex> relationTypes;
+        private Set<TypeVertex> roleTypes;
+        private Set<TypeVertex> playerTypes;
+        private Set<TypeVertex> roleTypesPlayed;
+        private Set<TypeVertex> attributeTypes;
+        private Set<TypeVertex> attributeTypesOwned;
+        private Set<TypeVertex> attributeOwnerTypes;
 
         Cache() {
             ownedAttributeTypes = new ConcurrentHashMap<>();
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
             resolvedRoleTypeLabels = new ConcurrentHashMap<>();
+            valueAttributeTypes = new ConcurrentHashMap<>();
         }
 
         public void replace(Label original, Label replacement) {
             if (original.scope().isPresent()) {
                 Set<Label> removed = resolvedRoleTypeLabels.remove(original);
                 if (removed != null) resolvedRoleTypeLabels.put(replacement, removed);
-                resolvedRoleTypeLabels.forEach((l, resolved) -> replace(resolved, original, replacement));
-            }
-            replace(relations, original, replacement);
-            replace(roles, original, replacement);
-            replace(rolePlayers, original, replacement);
-            replace(rolesPlayed, original, replacement);
-            replace(attributes, original, replacement);
-            replace(attributesOwned, original, replacement);
-            replace(attributeOwners, original, replacement);
-            replace(stringAttributes, original, replacement);
-            replace(longAttributes, original, replacement);
-            replace(doubleAttributes, original, replacement);
-            replace(booleanAttributes, original, replacement);
-            replace(datetimeAttributes, original, replacement);
-        }
-        
-        private void replace(Set<Label> labels, Label original, Label replacement) {
-            if (labels != null && labels.contains(original)) {
-                labels.remove(original);
-                labels.add(replacement);
+                resolvedRoleTypeLabels.forEach((l, resolved) -> {
+                    if (resolved != null && resolved.contains(original)) {
+                        resolved.remove(original);
+                        resolved.add(replacement);
+                    }
+                });
             }
         }
 
-        public void remove(Label label) {
-            if (label.scope().isPresent()) {
+        public void remove(TypeVertex vertex) {
+            if (vertex.properLabel().scope().isPresent()) {
+                Label label = vertex.properLabel();
                 resolvedRoleTypeLabels.remove(label);
                 resolvedRoleTypeLabels.forEach((l, resolved) -> resolved.remove(label));
             }
-            if (relations != null) relations.remove(label);
-            if (roles != null) roles.remove(label);
-            if (rolePlayers != null) rolePlayers.remove(label);
-            if (rolesPlayed != null) rolesPlayed.remove(label);
-            if (attributes != null) attributes.remove(label);
-            if (attributesOwned != null) attributesOwned.remove(label);
-            if (attributeOwners != null) attributeOwners.remove(label);
-            if (stringAttributes != null) stringAttributes.remove(label);
-            if (longAttributes != null) longAttributes.remove(label);
-            if (doubleAttributes != null) doubleAttributes.remove(label);
-            if (booleanAttributes != null) booleanAttributes.remove(label);
-            if (datetimeAttributes != null) datetimeAttributes.remove(label);
+            if (entityTypes != null) entityTypes.remove(vertex);
+            if (relationTypes != null) relationTypes.remove(vertex);
+            if (roleTypes != null) roleTypes.remove(vertex);
+            if (playerTypes != null) playerTypes.remove(vertex);
+            if (roleTypesPlayed != null) roleTypesPlayed.remove(vertex);
+            if (attributeTypes != null) attributeTypes.remove(vertex);
+            if (attributeTypesOwned != null) attributeTypesOwned.remove(vertex);
+            if (attributeOwnerTypes != null) attributeOwnerTypes.remove(vertex);
+            valueAttributeTypes.values().forEach(types -> types.remove(vertex));
         }
 
         public void clear() {
             ownedAttributeTypes.clear();
             ownersOfAttributeTypes.clear();
             resolvedRoleTypeLabels.clear();
-            relations = null;
-            roles = null;
-            rolePlayers = null;
-            rolesPlayed = null;
-            attributes = null;
-            attributesOwned = null;
-            attributeOwners = null;
-            stringAttributes = null;
-            longAttributes = null;
-            doubleAttributes = null;
-            booleanAttributes = null;
-            datetimeAttributes = null;
+            entityTypes = null;
+            relationTypes = null;
+            roleTypes = null;
+            playerTypes = null;
+            roleTypesPlayed = null;
+            attributeTypes = null;
+            attributeTypesOwned = null;
+            attributeOwnerTypes = null;
+            valueAttributeTypes.clear();
         }
     }
 
@@ -267,24 +245,70 @@ public class TypeGraph {
         return tree(rootThingType(), v -> v.ins().edge(SUB).from());
     }
 
+    public FunctionalIterator<TypeVertex> getSubtypes(TypeVertex type) {
+        return tree(type, v -> v.ins().edge(SUB).from());
+    }
+
     public FunctionalIterator<TypeVertex> entityTypes() {
-        return tree(rootEntityType(), v -> v.ins().edge(SUB).from());
+        if (cache.entityTypes == null) cache.entityTypes = getSubtypes(rootEntityType()).toSet();
+        return iterate(cache.entityTypes);
     }
 
     public FunctionalIterator<TypeVertex> attributeTypes() {
-        return tree(rootAttributeType(), v -> v.ins().edge(SUB).from());
+        if (cache.attributeTypes == null) cache.attributeTypes = getSubtypes(rootAttributeType()).toSet();
+        return iterate(cache.attributeTypes);
     }
 
-    public FunctionalIterator<TypeVertex> attributeTypes(Encoding.ValueType vt) {
-        return attributeTypes().filter(at -> at.valueType().equals(vt));
+    public FunctionalIterator<TypeVertex> attributeTypes(Encoding.ValueType valueType) {
+        return iterate(cache.valueAttributeTypes.computeIfAbsent(valueType,
+                vt -> attributeTypes().filter(at -> at.valueType().equals(valueType)).toSet()));
     }
 
     public FunctionalIterator<TypeVertex> relationTypes() {
-        return tree(rootRelationType(), v -> v.ins().edge(SUB).from());
+        if (cache.relationTypes == null) cache.relationTypes = getSubtypes(rootRelationType()).toSet();
+        return iterate(cache.relationTypes);
     }
 
     public FunctionalIterator<TypeVertex> roleTypes() {
-        return tree(rootRoleType(), v -> v.ins().edge(SUB).from());
+        if (cache.roleTypes == null) cache.roleTypes = getSubtypes(rootRoleType()).toSet();
+        return iterate(cache.roleTypes);
+    }
+
+    public FunctionalIterator<TypeVertex> playerTypes() {
+        if (cache.playerTypes == null) {
+            cache.playerTypes = getSubtypes(rootThingType())
+                    .filter(type -> type.outs().edge(Encoding.Edge.Type.PLAYS).to().first().isPresent())
+                    .flatMap(this::getSubtypes).toSet();
+        }
+        return iterate(cache.playerTypes);
+    }
+
+    public FunctionalIterator<TypeVertex> roleTypesPlayed() {
+        if (cache.roleTypesPlayed == null) {
+            cache.roleTypesPlayed = getSubtypes(rootRoleType())
+                    .filter(roleType -> roleType.ins().edge(Encoding.Edge.Type.PLAYS).from().first().isPresent())
+                    .toSet();
+        }
+        return iterate(cache.roleTypesPlayed);
+    }
+
+    public FunctionalIterator<TypeVertex> attributeOwnerTypes() {
+        if (cache.attributeOwnerTypes == null) {
+            cache.attributeOwnerTypes = getSubtypes(rootThingType())
+                    .filter(type -> type.outs().edge(OWNS).to().first().isPresent() ||
+                            type.outs().edge(OWNS_KEY).to().first().isPresent())
+                    .flatMap(this::getSubtypes).toSet();
+        }
+        return iterate(cache.attributeOwnerTypes);
+    }
+
+    public FunctionalIterator<TypeVertex> attributeTypesOwned() {
+        if (cache.attributeTypesOwned == null) {
+            cache.attributeTypesOwned = getSubtypes(rootAttributeType())
+                    .filter(attrType -> attrType.ins().edge(OWNS).from().first().isPresent() ||
+                            attrType.ins().edge(OWNS_KEY).from().first().isPresent()).toSet();
+        }
+        return iterate(cache.attributeTypesOwned);
     }
 
     public Set<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
@@ -320,109 +344,6 @@ public class TypeGraph {
         };
         if (isReadOnly) return cache.resolvedRoleTypeLabels.computeIfAbsent(scopedLabel, l -> fn.get());
         else return fn.get();
-    }
-
-    public Set<Label> relations() {
-        if (cache.relations == null) {
-            cache.relations = getSubtypes(getType(RELATION.properLabel())).map(TypeVertex::properLabel).toSet();
-        }
-        return cache.relations;
-    }
-
-    public Set<Label> roles() {
-        if (cache.roles == null) {
-            cache.roles = getSubtypes(getType(ROLE.properLabel())).map(TypeVertex::properLabel).toSet();
-        }
-        return cache.roles;
-    }
-
-    public Set<Label> rolePlayers() {
-        if (cache.rolePlayers == null) {
-            cache.rolePlayers = getSubtypes(getType(THING.properLabel()))
-                    .filter(type -> type.outs().edge(Encoding.Edge.Type.PLAYS).to().first().isPresent())
-                    .flatMap(typePlayingRole -> getSubtypes(typePlayingRole).map(TypeVertex::properLabel)).toSet();
-        }
-        return cache.rolePlayers;
-    }
-
-    public Set<Label> rolesPlayed() {
-        if (cache.rolesPlayed == null) {
-            cache.rolesPlayed = getSubtypes(getType(ROLE.properLabel()))
-                    .filter(roleType -> roleType.ins().edge(Encoding.Edge.Type.PLAYS).from().first().isPresent())
-                    .map(TypeVertex::properLabel).toSet();
-        }
-        return cache.rolesPlayed;
-    }
-
-    public Set<Label> attributes() {
-        if (cache.attributes == null) {
-            cache.attributes = getSubtypes(getType(ATTRIBUTE.properLabel())).map(TypeVertex::properLabel).toSet();
-        }
-        return cache.attributes;
-    }
-
-    public Set<Label> attributeOwners() {
-        if (cache.attributeOwners == null) {
-            cache.attributeOwners = getSubtypes(getType(THING.properLabel()))
-                    .filter(type -> type.outs().edge(OWNS).to().first().isPresent() ||
-                            type.outs().edge(OWNS_KEY).to().first().isPresent())
-                    .flatMap(typeOwningAttr -> getSubtypes(typeOwningAttr).map(TypeVertex::properLabel)).toSet();
-        }
-        return cache.attributeOwners;
-    }
-
-    public Set<Label> attributesOwned() {
-        if (cache.attributesOwned == null) {
-            cache.attributesOwned = getSubtypes(getType(ATTRIBUTE.properLabel()))
-                    .filter(attrType -> attrType.ins().edge(OWNS).from().first().isPresent() ||
-                            attrType.ins().edge(OWNS_KEY).from().first().isPresent())
-                    .map(TypeVertex::properLabel).toSet();
-        }
-        return cache.attributesOwned;
-    }
-
-    public Set<Label> stringAttributes() {
-        if (cache.stringAttributes == null) {
-            cache.stringAttributes = getSubtypes(getType(ATTRIBUTE.properLabel()))
-                    .filter(type -> type.valueType().equals(STRING)).map(TypeVertex::properLabel).toSet();
-        }
-        return cache.stringAttributes;
-    }
-
-    public Set<Label> longAttributes() {
-        if (cache.longAttributes == null) {
-            cache.longAttributes = getSubtypes(getType(ATTRIBUTE.properLabel()))
-                    .filter(type -> type.valueType().equals(LONG)).map(TypeVertex::properLabel).toSet();
-        }
-        return cache.longAttributes;
-    }
-
-    public Set<Label> doubleAttributes() {
-        if (cache.doubleAttributes == null) {
-            cache.doubleAttributes = getSubtypes(getType(ATTRIBUTE.properLabel()))
-                    .filter(type -> type.valueType().equals(DOUBLE)).map(TypeVertex::properLabel).toSet();
-        }
-        return cache.doubleAttributes;
-    }
-
-    public Set<Label> booleanAttributes() {
-        if (cache.booleanAttributes == null) {
-            cache.booleanAttributes = getSubtypes(getType(ATTRIBUTE.properLabel()))
-                    .filter(type -> type.valueType().equals(BOOLEAN)).map(TypeVertex::properLabel).toSet();
-        }
-        return cache.booleanAttributes;
-    }
-
-    public Set<Label> datetimeAttributes() {
-        if (cache.datetimeAttributes == null) {
-            cache.datetimeAttributes = getSubtypes(getType(ATTRIBUTE.properLabel()))
-                    .filter(type -> type.valueType().equals(DATETIME)).map(TypeVertex::properLabel).toSet();
-        }
-        return cache.datetimeAttributes;
-    }
-
-    public FunctionalIterator<TypeVertex> getSubtypes(TypeVertex type) {
-        return tree(type, v -> v.ins().edge(SUB).from());
     }
 
     public Stream<TypeVertex> bufferedTypes() {
@@ -529,7 +450,7 @@ public class TypeGraph {
 
             typesByLabel.remove(vertex.scopedLabel());
             typesByIID.remove(vertex.iid());
-            cache.remove(vertex.properLabel());
+            cache.remove(vertex);
         } finally {
             singleLabelLocks.get(vertex.scopedLabel()).writeLock().unlock();
             multiLabelLock.readLock().unlock();
