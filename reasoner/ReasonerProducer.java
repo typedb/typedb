@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Co
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestFactory;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
@@ -60,7 +59,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final ExplainablesManager explainablesManager;
     private final int computeSize;
     private final Set<Identifier.Variable.Retrievable> filter;
-    private final RequestFactory requestFactory;
+    private final Request.Factory requestFactory;
     private boolean done;
     private Queue<ConceptMap> queue;
     private int requestIdCounter;
@@ -109,9 +108,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         return abs(System.identityHashCode(this));
     }
 
-    private RequestFactory requestFactory() {
+    private Request.Factory requestFactory() {
         Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        return RequestFactory.create(rootResolver, downstream);
+        return Request.Factory.create(rootResolver, downstream);
     }
 
     @Override

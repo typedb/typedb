@@ -17,15 +17,12 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestFactory;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
@@ -39,8 +36,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced.trace;
 
 public abstract class SubsumptiveCoordinator<
         RESOLVER extends SubsumptiveCoordinator<RESOLVER, WORKER>,
@@ -65,7 +60,7 @@ public abstract class SubsumptiveCoordinator<
         if (isTerminated()) return;
         Driver<? extends Resolver<?>> root = fromUpstream.message().partialAnswer().root();
         Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.message().partialAnswer());
-        RequestFactory requestFactory = RequestFactory.create(driver(), worker, fromUpstream.message().partialAnswer());
+        Request.Factory requestFactory = Request.Factory.create(driver(), worker, fromUpstream.message().partialAnswer());
         Request.Visit visit = requestFactory.createVisit(fromUpstream.trace());
         visitDownstream(visit, tracedFromUpstream(fromUpstream));
     }
@@ -77,7 +72,7 @@ public abstract class SubsumptiveCoordinator<
         if (isTerminated()) return;
         Driver<? extends Resolver<?>> root = fromUpstream.message().visit().partialAnswer().root();
         Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.message().visit().partialAnswer());
-        RequestFactory requestFactory = RequestFactory.create(driver(), worker, fromUpstream.message().visit().partialAnswer());
+        Request.Factory requestFactory = Request.Factory.create(driver(), worker, fromUpstream.message().visit().partialAnswer());
         Request.Revisit revisit = requestFactory.createRevisit(fromUpstream.trace(), fromUpstream.message().cycles());
         revisitDownstream(revisit, tracedFromUpstream(fromUpstream));
     }

@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explai
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestFactory;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
@@ -54,7 +53,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     private final int computeSize;
     private final AtomicInteger required;
     private final AtomicInteger processing;
-    private final RequestFactory requestFactory;
+    private final Request.Factory requestFactory;
     private boolean done;
     private int requestTraceIdCounter;
     private Queue<Explanation> queue;
@@ -82,9 +81,9 @@ public class ExplanationProducer implements Producer<Explanation> {
         return abs(System.identityHashCode(this));
     }
 
-    private RequestFactory requestFactory() {
+    private Request.Factory requestFactory() {
         Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
-        return RequestFactory.create(explainer, downstream);
+        return Request.Factory.create(explainer, downstream);
     }
 
     @Override

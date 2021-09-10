@@ -40,16 +40,12 @@ public interface Request {
         protected final AnswerState.Partial<?> partialAnswer;
         protected final int planIndex;
 
-        protected Visit(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                        AnswerState.Partial<?> partialAnswer, int planIndex) {
+        private Visit(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                        AnswerState.Partial<?> partialAnswer, int planIndex, Trace trace) {
             this.sender = sender;
             this.receiver = receiver;
             this.partialAnswer = partialAnswer;
             this.planIndex = planIndex;
-        }
-
-        public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer, int planIndex, Trace trace) {
-            return new Visit(sender, receiver, partialAnswer, planIndex);
         }
 
         public Actor.Driver<? extends Resolver<?>> receiver() {
@@ -64,8 +60,8 @@ public interface Request {
             return partialAnswer;
         }
 
-        public RequestFactory factory() {
-            return RequestFactory.create(sender(), receiver(), partialAnswer(), planIndex());
+        public Factory factory() {
+            return Factory.create(sender(), receiver(), partialAnswer(), planIndex());
         }
 
         @Override
@@ -124,16 +120,9 @@ public interface Request {
             private ToSubsumed(@Nullable Actor.Driver<? extends Resolver<?>> sender,
                                Actor.Driver<? extends Resolver<?>> receiver,
                                @Nullable Actor.Driver<? extends Resolver<?>> subsumer,
-                               AnswerState.Partial<?> partialAnswer, int planIndex) {
-                super(sender, receiver, partialAnswer, planIndex);
+                               AnswerState.Partial<?> partialAnswer, int planIndex, Trace trace) {
+                super(sender, receiver, partialAnswer, planIndex, trace);
                 this.subsumer = subsumer;
-            }
-
-            public static Visit create(Actor.Driver<? extends Resolver<?>> sender,
-                                       Actor.Driver<? extends Resolver<?>> receiver,
-                                       Actor.Driver<? extends Resolver<?>> subsumer,
-                                       AnswerState.Partial<?> partialAnswer) {
-                return new ToSubsumed(sender, receiver, subsumer, partialAnswer, -1);
             }
 
             public Actor.Driver<? extends Resolver<?>> subsumer() {
@@ -158,14 +147,9 @@ public interface Request {
 
             private ToSubsumer(@Nullable Actor.Driver<? extends Resolver<?>> sender,
                                Actor.Driver<? extends Resolver<?>> receiver,
-                               ToSubsumed toSubsumed, AnswerState.Partial<?> partialAnswer, int planIndex) {
-                super(sender, receiver, partialAnswer, planIndex);
+                               ToSubsumed toSubsumed, AnswerState.Partial<?> partialAnswer, int planIndex, Trace trace) {
+                super(sender, receiver, partialAnswer, planIndex, trace);
                 this.toSubsumed = toSubsumed;
-            }
-
-            public static ToSubsumer create(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<?
-                    extends Resolver<?>> receiver, ToSubsumed toSubsumed, AnswerState.Partial<?> partialAnswer) {
-                return new ToSubsumer(sender, receiver, toSubsumed, partialAnswer, -1);
             }
 
             public ToSubsumed toSubsumed() {
@@ -227,6 +211,78 @@ public interface Request {
             return "Revisit{" +
                     "visit=" + visit +
                     ", cycles=" + cycles +
+                    '}';
+        }
+    }
+
+    class Factory {
+        protected final Actor.Driver<? extends Resolver<?>> sender;
+        protected final Actor.Driver<? extends Resolver<?>> receiver;
+        protected final AnswerState.Partial<?> partialAnswer;
+        protected final int planIndex;
+
+        private final int hash;
+
+        protected Factory(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                          AnswerState.Partial<?> partialAnswer, int planIndex) {
+            this.sender = sender;
+            this.receiver = receiver;
+            this.partialAnswer = partialAnswer;
+            this.planIndex = planIndex;
+            this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer);
+        }
+
+        public static Factory create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                                     AnswerState.Partial<?> partialAnswer, int planIndex) {
+            return new Factory(sender, receiver, partialAnswer, planIndex);
+        }
+
+        public static Factory create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                                     AnswerState.Partial<?> partialAnswer) {
+            return new Factory(sender, receiver, partialAnswer, -1);
+        }
+
+        public static Factory create(Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer) {
+            return new Factory(null, receiver, partialAnswer, -1);
+        }
+
+        public static Factory of(Visit request) {
+            return Factory.create(request.sender(), request.receiver(), request.partialAnswer(), request.planIndex());
+        }
+
+        public Visit createVisit(Trace trace) {
+            return new Visit(sender, receiver, partialAnswer, planIndex, trace);
+        }
+
+        public Revisit createRevisit(Trace trace, Set<Response.Cycle.Origin> cycles) {
+            return new Revisit(createVisit(trace), cycles);
+        }
+
+        public int planIndex() {
+            return planIndex;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Factory factory = (Factory) o;
+            return Objects.equals(sender, factory.sender) &&
+                    Objects.equals(receiver, factory.receiver) &&
+                    Objects.equals(partialAnswer, factory.partialAnswer);
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+
+        @Override
+        public String toString() {
+            return "Factory{" +
+                    "sender=" + sender +
+                    ", receiver=" + receiver +
+                    ", partial=" + partialAnswer +
                     '}';
         }
     }

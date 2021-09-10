@@ -31,7 +31,6 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Co
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestFactory;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
@@ -490,7 +489,7 @@ public class ResolutionTest {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
-        RequestFactory requestFactory = RequestFactory.create(root, downstream);
+        Request.Factory requestFactory = Request.Factory.create(root, downstream);
         for (int i = 0; i < n; i++) {
             Trace trace = Trace.create(0, i);
             root.execute(actor -> actor.receiveVisit(trace(requestFactory.createVisit(trace), trace)));

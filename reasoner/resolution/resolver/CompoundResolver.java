@@ -19,7 +19,6 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestFactory;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
@@ -80,7 +79,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     protected void receiveFail(Traced<Response.Fail> fromDownstream) {
         LOG.trace("{}: received Exhausted from {}", name(), fromDownstream);
         if (isTerminated()) return;
-        RequestFactory toDownstream = RequestFactory.of(fromDownstream.message().sourceRequest());
+        Request.Factory toDownstream = Request.Factory.of(fromDownstream.message().sourceRequest());
         Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
         RequestState requestState = requestStates.get(fromUpstream.message().visit());
         requestState.downstreamManager().remove(toDownstream);
@@ -91,7 +90,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     protected void receiveCycle(Traced<Response.Cycle> fromDownstream) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        RequestFactory cyclingDownstream = RequestFactory.of(fromDownstream.message().sourceRequest());
+        Request.Factory cyclingDownstream = Request.Factory.of(fromDownstream.message().sourceRequest());
         Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
         RequestState requestState = this.requestStates.get(fromUpstream.message().visit());
         if (requestState.downstreamManager().contains(cyclingDownstream)) {

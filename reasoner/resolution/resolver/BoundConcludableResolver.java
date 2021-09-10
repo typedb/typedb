@@ -27,7 +27,6 @@ import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestFactory;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
@@ -141,8 +140,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         requestStates.clear();
     }
 
-    protected List<RequestFactory> ruleDownstreams(Request.Visit fromUpstream) {
-        List<RequestFactory> downstreams = new ArrayList<>();
+    protected List<Request.Factory> ruleDownstreams(Request.Visit fromUpstream) {
+        List<Request.Factory> downstreams = new ArrayList<>();
         Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
         for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry:
                 parent().actor().conclusionResolvers().entrySet()) { // TODO: Reaching through to the actor is not ideal
@@ -150,7 +149,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             Rule rule = conclusionResolver.actor().conclusion().rule();  // TODO: Reaching through to the actor is not ideal
             for (Unifier unifier : entry.getValue()) {
                 partialAnswer.toDownstream(unifier, rule).ifPresent(
-                        conclusion -> downstreams.add(RequestFactory.create(driver(), conclusionResolver, conclusion)));
+                        conclusion -> downstreams.add(Request.Factory.create(driver(), conclusionResolver, conclusion)));
             }
         }
         return downstreams;
@@ -259,7 +258,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         private final ConcludableDownstreamManager downstreamManager;
 
         protected ExploringRequestState(Request.Visit fromUpstream, AnswerCache<ANSWER> answerCache,
-                                        List<RequestFactory> ruleDownstreams, boolean deduplicate,
+                                        List<Request.Factory> ruleDownstreams, boolean deduplicate,
                                         UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate, upstreamBehaviour, singleAnswerRequired);
             this.downstreamManager = new ConcludableDownstreamManager(ruleDownstreams);
@@ -316,13 +315,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         @Override
         void receiveFail(Traced<Response.Fail> fromDownstream) {
-            downstreamManager().remove(RequestFactory.of(fromDownstream.message().sourceRequest()));
+            downstreamManager().remove(Request.Factory.of(fromDownstream.message().sourceRequest()));
             sendNextMessage(fromDownstream.trace());
         }
 
         @Override
         void receiveCycle(Traced<Response.Cycle> fromDownstream) {
-            RequestFactory cyclingDownstream = RequestFactory.of(fromDownstream.message().sourceRequest());
+            Request.Factory cyclingDownstream = Request.Factory.of(fromDownstream.message().sourceRequest());
             if (downstreamManager().contains(cyclingDownstream)) {
                 downstreamManager().block(cyclingDownstream, fromDownstream.message().origins());
                 downstreamManager().unblockOutdated();
@@ -332,7 +331,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         class ConcludableDownstreamManager extends DownstreamManager {
 
-            public ConcludableDownstreamManager(List<RequestFactory> ruleDownstreams) {
+            public ConcludableDownstreamManager(List<Request.Factory> ruleDownstreams) {
                 super(ruleDownstreams);
             }
 
