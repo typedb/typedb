@@ -147,14 +147,14 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected void answerToUpstream(AnswerState answer, Traced<Request> fromUpstream) {
         assert answer.isPartial();
-        Traced<Answer> response = trace(Answer.create(fromUpstream.message().visit().factory(), answer.asPartial()), fromUpstream.trace());
+        Traced<Answer> response = trace(Answer.create(fromUpstream.message().visit().factory(), answer.asPartial(), fromUpstream.trace()), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(response);
         fromUpstream.message().visit().sender().execute(actor -> actor.receiveAnswer(response));
     }
 
     protected void failToUpstream(Traced<Request> fromUpstream) {
-        Traced<Response.Fail> response = trace(new Response.Fail(fromUpstream.message().visit().factory()), fromUpstream.trace());
+        Traced<Response.Fail> response = trace(new Response.Fail(fromUpstream.message().visit().factory(), fromUpstream.trace()), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(response);
         fromUpstream.message().visit().sender().execute(actor -> actor.receiveFail(response));
@@ -162,7 +162,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected void cycleToUpstream(Traced<Request> fromUpstream, Set<Response.Cycle.Origin> cycleOrigins) {
         assert !fromUpstream.message().visit().partialAnswer().parent().isTop();
-        Traced<Response.Cycle> response = trace(new Response.Cycle(fromUpstream.message().visit().factory(), cycleOrigins), fromUpstream.trace());
+        Traced<Response.Cycle> response = trace(new Response.Cycle(fromUpstream.message().visit().factory(), cycleOrigins, fromUpstream.trace()), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response);
         fromUpstream.message().visit().sender().execute(actor -> actor.receiveCycle(response));
@@ -171,7 +171,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     protected void cycleToUpstream(Traced<Request> fromUpstream, int numAnswersSeen) {
         assert !fromUpstream.message().visit().partialAnswer().parent().isTop();
         Traced<Response.Cycle> response = trace(
-                new Response.Cycle.Origin(fromUpstream.message().visit().factory(), numAnswersSeen), fromUpstream.trace());
+                new Response.Cycle.Origin(fromUpstream.message().visit().factory(), numAnswersSeen, fromUpstream.trace()), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response);
         fromUpstream.message().visit().sender().execute(actor -> actor.receiveCycle(response));

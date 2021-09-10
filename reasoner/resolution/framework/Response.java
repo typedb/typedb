@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.resolution.framework;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 
 import java.util.Objects;
 import java.util.Set;
@@ -36,6 +37,8 @@ public interface Response {
     boolean isAnswer();
 
     boolean isFail();
+
+    Trace trace();
 
     default Answer asAnswer() {
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Answer.class));
@@ -56,14 +59,16 @@ public interface Response {
     class Answer implements Response {
         private final Request.Factory sourceRequest;
         private final Partial<?> answer;
+        private final Trace trace;
 
-        private Answer(Request.Factory sourceRequest, Partial<?> answer) {
+        private Answer(Request.Factory sourceRequest, Partial<?> answer, Trace trace) {
             this.sourceRequest = sourceRequest;
             this.answer = answer;
+            this.trace = trace;
         }
 
-        public static Answer create(Request.Factory sourceRequest, Partial<?> answer) {
-            return new Answer(sourceRequest, answer);
+        public static Answer create(Request.Factory sourceRequest, Partial<?> answer, Trace trace) {
+            return new Answer(sourceRequest, answer, trace);
         }
 
         @Override
@@ -73,6 +78,11 @@ public interface Response {
 
         public Partial<?> answer() {
             return answer;
+        }
+
+        @Override
+        public Trace trace() {
+            return trace;
         }
 
         public int planIndex() {
@@ -119,14 +129,21 @@ public interface Response {
 
     class Fail implements Response {
         private final Request.Factory sourceRequest;
+        private final Trace trace;
 
-        public Fail(Request.Factory sourceRequest) {
+        public Fail(Request.Factory sourceRequest, Trace trace) {
             this.sourceRequest = sourceRequest;
+            this.trace = trace;
         }
 
         @Override
         public Request.Factory sourceRequest() {
             return sourceRequest;
+        }
+
+        @Override
+        public Trace trace() {
+            return trace;
         }
 
         @Override
@@ -156,20 +173,28 @@ public interface Response {
     class Cycle implements Response {
 
         private final Request.Factory sourceRequest;
+        private final Trace trace;
         protected Set<Origin> origins;
 
-        public Cycle(Request.Factory sourceRequest, Set<Origin> origins) {
+        public Cycle(Request.Factory sourceRequest, Set<Origin> origins, Trace trace) {
             this.sourceRequest = sourceRequest;
             this.origins = origins;
+            this.trace = trace;
         }
 
-        private Cycle(Request.Factory sourceRequest) {
+        private Cycle(Request.Factory sourceRequest, Trace trace) {
             this.sourceRequest = sourceRequest;
+            this.trace = trace;
         }
 
         @Override
         public Request.Factory sourceRequest() {
             return sourceRequest;
+        }
+
+        @Override
+        public Trace trace() {
+            return trace;
         }
 
         @Override
@@ -204,8 +229,8 @@ public interface Response {
 
             private final int numAnswersSeen;
 
-            public Origin(Request.Factory sourceRequest, int numAnswersSeen) {
-                super(sourceRequest);
+            public Origin(Request.Factory sourceRequest, int numAnswersSeen, Trace trace) {
+                super(sourceRequest, trace);
                 this.origins = set();
                 this.numAnswersSeen = numAnswersSeen;
             }
