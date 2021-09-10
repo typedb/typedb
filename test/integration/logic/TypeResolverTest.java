@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.logic;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
-import com.vaticle.typedb.core.logic.tool.TypeResolver;
+import com.vaticle.typedb.core.logic.tool.TypeInference;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.rocks.RocksSession;
@@ -114,10 +114,10 @@ public class TypeResolverTest {
     public void schema_query_not_resolved_beyond_labels() throws IOException {
         define_standard_schema("basic-schema");
         String queryString = "match $p sub person, owns $a;";
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
         assertTrue(disjunction.isCoherent());
 
         Map<String, Set<String>> expected = new HashMap<>() {{
@@ -133,10 +133,10 @@ public class TypeResolverTest {
     public void isa_inference() throws IOException {
         define_standard_schema("basic-schema");
         String queryString = "match $p isa person;";
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("person", "man", "woman"));
@@ -149,11 +149,11 @@ public class TypeResolverTest {
     @Test
     public void isa_explicit_inference() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match $p isa! person; ";
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("person"));
@@ -166,7 +166,7 @@ public class TypeResolverTest {
     @Test
     public void is_inference() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match" +
                 "  $p isa entity;" +
@@ -174,7 +174,7 @@ public class TypeResolverTest {
                 "  $q isa mammal;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expectedExhaustive = new HashMap<>() {{
             put("$p", set("mammal", "person", "man", "woman", "dog"));
@@ -189,12 +189,12 @@ public class TypeResolverTest {
     @Test
     public void has_inference() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match $p has name 'bob';";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("person", "man", "woman", "dog"));
@@ -219,13 +219,13 @@ public class TypeResolverTest {
                         "  height sub attribute, value double;" +
                         "  "
         );
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match" +
                 "  $a has $b;" +
                 "  $b has $a;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$a", set("nickname", "name"));
@@ -249,7 +249,7 @@ public class TypeResolverTest {
                         "  conversion-rate sub attribute, value double;" +
                         "  height sub attribute, value double;"
         );
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match" +
                 "  $a has $b;" +
                 "  $b has $c;" +
@@ -257,7 +257,7 @@ public class TypeResolverTest {
                 "  $d has $a;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expectedExhaustive = new HashMap<>() {{
             put("$a", set("name", "surname", "nickname", "middlename"));
@@ -272,12 +272,12 @@ public class TypeResolverTest {
     @Test
     public void has_inference_variable_with_attribute_type() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match $p has name $a;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("person", "man", "woman", "dog"));
@@ -291,14 +291,14 @@ public class TypeResolverTest {
     @Test
     public void has_inference_variable_without_attribute_type() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match" +
                 "  $p isa shape;" +
                 "  $p has $a;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("triangle", "right-angled-triangle", "square"));
@@ -318,13 +318,13 @@ public class TypeResolverTest {
                         "  weight sub attribute, value double;" +
                         "  name sub attribute, value string;"
         );
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match" +
                 "  $p has $a;" +
                 "  $a = 'bob';";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("person"));
@@ -342,11 +342,11 @@ public class TypeResolverTest {
                                      " name sub attribute, value string;"
         );
 
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match $x = 1; $y = 1.0; $z = 'bob';";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("house-number", "length"));
@@ -359,12 +359,12 @@ public class TypeResolverTest {
     @Test
     public void relation_concrete_role_concrete() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match $r (wife: $yoko) isa marriage;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$yoko", set("woman"));
@@ -379,12 +379,12 @@ public class TypeResolverTest {
     @Test
     public void relation_variable_role_concrete_relation_hidden_variable() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match $r ($role: $yoko) isa marriage;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$yoko", set("person", "man", "woman"));
@@ -399,12 +399,12 @@ public class TypeResolverTest {
     @Test
     public void relation_variable_role_variable_relation_named_variable() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match $r (wife: $yoko) isa $m;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$yoko", set("woman"));
@@ -438,11 +438,11 @@ public class TypeResolverTest {
                                      " hetero-marriage sub marriage," +
                                      "  relates husband as spouse," +
                                      "  relates wife as spouse;");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match $r (spouse: $yoko, $role: $john) isa $m; $john isa man;";
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$yoko", set("person", "woman", "man"));
@@ -460,12 +460,12 @@ public class TypeResolverTest {
     @Test
     public void relation_anon_isa() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match (wife: $yoko);";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$yoko", set("woman"));
@@ -479,12 +479,12 @@ public class TypeResolverTest {
     @Test
     public void no_role_type() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match ($yoko) isa marriage;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$yoko", set("man", "woman", "person"));
@@ -498,12 +498,12 @@ public class TypeResolverTest {
     @Test
     public void relation_multiple_roles() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match $r (husband: $john, $role: $yoko, $a) isa marriage;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$yoko", set("person", "man", "woman"));
@@ -521,14 +521,14 @@ public class TypeResolverTest {
     @Test
     public void has_reverse() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match" +
                 "  $p isa! person;" +
                 "  $p has $a;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$a", set("name", "email"));
@@ -542,13 +542,13 @@ public class TypeResolverTest {
     @Test
     public void negations_ignored() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match" +
                 "  $p isa person;" +
                 "  not {$p isa man;};";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("person", "man", "woman"));
@@ -568,13 +568,13 @@ public class TypeResolverTest {
                         "  greek sub man;" +
                         "  socrates sub greek;"
         );
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match" +
                 "  $p isa man;" +
                 "  man sub $q;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$p", set("man", "greek", "socrates"));
@@ -588,12 +588,12 @@ public class TypeResolverTest {
     @Test
     public void test_type_var_with_label() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match $t type shape;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$t", set("shape"));
@@ -605,11 +605,11 @@ public class TypeResolverTest {
     @Test
     public void plays_hierarchy() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match (spouse: $john) isa marriage;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$john", set("person", "man", "woman"));
@@ -632,14 +632,14 @@ public class TypeResolverTest {
                         "  weight sub attribute, value long, abstract;" +
                         "  leg-weight sub weight;"
         );
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match" +
                 "  $a has weight $c;" +
                 "  $b has leg-weight 5;" +
                 "  $p has weight $c;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$a", set("person", "chair"));
@@ -659,12 +659,12 @@ public class TypeResolverTest {
         define_custom_schema("define " +
                                      "unit sub attribute, value string, owns unit, owns ref;" +
                                      "ref sub attribute, value long;");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match" +
                 "  $a has $a;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
         Map<String, Set<String>> expectedExhaustive = new HashMap<>() {{
             put("$a", set("unit"));
         }};
@@ -675,12 +675,12 @@ public class TypeResolverTest {
     @Test
     public void all_things_is_empty_set() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match $x isa thing;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("animal", "mammal", "reptile", "tortoise", "person", "man", "woman", "dog", "name", "email",
@@ -702,12 +702,12 @@ public class TypeResolverTest {
                         "  woman-name sub attribute, value string;" +
                         ""
         );
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match $x isa $t; $y isa $t; $x has man-name 'bob'; $y has woman-name 'alice';";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expectedExhaustive = new HashMap<>() {{
             put("$x", set("man"));
@@ -732,7 +732,7 @@ public class TypeResolverTest {
                         "  greek sub man;" +
                         "  socrates sub greek;"
         );
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match $x isa $y;" +
                 "  $y sub $z;" +
@@ -740,7 +740,7 @@ public class TypeResolverTest {
                 "  $w sub person;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("person", "man", "greek", "socrates"));
@@ -777,7 +777,7 @@ public class TypeResolverTest {
                         "  marriage sub relation, relates husband, relates wife, owns marriage-attr; " +
                         "  ownership sub relation, relates pet, relates owner, owns ownership-attr;"
         );
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match " +
                 "  $a isa $t; " +
                 "  $b isa $t; " +
@@ -789,7 +789,7 @@ public class TypeResolverTest {
                 "  $b has right-attr true;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$t", set("animal", "person"));
@@ -805,9 +805,9 @@ public class TypeResolverTest {
     public void multiple_anonymous_vars() throws IOException {
         define_standard_schema("basic-schema");
         String queryString = "match $a has name 'fido'; $a has label 'poodle';";
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$a", set("dog"));
@@ -824,13 +824,13 @@ public class TypeResolverTest {
     public void matching_rp_in_relation_that_cant_play_that_role_sets_conjunction_not_satisfiable() throws IOException {
         define_standard_schema("test-type-resolution");
 
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match " +
                 " $x isa company;" +
                 " ($x) isa friendship;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
         assertFalse(disjunction.isCoherent());
     }
 
@@ -843,11 +843,11 @@ public class TypeResolverTest {
                                      " person sub entity, plays marriage:spouse, plays hetero-marriage:husband," +
                                      "   plays hetero-marriage:wife;"
         );
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match $m (spouse: $x, spouse: $y) isa marriage;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("person"));
@@ -862,11 +862,11 @@ public class TypeResolverTest {
     @Test
     public void converts_root_types() throws IOException {
         define_standard_schema("test-type-resolution");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String relationString = "match $x isa relation;";
 
         Disjunction relationDisjunction = createDisjunction(relationString);
-        typeResolver.resolveDisjunction(relationDisjunction);
+        typeInference.infer(relationDisjunction);
         Map<String, Set<String>> relationExpected = new HashMap<>() {{
             put("$x", set("friendship", "employment"));
             put("$_relation", set("relation"));
@@ -875,7 +875,7 @@ public class TypeResolverTest {
 
         String attributeString = "match $x isa attribute;";
         Disjunction attributeDisjunction = createDisjunction(attributeString);
-        typeResolver.resolveDisjunction(attributeDisjunction);
+        typeInference.infer(attributeDisjunction);
         Map<String, Set<String>> attributeExpected = new HashMap<>() {{
             put("$x", set("name", "age", "ref"));
             put("$_attribute", set("attribute"));
@@ -885,7 +885,7 @@ public class TypeResolverTest {
 
         String entityString = "match $x isa entity;";
         Disjunction entityDisjunction = createDisjunction(entityString);
-        typeResolver.resolveDisjunction(entityDisjunction);
+        typeInference.infer(entityDisjunction);
         Map<String, Set<String>> entityExpected = new HashMap<>() {{
             put("$x", set("person", "company"));
             put("$_entity", set("entity"));
@@ -894,7 +894,7 @@ public class TypeResolverTest {
 
         String roleString = "match ($role: $x) isa relation;";
         Disjunction roleDisjunction = createDisjunction(roleString);
-        typeResolver.resolveDisjunction(roleDisjunction);
+        typeInference.infer(roleDisjunction);
         Map<String, Set<String>> roleExpected = new HashMap<>() {{
             put("$role", set("friendship:friend", "employment:employer", "employment:employee", "relation:role"));
             put("$x", set("person", "company"));
@@ -905,7 +905,7 @@ public class TypeResolverTest {
 
         String thingString = "match $x isa thing;";
         Disjunction thingDisjunction = createDisjunction(thingString);
-        typeResolver.resolveDisjunction(thingDisjunction);
+        typeInference.infer(thingDisjunction);
 
         Map<String, Set<String>> thingExpected = new HashMap<>() {{
             put("$x", set("person", "company", "friendship", "employment", "name", "age", "ref"));
@@ -918,7 +918,7 @@ public class TypeResolverTest {
     public void infers_value_type_recursively() throws IOException {
         define_standard_schema("basic-schema");
 
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match " +
                 " $x = $y;" +
                 " $y = $z;" +
@@ -926,7 +926,7 @@ public class TypeResolverTest {
                 " $w = 1;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("perimeter", "area", "hypotenuse-length"));
@@ -953,7 +953,7 @@ public class TypeResolverTest {
                         "  weight sub attribute, value double, owns height;" +
                         "  ");
 
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match " +
                 " $x = 'bob';" +
                 " $y = $x;" +
@@ -961,7 +961,7 @@ public class TypeResolverTest {
                 " $y has $x;";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("nickname", "name"));
@@ -974,22 +974,22 @@ public class TypeResolverTest {
     @Test
     public void multiple_value_types_returns_unsatisfiable_error() throws IOException {
         define_standard_schema("basic-schema");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match $x = 2; $x = 'bob';";
         Disjunction disjunction = createDisjunction(queryString);
 
         assertThrows(
-                () -> typeResolver.resolveDisjunction(disjunction)
+                () -> typeInference.infer(disjunction)
         );
     }
 
     @Test
     public void infer_is_attribute_from_ownership() throws IOException {
         define_standard_schema("test-type-resolution");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match $x has $y;";
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("person", "company", "friendship", "employment"));
@@ -1002,10 +1002,10 @@ public class TypeResolverTest {
     @Test
     public void infer_is_attribute_from_having_value() throws IOException {
         define_standard_schema("test-type-resolution");
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match $x = $y;";
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("name", "age", "ref"));
@@ -1022,11 +1022,11 @@ public class TypeResolverTest {
                                      " name sub attribute, value string;"
         );
 
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match $x has name 'bob';";
 
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
 
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("person"));
@@ -1045,17 +1045,17 @@ public class TypeResolverTest {
                                      " business sub relation, relates partner;"
         );
 
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match (partner: $x);";
         Disjunction disjunction = createDisjunction(queryString);
         Conjunction conjunction = disjunction.conjunctions().get(0);
-        typeResolver.resolveLabels(conjunction);
+        typeInference.propagateLabels(conjunction);
 
         Set<String> expectedLabels = set("partnership:partner", "business:partner");
 
         assertEquals(expectedLabels, resolvedTypeMap(conjunction).get("$_relation:partner"));
 
-        typeResolver.resolveConjunction(conjunction, false);
+        typeInference.infer(conjunction, false);
         Set<String> expectedResolvedTypes = set("partnership:partner");
 
         assertEquals(expectedResolvedTypes, resolvedTypeMap(disjunction.conjunctions().get(0)).get("$_relation:partner"));
@@ -1065,9 +1065,9 @@ public class TypeResolverTest {
     public void roles_can_handle_type_constraints() throws IOException {
         define_standard_schema("basic-schema");
         String queryString = "match ($role: $x) isa $y; $role type marriage:wife;";
-        TypeResolver typeResolver = transaction.logic().typeResolver();
+        TypeInference typeInference = transaction.logic().typeInference();
         Disjunction disjunction = createDisjunction(queryString);
-        typeResolver.resolveDisjunction(disjunction);
+        typeInference.infer(disjunction);
         HashMap<String, Set<String>> expected = new HashMap<>() {{
             put("$y", set("marriage", "relation", "thing"));
             put("$x", set("woman"));
@@ -1098,7 +1098,7 @@ public class TypeResolverTest {
                                      " maiden-name sub name, value string;");
         String queryString = "match $x isa woman, has name 'smith';";
         Disjunction disjunction = createDisjunction(queryString);
-        transaction.logic().typeResolver().resolveDisjunction(disjunction);
+        transaction.logic().typeInference().infer(disjunction);
 
         assertThrows(() -> transaction.logic().putRule(
                 "women-called-smith",
@@ -1114,7 +1114,7 @@ public class TypeResolverTest {
                                      " marriage sub partnership, relates husband as partner, relates wife as partner;");
         String queryString = "match $x isa person; (wife: $x) isa partnership;";
         Disjunction disjunction = createDisjunction(queryString);
-        transaction.logic().typeResolver().resolveDisjunction(disjunction);
+        transaction.logic().typeInference().infer(disjunction);
 
         assertThrows(() -> transaction.logic().putRule(
                 "marriage-rule",
@@ -1130,7 +1130,7 @@ public class TypeResolverTest {
                                      " marriage sub partnership, relates husband as partner, relates wife as partner;");
         String queryString = "match $x isa person; (partner: $x) isa marriage;";
         Disjunction disjunction = createDisjunction(queryString);
-        transaction.logic().typeResolver().resolveDisjunction(disjunction);
+        transaction.logic().typeInference().infer(disjunction);
 
         assertThrows(() -> transaction.logic().putRule(
                 "marriage-rule",
@@ -1160,7 +1160,7 @@ public class TypeResolverTest {
 
         String minimallyRestricted = "match $x isa person; not { ($x) isa marriage; };";
         Disjunction disjunction = createDisjunction(minimallyRestricted);
-        transaction.logic().typeResolver().resolveDisjunction(disjunction);
+        transaction.logic().typeInference().infer(disjunction);
         HashMap<String, Set<String>> expected = new HashMap<>() {{
             put("$x", set("person", "woman"));
             put("$_0", set("marriage"));
@@ -1171,7 +1171,7 @@ public class TypeResolverTest {
 
         String restricted = "match $x isa woman; not { ($x) isa marriage; };";
         Disjunction restrictedDisjunction = createDisjunction(restricted);
-        transaction.logic().typeResolver().resolveDisjunction(restrictedDisjunction);
+        transaction.logic().typeInference().infer(restrictedDisjunction);
         expected = new HashMap<>() {{
             put("$x", set("woman"));
             put("$_0", set("marriage"));
@@ -1213,7 +1213,7 @@ public class TypeResolverTest {
                 "              ($flt, $ques) isa fault-identification;" +
                 "          };";
         Disjunction disjunction = createDisjunction(query);
-        transaction.logic().typeResolver().resolveDisjunction(disjunction);
+        transaction.logic().typeInference().infer(disjunction);
         assertTrue(disjunction.conjunctions().get(0).negations().iterator().next().disjunction().conjunctions().get(0).isCoherent());
     }
 }

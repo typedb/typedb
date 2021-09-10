@@ -71,13 +71,13 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ATTRIBUTE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.THING;
 
-public class TypeResolver {
+public class TypeInference {
 
     private final TraversalEngine traversalEng;
     private final LogicCache logicCache;
     private final GraphManager graphMgr;
 
-    public TypeResolver(LogicCache logicCache, TraversalEngine traversalEng, GraphManager graphMgr) {
+    public TypeInference(LogicCache logicCache, TraversalEngine traversalEng, GraphManager graphMgr) {
         this.traversalEng = traversalEng;
         this.logicCache = logicCache;
         this.graphMgr = graphMgr;
@@ -98,7 +98,7 @@ public class TypeResolver {
         });
     }
 
-    public void resolveLabels(Conjunction conj) {
+    public void propagateLabels(Conjunction conj) {
         iterate(conj.variables()).filter(v -> v.isType() && v.asType().label().isPresent()).forEachRemaining(typeVar -> {
             Label label = typeVar.asType().label().get().properLabel();
             if (label.scope().isPresent()) {
@@ -114,25 +114,25 @@ public class TypeResolver {
         });
     }
 
-    public void resolveDisjunction(Disjunction disjunction) {
-        resolveDisjunction(disjunction, new LinkedList<>());
+    public void infer(Disjunction disjunction) {
+        infer(disjunction, new LinkedList<>());
     }
 
-    private void resolveDisjunction(Disjunction disjunction, List<Conjunction> scopingConjunctions) {
+    private void infer(Disjunction disjunction, List<Conjunction> scopingConjunctions) {
         disjunction.conjunctions().forEach(conjunction -> {
-            resolveConjunction(conjunction, scopingConjunctions, false);
+            infer(conjunction, scopingConjunctions, false);
             for (Negation negation : conjunction.negations()) {
-                resolveDisjunction(negation.disjunction(), list(scopingConjunctions, conjunction));
+                infer(negation.disjunction(), list(scopingConjunctions, conjunction));
             }
         });
     }
 
-    public void resolveConjunction(Conjunction conjunction, boolean insertable) {
-        resolveConjunction(conjunction, list(), insertable);
+    public void infer(Conjunction conjunction, boolean insertable) {
+        infer(conjunction, list(), insertable);
     }
 
-    private void resolveConjunction(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
-        resolveLabels(conjunction);
+    private void infer(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
+        propagateLabels(conjunction);
         if (isSchemaQuery(conjunction)) return;
 
         TraversalBuilder builder = builder(conjunction, scopingConjunctions, graphMgr, insertable);

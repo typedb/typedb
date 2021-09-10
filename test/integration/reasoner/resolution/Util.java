@@ -26,7 +26,7 @@ public class Util {
 
     public static Disjunction resolvedDisjunction(String query, LogicManager logicMgr) {
         Disjunction disjunction = Disjunction.create(TypeQL.parsePattern(query).asConjunction().normalise());
-        logicMgr.typeResolver().resolveDisjunction(disjunction);
+        logicMgr.typeInference().infer(disjunction);
         return disjunction;
     }
 

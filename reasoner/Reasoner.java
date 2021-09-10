@@ -108,15 +108,17 @@ public class Reasoner {
     }
 
     public FunctionalIterator<ConceptMap> execute(Disjunction disjunction, TypeQLMatch.Modifiers modifiers, Context.Query context) {
-        logicMgr.typeResolver().resolveDisjunction(disjunction);
+        resolveAndValidate(disjunction);
+        if (mayReason(disjunction, context)) return executeReasoner(disjunction, filter(modifiers.filter()), context);
+        else return executeTraversal(disjunction, context, filter(modifiers.filter()));
+    }
 
+    private void resolveAndValidate(Disjunction disjunction) {
+        logicMgr.typeInference().infer(disjunction);
         if (!disjunction.isCoherent()) {
             Set<Conjunction> causes = incoherentConjunctions(disjunction);
             throw TypeDBException.of(UNSATISFIABLE_PATTERN, disjunction, causes);
         }
-
-        if (mayReason(disjunction, context)) return executeReasoner(disjunction, filter(modifiers.filter()), context);
-        else return executeTraversal(disjunction, context, filter(modifiers.filter()));
     }
 
     private Set<Identifier.Variable.Retrievable> filter(List<UnboundVariable> typeQLVars) {

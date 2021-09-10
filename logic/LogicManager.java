@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
-import com.vaticle.typedb.core.logic.tool.TypeResolver;
+import com.vaticle.typedb.core.logic.tool.TypeInference;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
@@ -52,20 +52,20 @@ public class LogicManager {
 
     private final GraphManager graphMgr;
     private final ConceptManager conceptMgr;
-    private final TypeResolver typeResolver;
-    private LogicCache logicCache;
+    private final TypeInference typeInference;
+    private final LogicCache logicCache;
 
     public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
-        this.typeResolver = new TypeResolver(logicCache, traversalEng, graphMgr);
+        this.typeInference = new TypeInference(logicCache, traversalEng, graphMgr);
     }
 
     GraphManager graph() { return graphMgr; }
 
-    public TypeResolver typeResolver() {
-        return typeResolver;
+    public TypeInference typeInference() {
+        return typeInference;
     }
 
     public void deleteAndInvalidateRule(Rule rule) {
