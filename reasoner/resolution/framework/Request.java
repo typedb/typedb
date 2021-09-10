@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
@@ -26,8 +25,6 @@ import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Tr
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
-
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public interface Request {
 
@@ -97,76 +94,6 @@ public interface Request {
                     '}';
         }
 
-        public boolean isToSubsumed() {
-            return false;
-        }
-
-        public ToSubsumed asToSubsumed() {
-            throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
-        public boolean isToSubsumer() {
-            return false;
-        }
-
-        public ToSubsumer asToSubsumer() {
-            throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
-        public static class ToSubsumed extends Visit {
-
-            private final Actor.Driver<? extends Resolver<?>> subsumer;
-
-            private ToSubsumed(@Nullable Actor.Driver<? extends Resolver<?>> sender,
-                               Actor.Driver<? extends Resolver<?>> receiver,
-                               @Nullable Actor.Driver<? extends Resolver<?>> subsumer,
-                               AnswerState.Partial<?> partialAnswer, int planIndex, Trace trace) {
-                super(sender, receiver, partialAnswer, planIndex, trace);
-                this.subsumer = subsumer;
-            }
-
-            public Actor.Driver<? extends Resolver<?>> subsumer() {
-                return subsumer;
-            }
-
-            @Override
-            public boolean isToSubsumed() {
-                return true;
-            }
-
-            @Override
-            public ToSubsumed asToSubsumed() {
-                return this;
-            }
-
-        }
-
-        public static class ToSubsumer extends Visit {
-
-            private final ToSubsumed toSubsumed;
-
-            private ToSubsumer(@Nullable Actor.Driver<? extends Resolver<?>> sender,
-                               Actor.Driver<? extends Resolver<?>> receiver,
-                               ToSubsumed toSubsumed, AnswerState.Partial<?> partialAnswer, int planIndex, Trace trace) {
-                super(sender, receiver, partialAnswer, planIndex, trace);
-                this.toSubsumed = toSubsumed;
-            }
-
-            public ToSubsumed toSubsumed() {
-                return toSubsumed;
-            }
-
-            @Override
-            public boolean isToSubsumer() {
-                return true;
-            }
-
-            @Override
-            public ToSubsumer asToSubsumer() {
-                return this;
-            }
-
-        }
     }
 
     class Revisit implements Request {
