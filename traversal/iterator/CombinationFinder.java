@@ -37,7 +37,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 
-public class TypeCombinationGetter {
+public class CombinationFinder {
 
     private final GraphManager graphMgr;
     private final CombinationProcedure procedure;
@@ -48,8 +48,8 @@ public class TypeCombinationGetter {
 
     private enum Status { CHANGED, UNCHANGED, EMPTY }
 
-    private TypeCombinationGetter(GraphManager graphMgr, CombinationProcedure procedure, Set<Retrievable> filter,
-                                  Set<Retrievable> concreteVarIds) {
+    private CombinationFinder(GraphManager graphMgr, CombinationProcedure procedure, Set<Retrievable> filter,
+                              Set<Retrievable> concreteVarIds) {
         assert filter.containsAll(concreteVarIds);
         this.graphMgr = graphMgr;
         this.procedure = procedure;
@@ -61,10 +61,10 @@ public class TypeCombinationGetter {
 
     public static Optional<Map<Retrievable, Set<TypeVertex>>> get(GraphManager graphMgr, CombinationProcedure procedure,
                                                                   Set<Retrievable> filter, Set<Retrievable> concreteTypesOnly) {
-        return new TypeCombinationGetter(graphMgr, procedure, filter, concreteTypesOnly).combination();
+        return new CombinationFinder(graphMgr, procedure, filter, concreteTypesOnly).combination();
     }
 
-    public Optional<Map<Retrievable, Set<TypeVertex>>> combination() {
+    private Optional<Map<Retrievable, Set<TypeVertex>>> combination() {
         for (Identifier startId : procedure.startIds()) {
             initialise(startId);
             Status status = Status.CHANGED;
