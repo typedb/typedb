@@ -42,20 +42,20 @@ public class CombinationProcedure {
     CombinationProcedure(GraphTraversal.Type traversal) {
         this.traversal = traversal;
         this.graphs = new HashMap<>();
-        computeForwardBackward();
+        generateForwardBackward();
     }
 
     public static CombinationProcedure of(GraphTraversal.Type traversal) {
         return new CombinationProcedure(traversal);
     }
 
-    private void computeForwardBackward() {
+    private void generateForwardBackward() {
         for (Structure structure : traversal.structure().asGraphs()) {
             StructureVertex.Type startVertex = structure.vertices().iterator().next().asType();
             ReachableGraph reachableGraph = new ReachableGraph();
             graphs.put(startVertex.id(), reachableGraph);
             Set<StructureEdge<?, ?>> visitedEdges = new HashSet<>();
-            visitBfs(startVertex, visitedEdges, true, reachableGraph);
+            visitBFS(startVertex, visitedEdges, true, reachableGraph);
         }
     }
 
@@ -88,12 +88,12 @@ public class CombinationProcedure {
         return graphs.get(startId).reverseEdges.get(vertex);
     }
 
-    private void visitBfs(StructureVertex.Type structureVertex, Set<StructureEdge<?, ?>> visitedEdges,
+    private void visitBFS(StructureVertex.Type structureVertex, Set<StructureEdge<?, ?>> visitedEdges,
                           boolean isStart, ReachableGraph reachableGraph) {
         ProcedureVertex.Type procedureVertex = reachableGraph.vertex(structureVertex, isStart);
         Set<StructureVertex.Type> next = visitOut(procedureVertex, structureVertex, visitedEdges, reachableGraph);
         next.addAll(visitIn(procedureVertex, structureVertex, visitedEdges, reachableGraph));
-        next.forEach(vertex -> visitBfs(vertex, visitedEdges, false, reachableGraph));
+        next.forEach(vertex -> visitBFS(vertex, visitedEdges, false, reachableGraph));
     }
 
 
