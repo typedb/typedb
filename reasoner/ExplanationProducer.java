@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explai
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.RequestFactory;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
@@ -53,6 +54,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     private final int computeSize;
     private final AtomicInteger required;
     private final AtomicInteger processing;
+    private final RequestFactory requestFactory;
     private boolean done;
     private int requestTraceIdCounter;
     private Queue<Explanation> queue;
@@ -71,12 +73,18 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.requestTraceIdCounter = 0;
         this.id = id();
+        this.requestFactory = requestFactory();
 
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
     private int id() {
         return abs(System.identityHashCode(this));
+    }
+
+    private RequestFactory requestFactory() {
+        Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
+        return RequestFactory.create(explainer, downstream);
     }
 
     @Override
@@ -92,13 +100,9 @@ public class ExplanationProducer implements Producer<Explanation> {
         processing.addAndGet(toRequest);
     }
 
-    private Traced<Request.Visit> createExplanationRequest(int explainRequestId) {
-        Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
-        return trace(Request.Visit.create(explainer, downstream), Trace.create(id, explainRequestId));
-    }
-
     private void requestExplanation() {
-        Traced<Request.Visit> explainRequest = createExplanationRequest(requestTraceIdCounter);
+        Trace trace = Trace.create(id, requestTraceIdCounter);
+        Traced<Request.Visit> explainRequest = trace(requestFactory.createVisit(trace), trace);
         if (options.traceInference()) ResolutionTracer.get().start(explainRequest);
         explainer.execute(explainer -> explainer.receiveVisit(explainRequest));
         requestTraceIdCounter += 1;

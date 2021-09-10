@@ -19,7 +19,7 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
+import com.vaticle.typedb.core.reasoner.resolution.framework.RequestFactory;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
@@ -47,9 +47,9 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
 
     protected void nextAnswer(Traced<Request> fromUpstream, RequestState requestState) {
         if (requestState.downstreamManager().hasNextVisit()) {
-            visitDownstream(requestState.downstreamManager().nextVisit(), fromUpstream);
+            visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream.trace()), fromUpstream);
         } else if (requestState.downstreamManager().hasNextRevisit()) {
-            revisitDownstream(requestState.downstreamManager().nextRevisit(), fromUpstream);
+            revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream.trace()), fromUpstream);
         } else if (requestState.downstreamManager().hasNextBlocked()) {
             cycleToUpstream(fromUpstream, requestState.downstreamManager().blockers());
         } else {
@@ -80,7 +80,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     protected void receiveFail(Traced<Response.Fail> fromDownstream) {
         LOG.trace("{}: received Exhausted from {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Downstream toDownstream = Downstream.of(fromDownstream.message().sourceRequest());
+        RequestFactory toDownstream = RequestFactory.of(fromDownstream.message().sourceRequest());
         Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
         RequestState requestState = requestStates.get(fromUpstream.message().visit());
         requestState.downstreamManager().remove(toDownstream);
@@ -91,7 +91,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     protected void receiveCycle(Traced<Response.Cycle> fromDownstream) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Downstream cyclingDownstream = Downstream.of(fromDownstream.message().sourceRequest());
+        RequestFactory cyclingDownstream = RequestFactory.of(fromDownstream.message().sourceRequest());
         Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
         RequestState requestState = this.requestStates.get(fromUpstream.message().visit());
         if (requestState.downstreamManager().contains(cyclingDownstream)) {

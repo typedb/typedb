@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Co
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.RequestFactory;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
@@ -59,6 +60,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final ExplainablesManager explainablesManager;
     private final int computeSize;
     private final Set<Identifier.Variable.Retrievable> filter;
+    private final RequestFactory requestFactory;
     private boolean done;
     private Queue<ConceptMap> queue;
     private int requestIdCounter;
@@ -80,6 +82,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.filter = filter;
         this.requestIdCounter = 0;
         this.id = abs(UUID.randomUUID().hashCode());
+        this.requestFactory = requestFactory();
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -98,11 +101,17 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.filter = filter;
         this.requestIdCounter = 0;
         this.id = id();
+        this.requestFactory = requestFactory();
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
     private int id() {
         return abs(System.identityHashCode(this));
+    }
+
+    private RequestFactory requestFactory() {
+        Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
+        return RequestFactory.create(rootResolver, downstream);
     }
 
     @Override
@@ -159,13 +168,9 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         }
     }
 
-    private Traced<Request.Visit> createResolveRequest(int requestId) {
-        Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        return trace(Request.Visit.create(rootResolver, downstream), Trace.create(id, requestId));
-    }
-
     private void requestAnswer() {
-        Traced<Request.Visit> resolveRequest = createResolveRequest(requestIdCounter);
+        Trace trace = Trace.create(id, requestIdCounter);
+        Traced<Request.Visit> resolveRequest = trace(requestFactory.createVisit(trace), trace);
         if (options.traceInference()) ResolutionTracer.get().start(resolveRequest);
         rootResolver.execute(actor -> actor.receiveVisit(resolveRequest));
         requestIdCounter += 1;

@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.resolution.framework;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -47,7 +48,7 @@ public interface Request {
             this.planIndex = planIndex;
         }
 
-        public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer, int planIndex) {
+        public static Visit create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer, int planIndex, Trace trace) {
             return new Visit(sender, receiver, partialAnswer, planIndex);
         }
 
@@ -69,6 +70,10 @@ public interface Request {
 
         public AnswerState.Partial<?> partialAnswer() {
             return partialAnswer;
+        }
+
+        public RequestFactory factory() {
+            return RequestFactory.create(sender(), receiver(), partialAnswer(), planIndex());
         }
 
         @Override

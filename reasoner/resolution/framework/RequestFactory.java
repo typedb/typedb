@@ -20,11 +20,12 @@ package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 
 import java.util.Objects;
 import java.util.Set;
 
-public class Downstream {
+public class RequestFactory {
     protected final Actor.Driver<? extends Resolver<?>> sender;
     protected final Actor.Driver<? extends Resolver<?>> receiver;
     protected final AnswerState.Partial<?> partialAnswer;
@@ -32,8 +33,8 @@ public class Downstream {
 
     private final int hash;
 
-    protected Downstream(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                       AnswerState.Partial<?> partialAnswer, int planIndex) {
+    protected RequestFactory(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                             AnswerState.Partial<?> partialAnswer, int planIndex) {
         this.sender = sender;
         this.receiver = receiver;
         this.partialAnswer = partialAnswer;
@@ -41,30 +42,30 @@ public class Downstream {
         this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer);
     }
 
-    public static Downstream create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                       AnswerState.Partial<?> partialAnswer, int planIndex) {
-        return new Downstream(sender, receiver, partialAnswer, planIndex);
+    public static RequestFactory create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                                        AnswerState.Partial<?> partialAnswer, int planIndex) {
+        return new RequestFactory(sender, receiver, partialAnswer, planIndex);
     }
 
-    public static Downstream create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                       AnswerState.Partial<?> partialAnswer) {
-        return new Downstream(sender, receiver, partialAnswer, -1);
+    public static RequestFactory create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                                        AnswerState.Partial<?> partialAnswer) {
+        return new RequestFactory(sender, receiver, partialAnswer, -1);
     }
 
-    public static Downstream of(Request.Visit request) {
-        return Downstream.create(request.sender(), request.receiver(), request.partialAnswer(), request.planIndex());
+    public static RequestFactory create(Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer) {
+        return new RequestFactory(null, receiver, partialAnswer, -1);
     }
 
-    public Request.Visit toVisit() {
-        return Request.Visit.create(sender, receiver, partialAnswer, planIndex);
+    public static RequestFactory of(Request.Visit request) {
+        return RequestFactory.create(request.sender(), request.receiver(), request.partialAnswer(), request.planIndex());
     }
 
-    public Request.Revisit toRevisit(Set<Response.Cycle.Origin> cycles) {
-        return Request.Revisit.create(toVisit(), cycles);
+    public Request.Visit createVisit(Trace trace) {
+        return Request.Visit.create(sender, receiver, partialAnswer, planIndex, trace);
     }
 
-    public AnswerState.Partial<?> partialAnswer() {
-        return partialAnswer;
+    public Request.Revisit createRevisit(Trace trace, Set<Response.Cycle.Origin> cycles) {
+        return Request.Revisit.create(createVisit(trace), cycles);
     }
 
     public int planIndex() {
@@ -75,7 +76,7 @@ public class Downstream {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Downstream downstream = (Downstream) o;
+        RequestFactory downstream = (RequestFactory) o;
         return Objects.equals(sender, downstream.sender) &&
                 Objects.equals(receiver, downstream.receiver) &&
                 Objects.equals(partialAnswer, downstream.partialAnswer);
@@ -88,7 +89,7 @@ public class Downstream {
 
     @Override
     public String toString() {
-        return "Downstream{" +
+        return "RequestFactory{" +
                 "sender=" + sender +
                 ", receiver=" + receiver +
                 ", partial=" + partialAnswer +

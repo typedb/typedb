@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
@@ -120,8 +121,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         return Traced.trace(fromUpstream.message(), fromUpstream.trace());
     }
 
-    protected void visitDownstream(Downstream downstream, Traced<Request> fromUpstream) {
-        visitDownstream(downstream.toVisit(), fromUpstream);
+    protected void visitDownstream(RequestFactory downstream, Traced<Request> fromUpstream) {
+        visitDownstream(downstream.createVisit(fromUpstream.trace()), fromUpstream);
     }
 
     protected void visitDownstream(Request.Visit visit, Traced<Request> fromUpstream) {
@@ -279,9 +280,9 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     }
 
     public static class DownstreamManager {
-        protected final List<Downstream> visits;
-        protected Map<Downstream, Set<Response.Cycle.Origin>> revisits;
-        protected Map<Downstream, Set<Response.Cycle.Origin>> blocked;
+        protected final List<RequestFactory> visits;
+        protected Map<RequestFactory, Set<Response.Cycle.Origin>> revisits;
+        protected Map<RequestFactory, Set<Response.Cycle.Origin>> blocked;
 
         public DownstreamManager() {
             this.visits = new ArrayList<>();
@@ -289,20 +290,20 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             this.blocked = new LinkedHashMap<>();
         }
 
-        public DownstreamManager(List<Downstream> visits) {
+        public DownstreamManager(List<RequestFactory> visits) {
             this.visits = visits;
             this.revisits = new LinkedHashMap<>();
             this.blocked = new LinkedHashMap<>();
         }
 
-        public Request.Visit nextVisit() {
-            return visits.get(0).toVisit();
+        public Request.Visit nextVisit(Trace trace) {
+            return visits.get(0).createVisit(trace);
         }
 
-        public Request.Revisit nextRevisit() {
-            Optional<Downstream> downstream = iterate(revisits.keySet()).first();
+        public Request.Revisit nextRevisit(Trace trace) {
+            Optional<RequestFactory> downstream = iterate(revisits.keySet()).first();
             assert downstream.isPresent();
-            return downstream.get().toRevisit(revisits.get(downstream.get()));
+            return downstream.get().createRevisit(trace, revisits.get(downstream.get()));
         }
 
         public boolean hasNextVisit() {
@@ -317,16 +318,16 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             return !blocked.isEmpty();
         }
 
-        public boolean contains(Downstream downstream) {
+        public boolean contains(RequestFactory downstream) {
             return visits.contains(downstream) || revisits.containsKey(downstream) || blocked.containsKey(downstream);
         }
 
-        public void add(Downstream downstream) {
+        public void add(RequestFactory downstream) {
             assert !(visits.contains(downstream)) : "downstream answer producer already contains this request";
             visits.add(downstream);
         }
 
-        public void remove(Downstream downstream) {
+        public void remove(RequestFactory downstream) {
             visits.remove(downstream);
             revisits.remove(downstream);
             blocked.remove(downstream);
@@ -342,7 +343,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
         }
 
-        public void block(Downstream toBlock, Set<Response.Cycle.Origin> blockers) {
+        public void block(RequestFactory toBlock, Set<Response.Cycle.Origin> blockers) {
             assert !blockers.isEmpty();
             assert contains(toBlock);
             visits.remove(toBlock);
@@ -352,7 +353,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
         public void unblock(Set<Response.Cycle.Origin> cycles) {
             assert !cycles.isEmpty();
-            Set<Downstream> toRemove = new HashSet<>();
+            Set<RequestFactory> toRemove = new HashSet<>();
             blocked.forEach((downstream, blockers) -> {
                 assert !visits.contains(downstream);
                 Set<Response.Cycle.Origin> blockersToRevisit = new HashSet<>(cycles);

@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
+import com.vaticle.typedb.core.reasoner.resolution.framework.RequestFactory;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
@@ -91,7 +91,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
             Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
                     .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
-            Downstream request = Downstream.create(driver(), conjunctionResolver, downstream);
+            RequestFactory request = RequestFactory.create(driver(), conjunctionResolver, downstream);
             requestState.downstreamManager().add(request);
         }
         return requestState;

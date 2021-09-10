@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
+import com.vaticle.typedb.core.reasoner.resolution.framework.RequestFactory;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
@@ -106,7 +106,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         //  requests into the sub system at once!
         assert fromUpstream.message().partialAnswer().isCompound();
         Compound.Nestable downstreamPartial = fromUpstream.message().partialAnswer().asCompound().filterToNestable(negated.retrieves());
-        visitDownstream(Downstream.create(driver(), this.downstream, downstreamPartial), tracedFromUpstream(fromUpstream));
+        visitDownstream(RequestFactory.create(driver(), this.downstream, downstreamPartial), tracedFromUpstream(fromUpstream));
         boundsState.setRequested();
     }
 

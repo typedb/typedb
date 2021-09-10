@@ -32,7 +32,7 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Downstream;
+import com.vaticle.typedb.core.reasoner.resolution.framework.RequestFactory;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
@@ -78,7 +78,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Downstream toDownstream = Downstream.of(fromDownstream.message().sourceRequest());
+        RequestFactory toDownstream = RequestFactory.of(fromDownstream.message().sourceRequest());
         Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
         Request.Visit upstreamVisit = fromUpstream.message().visit();
         RequestState requestState = requestStates.get(upstreamVisit);
@@ -117,7 +117,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         Resolvable<?> nextResolvable = plan.get(nextResolverIndex);
         ResolverRegistry.ResolverView nextPlannedDownstream = downstreamResolvers.get(nextResolvable);
         final Partial<?> downstreamAns = toDownstream(fromDownstream.message().answer().asCompound(), nextPlannedDownstream, nextResolvable);
-        Downstream downstream = Downstream.create(driver(), nextPlannedDownstream.resolver(), downstreamAns, nextResolverIndex);
+        RequestFactory downstream = RequestFactory.create(driver(), nextPlannedDownstream.resolver(), downstreamAns, nextResolverIndex);
         visitDownstream(downstream, trace(fromUpstream, fromDownstream.trace()));
         // negated requests can be used twice in a parallel setting, and return the same answer twice
         if (!nextResolvable.isNegated() || (nextResolvable.isNegated() && !requestState.downstreamManager().contains(downstream))) {
@@ -130,7 +130,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         LOG.trace("{}: Receiving Exhausted: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Downstream downstream = Downstream.of(fromDownstream.message().sourceRequest());
+        RequestFactory downstream = RequestFactory.of(fromDownstream.message().sourceRequest());
         Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
         RequestState requestState = this.requestStates.get(fromUpstream.message().visit());
         requestState.downstreamManager().remove(downstream);
@@ -176,7 +176,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     private void initialiseRequestState(RequestState requestState, Request.Visit fromUpstream, Plans.Plan plan) {
         ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
         Partial<?> downstream = toDownstream(fromUpstream.partialAnswer().asCompound(), childResolver, plan.get(0));
-        requestState.downstreamManager().add(Downstream.create(driver(), childResolver.resolver(), downstream, 0));
+        requestState.downstreamManager().add(RequestFactory.create(driver(), childResolver.resolver(), downstream, 0));
     }
 
     private Partial<?> toDownstream(Partial.Compound<?, ?> partialAnswer, ResolverRegistry.ResolverView nextDownstream,
