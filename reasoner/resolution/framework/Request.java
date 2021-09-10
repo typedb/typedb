@@ -86,12 +86,13 @@ public interface Request {
             Visit visit = (Visit) o;
             return Objects.equals(sender, visit.sender) &&
                     Objects.equals(receiver, visit.receiver) &&
-                    Objects.equals(partialAnswer, visit.partialAnswer());
+                    Objects.equals(partialAnswer, visit.partialAnswer) &&
+                    Objects.equals(trace, visit.trace);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(this.sender, this.receiver, this.partialAnswer);
+            return Objects.hash(this.sender, this.receiver, this.partialAnswer, this.trace);
         }
 
         @Override
@@ -100,6 +101,7 @@ public interface Request {
                     "sender=" + sender +
                     ", receiver=" + receiver +
                     ", partial=" + partialAnswer +
+                    ", trace=" + trace +
                     '}';
         }
 
@@ -164,13 +166,13 @@ public interface Request {
 
         private final int hash;
 
-        protected Factory(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+        protected Factory(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
                           AnswerState.Partial<?> partialAnswer, int planIndex) {
             this.sender = sender;
             this.receiver = receiver;
             this.partialAnswer = partialAnswer;
             this.planIndex = planIndex;
-            this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer);
+            this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer, this.planIndex);
         }
 
         public static Factory create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
@@ -220,9 +222,10 @@ public interface Request {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Factory factory = (Factory) o;
-            return Objects.equals(sender, factory.sender) &&
-                    Objects.equals(receiver, factory.receiver) &&
-                    Objects.equals(partialAnswer, factory.partialAnswer);
+            return planIndex == factory.planIndex &&
+                    Objects.equals(sender, factory.sender) &&
+                    receiver.equals(factory.receiver) &&
+                    partialAnswer.equals(factory.partialAnswer);
         }
 
         @Override
@@ -235,7 +238,8 @@ public interface Request {
             return "Factory{" +
                     "sender=" + sender +
                     ", receiver=" + receiver +
-                    ", partial=" + partialAnswer +
+                    ", partialAnswer=" + partialAnswer +
+                    ", planIndex=" + planIndex +
                     '}';
         }
     }

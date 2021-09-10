@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
@@ -51,20 +50,20 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     }
 
     @Override
-    protected void receiveAnswer(Traced<Response.Answer> fromDownstream) {
+    protected void receiveAnswer(Response.Answer fromDownstream) {
         LOG.trace("{}: received answer: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
-        RequestState requestState = requestStates.get(fromUpstream.message().visit().factory());
+        Request fromUpstream = upstreamRequest(fromDownstream);
+        RequestState requestState = requestStates.get(fromUpstream.visit().factory());
 
-        assert fromDownstream.message().answer().isCompound();
-        AnswerState answer = toUpstreamAnswer(fromDownstream.message().answer().asCompound(), fromDownstream.message());
+        assert fromDownstream.answer().isCompound();
+        AnswerState answer = toUpstreamAnswer(fromDownstream.answer().asCompound(), fromDownstream);
         boolean acceptedAnswer = tryAcceptUpstreamAnswer(answer, fromUpstream);
         if (!acceptedAnswer) nextAnswer(fromUpstream, requestState);
     }
 
-    protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Traced<Request> fromUpstream);
+    protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream);
 
     protected abstract AnswerState toUpstreamAnswer(Compound<?, ?> answer, Response.Answer fromDownstream);
 
@@ -110,7 +109,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         }
 
         @Override
-        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Traced<Request> fromUpstream) {
+        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream) {
             answerToUpstream(upstreamAnswer, fromUpstream);
             return true;
         }

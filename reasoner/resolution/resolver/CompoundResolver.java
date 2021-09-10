@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import org.slf4j.Logger;
@@ -44,7 +43,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         this.isInitialised = false;
     }
 
-    protected void nextAnswer(Traced<Request> fromUpstream, RequestState requestState) {
+    protected void nextAnswer(Request fromUpstream, RequestState requestState) {
         if (requestState.downstreamManager().hasNextVisit()) {
             visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream.trace()), fromUpstream);
         } else if (requestState.downstreamManager().hasNextRevisit()) {
@@ -57,44 +56,44 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     }
 
     @Override
-    public void receiveVisit(Traced<Request.Visit> fromUpstream) {
+    public void receiveVisit(Request.Visit fromUpstream) {
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
-        RequestState requestState = requestStates.computeIfAbsent(fromUpstream.message().factory(), this::requestStateCreate);
-        nextAnswer(tracedFromUpstream(fromUpstream), requestState);
+        RequestState requestState = requestStates.computeIfAbsent(fromUpstream.factory(), this::requestStateCreate);
+        nextAnswer(fromUpstream, requestState);
     }
 
     @Override
-    protected void receiveRevisit(Traced<Request.Revisit> fromUpstream) {
+    protected void receiveRevisit(Request.Revisit fromUpstream) {
         LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
         assert isInitialised;
         if (isTerminated()) return;
-        RequestState requestState = requestStates.get(fromUpstream.message().visit().factory());
-        requestState.downstreamManager().unblock(fromUpstream.message().cycles());
-        nextAnswer(tracedFromUpstream(fromUpstream), requestState);
+        RequestState requestState = requestStates.get(fromUpstream.visit().factory());
+        requestState.downstreamManager().unblock(fromUpstream.cycles());
+        nextAnswer(fromUpstream, requestState);
     }
 
     @Override
-    protected void receiveFail(Traced<Response.Fail> fromDownstream) {
+    protected void receiveFail(Response.Fail fromDownstream) {
         LOG.trace("{}: received Exhausted from {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Request.Factory toDownstream = fromDownstream.message().sourceRequest();
-        Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
-        RequestState requestState = requestStates.get(fromUpstream.message().visit().factory());
+        Request.Factory toDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = upstreamRequest(fromDownstream);
+        RequestState requestState = requestStates.get(fromUpstream.visit().factory());
         requestState.downstreamManager().remove(toDownstream);
         nextAnswer(fromUpstream, requestState);
     }
 
     @Override
-    protected void receiveCycle(Traced<Response.Cycle> fromDownstream) {
+    protected void receiveCycle(Response.Cycle fromDownstream) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Request.Factory cyclingDownstream = fromDownstream.message().sourceRequest();
-        Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
-        RequestState requestState = this.requestStates.get(fromUpstream.message().visit().factory());
+        Request.Factory cyclingDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = upstreamRequest(fromDownstream);
+        RequestState requestState = this.requestStates.get(fromUpstream.visit().factory());
         if (requestState.downstreamManager().contains(cyclingDownstream)) {
-            requestState.downstreamManager().block(cyclingDownstream, fromDownstream.message().origins());
+            requestState.downstreamManager().block(cyclingDownstream, fromDownstream.origins());
         }
         nextAnswer(fromUpstream, requestState);
     }

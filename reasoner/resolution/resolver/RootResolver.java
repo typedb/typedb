@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import org.slf4j.Logger;
@@ -45,12 +44,12 @@ public interface RootResolver {
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
         private final com.vaticle.typedb.core.pattern.Conjunction conjunction;
-        private final BiConsumer<Traced<Request>, Finished> onAnswer;
-        private final Consumer<Traced<Request>> onFail;
+        private final BiConsumer<Request, Finished> onAnswer;
+        private final Consumer<Request> onFail;
         private final Consumer<Throwable> onException;
 
         public Conjunction(Driver<Conjunction> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction,
-                           BiConsumer<Traced<Request>, Finished> onAnswer, Consumer<Traced<Request>> onFail, Consumer<Throwable> onException,
+                           BiConsumer<Request, Finished> onAnswer, Consumer<Request> onFail, Consumer<Throwable> onException,
                            ResolverRegistry registry) {
             super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", registry);
             this.conjunction = conjunction;
@@ -78,7 +77,7 @@ public interface RootResolver {
         }
 
         @Override
-        protected void answerToUpstream(AnswerState answer, Traced<Request> fromUpstream) {
+        protected void answerToUpstream(AnswerState answer, Request fromUpstream) {
             assert answer.isTop() && answer.asTop().isMatch() && answer.asTop().asMatch().isFinished();
             Finished finished = answer.asTop().asMatch().asFinished();
             LOG.debug("Submitting answer: {}", finished);
@@ -86,7 +85,7 @@ public interface RootResolver {
         }
 
         @Override
-        protected void failToUpstream(Traced<Request> fromUpstream) {
+        protected void failToUpstream(Request fromUpstream) {
             LOG.debug("Submitting fail for request: {}", fromUpstream);
             onFail.accept(fromUpstream);
         }
@@ -107,12 +106,12 @@ public interface RootResolver {
     class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver {
 
         private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
-        private final BiConsumer<Traced<Request>, Finished> onAnswer;
-        private final Consumer<Traced<Request>> onFail;
+        private final BiConsumer<Request, Finished> onAnswer;
+        private final Consumer<Request> onFail;
         private final Consumer<Throwable> onException;
 
         public Disjunction(Driver<Disjunction> driver, com.vaticle.typedb.core.pattern.Disjunction disjunction,
-                           BiConsumer<Traced<Request>, Finished> onAnswer, Consumer<Traced<Request>> onFail,
+                           BiConsumer<Request, Finished> onAnswer, Consumer<Request> onFail,
                            Consumer<Throwable> onException, ResolverRegistry registry) {
             super(driver, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction, registry);
             this.onAnswer = onAnswer;
@@ -128,7 +127,7 @@ public interface RootResolver {
         }
 
         @Override
-        protected void answerToUpstream(AnswerState answer, Traced<Request> fromUpstream) {
+        protected void answerToUpstream(AnswerState answer, Request fromUpstream) {
             assert answer.isTop() && answer.asTop().isMatch() && answer.asTop().asMatch().isFinished();
             Finished finished = answer.asTop().asMatch().asFinished();
             LOG.debug("Submitting answer: {}", finished);
@@ -136,13 +135,13 @@ public interface RootResolver {
         }
 
         @Override
-        protected void failToUpstream(Traced<Request> fromUpstream) {
+        protected void failToUpstream(Request fromUpstream) {
             onFail.accept(fromUpstream);
         }
 
         @Override
-        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Traced<Request> fromUpstream) {
-            RequestState requestState = requestStates.get(fromUpstream.message().visit().factory());
+        protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream) {
+            RequestState requestState = requestStates.get(fromUpstream.visit().factory());
             if (!requestState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
                 requestState.deduplicationSet().add(upstreamAnswer.conceptMap());
                 answerToUpstream(upstreamAnswer, fromUpstream);
@@ -167,15 +166,15 @@ public interface RootResolver {
         private static final Logger LOG = LoggerFactory.getLogger(Explain.class);
 
         private final com.vaticle.typedb.core.pattern.Conjunction conjunction;
-        private final BiConsumer<Traced<Request>, Top.Explain.Finished> onAnswer;
-        private final Consumer<Traced<Request>> onFail;
+        private final BiConsumer<Request, Top.Explain.Finished> onAnswer;
+        private final Consumer<Request> onFail;
         private final Consumer<Throwable> onException;
 
         private final Set<Explanation> submittedExplanations;
 
         public Explain(Driver<Explain> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction,
-                       BiConsumer<Traced<Request>, Top.Explain.Finished> onAnswer,
-                       Consumer<Traced<Request>> onFail,
+                       BiConsumer<Request, Top.Explain.Finished> onAnswer,
+                       Consumer<Request> onFail,
                        Consumer<Throwable> onException, ResolverRegistry registry) {
             super(driver, "Explain(" + conjunction + ")", registry);
             this.conjunction = conjunction;
@@ -192,7 +191,7 @@ public interface RootResolver {
         }
 
         @Override
-        protected void answerToUpstream(AnswerState answer, Traced<Request> fromUpstream) {
+        protected void answerToUpstream(AnswerState answer, Request fromUpstream) {
             assert answer.isTop() && answer.asTop().isExplain() && answer.asTop().asExplain().isFinished();
             Top.Explain.Finished finished = answer.asTop().asExplain().asFinished();
             LOG.debug("Submitting answer: {}", finished);
@@ -200,7 +199,7 @@ public interface RootResolver {
         }
 
         @Override
-        protected void failToUpstream(Traced<Request> fromUpstream) {
+        protected void failToUpstream(Request fromUpstream) {
             onFail.accept(fromUpstream);
         }
 
@@ -211,7 +210,7 @@ public interface RootResolver {
         }
 
         @Override
-        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Traced<Request> fromUpstream) {
+        boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream) {
             assert upstreamAnswer.isTop() && upstreamAnswer.asTop().isExplain() && upstreamAnswer.asTop().asExplain().isFinished();
             Top.Explain.Finished finished = upstreamAnswer.asTop().asExplain().asFinished();
             if (!submittedExplanations.contains(finished.explanation())) {

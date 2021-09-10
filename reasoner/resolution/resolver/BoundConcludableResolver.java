@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import org.slf4j.Logger;
@@ -44,7 +43,6 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced.trace;
 
 public abstract class BoundConcludableResolver extends Resolver<BoundConcludableResolver>  {
 
@@ -90,17 +88,17 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     }
 
     @Override
-    public void receiveVisit(Traced<Request.Visit> fromUpstream) {
+    public void receiveVisit(Request.Visit fromUpstream) {
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (isTerminated()) return;
-        assert fromUpstream.message().partialAnswer().isConcludable();
-        getOrCreateRequestState(fromUpstream.message().factory()).receiveVisit(fromUpstream.trace());
+        assert fromUpstream.partialAnswer().isConcludable();
+        getOrCreateRequestState(fromUpstream.factory()).receiveVisit(fromUpstream.trace());
     }
 
     @Override
-    protected void receiveRevisit(Traced<Request.Revisit> fromUpstream) {
-        assert fromUpstream.message().visit().partialAnswer().isConcludable();
-        getOrCreateRequestState(fromUpstream.message().visit().factory()).receiveRevisit(fromUpstream.trace(), fromUpstream.message().cycles());
+    protected void receiveRevisit(Request.Revisit fromUpstream) {
+        assert fromUpstream.visit().partialAnswer().isConcludable();
+        getOrCreateRequestState(fromUpstream.visit().factory()).receiveRevisit(fromUpstream.trace(), fromUpstream.cycles());
     }
 
     abstract ExploringRequestState<?> createExploringRequestState(Request.Factory fromUpstream);
@@ -108,23 +106,23 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     abstract CycleRequestState<?> createCycleRequestState(Request.Factory fromUpstream);
 
     @Override
-    protected void receiveAnswer(Traced<Response.Answer> fromDownstream) {
+    protected void receiveAnswer(Response.Answer fromDownstream) {
         if (isTerminated()) return;
-        this.requestStates.get(upstreamVisit(fromDownstream)).receiveAnswer(fromDownstream);
+        this.requestStates.get(upstreamFactory(fromDownstream)).receiveAnswer(fromDownstream);
     }
 
     @Override
-    protected void receiveFail(Traced<Response.Fail> fromDownstream) {
+    protected void receiveFail(Response.Fail fromDownstream) {
         LOG.trace("{}: received Fail: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        this.requestStates.get(upstreamVisit(fromDownstream)).receiveFail(fromDownstream);
+        this.requestStates.get(upstreamFactory(fromDownstream)).receiveFail(fromDownstream);
     }
 
     @Override
-    protected void receiveCycle(Traced<Response.Cycle> fromDownstream) {
+    protected void receiveCycle(Response.Cycle fromDownstream) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        this.requestStates.get(upstreamVisit(fromDownstream)).receiveCycle(fromDownstream);
+        this.requestStates.get(upstreamFactory(fromDownstream)).receiveCycle(fromDownstream);
     }
 
     @Override
@@ -188,8 +186,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             return upstreamBehaviour.toUpstream(fromUpstream, answer);
         }
 
-        Traced<Request> tracedFromUpstream(Trace trace) {
-            return trace(fromUpstream.createVisit(trace), trace);
+        Request tracedFromUpstream(Trace trace) {
+            return fromUpstream.createVisit(trace);
         }
 
         abstract void sendNextMessage(Trace trace);
@@ -200,11 +198,11 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         abstract void receiveRevisit(Trace trace, Set<Response.Cycle.Origin> cycles);
 
-        abstract void receiveAnswer(Traced<Response.Answer> fromDownstream);
+        abstract void receiveAnswer(Response.Answer fromDownstream);
 
-        abstract void receiveFail(Traced<Response.Fail> fromDownstream);
+        abstract void receiveFail(Response.Fail fromDownstream);
 
-        abstract void receiveCycle(Traced<Response.Cycle> fromDownstream);
+        abstract void receiveCycle(Response.Cycle fromDownstream);
 
         protected Optional<Partial.Compound<?, ?>> upstreamAnswer() {
             return nextAnswer().map(Partial::asCompound);
@@ -238,17 +236,17 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
 
         @Override
-        void receiveAnswer(Traced<Response.Answer> fromDownstream) {
+        void receiveAnswer(Response.Answer fromDownstream) {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         @Override
-        void receiveFail(Traced<Response.Fail> fromDownstream) {
+        void receiveFail(Response.Fail fromDownstream) {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         @Override
-        void receiveCycle(Traced<Response.Cycle> fromDownstream) {
+        void receiveCycle(Response.Cycle fromDownstream) {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
@@ -308,22 +306,22 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
 
         @Override
-        void receiveAnswer(Traced<Response.Answer> fromDownstream) {
-            if (newAnswer(fromDownstream.message().answer())) downstreamManager().unblockOutdated();
+        void receiveAnswer(Response.Answer fromDownstream) {
+            if (newAnswer(fromDownstream.answer())) downstreamManager().unblockOutdated();
             sendNextMessage(fromDownstream.trace());
         }
 
         @Override
-        void receiveFail(Traced<Response.Fail> fromDownstream) {
-            downstreamManager().remove(fromDownstream.message().sourceRequest());
+        void receiveFail(Response.Fail fromDownstream) {
+            downstreamManager().remove(fromDownstream.sourceRequest());
             sendNextMessage(fromDownstream.trace());
         }
 
         @Override
-        void receiveCycle(Traced<Response.Cycle> fromDownstream) {
-            Request.Factory cyclingDownstream = fromDownstream.message().sourceRequest();
+        void receiveCycle(Response.Cycle fromDownstream) {
+            Request.Factory cyclingDownstream = fromDownstream.sourceRequest();
             if (downstreamManager().contains(cyclingDownstream)) {
-                downstreamManager().block(cyclingDownstream, fromDownstream.message().origins());
+                downstreamManager().block(cyclingDownstream, fromDownstream.origins());
                 downstreamManager().unblockOutdated();
             }
             sendNextMessage(fromDownstream.trace());

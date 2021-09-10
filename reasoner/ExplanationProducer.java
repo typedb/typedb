@@ -31,7 +31,6 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced.trace;
 import static java.lang.Math.abs;
 
 public class ExplanationProducer implements Producer<Explanation> {
@@ -101,14 +99,14 @@ public class ExplanationProducer implements Producer<Explanation> {
 
     private void requestExplanation() {
         Trace trace = Trace.create(id, requestTraceIdCounter);
-        Traced<Request.Visit> explainRequest = trace(requestFactory.createVisit(trace), trace);
+        Request.Visit explainRequest = requestFactory.createVisit(trace);
         if (options.traceInference()) ResolutionTracer.get().start(explainRequest);
         explainer.execute(explainer -> explainer.receiveVisit(explainRequest));
         requestTraceIdCounter += 1;
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestAnswered(Traced<Request> requestAnswered, Explain.Finished explainedAnswer) {
+    private void requestAnswered(Request requestAnswered, Explain.Finished explainedAnswer) {
         if (options.traceInference()) ResolutionTracer.get().finish(requestAnswered);
         Explanation explanation = explainedAnswer.explanation();
         explainablesManager.setAndRecordExplainables(explanation.conditionAnswer());
@@ -118,7 +116,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestFailed(Traced<Request> failedRequest) {
+    private void requestFailed(Request failedRequest) {
         LOG.trace("Failed to find answer to request {}", failedRequest);
         if (options.traceInference()) ResolutionTracer.get().finish(failedRequest);
         finish();

@@ -32,7 +32,6 @@ import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
@@ -53,12 +52,11 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 import static com.vaticle.typedb.core.common.poller.Pollers.poll;
-import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced.trace;
 
 public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends ReasonerActor<RESOLVER> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
-    private final Map<Traced<Request>, Traced<Request>> requestRouter;
+    private final Map<Request, Request> requestRouter;
     protected final ResolverRegistry registry;
 
     protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
@@ -83,98 +81,90 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         registry.terminate(e);
     }
 
-    public abstract void receiveVisit(Traced<Request.Visit> fromUpstream);
+    public abstract void receiveVisit(Request.Visit fromUpstream);
 
-    protected abstract void receiveRevisit(Traced<Request.Revisit> fromUpstream);
+    protected abstract void receiveRevisit(Request.Revisit fromUpstream);
 
-    protected abstract void receiveAnswer(Traced<Answer> fromDownstream);
+    protected abstract void receiveAnswer(Answer fromDownstream);
 
-    protected abstract void receiveFail(Traced<Response.Fail> fromDownstream);
+    protected abstract void receiveFail(Response.Fail fromDownstream);
 
-    protected void receiveCycle(Traced<Response.Cycle> fromDownstream) {
+    protected void receiveCycle(Response.Cycle fromDownstream) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Traced<Request> toDownstream = trace(fromDownstream.message().sourceRequest().createVisit(fromDownstream.trace()), fromDownstream.trace());
-        Traced<Request> fromUpstream = fromUpstream(toDownstream);
-        cycleToUpstream(fromUpstream, fromDownstream.message().origins());
+        fromDownstream.trace();
+        Request toDownstream = fromDownstream.sourceRequest().createVisit(fromDownstream.trace());
+        Request fromUpstream = fromUpstream(toDownstream);
+        cycleToUpstream(fromUpstream, fromDownstream.origins());
     }
 
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
 
-    protected Traced<Request> fromUpstream(Traced<Request> toDownstream) {
+    protected Request fromUpstream(Request toDownstream) {
         assert toDownstream.trace().root() != -1;
         assert requestRouter.containsKey(toDownstream);
         assert requestRouter.get(toDownstream).trace() == toDownstream.trace();
         return requestRouter.get(toDownstream);
     }
 
-    protected Traced<Request> upstreamTracedRequest(Traced<? extends Response> response) {
-        return fromUpstream(trace(response.message().sourceRequest().createVisit(response.trace()), response.trace()));
+    protected Request upstreamRequest(Response response) {
+        return fromUpstream(response.sourceRequest().createVisit(response.trace()));
     }
 
-    protected Request.Factory upstreamVisit(Traced<? extends Response> response) {
-        return fromUpstream(trace(response.message().sourceRequest().createVisit(response.trace()), response.trace())).message().visit().factory();
+    protected Request.Factory upstreamFactory(Response response) {
+        return fromUpstream(response.sourceRequest().createVisit(response.trace())).visit().factory();
     }
 
-    protected static Traced<Request> tracedFromUpstream(Traced<? extends Request> fromUpstream) {
-        // TODO: Hacks the casting
-        return Traced.trace(fromUpstream.message(), fromUpstream.trace());
-    }
-
-    protected void visitDownstream(Request.Factory downstream, Traced<Request> fromUpstream) {
+    protected void visitDownstream(Request.Factory downstream, Request fromUpstream) {
         visitDownstream(downstream.createVisit(fromUpstream.trace()), fromUpstream);
     }
 
-    protected void visitDownstream(Request.Visit visit, Traced<Request> fromUpstream) {
+    protected void visitDownstream(Request.Visit visit, Request fromUpstream) {
         LOG.trace("{} : Sending a new Visit request to downstream: {}", name(), visit);
         assert fromUpstream.trace().root() != -1;
-        Traced<Request.Visit> tracedVisit = trace(visit, fromUpstream.trace());
-        Traced<Request> tracedRequest = trace(visit, fromUpstream.trace());
-        if (registry.resolutionTracing()) ResolutionTracer.get().visit(tracedVisit);
-        requestRouter.put(tracedRequest, tracedFromUpstream(fromUpstream));
-        visit.receiver().execute(actor -> actor.receiveVisit(tracedVisit));
+        if (registry.resolutionTracing()) ResolutionTracer.get().visit(visit);
+        requestRouter.put(visit, fromUpstream);
+        visit.receiver().execute(actor -> actor.receiveVisit(visit));
     }
 
-    protected void revisitDownstream(Request.Revisit revisit, Traced<Request> fromUpstream) {
+    protected void revisitDownstream(Request.Revisit revisit, Request fromUpstream) {
         LOG.trace("{} : Sending a new Revisit request to downstream: {}", name(), revisit);
         assert fromUpstream.trace().root() != -1;
-        Traced<Request.Revisit> tracedRevisit = trace(revisit, fromUpstream.trace());
-        Traced<Request> tracedRequest = trace(revisit, fromUpstream.trace());  // TODO
-        if (registry.resolutionTracing()) ResolutionTracer.get().revisit(tracedRevisit);
-        requestRouter.put(tracedRequest, fromUpstream);
-        revisit.visit().receiver().execute(actor -> actor.receiveRevisit(tracedRevisit));
+        if (registry.resolutionTracing()) ResolutionTracer.get().revisit(revisit);
+        requestRouter.put(revisit, fromUpstream);
+        revisit.visit().receiver().execute(actor -> actor.receiveRevisit(revisit));
     }
 
-    protected void answerToUpstream(AnswerState answer, Traced<Request> fromUpstream) {
+    protected void answerToUpstream(AnswerState answer, Request fromUpstream) {
         assert answer.isPartial();
-        Traced<Answer> response = trace(Answer.create(fromUpstream.message().visit().factory(), answer.asPartial(), fromUpstream.trace()), fromUpstream.trace());
+        Answer response = Answer.create(fromUpstream.visit().factory(), answer.asPartial(), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(response);
-        fromUpstream.message().visit().sender().execute(actor -> actor.receiveAnswer(response));
+        fromUpstream.visit().sender().execute(actor -> actor.receiveAnswer(response));
     }
 
-    protected void failToUpstream(Traced<Request> fromUpstream) {
-        Traced<Response.Fail> response = trace(new Response.Fail(fromUpstream.message().visit().factory(), fromUpstream.trace()), fromUpstream.trace());
+    protected void failToUpstream(Request fromUpstream) {
+        Response.Fail response = new Response.Fail(fromUpstream.visit().factory(), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(response);
-        fromUpstream.message().visit().sender().execute(actor -> actor.receiveFail(response));
+        fromUpstream.visit().sender().execute(actor -> actor.receiveFail(response));
     }
 
-    protected void cycleToUpstream(Traced<Request> fromUpstream, Set<Response.Cycle.Origin> cycleOrigins) {
-        assert !fromUpstream.message().visit().partialAnswer().parent().isTop();
-        Traced<Response.Cycle> response = trace(new Response.Cycle(fromUpstream.message().visit().factory(), cycleOrigins, fromUpstream.trace()), fromUpstream.trace());
+    protected void cycleToUpstream(Request fromUpstream, Set<Response.Cycle.Origin> cycleOrigins) {
+        assert !fromUpstream.visit().partialAnswer().parent().isTop();
+        Response.Cycle response = new Response.Cycle(fromUpstream.visit().factory(), cycleOrigins,
+                                                     fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response);
-        fromUpstream.message().visit().sender().execute(actor -> actor.receiveCycle(response));
+        fromUpstream.visit().sender().execute(actor -> actor.receiveCycle(response));
     }
 
-    protected void cycleToUpstream(Traced<Request> fromUpstream, int numAnswersSeen) {
-        assert !fromUpstream.message().visit().partialAnswer().parent().isTop();
-        Traced<Response.Cycle> response = trace(
-                new Response.Cycle.Origin(fromUpstream.message().visit().factory(), numAnswersSeen, fromUpstream.trace()), fromUpstream.trace());
+    protected void cycleToUpstream(Request fromUpstream, int numAnswersSeen) {
+        assert !fromUpstream.visit().partialAnswer().parent().isTop();
+        Response.Cycle response = new Response.Cycle.Origin(fromUpstream.visit().factory(), numAnswersSeen, fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response);
-        fromUpstream.message().visit().sender().execute(actor -> actor.receiveCycle(response));
+        fromUpstream.visit().sender().execute(actor -> actor.receiveCycle(response));
     }
 
     protected FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {

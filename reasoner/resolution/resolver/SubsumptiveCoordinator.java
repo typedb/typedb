@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
@@ -54,39 +53,39 @@ public abstract class SubsumptiveCoordinator<
     }
 
     @Override
-    public void receiveVisit(Traced<Request.Visit> fromUpstream) {
+    public void receiveVisit(Request.Visit fromUpstream) {
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
-        Driver<? extends Resolver<?>> root = fromUpstream.message().partialAnswer().root();
-        Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.message().partialAnswer());
-        Request.Factory requestFactory = Request.Factory.create(driver(), worker, fromUpstream.message().partialAnswer());
+        Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
+        Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.partialAnswer());
+        Request.Factory requestFactory = Request.Factory.create(driver(), worker, fromUpstream.partialAnswer());
         Request.Visit visit = requestFactory.createVisit(fromUpstream.trace());
-        visitDownstream(visit, tracedFromUpstream(fromUpstream));
+        visitDownstream(visit, fromUpstream);
     }
 
     @Override
-    public void receiveRevisit(Traced<Request.Revisit> fromUpstream) {
+    public void receiveRevisit(Request.Revisit fromUpstream) {
         LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
         assert isInitialised;
         if (isTerminated()) return;
-        Driver<? extends Resolver<?>> root = fromUpstream.message().visit().partialAnswer().root();
-        Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.message().visit().partialAnswer());
-        Request.Factory requestFactory = Request.Factory.create(driver(), worker, fromUpstream.message().visit().partialAnswer());
-        Request.Revisit revisit = requestFactory.createRevisit(fromUpstream.trace(), fromUpstream.message().cycles());
-        revisitDownstream(revisit, tracedFromUpstream(fromUpstream));
+        Driver<? extends Resolver<?>> root = fromUpstream.visit().partialAnswer().root();
+        Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.visit().partialAnswer());
+        Request.Factory requestFactory = Request.Factory.create(driver(), worker, fromUpstream.visit().partialAnswer());
+        Request.Revisit revisit = requestFactory.createRevisit(fromUpstream.trace(), fromUpstream.cycles());
+        revisitDownstream(revisit, fromUpstream);
     }
 
     abstract Driver<WORKER> getOrCreateWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial);
 
     @Override
-    protected void receiveAnswer(Traced<Answer> answer) {
-        answerToUpstream(answer.message().answer(), upstreamTracedRequest(answer));
+    protected void receiveAnswer(Answer answer) {
+        answerToUpstream(answer.answer(), upstreamRequest(answer));
     }
 
     @Override
-    protected void receiveFail(Traced<Response.Fail> fail) {
-        failToUpstream(upstreamTracedRequest(fail));
+    protected void receiveFail(Response.Fail fail) {
+        failToUpstream(upstreamRequest(fail));
     }
 
     static class SubsumptionTracker {

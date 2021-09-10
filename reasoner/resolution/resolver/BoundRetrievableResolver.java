@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 
@@ -35,7 +34,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced.trace;
 
 public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver> {
 
@@ -53,32 +51,32 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     }
 
     @Override
-    public void receiveVisit(Traced<Request.Visit> fromUpstream) {
-        assert fromUpstream.message().partialAnswer().conceptMap().equals(bounds);
-        sendAnswerOrFail(tracedFromUpstream(fromUpstream), requestStates.computeIfAbsent(
-                fromUpstream.message().factory(), request -> new BoundRequestState(request, cache)));
+    public void receiveVisit(Request.Visit fromUpstream) {
+        assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
+        sendAnswerOrFail(fromUpstream, requestStates.computeIfAbsent(
+                fromUpstream.factory(), request -> new BoundRequestState(request, cache)));
     }
 
     @Override
-    protected void receiveRevisit(Traced<Request.Revisit> fromUpstream) {
-        assert fromUpstream.message().visit().partialAnswer().conceptMap().equals(bounds);
-        receiveVisit(trace(fromUpstream.message().visit(), fromUpstream.trace()));
+    protected void receiveRevisit(Request.Revisit fromUpstream) {
+        assert fromUpstream.visit().partialAnswer().conceptMap().equals(bounds);
+        receiveVisit(fromUpstream.visit());
     }
 
     @Override
-    protected void receiveAnswer(Traced<Response.Answer> fromDownstream) {
-        Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
-        sendAnswerOrFail(fromUpstream, requestStates.get(fromUpstream.message().visit().factory()));
+    protected void receiveAnswer(Response.Answer fromDownstream) {
+        Request fromUpstream = upstreamRequest(fromDownstream);
+        sendAnswerOrFail(fromUpstream, requestStates.get(fromUpstream.visit().factory()));
     }
 
     @Override
-    protected void receiveFail(Traced<Response.Fail> fromDownstream) {
+    protected void receiveFail(Response.Fail fromDownstream) {
         cache.setComplete();
-        Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
-        sendAnswerOrFail(fromUpstream, requestStates.get(fromUpstream.message().visit().factory()));
+        Request fromUpstream = upstreamRequest(fromDownstream);
+        sendAnswerOrFail(fromUpstream, requestStates.get(fromUpstream.visit().factory()));
     }
 
-    private void sendAnswerOrFail(Traced<Request> fromUpstream, RequestState requestState) {
+    private void sendAnswerOrFail(Request fromUpstream, RequestState requestState) {
         Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream);

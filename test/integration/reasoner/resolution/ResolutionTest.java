@@ -58,7 +58,6 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedConjunction;
 import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedDisjunction;
-import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced.trace;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.fail;
@@ -492,7 +491,7 @@ public class ResolutionTest {
         Request.Factory requestFactory = Request.Factory.create(root, downstream);
         for (int i = 0; i < n; i++) {
             Trace trace = Trace.create(0, i);
-            root.execute(actor -> actor.receiveVisit(trace(requestFactory.createVisit(trace), trace)));
+            root.execute(actor -> actor.receiveVisit(requestFactory.createVisit(trace)));
         }
         int answersFound = 0;
         int explainableAnswersFound = 0;

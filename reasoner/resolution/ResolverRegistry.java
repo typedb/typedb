@@ -36,7 +36,6 @@ import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Traced;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConclusionResolver;
@@ -128,8 +127,8 @@ public class ResolverRegistry {
     }
 
     public Actor.Driver<RootResolver.Conjunction> root(Conjunction conjunction,
-                                                       BiConsumer<Traced<Request>, Match.Finished> onAnswer,
-                                                       Consumer<Traced<Request>> onFail,
+                                                       BiConsumer<Request, Match.Finished> onAnswer,
+                                                       Consumer<Request> onFail,
                                                        Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         Actor.Driver<RootResolver.Conjunction> resolver = Actor.driver(driver -> new RootResolver.Conjunction(
@@ -140,8 +139,8 @@ public class ResolverRegistry {
     }
 
     public Actor.Driver<RootResolver.Disjunction> root(Disjunction disjunction,
-                                                       BiConsumer<Traced<Request>, Match.Finished> onAnswer,
-                                                       Consumer<Traced<Request>> onExhausted,
+                                                       BiConsumer<Request, Match.Finished> onAnswer,
+                                                       Consumer<Request> onExhausted,
                                                        Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         Actor.Driver<RootResolver.Disjunction> resolver = Actor.driver(driver -> new RootResolver.Disjunction(
@@ -280,8 +279,8 @@ public class ResolverRegistry {
     }
 
     public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction,
-                                                        BiConsumer<Traced<Request>, Explain.Finished> requestAnswered,
-                                                        Consumer<Traced<Request>> requestFailed, Consumer<Throwable> exception) {
+                                                        BiConsumer<Request, Explain.Finished> requestAnswered,
+                                                        Consumer<Request> requestFailed, Consumer<Throwable> exception) {
         Actor.Driver<RootResolver.Explain> resolver = Actor.driver(
                 driver -> new RootResolver.Explain(
                         driver, conjunction, requestAnswered, requestFailed, exception, this), executorService);
