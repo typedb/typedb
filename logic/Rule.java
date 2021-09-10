@@ -187,8 +187,8 @@ public class Rule {
         then.variables().stream().filter(variable -> variable.id().isName())
                 .forEach(thenVar -> {
                     Variable whenVar = when.variable(thenVar.id());
-                    thenVar.retainResolvedTypes(whenVar.resolvedTypes());
-                    if (thenVar.resolvedTypes().isEmpty()) then.setCoherent(false);
+                    thenVar.retainInferredTypes(whenVar.inferredTypes());
+                    if (thenVar.inferredTypes().isEmpty()) then.setCoherent(false);
                 });
     }
 
@@ -518,14 +518,14 @@ public class Rule {
             @Override
             void index() {
                 Variable relation = relation().owner();
-                Set<Label> possibleRelationTypes = relation.resolvedTypes();
+                Set<Label> possibleRelationTypes = relation.inferredTypes();
                 possibleRelationTypes.forEach(rule().structure::indexConcludesVertex);
             }
 
             @Override
             void unindex() {
                 Variable relation = relation().owner();
-                Set<Label> possibleRelationTypes = relation.resolvedTypes();
+                Set<Label> possibleRelationTypes = relation.inferredTypes();
                 possibleRelationTypes.forEach(rule().structure::unindexConcludesVertex);
             }
 
@@ -689,7 +689,7 @@ public class Rule {
                 @Override
                 void index() {
                     com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    Set<Label> possibleAttributeHas = attribute.inferredTypes();
                     possibleAttributeHas.forEach(label -> {
                         rule().structure.indexConcludesVertex(label);
                         rule().structure.indexConcludesEdgeTo(label);
@@ -699,7 +699,7 @@ public class Rule {
                 @Override
                 void unindex() {
                     com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    Set<Label> possibleAttributeHas = attribute.inferredTypes();
                     possibleAttributeHas.forEach(label -> {
                         rule().structure.unindexConcludesVertex(label);
                         rule().structure.unindexConcludesEdgeTo(label);
@@ -807,14 +807,14 @@ public class Rule {
                 @Override
                 void index() {
                     com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    Set<Label> possibleAttributeHas = attribute.inferredTypes();
                     possibleAttributeHas.forEach(rule().structure::indexConcludesEdgeTo);
                 }
 
                 @Override
                 void unindex() {
                     com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    Set<Label> possibleAttributeHas = attribute.inferredTypes();
                     possibleAttributeHas.forEach(rule().structure::unindexConcludesEdgeTo);
                 }
 

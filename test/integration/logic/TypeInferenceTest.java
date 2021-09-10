@@ -54,7 +54,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class TypeResolverTest {
+public class TypeInferenceTest {
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("type-resolver-test");
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
@@ -101,7 +101,7 @@ public class TypeResolverTest {
     private Map<String, Set<String>> resolvedTypeMap(Conjunction conjunction) {
         return conjunction.variables().stream().collect(Collectors.toMap(
                 variable -> variable.id().toString(),
-                variable -> variable.resolvedTypes().stream().map(Label::scopedName).collect(Collectors.toSet())
+                variable -> variable.inferredTypes().stream().map(Label::scopedName).collect(Collectors.toSet())
         ));
     }
 

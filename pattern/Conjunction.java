@@ -127,7 +127,7 @@ public class Conjunction implements Pattern, Cloneable {
                         this.setCoherent(false);
                     } else if (!existingLabel.isPresent()) {
                         var.asType().label(boundVar.first());
-                        var.asType().setResolvedTypes(set(boundVar.first()));
+                        var.asType().setInferredTypes(set(boundVar.first()));
                     }
                 } else if (var.isThing()) {
                     Optional<IIDConstraint> existingIID = var.asThing().iid();
@@ -269,7 +269,7 @@ public class Conjunction implements Pattern, Cloneable {
         public ThingVariable cloneVariable(ThingVariable variable) {
             return variables.computeIfAbsent(variable.id(), identifier -> {
                 ThingVariable clone = new ThingVariable(identifier);
-                clone.addResolvedTypes(variable.resolvedTypes());
+                clone.addInferredTypes(variable.inferredTypes());
                 return clone;
             }).asThing();
         }
@@ -277,7 +277,7 @@ public class Conjunction implements Pattern, Cloneable {
         public TypeVariable cloneVariable(TypeVariable variable) {
             return variables.computeIfAbsent(variable.id(), identifier -> {
                 TypeVariable clone = new TypeVariable(identifier);
-                clone.addResolvedTypes(variable.resolvedTypes());
+                clone.addInferredTypes(variable.inferredTypes());
                 return clone;
             }).asType();
         }

@@ -50,7 +50,7 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-type-resolver",
-    srcs = ["TypeResolverTest.java"],
+    srcs = ["TypeInferenceTest.java"],
     test_class = "com.vaticle.typedb.core.logic.TypeResolverTest",
     native_libraries_deps = [
         "//concept:concept",

@@ -163,9 +163,9 @@ public abstract class Concludable extends Resolvable<Conjunction> {
      */
     boolean unificationSatisfiable(TypeVariable concludableTypeVar, TypeVariable conclusionTypeVar, ConceptManager conceptMgr) {
 
-        if (!concludableTypeVar.resolvedTypes().isEmpty() && !conclusionTypeVar.resolvedTypes().isEmpty()) {
-            return !Collections.disjoint(subtypeLabels(concludableTypeVar.resolvedTypes(), conceptMgr).toSet(),
-                                         conclusionTypeVar.resolvedTypes());
+        if (!concludableTypeVar.inferredTypes().isEmpty() && !conclusionTypeVar.inferredTypes().isEmpty()) {
+            return !Collections.disjoint(subtypeLabels(concludableTypeVar.inferredTypes(), conceptMgr).toSet(),
+                                         conclusionTypeVar.inferredTypes());
         } else {
             // if either variable is allowed to be any type (ie empty set), its possible to do unification
             return true;
@@ -184,8 +184,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
      */
     boolean unificationSatisfiable(ThingVariable concludableThingVar, ThingVariable conclusionThingVar) {
         boolean satisfiable = true;
-        if (!concludableThingVar.resolvedTypes().isEmpty() && !conclusionThingVar.resolvedTypes().isEmpty()) {
-            satisfiable = !Collections.disjoint(concludableThingVar.resolvedTypes(), conclusionThingVar.resolvedTypes());
+        if (!concludableThingVar.inferredTypes().isEmpty() && !conclusionThingVar.inferredTypes().isEmpty()) {
+            satisfiable = !Collections.disjoint(concludableThingVar.inferredTypes(), conclusionThingVar.inferredTypes());
         }
 
         if (!concludableThingVar.value().isEmpty() && !conclusionThingVar.value().isEmpty()) {
@@ -352,8 +352,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             if (relVar.isa().isPresent()) {
                 if (relVar.isa().get().type().id().isLabel()) {
                     // require the unification target type variable satisfies a set of labels
-                    Set<Label> allowedTypes = iterate(relVar.isa().get().type().resolvedTypes()).flatMap(label -> subtypeLabels(label, conceptMgr)).toSet();
-                    assert allowedTypes.containsAll(relVar.resolvedTypes())
+                    Set<Label> allowedTypes = iterate(relVar.isa().get().type().inferredTypes()).flatMap(label -> subtypeLabels(label, conceptMgr)).toSet();
+                    assert allowedTypes.containsAll(relVar.inferredTypes())
                             && unificationSatisfiable(relVar.isa().get().type(), unifiedRelVar.isa().get().type(), conceptMgr);
                     unifierBuilder.addLabelType(relVar.isa().get().type().id().asLabel(), allowedTypes, unifiedRelVar.isa().get().type().id());
                 } else {
@@ -394,7 +394,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                     TypeVariable conjRoleType = conjRP.roleType().get();
                     TypeVariable thenRoleType = thenRP.roleType().get();
                     if (conjRoleType.id().isLabel()) {
-                        Set<Label> allowedTypes = iterate(conjRoleType.resolvedTypes())
+                        Set<Label> allowedTypes = iterate(conjRoleType.inferredTypes())
                                 .flatMap(roleLabel -> subtypeLabels(roleLabel, conceptMgr))
                                 .toSet();
                         unifierBuilder.addLabelType(conjRoleType.id().asLabel(), allowedTypes, thenRoleType.id());
@@ -421,7 +421,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedRelation = generating().get();
-            Set<Label> relationTypes = generatedRelation.resolvedTypes();
+            Set<Label> relationTypes = generatedRelation.inferredTypes();
             assert !relationTypes.isEmpty();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
@@ -568,8 +568,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedAttribute = generating().get();
-            Set<Label> attributeTypes = generatedAttribute.resolvedTypes();
-            assert !generatedAttribute.resolvedTypes().isEmpty();
+            Set<Label> attributeTypes = generatedAttribute.inferredTypes();
+            assert !generatedAttribute.inferredTypes().isEmpty();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
             attributeTypes.forEach(type -> logicMgr.rulesConcludingHas(type)
@@ -651,7 +651,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             if (unificationSatisfiable(type, unifiedType, conceptMgr)) {
                 if (type.id().isLabel()) {
                     // form: $r isa friendship -> require type subs(friendship) for anonymous type variable
-                    Set<Label> allowedTypes = subtypeLabels(type.resolvedTypes(), conceptMgr).toSet();
+                    Set<Label> allowedTypes = subtypeLabels(type.inferredTypes(), conceptMgr).toSet();
                     assert allowedTypes.containsAll(unifierBuilder.requirements().isaExplicit().get(owner.id()));
                     unifierBuilder.addLabelType(type.id().asLabel(), allowedTypes, unifiedType.id());
                 } else {
@@ -682,7 +682,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generated = generating().get();
-            Set<Label> types = generated.resolvedTypes();
+            Set<Label> types = generated.inferredTypes();
             assert !types.isEmpty();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
@@ -731,7 +731,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         public static Attribute of(ThingVariable attribute) {
             TypeVariable typeVar = TypeVariable.of(Identifier.Variable.of(Reference.label(TypeQLToken.Type.ATTRIBUTE.toString())));
             typeVar.label(Label.of(TypeQLToken.Type.ATTRIBUTE.toString()));
-            typeVar.setResolvedTypes(attribute.resolvedTypes());
+            typeVar.setInferredTypes(attribute.inferredTypes());
             return new Attribute(attribute.clone().isa(typeVar, false));
         }
 
@@ -792,7 +792,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedAttr = generating().get();
-            Set<Label> attributeTypes = generatedAttr.resolvedTypes();
+            Set<Label> attributeTypes = generatedAttr.inferredTypes();
             assert !attributeTypes.isEmpty();
 
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();

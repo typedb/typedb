@@ -70,7 +70,7 @@ public class LabelConstraint extends TypeConstraint implements AlphaEquivalent<L
 
     @Override
     public void addTo(GraphTraversal.Thing traversal) {
-        assert !owner.resolvedTypes().isEmpty();
+        assert !owner.inferredTypes().isEmpty();
     }
 
     @Override

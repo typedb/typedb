@@ -105,11 +105,11 @@ public class TypeInference {
                 String scope = label.scope().get();
                 Set<Label> labels = traversalEng.graph().schema().resolveRoleTypeLabels(label);
                 if (labels.isEmpty()) throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, label.name(), scope);
-                typeVar.addResolvedTypes(labels);
+                typeVar.addInferredTypes(labels);
             } else {
                 TypeVertex type = traversalEng.graph().schema().getType(label);
                 if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, label);
-                typeVar.addResolvedType(label);
+                typeVar.addInferredTypes(label);
             }
         });
     }
@@ -140,8 +140,8 @@ public class TypeInference {
         if (resolvedLabels.isEmpty()) conjunction.setCoherent(false);
         else {
             resolvedLabels.get().forEach((id, labels) -> builder.getOriginalVariable(id).ifPresent(variable -> {
-                assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
-                variable.setResolvedTypes(labels);
+                assert variable.inferredTypes().isEmpty() || variable.inferredTypes().containsAll(labels);
+                variable.setInferredTypes(labels);
             }));
         }
     }
@@ -258,13 +258,13 @@ public class TypeInference {
             TypeVariable resolver;
             if (var.label().isPresent() && var.label().get().scope().isPresent()) {
                 resolver = new TypeVariable(newSystemId());
-                traversal.labels(resolver.id(), var.resolvedTypes());
+                traversal.labels(resolver.id(), var.inferredTypes());
             } else {
                 resolver = var;
             }
             originalToResolver.put(var.id(), resolver);
             resolverToOriginal.putIfAbsent(resolver.id(), var);
-            if (!var.resolvedTypes().isEmpty()) traversal.labels(resolver.id(), var.resolvedTypes());
+            if (!var.inferredTypes().isEmpty()) traversal.labels(resolver.id(), var.inferredTypes());
 
             for (TypeConstraint constraint : var.constraints()) {
                 if (constraint.isAbstract()) registerAbstract(resolver);

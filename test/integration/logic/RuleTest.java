@@ -304,7 +304,7 @@ public class RuleTest {
                             TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     Conjunction marriageFriendsThen = marriageFriendsRule.then();
                     Variable marriageFriendsRelation = getVariable(marriageFriendsThen.variables(), Identifier.Variable.anon(0));
-                    assertEquals(set(Label.of("friendship")), marriageFriendsRelation.resolvedTypes());
+                    assertEquals(set(Label.of("friendship")), marriageFriendsRelation.inferredTypes());
 
                     Rule allFriendsRule = logicMgr.putRule(
                             "all-people-are-friends",
@@ -312,7 +312,7 @@ public class RuleTest {
                             TypeQL.parseVariable("(friend: $x, friend: $y) isa $t").asThing());
                     Conjunction allFriendsThen = allFriendsRule.then();
                     Variable allFriendsRelation = getVariable(allFriendsThen.variables(), Identifier.Variable.anon(0));
-                    assertEquals(set(Label.of("friendship")), allFriendsRelation.resolvedTypes());
+                    assertEquals(set(Label.of("friendship")), allFriendsRelation.inferredTypes());
 
                     Rule marriageSameName = logicMgr.putRule(
                             "marriage-same-name",
@@ -320,7 +320,7 @@ public class RuleTest {
                             TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
                     Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
-                    assertEquals(set(Label.of("name")), nameAttr.resolvedTypes());
+                    assertEquals(set(Label.of("name")), nameAttr.inferredTypes());
 
                     Rule peopleHaveAge10 = logicMgr.putRule(
                             "people-have-age-10",
@@ -329,7 +329,7 @@ public class RuleTest {
                     );
                     Conjunction age10 = peopleHaveAge10.then();
                     Variable ageAttr = getVariable(age10.variables(), Identifier.Variable.anon(0));
-                    assertEquals(set(Label.of("age")), ageAttr.resolvedTypes());
+                    assertEquals(set(Label.of("age")), ageAttr.inferredTypes());
 
                     txn.commit();
                 }
@@ -383,7 +383,7 @@ public class RuleTest {
                             TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     Conjunction marriageFriendsThen = marriageFriendsRule.then();
                     Variable marriageFriendsRelation = getVariable(marriageFriendsThen.variables(), Identifier.Variable.anon(0));
-                    assertEquals(set(Label.of("friendship")), marriageFriendsRelation.resolvedTypes());
+                    assertEquals(set(Label.of("friendship")), marriageFriendsRelation.inferredTypes());
 
                     Rule allFriendsRule = logicMgr.putRule(
                             "all-people-are-friends",
@@ -391,7 +391,7 @@ public class RuleTest {
                             TypeQL.parseVariable("(friend: $x, friend: $y) isa $t").asThing());
                     Conjunction allFriendsThen = allFriendsRule.then();
                     Variable allFriendsRelation = getVariable(allFriendsThen.variables(), Identifier.Variable.anon(0));
-                    assertEquals(set(Label.of("friendship")), allFriendsRelation.resolvedTypes());
+                    assertEquals(set(Label.of("friendship")), allFriendsRelation.inferredTypes());
 
                     Rule marriageSameName = logicMgr.putRule(
                             "marriage-same-name",
@@ -399,7 +399,7 @@ public class RuleTest {
                             TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
                     Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
-                    assertEquals(set(Label.of("name")), nameAttr.resolvedTypes());
+                    assertEquals(set(Label.of("name")), nameAttr.inferredTypes());
 
                     txn.commit();
                 }
@@ -462,7 +462,7 @@ public class RuleTest {
                             TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
                     Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
-                    assertEquals(set(Label.of("first-name")), nameAttr.resolvedTypes());
+                    assertEquals(set(Label.of("first-name")), nameAttr.inferredTypes());
 
                     txn.commit();
                 }
@@ -519,7 +519,7 @@ public class RuleTest {
                             TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
                     Conjunction marriageFriendsThen = marriageFriendsRule.then();
                     Variable marriageFriendsRelation = getVariable(marriageFriendsThen.variables(), Identifier.Variable.anon(0));
-                    assertEquals(set(Label.of("friendship")), marriageFriendsRelation.resolvedTypes());
+                    assertEquals(set(Label.of("friendship")), marriageFriendsRelation.inferredTypes());
 
                     Rule marriageSameName = logicMgr.putRule(
                             "marriage-same-name",
@@ -527,7 +527,7 @@ public class RuleTest {
                             TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
                     Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
-                    assertEquals(set(Label.of("name")), nameAttr.resolvedTypes());
+                    assertEquals(set(Label.of("name")), nameAttr.inferredTypes());
 
                     txn.commit();
                 }
