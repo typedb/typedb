@@ -230,7 +230,6 @@ public class TypeInference {
             conjunction.variables().forEach(this::register);
         }
 
-
         public Set<Identifier.Variable.Retrievable> retrievedResolvers() {
             return iterate(resolverToOriginal.keySet()).filter(Identifier::isRetrievable).map(Identifier.Variable::asRetrievable).toSet();
         }
@@ -289,7 +288,7 @@ public class TypeInference {
             traversal.equalTypes(resolver.id(), register(isConstraint.variable()).id());
         }
 
-        private void withInferredTypes(Identifier.Variable id, FunctionalIterator<TypeVertex> types) {
+        private void restrict(Identifier.Variable id, FunctionalIterator<TypeVertex> types) {
             TraversalVertex.Properties.Type props = traversal.structure().typeVertex(id).props();
             Set<Label> existingLabels = props.labels();
             if (existingLabels.isEmpty()) types.forEachRemaining(t -> existingLabels.add(t.properLabel()));
@@ -304,27 +303,27 @@ public class TypeInference {
         private void registerOwns(TypeVariable resolver, OwnsConstraint ownsConstraint) {
             TypeVariable attrResolver = register(ownsConstraint.attribute());
             traversal.owns(resolver.id(), attrResolver.id(), ownsConstraint.isKey());
-            withInferredTypes(resolver.id(), graphMgr.schema().attributeOwnerTypes());
-            withInferredTypes(attrResolver.id(), graphMgr.schema().attributeTypesOwned());
+            restrict(resolver.id(), graphMgr.schema().attributeOwnerTypes());
+            restrict(attrResolver.id(), graphMgr.schema().attributeTypesOwned());
         }
 
         private void registerPlays(TypeVariable resolver, PlaysConstraint playsConstraint) {
             TypeVariable roleResolver = register(playsConstraint.role());
             traversal.plays(resolver.id(), roleResolver.id());
-            withInferredTypes(resolver.id(), graphMgr.schema().playerTypes());
-            withInferredTypes(roleResolver.id(), graphMgr.schema().roleTypesPlayed());
+            restrict(resolver.id(), graphMgr.schema().playerTypes());
+            restrict(roleResolver.id(), graphMgr.schema().roleTypesPlayed());
         }
 
         private void registerRegex(TypeVariable resolver, RegexConstraint regexConstraint) {
             traversal.regex(resolver.id(), regexConstraint.regex().pattern());
-            withInferredTypes(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.STRING));
+            restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.STRING));
         }
 
         private void registerRelates(TypeVariable resolver, RelatesConstraint relatesConstraint) {
             TypeVariable roleResolver = register(relatesConstraint.role());
             traversal.relates(resolver.id(), roleResolver.id());
-            withInferredTypes(resolver.id(), graphMgr.schema().relationTypes());
-            withInferredTypes(resolver.id(), graphMgr.schema().roleTypes());
+            restrict(resolver.id(), graphMgr.schema().relationTypes());
+            restrict(resolver.id(), graphMgr.schema().roleTypes());
         }
 
         private void registerSub(TypeVariable resolver, SubConstraint subConstraint) {
@@ -333,10 +332,10 @@ public class TypeInference {
             if (superResolver.id().isLabel()) {
                 assert superResolver.label().isPresent();
                 if (!subConstraint.isExplicit()) {
-                    withInferredTypes(resolver.id(), graphMgr.schema().getSubtypes(
+                    restrict(resolver.id(), graphMgr.schema().getSubtypes(
                             graphMgr.schema().getType(superResolver.label().get().properLabel())));
                 } else {
-                    withInferredTypes(resolver.id(), graphMgr.schema().getType(superResolver.label().get().properLabel())
+                    restrict(resolver.id(), graphMgr.schema().getType(superResolver.label().get().properLabel())
                             .ins().edge(Encoding.Edge.Type.SUB).from());
                 }
             }
@@ -350,19 +349,19 @@ public class TypeInference {
         private void inferTypesByValueType(TypeVariable resolver, ValueType valueType) {
             switch (valueType) {
                 case STRING:
-                    withInferredTypes(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.STRING));
+                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.STRING));
                     break;
                 case LONG:
-                    withInferredTypes(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.LONG));
+                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.LONG));
                     break;
                 case DOUBLE:
-                    withInferredTypes(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.DOUBLE));
+                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.DOUBLE));
                     break;
                 case BOOLEAN:
-                    withInferredTypes(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.BOOLEAN));
+                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.BOOLEAN));
                     break;
                 case DATETIME:
-                    withInferredTypes(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.DATETIME));
+                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.DATETIME));
                     break;
                 default:
                     throw TypeDBException.of(ILLEGAL_STATE);
@@ -406,7 +405,7 @@ public class TypeInference {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
             if (isaConstraint.type().label().isPresent()) {
-                withInferredTypes(resolver.id(), graphMgr.schema().getSubtypes(
+                restrict(resolver.id(), graphMgr.schema().getSubtypes(
                         graphMgr.schema().getType(isaConstraint.type().label().get().properLabel())));
             }
         }
@@ -419,8 +418,8 @@ public class TypeInference {
             TypeVariable attributeResolver = register(hasConstraint.attribute());
             traversal.owns(resolver.id(), attributeResolver.id(), false);
             registerSubAttribute(attributeResolver);
-            withInferredTypes(resolver.id(), graphMgr.schema().attributeOwnerTypes());
-            withInferredTypes(attributeResolver.id(), graphMgr.schema().attributeTypesOwned());
+            restrict(resolver.id(), graphMgr.schema().attributeOwnerTypes());
+            restrict(attributeResolver.id(), graphMgr.schema().attributeTypesOwned());
         }
 
         private void registerRelation(TypeVariable resolver, RelationConstraint constraint) {
@@ -430,14 +429,14 @@ public class TypeInference {
                 if (rolePlayer.roleType().isPresent()) {
                     TypeVariable roleTypeResolver = register(rolePlayer.roleType().get());
                     traversal.sub(actingRoleResolver.id(), roleTypeResolver.id(), true);
-                    withInferredTypes(roleTypeResolver.id(), graphMgr.schema().roleTypes());
-                    withInferredTypes(actingRoleResolver.id(), graphMgr.schema().roleTypes());
+                    restrict(roleTypeResolver.id(), graphMgr.schema().roleTypes());
+                    restrict(actingRoleResolver.id(), graphMgr.schema().roleTypes());
                 }
                 traversal.relates(resolver.id(), actingRoleResolver.id());
                 traversal.plays(playerResolver.id(), actingRoleResolver.id());
-                withInferredTypes(playerResolver.id(), graphMgr.schema().playerTypes());
+                restrict(playerResolver.id(), graphMgr.schema().playerTypes());
             }
-            withInferredTypes(resolver.id(), graphMgr.schema().relationTypes());
+            restrict(resolver.id(), graphMgr.schema().relationTypes());
         }
 
         private void registerInsertableRelation(TypeVariable resolver, RelationConstraint constraint) {
@@ -448,7 +447,7 @@ public class TypeInference {
                 traversal.relates(resolver.id(), roleResolver.id());
                 traversal.plays(playerResolver.id(), roleResolver.id());
             }
-            withInferredTypes(resolver.id(), graphMgr.schema().relationTypes());
+            restrict(resolver.id(), graphMgr.schema().relationTypes());
         }
 
         private void registerValue(TypeVariable resolver, ValueConstraint<?> constraint) {
