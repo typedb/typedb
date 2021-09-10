@@ -34,19 +34,19 @@ import java.util.Set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 
-public class TypeCombinationProcedure {
+public class CombinationProcedure {
 
     private final GraphTraversal.Type traversal;
     private final Map<Identifier, ReachableGraph> graphs;
 
-    TypeCombinationProcedure(GraphTraversal.Type traversal) {
+    CombinationProcedure(GraphTraversal.Type traversal) {
         this.traversal = traversal;
         this.graphs = new HashMap<>();
         computeForwardBackward();
     }
 
-    public static TypeCombinationProcedure of(GraphTraversal.Type traversal) {
-        return new TypeCombinationProcedure(traversal);
+    public static CombinationProcedure of(GraphTraversal.Type traversal) {
+        return new CombinationProcedure(traversal);
     }
 
     private void computeForwardBackward() {

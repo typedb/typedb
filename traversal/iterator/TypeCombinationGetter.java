@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
-import com.vaticle.typedb.core.traversal.procedure.TypeCombinationProcedure;
+import com.vaticle.typedb.core.traversal.procedure.CombinationProcedure;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,7 +40,7 @@ import java.util.Set;
 public class TypeCombinationGetter {
 
     private final GraphManager graphMgr;
-    private final TypeCombinationProcedure procedure;
+    private final CombinationProcedure procedure;
     private final Traversal.Parameters params;
     private final Map<Identifier, Set<TypeVertex>> combination;
     private final Set<Retrievable> filter;
@@ -48,7 +48,7 @@ public class TypeCombinationGetter {
 
     private enum Status { CHANGED, UNCHANGED, EMPTY }
 
-    private TypeCombinationGetter(GraphManager graphMgr, TypeCombinationProcedure procedure, Set<Retrievable> filter,
+    private TypeCombinationGetter(GraphManager graphMgr, CombinationProcedure procedure, Set<Retrievable> filter,
                                   Set<Retrievable> concreteVarIds) {
         assert filter.containsAll(concreteVarIds);
         this.graphMgr = graphMgr;
@@ -59,7 +59,7 @@ public class TypeCombinationGetter {
         this.combination = new HashMap<>();
     }
 
-    public static Optional<Map<Retrievable, Set<TypeVertex>>> get(GraphManager graphMgr, TypeCombinationProcedure procedure,
+    public static Optional<Map<Retrievable, Set<TypeVertex>>> get(GraphManager graphMgr, CombinationProcedure procedure,
                                                                   Set<Retrievable> filter, Set<Retrievable> concreteTypesOnly) {
         return new TypeCombinationGetter(graphMgr, procedure, filter, concreteTypesOnly).combination();
     }
