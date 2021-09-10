@@ -81,6 +81,24 @@ public abstract class GraphTraversal extends Traversal {
 
     public abstract void filter(Set<? extends Identifier.Variable.Retrievable> filter);
 
+    FunctionalIterator<VertexMap> permutation(GraphManager graphMgr, List<Planner> planners, boolean singleUse,
+                                              Set<Identifier.Variable.Retrievable> filter) {
+        assert !planners.isEmpty();
+        if (planners.size() == 1) {
+            planners.get(0).tryOptimise(graphMgr, singleUse);
+            return planners.get(0).procedure().iterator(graphMgr, parameters, filter);
+        } else {
+            return cartesian(planners.parallelStream().map(planner -> {
+                planner.tryOptimise(graphMgr, singleUse);
+                return planner.procedure().iterator(graphMgr, parameters, filter);
+            }).collect(toList())).map(partialAnswers -> {
+                Map<Identifier.Variable.Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
+                partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
+                return VertexMap.of(combinedAnswers);
+            });
+        }
+    }
+
     FunctionalIterator<Structure> structures() {
         return iterate(structure.asGraphs()).filter(p -> iterate(p.vertices()).anyMatch(
                 v -> v.id().isRetrievable() && filter().contains(v.id().asVariable().asRetrievable())
