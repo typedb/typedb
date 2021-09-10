@@ -108,12 +108,12 @@ public class Reasoner {
     }
 
     public FunctionalIterator<ConceptMap> execute(Disjunction disjunction, TypeQLMatch.Modifiers modifiers, Context.Query context) {
-        resolveAndValidate(disjunction);
+        inferAndValidateTypes(disjunction);
         if (mayReason(disjunction, context)) return executeReasoner(disjunction, filter(modifiers.filter()), context);
         else return executeTraversal(disjunction, context, filter(modifiers.filter()));
     }
 
-    private void resolveAndValidate(Disjunction disjunction) {
+    private void inferAndValidateTypes(Disjunction disjunction) {
         logicMgr.typeInference().infer(disjunction);
         if (!disjunction.isCoherent()) {
             Set<Conjunction> causes = incoherentConjunctions(disjunction);

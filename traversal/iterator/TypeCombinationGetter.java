@@ -48,21 +48,20 @@ public class TypeCombinationGetter {
 
     private enum Status { CHANGED, UNCHANGED, EMPTY }
 
-    private TypeCombinationGetter(GraphManager graphMgr, TypeCombinationProcedure procedure, Traversal.Parameters params,
-                                  Set<Retrievable> filter, Set<Retrievable> concreteVarIds) {
+    private TypeCombinationGetter(GraphManager graphMgr, TypeCombinationProcedure procedure, Set<Retrievable> filter,
+                                  Set<Retrievable> concreteVarIds) {
         assert filter.containsAll(concreteVarIds);
         this.graphMgr = graphMgr;
         this.procedure = procedure;
-        this.params = params;
+        this.params = new Traversal.Parameters();
         this.filter = filter;
         this.concreteVarIds = concreteVarIds;
         this.combination = new HashMap<>();
     }
 
     public static Optional<Map<Retrievable, Set<TypeVertex>>> get(GraphManager graphMgr, TypeCombinationProcedure procedure,
-                                                                  Traversal.Parameters parameters, Set<Retrievable> filter,
-                                                                  Set<Retrievable> concreteTypesOnly) {
-        return new TypeCombinationGetter(graphMgr, procedure, parameters, filter, concreteTypesOnly).combination();
+                                                                  Set<Retrievable> filter, Set<Retrievable> concreteTypesOnly) {
+        return new TypeCombinationGetter(graphMgr, procedure, filter, concreteTypesOnly).combination();
     }
 
     public Optional<Map<Retrievable, Set<TypeVertex>>> combination() {

@@ -77,15 +77,15 @@ public abstract class GraphTraversal extends Traversal {
         filter = new HashSet<>();
     }
 
+    abstract Set<Identifier.Variable.Retrievable> filter();
+
+    public abstract void filter(Set<? extends Identifier.Variable.Retrievable> filter);
+
     FunctionalIterator<Structure> structures() {
         return iterate(structure.asGraphs()).filter(p -> iterate(p.vertices()).anyMatch(
                 v -> v.id().isRetrievable() && filter().contains(v.id().asVariable().asRetrievable())
         ));
     }
-
-    abstract Set<Identifier.Variable.Retrievable> filter();
-
-    public abstract void filter(Set<? extends Identifier.Variable.Retrievable> filter);
 
     public void labels(Identifier.Variable type, Set<Label> labels) {
         structure.typeVertex(type).props().labels(labels);
@@ -141,8 +141,7 @@ public abstract class GraphTraversal extends Traversal {
 
         public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(
                 GraphManager graphMgr, Set<Identifier.Variable.Retrievable> concreteVarIds) {
-            return TypeCombinationGetter.get(graphMgr, TypeCombinationProcedure.of(this), parameters(), filter(),
-                    concreteVarIds);
+            return TypeCombinationGetter.get(graphMgr, TypeCombinationProcedure.of(this), filter(), concreteVarIds);
         }
 
         @Override
