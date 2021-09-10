@@ -77,12 +77,12 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Request.Factory toDownstream = Request.Factory.of(fromDownstream.message().sourceRequest());
+        Request.Factory toDownstream = fromDownstream.message().sourceRequest();
         Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
-        Request.Visit upstreamVisit = fromUpstream.message().visit();
-        RequestState requestState = requestStates.get(upstreamVisit);
+        Request.Factory factory = fromUpstream.message().visit().factory();
+        RequestState requestState = requestStates.get(factory);
 
-        Plans.Plan plan = plans.getActive(upstreamVisit);
+        Plans.Plan plan = plans.getActive(factory);
 
         // TODO: this is a bit of a hack, we want requests to a negation to be "single use", otherwise we can end up in an infinite loop
         //  where the request to the negation never gets removed and we constantly re-request from it!
@@ -93,14 +93,14 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         if (plan.isLast(fromDownstream.message().planIndex())) {
             Optional<AnswerState> upstreamAnswer = toUpstreamAnswer(partialAnswer);
             boolean answerAccepted = upstreamAnswer.isPresent() && tryAcceptUpstreamAnswer(upstreamAnswer.get(), fromUpstream);
-            if (!answerAccepted) nextAnswer(trace(upstreamVisit, fromDownstream.trace()), requestState);
+            if (!answerAccepted) nextAnswer(trace(factory.createVisit(fromDownstream.trace()), fromDownstream.trace()), requestState);
         } else {
-            toNextChild(fromDownstream, upstreamVisit, requestState, plan);
+            toNextChild(fromDownstream, factory, requestState, plan);
         }
     }
 
     boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Traced<Request> fromUpstream) {
-        RequestState requestState = requestStates.get(fromUpstream.message().visit());
+        RequestState requestState = requestStates.get(fromUpstream.message().visit().factory());
         if (!requestState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
             requestState.deduplicationSet().add(upstreamAnswer.conceptMap());
             answerToUpstream(upstreamAnswer, fromUpstream);
@@ -110,14 +110,14 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
     }
 
-    private void toNextChild(Traced<Response.Answer> fromDownstream, Request.Visit fromUpstream,
+    private void toNextChild(Traced<Response.Answer> fromDownstream, Request.Factory fromUpstream,
                              RequestState requestState, Plans.Plan plan) {
         int nextResolverIndex = fromDownstream.message().planIndex() + 1;
         Resolvable<?> nextResolvable = plan.get(nextResolverIndex);
         ResolverRegistry.ResolverView nextPlannedDownstream = downstreamResolvers.get(nextResolvable);
         final Partial<?> downstreamAns = toDownstream(fromDownstream.message().answer().asCompound(), nextPlannedDownstream, nextResolvable);
         Request.Factory downstream = Request.Factory.create(driver(), nextPlannedDownstream.resolver(), downstreamAns, nextResolverIndex);
-        visitDownstream(downstream, trace(fromUpstream, fromDownstream.trace()));
+        visitDownstream(downstream, trace(fromUpstream.createVisit(fromDownstream.trace()), fromDownstream.trace()));
         // negated requests can be used twice in a parallel setting, and return the same answer twice
         if (!nextResolvable.isNegated() || (nextResolvable.isNegated() && !requestState.downstreamManager().contains(downstream))) {
             requestState.downstreamManager().add(downstream);
@@ -129,9 +129,9 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         LOG.trace("{}: Receiving Exhausted: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Request.Factory downstream = Request.Factory.of(fromDownstream.message().sourceRequest());
+        Request.Factory downstream = fromDownstream.message().sourceRequest();
         Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
-        RequestState requestState = this.requestStates.get(fromUpstream.message().visit());
+        RequestState requestState = this.requestStates.get(fromUpstream.message().visit().factory());
         requestState.downstreamManager().remove(downstream);
         nextAnswer(fromUpstream, requestState);
     }
@@ -163,7 +163,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     }
 
     @Override
-    protected RequestState requestStateCreate(Request.Visit fromUpstream) {
+    protected RequestState requestStateCreate(Request.Factory fromUpstream) {
         LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
         Plans.Plan plan = plans.create(fromUpstream, resolvables, negateds);
         assert !plan.isEmpty() && fromUpstream.partialAnswer().isCompound();
@@ -172,7 +172,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         return requestState;
     }
 
-    private void initialiseRequestState(RequestState requestState, Request.Visit fromUpstream, Plans.Plan plan) {
+    private void initialiseRequestState(RequestState requestState, Request.Factory fromUpstream, Plans.Plan plan) {
         ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
         Partial<?> downstream = toDownstream(fromUpstream.partialAnswer().asCompound(), childResolver, plan.get(0));
         requestState.downstreamManager().add(Request.Factory.create(driver(), childResolver.resolver(), downstream, 0));
@@ -197,7 +197,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
     static class Plans {
         private final Map<ConceptMap, Plan> plans;
-        private final Map<Request.Visit, Plan> activePlans;
+        private final Map<Request.Factory, Plan> activePlans;
         private final Map<Resolvable<?>, Map<ConceptMap, Integer>> visitedWithBoundsCount;
 
         public Plans() {
@@ -206,7 +206,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             this.visitedWithBoundsCount = new HashMap<>();
         }
 
-        public Plan create(Request.Visit fromUpstream, Set<Resolvable<?>> resolvables, Set<Negated> negations) {
+        public Plan create(Request.Factory fromUpstream, Set<Resolvable<?>> resolvables, Set<Negated> negations) {
             ConceptMap bounds = fromUpstream.partialAnswer().conceptMap();
             updateCountsWithBounds(resolvables, bounds);
             Map<Resolvable<?>, Integer> visitCounts = getCountsForBounds(resolvables, bounds);
@@ -219,7 +219,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             return plan;
         }
 
-        public Plan getActive(Request.Visit fromUpstream) {
+        public Plan getActive(Request.Factory fromUpstream) {
             assert activePlans.containsKey(fromUpstream);
             return activePlans.get(fromUpstream);
         }

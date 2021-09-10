@@ -56,7 +56,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(BoundConclusionResolver.class);
     private final ConceptMap bounds;
     private final Rule.Conclusion conclusion;
-    private final Map<Request.Visit, ConclusionRequestState<? extends Concludable<?>>> requestStates;
+    private final Map<Request.Factory, ConclusionRequestState<? extends Concludable<?>>> requestStates;
     private final Map<Materialiser.Request, Traced<Request>> materialiserRequestRouter;
 
     public BoundConclusionResolver(Driver<BoundConclusionResolver> driver, Rule.Conclusion conclusion,
@@ -75,7 +75,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (isTerminated()) return;
         assert fromUpstream.message().partialAnswer().conceptMap().equals(bounds);
         ConclusionRequestState<? extends Concludable<?>> requestState = requestStates.computeIfAbsent(
-                fromUpstream.message(), r -> createRequestState(fromUpstream.message()));
+                fromUpstream.message().factory(), r -> createRequestState(fromUpstream.message().factory()));
         if (requestState.materialisationsCounter().nonZero()) {
             requestState.replayBuffer().addVisit(fromUpstream);
         } else {
@@ -87,7 +87,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
     @Override
     protected void receiveRevisit(Traced<Request.Revisit> fromUpstream) {
-        ConclusionRequestState<? extends Concludable<?>> requestState = requestStates.get(fromUpstream.message().visit());
+        ConclusionRequestState<? extends Concludable<?>> requestState = requestStates.get(fromUpstream.message().visit().factory());
         if (requestState.materialisationsCounter().nonZero()) {
             requestState.replayBuffer().addRevisit(fromUpstream);
         } else {
@@ -104,7 +104,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
         if (isTerminated()) return;
         Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
-        ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream.message().visit());
+        ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream.message().visit().factory());
         if (!requestState.isComplete()) {
             Materialiser.Request request = Materialiser.Request.create(
                     driver(), registry.materialiser(), fromUpstream.trace(), conclusion, fromDownstream.message().answer());
@@ -122,11 +122,11 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
         Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
-        ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream.message().visit());
+        ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream.message().visit().factory());
         if (requestState.materialisationsCounter().nonZero()) {
             requestState.replayBuffer().addCycle(fromDownstream);
         } else {
-            Request.Factory downstream = Request.Factory.of(fromDownstream.message().sourceRequest());
+            Request.Factory downstream = fromDownstream.message().sourceRequest();
             if (requestState.downstreamManager().contains(downstream)) {
                 requestState.downstreamManager().block(downstream, fromDownstream.message().origins());
             }
@@ -141,12 +141,12 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         LOG.trace("{}: received Fail: {}", name(), fromDownstream);
         if (isTerminated()) return;
         Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
-        ConclusionRequestState<?> requestState = this.requestStates.get(fromUpstream.message().visit());
+        ConclusionRequestState<?> requestState = this.requestStates.get(fromUpstream.message().visit().factory());
 
         if (requestState.materialisationsCounter().nonZero()) {
             requestState.replayBuffer().addFail(fromDownstream);
         } else {
-            requestState.downstreamManager().remove(Request.Factory.of(fromDownstream.message().sourceRequest()));
+            requestState.downstreamManager().remove(fromDownstream.message().sourceRequest());
             if (!sendAnswerOrSearchDownstream(fromUpstream, requestState)) {
                 cycleOrFail(fromUpstream, requestState);
             }
@@ -163,7 +163,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (isTerminated()) return;
         Materialiser.Request toDownstream = response.sourceRequest();
         Traced<Request> fromUpstream = fromUpstream(toDownstream);
-        ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream.message().visit());
+        ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream.message().visit().factory());
         LOG.trace("{}: received materialisation response: {}", name(), response);
         Optional<Map<Identifier.Variable, Concept>> materialisation = response.materialisation();
         materialisation.ifPresent(m -> requestState.newMaterialisation(response.partialAnswer(), m));
@@ -207,7 +207,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private ConclusionRequestState<?> createRequestState(Request.Visit fromUpstream) {
+    private ConclusionRequestState<?> createRequestState(Request.Factory fromUpstream) {
         LOG.debug("{}: Creating a new ConclusionResponse for request: {}", name(), fromUpstream);
 
         ConclusionRequestState<?> requestState;
@@ -222,7 +222,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         return requestState;
     }
 
-    private List<Request.Factory> conditionDownstreams(Request.Visit fromUpstream) {
+    private List<Request.Factory> conditionDownstreams(Request.Factory fromUpstream) {
         // TODO: Can there be more than one downstream Condition? If not reduce this return type from List to single
         // we do a extra traversal to expand the partial answer if we already have the concept that is meant to be generated
         // and if there's extra variables to be populated
@@ -305,7 +305,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         private boolean complete;
         protected FunctionalIterator<CONCLUDABLE> materialisations;
 
-        protected ConclusionRequestState(Request.Visit fromUpstream, List<Request.Factory> conditionDownstreams, ReplayBuffer replayBuffer) {
+        protected ConclusionRequestState(Request.Factory fromUpstream, List<Request.Factory> conditionDownstreams, ReplayBuffer replayBuffer) {
             super(fromUpstream);
             this.downstreamManager = new DownstreamManager(conditionDownstreams);
             this.materialisations = Iterators.empty();
@@ -369,7 +369,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
             private final Set<ConceptMap> deduplicationSet;
 
-            private Match(Request.Visit fromUpstream, List<Request.Factory> conditionDownstreams, ReplayBuffer replayBuffer) {
+            private Match(Request.Factory fromUpstream, List<Request.Factory> conditionDownstreams, ReplayBuffer replayBuffer) {
                 super(fromUpstream, conditionDownstreams, replayBuffer);
                 this.deduplicationSet = new HashSet<>();
             }
@@ -396,7 +396,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
         private static class Explain extends ConclusionRequestState<Concludable.Explain> {
 
-            private Explain(Request.Visit fromUpstream, List<Request.Factory> conditionDownstreams, ReplayBuffer replayBuffer) {
+            private Explain(Request.Factory fromUpstream, List<Request.Factory> conditionDownstreams, ReplayBuffer replayBuffer) {
                 super(fromUpstream, conditionDownstreams, replayBuffer);
             }
 

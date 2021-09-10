@@ -56,7 +56,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         if (isTerminated()) return;
 
         Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
-        RequestState requestState = requestStates.get(fromUpstream.message().visit());
+        RequestState requestState = requestStates.get(fromUpstream.message().visit().factory());
 
         assert fromDownstream.message().answer().isCompound();
         AnswerState answer = toUpstreamAnswer(fromDownstream.message().answer().asCompound(), fromDownstream.message());
@@ -83,7 +83,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     }
 
     @Override
-    protected RequestState requestStateCreate(Request.Visit fromUpstream) {
+    protected RequestState requestStateCreate(Request.Factory fromUpstream) {
         LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
         assert fromUpstream.partialAnswer().isCompound();
         RequestState requestState = new RequestState();

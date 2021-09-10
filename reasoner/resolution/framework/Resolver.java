@@ -94,7 +94,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     protected void receiveCycle(Traced<Response.Cycle> fromDownstream) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Traced<Request> toDownstream = trace(fromDownstream.message().sourceRequest(), fromDownstream.trace());
+        Traced<Request> toDownstream = trace(fromDownstream.message().sourceRequest().createVisit(fromDownstream.trace()), fromDownstream.trace());
         Traced<Request> fromUpstream = fromUpstream(toDownstream);
         cycleToUpstream(fromUpstream, fromDownstream.message().origins());
     }
@@ -109,11 +109,11 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     }
 
     protected Traced<Request> upstreamTracedRequest(Traced<? extends Response> response) {
-        return fromUpstream(trace(response.message().sourceRequest(), response.trace()));
+        return fromUpstream(trace(response.message().sourceRequest().createVisit(response.trace()), response.trace()));
     }
 
-    protected Request.Visit upstreamVisit(Traced<? extends Response> response) {
-        return fromUpstream(trace(response.message().sourceRequest(), response.trace())).message().visit();
+    protected Request.Factory upstreamVisit(Traced<? extends Response> response) {
+        return fromUpstream(trace(response.message().sourceRequest().createVisit(response.trace()), response.trace())).message().visit().factory();
     }
 
     protected static Traced<Request> tracedFromUpstream(Traced<? extends Request> fromUpstream) {
@@ -147,14 +147,14 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected void answerToUpstream(AnswerState answer, Traced<Request> fromUpstream) {
         assert answer.isPartial();
-        Traced<Answer> response = trace(Answer.create(fromUpstream.message().visit(), answer.asPartial()), fromUpstream.trace());
+        Traced<Answer> response = trace(Answer.create(fromUpstream.message().visit().factory(), answer.asPartial()), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(response);
         fromUpstream.message().visit().sender().execute(actor -> actor.receiveAnswer(response));
     }
 
     protected void failToUpstream(Traced<Request> fromUpstream) {
-        Traced<Response.Fail> response = trace(new Response.Fail(fromUpstream.message().visit()), fromUpstream.trace());
+        Traced<Response.Fail> response = trace(new Response.Fail(fromUpstream.message().visit().factory()), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(response);
         fromUpstream.message().visit().sender().execute(actor -> actor.receiveFail(response));
@@ -162,7 +162,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected void cycleToUpstream(Traced<Request> fromUpstream, Set<Response.Cycle.Origin> cycleOrigins) {
         assert !fromUpstream.message().visit().partialAnswer().parent().isTop();
-        Traced<Response.Cycle> response = trace(new Response.Cycle(fromUpstream.message().visit(), cycleOrigins), fromUpstream.trace());
+        Traced<Response.Cycle> response = trace(new Response.Cycle(fromUpstream.message().visit().factory(), cycleOrigins), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response);
         fromUpstream.message().visit().sender().execute(actor -> actor.receiveCycle(response));
@@ -171,7 +171,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     protected void cycleToUpstream(Traced<Request> fromUpstream, int numAnswersSeen) {
         assert !fromUpstream.message().visit().partialAnswer().parent().isTop();
         Traced<Response.Cycle> response = trace(
-                new Response.Cycle.Origin(fromUpstream.message().visit(), numAnswersSeen), fromUpstream.trace());
+                new Response.Cycle.Origin(fromUpstream.message().visit().factory(), numAnswersSeen), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response);
         fromUpstream.message().visit().sender().execute(actor -> actor.receiveCycle(response));
@@ -229,13 +229,13 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     public abstract static class RequestState {
 
-        protected final Request.Visit fromUpstream;
+        protected final Request.Factory fromUpstream;
 
-        protected RequestState(Request.Visit fromUpstream) {
+        protected RequestState(Request.Factory fromUpstream) {
             this.fromUpstream = fromUpstream;
         }
 
-        public Request.Visit fromUpstream() {
+        public Request.Factory fromUpstream() {
             return fromUpstream;
         }
 
@@ -259,7 +259,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         protected Poller<? extends AnswerState.Partial<?>> cacheReader;
         protected final Set<ConceptMap> deduplicationSet;
 
-        protected CachingRequestState(Request.Visit fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate) {
+        protected CachingRequestState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate) {
             super(fromUpstream);
             this.answerCache = answerCache;
             this.deduplicationSet = deduplicate ? new HashSet<>() : null;

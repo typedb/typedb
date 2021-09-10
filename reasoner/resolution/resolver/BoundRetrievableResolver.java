@@ -40,7 +40,7 @@ import static com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTr
 public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver> {
 
     private final AnswerCache<ConceptMap> cache;
-    private final Map<Request.Visit, RequestState> requestStates;
+    private final Map<Request.Factory, RequestState> requestStates;
     private final ConceptMap bounds;
 
     public BoundRetrievableResolver(Driver<BoundRetrievableResolver> driver, Retrievable retrievable, ConceptMap bounds,
@@ -56,7 +56,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     public void receiveVisit(Traced<Request.Visit> fromUpstream) {
         assert fromUpstream.message().partialAnswer().conceptMap().equals(bounds);
         sendAnswerOrFail(tracedFromUpstream(fromUpstream), requestStates.computeIfAbsent(
-                fromUpstream.message(), request -> new BoundRequestState(request, cache)));
+                fromUpstream.message().factory(), request -> new BoundRequestState(request, cache)));
     }
 
     @Override
@@ -68,14 +68,14 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     @Override
     protected void receiveAnswer(Traced<Response.Answer> fromDownstream) {
         Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
-        sendAnswerOrFail(fromUpstream, requestStates.get(fromUpstream.message().visit()));
+        sendAnswerOrFail(fromUpstream, requestStates.get(fromUpstream.message().visit().factory()));
     }
 
     @Override
     protected void receiveFail(Traced<Response.Fail> fromDownstream) {
         cache.setComplete();
         Traced<Request> fromUpstream = upstreamTracedRequest(fromDownstream);
-        sendAnswerOrFail(fromUpstream, requestStates.get(fromUpstream.message().visit()));
+        sendAnswerOrFail(fromUpstream, requestStates.get(fromUpstream.message().visit().factory()));
     }
 
     private void sendAnswerOrFail(Traced<Request> fromUpstream, RequestState requestState) {
@@ -94,7 +94,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     private static class BoundRequestState extends CachingRequestState<ConceptMap> {
 
-        public BoundRequestState(Request.Visit fromUpstream, AnswerCache<ConceptMap> answerCache) {
+        public BoundRequestState(Request.Factory fromUpstream, AnswerCache<ConceptMap> answerCache) {
             super(fromUpstream, answerCache, false);
         }
 

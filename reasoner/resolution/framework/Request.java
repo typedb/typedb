@@ -30,12 +30,15 @@ public interface Request {
 
     Visit visit();
 
+    Trace trace();
+
     class Visit implements Request {
 
         protected final Actor.Driver<? extends Resolver<?>> sender;
         protected final Actor.Driver<? extends Resolver<?>> receiver;
         protected final AnswerState.Partial<?> partialAnswer;
         protected final int planIndex;
+        private final Trace trace;
 
         private Visit(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
                         AnswerState.Partial<?> partialAnswer, int planIndex, Trace trace) {
@@ -43,6 +46,7 @@ public interface Request {
             this.receiver = receiver;
             this.partialAnswer = partialAnswer;
             this.planIndex = planIndex;
+            this.trace = trace;
         }
 
         public Actor.Driver<? extends Resolver<?>> receiver() {
@@ -64,6 +68,11 @@ public interface Request {
         @Override
         public Visit visit() {
             return this;
+        }
+
+        @Override
+        public Trace trace() {
+            return trace;
         }
 
         public int planIndex() {
@@ -113,6 +122,11 @@ public interface Request {
         @Override
         public Visit visit() {
             return visit;
+        }
+
+        @Override
+        public Trace trace() {
+            return visit().trace;
         }
 
         public Set<Response.Cycle.Origin> cycles() {
@@ -183,6 +197,18 @@ public interface Request {
 
         public Revisit createRevisit(Trace trace, Set<Response.Cycle.Origin> cycles) {
             return new Revisit(createVisit(trace), cycles);
+        }
+
+        public AnswerState.Partial<?> partialAnswer() {
+            return partialAnswer;
+        }
+
+        public Actor.Driver<? extends Resolver<?>> receiver() {
+            return receiver;
+        }
+
+        public Actor.Driver<? extends Resolver<?>> sender() {
+            return sender;
         }
 
         public int planIndex() {

@@ -48,14 +48,14 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
-    BoundConcludableResolver.ExploringRequestState<?> createExploringRequestState(Request.Visit fromUpstream) {
+    BoundConcludableResolver.ExploringRequestState<?> createExploringRequestState(Request.Factory fromUpstream) {
         LOG.debug("{}: Creating new exploring request state for request: {}", name(), fromUpstream);
         return new ExploringRequestState<>(fromUpstream, cache(), ruleDownstreams(fromUpstream), true,
                                            new MatchUpstream(), singleAnswerRequired);
     }
 
     @Override
-    CycleRequestState<?> createCycleRequestState(Request.Visit fromUpstream) {
+    CycleRequestState<?> createCycleRequestState(Request.Factory fromUpstream) {
         LOG.debug("{}: Creating new cycle request state for request: {}", name(), fromUpstream);
         return new CycleRequestState<>(fromUpstream, cache(), true, new MatchUpstream(), singleAnswerRequired);
     }
@@ -86,7 +86,7 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         }
 
         @Override
-        FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Visit fromUpstream, ConceptMap conceptMap) {
+        FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Factory fromUpstream, ConceptMap conceptMap) {
             return Iterators.single(fromUpstream.partialAnswer().asConcludable().asMatch().toUpstreamLookup(
                     conceptMap, parent().actor().concludable().isInferredAnswer(conceptMap)));
         }

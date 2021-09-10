@@ -70,7 +70,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         } else if (boundsState.status.isRequested()) {
             boundsState.addAwaiting(fromUpstream);
         } else if (boundsState.status.isSatisfied()) {
-            answerToUpstream(upstreamAnswer(fromUpstream.message()), tracedFromUpstream(fromUpstream));
+            answerToUpstream(upstreamAnswer(fromUpstream.message().factory()), tracedFromUpstream(fromUpstream));
         } else if (boundsState.status.isFailed()) {
             failToUpstream(tracedFromUpstream(fromUpstream));
         } else {
@@ -130,12 +130,12 @@ public class NegationResolver extends Resolver<NegationResolver> {
         BoundsState boundsState = this.boundsStates.get(fromUpstream.message().visit().partialAnswer().conceptMap());
         boundsState.setSatisfied();
         for (BoundsState.Awaiting awaiting : boundsState.awaiting) {
-            answerToUpstream(upstreamAnswer(awaiting.request.message()), tracedFromUpstream(awaiting.request));
+            answerToUpstream(upstreamAnswer(awaiting.request.message().factory()), tracedFromUpstream(awaiting.request));
         }
         boundsState.clearAwaiting();
     }
 
-    private static Partial<?> upstreamAnswer(Request.Visit fromUpstream) {
+    private static Partial<?> upstreamAnswer(Request.Factory fromUpstream) {
         assert fromUpstream.partialAnswer().isCompound() && fromUpstream.partialAnswer().asCompound().isNestable();
         return fromUpstream.partialAnswer().asCompound().asNestable().toUpstream();
     }

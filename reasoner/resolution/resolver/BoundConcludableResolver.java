@@ -52,7 +52,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     protected final ConceptMap bounds;
     private final Driver<ConcludableResolver> parent;
-    private final Map<Request.Visit, BoundConcludableRequestState<?>> requestStates;
+    private final Map<Request.Factory, BoundConcludableRequestState<?>> requestStates;
 
     protected BoundConcludableResolver(Driver<BoundConcludableResolver> driver, Driver<ConcludableResolver> parent,
                                        ConceptMap bounds, ResolverRegistry registry) {
@@ -67,7 +67,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         return parent;
     }
 
-    private BoundConcludableRequestState<?> getOrCreateRequestState(Request.Visit fromUpstream) {
+    private BoundConcludableRequestState<?> getOrCreateRequestState(Request.Factory fromUpstream) {
         if (isCycle(fromUpstream.partialAnswer())) {
             return requestStates.computeIfAbsent(fromUpstream, request -> createCycleRequestState(fromUpstream));
         } else {
@@ -94,18 +94,18 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (isTerminated()) return;
         assert fromUpstream.message().partialAnswer().isConcludable();
-        getOrCreateRequestState(fromUpstream.message()).receiveVisit(fromUpstream.trace());
+        getOrCreateRequestState(fromUpstream.message().factory()).receiveVisit(fromUpstream.trace());
     }
 
     @Override
     protected void receiveRevisit(Traced<Request.Revisit> fromUpstream) {
         assert fromUpstream.message().visit().partialAnswer().isConcludable();
-        getOrCreateRequestState(fromUpstream.message().visit()).receiveRevisit(fromUpstream.trace(), fromUpstream.message().cycles());
+        getOrCreateRequestState(fromUpstream.message().visit().factory()).receiveRevisit(fromUpstream.trace(), fromUpstream.message().cycles());
     }
 
-    abstract ExploringRequestState<?> createExploringRequestState(Request.Visit fromUpstream);
+    abstract ExploringRequestState<?> createExploringRequestState(Request.Factory fromUpstream);
 
-    abstract CycleRequestState<?> createCycleRequestState(Request.Visit fromUpstream);
+    abstract CycleRequestState<?> createCycleRequestState(Request.Factory fromUpstream);
 
     @Override
     protected void receiveAnswer(Traced<Response.Answer> fromDownstream) {
@@ -140,7 +140,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         requestStates.clear();
     }
 
-    protected List<Request.Factory> ruleDownstreams(Request.Visit fromUpstream) {
+    protected List<Request.Factory> ruleDownstreams(Request.Factory fromUpstream) {
         List<Request.Factory> downstreams = new ArrayList<>();
         Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
         for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry:
@@ -159,7 +159,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         abstract ANSWER answerFromPartial(Partial<?> partial);
 
-        abstract FunctionalIterator<? extends Partial<?>> toUpstream(Request.Visit fromUpstream, ANSWER partial);
+        abstract FunctionalIterator<? extends Partial<?>> toUpstream(Request.Factory fromUpstream, ANSWER partial);
 
     }
 
@@ -167,7 +167,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         protected final UpstreamBehaviour<ANSWER> upstreamBehaviour;
         protected final boolean singleAnswerRequired;
 
-        protected BoundConcludableRequestState(Request.Visit fromUpstream, AnswerCache<ANSWER> answerCache,
+        protected BoundConcludableRequestState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache,
                                                boolean deduplicate, UpstreamBehaviour<ANSWER> upstreamBehaviour,
                                                boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate);
@@ -189,7 +189,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
 
         Traced<Request> tracedFromUpstream(Trace trace) {
-            return trace(fromUpstream, trace);
+            return trace(fromUpstream.createVisit(trace), trace);
         }
 
         abstract void sendNextMessage(Trace trace);
@@ -214,7 +214,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     protected class CycleRequestState<ANSWER> extends BoundConcludableRequestState<ANSWER> {
 
-        public CycleRequestState(Request.Visit fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate,
+        public CycleRequestState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate,
                                  UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate, upstreamBehaviour, singleAnswerRequired);
         }
@@ -257,7 +257,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         private final ConcludableDownstreamManager downstreamManager;
 
-        protected ExploringRequestState(Request.Visit fromUpstream, AnswerCache<ANSWER> answerCache,
+        protected ExploringRequestState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache,
                                         List<Request.Factory> ruleDownstreams, boolean deduplicate,
                                         UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate, upstreamBehaviour, singleAnswerRequired);
@@ -315,13 +315,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         @Override
         void receiveFail(Traced<Response.Fail> fromDownstream) {
-            downstreamManager().remove(Request.Factory.of(fromDownstream.message().sourceRequest()));
+            downstreamManager().remove(fromDownstream.message().sourceRequest());
             sendNextMessage(fromDownstream.trace());
         }
 
         @Override
         void receiveCycle(Traced<Response.Cycle> fromDownstream) {
-            Request.Factory cyclingDownstream = Request.Factory.of(fromDownstream.message().sourceRequest());
+            Request.Factory cyclingDownstream = fromDownstream.message().sourceRequest();
             if (downstreamManager().contains(cyclingDownstream)) {
                 downstreamManager().block(cyclingDownstream, fromDownstream.message().origins());
                 downstreamManager().unblockOutdated();
