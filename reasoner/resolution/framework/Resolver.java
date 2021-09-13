@@ -56,7 +56,7 @@ import static com.vaticle.typedb.core.common.poller.Pollers.poll;
 public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends ReasonerActor<RESOLVER> {
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
-    private final Map<Request, Request> requestRouter;
+    private final Map<Request.Visit, Request.Visit> requestRouter;
     protected final ResolverRegistry registry;
 
     protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
@@ -123,7 +123,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         LOG.trace("{} : Sending a new Visit request to downstream: {}", name(), visit);
         assert fromUpstream.trace().root() != -1;
         if (registry.resolutionTracing()) ResolutionTracer.get().visit(visit);
-        requestRouter.put(visit, fromUpstream);
+        requestRouter.put(visit, fromUpstream.visit());
         visit.receiver().execute(actor -> actor.receiveVisit(visit));
     }
 
@@ -131,7 +131,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         LOG.trace("{} : Sending a new Revisit request to downstream: {}", name(), revisit);
         assert fromUpstream.trace().root() != -1;
         if (registry.resolutionTracing()) ResolutionTracer.get().revisit(revisit);
-        requestRouter.put(revisit, fromUpstream);
+        requestRouter.put(revisit.visit(), fromUpstream.visit());
         revisit.visit().receiver().execute(actor -> actor.receiveRevisit(revisit));
     }
 
