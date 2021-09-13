@@ -151,17 +151,19 @@ public class TypeInference {
     }
 
     private TraversalBuilder builder(Conjunction conjunction, List<Conjunction> scopingConjunctions, GraphManager graphMgr, boolean insertable) {
-        TraversalBuilder currentBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
+        TraversalBuilder currentBuilder = null;
         if (!scopingConjunctions.isEmpty()) {
-            Set<Reference.Name> names = iterate(currentBuilder.conjunction.variables()).filter(v -> v.reference().isName())
+            Set<Reference.Name> names = iterate(conjunction.variables()).filter(v -> v.reference().isName())
                     .map(v -> v.reference().asName()).toSet();
             for (Conjunction scoping : scopingConjunctions) {
                 // only include conjunctions with a variable in common
                 if (iterate(scoping.variables()).anyMatch(v -> v.reference().isName() && names.contains(v.reference().asName()))) {
-                    currentBuilder = new TraversalBuilder(scoping, currentBuilder, insertable, graphMgr);
+                    if (currentBuilder == null) currentBuilder = new TraversalBuilder(scoping, insertable, graphMgr);
+                    else currentBuilder = new TraversalBuilder(scoping, currentBuilder, insertable, graphMgr);
                 }
             }
-        }
+            currentBuilder = new TraversalBuilder(conjunction, currentBuilder, insertable, graphMgr);
+        } else currentBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
         currentBuilder.traversal().filter(currentBuilder.retrievedResolvers());
         return currentBuilder;
     }

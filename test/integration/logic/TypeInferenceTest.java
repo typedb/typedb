@@ -89,7 +89,7 @@ public class TypeInferenceTest {
 
     private static void define_standard_schema(String fileName) throws IOException {
         TypeQLDefine query = TypeQL.parseQuery(
-                new String(Files.readAllBytes(Paths.get("test/integration/logic/" + fileName + ".gql")), UTF_8));
+                new String(Files.readAllBytes(Paths.get("test/integration/logic/" + fileName + ".tql")), UTF_8));
         transaction.query().define(query);
     }
 
@@ -822,7 +822,7 @@ public class TypeInferenceTest {
 
     @Test
     public void matching_rp_in_relation_that_cant_play_that_role_sets_conjunction_not_satisfiable() throws IOException {
-        define_standard_schema("test-type-resolution");
+        define_standard_schema("test-type-inference");
 
         TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match " +
@@ -861,7 +861,7 @@ public class TypeInferenceTest {
 
     @Test
     public void converts_root_types() throws IOException {
-        define_standard_schema("test-type-resolution");
+        define_standard_schema("test-type-inference");
         TypeInference typeInference = transaction.logic().typeInference();
         String relationString = "match $x isa relation;";
 
@@ -985,7 +985,7 @@ public class TypeInferenceTest {
 
     @Test
     public void infer_is_attribute_from_ownership() throws IOException {
-        define_standard_schema("test-type-resolution");
+        define_standard_schema("test-type-inference");
         TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match $x has $y;";
         Disjunction disjunction = createDisjunction(queryString);
@@ -1001,7 +1001,7 @@ public class TypeInferenceTest {
 
     @Test
     public void infer_is_attribute_from_having_value() throws IOException {
-        define_standard_schema("test-type-resolution");
+        define_standard_schema("test-type-inference");
         TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match $x = $y;";
         Disjunction disjunction = createDisjunction(queryString);
