@@ -37,6 +37,8 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+
 public class CombinationFinder {
 
     private final GraphManager graphMgr;
@@ -67,6 +69,7 @@ public class CombinationFinder {
     private Optional<Map<Retrievable, Set<TypeVertex>>> combination() {
         for (CombinationProcedure procedure : procedures) {
             initialise(procedure);
+            if (procedure.vertices().size() == 1) continue;
             Status status = Status.CHANGED;
             while (status == Status.CHANGED) {
                 status = forward(procedure);
@@ -80,27 +83,22 @@ public class CombinationFinder {
 
     private void initialise(CombinationProcedure procedure) {
         ProcedureVertex.Type from = procedure.startVertex();
-        record(from.id(), vertexIter(from).toSet());
+        recordCombination(from.id(), vertexIter(from).toSet());
     }
 
     private Status forward(CombinationProcedure procedure) {
-        Queue<ProcedureVertex.Type> vertices = new LinkedList<>();
-        ProcedureVertex.Type start = procedure.startVertex();
-        if (!procedure.isTerminal(start)) vertices.add(start);
+        Queue<ProcedureVertex.Type> toVisit = new LinkedList<>();
+        toVisit.add(procedure.startVertex());
         ProcedureVertex.Type from;
         boolean changed = false;
-        while (!vertices.isEmpty()) {
-            from = vertices.remove();
+        while (!toVisit.isEmpty()) {
+            from = toVisit.remove();
             for (ProcedureEdge<?, ?> procedureEdge : procedure.forwardEdges(from)) {
-                assert combination.containsKey(from.id()) && procedureEdge.from().id().equals(from.id());
-                Set<TypeVertex> toTypes = new HashSet<>();
-                for (TypeVertex type : combination.get(from.id())) {
-                    branchIter(procedureEdge, type).forEachRemaining(toTypes::add);
-                }
-                changed = record(procedureEdge.to().id(), toTypes) || changed;
+                Set<TypeVertex> toCombination = toCombination(procedureEdge);
+                changed = recordCombination(procedureEdge.to().id(), toCombination) || changed;
                 if (combination.get(procedureEdge.to().id()).isEmpty()) return Status.EMPTY;
                 if (!procedure.isTerminal(procedureEdge.to().asType()) && !from.equals(procedureEdge.to())) {
-                    vertices.add(procedureEdge.to().asType());
+                    toVisit.add(procedureEdge.to().asType());
                 }
             }
         }
@@ -108,27 +106,26 @@ public class CombinationFinder {
     }
 
     private Status backward(CombinationProcedure procedure) {
-        Queue<ProcedureVertex.Type> vertices = new LinkedList<>(procedure.terminals());
+        Queue<ProcedureVertex.Type> toVisit = new LinkedList<>(procedure.terminals());
         ProcedureVertex.Type from;
         boolean changed = false;
-        while (!vertices.isEmpty()) {
-            from = vertices.remove();
+        while (!toVisit.isEmpty()) {
+            from = toVisit.remove();
             for (ProcedureEdge<?, ?> procedureEdge : procedure.reverseEdges(from)) {
-                assert combination.containsKey(procedureEdge.from().id()) && combination.containsKey(from.id())
-                        && procedureEdge.from().id().equals(from.id());
-                Set<TypeVertex> toTypes = new HashSet<>();
-                for (TypeVertex type : combination.get(from.id())) {
-                    branchIter(procedureEdge, type).forEachRemaining(toTypes::add);
-                }
-                changed = record(procedureEdge.to().id(), toTypes) || changed;
+                Set<TypeVertex> toTypes = toCombination(procedureEdge);
+                changed = recordCombination(procedureEdge.to().id(), toTypes) || changed;
                 if (combination.get(procedureEdge.to().id()).isEmpty()) return Status.EMPTY;
-                if (!procedureEdge.to().isStartingVertex()) vertices.add(procedureEdge.to().asType());
+                if (!procedureEdge.to().isStartingVertex()) toVisit.add(procedureEdge.to().asType());
             }
         }
         return changed ? Status.CHANGED : Status.UNCHANGED;
     }
 
-    private boolean record(Identifier identifier, Set<TypeVertex> types) {
+    private Set<TypeVertex> toCombination(ProcedureEdge<?, ?> edge) {
+        return iterate(combination.get(edge.from().id())).flatMap(type -> branchIter(edge, type)).toSet();
+    }
+
+    private boolean recordCombination(Identifier identifier, Set<TypeVertex> types) {
         Set<TypeVertex> vertices = combination.computeIfAbsent(identifier, (id) -> new HashSet<>());
         int sizeBefore = vertices.size();
         if (vertices.isEmpty()) vertices.addAll(types);

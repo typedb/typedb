@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -58,6 +59,10 @@ public class CombinationProcedure {
 
     public ProcedureVertex.Type startVertex() {
         return startVertex;
+    }
+
+    public Collection<ProcedureVertex.Type> vertices() {
+        return vertices.values();
     }
 
     public boolean isTerminal(ProcedureVertex.Type vertex) {
