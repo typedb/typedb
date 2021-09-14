@@ -31,7 +31,7 @@ import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
-import com.vaticle.typedb.core.traversal.iterator.CombinationFinder;
+import com.vaticle.typedb.core.traversal.scanner.CombinationFinder;
 import com.vaticle.typedb.core.traversal.planner.Planner;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
@@ -159,7 +159,9 @@ public abstract class GraphTraversal extends Traversal {
 
         public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(
                 GraphManager graphMgr, Set<Identifier.Variable.Retrievable> concreteVarIds) {
-            return CombinationFinder.find(graphMgr, CombinationProcedure.create(this.structures()), filter(), concreteVarIds);
+            Set<CombinationProcedure> combinationProcedures = new HashSet<>();
+            structures().forEachRemaining(structure -> combinationProcedures.add(CombinationProcedure.create(structure)));
+            return CombinationFinder.find(graphMgr, combinationProcedures, filter(), concreteVarIds);
         }
 
         @Override

@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.traversal.iterator;
+package com.vaticle.typedb.core.traversal.scanner;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.graph.GraphManager;
@@ -25,9 +25,9 @@ import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.traversal.procedure.CombinationProcedure;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
-import com.vaticle.typedb.core.traversal.procedure.CombinationProcedure;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,58 +40,58 @@ import java.util.Set;
 public class CombinationFinder {
 
     private final GraphManager graphMgr;
-    private final CombinationProcedure procedure;
+    private final Set<CombinationProcedure> procedures;
     private final Traversal.Parameters params;
     private final Map<Identifier, Set<TypeVertex>> combination;
     private final Set<Retrievable> filter;
     private final Set<Retrievable> concreteVarIds;
 
-    private enum Status { CHANGED, UNCHANGED, EMPTY }
+    private enum Status {CHANGED, UNCHANGED, EMPTY}
 
-    private CombinationFinder(GraphManager graphMgr, CombinationProcedure procedure, Set<Retrievable> filter,
+    private CombinationFinder(GraphManager graphMgr, Set<CombinationProcedure> procedures, Set<Retrievable> filter,
                               Set<Retrievable> concreteVarIds) {
         assert filter.containsAll(concreteVarIds);
         this.graphMgr = graphMgr;
-        this.procedure = procedure;
+        this.procedures = procedures;
         this.params = new Traversal.Parameters();
         this.filter = filter;
         this.concreteVarIds = concreteVarIds;
         this.combination = new HashMap<>();
     }
 
-    public static Optional<Map<Retrievable, Set<TypeVertex>>> find(GraphManager graphMgr, CombinationProcedure procedure,
+    public static Optional<Map<Retrievable, Set<TypeVertex>>> find(GraphManager graphMgr, Set<CombinationProcedure> procedures,
                                                                    Set<Retrievable> filter, Set<Retrievable> concreteTypesOnly) {
-        return new CombinationFinder(graphMgr, procedure, filter, concreteTypesOnly).combination();
+        return new CombinationFinder(graphMgr, procedures, filter, concreteTypesOnly).combination();
     }
 
     private Optional<Map<Retrievable, Set<TypeVertex>>> combination() {
-        for (Identifier startId : procedure.startIds()) {
-            initialise(startId);
+        for (CombinationProcedure procedure : procedures) {
+            initialise(procedure);
             Status status = Status.CHANGED;
             while (status == Status.CHANGED) {
-                status = forward(startId);
+                status = forward(procedure);
                 if (status == Status.EMPTY) return Optional.empty();
-                status = backward(startId);
+                status = backward(procedure);
                 if (status == Status.EMPTY) return Optional.empty();
             }
         }
         return Optional.of(filtered(combination));
     }
 
-    private void initialise(Identifier startId) {
-        ProcedureVertex.Type from = procedure.start(startId);
+    private void initialise(CombinationProcedure procedure) {
+        ProcedureVertex.Type from = procedure.startVertex();
         record(from.id(), vertexIter(from).toSet());
     }
 
-    private Status forward(Identifier startId) {
+    private Status forward(CombinationProcedure procedure) {
         Queue<ProcedureVertex.Type> vertices = new LinkedList<>();
-        ProcedureVertex.Type start = procedure.start(startId);
-        if (procedure.nonTerminal(startId, start)) vertices.add(start);
+        ProcedureVertex.Type start = procedure.startVertex();
+        if (procedure.nonTerminal(start)) vertices.add(start);
         ProcedureVertex.Type from;
         boolean changed = false;
         while (!vertices.isEmpty()) {
             from = vertices.remove();
-            for (ProcedureEdge<?, ?> procedureEdge : procedure.forwardEdges(startId, from)) {
+            for (ProcedureEdge<?, ?> procedureEdge : procedure.forwardEdges(from)) {
                 assert combination.containsKey(from.id()) && procedureEdge.from().id().equals(from.id());
                 Set<TypeVertex> toTypes = new HashSet<>();
                 for (TypeVertex type : combination.get(from.id())) {
@@ -99,7 +99,7 @@ public class CombinationFinder {
                 }
                 changed = record(procedureEdge.to().id(), toTypes) || changed;
                 if (combination.get(procedureEdge.to().id()).isEmpty()) return Status.EMPTY;
-                if (procedure.nonTerminal(startId, procedureEdge.to().asType()) && !from.equals(procedureEdge.to())) {
+                if (procedure.nonTerminal(procedureEdge.to().asType()) && !from.equals(procedureEdge.to())) {
                     vertices.add(procedureEdge.to().asType());
                 }
             }
@@ -107,13 +107,13 @@ public class CombinationFinder {
         return changed ? Status.CHANGED : Status.UNCHANGED;
     }
 
-    private Status backward(Identifier startId) {
-        Queue<ProcedureVertex.Type> vertices = new LinkedList<>(procedure.terminals(startId));
+    private Status backward(CombinationProcedure procedure) {
+        Queue<ProcedureVertex.Type> vertices = new LinkedList<>(procedure.terminals());
         ProcedureVertex.Type from;
         boolean changed = false;
         while (!vertices.isEmpty()) {
             from = vertices.remove();
-            for (ProcedureEdge<?, ?> procedureEdge : procedure.reverseEdges(startId, from)) {
+            for (ProcedureEdge<?, ?> procedureEdge : procedure.reverseEdges(from)) {
                 assert combination.containsKey(procedureEdge.from().id()) && combination.containsKey(from.id())
                         && procedureEdge.from().id().equals(from.id());
                 Set<TypeVertex> toTypes = new HashSet<>();
@@ -147,7 +147,7 @@ public class CombinationFinder {
     private FunctionalIterator<TypeVertex> branchIter(ProcedureEdge<?, ?> edge, TypeVertex vertex) {
         FunctionalIterator<TypeVertex> iterator = edge.branch(graphMgr, vertex, params).map(Vertex::asType);
         if (edge.to().id().isRetrievable() && concreteVarIds.contains(edge.to().id().asVariable().asRetrievable())) {
-           iterator = iterator.filter(type -> !type.isAbstract());
+            iterator = iterator.filter(type -> !type.isAbstract());
         }
         return iterator;
     }

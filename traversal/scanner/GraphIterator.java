@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.traversal.iterator;
+package com.vaticle.typedb.core.traversal.scanner;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;

@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
-import com.vaticle.typedb.core.traversal.iterator.GraphIterator;
+import com.vaticle.typedb.core.traversal.scanner.GraphIterator;
 import com.vaticle.typedb.core.traversal.planner.GraphPlanner;
 import com.vaticle.typedb.core.traversal.planner.PlannerEdge;
 import com.vaticle.typedb.core.traversal.planner.PlannerVertex;
