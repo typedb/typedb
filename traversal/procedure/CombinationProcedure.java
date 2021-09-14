@@ -82,7 +82,7 @@ public class CombinationProcedure {
         return reverseEdges.get(vertex);
     }
 
-    private ProcedureVertex.Type vertex(StructureVertex.Type sv, boolean isStart) {
+    private ProcedureVertex.Type registerVertex(StructureVertex.Type sv, boolean isStart) {
         return vertices.computeIfAbsent(sv.id(), id -> {
             ProcedureVertex.Type vertex = new ProcedureVertex.Type(id, isStart);
             vertex.props(sv.props());
@@ -90,12 +90,11 @@ public class CombinationProcedure {
         });
     }
 
-    private void registerBFS(StructureVertex.Type structureVertex, Set<StructureEdge<?, ?>> visitedEdges,
-                             boolean isStart) {
-        ProcedureVertex.Type procedureVertex = vertex(structureVertex, isStart);
-        Set<StructureVertex.Type> next = registerOut(procedureVertex, structureVertex, visitedEdges);
-        next.addAll(registerIn(procedureVertex, structureVertex, visitedEdges));
-        next.forEach(vertex -> registerBFS(vertex, visitedEdges, false));
+    private void registerBFS(StructureVertex.Type vertex, Set<StructureEdge<?, ?>> visitedEdges, boolean isStart) {
+        ProcedureVertex.Type procedureVertex = registerVertex(vertex, isStart);
+        Set<StructureVertex.Type> next = registerOut(procedureVertex, vertex, visitedEdges);
+        next.addAll(registerIn(procedureVertex, vertex, visitedEdges));
+        next.forEach(v -> registerBFS(v, visitedEdges, false));
     }
 
     private Set<StructureVertex.Type> registerOut(ProcedureVertex.Type procedureVertex, StructureVertex.Type structureVertex,
@@ -106,7 +105,7 @@ public class CombinationProcedure {
                 if (!visitedEdges.contains(structureEdge)) {
                     visitedEdges.add(structureEdge);
                     int order = visitedEdges.size();
-                    ProcedureVertex.Type end = vertex(structureEdge.to().asType(), false);
+                    ProcedureVertex.Type end = registerVertex(structureEdge.to().asType(), false);
                     ProcedureEdge<?, ?> edge = createOut(procedureVertex, end, structureEdge, order);
                     forwardEdges.computeIfAbsent(procedureVertex, (v) -> new HashSet<>()).add(edge);
                     reverseEdges.computeIfAbsent(end, (v) -> new HashSet<>()).add(edge.reverse());
@@ -125,7 +124,7 @@ public class CombinationProcedure {
                 if (!visitedEdges.contains(structureEdge)) {
                     visitedEdges.add(structureEdge);
                     int order = visitedEdges.size();
-                    ProcedureVertex.Type start = vertex(structureEdge.from().asType(), false);
+                    ProcedureVertex.Type start = registerVertex(structureEdge.from().asType(), false);
                     ProcedureEdge<?, ?> edge = createIn(procedureVertex, start, structureEdge, order);
                     forwardEdges.computeIfAbsent(procedureVertex, (v1) -> new HashSet<>()).add(edge);
                     reverseEdges.computeIfAbsent(start, (v) -> new HashSet<>()).add(edge.reverse());
