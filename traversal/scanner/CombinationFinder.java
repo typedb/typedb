@@ -44,29 +44,24 @@ public class CombinationFinder {
     private final GraphManager graphMgr;
     private final Set<CombinationProcedure> procedures;
     private final Traversal.Parameters params;
-    private final Map<Identifier, Set<TypeVertex>> combination;
     private final Set<Retrievable> filter;
     private final Set<Retrievable> concreteVarIds;
+    private final Map<Identifier, Set<TypeVertex>> combination;
 
     private enum Status {CHANGED, UNCHANGED, EMPTY}
 
-    private CombinationFinder(GraphManager graphMgr, Set<CombinationProcedure> procedures, Set<Retrievable> filter,
+    public CombinationFinder(GraphManager graphMgr, Set<CombinationProcedure> procedures, Set<Retrievable> filter,
                               Set<Retrievable> concreteVarIds) {
         assert filter.containsAll(concreteVarIds);
         this.graphMgr = graphMgr;
         this.procedures = procedures;
-        this.params = new Traversal.Parameters();
         this.filter = filter;
         this.concreteVarIds = concreteVarIds;
+        this.params = new Traversal.Parameters();
         this.combination = new HashMap<>();
     }
 
-    public static Optional<Map<Retrievable, Set<TypeVertex>>> find(GraphManager graphMgr, Set<CombinationProcedure> procedures,
-                                                                   Set<Retrievable> filter, Set<Retrievable> concreteTypesOnly) {
-        return new CombinationFinder(graphMgr, procedures, filter, concreteTypesOnly).combination();
-    }
-
-    private Optional<Map<Retrievable, Set<TypeVertex>>> combination() {
+    public Optional<Map<Retrievable, Set<TypeVertex>>> combination() {
         for (CombinationProcedure procedure : procedures) {
             initialise(procedure);
             if (procedure.vertices().size() == 1) continue;

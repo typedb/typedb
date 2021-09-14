@@ -161,7 +161,7 @@ public abstract class GraphTraversal extends Traversal {
                 GraphManager graphMgr, Set<Identifier.Variable.Retrievable> concreteVarIds) {
             Set<CombinationProcedure> combinationProcedures = new HashSet<>();
             structures().forEachRemaining(structure -> combinationProcedures.add(CombinationProcedure.create(structure)));
-            return CombinationFinder.find(graphMgr, combinationProcedures, filter(), concreteVarIds);
+            return new CombinationFinder(graphMgr, combinationProcedures, filter(), concreteVarIds).combination();
         }
 
         @Override
