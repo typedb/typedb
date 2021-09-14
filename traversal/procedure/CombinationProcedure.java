@@ -97,11 +97,11 @@ public class CombinationProcedure {
         next.forEach(v -> registerBFS(v, visitedEdges, false));
     }
 
-    private Set<StructureVertex.Type> registerOut(ProcedureVertex.Type procedureVertex, StructureVertex.Type structureVertex,
+    private Set<StructureVertex.Type> registerOut(ProcedureVertex.Type procedureVertex, StructureVertex.Type vertex,
                                                   Set<StructureEdge<?, ?>> visitedEdges) {
         Set<StructureVertex.Type> next = new HashSet<>();
-        if (!structureVertex.outs().isEmpty()) {
-            structureVertex.outs().forEach(structureEdge -> {
+        if (!vertex.outs().isEmpty()) {
+            vertex.outs().forEach(structureEdge -> {
                 if (!visitedEdges.contains(structureEdge)) {
                     visitedEdges.add(structureEdge);
                     int order = visitedEdges.size();
@@ -116,11 +116,11 @@ public class CombinationProcedure {
         return next;
     }
 
-    private Set<StructureVertex.Type> registerIn(ProcedureVertex.Type procedureVertex, StructureVertex.Type structureVertex,
+    private Set<StructureVertex.Type> registerIn(ProcedureVertex.Type procedureVertex, StructureVertex.Type vertex,
                                                  Set<StructureEdge<?, ?>> visitedEdges) {
         Set<StructureVertex.Type> next = new HashSet<>();
-        if (!structureVertex.ins().isEmpty()) {
-            structureVertex.ins().forEach(structureEdge -> {
+        if (!vertex.ins().isEmpty()) {
+            vertex.ins().forEach(structureEdge -> {
                 if (!visitedEdges.contains(structureEdge)) {
                     visitedEdges.add(structureEdge);
                     int order = visitedEdges.size();
