@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Tr
 import java.util.Objects;
 import java.util.Set;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
@@ -182,11 +181,6 @@ public interface Response {
             this.trace = trace;
         }
 
-        private Cycle(Request.Factory sourceRequest, Trace trace) {
-            this.sourceRequest = sourceRequest;
-            this.trace = trace;
-        }
-
         @Override
         public Request.Factory sourceRequest() {
             return sourceRequest;
@@ -225,14 +219,18 @@ public interface Response {
             return Objects.hash(sourceRequest, origins);
         }
 
-        public static class Origin extends Cycle {
+        public static class Origin {
 
             private final int numAnswersSeen;
+            private final Request.Factory sourceRequest;
 
-            public Origin(Request.Factory sourceRequest, int numAnswersSeen, Trace trace) {
-                super(sourceRequest, trace);
-                this.origins = set();
+            public Origin(Request.Factory sourceRequest, int numAnswersSeen) {
+                this.sourceRequest = sourceRequest;
                 this.numAnswersSeen = numAnswersSeen;
+            }
+
+            public Actor.Driver<? extends Resolver<?>> sender() {
+                return sourceRequest.receiver();
             }
 
             public int numAnswersSeen() {
@@ -240,28 +238,23 @@ public interface Response {
             }
 
             @Override
-            public Set<Origin> origins() {
-                return set(this);
-            }
-
-            @Override
             public boolean equals(Object o) {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
-                if (!super.equals(o)) return false;
                 Origin origin = (Origin) o;
-                return numAnswersSeen == origin.numAnswersSeen;
+                return numAnswersSeen == origin.numAnswersSeen &&
+                        sourceRequest.equals(origin.sourceRequest);
             }
 
             @Override
             public int hashCode() {
-                return Objects.hash(super.hashCode(), numAnswersSeen);
+                return Objects.hash(numAnswersSeen, sourceRequest);
             }
 
             @Override
             public String toString() {
                 return "Origin{" +
-                        "sourceRequest=" + sourceRequest().toString() +
+                        "sourceRequest=" + sourceRequest.toString() +
                         ", numAnswersSeen=" + numAnswersSeen +
                         '}';
             }

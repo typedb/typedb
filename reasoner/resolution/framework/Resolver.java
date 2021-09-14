@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -161,7 +162,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected void cycleToUpstream(Request fromUpstream, int numAnswersSeen) {
         assert !fromUpstream.visit().partialAnswer().parent().isTop();
-        Response.Cycle response = new Response.Cycle.Origin(fromUpstream.visit().factory(), numAnswersSeen, fromUpstream.trace());
+        Response.Cycle.Origin cycleOrigin = new Response.Cycle.Origin(fromUpstream.visit().factory(), numAnswersSeen);
+        Response.Cycle response = new Response.Cycle(fromUpstream.visit().factory(), set(cycleOrigin), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response);
         fromUpstream.visit().sender().execute(actor -> actor.receiveCycle(response));
