@@ -86,7 +86,7 @@ public class CombinationFinder {
     private Status forward(CombinationProcedure procedure) {
         Queue<ProcedureVertex.Type> vertices = new LinkedList<>();
         ProcedureVertex.Type start = procedure.startVertex();
-        if (procedure.nonTerminal(start)) vertices.add(start);
+        if (!procedure.isTerminal(start)) vertices.add(start);
         ProcedureVertex.Type from;
         boolean changed = false;
         while (!vertices.isEmpty()) {
@@ -99,7 +99,7 @@ public class CombinationFinder {
                 }
                 changed = record(procedureEdge.to().id(), toTypes) || changed;
                 if (combination.get(procedureEdge.to().id()).isEmpty()) return Status.EMPTY;
-                if (procedure.nonTerminal(procedureEdge.to().asType()) && !from.equals(procedureEdge.to())) {
+                if (!procedure.isTerminal(procedureEdge.to().asType()) && !from.equals(procedureEdge.to())) {
                     vertices.add(procedureEdge.to().asType());
                 }
             }

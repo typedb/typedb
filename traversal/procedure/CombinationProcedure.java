@@ -39,6 +39,7 @@ public class CombinationProcedure {
     private final Map<Identifier, ProcedureVertex.Type> vertices;
     private final Map<ProcedureVertex.Type, Set<ProcedureEdge<?, ?>>> forwardEdges;
     private final Map<ProcedureVertex.Type, Set<ProcedureEdge<?, ?>>> reverseEdges;
+    private Set<ProcedureVertex.Type> terminals;
 
     CombinationProcedure(Identifier startId) {
         this.startId = startId;
@@ -59,13 +60,15 @@ public class CombinationProcedure {
         return vertices.get(startId);
     }
 
-    public boolean nonTerminal(ProcedureVertex.Type vertex) {
-        return forwardEdges.containsKey(vertex);
+    public boolean isTerminal(ProcedureVertex.Type vertex) {
+        return terminals().contains(vertex);
     }
 
     public Set<ProcedureVertex.Type> terminals() {
-        Set<ProcedureVertex.Type> terminals = new HashSet<>(reverseEdges.keySet());
-        terminals.removeAll(forwardEdges.keySet());
+        if (terminals == null) {
+            terminals = new HashSet<>(reverseEdges.keySet());
+            terminals.removeAll(forwardEdges.keySet());
+        }
         return terminals;
     }
 
