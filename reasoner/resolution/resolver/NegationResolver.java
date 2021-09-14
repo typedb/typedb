@@ -43,7 +43,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(NegationResolver.class);
 
     private final Negated negated;
-    private final Map<ConceptMap, BoundsState> boundsStates;
+    private final Map<ConceptMap, BoundsState> boundsStates;  // TODO: Indicates this should have bound workers too
     private boolean isInitialised;
     private Driver<? extends Resolver<?>> downstream;
 
@@ -79,6 +79,14 @@ public class NegationResolver extends Resolver<NegationResolver> {
     @Override
     protected void receiveRevisit(Request.Revisit fromUpstream) {
         receiveVisit(fromUpstream.visit());
+    }
+
+    @Override
+    protected void receiveCycle(Response.Cycle fromDownstream) {
+        LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
+        if (isTerminated()) return;
+        cycleToUpstream(fromUpstream(fromDownstream.sourceRequest().createVisit(fromDownstream.trace())),
+                        fromDownstream.origins());
     }
 
     @Override

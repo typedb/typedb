@@ -76,6 +76,7 @@ public class Materialiser extends ReasonerActor<Materialiser> {
     }
 
     public static class Request {
+        //TODO: Align with other Request types
 
         private final Driver<BoundConclusionResolver> sender;
         private final Actor.Driver<Materialiser> receiver;
@@ -128,6 +129,7 @@ public class Materialiser extends ReasonerActor<Materialiser> {
     }
 
     public static class Response {
+        //TODO: Align with other Response types
 
         private final Request request;
         private final Map<Identifier.Variable, Concept> materialisation;

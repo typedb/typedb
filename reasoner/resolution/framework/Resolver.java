@@ -90,18 +90,11 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected abstract void receiveFail(Response.Fail fromDownstream);
 
-    protected void receiveCycle(Response.Cycle fromDownstream) {
-        LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
-        if (isTerminated()) return;
-        fromDownstream.trace();
-        Request toDownstream = fromDownstream.sourceRequest().createVisit(fromDownstream.trace());
-        Request fromUpstream = fromUpstream(toDownstream);
-        cycleToUpstream(fromUpstream, fromDownstream.origins());
-    }
+    protected abstract void receiveCycle(Response.Cycle fromDownstream);
 
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
 
-    protected Request fromUpstream(Request toDownstream) {
+    protected Request.Visit fromUpstream(Request.Visit toDownstream) {
         assert toDownstream.trace().root() != -1;
         assert requestRouter.containsKey(toDownstream);
         assert requestRouter.get(toDownstream).trace() == toDownstream.trace();

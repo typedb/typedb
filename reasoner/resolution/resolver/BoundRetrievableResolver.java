@@ -76,6 +76,11 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         sendAnswerOrFail(fromUpstream, requestStates.get(fromUpstream.visit().factory()));
     }
 
+    @Override
+    protected void receiveCycle(Response.Cycle fromDownstream) {
+        throw TypeDBException.of(ILLEGAL_STATE);
+    }
+
     private void sendAnswerOrFail(Request fromUpstream, RequestState requestState) {
         Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestState.nextAnswer();
         if (upstreamAnswer.isPresent()) {

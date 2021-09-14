@@ -59,6 +59,7 @@ public class AnswerCache<ANSWER> {
     }
 
     public void clearSource() {
+        // TODO: useful when subsumption is active
         if (answerSource != null) answerSource.recycle();
         answerSource = empty();
         sourceCleared = true;

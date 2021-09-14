@@ -76,6 +76,14 @@ public abstract class SubsumptiveCoordinator<
         revisitDownstream(revisit, fromUpstream);
     }
 
+    @Override
+    protected void receiveCycle(Response.Cycle fromDownstream) {
+        LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
+        if (isTerminated()) return;
+        cycleToUpstream(fromUpstream(fromDownstream.sourceRequest().createVisit(fromDownstream.trace())),
+                        fromDownstream.origins());
+    }
+
     abstract Driver<WORKER> getOrCreateWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial);
 
     @Override
