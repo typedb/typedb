@@ -92,7 +92,6 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             Optional<AnswerState> upstreamAnswer = toUpstreamAnswer(partialAnswer);
             boolean answerAccepted = upstreamAnswer.isPresent() && tryAcceptUpstreamAnswer(upstreamAnswer.get(), fromUpstream);
             if (!answerAccepted) {
-                fromDownstream.trace();
                 nextAnswer(factory.createVisit(fromDownstream.trace()), requestState);
             }
         } else {

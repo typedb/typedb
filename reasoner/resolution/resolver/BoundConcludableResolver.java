@@ -186,10 +186,6 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             return upstreamBehaviour.toUpstream(fromUpstream, answer);
         }
 
-        Request tracedFromUpstream(Trace trace) {
-            return fromUpstream.createVisit(trace);
-        }
-
         abstract void sendNextMessage(Trace trace);
 
         protected void receiveVisit(Trace trace) {
@@ -222,11 +218,11 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer();
             if (upstreamAnswer.isPresent()) {
                 if (singleAnswerRequired()) cache().setComplete();
-                answerToUpstream(upstreamAnswer.get(), tracedFromUpstream(trace));
+                answerToUpstream(upstreamAnswer.get(), fromUpstream().createVisit(trace));
             } else if (cache().isComplete()) {
-                failToUpstream(tracedFromUpstream(trace));
+                failToUpstream(fromUpstream().createVisit(trace));
             } else {
-                cycleToUpstream(tracedFromUpstream(trace), cache().size());
+                cycleToUpstream(fromUpstream().createVisit(trace), cache().size());
             }
         }
 
@@ -284,18 +280,18 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                     downstreamManager().clear();
                     cache().setComplete();
                 }
-                answerToUpstream(upstreamAnswer.get(), tracedFromUpstream(trace));
+                answerToUpstream(upstreamAnswer.get(), fromUpstream().createVisit(trace));
             } else if (cache().isComplete()) {
-                failToUpstream(tracedFromUpstream(trace));
+                failToUpstream(fromUpstream().createVisit(trace));
             } else if (downstreamManager().hasNextVisit()) {
-                visitDownstream(downstreamManager().nextVisit(trace), tracedFromUpstream(trace));
+                visitDownstream(downstreamManager().nextVisit(trace), fromUpstream().createVisit(trace));
             } else if (downstreamManager().hasNextRevisit()) {
-                revisitDownstream(downstreamManager().nextRevisit(trace), tracedFromUpstream(trace));
+                revisitDownstream(downstreamManager().nextRevisit(trace), fromUpstream().createVisit(trace));
             } else if (downstreamManager().allDownstreamsCycleToHereOnly()) {
                 cache().setComplete();
-                failToUpstream(tracedFromUpstream(trace));
+                failToUpstream(fromUpstream().createVisit(trace));
             } else {
-                cycleToUpstream(tracedFromUpstream(trace), downstreamManager().cyclesNotOriginatingHere());
+                cycleToUpstream(fromUpstream().createVisit(trace), downstreamManager().cyclesNotOriginatingHere());
             }
         }
 
