@@ -159,7 +159,7 @@ public abstract class GraphTraversal extends Traversal {
 
         public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(
                 GraphManager graphMgr, Set<Identifier.Variable.Retrievable> concreteVarIds) {
-            return CombinationFinder.get(graphMgr, CombinationProcedure.of(this), filter(), concreteVarIds);
+            return CombinationFinder.find(graphMgr, CombinationProcedure.create(this.structures()), filter(), concreteVarIds);
         }
 
         @Override

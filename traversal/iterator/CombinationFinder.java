@@ -59,8 +59,8 @@ public class CombinationFinder {
         this.combination = new HashMap<>();
     }
 
-    public static Optional<Map<Retrievable, Set<TypeVertex>>> get(GraphManager graphMgr, CombinationProcedure procedure,
-                                                                  Set<Retrievable> filter, Set<Retrievable> concreteTypesOnly) {
+    public static Optional<Map<Retrievable, Set<TypeVertex>>> find(GraphManager graphMgr, CombinationProcedure procedure,
+                                                                   Set<Retrievable> filter, Set<Retrievable> concreteTypesOnly) {
         return new CombinationFinder(graphMgr, procedure, filter, concreteTypesOnly).combination();
     }
 
