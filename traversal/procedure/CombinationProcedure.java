@@ -27,7 +27,9 @@ import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -50,9 +52,7 @@ public class CombinationProcedure {
     public static CombinationProcedure create(Structure structure) {
         StructureVertex.Type startVertex = structure.vertices().iterator().next().asType();
         CombinationProcedure procedure = new CombinationProcedure();
-        Set<StructureEdge<?, ?>> visitedEdges = new HashSet<>();
-        procedure.registerVertex(startVertex, true);
-        procedure.registerBFS(startVertex, visitedEdges);
+        procedure.registerBFS(startVertex);
         return procedure;
     }
 
@@ -82,11 +82,19 @@ public class CombinationProcedure {
         return reverseEdges.get(vertex);
     }
 
-    private void registerBFS(StructureVertex.Type vertex, Set<StructureEdge<?, ?>> visitedEdges) {
-        ProcedureVertex.Type procedureVertex = registerVertex(vertex);
-        Set<StructureVertex.Type> nextVertices = registerOutEdges(procedureVertex, vertex.outs(), visitedEdges);
-        nextVertices.addAll(registerInEdges(procedureVertex, vertex.ins(), visitedEdges));
-        nextVertices.forEach(v -> registerBFS(v, visitedEdges));
+    private void registerBFS(StructureVertex.Type start) {
+        Set<StructureEdge<?, ?>> visitedEdges = new HashSet<>();
+        Queue<StructureVertex.Type> queue = new LinkedList<>();
+        queue.add(start);
+        StructureVertex.Type vertex;
+        while (!queue.isEmpty()) {
+            vertex = queue.remove();
+            ProcedureVertex.Type procedureVertex;
+            if (vertices.isEmpty()) procedureVertex = registerVertex(vertex, true);
+            else procedureVertex = registerVertex(vertex);
+            queue.addAll(registerOutEdges(procedureVertex, vertex.outs(), visitedEdges));
+            queue.addAll(registerInEdges(procedureVertex, vertex.ins(), visitedEdges));
+        }
     }
 
     private ProcedureVertex.Type registerVertex(StructureVertex.Type vertex) {
@@ -96,7 +104,7 @@ public class CombinationProcedure {
     private ProcedureVertex.Type registerVertex(StructureVertex.Type vertex, boolean isStart) {
         ProcedureVertex.Type procedureVertex = vertices.computeIfAbsent(vertex.id(), id -> {
             ProcedureVertex.Type v = new ProcedureVertex.Type(id, isStart);
-            v.props(v.props());
+            v.props(vertex.props());
             return v;
         });
         if (isStart) startVertex = procedureVertex;
