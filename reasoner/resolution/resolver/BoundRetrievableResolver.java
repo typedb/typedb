@@ -65,15 +65,12 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream) {
-        Request fromUpstream = upstreamRequest(fromDownstream);
-        sendAnswerOrFail(fromUpstream, requestStates.get(fromUpstream.visit().factory()));
+        throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream) {
-        cache.setComplete();
-        Request fromUpstream = upstreamRequest(fromDownstream);
-        sendAnswerOrFail(fromUpstream, requestStates.get(fromUpstream.visit().factory()));
+        throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     @Override
