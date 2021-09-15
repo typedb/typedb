@@ -155,7 +155,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected void cycleToUpstream(Request fromUpstream, int numAnswersSeen) {
         assert !fromUpstream.visit().partialAnswer().parent().isTop();
-        Response.Cycle.Origin cycleOrigin = new Response.Cycle.Origin(fromUpstream.visit().factory(), numAnswersSeen);
+        Response.Cycle.Origin cycleOrigin = new Response.Cycle.Origin(fromUpstream.visit().factory().receiver(), numAnswersSeen);
         Response.Cycle response = new Response.Cycle(fromUpstream.visit().factory(), set(cycleOrigin), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Cycle to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseCycle(response);

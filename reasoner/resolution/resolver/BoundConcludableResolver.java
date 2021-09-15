@@ -336,7 +336,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             }
 
             private boolean originatedHere(Response.Cycle.Origin cycleOrigin) {
-                return cycleOrigin.sender().equals(driver());
+                return cycleOrigin.resolver().equals(driver());
             }
 
             public boolean isOutdated(Response.Cycle.Origin cycleOrigin) {

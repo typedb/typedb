@@ -222,15 +222,15 @@ public interface Response {
         public static class Origin {
 
             private final int numAnswersSeen;
-            private final Request.Factory sourceRequest;
+            private final Actor.Driver<? extends Resolver<?>> resolver;
 
-            public Origin(Request.Factory sourceRequest, int numAnswersSeen) {
-                this.sourceRequest = sourceRequest;
+            public Origin(Actor.Driver<? extends Resolver<?>> resolver, int numAnswersSeen) {
+                this.resolver = resolver;
                 this.numAnswersSeen = numAnswersSeen;
             }
 
-            public Actor.Driver<? extends Resolver<?>> sender() {
-                return sourceRequest.receiver();
+            public Actor.Driver<? extends Resolver<?>> resolver() {
+                return resolver;
             }
 
             public int numAnswersSeen() {
@@ -243,18 +243,18 @@ public interface Response {
                 if (o == null || getClass() != o.getClass()) return false;
                 Origin origin = (Origin) o;
                 return numAnswersSeen == origin.numAnswersSeen &&
-                        sourceRequest.equals(origin.sourceRequest);
+                        resolver.equals(origin.resolver);
             }
 
             @Override
             public int hashCode() {
-                return Objects.hash(numAnswersSeen, sourceRequest);
+                return Objects.hash(numAnswersSeen, resolver);
             }
 
             @Override
             public String toString() {
                 return "Origin{" +
-                        "sourceRequest=" + sourceRequest.toString() +
+                        "resolver=" + resolver.toString() +
                         ", numAnswersSeen=" + numAnswersSeen +
                         '}';
             }
