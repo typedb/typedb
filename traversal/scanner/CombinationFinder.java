@@ -48,7 +48,7 @@ public class CombinationFinder {
     private final Set<Retrievable> concreteVarIds;
     private final Map<Identifier, Set<TypeVertex>> combination;
 
-    private enum Status {CHANGED, UNCHANGED, EMPTY}
+    private enum State {CHANGED, UNCHANGED, EMPTY}
 
     public CombinationFinder(GraphManager graphMgr, Set<CombinationProcedure> procedures, Set<Retrievable> filter,
                               Set<Retrievable> concreteVarIds) {
@@ -65,12 +65,12 @@ public class CombinationFinder {
         for (CombinationProcedure procedure : procedures) {
             start(procedure);
             if (procedure.vertices().size() == 1) continue;
-            Status status = Status.CHANGED;
-            while (status == Status.CHANGED) {
-                status = forward(procedure);
-                if (status == Status.EMPTY) return Optional.empty();
-                status = backward(procedure);
-                if (status == Status.EMPTY) return Optional.empty();
+            State state = State.CHANGED;
+            while (state == State.CHANGED) {
+                state = forward(procedure);
+                if (state == State.EMPTY) return Optional.empty();
+                state = backward(procedure);
+                if (state == State.EMPTY) return Optional.empty();
             }
         }
         return Optional.of(filtered(combination));
@@ -81,7 +81,7 @@ public class CombinationFinder {
         recordCombination(from.id(), vertexIter(from).toSet());
     }
 
-    private Status forward(CombinationProcedure procedure) {
+    private State forward(CombinationProcedure procedure) {
         Queue<ProcedureVertex.Type> toVisit = new LinkedList<>();
         toVisit.add(procedure.startVertex());
         ProcedureVertex.Type from;
@@ -91,16 +91,16 @@ public class CombinationFinder {
             for (ProcedureEdge<?, ?> procedureEdge : procedure.forwardEdges(from)) {
                 Set<TypeVertex> toCombination = toTypes(procedureEdge);
                 changed = recordCombination(procedureEdge.to().id(), toCombination) || changed;
-                if (combination.get(procedureEdge.to().id()).isEmpty()) return Status.EMPTY;
+                if (combination.get(procedureEdge.to().id()).isEmpty()) return State.EMPTY;
                 if (!procedure.isTerminal(procedureEdge.to().asType()) && !from.equals(procedureEdge.to())) {
                     toVisit.add(procedureEdge.to().asType());
                 }
             }
         }
-        return changed ? Status.CHANGED : Status.UNCHANGED;
+        return changed ? State.CHANGED : State.UNCHANGED;
     }
 
-    private Status backward(CombinationProcedure procedure) {
+    private State backward(CombinationProcedure procedure) {
         Queue<ProcedureVertex.Type> toVisit = new LinkedList<>(procedure.terminals());
         ProcedureVertex.Type from;
         boolean changed = false;
@@ -109,11 +109,11 @@ public class CombinationFinder {
             for (ProcedureEdge<?, ?> procedureEdge : procedure.reverseEdges(from)) {
                 Set<TypeVertex> toTypes = toTypes(procedureEdge);
                 changed = recordCombination(procedureEdge.to().id(), toTypes) || changed;
-                if (combination.get(procedureEdge.to().id()).isEmpty()) return Status.EMPTY;
+                if (combination.get(procedureEdge.to().id()).isEmpty()) return State.EMPTY;
                 if (!procedureEdge.to().isStartingVertex()) toVisit.add(procedureEdge.to().asType());
             }
         }
-        return changed ? Status.CHANGED : Status.UNCHANGED;
+        return changed ? State.CHANGED : State.UNCHANGED;
     }
 
     private Set<TypeVertex> toTypes(ProcedureEdge<?, ?> edge) {
