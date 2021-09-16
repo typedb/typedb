@@ -28,11 +28,8 @@ import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.Optional;
 
 import static com.vaticle.typedb.common.util.Objects.className;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.ATTRIBUTES_NOT_COMPARABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.HAS;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
