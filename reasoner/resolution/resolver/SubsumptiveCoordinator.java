@@ -59,7 +59,7 @@ public abstract class SubsumptiveCoordinator<
         if (isTerminated()) return;
         Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
         Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.partialAnswer());
-        Request.Factory requestFactory = Request.Factory.create(driver(), worker, fromUpstream.partialAnswer());
+        Request.Template requestFactory = Request.Template.create(driver(), worker, fromUpstream.partialAnswer());
         Request.Visit visit = requestFactory.createVisit(fromUpstream.trace());
         visitDownstream(visit, fromUpstream);
     }
@@ -71,16 +71,16 @@ public abstract class SubsumptiveCoordinator<
         if (isTerminated()) return;
         Driver<? extends Resolver<?>> root = fromUpstream.visit().partialAnswer().root();
         Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.visit().partialAnswer());
-        Request.Factory requestFactory = Request.Factory.create(driver(), worker, fromUpstream.visit().partialAnswer());
+        Request.Template requestFactory = Request.Template.create(driver(), worker, fromUpstream.visit().partialAnswer());
         Request.Revisit revisit = requestFactory.createRevisit(fromUpstream.trace(), fromUpstream.cycles());
         revisitDownstream(revisit, fromUpstream);
     }
 
     @Override
-    protected void receiveCycle(Response.Cycle fromDownstream) {
-        LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
+    protected void receiveBlocked(Response.Blocked fromDownstream) {
+        LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        cycleToUpstream(fromUpstream(fromDownstream.sourceRequest().createVisit(fromDownstream.trace())),
+        blockToUpstream(fromUpstream(fromDownstream.sourceRequest().createVisit(fromDownstream.trace())),
                         fromDownstream.origins());
     }
 

@@ -55,7 +55,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         if (isTerminated()) return;
 
         Request fromUpstream = upstreamRequest(fromDownstream);
-        RequestState requestState = requestStates.get(fromUpstream.visit().factory());
+        RequestState requestState = requestStates.get(fromUpstream.visit().template());
 
         assert fromDownstream.answer().isCompound();
         AnswerState answer = toUpstreamAnswer(fromDownstream.answer().asCompound(), fromDownstream);
@@ -82,14 +82,14 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     }
 
     @Override
-    protected RequestState requestStateCreate(Request.Factory fromUpstream) {
+    protected RequestState requestStateCreate(Request.Template fromUpstream) {
         LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
         assert fromUpstream.partialAnswer().isCompound();
         RequestState requestState = new RequestState();
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
             Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
                     .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
-            Request.Factory request = Request.Factory.create(driver(), conjunctionResolver, downstream);
+            Request.Template request = Request.Template.create(driver(), conjunctionResolver, downstream);
             requestState.downstreamManager().add(request);
         }
         return requestState;

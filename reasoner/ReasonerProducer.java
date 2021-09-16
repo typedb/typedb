@@ -57,7 +57,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     private final ExplainablesManager explainablesManager;
     private final int computeSize;
     private final Set<Identifier.Variable.Retrievable> filter;
-    private final Request.Factory requestFactory;
+    private final Request.Template requestFactory;
     private final Request.Visit defaultResolveRequest;
     private boolean done;
     private Queue<ConceptMap> queue;
@@ -109,9 +109,9 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         return abs(System.identityHashCode(this));
     }
 
-    private Request.Factory requestFactory() {
+    private Request.Template requestFactory() {
         Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        return Request.Factory.create(rootResolver, downstream);
+        return Request.Template.create(rootResolver, downstream);
     }
 
     @Override

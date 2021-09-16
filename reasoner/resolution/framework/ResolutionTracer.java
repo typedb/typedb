@@ -112,10 +112,10 @@ public final class ResolutionTracer {
         addMessage(sender, receiver, response.trace(), EdgeType.EXHAUSTED, "");
     }
 
-    public synchronized void responseCycle(Response.Cycle response) {
+    public synchronized void responseBlocked(Response.Blocked response) {
         String sender = response.sender().name();
         String receiver = response.receiver().name();
-        addMessage(sender, receiver, response.trace(), EdgeType.CYCLE, "");
+        addMessage(sender, receiver, response.trace(), EdgeType.BLOCKED, "");
     }
 
     private void addMessage(String sender, String receiver, Trace trace, EdgeType edgeType,
@@ -224,7 +224,7 @@ public final class ResolutionTracer {
 
     enum EdgeType {
         EXHAUSTED("red"),
-        CYCLE("orange"),
+        BLOCKED("orange"),
         ANSWER("green"),
         VISIT("blue"),
         REVISIT("purple");

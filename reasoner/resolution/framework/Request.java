@@ -61,8 +61,8 @@ public interface Request {
             return partialAnswer;
         }
 
-        public Factory factory() {
-            return Factory.create(sender(), receiver(), partialAnswer(), planIndex());
+        public Template template() {
+            return Template.create(sender(), receiver(), partialAnswer(), planIndex());
         }
 
         @Override
@@ -110,14 +110,14 @@ public interface Request {
     class Revisit implements Request {
 
         private final Visit visit;
-        private final Set<Response.Cycle.Origin> cycles;
+        private final Set<Response.Blocked.Origin> cycles;
 
-        protected Revisit(Visit visit, Set<Response.Cycle.Origin> cycles) {
+        protected Revisit(Visit visit, Set<Response.Blocked.Origin> cycles) {
             this.visit = visit;
             this.cycles = cycles;
         }
 
-        public static Revisit create(Visit visit, Set<Response.Cycle.Origin> cycles) {
+        public static Revisit create(Visit visit, Set<Response.Blocked.Origin> cycles) {
             return new Revisit(visit, cycles);
         }
 
@@ -131,7 +131,7 @@ public interface Request {
             return visit().trace;
         }
 
-        public Set<Response.Cycle.Origin> cycles() {
+        public Set<Response.Blocked.Origin> cycles() {
             return cycles;
         }
 
@@ -158,7 +158,7 @@ public interface Request {
         }
     }
 
-    class Factory {
+    class Template {
         protected final Actor.Driver<? extends Resolver<?>> sender;
         protected final Actor.Driver<? extends Resolver<?>> receiver;
         protected final AnswerState.Partial<?> partialAnswer;
@@ -166,8 +166,8 @@ public interface Request {
 
         private final int hash;
 
-        protected Factory(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                          AnswerState.Partial<?> partialAnswer, int planIndex) {
+        protected Template(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                           AnswerState.Partial<?> partialAnswer, int planIndex) {
             this.sender = sender;
             this.receiver = receiver;
             this.partialAnswer = partialAnswer;
@@ -175,29 +175,29 @@ public interface Request {
             this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer, this.planIndex);
         }
 
-        public static Factory create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                                     AnswerState.Partial<?> partialAnswer, int planIndex) {
-            return new Factory(sender, receiver, partialAnswer, planIndex);
+        public static Template create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                                      AnswerState.Partial<?> partialAnswer, int planIndex) {
+            return new Template(sender, receiver, partialAnswer, planIndex);
         }
 
-        public static Factory create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                                     AnswerState.Partial<?> partialAnswer) {
-            return new Factory(sender, receiver, partialAnswer, -1);
+        public static Template create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                                      AnswerState.Partial<?> partialAnswer) {
+            return new Template(sender, receiver, partialAnswer, -1);
         }
 
-        public static Factory create(Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer) {
-            return new Factory(null, receiver, partialAnswer, -1);
+        public static Template create(Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer) {
+            return new Template(null, receiver, partialAnswer, -1);
         }
 
-        public static Factory of(Visit request) {
-            return Factory.create(request.sender(), request.receiver(), request.partialAnswer(), request.planIndex());
+        public static Template of(Visit request) {
+            return Template.create(request.sender(), request.receiver(), request.partialAnswer(), request.planIndex());
         }
 
         public Visit createVisit(Trace trace) {
             return new Visit(sender, receiver, partialAnswer, planIndex, trace);
         }
 
-        public Revisit createRevisit(Trace trace, Set<Response.Cycle.Origin> cycles) {
+        public Revisit createRevisit(Trace trace, Set<Response.Blocked.Origin> cycles) {
             return new Revisit(createVisit(trace), cycles);
         }
 
@@ -221,11 +221,11 @@ public interface Request {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Factory factory = (Factory) o;
-            return planIndex == factory.planIndex &&
-                    Objects.equals(sender, factory.sender) &&
-                    receiver.equals(factory.receiver) &&
-                    partialAnswer.equals(factory.partialAnswer);
+            Template template = (Template) o;
+            return planIndex == template.planIndex &&
+                    Objects.equals(sender, template.sender) &&
+                    receiver.equals(template.receiver) &&
+                    partialAnswer.equals(template.partialAnswer);
         }
 
         @Override
@@ -235,7 +235,7 @@ public interface Request {
 
         @Override
         public String toString() {
-            return "Factory{" +
+            return "Template{" +
                     "sender=" + sender +
                     ", receiver=" + receiver +
                     ", partialAnswer=" + partialAnswer +

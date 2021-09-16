@@ -31,7 +31,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVA
 
 public interface Response {
 
-    Request.Factory sourceRequest();
+    Request.Template sourceRequest();
 
     boolean isAnswer();
 
@@ -56,22 +56,22 @@ public interface Response {
     }
 
     class Answer implements Response {
-        private final Request.Factory sourceRequest;
+        private final Request.Template sourceRequest;
         private final Partial<?> answer;
         private final Trace trace;
 
-        private Answer(Request.Factory sourceRequest, Partial<?> answer, Trace trace) {
+        private Answer(Request.Template sourceRequest, Partial<?> answer, Trace trace) {
             this.sourceRequest = sourceRequest;
             this.answer = answer;
             this.trace = trace;
         }
 
-        public static Answer create(Request.Factory sourceRequest, Partial<?> answer, Trace trace) {
+        public static Answer create(Request.Template sourceRequest, Partial<?> answer, Trace trace) {
             return new Answer(sourceRequest, answer, trace);
         }
 
         @Override
-        public Request.Factory sourceRequest() {
+        public Request.Template sourceRequest() {
             return sourceRequest;
         }
 
@@ -127,16 +127,16 @@ public interface Response {
     }
 
     class Fail implements Response {
-        private final Request.Factory sourceRequest;
+        private final Request.Template sourceRequest;
         private final Trace trace;
 
-        public Fail(Request.Factory sourceRequest, Trace trace) {
+        public Fail(Request.Template sourceRequest, Trace trace) {
             this.sourceRequest = sourceRequest;
             this.trace = trace;
         }
 
         @Override
-        public Request.Factory sourceRequest() {
+        public Request.Template sourceRequest() {
             return sourceRequest;
         }
 
@@ -169,20 +169,20 @@ public interface Response {
         }
     }
 
-    class Cycle implements Response {
+    class Blocked implements Response {
 
-        private final Request.Factory sourceRequest;
+        private final Request.Template sourceRequest;
         private final Trace trace;
         protected Set<Origin> origins;
 
-        public Cycle(Request.Factory sourceRequest, Set<Origin> origins, Trace trace) {
+        public Blocked(Request.Template sourceRequest, Set<Origin> origins, Trace trace) {
             this.sourceRequest = sourceRequest;
             this.origins = origins;
             this.trace = trace;
         }
 
         @Override
-        public Request.Factory sourceRequest() {
+        public Request.Template sourceRequest() {
             return sourceRequest;
         }
 
@@ -209,9 +209,9 @@ public interface Response {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Cycle cycle = (Cycle) o;
-            return sourceRequest.equals(cycle.sourceRequest) &&
-                    origins.equals(cycle.origins);
+            Blocked blocked = (Blocked) o;
+            return sourceRequest.equals(blocked.sourceRequest) &&
+                    origins.equals(blocked.origins);
         }
 
         @Override

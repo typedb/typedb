@@ -51,7 +51,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     private final int computeSize;
     private final AtomicInteger required;
     private final AtomicInteger processing;
-    private final Request.Factory requestFactory;
+    private final Request.Template requestFactory;
     private final Request.Visit defaultResolveRequest;
     private boolean done;
     private int requestTraceIdCounter;
@@ -80,9 +80,9 @@ public class ExplanationProducer implements Producer<Explanation> {
         return abs(System.identityHashCode(this));
     }
 
-    private Request.Factory requestFactory() {
+    private Request.Template requestFactory() {
         Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
-        return Request.Factory.create(explainer, downstream);
+        return Request.Template.create(explainer, downstream);
     }
 
     @Override

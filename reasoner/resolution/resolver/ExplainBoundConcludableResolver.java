@@ -41,16 +41,16 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
-    ExploringRequestState<?> createExploringRequestState(Request.Factory fromUpstream) {
+    ExploringRequestState<?> createExploringRequestState(Request.Template fromUpstream) {
         LOG.debug("{}: Creating new exploring request state for request: {}", name(), fromUpstream);
         return new ExploringRequestState<>(fromUpstream, cache(), ruleDownstreams(fromUpstream), false,
                                            new ExplainUpstream(), false);
     }
 
     @Override
-    CycleRequestState<?> createCycleRequestState(Request.Factory fromUpstream) {
-        LOG.debug("{}: Creating new cycle request state for request: {}", name(), fromUpstream);
-        return new CycleRequestState<>(fromUpstream, cache(), false, new ExplainUpstream(), false);
+    BlockedRequestState<?> createBlockedRequestState(Request.Template fromUpstream) {
+        LOG.debug("{}: Creating new blocked request state for request: {}", name(), fromUpstream);
+        return new BlockedRequestState<>(fromUpstream, cache(), false, new ExplainUpstream(), false);
     }
 
     @Override
@@ -66,7 +66,7 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
         }
 
         @Override
-        FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Factory fromUpstream, AnswerState.Partial.Concludable<?> partial) {
+        FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Template fromUpstream, AnswerState.Partial.Concludable<?> partial) {
             return Iterators.single(partial.asExplain().toUpstreamInferred());
         }
     }
