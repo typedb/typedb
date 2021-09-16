@@ -95,7 +95,6 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
 
     protected Request.Visit fromUpstream(Request.Visit toDownstream) {
-        assert toDownstream.trace().root() != -1;
         assert requestRouter.containsKey(toDownstream);
         assert requestRouter.get(toDownstream).trace() == toDownstream.trace();
         return requestRouter.get(toDownstream);
@@ -115,7 +114,6 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected void visitDownstream(Request.Visit visit, Request fromUpstream) {
         LOG.trace("{} : Sending a new Visit request to downstream: {}", name(), visit);
-        assert fromUpstream.trace().root() != -1;
         if (registry.resolutionTracing()) ResolutionTracer.get().visit(visit);
         requestRouter.put(visit, fromUpstream.visit());
         visit.receiver().execute(actor -> actor.receiveVisit(visit));
@@ -123,7 +121,6 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected void revisitDownstream(Request.Revisit revisit, Request fromUpstream) {
         LOG.trace("{} : Sending a new Revisit request to downstream: {}", name(), revisit);
-        assert fromUpstream.trace().root() != -1;
         if (registry.resolutionTracing()) ResolutionTracer.get().revisit(revisit);
         requestRouter.put(revisit.visit(), fromUpstream.visit());
         revisit.visit().receiver().execute(actor -> actor.receiveRevisit(revisit));

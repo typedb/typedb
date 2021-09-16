@@ -254,10 +254,6 @@ public final class ResolutionTracer {
             return new Trace(scope, rootRequestId);
         }
 
-        public static Trace downstream() {
-            return new Trace(-1, -1);  // TODO
-        }
-
         public int root() {
             return root;
         }
