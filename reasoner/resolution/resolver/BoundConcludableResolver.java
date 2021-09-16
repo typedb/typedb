@@ -78,8 +78,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         while (a.parent().isPartial()) {
             a = a.parent().asPartial();
             if (a.isConcludable()
-                    && a.asConcludable().concludable().alphaEquals(parent().actor().concludable()).isValid()
-//                    && registry.concludableResolver(a.asConcludable().concludable()).equals(parent()) // TODO: This is more optimal as alpha equivalence is already done, but requires all concludable -> actor pairs to be stored in the registry
+                    && registry.concludables(parent()).contains(a.asConcludable().concludable())
                     && a.conceptMap().equals(bounds)) {
                 return true;
             }

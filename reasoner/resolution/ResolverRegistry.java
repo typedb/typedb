@@ -57,7 +57,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -79,6 +81,7 @@ public class ResolverRegistry {
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private final Map<Concludable, Actor.Driver<ConcludableResolver>> concludableResolvers;
+    private final Map<Actor.Driver<ConcludableResolver>, Set<Concludable>> resolverConcludables;
     private final ConcurrentMap<Rule, Actor.Driver<ConditionResolver>> ruleConditions;
     private final ConcurrentMap<Rule, Actor.Driver<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Set<Actor.Driver<? extends Resolver<?>>> resolvers;
@@ -95,6 +98,7 @@ public class ResolverRegistry {
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
         this.concludableResolvers = new HashMap<>();
+        this.resolverConcludables = new HashMap<Actor.Driver<ConcludableResolver>, Set<Concludable>>();
         this.ruleConditions = new ConcurrentHashMap<>();
         this.ruleConclusions = new ConcurrentHashMap<>();
         this.resolvers = new ConcurrentSet<>();
@@ -221,35 +225,51 @@ public class ResolverRegistry {
         return resolver;
     }
 
-    // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
-    private synchronized ResolverView.MappedConcludable registerConcludable(Concludable concludable) {
-        LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
+    private Optional<ResolverView.MappedConcludable> getConcludableResolver(Concludable concludable) {
         for (Map.Entry<Concludable, Actor.Driver<ConcludableResolver>> c : concludableResolvers.entrySet()) {
             // TODO: This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = concludable.alphaEquals(c.getKey());
             if (alphaEquality.isValid()) {
-                return ResolverView.concludable(c.getValue(), alphaEquality.asValid().idMapping());
+                return Optional.of(ResolverView.concludable(c.getValue(), alphaEquality.asValid().idMapping()));
             }
         }
-        Actor.Driver<ConcludableResolver> resolver = Actor.driver(driver -> new ConcludableResolver(
-                driver, concludable, this), executorService);
-        concludableResolvers.put(concludable, resolver);
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
-        return ResolverView.concludable(resolver, identity(concludable));
+        return Optional.empty();
     }
 
-    public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(Concludable concludable, ConceptMap bounds,
-                                                                           boolean explain) {
+    // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
+    private synchronized ResolverView.MappedConcludable registerConcludable(Concludable concludable) {
+        LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
+        Optional<ResolverView.MappedConcludable> resolverViewOpt = getConcludableResolver(concludable);
+        ResolverView.MappedConcludable resolverView;
+        if (resolverViewOpt.isPresent()) {
+            resolverView = resolverViewOpt.get();
+            resolverConcludables.get(resolverView.resolver()).add(concludable);
+        } else {
+            Actor.Driver<ConcludableResolver> resolver = Actor.driver(driver -> new ConcludableResolver(
+                    driver, concludable, this), executorService);
+            resolverView = ResolverView.concludable(resolver, identity(concludable));
+            resolvers.add(resolver);
+            concludableResolvers.put(concludable, resolverView.resolver());
+            Set<Concludable> concludables = new HashSet<>();
+            concludables.add(concludable);
+            resolverConcludables.put(resolverView.resolver(), concludables);
+        }
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return resolverView;
+    }
+
+    public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(Concludable concludable,
+                                                                           Actor.Driver<ConcludableResolver> concludableResolver,
+                                                                           ConceptMap bounds, boolean explain) {
         // TODO: Move this to the responsibility of the ConcludableResolver
         LOG.debug("Register BoundConcludableResolver, pattern: {} bounds: {}", concludable.pattern(), bounds);
         Actor.Driver<BoundConcludableResolver> resolver;
         if (explain) {
             resolver = Actor.driver(
-                    driver -> new ExplainBoundConcludableResolver(driver, concludableResolver(concludable), bounds, this), executorService);
+                    driver -> new ExplainBoundConcludableResolver(driver, concludableResolver, bounds, this), executorService);
         } else {
             resolver = Actor.driver(
-                    driver -> new MatchBoundConcludableResolver(driver, concludableResolver(concludable), bounds, this), executorService);
+                    driver -> new MatchBoundConcludableResolver(driver, concludableResolver, bounds, this), executorService);
         }
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -301,8 +321,8 @@ public class ResolverRegistry {
         return ruleConditions.get(rule);
     }
 
-    public Actor.Driver<ConcludableResolver> concludableResolver(Concludable concludable) {
-        return concludableResolvers.get(concludable);
+    public Set<Concludable> concludables(Actor.Driver<ConcludableResolver> resolver) {
+        return resolverConcludables.get(resolver);
     }
 
     public static abstract class ResolverView {
