@@ -105,7 +105,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     }
 
     protected Request.Factory upstreamFactory(Response response) {
-        return fromUpstream(response.sourceRequest().createVisit(response.trace())).visit().factory();
+        return upstreamRequest(response).visit().factory();
     }
 
     protected void visitDownstream(Request.Factory downstream, Request fromUpstream) {
