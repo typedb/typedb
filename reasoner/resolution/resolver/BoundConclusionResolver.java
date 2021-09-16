@@ -194,7 +194,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
     private void blockOrFail(Request fromUpstream, ConclusionRequestState<?> requestState) {
         if (requestState.downstreamManager().hasNextBlocked()) {
-            blockToUpstream(fromUpstream, requestState.downstreamManager().blockers());
+            blockToUpstream(fromUpstream, requestState.downstreamManager().cycles());
         } else {
             requestState.setComplete();
             failToUpstream(fromUpstream);

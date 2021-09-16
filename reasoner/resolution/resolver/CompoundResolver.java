@@ -49,7 +49,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         } else if (requestState.downstreamManager().hasNextRevisit()) {
             revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream.trace()), fromUpstream);
         } else if (requestState.downstreamManager().hasNextBlocked()) {
-            blockToUpstream(fromUpstream, requestState.downstreamManager().blockers());
+            blockToUpstream(fromUpstream, requestState.downstreamManager().cycles());
         } else {
             failToUpstream(fromUpstream);
         }
@@ -89,11 +89,11 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     protected void receiveBlocked(Response.Blocked fromDownstream) {
         LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Request.Template cyclingDownstream = fromDownstream.sourceRequest();
+        Request.Template blockingDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = upstreamRequest(fromDownstream);
         RequestState requestState = this.requestStates.get(fromUpstream.visit().template());
-        if (requestState.downstreamManager().contains(cyclingDownstream)) {
-            requestState.downstreamManager().block(cyclingDownstream, fromDownstream.cycles());
+        if (requestState.downstreamManager().contains(blockingDownstream)) {
+            requestState.downstreamManager().block(blockingDownstream, fromDownstream.cycles());
         }
         nextAnswer(fromUpstream, requestState);
     }

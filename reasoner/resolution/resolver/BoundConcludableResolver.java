@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
@@ -249,18 +248,50 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     protected class ExploringRequestState<ANSWER> extends BoundConcludableRequestState<ANSWER> implements RequestState.Exploration {
 
-        private final ConcludableDownstreamManager downstreamManager;
+        private final DownstreamManager downstreamManager;
 
         protected ExploringRequestState(Request.Template fromUpstream, AnswerCache<ANSWER> answerCache,
                                         List<Request.Template> ruleDownstreams, boolean deduplicate,
                                         UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate, upstreamBehaviour, singleAnswerRequired);
-            this.downstreamManager = new ConcludableDownstreamManager(ruleDownstreams);
+            this.downstreamManager = new DownstreamManager(ruleDownstreams);
         }
 
         @Override
-        public ConcludableDownstreamManager downstreamManager() {
+        public DownstreamManager downstreamManager() {
             return downstreamManager;
+        }
+
+        @Override
+        void receiveRevisit(Trace trace, Set<Cycle> cycles) {
+            downstreamManager().unblock(cycles);
+            sendNextMessage(trace);
+        }
+
+        @Override
+        void receiveAnswer(Response.Answer fromDownstream) {
+            if (newAnswer(fromDownstream.answer())) {
+                Set<Cycle> outdated = outdatedCycles(downstreamManager().cycles());
+                if (!outdated.isEmpty()) downstreamManager().unblock(outdated);
+            }
+            sendNextMessage(fromDownstream.trace());
+        }
+
+        @Override
+        void receiveFail(Response.Fail fromDownstream) {
+            downstreamManager().remove(fromDownstream.sourceRequest());
+            sendNextMessage(fromDownstream.trace());
+        }
+
+        @Override
+        void receiveBlocked(Response.Blocked fromDownstream) {
+            Request.Template blockingDownstream = fromDownstream.sourceRequest();
+            if (downstreamManager().contains(blockingDownstream)) {
+                downstreamManager().block(blockingDownstream, fromDownstream.cycles());
+                Set<Cycle> outdated = outdatedCycles(downstreamManager().cycles());
+                if (!outdated.isEmpty()) downstreamManager().unblock(outdated);
+            }
+            sendNextMessage(fromDownstream.trace());
         }
 
         @Override
@@ -287,74 +318,33 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                 visitDownstream(downstreamManager().nextVisit(trace), fromUpstream().createVisit(trace));
             } else if (downstreamManager().hasNextRevisit()) {
                 revisitDownstream(downstreamManager().nextRevisit(trace), fromUpstream().createVisit(trace));
-            } else if (downstreamManager().allDownstreamsCycleToHereOnly()) {
+            } else if (startsHere(downstreamManager().cycles())) {
                 cache().setComplete();
                 failToUpstream(fromUpstream().createVisit(trace));
             } else {
-                blockToUpstream(fromUpstream().createVisit(trace), downstreamManager().cyclesNotOriginatingHere());
+                blockToUpstream(fromUpstream().createVisit(trace), startingElsewhere(downstreamManager().cycles()));
             }
         }
 
-        @Override
-        void receiveRevisit(Trace trace, Set<Cycle> cycles) {
-            downstreamManager().unblock(cycles);
-            sendNextMessage(trace);
+        private Set<Cycle> outdatedCycles(Set<Cycle> cycles) {
+            return iterate(cycles).filter(this::isOutdated).toSet();
         }
 
-        @Override
-        void receiveAnswer(Response.Answer fromDownstream) {
-            if (newAnswer(fromDownstream.answer())) downstreamManager().unblockOutdated();
-            sendNextMessage(fromDownstream.trace());
+        private Set<Cycle> startingElsewhere(Set<Cycle> cycles) {
+            return iterate(cycles).filter(c -> !startsHere(c)).toSet();
         }
 
-        @Override
-        void receiveFail(Response.Fail fromDownstream) {
-            downstreamManager().remove(fromDownstream.sourceRequest());
-            sendNextMessage(fromDownstream.trace());
+        private boolean isOutdated(Cycle cycle) {
+            return startsHere(cycle) && cycle.numAnswersSeen() < cache().size();
         }
 
-        @Override
-        void receiveBlocked(Response.Blocked fromDownstream) {
-            Request.Template cyclingDownstream = fromDownstream.sourceRequest();
-            if (downstreamManager().contains(cyclingDownstream)) {
-                downstreamManager().block(cyclingDownstream, fromDownstream.cycles());
-                downstreamManager().unblockOutdated();
-            }
-            sendNextMessage(fromDownstream.trace());
+        private boolean startsHere(Set<Cycle> cycles) {
+            return iterate(cycles).filter(c -> !startsHere(c)).first().isEmpty();
         }
 
-        class ConcludableDownstreamManager extends DownstreamManager {
-
-            public ConcludableDownstreamManager(List<Request.Template> ruleDownstreams) {
-                super(ruleDownstreams);
-            }
-
-            public void unblockOutdated() {
-                Set<Cycle> outdated = iterate(blocked.values()).flatMap(cycles -> iterate(cycles)
-                                .filter(this::isOutdated)).toSet();
-                if (!outdated.isEmpty()) unblock(outdated);
-            }
-
-            private boolean originatedHere(Cycle cycle) {
-                return cycle.resolver().equals(driver());
-            }
-
-            public boolean isOutdated(Cycle cycle) {
-                return originatedHere(cycle) && cycle.numAnswersSeen() < cache().size();
-            }
-
-            public Set<Cycle> cyclesNotOriginatingHere() {
-                return iterate(blocked.values()).flatMap(Iterators::iterate).filter(c -> !originatedHere(c)).toSet();
-            }
-            public boolean allDownstreamsCycleToHereOnly() {
-                return iterate(blocked.values())
-                        .filter(cycles -> iterate(cycles)
-                                .filter(c -> !originatedHere(c))
-                                .first()
-                                .isPresent())
-                        .first()
-                        .isEmpty();
-            }
+        private boolean startsHere(Cycle cycle) {
+            return cycle.end().equals(driver());
         }
+
     }
 }

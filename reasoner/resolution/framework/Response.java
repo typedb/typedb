@@ -222,15 +222,15 @@ public interface Response {
         public static class Cycle {
 
             private final int numAnswersSeen;
-            private final Actor.Driver<? extends Resolver<?>> resolver;
+            private final Actor.Driver<? extends Resolver<?>> end;
 
-            public Cycle(Actor.Driver<? extends Resolver<?>> resolver, int numAnswersSeen) {
-                this.resolver = resolver;
+            public Cycle(Actor.Driver<? extends Resolver<?>> end, int numAnswersSeen) {
+                this.end = end;
                 this.numAnswersSeen = numAnswersSeen;
             }
 
-            public Actor.Driver<? extends Resolver<?>> resolver() {
-                return resolver;
+            public Actor.Driver<? extends Resolver<?>> end() {
+                return end;
             }
 
             public int numAnswersSeen() {
@@ -243,18 +243,18 @@ public interface Response {
                 if (o == null || getClass() != o.getClass()) return false;
                 Cycle cycle = (Cycle) o;
                 return numAnswersSeen == cycle.numAnswersSeen &&
-                        resolver.equals(cycle.resolver);
+                        end.equals(cycle.end);
             }
 
             @Override
             public int hashCode() {
-                return Objects.hash(numAnswersSeen, resolver);
+                return Objects.hash(numAnswersSeen, end);
             }
 
             @Override
             public String toString() {
                 return "Cycle{" +
-                        "resolver=" + resolver.toString() +
+                        "resolver=" + end.toString() +
                         ", numAnswersSeen=" + numAnswersSeen +
                         '}';
             }

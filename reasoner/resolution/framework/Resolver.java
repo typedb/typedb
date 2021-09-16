@@ -322,7 +322,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             blocked.clear();
         }
 
-        public Set<Cycle> blockers() {
+        public Set<Cycle> cycles() {
             return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
         }
 
