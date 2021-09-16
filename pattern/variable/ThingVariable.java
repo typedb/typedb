@@ -88,7 +88,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
 
     public ThingVariable clone() {
         ThingVariable clone = new ThingVariable(id());
-        clone.addResolvedTypes(resolvedTypes());
+        clone.addInferredTypes(inferredTypes());
         return clone;
     }
 
@@ -102,11 +102,11 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     }
 
     @Override
-    public void addTo(GraphTraversal traversal) {
+    public void addTo(GraphTraversal.Thing traversal) {
         // TODO: create vertex properties first, then the vertex itself, then edges
         //       that way, we can make properties to be 'final' objects that are
         //       included in equality and hashCode of vertices
-        if (!resolvedTypes().isEmpty()) traversal.types(id(), resolvedTypes());
+        if (!inferredTypes().isEmpty()) traversal.types(id(), inferredTypes());
         constraints().forEach(constraint -> constraint.addTo(traversal));
     }
 
@@ -252,7 +252,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     public AlphaEquivalence alphaEquals(ThingVariable that) {
         return AlphaEquivalence.valid()
                 .validIf(id().isName() == that.id().isName())
-                .validIf(this.resolvedTypes().equals(that.resolvedTypes()))
+                .validIf(this.inferredTypes().equals(that.inferredTypes()))
                 .validIfAlphaEqual(this.isaConstraint, that.isaConstraint)
                 .validIfAlphaEqual(this.relationConstraint, that.relationConstraint)
                 .validIfAlphaEqual(this.hasConstraints, that.hasConstraints)

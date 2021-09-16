@@ -220,7 +220,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public void addTo(GraphTraversal traversal) {
+        public void addTo(GraphTraversal.Thing traversal) {
             traversal.predicate(owner.id(), predicate.asEquality(), value);
         }
 
@@ -252,7 +252,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public void addTo(GraphTraversal traversal) {
+        public void addTo(GraphTraversal.Thing traversal) {
             traversal.predicate(owner.id(), predicate.asEquality(), value);
         }
 
@@ -284,7 +284,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public void addTo(GraphTraversal traversal) {
+        public void addTo(GraphTraversal.Thing traversal) {
             traversal.predicate(owner.id(), predicate.asEquality(), value);
         }
 
@@ -311,7 +311,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public void addTo(GraphTraversal traversal) {
+        public void addTo(GraphTraversal.Thing traversal) {
             traversal.predicate(owner.id(), predicate, value);
         }
 
@@ -348,7 +348,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public void addTo(GraphTraversal traversal) {
+        public void addTo(GraphTraversal.Thing traversal) {
             traversal.predicate(owner.id(), predicate.asEquality(), value);
         }
 
@@ -381,7 +381,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public void addTo(GraphTraversal traversal) {
+        public void addTo(GraphTraversal.Thing traversal) {
             traversal.predicate(owner.id(), predicate.asEquality(), value.id());
         }
 

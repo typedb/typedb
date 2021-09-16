@@ -90,7 +90,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public FunctionalIterator<RoleTypeImpl> getSubtypes() {
-        return super.getSubtypes(v -> of(graphMgr, v));
+        return graphMgr.schema().getSubtypes(vertex).map(v -> of(graphMgr, v));
     }
 
     @Override

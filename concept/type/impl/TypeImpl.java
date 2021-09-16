@@ -141,10 +141,6 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
         }
     }
 
-    <TYPE extends Type> FunctionalIterator<TYPE> getSubtypes(Function<TypeVertex, TYPE> typeConstructor) {
-        return tree(vertex, v -> v.ins().edge(SUB).from()).map(typeConstructor);
-    }
-
     <TYPE extends Type> FunctionalIterator<TYPE> getSubtypesExplicit(Function<TypeVertex, TYPE> typeConstructor) {
         return vertex.ins().edge(SUB).from().map(typeConstructor);
     }

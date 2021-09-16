@@ -65,7 +65,12 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.OBJECT;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
@@ -110,17 +115,42 @@ public class TypeGraph {
         isModified = false;
     }
 
+
     static class Cache {
 
         private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownedAttributeTypes;
-
         private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownersOfAttributeTypes;
         private final ConcurrentMap<Label, Set<Label>> resolvedRoleTypeLabels;
+        private final ConcurrentMap<Encoding.ValueType, Set<TypeVertex>> valueAttributeTypes;
+        private Set<TypeVertex> entityTypes;
+        private Set<TypeVertex> relationTypes;
+        private Set<TypeVertex> roleTypes;
+        private Set<TypeVertex> playerTypes;
+        private Set<TypeVertex> roleTypesPlayed;
+        private Set<TypeVertex> attributeTypes;
+        private Set<TypeVertex> attributeTypesOwned;
+        private Set<TypeVertex> attributeOwnerTypes;
 
         Cache() {
             ownedAttributeTypes = new ConcurrentHashMap<>();
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
             resolvedRoleTypeLabels = new ConcurrentHashMap<>();
+            valueAttributeTypes = new ConcurrentHashMap<>();
+        }
+
+        public void clear() {
+            ownedAttributeTypes.clear();
+            ownersOfAttributeTypes.clear();
+            resolvedRoleTypeLabels.clear();
+            entityTypes = null;
+            relationTypes = null;
+            roleTypes = null;
+            playerTypes = null;
+            roleTypesPlayed = null;
+            attributeTypes = null;
+            attributeTypesOwned = null;
+            attributeOwnerTypes = null;
+            valueAttributeTypes.clear();
         }
     }
 
@@ -185,24 +215,70 @@ public class TypeGraph {
         return tree(rootThingType(), v -> v.ins().edge(SUB).from());
     }
 
+    public FunctionalIterator<TypeVertex> getSubtypes(TypeVertex type) {
+        return tree(type, v -> v.ins().edge(SUB).from());
+    }
+
     public FunctionalIterator<TypeVertex> entityTypes() {
-        return tree(rootEntityType(), v -> v.ins().edge(SUB).from());
+        if (cache.entityTypes == null) cache.entityTypes = getSubtypes(rootEntityType()).toSet();
+        return iterate(cache.entityTypes);
     }
 
     public FunctionalIterator<TypeVertex> attributeTypes() {
-        return tree(rootAttributeType(), v -> v.ins().edge(SUB).from());
+        if (cache.attributeTypes == null) cache.attributeTypes = getSubtypes(rootAttributeType()).toSet();
+        return iterate(cache.attributeTypes);
     }
 
-    public FunctionalIterator<TypeVertex> attributeTypes(Encoding.ValueType vt) {
-        return attributeTypes().filter(at -> at.valueType().equals(vt));
+    public FunctionalIterator<TypeVertex> attributeTypes(Encoding.ValueType valueType) {
+        return iterate(cache.valueAttributeTypes.computeIfAbsent(valueType,
+                vt -> attributeTypes().filter(at -> at.valueType().equals(valueType)).toSet()));
     }
 
     public FunctionalIterator<TypeVertex> relationTypes() {
-        return tree(rootRelationType(), v -> v.ins().edge(SUB).from());
+        if (cache.relationTypes == null) cache.relationTypes = getSubtypes(rootRelationType()).toSet();
+        return iterate(cache.relationTypes);
     }
 
     public FunctionalIterator<TypeVertex> roleTypes() {
-        return tree(rootRoleType(), v -> v.ins().edge(SUB).from());
+        if (cache.roleTypes == null) cache.roleTypes = getSubtypes(rootRoleType()).toSet();
+        return iterate(cache.roleTypes);
+    }
+
+    public FunctionalIterator<TypeVertex> playerTypes() {
+        if (cache.playerTypes == null) {
+            cache.playerTypes = getSubtypes(rootThingType())
+                    .filter(type -> type.outs().edge(Encoding.Edge.Type.PLAYS).to().first().isPresent())
+                    .flatMap(this::getSubtypes).toSet();
+        }
+        return iterate(cache.playerTypes);
+    }
+
+    public FunctionalIterator<TypeVertex> roleTypesPlayed() {
+        if (cache.roleTypesPlayed == null) {
+            cache.roleTypesPlayed = getSubtypes(rootRoleType())
+                    .filter(roleType -> roleType.ins().edge(Encoding.Edge.Type.PLAYS).from().first().isPresent())
+                    .toSet();
+        }
+        return iterate(cache.roleTypesPlayed);
+    }
+
+    public FunctionalIterator<TypeVertex> attributeOwnerTypes() {
+        if (cache.attributeOwnerTypes == null) {
+            cache.attributeOwnerTypes = getSubtypes(rootThingType())
+                    .filter(type -> type.outs().edge(OWNS).to().first().isPresent() ||
+                            type.outs().edge(OWNS_KEY).to().first().isPresent())
+                    .flatMap(this::getSubtypes).toSet();
+        }
+        return iterate(cache.attributeOwnerTypes);
+    }
+
+    public FunctionalIterator<TypeVertex> attributeTypesOwned() {
+        if (cache.attributeTypesOwned == null) {
+            cache.attributeTypesOwned = getSubtypes(rootAttributeType())
+                    .filter(attrType -> attrType.ins().edge(OWNS).from().first().isPresent() ||
+                            attrType.ins().edge(OWNS_KEY).from().first().isPresent()).toSet();
+        }
+        return iterate(cache.attributeTypesOwned);
     }
 
     public Set<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
@@ -308,6 +384,7 @@ public class TypeGraph {
                     this, VertexIID.Type.generate(keyGenerator, encoding), label, scope
             ));
             typesByIID.put(typeVertex.iid(), typeVertex);
+            cache.clear();
             return typeVertex;
         } finally {
             singleLabelLocks.get(scopedLabel).writeLock().unlock();
@@ -327,6 +404,7 @@ public class TypeGraph {
             if (type != null) throw TypeDBException.of(INVALID_SCHEMA_WRITE, newScopedLabel);
             typesByLabel.remove(oldScopedLabel);
             typesByLabel.put(newScopedLabel, vertex);
+            cache.clear();
             return vertex;
         } finally {
             multiLabelLock.writeLock().unlock();
@@ -342,6 +420,7 @@ public class TypeGraph {
 
             typesByLabel.remove(vertex.scopedLabel());
             typesByIID.remove(vertex.iid());
+            cache.clear();
         } finally {
             singleLabelLocks.get(vertex.scopedLabel()).writeLock().unlock();
             multiLabelLock.readLock().unlock();

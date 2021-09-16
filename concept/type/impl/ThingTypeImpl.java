@@ -467,21 +467,21 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public FunctionalIterator<ThingTypeImpl> getSubtypes() {
-            return getSubtypes(v -> {
-                switch (v.encoding()) {
-                    case THING_TYPE:
-                        assert vertex == v;
-                        return this;
-                    case ENTITY_TYPE:
-                        return EntityTypeImpl.of(graphMgr, v);
-                    case ATTRIBUTE_TYPE:
-                        return AttributeTypeImpl.of(graphMgr, v);
-                    case RELATION_TYPE:
-                        return RelationTypeImpl.of(graphMgr, v);
-                    default:
-                        throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
-                }
-            });
+            return graphMgr.schema().getSubtypes(vertex).map(v -> {
+                    switch (v.encoding()) {
+                        case THING_TYPE:
+                            assert vertex == v;
+                            return this;
+                        case ENTITY_TYPE:
+                            return EntityTypeImpl.of(graphMgr, v);
+                        case ATTRIBUTE_TYPE:
+                            return AttributeTypeImpl.of(graphMgr, v);
+                        case RELATION_TYPE:
+                            return RelationTypeImpl.of(graphMgr, v);
+                        default:
+                            throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
+                    }
+                });
         }
 
         @Override

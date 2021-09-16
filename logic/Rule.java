@@ -187,8 +187,8 @@ public class Rule {
         then.variables().stream().filter(variable -> variable.id().isName())
                 .forEach(thenVar -> {
                     Variable whenVar = when.variable(thenVar.id());
-                    thenVar.retainResolvedTypes(whenVar.resolvedTypes());
-                    if (thenVar.resolvedTypes().isEmpty()) then.setCoherent(false);
+                    thenVar.retainInferredTypes(whenVar.inferredTypes());
+                    if (thenVar.inferredTypes().isEmpty()) then.setCoherent(false);
                 });
     }
 
@@ -201,13 +201,13 @@ public class Rule {
             throw TypeDBException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
         }
 
-        logicMgr.typeResolver().resolve(when);
+        logicMgr.typeInference().infer(when);
         return when.conjunctions().get(0);
     }
 
     private Conjunction thenPattern(com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
-        logicMgr.typeResolver().resolveVariables(conj, true);
+        logicMgr.typeInference().infer(conj, true);
         return conj;
     }
 
@@ -401,8 +401,8 @@ public class Rule {
         }
 
         private void validateInsertable(LogicManager logicMgr) {
-            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeResolver().namedCombinations(rule.when, false);
-            Set<Map<Identifier.Variable.Name, Label>> allowedThenCombinations = logicMgr.typeResolver().namedCombinations(rule.then, true).toSet();
+            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeInference().typePermutations(rule.when, false);
+            Set<Map<Identifier.Variable.Name, Label>> allowedThenCombinations = logicMgr.typeInference().typePermutations(rule.then, true).toSet();
 
             whenCombinations.forEachRemaining(nameLabelMap -> {
                 if (allowedThenCombinations.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
@@ -518,14 +518,14 @@ public class Rule {
             @Override
             void index() {
                 Variable relation = relation().owner();
-                Set<Label> possibleRelationTypes = relation.resolvedTypes();
+                Set<Label> possibleRelationTypes = relation.inferredTypes();
                 possibleRelationTypes.forEach(rule().structure::indexConcludesVertex);
             }
 
             @Override
             void unindex() {
                 Variable relation = relation().owner();
-                Set<Label> possibleRelationTypes = relation.resolvedTypes();
+                Set<Label> possibleRelationTypes = relation.inferredTypes();
                 possibleRelationTypes.forEach(rule().structure::unindexConcludesVertex);
             }
 
@@ -569,7 +569,7 @@ public class Rule {
                     traversal.player(playerId, whenConcepts.get(playerId).asThing().getIID(),
                             set(getRole(rp, relationType, whenConcepts).getLabel())); // TODO include inheritance
                 });
-                return traversalEng.relations(traversal).map(conceptMgr::conceptMap)
+                return traversalEng.iterator(traversal).map(conceptMgr::conceptMap)
                         .map(conceptMap -> conceptMap.get(relationId).asRelation());
             }
 
@@ -689,7 +689,7 @@ public class Rule {
                 @Override
                 void index() {
                     com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    Set<Label> possibleAttributeHas = attribute.inferredTypes();
                     possibleAttributeHas.forEach(label -> {
                         rule().structure.indexConcludesVertex(label);
                         rule().structure.indexConcludesEdgeTo(label);
@@ -699,7 +699,7 @@ public class Rule {
                 @Override
                 void unindex() {
                     com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    Set<Label> possibleAttributeHas = attribute.inferredTypes();
                     possibleAttributeHas.forEach(label -> {
                         rule().structure.unindexConcludesVertex(label);
                         rule().structure.unindexConcludesEdgeTo(label);
@@ -807,14 +807,14 @@ public class Rule {
                 @Override
                 void index() {
                     com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    Set<Label> possibleAttributeHas = attribute.inferredTypes();
                     possibleAttributeHas.forEach(rule().structure::indexConcludesEdgeTo);
                 }
 
                 @Override
                 void unindex() {
                     com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.resolvedTypes();
+                    Set<Label> possibleAttributeHas = attribute.inferredTypes();
                     possibleAttributeHas.forEach(rule().structure::unindexConcludesEdgeTo);
                 }
 

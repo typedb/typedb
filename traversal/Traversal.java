@@ -20,15 +20,21 @@ package com.vaticle.typedb.core.traversal;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.planner.Planner;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -36,11 +42,13 @@ import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.cartesian;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
+import static java.util.stream.Collectors.toList;
 
 public abstract class Traversal {
 
@@ -58,6 +66,21 @@ public abstract class Traversal {
 
     public Parameters parameters() {
         return parameters;
+    }
+
+    abstract FunctionalIterator<VertexMap> permutation(GraphManager graphMgr);
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Traversal that = (Traversal) o;
+        return this.structure.equals(that.structure) && this.parameters.equals(that.parameters);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.structure, this.parameters);
     }
 
     public static class Parameters {

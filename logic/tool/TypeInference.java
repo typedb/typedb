@@ -21,17 +21,14 @@ package com.vaticle.typedb.core.logic.tool;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.concept.ConceptManager;
-import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.Negation;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
-import com.vaticle.typedb.core.pattern.constraint.thing.IIDConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
@@ -51,7 +48,8 @@ import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
-import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Name;
+import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typeql.lang.common.TypeQLArg.ValueType;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 
@@ -73,24 +71,24 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ATTRIBUTE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.THING;
 
-public class TypeResolver {
+public class TypeInference {
 
-    private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
     private final LogicCache logicCache;
+    private final GraphManager graphMgr;
 
-    public TypeResolver(LogicCache logicCache, TraversalEngine traversalEng, ConceptManager conceptMgr) {
-        this.conceptMgr = conceptMgr;
+    public TypeInference(LogicCache logicCache, TraversalEngine traversalEng, GraphManager graphMgr) {
         this.traversalEng = traversalEng;
         this.logicCache = logicCache;
+        this.graphMgr = graphMgr;
     }
 
-    public FunctionalIterator<Map<Identifier.Variable.Name, Label>> namedCombinations(Conjunction conjunction, boolean insertable) {
-        GraphTraversal resolverTraversal = new GraphTraversal();
-        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, conceptMgr, resolverTraversal, 0, insertable);
-        resolverTraversal.filter(traversalBuilder.retrievedResolvers());
-        return traversalEng.iterator(traversalBuilder.traversal()).map(vertexMap -> {
-            Map<Identifier.Variable.Name, Label> mapping = new HashMap<>();
+    public FunctionalIterator<Map<Name, Label>> typePermutations(Conjunction conjunction, boolean insertable) {
+        TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
+        GraphTraversal.Type traversal = traversalBuilder.traversal();
+        traversal.filter(traversalBuilder.retrievedResolvers());
+        return traversalEng.iterator(traversal).map(vertexMap -> {
+            Map<Name, Label> mapping = new HashMap<>();
             vertexMap.forEach((id, vertex) -> {
                 assert vertex.isType();
                 traversalBuilder.getOriginalVariable(id).map(Variable::id).filter(Identifier::isName)
@@ -100,57 +98,50 @@ public class TypeResolver {
         });
     }
 
-    public void resolveVariableLabels(Conjunction conjunction) {
-        iterate(conjunction.variables()).filter(v -> v.isType() && v.asType().label().isPresent())
-                .forEachRemaining(typeVar -> {
-                    Label label = typeVar.asType().label().get().properLabel();
-                    if (label.scope().isPresent()) {
-                        String scope = label.scope().get();
-                        Set<Label> labels = traversalEng.graph().schema().resolveRoleTypeLabels(label);
-                        if (labels.isEmpty()) throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, label.name(), scope);
-                        typeVar.addResolvedTypes(labels);
-                    } else {
-                        TypeVertex type = traversalEng.graph().schema().getType(label);
-                        if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, label);
-                        typeVar.addResolvedType(label);
-                    }
-                });
+    public void propagateLabels(Conjunction conj) {
+        iterate(conj.variables()).filter(v -> v.isType() && v.asType().label().isPresent()).forEachRemaining(typeVar -> {
+            Label label = typeVar.asType().label().get().properLabel();
+            if (label.scope().isPresent()) {
+                String scope = label.scope().get();
+                Set<Label> labels = traversalEng.graph().schema().resolveRoleTypeLabels(label);
+                if (labels.isEmpty()) throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, label.name(), scope);
+                typeVar.addInferredTypes(labels);
+            } else {
+                TypeVertex type = traversalEng.graph().schema().getType(label);
+                if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, label);
+                typeVar.addInferredTypes(label);
+            }
+        });
     }
 
-    public void resolve(Disjunction disjunction) {
-        resolve(disjunction, new LinkedList<>());
+    public void infer(Disjunction disjunction) {
+        infer(disjunction, new LinkedList<>());
     }
 
-    private void resolve(Disjunction disjunction, List<Conjunction> scopingConjunctions) {
-        disjunction.conjunctions().forEach(conjunction -> resolve(conjunction, scopingConjunctions));
+    private void infer(Disjunction disjunction, List<Conjunction> scopingConjunctions) {
+        disjunction.conjunctions().forEach(conjunction -> {
+            infer(conjunction, scopingConjunctions, false);
+            for (Negation negation : conjunction.negations()) {
+                infer(negation.disjunction(), list(scopingConjunctions, conjunction));
+            }
+        });
     }
 
-    private void resolve(Conjunction conjunction, List<Conjunction> scopingConjunctions) {
-        resolveVariables(conjunction, scopingConjunctions, false);
-        for (Negation negation : conjunction.negations()) {
-            resolve(negation.disjunction(), list(scopingConjunctions, conjunction));
-        }
+    public void infer(Conjunction conjunction, boolean insertable) {
+        infer(conjunction, list(), insertable);
     }
 
-    public void resolveVariables(Conjunction conjunction, boolean insertable) {
-        resolveVariables(conjunction, list(), insertable);
-    }
+    private void infer(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
+        propagateLabels(conjunction);
+        if (isSchemaQuery(conjunction)) return;
 
-    private void resolveVariables(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
-        resolveVariableLabels(conjunction);
-        if (!isSchemaQuery(conjunction)) resolveVariableTypes(conjunction, scopingConjunctions, insertable);
-    }
-
-    private void resolveVariableTypes(Conjunction conjunction, List<Conjunction> scopingConjunctions, boolean insertable) {
-        GraphTraversal resolverTraversal = new GraphTraversal();
-        TraversalBuilder traversalBuilder = builder(resolverTraversal, conjunction, scopingConjunctions, insertable);
-        resolverTraversal.filter(traversalBuilder.retrievedResolvers());
-        Map<Identifier.Variable.Retrievable, Set<Label>> resolvedLabels = executeTypeResolvers(traversalBuilder);
+        TraversalBuilder builder = builder(conjunction, scopingConjunctions, graphMgr, insertable);
+        Optional<Map<Identifier.Variable.Retrievable, Set<Label>>> resolvedLabels = executeTypeResolvers(builder);
         if (resolvedLabels.isEmpty()) conjunction.setCoherent(false);
         else {
-            resolvedLabels.forEach((id, labels) -> traversalBuilder.getOriginalVariable(id).ifPresent(variable -> {
-                assert variable.resolvedTypes().isEmpty() || variable.resolvedTypes().containsAll(labels);
-                variable.setResolvedTypes(labels);
+            resolvedLabels.get().forEach((id, labels) -> builder.getOriginalVariable(id).ifPresent(variable -> {
+                assert variable.inferredTypes().isEmpty() || variable.inferredTypes().containsAll(labels);
+                variable.setInferredTypes(labels);
             }));
         }
     }
@@ -159,57 +150,46 @@ public class TypeResolver {
         return iterate(conjunction.variables()).noneMatch(Variable::isThing);
     }
 
-    private TraversalBuilder builder(GraphTraversal traversal, Conjunction conjunction, List<Conjunction> scopingConjunctions,
-                                     boolean insertable) {
-        TraversalBuilder currentBuilder;
+    private TraversalBuilder builder(Conjunction conjunction, List<Conjunction> scopingConjunctions, GraphManager graphMgr, boolean insertable) {
+        TraversalBuilder currentBuilder = null;
         if (!scopingConjunctions.isEmpty()) {
             Set<Reference.Name> names = iterate(conjunction.variables()).filter(v -> v.reference().isName())
                     .map(v -> v.reference().asName()).toSet();
-            currentBuilder = new TraversalBuilder(scopingConjunctions.get(0), conceptMgr, traversal, 0, insertable);
-            for (int i = 1; i < scopingConjunctions.size(); i++) {
-                Conjunction scoping = scopingConjunctions.get(i);
-                if (iterate(scoping.variables()).noneMatch(v -> v.reference().isName() && names.contains(v.reference().asName()))) {
-                    // skip any scoping conjunctions without a named variable in common
-                    continue;
+            for (Conjunction scoping : scopingConjunctions) {
+                // only include conjunctions with a variable in common
+                if (iterate(scoping.variables()).anyMatch(v -> v.reference().isName() && names.contains(v.reference().asName()))) {
+                    if (currentBuilder == null) currentBuilder = new TraversalBuilder(scoping, insertable, graphMgr);
+                    else currentBuilder = new TraversalBuilder(scoping, currentBuilder, insertable, graphMgr);
                 }
-                currentBuilder = new TraversalBuilder(scoping, conceptMgr, traversal, currentBuilder.sysVarCounter(), insertable);
             }
-            currentBuilder = new TraversalBuilder(conjunction, conceptMgr, traversal, currentBuilder.sysVarCounter(), insertable);
-        } else {
-            currentBuilder = new TraversalBuilder(conjunction, conceptMgr, traversal, 0, insertable);
-        }
+            currentBuilder = new TraversalBuilder(conjunction, currentBuilder, insertable, graphMgr);
+        } else currentBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
+        currentBuilder.traversal().filter(currentBuilder.retrievedResolvers());
         return currentBuilder;
     }
 
-    private Map<Identifier.Variable.Retrievable, Set<Label>> executeTypeResolvers(TraversalBuilder traversalBuilder) {
-        return logicCache.resolver().get(traversalBuilder.traversal().structure(), structure -> {
-            Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
-            traversalEng.iterator(traversalBuilder.traversal(), true)
-                    // TODO: This filter should not be needed if we enforce traversal only to return non-abstract
-                    .filter(result -> !containsAbstractThing(result, traversalBuilder))
-                    .forEachRemaining(
-                            result -> {
-                                assert iterate(result.map().values()).allMatch(Vertex::isType);
-                                result.forEach((id, vertex) -> {
-                                    Optional<Variable> originalVar = traversalBuilder.getOriginalVariable(id);
-                                    if (originalVar.isPresent()) {
-                                        Set<Label> labels = mapping.computeIfAbsent(id, (i) -> new HashSet<>());
-                                        labels.add(vertex.asType().properLabel());
-                                    }
-                                });
-                            }
-                    );
-            return mapping;
-        });
+    private Optional<Map<Identifier.Variable.Retrievable, Set<Label>>> executeTypeResolvers(TraversalBuilder traversalBuilder) {
+        return logicCache.resolver().get(traversalBuilder.traversal().structure(), structure ->
+                traversalEng.combination(traversalBuilder.traversal(), thingVariableIds(traversalBuilder)).map(result -> {
+                            Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
+                            result.forEach((id, types) -> {
+                                Optional<Variable> originalVar = traversalBuilder.getOriginalVariable(id);
+                                if (originalVar.isPresent()) {
+                                    Set<Label> labels = mapping.computeIfAbsent(id, (i) -> new HashSet<>());
+                                    types.forEach(vertex -> labels.add(vertex.properLabel()));
+                                }
+                            });
+                            return mapping;
+                        }
+                )
+        );
     }
 
-    private boolean containsAbstractThing(VertexMap resolvedTypes, TraversalBuilder traversalBuilder) {
-        for (Map.Entry<Identifier.Variable.Retrievable, Vertex<?, ?>> entry : resolvedTypes.map().entrySet()) {
-            Identifier.Variable.Retrievable id = entry.getKey();
-            Optional<Variable> var = traversalBuilder.getOriginalVariable(id);
-            if (entry.getValue().asType().isAbstract() && var.isPresent() && var.get().isThing()) return true;
-        }
-        return false;
+    private Set<Identifier.Variable.Retrievable> thingVariableIds(TraversalBuilder traversalBuilder) {
+        return iterate(traversalBuilder.resolverToOriginal.values()).filter(Variable::isThing).map(var -> {
+            assert var.id().isRetrievable();
+            return var.id().asRetrievable();
+        }).toSet();
     }
 
     private static class TraversalBuilder {
@@ -221,26 +201,34 @@ public class TypeResolver {
         private final Map<Identifier.Variable, Set<ValueType>> resolverValueTypes;
         private final Map<Identifier.Variable, TypeVariable> originalToResolver;
         private final Map<Identifier.Variable, Variable> resolverToOriginal;
-        private final ConceptManager conceptMgr;
+        private final GraphManager graphMgr;
         private final Conjunction conjunction;
-        private final GraphTraversal traversal;
+        private final GraphTraversal.Type traversal;
         private final boolean insertable;
         private boolean hasRootAttribute;
         private boolean hasRootThing;
         private int sysVarCounter;
 
-        TraversalBuilder(Conjunction conjunction, ConceptManager conceptMgr, GraphTraversal initialTraversal,
-                         int initialAnonymousVarCounter, boolean insertable) {
-            this.conceptMgr = conceptMgr;
+        TraversalBuilder(Conjunction conjunction, boolean insertable, GraphManager graphMgr) {
+            this(conjunction, new GraphTraversal.Type(), 0, insertable, graphMgr);
+        }
+
+        TraversalBuilder(Conjunction conjunction, TraversalBuilder scopingTraversal, boolean insertable, GraphManager graphMgr) {
+            this(conjunction, scopingTraversal.traversal(), scopingTraversal.sysVarCounter(), insertable, graphMgr);
+        }
+
+        private TraversalBuilder(Conjunction conjunction, GraphTraversal.Type initialTraversal, int initialSysVarCounter,
+                                 boolean insertable, GraphManager graphMgr) {
+            this.graphMgr = graphMgr;
             this.conjunction = conjunction;
             this.traversal = initialTraversal;
             this.resolverToOriginal = new HashMap<>();
             this.originalToResolver = new HashMap<>();
             this.resolverValueTypes = new HashMap<>();
-            this.sysVarCounter = initialAnonymousVarCounter;
+            this.sysVarCounter = initialSysVarCounter;
             this.insertable = insertable;
             this.hasRootAttribute = false;
-            this.hasRootThing  = false;
+            this.hasRootThing = false;
             conjunction.variables().forEach(this::register);
         }
 
@@ -252,7 +240,7 @@ public class TypeResolver {
             return sysVarCounter;
         }
 
-        GraphTraversal traversal() {
+        GraphTraversal.Type traversal() {
             return traversal;
         }
 
@@ -271,13 +259,13 @@ public class TypeResolver {
             TypeVariable resolver;
             if (var.label().isPresent() && var.label().get().scope().isPresent()) {
                 resolver = new TypeVariable(newSystemId());
-                traversal.labels(resolver.id(), var.resolvedTypes());
+                traversal.labels(resolver.id(), var.inferredTypes());
             } else {
                 resolver = var;
             }
             originalToResolver.put(var.id(), resolver);
             resolverToOriginal.putIfAbsent(resolver.id(), var);
-            if (!var.resolvedTypes().isEmpty()) traversal.labels(resolver.id(), var.resolvedTypes());
+            if (!var.inferredTypes().isEmpty()) traversal.labels(resolver.id(), var.inferredTypes());
 
             for (TypeConstraint constraint : var.constraints()) {
                 if (constraint.isAbstract()) registerAbstract(resolver);
@@ -302,28 +290,84 @@ public class TypeResolver {
             traversal.equalTypes(resolver.id(), register(isConstraint.variable()).id());
         }
 
+        private void restrict(Identifier.Variable id, FunctionalIterator<TypeVertex> types) {
+            TraversalVertex.Properties.Type props = traversal.structure().typeVertex(id).props();
+            Set<Label> existingLabels = props.labels();
+            if (existingLabels.isEmpty()) types.forEachRemaining(t -> existingLabels.add(t.properLabel()));
+            else {
+                Set<Label> intersection = types.filter(t -> existingLabels.contains(t.properLabel()))
+                        .map(TypeVertex::properLabel).toSet();
+                props.clearLabels();
+                props.labels(intersection);
+            }
+        }
+
         private void registerOwns(TypeVariable resolver, OwnsConstraint ownsConstraint) {
-            traversal.owns(resolver.id(), register(ownsConstraint.attribute()).id(), ownsConstraint.isKey());
+            TypeVariable attrResolver = register(ownsConstraint.attribute());
+            traversal.owns(resolver.id(), attrResolver.id(), ownsConstraint.isKey());
+            restrict(resolver.id(), graphMgr.schema().attributeOwnerTypes());
+            restrict(attrResolver.id(), graphMgr.schema().attributeTypesOwned());
         }
 
         private void registerPlays(TypeVariable resolver, PlaysConstraint playsConstraint) {
-            traversal.plays(resolver.id(), register(playsConstraint.role()).id());
+            TypeVariable roleResolver = register(playsConstraint.role());
+            traversal.plays(resolver.id(), roleResolver.id());
+            restrict(resolver.id(), graphMgr.schema().playerTypes());
+            restrict(roleResolver.id(), graphMgr.schema().roleTypesPlayed());
         }
 
         private void registerRegex(TypeVariable resolver, RegexConstraint regexConstraint) {
             traversal.regex(resolver.id(), regexConstraint.regex().pattern());
+            restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.STRING));
         }
 
         private void registerRelates(TypeVariable resolver, RelatesConstraint relatesConstraint) {
-            traversal.relates(resolver.id(), register(relatesConstraint.role()).id());
+            TypeVariable roleResolver = register(relatesConstraint.role());
+            traversal.relates(resolver.id(), roleResolver.id());
+            restrict(resolver.id(), graphMgr.schema().relationTypes());
+            restrict(resolver.id(), graphMgr.schema().roleTypes());
         }
 
         private void registerSub(TypeVariable resolver, SubConstraint subConstraint) {
-            traversal.sub(resolver.id(), register(subConstraint.type()).id(), !subConstraint.isExplicit());
+            TypeVariable superResolver = register(subConstraint.type());
+            traversal.sub(resolver.id(), superResolver.id(), !subConstraint.isExplicit());
+            if (superResolver.id().isLabel()) {
+                assert superResolver.label().isPresent();
+                if (!subConstraint.isExplicit()) {
+                    restrict(resolver.id(), graphMgr.schema().getSubtypes(
+                            graphMgr.schema().getType(superResolver.label().get().properLabel())));
+                } else {
+                    restrict(resolver.id(), graphMgr.schema().getType(superResolver.label().get().properLabel())
+                            .ins().edge(Encoding.Edge.Type.SUB).from());
+                }
+            }
         }
 
         private void registerValueType(TypeVariable resolver, ValueTypeConstraint valueTypeConstraint) {
             traversal.valueType(resolver.id(), valueTypeConstraint.valueType());
+            inferTypesByValueType(resolver, valueTypeConstraint.valueType());
+        }
+
+        private void inferTypesByValueType(TypeVariable resolver, ValueType valueType) {
+            switch (valueType) {
+                case STRING:
+                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.STRING));
+                    break;
+                case LONG:
+                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.LONG));
+                    break;
+                case DOUBLE:
+                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.DOUBLE));
+                    break;
+                case BOOLEAN:
+                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.BOOLEAN));
+                    break;
+                case DATETIME:
+                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.DATETIME));
+                    break;
+                default:
+                    throw TypeDBException.of(ILLEGAL_STATE);
+            }
         }
 
         private TypeVariable register(ThingVariable var) {
@@ -354,20 +398,17 @@ public class TypeResolver {
             traversal.sub(resolver.id(), ROOT_THING_ID, true);
         }
 
-        private void registerIID(TypeVariable resolver, IIDConstraint iidConstraint) {
-            Thing thing = conceptMgr.getThing(iidConstraint.iid());
-            if (thing != null) traversal.labels(resolver.id(), thing.getType().getLabel());
-        }
-
         private void registerIsa(TypeVariable resolver, IsaConstraint isaConstraint) {
             if (!isaConstraint.isExplicit() && !insertable) {
                 traversal.sub(resolver.id(), register(isaConstraint.type()).id(), true);
-            } else if (isaConstraint.type().reference().isName()) {
+            } else if (isaConstraint.type().id().isName() || isaConstraint.type().id().isLabel()) {
                 traversal.equalTypes(resolver.id(), register(isaConstraint.type()).id());
-            } else if (isaConstraint.type().label().isPresent()) {
-                traversal.labels(resolver.id(), isaConstraint.type().label().get().properLabel());
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
+            }
+            if (isaConstraint.type().label().isPresent()) {
+                restrict(resolver.id(), graphMgr.schema().getSubtypes(
+                        graphMgr.schema().getType(isaConstraint.type().label().get().properLabel())));
             }
         }
 
@@ -379,6 +420,8 @@ public class TypeResolver {
             TypeVariable attributeResolver = register(hasConstraint.attribute());
             traversal.owns(resolver.id(), attributeResolver.id(), false);
             registerSubAttribute(attributeResolver);
+            restrict(resolver.id(), graphMgr.schema().attributeOwnerTypes());
+            restrict(attributeResolver.id(), graphMgr.schema().attributeTypesOwned());
         }
 
         private void registerRelation(TypeVariable resolver, RelationConstraint constraint) {
@@ -388,20 +431,25 @@ public class TypeResolver {
                 if (rolePlayer.roleType().isPresent()) {
                     TypeVariable roleTypeResolver = register(rolePlayer.roleType().get());
                     traversal.sub(actingRoleResolver.id(), roleTypeResolver.id(), true);
+                    restrict(roleTypeResolver.id(), graphMgr.schema().roleTypes());
+                    restrict(actingRoleResolver.id(), graphMgr.schema().roleTypes());
                 }
                 traversal.relates(resolver.id(), actingRoleResolver.id());
                 traversal.plays(playerResolver.id(), actingRoleResolver.id());
+                restrict(playerResolver.id(), graphMgr.schema().playerTypes());
             }
+            restrict(resolver.id(), graphMgr.schema().relationTypes());
         }
 
         private void registerInsertableRelation(TypeVariable resolver, RelationConstraint constraint) {
             for (RelationConstraint.RolePlayer rolePlayer : constraint.players()) {
                 TypeVariable playerResolver = register(rolePlayer.player());
                 TypeVariable roleResolver = register(rolePlayer.roleType().isPresent() ?
-                                                             rolePlayer.roleType().get() : new TypeVariable(newSystemId()));
+                        rolePlayer.roleType().get() : new TypeVariable(newSystemId()));
                 traversal.relates(resolver.id(), roleResolver.id());
                 traversal.plays(playerResolver.id(), roleResolver.id());
             }
+            restrict(resolver.id(), graphMgr.schema().relationTypes());
         }
 
         private void registerValue(TypeVariable resolver, ValueConstraint<?> constraint) {
@@ -417,7 +465,10 @@ public class TypeResolver {
             }
 
             if (resolverValueTypes.get(resolver.id()).isEmpty()) {
-                valueTypes.forEach(valueType -> traversal.valueType(resolver.id(), valueType));
+                valueTypes.forEach(valueType -> {
+                    traversal.valueType(resolver.id(), valueType);
+                    inferTypesByValueType(resolver, valueType);
+                });
                 resolverValueTypes.put(resolver.id(), valueTypes);
             } else if (!resolverValueTypes.get(resolver.id()).containsAll(valueTypes)) {
                 // TODO this is a bit odd - can we set not coherent here and short circuit?
@@ -455,7 +506,6 @@ public class TypeResolver {
                 hasRootThing = true;
             }
         }
-
 
         private Identifier.Variable newSystemId() {
             return Identifier.Variable.of(SystemReference.of(sysVarCounter++));

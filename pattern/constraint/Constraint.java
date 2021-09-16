@@ -36,7 +36,7 @@ public abstract class Constraint {
 
     public abstract Set<? extends Variable> variables();
 
-    public abstract void addTo(GraphTraversal traversal);
+    public abstract void addTo(GraphTraversal.Thing traversal);
 
     public boolean isType() {
         return false;

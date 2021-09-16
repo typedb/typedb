@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.traversal.iterator;
+package com.vaticle.typedb.core.traversal.scanner;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
@@ -51,7 +51,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private final GraphManager graphMgr;
     private final GraphProcedure procedure;
-    private final GraphTraversal.Parameters params;
+    private final GraphTraversal.Thing.Parameters params;
     private final Set<Retrievable> filter;
     private final Map<Identifier, FunctionalIterator<? extends Vertex<?, ?>>> iterators;
     private final Map<Identifier, Vertex<?, ?>> answer;
@@ -64,7 +64,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
     public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, GraphProcedure procedure,
-                         GraphTraversal.Parameters params, Set<Retrievable> filter) {
+                         GraphTraversal.Thing.Parameters params, Set<Retrievable> filter) {
         assert procedure.edgesCount() > 0;
         this.graphMgr = graphMgr;
         this.procedure = procedure;

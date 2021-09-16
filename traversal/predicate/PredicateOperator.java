@@ -159,7 +159,7 @@ public abstract class PredicateOperator {
             super(token);
         }
 
-        abstract boolean apply(String vertexValue, GraphTraversal.Parameters.Value predicateValue);
+        abstract boolean apply(String vertexValue, GraphTraversal.Thing.Parameters.Value predicateValue);
 
         @Override
         boolean isSubString() { return true; }
@@ -169,7 +169,7 @@ public abstract class PredicateOperator {
 
         private static final SubString CONTAINS = new SubString(TypeQLToken.Predicate.SubString.CONTAINS) {
             @Override
-            boolean apply(String vertexValue, GraphTraversal.Parameters.Value predicateValue) {
+            boolean apply(String vertexValue, GraphTraversal.Thing.Parameters.Value predicateValue) {
                 assert predicateValue.isString();
                 return containsIgnoreCase(vertexValue, predicateValue.getString());
             }
@@ -193,7 +193,7 @@ public abstract class PredicateOperator {
 
         private static final SubString LIKE = new SubString(TypeQLToken.Predicate.SubString.LIKE) {
             @Override
-            boolean apply(String vertexValue, GraphTraversal.Parameters.Value predicateValue) {
+            boolean apply(String vertexValue, GraphTraversal.Thing.Parameters.Value predicateValue) {
                 assert predicateValue.isRegex();
                 return predicateValue.getRegex().matcher(vertexValue).matches();
             }

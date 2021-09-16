@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
-import com.vaticle.typedb.core.traversal.iterator.RelationIterator;
+import com.vaticle.typedb.core.traversal.scanner.RelationIterator;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
 import java.util.HashSet;
@@ -45,7 +45,8 @@ public class RelationTraversal extends Traversal {
         this.players = new HashSet<>();
     }
 
-    FunctionalIterator<VertexMap> iterator(GraphManager graphMgr) {
+    @Override
+    FunctionalIterator<VertexMap> permutation(GraphManager graphMgr) {
         return new RelationIterator(this, graphMgr);
     }
 

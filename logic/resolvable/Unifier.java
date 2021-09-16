@@ -197,15 +197,15 @@ public class Unifier {
 
         public void addThing(com.vaticle.typedb.core.pattern.variable.ThingVariable source, Retrievable target) {
             unifier.computeIfAbsent(source.id(), (s) -> new HashSet<>()).add(target);
-            requirements.isaExplicit(source.id(), source.resolvedTypes());
-            unifiedRequirements.isaExplicit(target, source.resolvedTypes());
+            requirements.isaExplicit(source.id(), source.inferredTypes());
+            unifiedRequirements.isaExplicit(target, source.inferredTypes());
         }
 
         public void addVariableType(com.vaticle.typedb.core.pattern.variable.TypeVariable source, Variable target) {
             assert source.id().isVariable();
             unifier.computeIfAbsent(source.id().asRetrievable(), (s) -> new HashSet<>()).add(target);
-            requirements.types(source.id(), source.resolvedTypes());
-            unifiedRequirements.types(target, source.resolvedTypes());
+            requirements.types(source.id(), source.inferredTypes());
+            unifiedRequirements.types(target, source.inferredTypes());
         }
 
         public void addLabelType(Identifier.Variable.Label source, Set<Label> allowedTypes, Variable target) {

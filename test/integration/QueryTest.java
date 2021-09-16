@@ -70,7 +70,7 @@ public class QueryTest {
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
 
                 try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    TypeQLDefine query = TypeQL.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                    TypeQLDefine query = TypeQL.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.tql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }
@@ -135,7 +135,7 @@ public class QueryTest {
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
 
                 try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    TypeQLDefine query = TypeQL.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                    TypeQLDefine query = TypeQL.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.tql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }
@@ -219,7 +219,7 @@ public class QueryTest {
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    TypeQLDefine query = TypeQL.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                    TypeQLDefine query = TypeQL.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.tql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }
@@ -270,7 +270,7 @@ public class QueryTest {
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    TypeQLDefine query = TypeQL.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.gql")), UTF_8));
+                    TypeQLDefine query = TypeQL.parseQuery(new String(Files.readAllBytes(Paths.get("test/integration/schema.tql")), UTF_8));
                     transaction.query().define(query);
                     transaction.commit();
                 }

@@ -42,7 +42,7 @@ public class AbstractConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(GraphTraversal traversal) {
+    public void addTo(GraphTraversal.Thing traversal) {
         traversal.isAbstract(owner.id());
     }
 

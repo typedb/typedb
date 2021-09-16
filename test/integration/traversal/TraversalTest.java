@@ -165,7 +165,7 @@ public class TraversalTest {
             );
 
             GraphProcedure procedure = proc.build();
-            FunctionalIterator<VertexMap> vertices = transaction.traversal().iterator(procedure, params, filter);
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
             assertEquals(1, vertices.count());
         }
     }
@@ -244,19 +244,19 @@ public class TraversalTest {
             ProcedureVertex.Thing y = proc.namedThing("y");
             y.props().types(set(Label.of("person")));
 
-            GraphTraversal.Parameters params = new GraphTraversal.Parameters();
+            GraphTraversal.Thing.Parameters params = new GraphTraversal.Thing.Parameters();
             params.pushValue(_0.id().asVariable(),
                     Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ),
-                    new GraphTraversal.Parameters.Value("Alex"));
+                    new GraphTraversal.Thing.Parameters.Value("Alex"));
             params.pushValue(_1.id().asVariable(),
                     Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ),
-                    new GraphTraversal.Parameters.Value("John"));
+                    new GraphTraversal.Thing.Parameters.Value("John"));
             params.pushValue(r1.id().asVariable(),
                     Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG),
-                    new GraphTraversal.Parameters.Value(3L));
+                    new GraphTraversal.Thing.Parameters.Value(3L));
             params.pushValue(r2.id().asVariable(),
                     Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG),
-                    new GraphTraversal.Parameters.Value(1L));
+                    new GraphTraversal.Thing.Parameters.Value(1L));
 
             /*
             edges:
@@ -295,7 +295,7 @@ public class TraversalTest {
             );
 
             GraphProcedure procedure = proc.build();
-            FunctionalIterator<VertexMap> vertices = transaction.traversal().iterator(procedure, params, filter);
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
             vertices.next();
         }
         session.close();

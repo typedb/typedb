@@ -97,7 +97,7 @@ public class Reasoner {
         for (Conjunction conj : disjunction.conjunctions()) {
             Set<Variable> vars = conj.variables();
             Set<Negation> negs = conj.negations();
-            if (iterate(vars).flatMap(v -> iterate(v.resolvedTypes())).distinct().anyMatch(this::hasRule)) return true;
+            if (iterate(vars).flatMap(v -> iterate(v.inferredTypes())).distinct().anyMatch(this::hasRule)) return true;
             if (!negs.isEmpty() && iterate(negs).anyMatch(n -> mayReason(n.disjunction()))) return true;
         }
         return false;
@@ -108,15 +108,17 @@ public class Reasoner {
     }
 
     public FunctionalIterator<ConceptMap> execute(Disjunction disjunction, TypeQLMatch.Modifiers modifiers, Context.Query context) {
-        logicMgr.typeResolver().resolve(disjunction);
+        inferAndValidateTypes(disjunction);
+        if (mayReason(disjunction, context)) return executeReasoner(disjunction, filter(modifiers.filter()), context);
+        else return executeTraversal(disjunction, context, filter(modifiers.filter()));
+    }
 
+    private void inferAndValidateTypes(Disjunction disjunction) {
+        logicMgr.typeInference().infer(disjunction);
         if (!disjunction.isCoherent()) {
             Set<Conjunction> causes = incoherentConjunctions(disjunction);
             throw TypeDBException.of(UNSATISFIABLE_PATTERN, disjunction, causes);
         }
-
-        if (mayReason(disjunction, context)) return executeReasoner(disjunction, filter(modifiers.filter()), context);
-        else return executeTraversal(disjunction, context, filter(modifiers.filter()));
     }
 
     private Set<Identifier.Variable.Retrievable> filter(List<UnboundVariable> typeQLVars) {

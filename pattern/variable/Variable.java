@@ -35,14 +35,14 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVA
 
 public abstract class Variable implements Pattern {
 
-    private final Set<Label> resolvedTypes;
+    private final Set<Label> inferredTypes;
     private final int hash;
     final Identifier.Variable identifier;
 
     Variable(Identifier.Variable identifier) {
         this.identifier = identifier;
         this.hash = Objects.hash(identifier);
-        this.resolvedTypes = new HashSet<>();
+        this.inferredTypes = new HashSet<>();
     }
 
     public abstract Set<? extends Constraint> constraints();
@@ -57,7 +57,7 @@ public abstract class Variable implements Pattern {
         return identifier.reference();
     }
 
-    public abstract void addTo(GraphTraversal traversal);
+    public abstract void addTo(GraphTraversal.Thing traversal);
 
     public boolean isType() {
         return false;
@@ -75,25 +75,25 @@ public abstract class Variable implements Pattern {
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(ThingVariable.class));
     }
 
-    public void addResolvedType(Label label) {
-        resolvedTypes.add(label);
+    public void addInferredTypes(Label label) {
+        inferredTypes.add(label);
     }
 
-    public void addResolvedTypes(Set<Label> labels) {
-        resolvedTypes.addAll(labels);
+    public void addInferredTypes(Set<Label> labels) {
+        inferredTypes.addAll(labels);
     }
 
-    public void setResolvedTypes(Set<Label> labels) {
-        resolvedTypes.clear();
-        resolvedTypes.addAll(labels);
+    public void setInferredTypes(Set<Label> labels) {
+        inferredTypes.clear();
+        inferredTypes.addAll(labels);
     }
 
-    public void retainResolvedTypes(Set<Label> labels) {
-        resolvedTypes.retainAll(labels);
+    public void retainInferredTypes(Set<Label> labels) {
+        inferredTypes.retainAll(labels);
     }
 
-    public Set<Label> resolvedTypes() {
-        return resolvedTypes;
+    public Set<Label> inferredTypes() {
+        return inferredTypes;
     }
 
     @Override

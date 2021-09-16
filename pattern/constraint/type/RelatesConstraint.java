@@ -78,7 +78,7 @@ public class RelatesConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(GraphTraversal traversal) {
+    public void addTo(GraphTraversal.Thing traversal) {
         if (overridden().isPresent()) throw TypeDBException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
         traversal.relates(owner.id(), roleType.id());
     }

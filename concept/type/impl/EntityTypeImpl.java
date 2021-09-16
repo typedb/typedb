@@ -69,7 +69,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public FunctionalIterator<EntityTypeImpl> getSubtypes() {
-        return super.getSubtypes(v -> of(graphMgr, v));
+        return graphMgr.schema().getSubtypes(vertex).map(v -> of(graphMgr, v));
     }
 
     @Override

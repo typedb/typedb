@@ -24,12 +24,13 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public class LogicCache {
 
-    private CommonCache<Structure, Map<Identifier.Variable.Retrievable, Set<Label>>> typeResolverCache;
-    private CommonCache<String, Rule> ruleCache;
+    private final CommonCache<Structure, Optional<Map<Identifier.Variable.Retrievable, Set<Label>>>> typeResolverCache;
+    private final CommonCache<String, Rule> ruleCache;
 
     public LogicCache() {
         this.ruleCache = new CommonCache<>();
@@ -41,7 +42,7 @@ public class LogicCache {
         this.typeResolverCache = new CommonCache<>(size, timeOutMinutes);
     }
 
-    public CommonCache<Structure, Map<Identifier.Variable.Retrievable, Set<Label>>> resolver() { return typeResolverCache; }
+    public CommonCache<Structure, Optional<Map<Identifier.Variable.Retrievable, Set<Label>>>> resolver() { return typeResolverCache; }
 
     CommonCache<String, Rule> rule() { return ruleCache; }
 }

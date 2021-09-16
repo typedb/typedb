@@ -27,11 +27,11 @@ import com.vaticle.typedb.core.traversal.common.VertexMap;
 
 import java.util.Set;
 
-public interface Procedure {
+public interface PermutationProcedure {
 
-    FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Parameters params,
+    FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
                                            Set<Identifier.Variable.Retrievable> filter, int parallelisation);
 
-    FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Parameters params,
+    FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
                                            Set<Identifier.Variable.Retrievable> filter);
 }

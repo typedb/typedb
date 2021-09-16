@@ -38,7 +38,7 @@ import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 
-public class VertexProcedure implements Procedure {
+public class VertexProcedure implements PermutationProcedure {
 
     private static final Logger LOG = LoggerFactory.getLogger(VertexProcedure.class);
     private final ProcedureVertex<?, ?> vertex;
@@ -88,7 +88,7 @@ public class VertexProcedure implements Procedure {
     }
 
     @Override
-    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Parameters params,
+    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());
@@ -96,7 +96,7 @@ public class VertexProcedure implements Procedure {
     }
 
     @Override
-    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Parameters params,
+    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter) {
         LOG.debug(params.toString());
         LOG.debug(this.toString());

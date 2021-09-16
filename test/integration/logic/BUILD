@@ -49,9 +49,9 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-type-resolver",
-    srcs = ["TypeResolverTest.java"],
-    test_class = "com.vaticle.typedb.core.logic.TypeResolverTest",
+    name = "test-type-inference",
+    srcs = ["TypeInferenceTest.java"],
+    test_class = "com.vaticle.typedb.core.logic.TypeInferenceTest",
     native_libraries_deps = [
         "//concept:concept",
         "//:typedb",
@@ -70,7 +70,7 @@ host_compatible_java_test(
         "@vaticle_typeql_lang_java//:typeql-lang",
         "@vaticle_typedb_common//:common",
     ],
-    data = [":basic-schema.gql", ":test-type-resolution.gql"],
+    data = [":basic-schema.tql", ":test-type-inference.tql"],
     resources = [
         "//common/test:logback-test"
     ],

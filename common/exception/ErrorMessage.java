@@ -89,22 +89,24 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Internal(3, "Illegal internal operation! This method should not have been called.");
         public static final Internal ILLEGAL_ARGUMENT =
                 new Internal(4, "Illegal argument provided.");
+        public static final Internal UNSUPPORTED_OPERATION =
+                new Internal(5, "Operation is not supported.");
         public static final Internal RESOURCE_CLOSED =
-                new Internal(5, "Attempted to utilise a closed resource.");
+                new Internal(6, "Attempted to utilise a closed resource.");
         public static final Internal UNRECOGNISED_VALUE =
-                new Internal(6, "Unrecognised encoding value!");
+                new Internal(7, "Unrecognised encoding value!");
         public static final Internal DIRTY_INITIALISATION =
-                new Internal(7, "Invalid Database Initialisation.");
+                new Internal(8, "Invalid Database Initialisation.");
         public static final Internal TYPEDB_CLOSED =
-                new Internal(8, "Attempted to open a session on a closed TypeDB.");
+                new Internal(9, "Attempted to open a session on a closed TypeDB.");
         public static final Internal OUT_OF_BOUNDS =
-                new Internal(9, "Resource out of bounds.");
+                new Internal(10, "Resource out of bounds.");
         public static final Internal UNEXPECTED_INTERRUPTION =
-                new Internal(10, "Unexpected thread interruption!");
+                new Internal(11, "Unexpected thread interruption!");
         public static final Internal UNEXPECTED_PLANNING_ERROR =
-                new Internal(11, "Unexpected error during traversal plan optimisation.");
+                new Internal(12, "Unexpected error during traversal plan optimisation.");
         public static final Internal UNIMPLEMENTED =
-                new Internal(12, "This functionality is not yet implemented.");
+                new Internal(13, "This functionality is not yet implemented.");
 
         private static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";

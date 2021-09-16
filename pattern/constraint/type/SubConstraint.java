@@ -65,7 +65,7 @@ public class SubConstraint extends TypeConstraint {
     }
 
     @Override
-    public void addTo(GraphTraversal traversal) {
+    public void addTo(GraphTraversal.Thing traversal) {
         // TODO: is there a scenario where we are able to skip this edge with the help of TypeResolver?
         traversal.sub(owner.id(), type.id(), !isExplicit);
     }
