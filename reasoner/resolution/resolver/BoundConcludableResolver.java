@@ -107,21 +107,21 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream) {
         if (isTerminated()) return;
-        this.requestStates.get(upstreamFactory(fromDownstream)).receiveAnswer(fromDownstream);
+        this.requestStates.get(fromDownstream.sourceRequest()).receiveAnswer(fromDownstream);
     }
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream) {
         LOG.trace("{}: received Fail: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        this.requestStates.get(upstreamFactory(fromDownstream)).receiveFail(fromDownstream);
+        this.requestStates.get(fromDownstream.sourceRequest()).receiveFail(fromDownstream);
     }
 
     @Override
     protected void receiveCycle(Response.Cycle fromDownstream) {
         LOG.trace("{}: received Cycle: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        this.requestStates.get(upstreamFactory(fromDownstream)).receiveCycle(fromDownstream);
+        this.requestStates.get(fromDownstream.sourceRequest()).receiveCycle(fromDownstream);
     }
 
     @Override
