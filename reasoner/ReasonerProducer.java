@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static java.lang.Math.abs;
 
 @ThreadSafe
-public class ReasonerProducer implements Producer<ConceptMap> {
+public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename to MatchProducer and create abstract supertype
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
@@ -58,6 +58,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final int computeSize;
     private final Set<Identifier.Variable.Retrievable> filter;
     private final Request.Factory requestFactory;
+    private final Request.Visit defaultResolveRequest;
     private boolean done;
     private Queue<ConceptMap> queue;
     private int requestIdCounter;
@@ -80,6 +81,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.requestIdCounter = 0;
         this.id = abs(UUID.randomUUID().hashCode());
         this.requestFactory = requestFactory();
+        this.defaultResolveRequest = requestFactory.createVisit(Trace.create(id, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -99,6 +101,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.requestIdCounter = 0;
         this.id = id();
         this.requestFactory = requestFactory();
+        this.defaultResolveRequest = requestFactory.createVisit(Trace.create(id, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -166,10 +169,15 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void requestAnswer() {
-        Trace trace = Trace.create(id, requestIdCounter);
-        Request.Visit resolveRequest = requestFactory.createVisit(trace);
-        if (options.traceInference()) ResolutionTracer.get().start(resolveRequest);
+        Request.Visit resolveRequest;
+        if (options.traceInference()) {
+            Trace trace = Trace.create(id, requestIdCounter);
+            resolveRequest = requestFactory.createVisit(trace);
+            ResolutionTracer.get().start(resolveRequest);
+            requestIdCounter += 1;
+        } else {
+            resolveRequest = defaultResolveRequest;
+        }
         rootResolver.execute(actor -> actor.receiveVisit(resolveRequest));
-        requestIdCounter += 1;
     }
 }

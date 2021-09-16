@@ -52,6 +52,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     private final AtomicInteger required;
     private final AtomicInteger processing;
     private final Request.Factory requestFactory;
+    private final Request.Visit defaultResolveRequest;
     private boolean done;
     private int requestTraceIdCounter;
     private Queue<Explanation> queue;
@@ -71,7 +72,7 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.requestTraceIdCounter = 0;
         this.id = id();
         this.requestFactory = requestFactory();
-
+        this.defaultResolveRequest = requestFactory.createVisit(Trace.create(id, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -98,11 +99,16 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     private void requestExplanation() {
-        Trace trace = Trace.create(id, requestTraceIdCounter);
-        Request.Visit explainRequest = requestFactory.createVisit(trace);
-        if (options.traceInference()) ResolutionTracer.get().start(explainRequest);
-        explainer.execute(explainer -> explainer.receiveVisit(explainRequest));
-        requestTraceIdCounter += 1;
+        Request.Visit resolveRequest;
+        if (options.traceInference()) {
+            Trace trace = Trace.create(id, requestTraceIdCounter);
+            resolveRequest = requestFactory.createVisit(trace);
+            ResolutionTracer.get().start(resolveRequest);
+            requestTraceIdCounter += 1;
+        } else {
+            resolveRequest = defaultResolveRequest;
+        }
+        explainer.execute(actor -> actor.receiveVisit(resolveRequest));
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
