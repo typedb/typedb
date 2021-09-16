@@ -81,7 +81,7 @@ public abstract class SubsumptiveCoordinator<
         LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
         if (isTerminated()) return;
         blockToUpstream(fromUpstream(fromDownstream.sourceRequest().createVisit(fromDownstream.trace())),
-                        fromDownstream.origins());
+                        fromDownstream.cycles());
     }
 
     abstract Driver<WORKER> getOrCreateWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial);

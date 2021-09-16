@@ -33,6 +33,7 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Blocked.Cycle;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
@@ -141,9 +142,9 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         fromUpstream.visit().sender().execute(actor -> actor.receiveFail(response));
     }
 
-    protected void blockToUpstream(Request fromUpstream, Set<Response.Blocked.Origin> cycleOrigins) {
+    protected void blockToUpstream(Request fromUpstream, Set<Cycle> cycles) {
         assert !fromUpstream.visit().partialAnswer().parent().isTop();
-        Response.Blocked response = new Response.Blocked(fromUpstream.visit().template(), cycleOrigins,
+        Response.Blocked response = new Response.Blocked(fromUpstream.visit().template(), cycles,
                                                          fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response);
@@ -152,8 +153,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected void blockToUpstream(Request fromUpstream, int numAnswersSeen) {
         assert !fromUpstream.visit().partialAnswer().parent().isTop();
-        Response.Blocked.Origin cycleOrigin = new Response.Blocked.Origin(fromUpstream.visit().template().receiver(), numAnswersSeen);
-        Response.Blocked response = new Response.Blocked(fromUpstream.visit().template(), set(cycleOrigin), fromUpstream.trace());
+        Cycle cycle = new Cycle(fromUpstream.visit().template().receiver(), numAnswersSeen);
+        Response.Blocked response = new Response.Blocked(fromUpstream.visit().template(), set(cycle), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response);
         fromUpstream.visit().sender().execute(actor -> actor.receiveBlocked(response));
@@ -263,8 +264,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     public static class DownstreamManager {
         protected final List<Request.Template> visits;
-        protected Map<Request.Template, Set<Response.Blocked.Origin>> revisits;
-        protected Map<Request.Template, Set<Response.Blocked.Origin>> blocked;
+        protected Map<Request.Template, Set<Cycle>> revisits;
+        protected Map<Request.Template, Set<Cycle>> blocked;
 
         public DownstreamManager() {
             this.visits = new ArrayList<>();
@@ -321,11 +322,11 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             blocked.clear();
         }
 
-        public Set<Response.Blocked.Origin> blockers() {
+        public Set<Cycle> blockers() {
             return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
         }
 
-        public void block(Request.Template toBlock, Set<Response.Blocked.Origin> blockers) {
+        public void block(Request.Template toBlock, Set<Cycle> blockers) {
             assert !blockers.isEmpty();
             assert contains(toBlock);
             visits.remove(toBlock);
@@ -333,12 +334,12 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             blocked.computeIfAbsent(toBlock, b -> new HashSet<>()).addAll(blockers);
         }
 
-        public void unblock(Set<Response.Blocked.Origin> cycles) {
+        public void unblock(Set<Cycle> cycles) {
             assert !cycles.isEmpty();
             Set<Request.Template> toRemove = new HashSet<>();
             blocked.forEach((downstream, blockers) -> {
                 assert !visits.contains(downstream);
-                Set<Response.Blocked.Origin> blockersToRevisit = new HashSet<>(cycles);
+                Set<Cycle> blockersToRevisit = new HashSet<>(cycles);
                 blockersToRevisit.retainAll(blockers);
                 if (!blockersToRevisit.isEmpty()) {
                     this.revisits.computeIfAbsent(downstream, o -> new HashSet<>()).addAll(blockersToRevisit);

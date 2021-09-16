@@ -173,11 +173,11 @@ public interface Response {
 
         private final Request.Template sourceRequest;
         private final Trace trace;
-        protected Set<Origin> origins;
+        protected Set<Cycle> cycles;
 
-        public Blocked(Request.Template sourceRequest, Set<Origin> origins, Trace trace) {
+        public Blocked(Request.Template sourceRequest, Set<Cycle> cycles, Trace trace) {
             this.sourceRequest = sourceRequest;
-            this.origins = origins;
+            this.cycles = cycles;
             this.trace = trace;
         }
 
@@ -201,8 +201,8 @@ public interface Response {
             return false;
         }
 
-        public Set<Origin> origins() {
-            return origins;
+        public Set<Cycle> cycles() {
+            return cycles;
         }
 
         @Override
@@ -211,20 +211,20 @@ public interface Response {
             if (o == null || getClass() != o.getClass()) return false;
             Blocked blocked = (Blocked) o;
             return sourceRequest.equals(blocked.sourceRequest) &&
-                    origins.equals(blocked.origins);
+                    cycles.equals(blocked.cycles);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(sourceRequest, origins);
+            return Objects.hash(sourceRequest, cycles);
         }
 
-        public static class Origin {
+        public static class Cycle {
 
             private final int numAnswersSeen;
             private final Actor.Driver<? extends Resolver<?>> resolver;
 
-            public Origin(Actor.Driver<? extends Resolver<?>> resolver, int numAnswersSeen) {
+            public Cycle(Actor.Driver<? extends Resolver<?>> resolver, int numAnswersSeen) {
                 this.resolver = resolver;
                 this.numAnswersSeen = numAnswersSeen;
             }
@@ -241,9 +241,9 @@ public interface Response {
             public boolean equals(Object o) {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
-                Origin origin = (Origin) o;
-                return numAnswersSeen == origin.numAnswersSeen &&
-                        resolver.equals(origin.resolver);
+                Cycle cycle = (Cycle) o;
+                return numAnswersSeen == cycle.numAnswersSeen &&
+                        resolver.equals(cycle.resolver);
             }
 
             @Override
@@ -253,7 +253,7 @@ public interface Response {
 
             @Override
             public String toString() {
-                return "Origin{" +
+                return "Cycle{" +
                         "resolver=" + resolver.toString() +
                         ", numAnswersSeen=" + numAnswersSeen +
                         '}';

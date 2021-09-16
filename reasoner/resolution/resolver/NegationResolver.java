@@ -86,7 +86,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
         LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
         if (isTerminated()) return;
         blockToUpstream(fromUpstream(fromDownstream.sourceRequest().createVisit(fromDownstream.trace())),
-                        fromDownstream.origins());
+                        fromDownstream.cycles());
     }
 
     @Override

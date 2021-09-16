@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Blocked.Cycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -191,7 +192,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             sendNextMessage(trace);
         }
 
-        abstract void receiveRevisit(Trace trace, Set<Response.Blocked.Origin> cycles);
+        abstract void receiveRevisit(Trace trace, Set<Cycle> cycles);
 
         abstract void receiveAnswer(Response.Answer fromDownstream);
 
@@ -226,7 +227,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
 
         @Override
-        void receiveRevisit(Trace trace, Set<Response.Blocked.Origin> cycles) {
+        void receiveRevisit(Trace trace, Set<Cycle> cycles) {
             sendNextMessage(trace);
         }
 
@@ -295,7 +296,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
 
         @Override
-        void receiveRevisit(Trace trace, Set<Response.Blocked.Origin> cycles) {
+        void receiveRevisit(Trace trace, Set<Cycle> cycles) {
             downstreamManager().unblock(cycles);
             sendNextMessage(trace);
         }
@@ -316,7 +317,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         void receiveBlocked(Response.Blocked fromDownstream) {
             Request.Template cyclingDownstream = fromDownstream.sourceRequest();
             if (downstreamManager().contains(cyclingDownstream)) {
-                downstreamManager().block(cyclingDownstream, fromDownstream.origins());
+                downstreamManager().block(cyclingDownstream, fromDownstream.cycles());
                 downstreamManager().unblockOutdated();
             }
             sendNextMessage(fromDownstream.trace());
@@ -329,26 +330,26 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             }
 
             public void unblockOutdated() {
-                Set<Response.Blocked.Origin> outdated = iterate(blocked.values()).flatMap(origins -> iterate(origins)
+                Set<Cycle> outdated = iterate(blocked.values()).flatMap(cycles -> iterate(cycles)
                                 .filter(this::isOutdated)).toSet();
                 if (!outdated.isEmpty()) unblock(outdated);
             }
 
-            private boolean originatedHere(Response.Blocked.Origin cycleOrigin) {
-                return cycleOrigin.resolver().equals(driver());
+            private boolean originatedHere(Cycle cycle) {
+                return cycle.resolver().equals(driver());
             }
 
-            public boolean isOutdated(Response.Blocked.Origin cycleOrigin) {
-                return originatedHere(cycleOrigin) && cycleOrigin.numAnswersSeen() < cache().size();
+            public boolean isOutdated(Cycle cycle) {
+                return originatedHere(cycle) && cycle.numAnswersSeen() < cache().size();
             }
 
-            public Set<Response.Blocked.Origin> cyclesNotOriginatingHere() {
-                return iterate(blocked.values()).flatMap(Iterators::iterate).filter(o -> !originatedHere(o)).toSet();
+            public Set<Cycle> cyclesNotOriginatingHere() {
+                return iterate(blocked.values()).flatMap(Iterators::iterate).filter(c -> !originatedHere(c)).toSet();
             }
             public boolean allDownstreamsCycleToHereOnly() {
                 return iterate(blocked.values())
-                        .filter(cycleOrigins -> iterate(cycleOrigins)
-                                .filter(o -> !originatedHere(o))
+                        .filter(cycles -> iterate(cycles)
+                                .filter(c -> !originatedHere(c))
                                 .first()
                                 .isPresent())
                         .first()

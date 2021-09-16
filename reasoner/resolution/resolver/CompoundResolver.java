@@ -93,7 +93,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         Request fromUpstream = upstreamRequest(fromDownstream);
         RequestState requestState = this.requestStates.get(fromUpstream.visit().template());
         if (requestState.downstreamManager().contains(cyclingDownstream)) {
-            requestState.downstreamManager().block(cyclingDownstream, fromDownstream.origins());
+            requestState.downstreamManager().block(cyclingDownstream, fromDownstream.cycles());
         }
         nextAnswer(fromUpstream, requestState);
     }

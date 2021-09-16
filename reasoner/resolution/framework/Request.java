@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.resolution.framework;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Blocked.Cycle;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -110,14 +111,14 @@ public interface Request {
     class Revisit implements Request {
 
         private final Visit visit;
-        private final Set<Response.Blocked.Origin> cycles;
+        private final Set<Cycle> cycles;
 
-        protected Revisit(Visit visit, Set<Response.Blocked.Origin> cycles) {
+        protected Revisit(Visit visit, Set<Cycle> cycles) {
             this.visit = visit;
             this.cycles = cycles;
         }
 
-        public static Revisit create(Visit visit, Set<Response.Blocked.Origin> cycles) {
+        public static Revisit create(Visit visit, Set<Cycle> cycles) {
             return new Revisit(visit, cycles);
         }
 
@@ -131,7 +132,7 @@ public interface Request {
             return visit().trace;
         }
 
-        public Set<Response.Blocked.Origin> cycles() {
+        public Set<Cycle> cycles() {
             return cycles;
         }
 
@@ -197,7 +198,7 @@ public interface Request {
             return new Visit(sender, receiver, partialAnswer, planIndex, trace);
         }
 
-        public Revisit createRevisit(Trace trace, Set<Response.Blocked.Origin> cycles) {
+        public Revisit createRevisit(Trace trace, Set<Cycle> cycles) {
             return new Revisit(createVisit(trace), cycles);
         }
 

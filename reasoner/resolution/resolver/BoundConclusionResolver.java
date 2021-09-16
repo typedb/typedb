@@ -127,7 +127,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         } else {
             Request.Template downstream = fromDownstream.sourceRequest();
             if (requestState.downstreamManager().contains(downstream)) {
-                requestState.downstreamManager().block(downstream, fromDownstream.origins());
+                requestState.downstreamManager().block(downstream, fromDownstream.cycles());
             }
             if (!sendAnswerOrSearchDownstream(fromUpstream, requestState)) {
                 blockOrFail(fromUpstream, requestState);
