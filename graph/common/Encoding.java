@@ -50,6 +50,7 @@ public class Encoding {
 
     public static final String ROCKS_DATA = "data";
     public static final String ROCKS_SCHEMA = "schema";
+    public static final int ENCODING_VERSION = 1;
 
     public enum Key {
         PERSISTED(0, true),
@@ -1006,7 +1007,8 @@ public class Encoding {
 
     public enum System {
 
-        TRANSACTION_DUMMY_WRITE(0);
+        ENCODING_VERSION(0),
+        TRANSACTION_DUMMY_WRITE(1);
 
         private final ByteArray bytes;
 
