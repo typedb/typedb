@@ -28,6 +28,8 @@ import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.Optional;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.ATTRIBUTES_NOT_COMPARABLE;
@@ -68,14 +70,6 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     }
 
     public abstract VALUE getValue();
-
-    @Override
-    public int compareTo(Attribute o) {
-        AttributeImpl<?> other = (AttributeImpl<?>) o;
-        if (getType().getValueType().comparables().contains(other.getType().getValueType())) {
-            return getType().getValueType().comparator(other.getType().getValueType()).compare(getValue(), other.getValue());
-        } else throw TypeDBException.of(ATTRIBUTES_NOT_COMPARABLE, this, other);
-    }
 
     @Override
     protected AttributeVertex.Write<VALUE> writableVertex() {

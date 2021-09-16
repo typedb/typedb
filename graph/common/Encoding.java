@@ -401,28 +401,15 @@ public class Encoding {
                 pair(DATETIME, set(DATETIME))
         );
 
-        private static final Map<ValueType, Compare> COMPARABLES = map(
-                pair(OBJECT, new Compare(map(
-                        pair(OBJECT, Comparator.comparing(val -> val, (a, b) -> 0))
-                ))),
-                pair(BOOLEAN, new Compare(map(
-                        pair(BOOLEAN, Comparator.comparing(bool -> (boolean) bool, Boolean::compareTo))
-                ))),
-                pair(LONG, new Compare(map(
-                        pair(LONG, Comparator.comparing(l -> (long) l, Long::compareTo)),
-                        pair(DOUBLE, Comparator.comparing(val -> (double) val, Double::compareTo))
-                ))),
-                pair(DOUBLE, new Compare(map(
-                        pair(LONG, Comparator.comparing(d -> (double) d, Double::compareTo)),
-                        pair(DOUBLE, Comparator.comparing(d -> (double) d, Double::compareTo))
-                ))),
-                pair(DATETIME, new Compare(map(
-                        pair(DATETIME, Comparator.comparing(d -> (LocalDateTime) d, LocalDateTime::compareTo))
-                ))),
-                pair(STRING, new Compare(map(
-                        pair(STRING, Comparator.comparing(s -> (String) s, String::compareToIgnoreCase))
-                )))
+        private static final Map<ValueType, Set<ValueType>> COMPARABLES = map(
+                pair(OBJECT, set(OBJECT)),
+                pair(BOOLEAN, set(BOOLEAN)),
+                pair(LONG, set(LONG, DOUBLE)),
+                pair(DOUBLE, set(LONG, DOUBLE)),
+                pair(STRING, set(STRING)),
+                pair(DATETIME, set(DATETIME))
         );
+
         private final byte key;
         private final Class<?> valueClass;
         private final boolean isKeyable;
@@ -488,38 +475,15 @@ public class Encoding {
         }
 
         public Set<ValueType> comparables() {
-            return COMPARABLES.get(this).comparables();
+            return COMPARABLES.get(this);
         }
 
         public boolean comparableTo(ValueType valueType) {
-            return COMPARABLES.get(this).comparables().contains(valueType);
-        }
-
-        public Comparator<Object> comparator(ValueType valueType) {
-            return COMPARABLES.get(this).comparator(valueType);
+            return COMPARABLES.get(this).contains(valueType);
         }
 
         public TypeQLArg.ValueType typeQLValueType() {
             return typeQLValueType;
-        }
-
-        private static class Compare {
-
-            Map<ValueType, Comparator<Object>> comparables;
-
-            Compare(Map<ValueType, Comparator<Object>> comparables) {
-                this.comparables = comparables;
-            }
-
-            Set<ValueType> comparables() {
-                return comparables.keySet();
-            }
-
-            Comparator<Object> comparator(ValueType other) {
-                assert comparables.containsKey(other);
-                return comparables.get(other);
-            }
-
         }
 
     }

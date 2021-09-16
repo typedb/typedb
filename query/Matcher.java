@@ -55,9 +55,11 @@ import java.util.stream.IntStream;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.AGGREGATE_ATTRIBUTE_NOT_NUMBER;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_VARIABLE_NOT_ATTRIBUTE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
@@ -139,8 +141,13 @@ public class Matcher {
             List<Attribute> attributes2 = new ArrayList<>(sortVars.size());
             for (Reference.Name var : sortVars) {
                 try {
-                    attributes1.add(answer1.get(var).asAttribute());
-                    attributes2.add(answer2.get(var).asAttribute());
+                    Attribute att1 = answer1.get(var).asAttribute();
+                    Attribute att2 = answer2.get(var).asAttribute();
+                    if (!att1.getType().getValueType().comparables().contains(att2.getType().getValueType())) {
+                        throw TypeDBException.of(SORT_ATTRIBUTE_NOT_COMPARABLE, var);
+                    }
+                    attributes1.add(att1);
+                    attributes2.add(att2);
                 } catch (TypeDBException e) {
                     if (e.code().isPresent() || e.code().get().equals(INVALID_THING_CASTING.code())) {
                         throw TypeDBException.of(SORT_VARIABLE_NOT_ATTRIBUTE, var);
@@ -156,11 +163,26 @@ public class Matcher {
     }
 
     private Comparator<List<Attribute>> multiComparator(int n) {
-        Optional<Comparator<List<Attribute>>> comparator = IntStream.range(0, n)
-                .mapToObj(i -> Comparator.comparing((List<Attribute> attrs) -> attrs.get(i), Attribute::compareTo))
-                .reduce(Comparator::thenComparing);
-        assert comparator.isPresent();
-        return comparator.get();
+        Optional<Comparator<List<Attribute>>> multiComparator = IntStream.range(0, n)
+                .mapToObj(i -> Comparator.comparing((List<Attribute> attrs) -> attrs.get(i), (att1, att2) -> {
+                    if (att1.isString()) {
+                        return att1.asString().getValue().compareToIgnoreCase(att2.asString().getValue());
+                    } else if (att1.isBoolean()) {
+                        return att1.asBoolean().getValue().compareTo(att2.asBoolean().getValue());
+                    } else if (att1.isLong() && att2.isLong()) {
+                        return att1.asLong().getValue().compareTo(att2.asLong().getValue());
+                    } else if (att1.isDouble() || att2.isDouble()) {
+                        Double double1 = att1.isLong() ? att1.asLong().getValue() : att1.asDouble().getValue();
+                        Double double2 = att2.isLong() ? att2.asLong().getValue() : att2.asDouble().getValue();
+                        return double1.compareTo(double2);
+                    } else if (att1.isDateTime()) {
+                        return (att1.asDateTime().getValue()).compareTo(att2.asDateTime().getValue());
+                    } else {
+                        throw TypeDBException.of(ILLEGAL_STATE);
+                    }
+                })).reduce(Comparator::thenComparing);
+        assert multiComparator.isPresent();
+        return multiComparator.get();
     }
 
     public static class Aggregator {
@@ -342,7 +364,9 @@ public class Matcher {
 
                 @Override
                 public BinaryOperator<MedianCalculator> combiner() {
-                    return (t, u) -> { throw TypeDBException.of(ILLEGAL_OPERATION); };
+                    return (t, u) -> {
+                        throw TypeDBException.of(ILLEGAL_OPERATION);
+                    };
                 }
 
                 @Override
@@ -408,7 +432,9 @@ public class Matcher {
 
                 @Override
                 public BinaryOperator<STDCalculator> combiner() {
-                    return (t, u) -> { throw TypeDBException.of(ILLEGAL_OPERATION); };
+                    return (t, u) -> {
+                        throw TypeDBException.of(ILLEGAL_OPERATION);
+                    };
                 }
 
                 @Override

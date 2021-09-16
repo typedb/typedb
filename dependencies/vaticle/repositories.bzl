@@ -25,10 +25,14 @@ def vaticle_dependencies():
     )
 
 def vaticle_typeql_lang_java():
-    git_repository(
+#    git_repository(
+#        name = "vaticle_typeql_lang_java",
+#        remote = "https://github.com/flyingsilverfin/typeql-lang-java",
+#        commit = "881c4732fd8d746ad41a4e90431953e3d7118afb", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typeql_lang_java
+#    )
+    native.local_repository(
         name = "vaticle_typeql_lang_java",
-        remote = "https://github.com/flyingsilverfin/typeql-lang-java",
-        commit = "881c4732fd8d746ad41a4e90431953e3d7118afb", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typeql_lang_java
+        path = "../typeql-lang-java",
     )
 
 def vaticle_typedb_common():
