@@ -78,9 +78,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (requestState.materialisationsCounter().nonZero()) {
             requestState.replayBuffer().addVisit(fromUpstream);
         } else {
-            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState)) {
-                blockOrFail(fromUpstream, requestState);
-            }
+            sendNextMessage(requestState, fromUpstream);
         }
     }
 
@@ -91,9 +89,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             requestState.replayBuffer().addRevisit(fromUpstream);
         } else {
             requestState.downstreamManager().unblock(fromUpstream.cycles());
-            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState)) {
-                blockOrFail(fromUpstream, requestState);
-            }
+            sendNextMessage(requestState, fromUpstream);
         }
     }
 
@@ -110,9 +106,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             requestFromMaterialiser(request, fromUpstream);
             requestState.materialisationsCounter().increment();
         } else {
-            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState)) {
-                blockOrFail(fromUpstream, requestState);
-            }
+            sendNextMessage(requestState, fromUpstream);
         }
     }
 
@@ -129,9 +123,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             if (requestState.downstreamManager().contains(downstream)) {
                 requestState.downstreamManager().block(downstream, fromDownstream.cycles());
             }
-            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState)) {
-                blockOrFail(fromUpstream, requestState);
-            }
+            sendNextMessage(requestState, fromUpstream);
         }
     }
 
@@ -146,9 +138,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             requestState.replayBuffer().addFail(fromDownstream);
         } else {
             requestState.downstreamManager().remove(fromDownstream.sourceRequest());
-            if (!sendAnswerOrSearchDownstream(fromUpstream, requestState)) {
-                blockOrFail(fromUpstream, requestState);
-            }
+            sendNextMessage(requestState, fromUpstream);
         }
     }
 
@@ -166,19 +156,12 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         LOG.trace("{}: received materialisation response: {}", name(), response);
         Optional<Map<Identifier.Variable, Concept>> materialisation = response.materialisation();
         materialisation.ifPresent(m -> requestState.newMaterialisation(response.partialAnswer(), m));
-        if (!sendAnswerOrSearchDownstream(fromUpstream, requestState)) {
-            blockOrFail(fromUpstream, requestState);
-        }
+        sendNextMessage(requestState, fromUpstream);
         requestState.materialisationsCounter().decrement();
         if (!requestState.materialisationsCounter().nonZero()) requestState.replayBuffer().replay();
     }
 
-    protected Request fromUpstream(Materialiser.Request toDownstream) {
-        assert materialiserRequestRouter.containsKey(toDownstream);
-        return materialiserRequestRouter.remove(toDownstream);
-    }
-
-    private boolean sendAnswerOrSearchDownstream(Request fromUpstream, ConclusionRequestState<?> requestState) {
+    private void sendNextMessage(ConclusionRequestState<? extends Concludable<?>> requestState, Request fromUpstream) {
         Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream);
@@ -186,19 +169,17 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream.trace()), fromUpstream);
         } else if (!requestState.isComplete() && requestState.downstreamManager().hasNextRevisit()) {
             revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream.trace()), fromUpstream);
-        } else {
-            return false;
-        }
-        return true;
-    }
-
-    private void blockOrFail(Request fromUpstream, ConclusionRequestState<?> requestState) {
-        if (requestState.downstreamManager().hasNextBlocked()) {
+        } else if (requestState.downstreamManager().hasNextBlocked()) {
             blockToUpstream(fromUpstream, requestState.downstreamManager().cycles());
         } else {
             requestState.setComplete();
             failToUpstream(fromUpstream);
         }
+    }
+
+    protected Request fromUpstream(Materialiser.Request toDownstream) {
+        assert materialiserRequestRouter.containsKey(toDownstream);
+        return materialiserRequestRouter.remove(toDownstream);
     }
 
     @Override
