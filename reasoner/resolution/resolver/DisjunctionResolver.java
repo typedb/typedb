@@ -60,7 +60,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         assert fromDownstream.answer().isCompound();
         AnswerState answer = toUpstreamAnswer(fromDownstream.answer().asCompound(), fromDownstream);
         boolean acceptedAnswer = tryAcceptUpstreamAnswer(answer, fromUpstream);
-        if (!acceptedAnswer) nextAnswer(fromUpstream, requestState);
+        if (!acceptedAnswer) sendNextMessage(fromUpstream, requestState);
     }
 
     protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream);

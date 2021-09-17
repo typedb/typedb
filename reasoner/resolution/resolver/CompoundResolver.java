@@ -43,7 +43,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         this.isInitialised = false;
     }
 
-    protected void nextAnswer(Request fromUpstream, RequestState requestState) {
+    protected void sendNextMessage(Request fromUpstream, RequestState requestState) {
         if (requestState.downstreamManager().hasNextVisit()) {
             visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream.trace()), fromUpstream);
         } else if (requestState.downstreamManager().hasNextRevisit()) {
@@ -61,7 +61,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
         RequestState requestState = requestStates.computeIfAbsent(fromUpstream.template(), this::requestStateCreate);
-        nextAnswer(fromUpstream, requestState);
+        sendNextMessage(fromUpstream, requestState);
     }
 
     @Override
@@ -71,7 +71,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         if (isTerminated()) return;
         RequestState requestState = requestStates.get(fromUpstream.visit().template());
         requestState.downstreamManager().unblock(fromUpstream.cycles());
-        nextAnswer(fromUpstream, requestState);
+        sendNextMessage(fromUpstream, requestState);
     }
 
     @Override
@@ -82,7 +82,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         Request fromUpstream = upstreamRequest(fromDownstream);
         RequestState requestState = requestStates.get(fromUpstream.visit().template());
         requestState.downstreamManager().remove(toDownstream);
-        nextAnswer(fromUpstream, requestState);
+        sendNextMessage(fromUpstream, requestState);
     }
 
     @Override
@@ -95,7 +95,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         if (requestState.downstreamManager().contains(blockingDownstream)) {
             requestState.downstreamManager().block(blockingDownstream, fromDownstream.cycles());
         }
-        nextAnswer(fromUpstream, requestState);
+        sendNextMessage(fromUpstream, requestState);
     }
 
     abstract RequestState requestStateCreate(Request.Template fromUpstream);

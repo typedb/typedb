@@ -53,7 +53,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     @Override
     public void receiveVisit(Request.Visit fromUpstream) {
         assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
-        sendAnswerOrFail(fromUpstream, requestStates.computeIfAbsent(
+        sendNextMessage(fromUpstream, requestStates.computeIfAbsent(
                 fromUpstream.template(), request -> new BoundRequestState(request, cache)));
     }
 
@@ -78,7 +78,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private void sendAnswerOrFail(Request fromUpstream, RequestState requestState) {
+    private void sendNextMessage(Request fromUpstream, RequestState requestState) {
         Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream);

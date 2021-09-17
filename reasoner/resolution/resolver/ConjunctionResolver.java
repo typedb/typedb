@@ -92,7 +92,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
             Optional<AnswerState> upstreamAnswer = toUpstreamAnswer(partialAnswer);
             boolean answerAccepted = upstreamAnswer.isPresent() && tryAcceptUpstreamAnswer(upstreamAnswer.get(), fromUpstream);
             if (!answerAccepted) {
-                nextAnswer(template.createVisit(fromDownstream.trace()), requestState);
+                sendNextMessage(template.createVisit(fromDownstream.trace()), requestState);
             }
         } else {
             toNextChild(fromDownstream, template, requestState, plan);
@@ -135,7 +135,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         Request fromUpstream = upstreamRequest(fromDownstream);
         RequestState requestState = this.requestStates.get(fromUpstream.visit().template());
         requestState.downstreamManager().remove(downstream);
-        nextAnswer(fromUpstream, requestState);
+        sendNextMessage(fromUpstream, requestState);
     }
 
     @Override
