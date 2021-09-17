@@ -328,8 +328,8 @@ public class ResolverRegistry {
         return resolverConcludables.get(resolver);
     }
 
-    public Rule conclusionRule(Actor.Driver<ConclusionResolver> conclusionResolver) {
-        return conclusionRule.get(conclusionResolver);
+    public Rule conclusionRule(Actor.Driver<ConclusionResolver> resolver) {
+        return conclusionRule.get(resolver);
     }
 
     public static abstract class ResolverView {
