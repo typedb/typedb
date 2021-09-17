@@ -36,15 +36,12 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class SessionService implements AutoCloseable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
-
     private final ConcurrentSet<TransactionService> transactionServices;
     private final ClientService clientSvc;
     private final Options.Session options;
     private final TypeDB.Session session;
     private final ReadWriteLock accessLock;
     private final AtomicBoolean isOpen;
-    private ScheduledFuture<?> idleTimeoutTask;
 
     public SessionService(ClientService clientSvc, TypeDB.Session session, Options.Session options) {
         this.clientSvc = clientSvc;
@@ -53,7 +50,6 @@ public class SessionService implements AutoCloseable {
         this.accessLock = new StampedLock().asReadWriteLock();
         this.isOpen = new AtomicBoolean(true);
         this.transactionServices = new ConcurrentSet<>();
-        mayStartIdleTimeout();
     }
 
     void register(TransactionService transactionSvc) {
@@ -61,7 +57,6 @@ public class SessionService implements AutoCloseable {
             accessLock.readLock().lock();
             if (isOpen.get()) {
                 transactionServices.add(transactionSvc);
-                cancelIdleTimeout();
             } else throw TypeDBException.of(SESSION_CLOSED);
         } finally {
             accessLock.readLock().unlock();
@@ -70,7 +65,6 @@ public class SessionService implements AutoCloseable {
 
     void unregister(TransactionService transactionSvc) {
         transactionServices.remove(transactionSvc);
-        mayStartIdleTimeout();
     }
 
     public boolean isOpen() {
@@ -89,34 +83,10 @@ public class SessionService implements AutoCloseable {
         return options;
     }
 
-    public synchronized void resetIdleTimeout() {
-        cancelIdleTimeout();
-        mayStartIdleTimeout();
-    }
-
-    private void cancelIdleTimeout() {
-        assert idleTimeoutTask != null;
-        idleTimeoutTask.cancel(false);
-    }
-
-    private void mayStartIdleTimeout() {
-        if (transactionServices.isEmpty()) {
-            idleTimeoutTask = scheduled().schedule(this::idleTimeout, options.sessionIdleTimeoutMillis(), MILLISECONDS);
-        }
-    }
-
-    private void idleTimeout() {
-        if (transactionServices.isEmpty()) {
-            close();
-            LOG.warn("Session with ID " + session.uuid() + " timed out due to inactivity");
-        } else resetIdleTimeout();
-    }
-
     @Override
     public void close() {
         try {
             accessLock.writeLock().lock();
-            if (idleTimeoutTask != null) idleTimeoutTask.cancel(false);
             if (isOpen.compareAndSet(true, false)) {
                 transactionServices.forEach(TransactionService::close);
                 session.close();

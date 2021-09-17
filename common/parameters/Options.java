@@ -30,7 +30,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REA
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
 
     public static final int DEFAULT_PREFETCH_SIZE = 50;
-    public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 30_000;
     public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
     public static final boolean DEFAULT_INFER = false;
     public static final boolean DEFAULT_TRACE_INFERENCE = false;
@@ -46,7 +45,6 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Boolean explain = null;
     private Boolean parallel = null;
     private Integer prefetchSize = null;
-    private Integer sessionIdlTimeoutMillis = null;
     private Integer schemaLockAcquireTimeoutMillis = null;
     private Boolean readAnyReplica = null;
     protected Boolean prefetch = null;
@@ -113,17 +111,6 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public SELF parallel(boolean parallel) {
         this.parallel = parallel;
-        return getThis();
-    }
-
-    public int sessionIdleTimeoutMillis() {
-        if (sessionIdlTimeoutMillis != null) return sessionIdlTimeoutMillis;
-        else if (parent != null) return parent.sessionIdleTimeoutMillis();
-        else return DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS;
-    }
-
-    public SELF sessionIdleTimeoutMillis(int idleTimeoutMillis) {
-        this.sessionIdlTimeoutMillis = idleTimeoutMillis;
         return getThis();
     }
 

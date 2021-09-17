@@ -38,7 +38,6 @@ import static com.vaticle.typedb.protocol.OptionsProto.Options.ParallelOptCase.P
 import static com.vaticle.typedb.protocol.OptionsProto.Options.PrefetchOptCase.PREFETCH;
 import static com.vaticle.typedb.protocol.OptionsProto.Options.PrefetchSizeOptCase.PREFETCH_SIZE;
 import static com.vaticle.typedb.protocol.OptionsProto.Options.SchemaLockAcquireTimeoutOptCase.SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS;
-import static com.vaticle.typedb.protocol.OptionsProto.Options.SessionIdleTimeoutOptCase.SESSION_IDLE_TIMEOUT_MILLIS;
 import static com.vaticle.typedb.protocol.OptionsProto.Options.TraceInferenceOptCase.TRACE_INFERENCE;
 
 public class RequestReader {
@@ -62,9 +61,6 @@ public class RequestReader {
         }
         if (request.getPrefetchSizeOptCase().equals(PREFETCH_SIZE)) {
             options.prefetchSize(request.getPrefetchSize());
-        }
-        if (request.getSessionIdleTimeoutOptCase().equals(SESSION_IDLE_TIMEOUT_MILLIS)) {
-            options.sessionIdleTimeoutMillis(request.getSessionIdleTimeoutMillis());
         }
         if (request.getSchemaLockAcquireTimeoutOptCase().equals(SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS)) {
             options.schemaLockTimeoutMillis(request.getSchemaLockAcquireTimeoutMillis());

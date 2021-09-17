@@ -56,6 +56,7 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.DatabaseMana
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Session.closeRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Session.openRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.exception;
+import static com.vaticle.typedb.protocol.ClientProto.Client.Open.Req.IdleTimeoutOptCase.IDLE_TIMEOUT_MILLIS;
 import static java.util.stream.Collectors.toList;
 
 public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
@@ -74,7 +75,12 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public void clientOpen(ClientProto.Client.Open.Req request,
                             StreamObserver<ClientProto.Client.Open.Res> responder) {
         try {
-            ClientService clientSvc = new ClientService(typeDB);
+            ClientService clientSvc;
+            if (request.getIdleTimeoutOptCase().equals(IDLE_TIMEOUT_MILLIS)) {
+                clientSvc = new ClientService(typeDB, request.getIdleTimeoutMillis());
+            } else {
+                clientSvc = new ClientService(typeDB);
+            }
             clientServices.put(clientSvc.ID(), clientSvc);
             responder.onNext(ResponseBuilder.Client.openRes(clientSvc.ID()));
             responder.onCompleted();
