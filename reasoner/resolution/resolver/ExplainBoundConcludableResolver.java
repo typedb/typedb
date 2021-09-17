@@ -34,9 +34,9 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
 
     private final AnswerCache<AnswerState.Partial.Concludable<?>> cache;
 
-    public ExplainBoundConcludableResolver(Driver<BoundConcludableResolver> driver, Driver<ConcludableResolver> parent,
+    public ExplainBoundConcludableResolver(Driver<BoundConcludableResolver> driver, BoundConcludableContext context,
                                            ConceptMap bounds, ResolverRegistry registry) {
-        super(driver, parent, bounds, registry);
+        super(driver, context, bounds, registry);
         this.cache = new AnswerCache<>(Iterators::empty); // TODO How is this working without doing traversal?
     }
 

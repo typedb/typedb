@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
@@ -49,20 +50,16 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     private static final Logger LOG = LoggerFactory.getLogger(BoundConcludableResolver.class);
 
     protected final ConceptMap bounds;
-    private final Driver<ConcludableResolver> parent;
     private final Map<Request.Template, BoundConcludableRequestState<?>> requestStates;
+    protected final BoundConcludableContext context;
 
-    protected BoundConcludableResolver(Driver<BoundConcludableResolver> driver, Driver<ConcludableResolver> parent,
+    protected BoundConcludableResolver(Driver<BoundConcludableResolver> driver, BoundConcludableContext context,
                                        ConceptMap bounds, ResolverRegistry registry) {
         super(driver, BoundConcludableResolver.class.getSimpleName() + "(pattern: " +
-                parent.actor().concludable().pattern() + ", bounds: " + bounds.concepts().toString() + ")", registry);
-        this.parent = parent;
+                context.concludable().pattern() + ", bounds: " + bounds.concepts().toString() + ")", registry);
+        this.context = context;
         this.bounds = bounds;
         this.requestStates = new HashMap<>();
-    }
-
-    protected Driver<ConcludableResolver> parent() {
-        return parent;
     }
 
     private BoundConcludableRequestState<?> getOrCreateRequestState(Request.Template fromUpstream) {
@@ -78,7 +75,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         while (a.parent().isPartial()) {
             a = a.parent().asPartial();
             if (a.isConcludable()
-                    && registry.concludables(parent()).contains(a.asConcludable().concludable())
+                    && registry.concludables(context.parent()).contains(a.asConcludable().concludable())
                     && a.conceptMap().equals(bounds)) {
                 return true;
             }
@@ -140,10 +137,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     protected List<Request.Template> ruleDownstreams(Request.Template fromUpstream) {
         List<Request.Template> downstreams = new ArrayList<>();
         Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
-        for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry:
-                parent().actor().conclusionResolvers().entrySet()) { // TODO: Reaching through to the actor is not ideal
+        for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry: context.conclusionResolvers().entrySet()) {
             Driver<ConclusionResolver> conclusionResolver = entry.getKey();
-            Rule rule = conclusionResolver.actor().conclusion().rule();  // TODO: Reaching through to the actor is not ideal
+            Rule rule = registry.conclusionRule(conclusionResolver);
             for (Unifier unifier : entry.getValue()) {
                 partialAnswer.toDownstream(unifier, rule).ifPresent(
                         conclusion -> downstreams.add(Request.Template.create(driver(), conclusionResolver, conclusion)));
@@ -347,4 +343,33 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
 
     }
+
+    public static class BoundConcludableContext {
+
+        private final Driver<ConcludableResolver> parent;
+        private final Concludable concludable;
+        private final Map<Driver<ConclusionResolver>, Set<Unifier>> conclusionUnifiers;
+
+        BoundConcludableContext(Driver<ConcludableResolver> parent,
+                                Concludable concludable,
+                                Map<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers) {
+
+            this.parent = parent;
+            this.concludable = concludable;
+            this.conclusionUnifiers = conclusionResolvers;
+        }
+
+        Driver<ConcludableResolver> parent() {
+            return parent;
+        }
+
+        public Concludable concludable() {
+            return concludable;
+        }
+
+        public Map<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers() {
+            return conclusionUnifiers;
+        }
+    }
+
 }

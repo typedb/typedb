@@ -40,11 +40,11 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     private final boolean singleAnswerRequired;
     private final AnswerCache<ConceptMap> cache;
 
-    public MatchBoundConcludableResolver(Driver<BoundConcludableResolver> driver, Driver<ConcludableResolver> parent,
+    public MatchBoundConcludableResolver(Driver<BoundConcludableResolver> driver, BoundConcludableContext context,
                                          ConceptMap bounds, ResolverRegistry registry) {
-        super(driver, parent, bounds, registry);
+        super(driver, context, bounds, registry);
         this.singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars());
-        this.cache = new AnswerCache<>(() -> traversalIterator(parent.actor().concludable().pattern(), bounds));
+        this.cache = new AnswerCache<>(() -> traversalIterator(context.concludable().pattern(), bounds));
     }
 
     @Override
@@ -67,7 +67,7 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
 
     private Set<Identifier.Variable.Retrievable> unboundVars() {
         Set<Identifier.Variable.Retrievable> missingBounds = new HashSet<>();
-        iterate(parent().actor().concludable().pattern().variables())
+        iterate(context.concludable().pattern().variables())
                 .filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
             if (var.isType() && !var.asType().label().isPresent()) {
                 missingBounds.add(var.asType().id().asRetrievable());
@@ -88,7 +88,7 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         @Override
         FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Template fromUpstream, ConceptMap conceptMap) {
             return Iterators.single(fromUpstream.partialAnswer().asConcludable().asMatch().toUpstreamLookup(
-                    conceptMap, parent().actor().concludable().isInferredAnswer(conceptMap)));
+                    conceptMap, context.concludable().isInferredAnswer(conceptMap)));
         }
     }
 }
