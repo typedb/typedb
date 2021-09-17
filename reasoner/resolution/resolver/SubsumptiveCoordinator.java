@@ -21,7 +21,6 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
-import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
@@ -41,15 +40,13 @@ public abstract class SubsumptiveCoordinator<
         WORKER extends Resolver<WORKER>> extends Resolver<RESOLVER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(SubsumptiveCoordinator.class);
-    protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, Driver<WORKER>>> workersByRoot; // TODO: We would like these not to be by root. They need to be, for now, for reiteration purposes.
-    protected final Map<Driver<? extends Resolver<?>>, Map<ConceptMap, AnswerCache<?>>> cacheRegistersByRoot;
+    protected final Map<ConceptMap, Driver<WORKER>> workers;
     protected boolean isInitialised;
 
     public SubsumptiveCoordinator(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
         super(driver, name, registry);
         this.isInitialised = false;
-        this.workersByRoot = new HashMap<>();
-        this.cacheRegistersByRoot = new HashMap<>();
+        this.workers = new HashMap<>();
     }
 
     @Override
@@ -58,7 +55,7 @@ public abstract class SubsumptiveCoordinator<
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
         Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
-        Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.partialAnswer());
+        Driver<WORKER> worker = getOrCreateWorker(fromUpstream.partialAnswer());
         Request.Template requestFactory = Request.Template.create(driver(), worker, fromUpstream.partialAnswer());
         Request.Visit visit = requestFactory.createVisit(fromUpstream.trace());
         visitDownstream(visit, fromUpstream);
@@ -70,7 +67,7 @@ public abstract class SubsumptiveCoordinator<
         assert isInitialised;
         if (isTerminated()) return;
         Driver<? extends Resolver<?>> root = fromUpstream.visit().partialAnswer().root();
-        Driver<WORKER> worker = getOrCreateWorker(root, fromUpstream.visit().partialAnswer());
+        Driver<WORKER> worker = getOrCreateWorker(fromUpstream.visit().partialAnswer());
         Request.Template requestFactory = Request.Template.create(driver(), worker, fromUpstream.visit().partialAnswer());
         Request.Revisit revisit = requestFactory.createRevisit(fromUpstream.trace(), fromUpstream.cycles());
         revisitDownstream(revisit, fromUpstream);
@@ -84,7 +81,7 @@ public abstract class SubsumptiveCoordinator<
                         fromDownstream.cycles());
     }
 
-    abstract Driver<WORKER> getOrCreateWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial);
+    abstract Driver<WORKER> getOrCreateWorker(AnswerState.Partial<?> partial);
 
     @Override
     protected void receiveAnswer(Answer answer) {

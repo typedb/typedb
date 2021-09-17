@@ -203,7 +203,6 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     }
 
     private List<Request.Template> conditionDownstreams(Request.Template fromUpstream) {
-        // TODO: Can there be more than one downstream Condition? If not reduce this return type from List to single
         // we do a extra traversal to expand the partial answer if we already have the concept that is meant to be generated
         // and if there's extra variables to be populated
         AnswerState.Partial.Conclusion<?, ?> partialAnswer = fromUpstream.partialAnswer().asConclusion();

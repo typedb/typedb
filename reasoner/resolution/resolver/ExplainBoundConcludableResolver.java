@@ -37,7 +37,7 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
     public ExplainBoundConcludableResolver(Driver<BoundConcludableResolver> driver, BoundConcludableContext context,
                                            ConceptMap bounds, ResolverRegistry registry) {
         super(driver, context, bounds, registry);
-        this.cache = new AnswerCache<>(Iterators::empty); // TODO How is this working without doing traversal?
+        this.cache = new AnswerCache<>(Iterators::empty);
     }
 
     @Override

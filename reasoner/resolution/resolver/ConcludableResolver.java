@@ -23,12 +23,10 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver.BoundConcludableContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Set;
@@ -53,8 +51,8 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
     }
 
     @Override
-    Driver<BoundConcludableResolver> getOrCreateWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial) {
-        return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(partial.conceptMap(), p -> {
+    Driver<BoundConcludableResolver> getOrCreateWorker(AnswerState.Partial<?> partial) {
+        return workers.computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundConcludableResolver for bounds: {}", name(), partial);
             // TODO: We could use the bounds to prune the applicable rules further
             BoundConcludableContext context = new BoundConcludableContext(driver(), concludable, conclusionResolvers);
