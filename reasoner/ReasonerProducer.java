@@ -57,7 +57,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     private final ExplainablesManager explainablesManager;
     private final int computeSize;
     private final Set<Identifier.Variable.Retrievable> filter;
-    private final Request.Template requestFactory;
+    private final Request.Template requestTemplate;
     private final Request.Visit defaultResolveRequest;
     private boolean done;
     private Queue<ConceptMap> queue;
@@ -80,8 +80,8 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.filter = filter;
         this.requestIdCounter = 0;
         this.id = abs(UUID.randomUUID().hashCode());
-        this.requestFactory = requestFactory();
-        this.defaultResolveRequest = requestFactory.createVisit(Trace.create(id, 0));
+        this.requestTemplate = requestTemplate();
+        this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(id, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -100,8 +100,8 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.filter = filter;
         this.requestIdCounter = 0;
         this.id = id();
-        this.requestFactory = requestFactory();
-        this.defaultResolveRequest = requestFactory.createVisit(Trace.create(id, 0));
+        this.requestTemplate = requestTemplate();
+        this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(id, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -109,7 +109,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         return abs(System.identityHashCode(this));
     }
 
-    private Request.Template requestFactory() {
+    private Request.Template requestTemplate() {
         Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
         return Request.Template.create(rootResolver, downstream);
     }
@@ -172,7 +172,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         Request.Visit resolveRequest;
         if (options.traceInference()) {
             Trace trace = Trace.create(id, requestIdCounter);
-            resolveRequest = requestFactory.createVisit(trace);
+            resolveRequest = requestTemplate.createVisit(trace);
             ResolutionTracer.get().start(resolveRequest);
             requestIdCounter += 1;
         } else {

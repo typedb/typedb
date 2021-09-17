@@ -56,8 +56,8 @@ public abstract class SubsumptiveCoordinator<
         if (isTerminated()) return;
         Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
         Driver<WORKER> worker = getOrCreateWorker(fromUpstream.partialAnswer());
-        Request.Template requestFactory = Request.Template.create(driver(), worker, fromUpstream.partialAnswer());
-        Request.Visit visit = requestFactory.createVisit(fromUpstream.trace());
+        Request.Template requestTemplate = Request.Template.create(driver(), worker, fromUpstream.partialAnswer());
+        Request.Visit visit = requestTemplate.createVisit(fromUpstream.trace());
         visitDownstream(visit, fromUpstream);
     }
 
@@ -68,8 +68,8 @@ public abstract class SubsumptiveCoordinator<
         if (isTerminated()) return;
         Driver<? extends Resolver<?>> root = fromUpstream.visit().partialAnswer().root();
         Driver<WORKER> worker = getOrCreateWorker(fromUpstream.visit().partialAnswer());
-        Request.Template requestFactory = Request.Template.create(driver(), worker, fromUpstream.visit().partialAnswer());
-        Request.Revisit revisit = requestFactory.createRevisit(fromUpstream.trace(), fromUpstream.cycles());
+        Request.Template requestTemplate = Request.Template.create(driver(), worker, fromUpstream.visit().partialAnswer());
+        Request.Revisit revisit = requestTemplate.createRevisit(fromUpstream.trace(), fromUpstream.cycles());
         revisitDownstream(revisit, fromUpstream);
     }
 

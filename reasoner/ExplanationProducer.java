@@ -51,7 +51,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     private final int computeSize;
     private final AtomicInteger required;
     private final AtomicInteger processing;
-    private final Request.Template requestFactory;
+    private final Request.Template requestTemplate;
     private final Request.Visit defaultResolveRequest;
     private boolean done;
     private int requestTraceIdCounter;
@@ -71,8 +71,8 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.requestTraceIdCounter = 0;
         this.id = id();
-        this.requestFactory = requestFactory();
-        this.defaultResolveRequest = requestFactory.createVisit(Trace.create(id, 0));
+        this.requestTemplate = requestTemplate();
+        this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(id, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -80,7 +80,7 @@ public class ExplanationProducer implements Producer<Explanation> {
         return abs(System.identityHashCode(this));
     }
 
-    private Request.Template requestFactory() {
+    private Request.Template requestTemplate() {
         Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
         return Request.Template.create(explainer, downstream);
     }
@@ -102,7 +102,7 @@ public class ExplanationProducer implements Producer<Explanation> {
         Request.Visit resolveRequest;
         if (options.traceInference()) {
             Trace trace = Trace.create(id, requestTraceIdCounter);
-            resolveRequest = requestFactory.createVisit(trace);
+            resolveRequest = requestTemplate.createVisit(trace);
             ResolutionTracer.get().start(resolveRequest);
             requestTraceIdCounter += 1;
         } else {
