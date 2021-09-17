@@ -408,6 +408,7 @@ public class Encoding {
                 pair(STRING, set(STRING)),
                 pair(DATETIME, set(DATETIME))
         );
+
         private final byte key;
         private final Class<?> valueClass;
         private final boolean isKeyable;

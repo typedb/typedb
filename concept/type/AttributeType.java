@@ -24,7 +24,9 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -80,6 +82,8 @@ public interface AttributeType extends ThingType {
         DATETIME(Encoding.ValueType.DATETIME);
 
         private final Encoding.ValueType encoding;
+        private Set<ValueType> comparables;
+        private Set<ValueType> assignables;
 
         ValueType(Encoding.ValueType encoding) {
             this.encoding = encoding;
@@ -125,11 +129,13 @@ public interface AttributeType extends ThingType {
         }
 
         public Set<ValueType> comparables() {
-            return iterate(encoding.comparables()).map(ValueType::of).toSet();
+            if (comparables == null) comparables = iterate(encoding.comparables()).map(ValueType::of).toSet();
+            return comparables;
         }
 
         public Set<ValueType> assignables() {
-            return iterate(encoding.assignables()).map(ValueType::of).toSet();
+            if (assignables == null) assignables = iterate(encoding.assignables()).map(ValueType::of).toSet();
+            return assignables;
         }
 
     }

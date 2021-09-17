@@ -41,6 +41,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {
 
     AttributeVertex<VALUE> attributeVertex;
+    AttributeTypeImpl attributeType;
 
     private AttributeImpl(AttributeVertex<VALUE> vertex) {
         super(vertex);
@@ -75,7 +76,8 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public AttributeTypeImpl getType() {
-        return AttributeTypeImpl.of(readableVertex().graphs(), readableVertex().type());
+        if (attributeType == null) attributeType = AttributeTypeImpl.of(readableVertex().graphs(), readableVertex().type());
+        return attributeType;
     }
 
     @Override
