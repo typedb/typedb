@@ -75,7 +75,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
         ConclusionRequestState<? extends Concludable<?>> requestState = requestStates.computeIfAbsent(
                 fromUpstream.template(), r -> createRequestState(fromUpstream.template()));
-        if (requestState.materialisationsCounter().nonZero()) {
+        if (requestState.materialisationsCounter > 0) {
             requestState.replayBuffer().addVisit(fromUpstream);
         } else {
             sendNextMessage(requestState, fromUpstream);
@@ -85,7 +85,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     @Override
     protected void receiveRevisit(Request.Revisit fromUpstream) {
         ConclusionRequestState<? extends Concludable<?>> requestState = requestStates.get(fromUpstream.visit().template());
-        if (requestState.materialisationsCounter().nonZero()) {
+        if (requestState.materialisationsCounter > 0) {
             requestState.replayBuffer().addRevisit(fromUpstream);
         } else {
             requestState.downstreamManager().unblock(fromUpstream.cycles());
@@ -104,7 +104,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             Materialiser.Request request = Materialiser.Request.create(
                     driver(), registry.materialiser(), fromUpstream.trace(), conclusion, fromDownstream.answer());
             requestFromMaterialiser(request, fromUpstream);
-            requestState.materialisationsCounter().increment();
+            requestState.materialisationsCounter += 1;
         } else {
             sendNextMessage(requestState, fromUpstream);
         }
@@ -116,7 +116,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (isTerminated()) return;
         Request fromUpstream = upstreamRequest(fromDownstream);
         ConclusionRequestState<? extends Concludable<?>> requestState = this.requestStates.get(fromUpstream.visit().template());
-        if (requestState.materialisationsCounter().nonZero()) {
+        if (requestState.materialisationsCounter > 0) {
             requestState.replayBuffer().addBlocked(fromDownstream);
         } else {
             Request.Template downstream = fromDownstream.sourceRequest();
@@ -134,7 +134,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         Request fromUpstream = upstreamRequest(fromDownstream);
         ConclusionRequestState<?> requestState = this.requestStates.get(fromUpstream.visit().template());
 
-        if (requestState.materialisationsCounter().nonZero()) {
+        if (requestState.materialisationsCounter > 0) {
             requestState.replayBuffer().addFail(fromDownstream);
         } else {
             requestState.downstreamManager().remove(fromDownstream.sourceRequest());
@@ -157,8 +157,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         Optional<Map<Identifier.Variable, Concept>> materialisation = response.materialisation();
         materialisation.ifPresent(m -> requestState.newMaterialisation(response.partialAnswer(), m));
         sendNextMessage(requestState, fromUpstream);
-        requestState.materialisationsCounter().decrement();
-        if (!requestState.materialisationsCounter().nonZero()) requestState.replayBuffer().replay();
+        requestState.materialisationsCounter -= 1;
+        if (requestState.materialisationsCounter == 0) requestState.replayBuffer().replay();
     }
 
     private void sendNextMessage(ConclusionRequestState<? extends Concludable<?>> requestState, Request fromUpstream) {
@@ -280,9 +280,9 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     private static abstract class ConclusionRequestState<CONCLUDABLE extends Concludable<?>> extends RequestState {
 
         private final DownstreamManager downstreamManager;
-        private final MaterialisationCounter materialisationsCounter;
         private final ReplayBuffer replayBuffer;
         private boolean complete;
+        private int materialisationsCounter;
         protected FunctionalIterator<CONCLUDABLE> materialisations;
 
         protected ConclusionRequestState(Request.Template fromUpstream, List<Request.Template> conditionDownstreams, ReplayBuffer replayBuffer) {
@@ -290,7 +290,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             this.downstreamManager = new DownstreamManager(conditionDownstreams);
             this.materialisations = Iterators.empty();
             this.complete = false;
-            this.materialisationsCounter = new MaterialisationCounter();
+            this.materialisationsCounter = 0;
             this.replayBuffer = replayBuffer;
         }
 
@@ -317,32 +317,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             this.materialisations = this.materialisations.link(toUpstream(fromDownstream, materialisation));
         }
 
-        private MaterialisationCounter materialisationsCounter() {
-            return materialisationsCounter;
-        }
-
         public ReplayBuffer replayBuffer() {
             return replayBuffer;
-        }
-
-        private static class MaterialisationCounter {
-            private int waitedMaterialisations;
-
-            MaterialisationCounter() {
-                this.waitedMaterialisations = 0;
-            }
-
-            public boolean nonZero() {
-                return waitedMaterialisations > 0;
-            }
-
-            public void decrement() {
-                waitedMaterialisations -= 1;
-            }
-
-            public void increment() {
-                waitedMaterialisations += 1;
-            }
         }
 
         private static class Match extends ConclusionRequestState<Concludable.Match<?>> {
