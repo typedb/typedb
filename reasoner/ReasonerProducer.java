@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -59,10 +58,10 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     private final Set<Identifier.Variable.Retrievable> filter;
     private final Request.Template requestTemplate;
     private final Request.Visit defaultResolveRequest;
+    private final int traceId;
     private boolean done;
     private Queue<ConceptMap> queue;
     private int requestIdCounter;
-    private int id;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
@@ -79,9 +78,9 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         assert computeSize > 0;
         this.filter = filter;
         this.requestIdCounter = 0;
-        this.id = abs(UUID.randomUUID().hashCode());
+        this.traceId = abs(System.identityHashCode(this));
         this.requestTemplate = requestTemplate();
-        this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(id, 0));
+        this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(traceId, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -99,14 +98,10 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         assert computeSize > 0;
         this.filter = filter;
         this.requestIdCounter = 0;
-        this.id = id();
+        this.traceId = abs(System.identityHashCode(this));
         this.requestTemplate = requestTemplate();
-        this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(id, 0));
+        this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(traceId, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
-    }
-
-    private int id() {
-        return abs(System.identityHashCode(this));
     }
 
     private Request.Template requestTemplate() {
@@ -129,7 +124,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
     @Override
     public void recycle() {
-        this.id = id();
+
     }
 
     // note: root resolver calls this single-threaded, so is thread safe
@@ -171,7 +166,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     private void requestAnswer() {
         Request.Visit resolveRequest;
         if (options.traceInference()) {
-            Trace trace = Trace.create(id, requestIdCounter);
+            Trace trace = Trace.create(traceId, requestIdCounter);
             resolveRequest = requestTemplate.createVisit(trace);
             ResolutionTracer.get().start(resolveRequest);
             requestIdCounter += 1;

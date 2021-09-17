@@ -53,10 +53,10 @@ public class ExplanationProducer implements Producer<Explanation> {
     private final AtomicInteger processing;
     private final Request.Template requestTemplate;
     private final Request.Visit defaultResolveRequest;
+    private final int traceId;
     private boolean done;
     private int requestTraceIdCounter;
     private Queue<Explanation> queue;
-    private int id;
 
     public ExplanationProducer(Conjunction conjunction, ConceptMap bounds, Options.Query options,
                                ResolverRegistry registry, ExplainablesManager explainablesManager) {
@@ -70,14 +70,10 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR : 1;
         this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.requestTraceIdCounter = 0;
-        this.id = id();
+        this.traceId = abs(System.identityHashCode(this));
         this.requestTemplate = requestTemplate();
-        this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(id, 0));
+        this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(traceId, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
-    }
-
-    private int id() {
-        return abs(System.identityHashCode(this));
     }
 
     private Request.Template requestTemplate() {
@@ -101,7 +97,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     private void requestExplanation() {
         Request.Visit resolveRequest;
         if (options.traceInference()) {
-            Trace trace = Trace.create(id, requestTraceIdCounter);
+            Trace trace = Trace.create(traceId, requestTraceIdCounter);
             resolveRequest = requestTemplate.createVisit(trace);
             ResolutionTracer.get().start(resolveRequest);
             requestTraceIdCounter += 1;
@@ -149,6 +145,6 @@ public class ExplanationProducer implements Producer<Explanation> {
 
     @Override
     public void recycle() {
-        id = id();
+
     }
 }
