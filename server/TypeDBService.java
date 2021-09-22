@@ -225,6 +225,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public void sessionClose(SessionProto.Session.Close.Req request,
                              StreamObserver<SessionProto.Session.Close.Res> responder) {
         try {
+            System.out.println("HEHEHEHEH: " + request.getClientId());
             UUID clientID = byteStringAsUUID(request.getClientId());
             ClientService clientSvc = clientServices.get(clientID);
             if (clientSvc == null) throw TypeDBException.of(CLIENT_NOT_FOUND);
