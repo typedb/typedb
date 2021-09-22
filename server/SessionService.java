@@ -21,18 +21,13 @@ import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
-import static com.vaticle.typedb.core.concurrent.executor.Executors.scheduled;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class SessionService implements AutoCloseable {
 

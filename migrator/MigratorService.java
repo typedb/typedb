@@ -17,9 +17,9 @@
 
 package com.vaticle.typedb.core.migrator;
 
+import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.migrator.data.DataExporter;
 import com.vaticle.typedb.core.migrator.data.DataImporter;
-import com.vaticle.typedb.core.TypeDB;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
