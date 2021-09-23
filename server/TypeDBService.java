@@ -208,7 +208,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Instant start = Instant.now();
             UUID clientID = byteStringAsUUID(request.getClientId());
             ClientService clientSvc = clientServices.get(clientID);
-            if (clientSvc == null) throw TypeDBException.of(CLIENT_NOT_FOUND);
+            if (clientSvc == null) throw TypeDBException.of(CLIENT_NOT_FOUND, clientID);
             Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
             Options.Session options = applyDefaultOptions(new Options.Session(), request.getOptions());
             UUID sessionID = clientSvc.sessionOpen(request.getDatabase(), sessionType, options);
@@ -225,10 +225,9 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public void sessionClose(SessionProto.Session.Close.Req request,
                              StreamObserver<SessionProto.Session.Close.Res> responder) {
         try {
-            System.out.println("HEHEHEHEH: " + request.getClientId());
             UUID clientID = byteStringAsUUID(request.getClientId());
             ClientService clientSvc = clientServices.get(clientID);
-            if (clientSvc == null) throw TypeDBException.of(CLIENT_NOT_FOUND);
+            if (clientSvc == null) throw TypeDBException.of(CLIENT_NOT_FOUND, clientID);
             UUID sessionID = byteStringAsUUID(request.getSessionId());
             clientSvc.sessionClose(sessionID);
             responder.onNext(closeRes());

@@ -122,7 +122,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Client CLIENT_CLOSED =
                 new Client(2, "Attempted to open a session from closed client.");
 
-        private static final String codePrefix = "CLI";
+        private static final String codePrefix = "CLN";
         private static final String messagePrefix = "Invalid Client Operation";
 
         Client(int number, String message) {
