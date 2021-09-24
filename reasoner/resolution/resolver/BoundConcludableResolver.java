@@ -62,6 +62,20 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         this.requestStates = new HashMap<>();
     }
 
+    @Override
+    public void receiveVisit(Request.Visit fromUpstream) {
+        LOG.trace("{}: received Visit: {}", name(), fromUpstream);
+        if (isTerminated()) return;
+        assert fromUpstream.partialAnswer().isConcludable();
+        getOrCreateRequestState(fromUpstream.template()).receiveVisit(fromUpstream.trace());
+    }
+
+    @Override
+    protected void receiveRevisit(Request.Revisit fromUpstream) {
+        assert fromUpstream.visit().partialAnswer().isConcludable();
+        getOrCreateRequestState(fromUpstream.visit().template()).receiveRevisit(fromUpstream.trace(), fromUpstream.cycles());
+    }
+
     private BoundConcludableRequestState<?> getOrCreateRequestState(Request.Template fromUpstream) {
         if (isCycle(fromUpstream.partialAnswer())) {
             return requestStates.computeIfAbsent(fromUpstream, request -> createBlockedRequestState(fromUpstream));
@@ -81,20 +95,6 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             }
         }
         return false;
-    }
-
-    @Override
-    public void receiveVisit(Request.Visit fromUpstream) {
-        LOG.trace("{}: received Visit: {}", name(), fromUpstream);
-        if (isTerminated()) return;
-        assert fromUpstream.partialAnswer().isConcludable();
-        getOrCreateRequestState(fromUpstream.template()).receiveVisit(fromUpstream.trace());
-    }
-
-    @Override
-    protected void receiveRevisit(Request.Revisit fromUpstream) {
-        assert fromUpstream.visit().partialAnswer().isConcludable();
-        getOrCreateRequestState(fromUpstream.visit().template()).receiveRevisit(fromUpstream.trace(), fromUpstream.cycles());
     }
 
     abstract ExploringRequestState<?> createExploringRequestState(Request.Template fromUpstream);

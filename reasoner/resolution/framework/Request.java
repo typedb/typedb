@@ -42,7 +42,7 @@ public interface Request {
         private final Trace trace;
 
         private Visit(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                        AnswerState.Partial<?> partialAnswer, int planIndex, Trace trace) {
+                      AnswerState.Partial<?> partialAnswer, int planIndex, Trace trace) {
             this.sender = sender;
             this.receiver = receiver;
             this.partialAnswer = partialAnswer;
@@ -160,11 +160,11 @@ public interface Request {
     }
 
     class Template {
-        protected final Actor.Driver<? extends Resolver<?>> sender;
-        protected final Actor.Driver<? extends Resolver<?>> receiver;
-        protected final AnswerState.Partial<?> partialAnswer;
-        protected final int planIndex;
 
+        private final Actor.Driver<? extends Resolver<?>> sender;
+        private final Actor.Driver<? extends Resolver<?>> receiver;
+        private final AnswerState.Partial<?> partialAnswer;
+        private final int planIndex;
         private final int hash;
 
         protected Template(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,

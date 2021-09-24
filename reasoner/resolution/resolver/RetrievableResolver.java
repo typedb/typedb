@@ -35,7 +35,7 @@ public class RetrievableResolver extends SubsumptiveCoordinator<RetrievableResol
     }
 
     @Override
-    Driver<BoundRetrievableResolver> getOrCreateWorker(AnswerState.Partial<?> partial) {
+    Driver<BoundRetrievableResolver> getOrCreateBoundResolver(AnswerState.Partial<?> partial) {
         return workers.computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundRetrievableResolver for bounds: {}", name(), partial);
             return registry.registerBoundRetrievable(retrievable, partial.conceptMap());

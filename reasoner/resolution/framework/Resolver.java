@@ -56,6 +56,7 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer
 import static com.vaticle.typedb.core.common.poller.Pollers.poll;
 
 public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends ReasonerActor<RESOLVER> {
+
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
     private final Map<Request.Visit, Request.Visit> requestRouter;

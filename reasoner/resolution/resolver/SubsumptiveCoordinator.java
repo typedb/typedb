@@ -54,8 +54,7 @@ public abstract class SubsumptiveCoordinator<
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
-        Driver<? extends Resolver<?>> root = fromUpstream.partialAnswer().root();
-        Driver<WORKER> worker = getOrCreateWorker(fromUpstream.partialAnswer());
+        Driver<WORKER> worker = getOrCreateBoundResolver(fromUpstream.partialAnswer());
         Request.Template requestTemplate = Request.Template.create(driver(), worker, fromUpstream.partialAnswer());
         Request.Visit visit = requestTemplate.createVisit(fromUpstream.trace());
         visitDownstream(visit, fromUpstream);
@@ -66,8 +65,7 @@ public abstract class SubsumptiveCoordinator<
         LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
         assert isInitialised;
         if (isTerminated()) return;
-        Driver<? extends Resolver<?>> root = fromUpstream.visit().partialAnswer().root();
-        Driver<WORKER> worker = getOrCreateWorker(fromUpstream.visit().partialAnswer());
+        Driver<WORKER> worker = getOrCreateBoundResolver(fromUpstream.visit().partialAnswer());
         Request.Template requestTemplate = Request.Template.create(driver(), worker, fromUpstream.visit().partialAnswer());
         Request.Revisit revisit = requestTemplate.createRevisit(fromUpstream.trace(), fromUpstream.cycles());
         revisitDownstream(revisit, fromUpstream);
@@ -81,7 +79,7 @@ public abstract class SubsumptiveCoordinator<
                         fromDownstream.cycles());
     }
 
-    abstract Driver<WORKER> getOrCreateWorker(AnswerState.Partial<?> partial);
+    abstract Driver<WORKER> getOrCreateBoundResolver(AnswerState.Partial<?> partial);
 
     @Override
     protected void receiveAnswer(Answer answer) {

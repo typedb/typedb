@@ -40,7 +40,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
 
     public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable, ResolverRegistry registry) {
         super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
-              registry);
+                registry);
         this.concludable = concludable;
         this.conclusionResolvers = new LinkedHashMap<>();
         this.isInitialised = false;
@@ -51,7 +51,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
     }
 
     @Override
-    Driver<BoundConcludableResolver> getOrCreateWorker(AnswerState.Partial<?> partial) {
+    Driver<BoundConcludableResolver> getOrCreateBoundResolver(AnswerState.Partial<?> partial) {
         return workers.computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundConcludableResolver for bounds: {}", name(), partial);
             // TODO: We could use the bounds to prune the applicable rules further
@@ -64,17 +64,15 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
         concludable.getApplicableRules(registry.conceptManager(), registry.logicManager())
-                .forEachRemaining(rule -> concludable.getUnifiers(rule)
-                        .forEachRemaining(unifier -> {
-                            if (isTerminated()) return;
-                            try {
-                                Driver<ConclusionResolver> conclusionResolver =
-                                        registry.registerConclusion(rule.conclusion());
-                                conclusionResolvers.computeIfAbsent(conclusionResolver, r -> new HashSet<>()).add(unifier);
-                            } catch (TypeDBException e) {
-                                terminate(e);
-                            }
-                        }));
+                .forEachRemaining(rule -> concludable.getUnifiers(rule).forEachRemaining(unifier -> {
+                    if (isTerminated()) return;
+                    try {
+                        Driver<ConclusionResolver> conclusionResolver = registry.registerConclusion(rule.conclusion());
+                        conclusionResolvers.computeIfAbsent(conclusionResolver, r -> new HashSet<>()).add(unifier);
+                    } catch (TypeDBException e) {
+                        terminate(e);
+                    }
+                }));
         if (!isTerminated()) isInitialised = true;
     }
 
