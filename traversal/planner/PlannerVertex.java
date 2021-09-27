@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.traversal.planner;
 
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPVariable;
+import com.google.ortools.sat.IntVar;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.graph.GraphManager;
@@ -27,6 +28,7 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
+import com.vaticle.typedb.core.traversal.optimiser.IntVariable;
 
 import javax.annotation.Nullable;
 
@@ -55,10 +57,10 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     private boolean isInitialisedConstraints;
     private double costNext;
     double costLastRecorded;
-    MPVariable varIsStartingVertex;
-    MPVariable varIsEndingVertex;
-    MPVariable varHasIncomingEdges;
-    MPVariable varHasOutgoingEdges;
+    IntVariable varIsStartingVertex;
+    IntVariable varIsEndingVertex;
+    IntVariable varHasIncomingEdges;
+    IntVariable varHasOutgoingEdges;
 
     PlannerVertex(Identifier identifier, @Nullable GraphPlanner planner) {
         super(identifier);
@@ -204,7 +206,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         assert varIsStartingVertex_init == 0;
     }
 
-    int recordInitial(MPVariable[] variables, double[] initialValues, int index) {
+    int recordInitial(IntVariable[] variables, double[] initialValues, int index) {
         variables[index] = varIsStartingVertex;
         variables[index + 1] = varIsEndingVertex;
         variables[index + 2] = varHasIncomingEdges;

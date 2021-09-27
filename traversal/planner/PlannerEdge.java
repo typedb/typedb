@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.traversal.planner;
 
-import com.google.ortools.linearsolver.MPConstraint;
-import com.google.ortools.linearsolver.MPVariable;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
@@ -27,6 +25,8 @@ import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
+import com.vaticle.typedb.core.traversal.optimiser.Constraint;
+import com.vaticle.typedb.core.traversal.optimiser.IntVariable;
 import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;
@@ -106,7 +106,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
     void initialiseConstraints() {
         String conPrefix = "edge_con_" + this.toString() + "_";
-        MPConstraint conOneDirection = planner.solver().makeConstraint(1, 1, conPrefix + "one_direction");
+        Constraint conOneDirection = planner.solver().makeConstraint(1, 1, conPrefix + "one_direction");
         conOneDirection.setCoefficient(forward.varIsSelected, 1);
         conOneDirection.setCoefficient(backward.varIsSelected, 1);
 
@@ -134,7 +134,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.resetInitialValue();
     }
 
-    int recordInitial(MPVariable[] variables, double[] initialValues, int index) {
+    int recordInitial(IntVariable[] variables, double[] initialValues, int index) {
         index = forward.recordInitial(variables, initialValues, index);
         index = backward.recordInitial(variables, initialValues, index);
         return index;
@@ -148,9 +148,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
     public static abstract class Directional<VERTEX_DIR_FROM extends PlannerVertex<?>, VERTEX_DIR_TO extends PlannerVertex<?>>
             extends TraversalEdge<VERTEX_DIR_FROM, VERTEX_DIR_TO> {
 
-        MPVariable varIsSelected;
-        MPVariable[] varOrderAssignment;
-        private MPVariable varOrderNumber;
+        IntVariable varIsSelected;
+        IntVariable[] varOrderAssignment;
+        private IntVariable varOrderNumber;
         private int varIsSelected_init;
         private int varOrderNumber_init;
         private int[] varOrderAssignment_init;
@@ -208,7 +208,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         void initialiseVariables() {
             varIsSelected = planner.solver().makeIntVar(0, 1, varPrefix + "is_selected");
             varOrderNumber = planner.solver().makeIntVar(0, planner.edges().size(), varPrefix + "order_number");
-            varOrderAssignment = new MPVariable[planner.edges().size()];
+            varOrderAssignment = new IntVariable[planner.edges().size()];
             varOrderAssignment_init = new int[planner.edges().size()];
             for (int i = 0; i < planner.edges().size(); i++) {
                 varOrderAssignment[i] = planner.solver().makeIntVar(0, 1, varPrefix + "order_assignment[" + i + "]");
@@ -225,10 +225,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
 
         private void initialiseConstraintsForOrderNumber() {
-            MPConstraint conOrderIfSelected = planner.solver().makeConstraint(0, 0, conPrefix + "order_if_selected");
+            Constraint conOrderIfSelected = planner.solver().makeConstraint(0, 0, conPrefix + "order_if_selected");
             conOrderIfSelected.setCoefficient(varIsSelected, -1);
 
-            MPConstraint conAssignOrderNumber = planner.solver().makeConstraint(0, 0, conPrefix + "assign_order_number");
+            Constraint conAssignOrderNumber = planner.solver().makeConstraint(0, 0, conPrefix + "assign_order_number");
             conAssignOrderNumber.setCoefficient(varOrderNumber, -1);
 
             for (int i = 0; i < planner.edges().size(); i++) {
@@ -244,7 +244,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             int i = 0;
             for (Directional<?, ?> previousEdge : previousEdges) {
                 String name = conPrefix + "order_sequence_" + i++;
-                MPConstraint conOrderSequence = planner.solver().makeConstraint(0, planner.edges().size() + 1, name);
+                Constraint conOrderSequence = planner.solver().makeConstraint(0, planner.edges().size() + 1, name);
                 conOrderSequence.setCoefficient(this.varOrderNumber, 1);
                 conOrderSequence.setCoefficient(this.opposite.varIsSelected, planner.edges().size() + 1);
                 conOrderSequence.setCoefficient(previousEdge.varOrderNumber, -1);
@@ -263,7 +263,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             for (int i = 0; i < planner.edges().size(); i++) {
                 double exp = 1 + (expMultiplier-- * planner.costExponentUnit);
                 double coeff = cost * Math.pow(planner.branchingFactor, exp);
-                planner.objective().setCoefficient(varOrderAssignment[i], coeff);
+                planner.solver().setObjectiveCoefficient(varOrderAssignment[i], coeff);
             }
             costNext = cost;
             planner.updateCostNext(costLastRecorded, costNext);
@@ -299,7 +299,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             return hasInitialValue;
         }
 
-        int recordInitial(MPVariable[] variables, double[] initialValues, int index) {
+        int recordInitial(IntVariable[] variables, double[] initialValues, int index) {
             variables[index] = varIsSelected;
             variables[index + 1] = varOrderNumber;
 

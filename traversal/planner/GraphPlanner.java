@@ -18,15 +18,13 @@
 
 package com.vaticle.typedb.core.traversal.planner;
 
-import com.google.ortools.linearsolver.MPConstraint;
-import com.google.ortools.linearsolver.MPObjective;
-import com.google.ortools.linearsolver.MPSolver;
-import com.google.ortools.linearsolver.MPSolverParameters;
-import com.google.ortools.linearsolver.MPVariable;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
+import com.vaticle.typedb.core.traversal.optimiser.Constraint;
+import com.vaticle.typedb.core.traversal.optimiser.IntVariable;
+import com.vaticle.typedb.core.traversal.optimiser.Solver;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
@@ -48,16 +46,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 
-import static com.google.ortools.linearsolver.MPSolver.ResultStatus.ABNORMAL;
-import static com.google.ortools.linearsolver.MPSolver.ResultStatus.FEASIBLE;
-import static com.google.ortools.linearsolver.MPSolver.ResultStatus.INFEASIBLE;
-import static com.google.ortools.linearsolver.MPSolver.ResultStatus.OPTIMAL;
-import static com.google.ortools.linearsolver.MPSolver.ResultStatus.UNBOUNDED;
-import static com.google.ortools.linearsolver.MPSolverParameters.IncrementalityValues.INCREMENTALITY_ON;
-import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.INCREMENTALITY;
-import static com.google.ortools.linearsolver.MPSolverParameters.IntegerParam.PRESOLVE;
-import static com.google.ortools.linearsolver.MPSolverParameters.PresolveValues.PRESOLVE_ON;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
+import static com.vaticle.typedb.core.traversal.optimiser.Solver.ResultStatus.ERROR;
+import static com.vaticle.typedb.core.traversal.optimiser.Solver.ResultStatus.FEASIBLE;
+import static com.vaticle.typedb.core.traversal.optimiser.Solver.ResultStatus.OPTIMAL;
 import static java.lang.Math.abs;
 import static java.time.Duration.between;
 import static java.util.Comparator.comparing;
@@ -75,15 +67,14 @@ public class GraphPlanner implements Planner {
     static final double OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE = 0.02;
     static final double INIT_ZERO = 0.01;
 
-    private final MPSolver solver;
-    private final MPSolverParameters parameters;
+    private final Solver solver;
     private final Map<Identifier, PlannerVertex<?>> vertices;
     private final Set<PlannerEdge<?, ?>> edges;
     private final AtomicBoolean isOptimising;
     private final ReadWriteLock firstOptimisingLock;
 
     protected volatile GraphProcedure procedure;
-    private volatile MPSolver.ResultStatus resultStatus;
+    private volatile Solver.ResultStatus resultStatus;
     private volatile boolean isUpToDate;
     private volatile long totalDuration;
     private volatile long snapshot;
@@ -95,16 +86,12 @@ public class GraphPlanner implements Planner {
     double costExponentUnit;
 
     private GraphPlanner() {
-        solver = MPSolver.createSolver("SCIP");
-        solver.objective().setMinimization();
-        parameters = new MPSolverParameters();
-        parameters.setIntegerParam(PRESOLVE, PRESOLVE_ON.swigValue());
-        parameters.setIntegerParam(INCREMENTALITY, INCREMENTALITY_ON.swigValue());
+        solver = new Solver();
         vertices = new HashMap<>();
         edges = new HashSet<>();
         isOptimising = new AtomicBoolean(false);
         firstOptimisingLock = new StampedLock().asReadWriteLock();
-        resultStatus = MPSolver.ResultStatus.NOT_SOLVED;
+        resultStatus = Solver.ResultStatus.NOT_SOLVED;
         isUpToDate = false;
         totalDuration = 0L;
         totalCostLastRecorded = INIT_ZERO;
@@ -163,15 +150,11 @@ public class GraphPlanner implements Planner {
     }
 
     private boolean isError() {
-        return resultStatus == INFEASIBLE || resultStatus == UNBOUNDED || resultStatus == ABNORMAL;
+        return resultStatus == ERROR;
     }
 
-    MPSolver solver() {
+    Solver solver() {
         return solver;
-    }
-
-    MPObjective objective() {
-        return solver.objective();
     }
 
     private void registerVertex(StructureVertex<?> structureVertex, Set<StructureVertex<?>> registeredVertices,
@@ -239,7 +222,7 @@ public class GraphPlanner implements Planner {
     private void initialiseConstraintsForVariables() {
         String conPrefix = "planner_vertex_con_";
         vertices.values().forEach(PlannerVertex::initialiseConstraints);
-        MPConstraint conOneStartingVertex = solver.makeConstraint(1, 1, conPrefix + "one_starting_vertex");
+        Constraint conOneStartingVertex = solver.makeConstraint(1, 1, conPrefix + "one_starting_vertex");
         for (PlannerVertex<?> vertex : vertices.values()) {
             conOneStartingVertex.setCoefficient(vertex.varIsStartingVertex, 1);
         }
@@ -249,7 +232,7 @@ public class GraphPlanner implements Planner {
         String conPrefix = "planner_edge_con_";
         edges.forEach(PlannerEdge::initialiseConstraints);
         for (int i = 0; i < edges.size(); i++) {
-            MPConstraint conOneEdgeAtOrderI = solver.makeConstraint(1, 1, conPrefix + "one_edge_at_order_" + i);
+            Constraint conOneEdgeAtOrderI = solver.makeConstraint(1, 1, conPrefix + "one_edge_at_order_" + i);
             for (PlannerEdge<?, ?> edge : edges) {
                 conOneEdgeAtOrderI.setCoefficient(edge.forward().varOrderAssignment[i], 1);
                 conOneEdgeAtOrderI.setCoefficient(edge.backward().varOrderAssignment[i], 1);
@@ -331,7 +314,7 @@ public class GraphPlanner implements Planner {
     }
 
     private void resetInitialValues() {
-        solver.setHint(new MPVariable[]{}, new double[]{});
+        solver.resetHints();
     }
 
     void mayOptimise(GraphManager graph, boolean singleUse) {
@@ -364,10 +347,9 @@ public class GraphPlanner implements Planner {
         long allocatedDuration = singleUse ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
         Instant start, endSolver, end;
         totalDuration += allocatedDuration;
-        solver.setTimeLimit(totalDuration);
 
         start = Instant.now();
-        resultStatus = solver.solve(parameters);
+        resultStatus = solver.solve(totalDuration);
         resetInitialValues();
         endSolver = Instant.now();
         if (isError()) throwPlanningError();
@@ -427,7 +409,7 @@ public class GraphPlanner implements Planner {
     private class Initialiser {
 
         private final LinkedHashSet<PlannerVertex<?>> queue;
-        private final MPVariable[] variables;
+        private final IntVariable[] variables;
         private final double[] initialValues;
         private int edgeCount;
 
@@ -436,7 +418,7 @@ public class GraphPlanner implements Planner {
             edgeCount = 0;
 
             int count = countVariables();
-            variables = new MPVariable[count];
+            variables = new IntVariable[count];
             initialValues = new double[count];
         }
 
@@ -474,7 +456,7 @@ public class GraphPlanner implements Planner {
             for (PlannerEdge<?, ?> e : edges) index = e.recordInitial(variables, initialValues, index);
             assert index == variables.length && index == initialValues.length;
 
-            solver.setHint(variables, initialValues);
+            solver.setHints(variables, initialValues);
         }
 
         private void resetInitialValues() {
