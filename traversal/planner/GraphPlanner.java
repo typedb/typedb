@@ -259,7 +259,7 @@ public class GraphPlanner implements Planner {
             }
         }
         assert hasObjective : String.format("Failed to set objective function. Planner snapshot: %d; statistics snapshot: %d", snapshot, graph.data().stats().snapshot());
-        if (LOG.isTraceEnabled()) LOG.trace(solver.exportModelAsLpFormat());
+        if (LOG.isTraceEnabled()) LOG.trace(solver.toString());
     }
 
     void updateCostNext(double costPrevious, double costNext) {
@@ -366,7 +366,7 @@ public class GraphPlanner implements Planner {
     private void throwPlanningError() {
         LOG.error(toString());
         LOG.error("Optimisation status: {}", resultStatus);
-        LOG.error(solver.exportModelAsLpFormat());
+        LOG.error(solver.toString());
         throw TypeDBException.of(UNEXPECTED_PLANNING_ERROR);
     }
 
@@ -409,17 +409,12 @@ public class GraphPlanner implements Planner {
     private class Initialiser {
 
         private final LinkedHashSet<PlannerVertex<?>> queue;
-        private final IntVariable[] variables;
-        private final double[] initialValues;
         private int edgeCount;
 
         private Initialiser() {
             queue = new LinkedHashSet<>();
             edgeCount = 0;
-
             int count = countVariables();
-            variables = new IntVariable[count];
-            initialValues = new double[count];
         }
 
         private int countVariables() {
@@ -450,13 +445,6 @@ public class GraphPlanner implements Planner {
                 }
                 queue.remove(vertex);
             }
-
-            int index = 0;
-            for (PlannerVertex<?> v : vertices.values()) index = v.recordInitial(variables, initialValues, index);
-            for (PlannerEdge<?, ?> e : edges) index = e.recordInitial(variables, initialValues, index);
-            assert index == variables.length && index == initialValues.length;
-
-            solver.setHints(variables, initialValues);
         }
 
         private void resetInitialValues() {

@@ -18,9 +18,6 @@
 
 package com.vaticle.typedb.core.traversal.planner;
 
-import com.google.ortools.linearsolver.MPConstraint;
-import com.google.ortools.linearsolver.MPVariable;
-import com.google.ortools.sat.IntVar;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.graph.GraphManager;
@@ -28,6 +25,7 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
+import com.vaticle.typedb.core.traversal.optimiser.Constraint;
 import com.vaticle.typedb.core.traversal.optimiser.IntVariable;
 
 import javax.annotation.Nullable;
@@ -45,10 +43,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     private final String varPrefix = "vertex_var_" + id() + "_";
     private final String conPrefix = "vertex_con_" + id() + "_";
-    private int varIsStartingVertex_init;
-    private int varIsEndingVertex_init;
-    private int varHasIncomingEdges_init;
-    private int varHasOutgoingEdges_init;
     private int varIsStartingVertex_result;
     private int varIsEndingVertex_result;
     private int varHasIncomingEdges_result;
@@ -131,24 +125,24 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     private void initialiseConstraintsForIncomingEdges() {
         assert !ins().isEmpty();
-        MPConstraint conHasIncomingEdges = planner.solver().makeConstraint(0, ins().size() - 1, conPrefix + "has_incoming_edges");
+        Constraint conHasIncomingEdges = planner.solver().makeConstraint(0, ins().size() - 1, conPrefix + "has_incoming_edges");
         conHasIncomingEdges.setCoefficient(varHasIncomingEdges, ins().size());
         ins().forEach(edge -> conHasIncomingEdges.setCoefficient(edge.varIsSelected, -1));
     }
 
     private void initialiseConstraintsForOutgoingEdges() {
         assert !outs().isEmpty();
-        MPConstraint conHasOutgoingEdges = planner.solver().makeConstraint(0, outs().size() - 1, conPrefix + "has_outgoing_edges");
+        Constraint conHasOutgoingEdges = planner.solver().makeConstraint(0, outs().size() - 1, conPrefix + "has_outgoing_edges");
         conHasOutgoingEdges.setCoefficient(varHasOutgoingEdges, outs().size());
         outs().forEach(edge -> conHasOutgoingEdges.setCoefficient(edge.varIsSelected, -1));
     }
 
     private void initialiseConstraintsForVertexFlow() {
-        MPConstraint conStartOrIncoming = planner.solver().makeConstraint(1, 1, conPrefix + "starting_or_incoming");
+        Constraint conStartOrIncoming = planner.solver().makeConstraint(1, 1, conPrefix + "starting_or_incoming");
         conStartOrIncoming.setCoefficient(varIsStartingVertex, 1);
         conStartOrIncoming.setCoefficient(varHasIncomingEdges, 1);
 
-        MPConstraint conEndingOrOutgoing = planner.solver().makeConstraint(1, 1, conPrefix + "ending_or_outgoing");
+        Constraint conEndingOrOutgoing = planner.solver().makeConstraint(1, 1, conPrefix + "ending_or_outgoing");
         conEndingOrOutgoing.setCoefficient(varIsEndingVertex, 1);
         conEndingOrOutgoing.setCoefficient(varHasOutgoingEdges, 1);
     }
@@ -158,7 +152,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         if (cost < INIT_ZERO) cost = INIT_ZERO;
         double exp = planner.edges().size() * planner.costExponentUnit;
         double coeff = cost * Math.pow(planner.branchingFactor, exp);
-        planner.objective().setCoefficient(varIsStartingVertex, coeff);
+        planner.solver().setObjectiveCoefficient(varIsStartingVertex, coeff);
         costNext = cost;
         planner.updateCostNext(costLastRecorded, costNext);
     }
@@ -168,56 +162,42 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     void recordResults() {
-        varIsStartingVertex_result = (int) Math.round(varIsStartingVertex.solutionValue());
-        varIsEndingVertex_result = (int) Math.round(varIsEndingVertex.solutionValue());
-        varHasIncomingEdges_result = (int) Math.round(varHasIncomingEdges.solutionValue());
-        varHasOutgoingEdges_result = (int) Math.round(varHasOutgoingEdges.solutionValue());
+        varIsStartingVertex_result = varIsStartingVertex.solutionValue();
+        varIsEndingVertex_result = varIsEndingVertex.solutionValue();
+        varHasIncomingEdges_result = varHasIncomingEdges.solutionValue();
+        varHasOutgoingEdges_result = varHasOutgoingEdges.solutionValue();
         assert !(isStartingVertex() && isEndingVertex());
         assert (isStartingVertex() ^ hasIncomingEdges());
         assert (isEndingVertex() ^ hasOutgoingEdges());
     }
 
     void resetInitialValue() {
-        varIsStartingVertex_init = 0;
-        varIsEndingVertex_init = 0;
-        varHasIncomingEdges_init = 0;
-        varHasOutgoingEdges_init = 0;
+        varIsStartingVertex.clearHint();
+        varIsEndingVertex.clearHint();
+        varHasIncomingEdges.clearHint();
+        varHasOutgoingEdges.clearHint();
     }
 
     void setStartingVertexInitial() {
-        varIsStartingVertex_init = 1;
-        varIsEndingVertex_init = 0;
+        varIsStartingVertex.setHint(1);
+        varIsEndingVertex.setHint(0);
     }
 
     void setEndingVertexInitial() {
-        varIsEndingVertex_init = 1;
-        assert varIsStartingVertex_init == 0;
-        assert varHasOutgoingEdges_init == 0;
-        assert varHasIncomingEdges_init == 1;
+        varIsEndingVertex.setHint(1);
+        assert varIsStartingVertex.getHint() == 0;
+        assert varHasOutgoingEdges.getHint() == 0;
+        assert varHasIncomingEdges.getHint() == 1;
     }
 
     void setHasOutgoingEdgesInitial() {
-        varHasOutgoingEdges_init = 1;
-        assert varIsEndingVertex_init == 0;
+        varHasOutgoingEdges.setHint(1);
+        assert varIsEndingVertex.getHint() == 0;
     }
 
     void setHasIncomingEdgesInitial() {
-        varHasIncomingEdges_init = 1;
-        assert varIsStartingVertex_init == 0;
-    }
-
-    int recordInitial(IntVariable[] variables, double[] initialValues, int index) {
-        variables[index] = varIsStartingVertex;
-        variables[index + 1] = varIsEndingVertex;
-        variables[index + 2] = varHasIncomingEdges;
-        variables[index + 3] = varHasOutgoingEdges;
-
-        initialValues[index] = varIsStartingVertex_init;
-        initialValues[index + 1] = varIsEndingVertex_init;
-        initialValues[index + 2] = varHasIncomingEdges_init;
-        initialValues[index + 3] = varHasOutgoingEdges_init;
-
-        return index + 4;
+        varHasIncomingEdges.setHint(1);
+        assert varIsStartingVertex.getHint() == 0;
     }
 
     void setStartingVertex() {

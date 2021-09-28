@@ -31,7 +31,6 @@ import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -134,12 +133,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.resetInitialValue();
     }
 
-    int recordInitial(IntVariable[] variables, double[] initialValues, int index) {
-        index = forward.recordInitial(variables, initialValues, index);
-        index = backward.recordInitial(variables, initialValues, index);
-        return index;
-    }
-
     @Override
     public String toString() {
         return String.format("(%s T[%s]H %s)", from.id(), symbol, to.id());
@@ -151,9 +144,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         IntVariable varIsSelected;
         IntVariable[] varOrderAssignment;
         private IntVariable varOrderNumber;
-        private int varIsSelected_init;
-        private int varOrderNumber_init;
-        private int[] varOrderAssignment_init;
         private int varIsSelected_result;
         private int varOrderNumber_result;
         private final String varPrefix;
@@ -209,7 +199,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             varIsSelected = planner.solver().makeIntVar(0, 1, varPrefix + "is_selected");
             varOrderNumber = planner.solver().makeIntVar(0, planner.edges().size(), varPrefix + "order_number");
             varOrderAssignment = new IntVariable[planner.edges().size()];
-            varOrderAssignment_init = new int[planner.edges().size()];
             for (int i = 0; i < planner.edges().size(); i++) {
                 varOrderAssignment[i] = planner.solver().makeIntVar(0, 1, varPrefix + "order_assignment[" + i + "]");
             }
@@ -280,16 +269,16 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         private void resetInitialValue() {
             hasInitialValue = false;
-            varIsSelected_init = 0;
-            varOrderNumber_init = 0;
-            Arrays.fill(varOrderAssignment_init, 0);
+            varIsSelected.clearHint();
+            varOrderNumber.clearHint();
+            iterate(varOrderAssignment).forEachRemaining(IntVariable::clearHint);
         }
 
         void setInitialValue(int order) {
-            varOrderNumber_init = order;
+            varOrderNumber.setHint(order);
             if (order > 0) {
-                varIsSelected_init = 1;
-                varOrderAssignment_init[order - 1] = 1;
+                varIsSelected.setHint(1);
+                varOrderAssignment[order - 1].setHint(1);
             }
             hasInitialValue = true;
             opposite.hasInitialValue = true;
@@ -297,21 +286,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         boolean hasInitialValue() {
             return hasInitialValue;
-        }
-
-        int recordInitial(IntVariable[] variables, double[] initialValues, int index) {
-            variables[index] = varIsSelected;
-            variables[index + 1] = varOrderNumber;
-
-            initialValues[index] = varIsSelected_init;
-            initialValues[index + 1] = varOrderNumber_init;
-
-            for (int i = 0; i < planner.edges().size(); i++) {
-                variables[index + 2 + i] = varOrderAssignment[i];
-                initialValues[index + 2 + i] = varOrderAssignment_init[i];
-            }
-
-            return index + 2 + planner.edges().size();
         }
 
         void setSelected() {
