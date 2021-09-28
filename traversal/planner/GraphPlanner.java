@@ -52,7 +52,6 @@ import static com.vaticle.typedb.core.traversal.optimiser.Solver.ResultStatus.OP
 import static java.lang.Math.abs;
 import static java.time.Duration.between;
 import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.toList;
 
 public class GraphPlanner implements Planner {
 

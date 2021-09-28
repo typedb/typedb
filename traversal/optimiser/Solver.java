@@ -47,7 +47,7 @@ public class Solver {
     private MPSolverParameters parameters;
 
     private enum SolverStatus {
-        INACTIVE, ACTIVE
+        INACTIVE, ACTIVE_NEW_HINTS, ACTIVE
     }
 
     public Solver() {
@@ -60,6 +60,7 @@ public class Solver {
     // TODO think about threading
     public ResultStatus solve(long timeLimitMillis) {
         if (status == SolverStatus.INACTIVE) activate();
+        else if (status == SolverStatus.ACTIVE_NEW_HINTS) applyHints();
         solver.setTimeLimit(timeLimitMillis);
         return ResultStatus.of(solver.solve(parameters));
     }
@@ -74,7 +75,6 @@ public class Solver {
         variables.forEach(var -> var.activate(solver));
         constraints.forEach(constraint -> constraint.activate(solver));
         applyHints();
-        status = SolverStatus.ACTIVE;
         assert variables.size() == solver.numVariables();
     }
 
@@ -97,6 +97,7 @@ public class Solver {
             hints[i] = variables.get(i).getHint();
         }
         solver.setHint(mpVariables, hints);
+        status = SolverStatus.ACTIVE;
     }
 
     public enum ResultStatus {
@@ -126,12 +127,14 @@ public class Solver {
     }
 
     public Constraint makeConstraint(double lowerBound, double upperBound, String name) {
+        assert status == SolverStatus.INACTIVE;
         Constraint constraint = new Constraint(lowerBound, upperBound, name);
         constraints.add(constraint);
         return constraint;
     }
 
     public IntVariable makeIntVar(double lowerBound, double upperBound, String name) {
+        assert status == SolverStatus.INACTIVE;
         IntVariable var = new IntVariable(lowerBound, upperBound, name);
         variables.add(var);
         return var;
@@ -139,6 +142,10 @@ public class Solver {
 
     public void resetHints() {
         variables.forEach(IntVariable::clearHint);
+        if (status == SolverStatus.ACTIVE) {
+            solver.setHint(new MPVariable[0], new double[0]);
+            status = SolverStatus.ACTIVE_NEW_HINTS;
+        }
     }
 
     @Override

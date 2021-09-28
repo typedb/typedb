@@ -44,6 +44,7 @@ public class Constraint {
     }
 
     public void setCoefficient(IntVariable variable, double coeff) {
+        assert status == Status.INACTIVE;
         coefficients.put(variable, coeff);
     }
 

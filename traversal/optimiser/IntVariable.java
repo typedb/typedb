@@ -49,6 +49,7 @@ public class IntVariable {
     }
 
     public void activate(MPSolver mpSolver) {
+        assert status == Status.INACTIVE;
         // TODO think about threading, idempotency
         this.mpVariable = mpSolver.makeIntVar(lowerBound, upperBound, name);
         this.status = Status.ACTIVE;
