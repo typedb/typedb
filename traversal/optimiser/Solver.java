@@ -122,6 +122,7 @@ public class Solver {
 
     public void setObjectiveCoefficient(IntVariable var, double coeff) {
         objectiveCoefficients.put(var, coeff);
+        if (status == SolverStatus.ACTIVE) solver.objective().setCoefficient(var.mpVariable, coeff);
     }
 
     public Constraint makeConstraint(double lowerBound, double upperBound, String name) {
