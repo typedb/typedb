@@ -75,4 +75,9 @@ public class IntVariable {
         assert hasHint();
         return hint;
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }

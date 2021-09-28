@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
 import com.vaticle.typedb.core.traversal.optimiser.Constraint;
-import com.vaticle.typedb.core.traversal.optimiser.IntVariable;
 import com.vaticle.typedb.core.traversal.optimiser.Solver;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
@@ -414,13 +413,6 @@ public class GraphPlanner implements Planner {
         private Initialiser() {
             queue = new LinkedHashSet<>();
             edgeCount = 0;
-            int count = countVariables();
-        }
-
-        private int countVariables() {
-            int vertexVars = 4 * vertices.size();
-            int edgeVars = (2 + edges.size()) * edges.size() * 2;
-            return vertexVars + edgeVars;
         }
 
         public void execute() {
@@ -430,9 +422,12 @@ public class GraphPlanner implements Planner {
             queue.add(start);
             while (!queue.isEmpty()) {
                 PlannerVertex<?> vertex = queue.iterator().next();
-                List<PlannerEdge.Directional<?, ?>> outgoing = vertex.outs().stream()
-                        .filter(e -> !e.hasInitialValue() && !(e.isSelfClosure() && e.direction().isBackward()))
-                        .sorted(comparing(e -> e.costLastRecorded)).collect(toList());
+                List<PlannerEdge.Directional<?, ?>> outgoing = new ArrayList<>();
+                vertex.outs().stream().filter(e -> !e.hasInitialValue()).sorted(comparing(e -> e.costLastRecorded))
+                        .forEachOrdered(edge -> {
+                            if (!(edge.isSelfClosure() && edge.direction().isBackward())) outgoing.add(edge);
+                            else edge.setInitialUnselected();
+                        });
                 if (!outgoing.isEmpty()) {
                     vertex.setHasOutgoingEdgesInitial();
                     outgoing.forEach(e -> {

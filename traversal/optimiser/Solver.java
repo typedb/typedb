@@ -64,15 +64,6 @@ public class Solver {
         return ResultStatus.of(solver.solve(parameters));
     }
 
-    public void deactivate() {
-        // TODO if this is synchronized, it doesn't have to be idempotent?
-        solver.delete();
-        parameters.delete();
-        status = SolverStatus.INACTIVE;
-        // TODO think about threading
-        // TODO delete all MP objects
-    }
-
     private void activate() {
         // TODO think about threading
         solver = MPSolver.createSolver("SCIP");
@@ -85,6 +76,16 @@ public class Solver {
         applyHints();
         status = SolverStatus.ACTIVE;
         assert variables.size() == solver.numVariables();
+    }
+
+    public void deactivate() {
+        // TODO if this is synchronized, it doesn't have to be idempotent?
+        solver.delete();
+        parameters.delete();
+        variables.forEach(IntVariable::deactivate);
+        constraints.forEach(Constraint::deactivate);
+        status = SolverStatus.INACTIVE;
+        // TODO think about threading
     }
 
     private void applyHints() {

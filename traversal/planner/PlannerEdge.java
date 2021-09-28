@@ -263,25 +263,34 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
 
         private void recordResults() {
-            varIsSelected_result = (int) Math.round(varIsSelected.solutionValue());
-            varOrderNumber_result = (int) Math.round(varOrderNumber.solutionValue());
+            varIsSelected_result = varIsSelected.solutionValue();
+            varOrderNumber_result = varOrderNumber.solutionValue();
         }
 
         private void resetInitialValue() {
-            hasInitialValue = false;
             varIsSelected.clearHint();
             varOrderNumber.clearHint();
             iterate(varOrderAssignment).forEachRemaining(IntVariable::clearHint);
+            hasInitialValue = false;
         }
 
         void setInitialValue(int order) {
+            assert order > 0;
             varOrderNumber.setHint(order);
-            if (order > 0) {
-                varIsSelected.setHint(1);
-                varOrderAssignment[order - 1].setHint(1);
+            varIsSelected.setHint(1);
+            for (int i = 0; i < varOrderAssignment.length; i++) {
+                if (i == order - 1) varOrderAssignment[i].setHint(1);
+                else varOrderAssignment[i].setHint(0);
             }
             hasInitialValue = true;
-            opposite.hasInitialValue = true;
+            opposite.setInitialUnselected();
+        }
+
+        public void setInitialUnselected() {
+            varIsSelected.setHint(0);
+            varOrderNumber.setHint(0); // irrelevant
+            iterate(varOrderAssignment).forEachRemaining(var -> var.setHint(0));
+            hasInitialValue = true;
         }
 
         boolean hasInitialValue() {
@@ -329,6 +338,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             if (direction.isForward()) return String.format("(%s T[%s]H %s)", from.id(), symbol, to.id());
             else return String.format("(%s H[%s]T %s)", from.id(), symbol, to.id());
         }
+
     }
 
     public static class Equal extends PlannerEdge<PlannerVertex<?>, PlannerVertex<?>> {

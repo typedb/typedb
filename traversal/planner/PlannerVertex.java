@@ -181,23 +181,28 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     void setStartingVertexInitial() {
         varIsStartingVertex.setHint(1);
         varIsEndingVertex.setHint(0);
+        varHasIncomingEdges.setHint(0);
     }
 
     void setEndingVertexInitial() {
         varIsEndingVertex.setHint(1);
-        assert varIsStartingVertex.getHint() == 0;
-        assert varHasOutgoingEdges.getHint() == 0;
+        varIsStartingVertex.setHint(0);
+        varHasOutgoingEdges.setHint(0);
+//        assert varIsStartingVertex.getHint() == 0;
+//        assert varHasOutgoingEdges.getHint() == 0;
         assert varHasIncomingEdges.getHint() == 1;
     }
 
     void setHasOutgoingEdgesInitial() {
         varHasOutgoingEdges.setHint(1);
-        assert varIsEndingVertex.getHint() == 0;
+        varIsEndingVertex.setHint(0);
+//        assert varIsEndingVertex.getHint() == 0;
     }
 
     void setHasIncomingEdgesInitial() {
         varHasIncomingEdges.setHint(1);
-        assert varIsStartingVertex.getHint() == 0;
+        varIsStartingVertex.setHint(0);
+//        assert varIsStartingVertex.getHint() == 0;
     }
 
     void setStartingVertex() {
