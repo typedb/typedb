@@ -118,10 +118,14 @@ public class GraphPlanner implements Planner {
     }
 
     @Override
-    public boolean isGraph() { return true; }
+    public boolean isGraph() {
+        return true;
+    }
 
     @Override
-    public GraphPlanner asGraph() { return this; }
+    public GraphPlanner asGraph() {
+        return this;
+    }
 
     public Collection<PlannerVertex<?>> vertices() {
         return vertices.values();
@@ -253,7 +257,6 @@ public class GraphPlanner implements Planner {
                 totalCostLastRecorded = totalCostNext;
                 vertices.values().forEach(PlannerVertex::recordCost);
                 edges.forEach(PlannerEdge::recordCost);
-                setInitialValues();
             }
         }
         assert hasObjective : String.format("Failed to set objective function. Planner snapshot: %d; statistics snapshot: %d", snapshot, graph.data().stats().snapshot());
@@ -311,7 +314,7 @@ public class GraphPlanner implements Planner {
         new Initialiser().execute();
     }
 
-    private void resetInitialValues() {
+    private void clearSolverHints() {
         solver.resetHints();
     }
 
@@ -341,6 +344,8 @@ public class GraphPlanner implements Planner {
             return;
         }
 
+        if (!isPlanned()) setInitialValues();
+
         // TODO: we should have a more clever logic to allocate extra time
         long allocatedDuration = singleUse ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
         Instant start, endSolver, end;
@@ -348,7 +353,7 @@ public class GraphPlanner implements Planner {
 
         start = Instant.now();
         resultStatus = solver.solve(totalDuration);
-        resetInitialValues();
+        clearSolverHints();
         endSolver = Instant.now();
         if (isError()) throwPlanningError();
         else assert isPlanned();

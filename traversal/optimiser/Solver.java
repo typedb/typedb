@@ -60,7 +60,7 @@ public class Solver {
     // TODO think about threading
     public ResultStatus solve(long timeLimitMillis) {
         if (status == SolverStatus.INACTIVE) activate();
-        else if (status == SolverStatus.ACTIVE_NEW_HINTS) applyHints();
+//        else if (status == SolverStatus.ACTIVE_NEW_HINTS) applyHints();
         solver.setTimeLimit(timeLimitMillis);
         return ResultStatus.of(solver.solve(parameters));
     }
@@ -75,6 +75,7 @@ public class Solver {
         variables.forEach(var -> var.activate(solver));
         constraints.forEach(constraint -> constraint.activate(solver));
         applyHints();
+        status = SolverStatus.ACTIVE;
         assert variables.size() == solver.numVariables();
     }
 
@@ -141,11 +142,8 @@ public class Solver {
     }
 
     public void resetHints() {
-        variables.forEach(IntVariable::clearHint);
-        if (status == SolverStatus.ACTIVE) {
-            solver.setHint(new MPVariable[0], new double[0]);
-            status = SolverStatus.ACTIVE_NEW_HINTS;
-        }
+        assert status == SolverStatus.ACTIVE;
+        solver.setHint(new MPVariable[0], new double[0]);
     }
 
     @Override
