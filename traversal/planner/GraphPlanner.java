@@ -314,10 +314,6 @@ public class GraphPlanner implements Planner {
         new Initialiser().execute();
     }
 
-    private void clearSolverHints() {
-        solver.resetHints();
-    }
-
     void mayOptimise(GraphManager graph, boolean singleUse) {
         if (procedure == null) {
             try {
@@ -353,7 +349,7 @@ public class GraphPlanner implements Planner {
 
         start = Instant.now();
         resultStatus = solver.solve(totalDuration);
-        clearSolverHints();
+        solver.clearHints();
         endSolver = Instant.now();
         if (isError()) throwPlanningError();
         else assert isPlanned();

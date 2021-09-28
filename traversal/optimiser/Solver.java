@@ -47,7 +47,7 @@ public class Solver {
     private MPSolverParameters parameters;
 
     private enum SolverStatus {
-        INACTIVE, ACTIVE_NEW_HINTS, ACTIVE
+        INACTIVE, ACTIVE
     }
 
     public Solver() {
@@ -76,7 +76,6 @@ public class Solver {
         constraints.forEach(constraint -> constraint.activate(solver));
         applyHints();
         status = SolverStatus.ACTIVE;
-        assert variables.size() == solver.numVariables();
     }
 
     public void deactivate() {
@@ -98,7 +97,6 @@ public class Solver {
             hints[i] = variables.get(i).getHint();
         }
         solver.setHint(mpVariables, hints);
-        status = SolverStatus.ACTIVE;
     }
 
     public enum ResultStatus {
@@ -141,7 +139,7 @@ public class Solver {
         return var;
     }
 
-    public void resetHints() {
+    public void clearHints() {
         assert status == SolverStatus.ACTIVE;
         solver.setHint(new MPVariable[0], new double[0]);
     }
