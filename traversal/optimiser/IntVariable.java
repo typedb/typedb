@@ -26,12 +26,11 @@ public class IntVariable {
     private final double lowerBound;
     private final double upperBound;
     private final String name;
-    private Integer solution;
     private Double hint;
     private Status status;
     MPVariable mpVariable;
 
-    private enum Status { INACTIVE, ACTIVE; }
+    private enum Status {INACTIVE, ACTIVE;}
 
     public IntVariable(double lowerBound, double upperBound, String name) {
         this.lowerBound = lowerBound;
@@ -41,11 +40,8 @@ public class IntVariable {
     }
 
     public int solutionValue() {
-        if (solution == null) {
-            assert status == Status.ACTIVE;
-            solution = (int) Math.round(mpVariable.solutionValue());
-        }
-        return solution;
+        assert status == Status.ACTIVE;
+        return (int) Math.round(mpVariable.solutionValue());
     }
 
     public void activate(MPSolver mpSolver) {

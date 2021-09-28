@@ -60,7 +60,6 @@ public class Solver {
     // TODO think about threading
     public ResultStatus solve(long timeLimitMillis) {
         if (status == SolverStatus.INACTIVE) activate();
-//        else if (status == SolverStatus.ACTIVE_NEW_HINTS) applyHints();
         solver.setTimeLimit(timeLimitMillis);
         return ResultStatus.of(solver.solve(parameters));
     }
