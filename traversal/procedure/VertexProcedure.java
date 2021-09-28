@@ -43,7 +43,7 @@ public class VertexProcedure implements PermutationProcedure {
     private static final Logger LOG = LoggerFactory.getLogger(VertexProcedure.class);
     private final ProcedureVertex<?, ?> vertex;
 
-    private VertexProcedure(ProcedureVertex<?, ?> vertex) {
+    public VertexProcedure(ProcedureVertex<?, ?> vertex) {
         this.vertex = vertex;
     }
 

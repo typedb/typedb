@@ -57,15 +57,23 @@ public class Solver {
         status = SolverStatus.INACTIVE;
     }
 
-    // TODO think about threading
-    public ResultStatus solve(long timeLimitMillis) {
+    public synchronized ResultStatus solve(long timeLimitMillis) {
         if (status == SolverStatus.INACTIVE) activate();
         solver.setTimeLimit(timeLimitMillis);
-        return ResultStatus.of(solver.solve(parameters));
+        ResultStatus resultStatus = ResultStatus.of(solver.solve(parameters));
+        variables.forEach(IntVariable::recordValue);
+        return resultStatus;
+    }
+
+    public synchronized void deactivate() {
+        solver.delete();
+        parameters.delete();
+        variables.forEach(IntVariable::deactivate);
+        constraints.forEach(Constraint::deactivate);
+        status = SolverStatus.INACTIVE;
     }
 
     private void activate() {
-        // TODO think about threading
         solver = MPSolver.createSolver("SCIP");
         solver.objective().setMinimization();
         parameters = new MPSolverParameters();
@@ -73,18 +81,13 @@ public class Solver {
         parameters.setIntegerParam(INCREMENTALITY, INCREMENTALITY_ON.swigValue());
         variables.forEach(var -> var.activate(solver));
         constraints.forEach(constraint -> constraint.activate(solver));
+        applyObjective();
         applyHints();
         status = SolverStatus.ACTIVE;
     }
 
-    public void deactivate() {
-        // TODO if this is synchronized, it doesn't have to be idempotent?
-        solver.delete();
-        parameters.delete();
-        variables.forEach(IntVariable::deactivate);
-        constraints.forEach(Constraint::deactivate);
-        status = SolverStatus.INACTIVE;
-        // TODO think about threading
+    private void applyObjective() {
+        objectiveCoefficients.forEach((var, coeff) -> solver.objective().setCoefficient(var.mpVariable, coeff));
     }
 
     private void applyHints() {
@@ -96,27 +99,6 @@ public class Solver {
             hints[i] = variables.get(i).getHint();
         }
         solver.setHint(mpVariables, hints);
-    }
-
-    public enum ResultStatus {
-        NOT_SOLVED, OPTIMAL, FEASIBLE, ERROR;
-
-        static ResultStatus of(MPSolver.ResultStatus mpStatus) {
-            switch (mpStatus) {
-                case NOT_SOLVED:
-                    return NOT_SOLVED;
-                case OPTIMAL:
-                    return OPTIMAL;
-                case FEASIBLE:
-                    return FEASIBLE;
-                case INFEASIBLE:
-                case UNBOUNDED:
-                case ABNORMAL:
-                    return ERROR;
-                default:
-                    throw TypeDBException.of(ILLEGAL_STATE);
-            }
-        }
     }
 
     public void setObjectiveCoefficient(IntVariable var, double coeff) {
@@ -143,16 +125,30 @@ public class Solver {
         solver.setHint(new MPVariable[0], new double[0]);
     }
 
+    public enum ResultStatus {
+        NOT_SOLVED, OPTIMAL, FEASIBLE, ERROR;
+
+        static ResultStatus of(MPSolver.ResultStatus mpStatus) {
+            switch (mpStatus) {
+                case NOT_SOLVED:
+                    return NOT_SOLVED;
+                case OPTIMAL:
+                    return OPTIMAL;
+                case FEASIBLE:
+                    return FEASIBLE;
+                case INFEASIBLE:
+                case UNBOUNDED:
+                case ABNORMAL:
+                    return ERROR;
+                default:
+                    throw TypeDBException.of(ILLEGAL_STATE);
+            }
+        }
+    }
+
     @Override
     public String toString() {
-        // TODO use exportLPFormat
-        return "Solver{" +
-                "variables=" + variables +
-                ", constraints=" + constraints +
-                ", objectiveCoefficients=" + objectiveCoefficients +
-                ", status=" + status +
-                ", solver=" + solver +
-                ", parameters=" + parameters +
-                '}';
+        return "Optimiser [" + "status=" + status + ", variables=" + variables.size() +
+                ", constraints=" + constraints.size() + "]" + (solver == null ? "" : solver.exportModelAsLpFormat());
     }
 }

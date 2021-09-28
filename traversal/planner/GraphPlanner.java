@@ -46,6 +46,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.traversal.optimiser.Solver.ResultStatus.ERROR;
 import static com.vaticle.typedb.core.traversal.optimiser.Solver.ResultStatus.FEASIBLE;
 import static com.vaticle.typedb.core.traversal.optimiser.Solver.ResultStatus.OPTIMAL;
@@ -379,8 +380,7 @@ public class GraphPlanner implements Planner {
     }
 
     private void createProcedure() {
-        vertices.values().forEach(PlannerVertex::recordResults);
-        edges.forEach(PlannerEdge::recordResults);
+        assert iterate(vertices.values()).allMatch(PlannerVertex::validResults);
         procedure = GraphProcedure.create(this);
     }
 

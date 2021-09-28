@@ -67,19 +67,19 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     abstract void updateObjective(GraphManager graph);
 
     public boolean isStartingVertex() {
-        return varIsStartingVertex_result == 1;
+        return varIsStartingVertex.solutionValue() == 1;
     }
 
     public boolean isEndingVertex() {
-        return varIsEndingVertex_result == 1;
+        return varIsEndingVertex.solutionValue() == 1;
     }
 
     public boolean hasIncomingEdges() {
-        return varHasIncomingEdges_result == 1;
+        return varHasIncomingEdges.solutionValue() == 1;
     }
 
     public boolean hasOutgoingEdges() {
-        return varHasOutgoingEdges_result == 1;
+        return varHasOutgoingEdges.solutionValue() == 1;
     }
 
     public boolean isInitialisedVariables() {
@@ -161,14 +161,9 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         costLastRecorded = costNext;
     }
 
-    void recordResults() {
-        varIsStartingVertex_result = varIsStartingVertex.solutionValue();
-        varIsEndingVertex_result = varIsEndingVertex.solutionValue();
-        varHasIncomingEdges_result = varHasIncomingEdges.solutionValue();
-        varHasOutgoingEdges_result = varHasOutgoingEdges.solutionValue();
-        assert !(isStartingVertex() && isEndingVertex());
-        assert (isStartingVertex() ^ hasIncomingEdges());
-        assert (isEndingVertex() ^ hasOutgoingEdges());
+    boolean validResults() {
+        return !(isStartingVertex() && isEndingVertex()) && (isStartingVertex() ^ hasIncomingEdges())
+                && (isEndingVertex() ^ hasOutgoingEdges());
     }
 
     void resetInitialValue() {

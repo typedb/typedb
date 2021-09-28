@@ -124,7 +124,7 @@ public abstract class ProcedureVertex<
 
     public static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {
 
-        Thing(Identifier identifier, boolean isStartingVertex) {
+        public Thing(Identifier identifier, boolean isStartingVertex) {
             super(identifier, isStartingVertex);
         }
 
@@ -338,7 +338,7 @@ public abstract class ProcedureVertex<
 
     public static class Type extends ProcedureVertex<TypeVertex, Properties.Type> {
 
-        Type(Identifier identifier, boolean isStartingVertex) {
+        public Type(Identifier identifier, boolean isStartingVertex) {
             super(identifier, isStartingVertex);
         }
 

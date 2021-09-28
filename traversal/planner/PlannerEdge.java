@@ -123,11 +123,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.recordCost();
     }
 
-    void recordResults() {
-        forward.recordResults();
-        backward.recordResults();
-    }
-
     void resetInitialValue() {
         forward.resetInitialValue();
         backward.resetInitialValue();
@@ -144,8 +139,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         IntVariable varIsSelected;
         IntVariable[] varOrderAssignment;
         private IntVariable varOrderNumber;
-        private int varIsSelected_result;
-        private int varOrderNumber_result;
         private final String varPrefix;
         private final String conPrefix;
         private final GraphPlanner planner;
@@ -172,11 +165,11 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         abstract void updateObjective(GraphManager graphMgr);
 
         public boolean isSelected() {
-            return varIsSelected_result == 1;
+            return varIsSelected.solutionValue() == 1;
         }
 
         public int orderNumber() {
-            return varOrderNumber_result;
+            return varOrderNumber.solutionValue();
         }
 
         public Encoding.Direction.Edge direction() {
@@ -262,11 +255,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             costLastRecorded = costNext;
         }
 
-        private void recordResults() {
-            varIsSelected_result = varIsSelected.solutionValue();
-            varOrderNumber_result = varOrderNumber.solutionValue();
-        }
-
         private void resetInitialValue() {
             varIsSelected.clearHint();
             varOrderNumber.clearHint();
@@ -295,18 +283,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         boolean hasInitialValue() {
             return hasInitialValue;
-        }
-
-        void setSelected() {
-            varIsSelected_result = 1;
-        }
-
-        void setUnselected() {
-            varIsSelected_result = 0;
-        }
-
-        void setOrder(int order) {
-            varOrderNumber_result = order;
         }
 
         public boolean isEqual() {

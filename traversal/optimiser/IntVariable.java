@@ -29,6 +29,7 @@ public class IntVariable {
     private Double hint;
     private Status status;
     MPVariable mpVariable;
+    private Integer solution;
 
     private enum Status {INACTIVE, ACTIVE;}
 
@@ -39,9 +40,14 @@ public class IntVariable {
         this.status = Status.INACTIVE;
     }
 
-    public int solutionValue() {
+    public void recordValue() {
         assert status == Status.ACTIVE;
-        return (int) Math.round(mpVariable.solutionValue());
+        solution = (int) Math.round(mpVariable.solutionValue());
+    }
+
+    public int solutionValue() {
+        assert solution != null;
+        return solution;
     }
 
     public void activate(MPSolver mpSolver) {

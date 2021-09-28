@@ -28,10 +28,16 @@ import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.procedure.CombinationProcedure;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
@@ -40,6 +46,8 @@ import java.util.Set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class CombinationFinder {
+
+    private static final Logger LOG = LoggerFactory.getLogger(CombinationFinder.class);
 
     private final GraphManager graphMgr;
     private final Set<CombinationProcedure> procedures;
@@ -62,6 +70,10 @@ public class CombinationFinder {
     }
 
     public Optional<Map<Retrievable, Set<TypeVertex>>> combination() {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(procedures.toString());
+        }
+
         for (CombinationProcedure procedure : procedures) {
             start(procedure);
             if (procedure.vertices().size() == 1) continue;

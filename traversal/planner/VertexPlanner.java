@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.traversal.planner;
 
+import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
+import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
 import com.vaticle.typedb.core.traversal.procedure.VertexProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
@@ -33,34 +35,25 @@ public class VertexPlanner implements Planner {
 
     static VertexPlanner create(Structure structure) {
         assert structure.vertices().size() == 1;
-        PlannerVertex<?> plannerVertex = toPlanner(structure.vertices().iterator().next());
-        VertexProcedure proc = VertexProcedure.create(plannerVertex);
+        ProcedureVertex<?, ?> plannerVertex = toProcedure(structure.vertices().iterator().next());
+        VertexProcedure proc = new VertexProcedure(plannerVertex);
         return new VertexPlanner(proc);
     }
 
-    private static PlannerVertex<?> toPlanner(StructureVertex<?> structureVertex) {
-        PlannerVertex<?> plannerVertex = structureVertex.isType()
-                ? new PlannerVertex.Type(structureVertex.id())
-                : new PlannerVertex.Thing(structureVertex.id());
-        if (plannerVertex.isType()) plannerVertex.asType().props(structureVertex.asType().props());
-        else plannerVertex.asThing().props(structureVertex.asThing().props());
-        plannerVertex.setStartingVertex();
+    private static ProcedureVertex<?, ?> toProcedure(StructureVertex<?> structureVertex) {
+
+        ProcedureVertex<?, ?> vertex = structureVertex.isType() ? new ProcedureVertex.Type(structureVertex.id(), true)
+                : new ProcedureVertex.Thing(structureVertex.id(), true);
+
+        if (vertex.isType()) vertex.asType().props(structureVertex.asType().props());
+        else vertex.asThing().props(structureVertex.asThing().props());
 
         int order = 0;
         for (StructureEdge<?, ?> structureEdge : structureVertex.outs()) {
-            PlannerEdge<?, ?> plannerEdge = PlannerEdge.of(plannerVertex, plannerVertex, structureEdge);
-            plannerEdge.backward().setUnselected();
-            plannerEdge.forward().setSelected();
-            plannerEdge.forward().setOrder(++order);
-            plannerVertex.out(plannerEdge);
-            plannerVertex.in(plannerEdge);
+            ProcedureEdge<?, ?> edge = ProcedureEdge.of(vertex, vertex, structureEdge, order, true);
+            vertex.out(edge);
         }
-        if (!structureVertex.outs().isEmpty()) {
-            plannerVertex.setHasOutGoingEdges();
-            plannerVertex.setHasIncomingEdges();
-        }
-
-        return plannerVertex;
+        return vertex;
     }
 
     @Override
@@ -69,8 +62,12 @@ public class VertexPlanner implements Planner {
     }
 
     @Override
-    public boolean isVertex() { return true; }
+    public boolean isVertex() {
+        return true;
+    }
 
     @Override
-    public VertexPlanner asVertex() { return this; }
+    public VertexPlanner asVertex() {
+        return this;
+    }
 }
