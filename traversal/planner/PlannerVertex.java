@@ -167,36 +167,36 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     void resetInitialValue() {
-        varIsStartingVertex.clearHint();
-        varIsEndingVertex.clearHint();
-        varHasIncomingEdges.clearHint();
-        varHasOutgoingEdges.clearHint();
+        varIsStartingVertex.clearInitial();
+        varIsEndingVertex.clearInitial();
+        varHasIncomingEdges.clearInitial();
+        varHasOutgoingEdges.clearInitial();
     }
 
     void setStartingVertexInitial() {
-        varIsStartingVertex.setHint(1);
-        varIsEndingVertex.setHint(0);
-        varHasIncomingEdges.setHint(0);
+        varIsStartingVertex.setInitial(1);
+        varIsEndingVertex.setInitial(0);
+        varHasIncomingEdges.setInitial(0);
     }
 
     void setEndingVertexInitial() {
-        varIsEndingVertex.setHint(1);
-        varIsStartingVertex.setHint(0);
-        varHasOutgoingEdges.setHint(0);
+        varIsEndingVertex.setInitial(1);
+        varIsStartingVertex.setInitial(0);
+        varHasOutgoingEdges.setInitial(0);
 //        assert varIsStartingVertex.getHint() == 0;
 //        assert varHasOutgoingEdges.getHint() == 0;
-        assert varHasIncomingEdges.getHint() == 1;
+        assert varHasIncomingEdges.getInitial() == 1;
     }
 
     void setHasOutgoingEdgesInitial() {
-        varHasOutgoingEdges.setHint(1);
-        varIsEndingVertex.setHint(0);
+        varHasOutgoingEdges.setInitial(1);
+        varIsEndingVertex.setInitial(0);
 //        assert varIsEndingVertex.getHint() == 0;
     }
 
     void setHasIncomingEdgesInitial() {
-        varHasIncomingEdges.setHint(1);
-        varIsStartingVertex.setHint(0);
+        varHasIncomingEdges.setInitial(1);
+        varIsStartingVertex.setInitial(0);
 //        assert varIsStartingVertex.getHint() == 0;
     }
 

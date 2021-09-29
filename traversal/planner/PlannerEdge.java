@@ -256,28 +256,28 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
 
         private void resetInitialValue() {
-            varIsSelected.clearHint();
-            varOrderNumber.clearHint();
-            iterate(varOrderAssignment).forEachRemaining(IntVariable::clearHint);
+            varIsSelected.clearInitial();
+            varOrderNumber.clearInitial();
+            iterate(varOrderAssignment).forEachRemaining(IntVariable::clearInitial);
             hasInitialValue = false;
         }
 
         void setInitialValue(int order) {
             assert order > 0;
-            varOrderNumber.setHint(order);
-            varIsSelected.setHint(1);
+            varOrderNumber.setInitial(order);
+            varIsSelected.setInitial(1);
             for (int i = 0; i < varOrderAssignment.length; i++) {
-                if (i == order - 1) varOrderAssignment[i].setHint(1);
-                else varOrderAssignment[i].setHint(0);
+                if (i == order - 1) varOrderAssignment[i].setInitial(1);
+                else varOrderAssignment[i].setInitial(0);
             }
             hasInitialValue = true;
             opposite.setInitialUnselected();
         }
 
         public void setInitialUnselected() {
-            varIsSelected.setHint(0);
-            varOrderNumber.setHint(0); // irrelevant
-            iterate(varOrderAssignment).forEachRemaining(var -> var.setHint(0));
+            varIsSelected.setInitial(0);
+            varOrderNumber.setInitial(0); // irrelevant
+            iterate(varOrderAssignment).forEachRemaining(var -> var.setInitial(0));
             hasInitialValue = true;
         }
 

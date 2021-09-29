@@ -26,7 +26,7 @@ public class IntVariable {
     private final double lowerBound;
     private final double upperBound;
     private final String name;
-    private Double hint;
+    private Double initial;
     private Status status;
     MPVariable mpVariable;
     private Integer solution;
@@ -62,21 +62,21 @@ public class IntVariable {
         this.status = Status.INACTIVE;
     }
 
-    public boolean hasHint() {
-        return hint != null;
+    public boolean hasInitial() {
+        return initial != null;
     }
 
-    public void setHint(double hint) {
-        this.hint = hint;
+    public void setInitial(double initial) {
+        this.initial = initial;
     }
 
-    public void clearHint() {
-        hint = null;
+    public void clearInitial() {
+        initial = null;
     }
 
-    public double getHint() {
-        assert hasHint();
-        return hint;
+    public double getInitial() {
+        assert hasInitial();
+        return initial;
     }
 
     @Override

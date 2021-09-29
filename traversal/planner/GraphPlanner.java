@@ -350,7 +350,6 @@ public class GraphPlanner implements Planner {
 
         start = Instant.now();
         resultStatus = solver.solve(totalDuration);
-        solver.clearHints();
         endSolver = Instant.now();
         if (isError()) throwPlanningError();
         else assert isPlanned();

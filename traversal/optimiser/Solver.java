@@ -62,6 +62,7 @@ public class Solver {
         solver.setTimeLimit(timeLimitMillis);
         ResultStatus resultStatus = ResultStatus.of(solver.solve(parameters));
         variables.forEach(IntVariable::recordValue);
+        clearInitialisation();
         return resultStatus;
     }
 
@@ -82,7 +83,7 @@ public class Solver {
         variables.forEach(var -> var.activate(solver));
         constraints.forEach(constraint -> constraint.activate(solver));
         applyObjective();
-        applyHints();
+        applyInitialisation();
         status = SolverStatus.ACTIVE;
     }
 
@@ -90,15 +91,20 @@ public class Solver {
         objectiveCoefficients.forEach((var, coeff) -> solver.objective().setCoefficient(var.mpVariable, coeff));
     }
 
-    private void applyHints() {
-        assert iterate(variables).allMatch(IntVariable::hasHint);
+    private void applyInitialisation() {
+        assert iterate(variables).allMatch(IntVariable::hasInitial);
         MPVariable[] mpVariables = new MPVariable[variables.size()];
-        double[] hints = new double[variables.size()];
+        double[] initialisations = new double[variables.size()];
         for (int i = 0; i < variables.size(); i++) {
             mpVariables[i] = variables.get(i).mpVariable;
-            hints[i] = variables.get(i).getHint();
+            initialisations[i] = variables.get(i).getInitial();
         }
-        solver.setHint(mpVariables, hints);
+        solver.setHint(mpVariables, initialisations);
+    }
+
+    private void clearInitialisation() {
+        assert status == SolverStatus.ACTIVE;
+        solver.setHint(new MPVariable[0], new double[0]);
     }
 
     public void setObjectiveCoefficient(IntVariable var, double coeff) {
@@ -118,11 +124,6 @@ public class Solver {
         IntVariable var = new IntVariable(lowerBound, upperBound, name);
         variables.add(var);
         return var;
-    }
-
-    public void clearHints() {
-        assert status == SolverStatus.ACTIVE;
-        solver.setHint(new MPVariable[0], new double[0]);
     }
 
     public enum ResultStatus {
