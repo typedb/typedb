@@ -20,20 +20,19 @@ package com.vaticle.typedb.core.traversal.optimiser;
 
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 
-public class IntVariable extends Variable {
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_OPTIMISER_VALUE;
 
-    private final double lowerBound;
-    private final double upperBound;
+public class BoolVariable extends Variable {
+
     private Status status;
-    private Integer initial;
-    private Integer solution;
+    private Boolean initial;
+    private Boolean solution;
     MPVariable mpVariable;
 
-    public IntVariable(double lowerBound, double upperBound, String name) {
+    public BoolVariable(String name) {
         super(name);
-        this.lowerBound = lowerBound;
-        this.upperBound = upperBound;
         this.status = Status.INACTIVE;
     }
 
@@ -46,10 +45,12 @@ public class IntVariable extends Variable {
     @Override
     public void recordValue() {
         assert status == Status.ACTIVE;
-        solution = (int) Math.round(mpVariable.solutionValue());
+        if (mpVariable.solutionValue() == 0.0) solution = false;
+        else if (mpVariable.solutionValue() == 1.0) solution = true;
+        else throw TypeDBException.of(UNEXPECTED_OPTIMISER_VALUE);
     }
 
-    public int solutionValue() {
+    public boolean solutionValue() {
         assert solution != null;
         return solution;
     }
@@ -58,7 +59,7 @@ public class IntVariable extends Variable {
     public void activate(MPSolver mpSolver) {
         assert status == Status.INACTIVE;
         // TODO think about threading, idempotency
-        this.mpVariable = mpSolver.makeIntVar(lowerBound, upperBound, name);
+        this.mpVariable = mpSolver.makeBoolVar(name);
         this.status = Status.ACTIVE;
     }
 
@@ -68,13 +69,13 @@ public class IntVariable extends Variable {
         this.status = Status.INACTIVE;
     }
 
+    public void setInitial(boolean initial) {
+        this.initial = initial;
+    }
+
     @Override
     public boolean hasInitial() {
         return initial != null;
-    }
-
-    public void setInitial(int initial) {
-        this.initial = initial;
     }
 
     @Override
@@ -85,7 +86,8 @@ public class IntVariable extends Variable {
     @Override
     public double getInitial() {
         assert hasInitial();
-        return initial;
+        if (initial) return 1.0;
+        else return 0.0;
     }
 
 }

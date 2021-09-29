@@ -105,8 +105,10 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Internal(11, "Unexpected thread interruption!");
         public static final Internal UNEXPECTED_PLANNING_ERROR =
                 new Internal(12, "Unexpected error during traversal plan optimisation.");
+        public static final Internal UNEXPECTED_OPTIMISER_VALUE =
+                new Internal(13, "Unexpected optimiser value.");
         public static final Internal UNIMPLEMENTED =
-                new Internal(13, "This functionality is not yet implemented.");
+                new Internal(14, "This functionality is not yet implemented.");
 
         private static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";

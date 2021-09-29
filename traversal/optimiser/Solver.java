@@ -39,9 +39,9 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Solver {
 
-    private final List<IntVariable> variables;
+    private final List<Variable> variables;
     private final Set<Constraint> constraints;
-    private final Map<IntVariable, Double> objectiveCoefficients;
+    private final Map<Variable, Double> objectiveCoefficients;
     private SolverStatus status;
     private MPSolver solver;
     private MPSolverParameters parameters;
@@ -61,7 +61,7 @@ public class Solver {
         if (status == SolverStatus.INACTIVE) activate();
         solver.setTimeLimit(timeLimitMillis);
         ResultStatus resultStatus = ResultStatus.of(solver.solve(parameters));
-        variables.forEach(IntVariable::recordValue);
+        variables.forEach(Variable::recordValue);
         clearInitialisation();
         return resultStatus;
     }
@@ -69,7 +69,7 @@ public class Solver {
     public synchronized void deactivate() {
         solver.delete();
         parameters.delete();
-        variables.forEach(IntVariable::deactivate);
+        variables.forEach(Variable::deactivate);
         constraints.forEach(Constraint::deactivate);
         status = SolverStatus.INACTIVE;
     }
@@ -88,15 +88,15 @@ public class Solver {
     }
 
     private void applyObjective() {
-        objectiveCoefficients.forEach((var, coeff) -> solver.objective().setCoefficient(var.mpVariable, coeff));
+        objectiveCoefficients.forEach((var, coeff) -> solver.objective().setCoefficient(var.mpVariable(), coeff));
     }
 
     private void applyInitialisation() {
-        assert iterate(variables).allMatch(IntVariable::hasInitial);
+        assert iterate(variables).allMatch(Variable::hasInitial);
         MPVariable[] mpVariables = new MPVariable[variables.size()];
         double[] initialisations = new double[variables.size()];
         for (int i = 0; i < variables.size(); i++) {
-            mpVariables[i] = variables.get(i).mpVariable;
+            mpVariables[i] = variables.get(i).mpVariable();
             initialisations[i] = variables.get(i).getInitial();
         }
         solver.setHint(mpVariables, initialisations);
@@ -107,9 +107,9 @@ public class Solver {
         solver.setHint(new MPVariable[0], new double[0]);
     }
 
-    public void setObjectiveCoefficient(IntVariable var, double coeff) {
+    public void setObjectiveCoefficient(Variable var, double coeff) {
         objectiveCoefficients.put(var, coeff);
-        if (status == SolverStatus.ACTIVE) solver.objective().setCoefficient(var.mpVariable, coeff);
+        if (status == SolverStatus.ACTIVE) solver.objective().setCoefficient(var.mpVariable(), coeff);
     }
 
     public Constraint makeConstraint(double lowerBound, double upperBound, String name) {
@@ -122,6 +122,13 @@ public class Solver {
     public IntVariable makeIntVar(double lowerBound, double upperBound, String name) {
         assert status == SolverStatus.INACTIVE;
         IntVariable var = new IntVariable(lowerBound, upperBound, name);
+        variables.add(var);
+        return var;
+    }
+
+    public BoolVariable makeBoolVar(String name) {
+        assert status == SolverStatus.INACTIVE;
+        BoolVariable var = new BoolVariable(name);
         variables.add(var);
         return var;
     }

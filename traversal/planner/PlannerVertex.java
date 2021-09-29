@@ -25,8 +25,8 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
+import com.vaticle.typedb.core.traversal.optimiser.BoolVariable;
 import com.vaticle.typedb.core.traversal.optimiser.Constraint;
-import com.vaticle.typedb.core.traversal.optimiser.IntVariable;
 
 import javax.annotation.Nullable;
 
@@ -43,18 +43,14 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     private final String varPrefix = "vertex_var_" + id() + "_";
     private final String conPrefix = "vertex_con_" + id() + "_";
-    private int varIsStartingVertex_result;
-    private int varIsEndingVertex_result;
-    private int varHasIncomingEdges_result;
-    private int varHasOutgoingEdges_result;
     private boolean isInitialisedVariables;
     private boolean isInitialisedConstraints;
     private double costNext;
     double costLastRecorded;
-    IntVariable varIsStartingVertex;
-    IntVariable varIsEndingVertex;
-    IntVariable varHasIncomingEdges;
-    IntVariable varHasOutgoingEdges;
+    BoolVariable varIsStartingVertex;
+    BoolVariable varIsEndingVertex;
+    BoolVariable varHasIncomingEdges;
+    BoolVariable varHasOutgoingEdges;
 
     PlannerVertex(Identifier identifier, @Nullable GraphPlanner planner) {
         super(identifier);
@@ -67,19 +63,19 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     abstract void updateObjective(GraphManager graph);
 
     public boolean isStartingVertex() {
-        return varIsStartingVertex.solutionValue() == 1;
+        return varIsStartingVertex.solutionValue();
     }
 
     public boolean isEndingVertex() {
-        return varIsEndingVertex.solutionValue() == 1;
+        return varIsEndingVertex.solutionValue();
     }
 
     public boolean hasIncomingEdges() {
-        return varHasIncomingEdges.solutionValue() == 1;
+        return varHasIncomingEdges.solutionValue();
     }
 
     public boolean hasOutgoingEdges() {
-        return varHasOutgoingEdges.solutionValue() == 1;
+        return varHasOutgoingEdges.solutionValue();
     }
 
     public boolean isInitialisedVariables() {
@@ -106,10 +102,10 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     void initialiseVariables() {
         assert planner != null;
-        varIsStartingVertex = planner.solver().makeIntVar(0, 1, varPrefix + "is_starting_vertex");
-        varIsEndingVertex = planner.solver().makeIntVar(0, 1, varPrefix + "is_ending_vertex");
-        varHasIncomingEdges = planner.solver().makeIntVar(0, 1, varPrefix + "has_incoming_edges");
-        varHasOutgoingEdges = planner.solver().makeIntVar(0, 1, varPrefix + "has_outgoing_edges");
+        varIsStartingVertex = planner.solver().makeBoolVar(varPrefix + "is_starting_vertex");
+        varIsEndingVertex = planner.solver().makeBoolVar(varPrefix + "is_ending_vertex");
+        varHasIncomingEdges = planner.solver().makeBoolVar(varPrefix + "has_incoming_edges");
+        varHasOutgoingEdges = planner.solver().makeBoolVar(varPrefix + "has_outgoing_edges");
 
         isInitialisedVariables = true;
     }
@@ -174,43 +170,30 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     void setStartingVertexInitial() {
-        varIsStartingVertex.setInitial(1);
-        varIsEndingVertex.setInitial(0);
-        varHasIncomingEdges.setInitial(0);
+        varIsStartingVertex.setInitial(true);
+        varIsEndingVertex.setInitial(false);
+        varHasIncomingEdges.setInitial(false);
     }
 
     void setEndingVertexInitial() {
-        varIsEndingVertex.setInitial(1);
-        varIsStartingVertex.setInitial(0);
-        varHasOutgoingEdges.setInitial(0);
+        varIsEndingVertex.setInitial(true);
+        varIsStartingVertex.setInitial(false);
+        varHasOutgoingEdges.setInitial(false);
 //        assert varIsStartingVertex.getHint() == 0;
 //        assert varHasOutgoingEdges.getHint() == 0;
         assert varHasIncomingEdges.getInitial() == 1;
     }
 
     void setHasOutgoingEdgesInitial() {
-        varHasOutgoingEdges.setInitial(1);
-        varIsEndingVertex.setInitial(0);
+        varHasOutgoingEdges.setInitial(true);
+        varIsEndingVertex.setInitial(false);
 //        assert varIsEndingVertex.getHint() == 0;
     }
 
     void setHasIncomingEdgesInitial() {
-        varHasIncomingEdges.setInitial(1);
-        varIsStartingVertex.setInitial(0);
+        varHasIncomingEdges.setInitial(true);
+        varIsStartingVertex.setInitial(false);
 //        assert varIsStartingVertex.getHint() == 0;
-    }
-
-    void setStartingVertex() {
-        varIsStartingVertex_result = 1;
-        varIsEndingVertex_result = 0;
-    }
-
-    void setHasOutGoingEdges() {
-        varHasOutgoingEdges_result = 1;
-    }
-
-    void setHasIncomingEdges() {
-        varHasIncomingEdges_result = 1;
     }
 
     public PlannerVertex.Thing asThing() {
@@ -269,10 +252,14 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         }
 
         @Override
-        public boolean isThing() { return true; }
+        public boolean isThing() {
+            return true;
+        }
 
         @Override
-        public PlannerVertex.Thing asThing() { return this; }
+        public PlannerVertex.Thing asThing() {
+            return this;
+        }
     }
 
     public static class Type extends PlannerVertex<Properties.Type> {
@@ -310,9 +297,13 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         }
 
         @Override
-        public boolean isType() { return true; }
+        public boolean isType() {
+            return true;
+        }
 
         @Override
-        public PlannerVertex.Type asType() { return this; }
+        public PlannerVertex.Type asType() {
+            return this;
+        }
     }
 }

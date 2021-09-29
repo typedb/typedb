@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
+import com.vaticle.typedb.core.traversal.optimiser.BoolVariable;
 import com.vaticle.typedb.core.traversal.optimiser.Constraint;
 import com.vaticle.typedb.core.traversal.optimiser.IntVariable;
 import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
@@ -136,8 +137,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
     public static abstract class Directional<VERTEX_DIR_FROM extends PlannerVertex<?>, VERTEX_DIR_TO extends PlannerVertex<?>>
             extends TraversalEdge<VERTEX_DIR_FROM, VERTEX_DIR_TO> {
 
-        IntVariable varIsSelected;
-        IntVariable[] varOrderAssignment;
+        BoolVariable varIsSelected;
+        BoolVariable[] varOrderAssignment;
         private IntVariable varOrderNumber;
         private final String varPrefix;
         private final String conPrefix;
@@ -165,7 +166,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         abstract void updateObjective(GraphManager graphMgr);
 
         public boolean isSelected() {
-            return varIsSelected.solutionValue() == 1;
+            return varIsSelected.solutionValue();
         }
 
         public int orderNumber() {
@@ -189,11 +190,11 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
 
         void initialiseVariables() {
-            varIsSelected = planner.solver().makeIntVar(0, 1, varPrefix + "is_selected");
+            varIsSelected = planner.solver().makeBoolVar(varPrefix + "is_selected");
             varOrderNumber = planner.solver().makeIntVar(0, planner.edges().size(), varPrefix + "order_number");
-            varOrderAssignment = new IntVariable[planner.edges().size()];
+            varOrderAssignment = new BoolVariable[planner.edges().size()];
             for (int i = 0; i < planner.edges().size(); i++) {
-                varOrderAssignment[i] = planner.solver().makeIntVar(0, 1, varPrefix + "order_assignment[" + i + "]");
+                varOrderAssignment[i] = planner.solver().makeBoolVar(varPrefix + "order_assignment[" + i + "]");
             }
             isInitialisedVariables = true;
         }
@@ -258,26 +259,26 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         private void resetInitialValue() {
             varIsSelected.clearInitial();
             varOrderNumber.clearInitial();
-            iterate(varOrderAssignment).forEachRemaining(IntVariable::clearInitial);
+            iterate(varOrderAssignment).forEachRemaining(BoolVariable::clearInitial);
             hasInitialValue = false;
         }
 
         void setInitialValue(int order) {
             assert order > 0;
             varOrderNumber.setInitial(order);
-            varIsSelected.setInitial(1);
+            varIsSelected.setInitial(true);
             for (int i = 0; i < varOrderAssignment.length; i++) {
-                if (i == order - 1) varOrderAssignment[i].setInitial(1);
-                else varOrderAssignment[i].setInitial(0);
+                if (i == order - 1) varOrderAssignment[i].setInitial(true);
+                else varOrderAssignment[i].setInitial(false);
             }
             hasInitialValue = true;
             opposite.setInitialUnselected();
         }
 
         public void setInitialUnselected() {
-            varIsSelected.setInitial(0);
+            varIsSelected.setInitial(false);
             varOrderNumber.setInitial(0); // irrelevant
-            iterate(varOrderAssignment).forEachRemaining(var -> var.setInitial(0));
+            iterate(varOrderAssignment).forEachRemaining(var -> var.setInitial(false));
             hasInitialValue = true;
         }
 

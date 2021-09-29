@@ -29,7 +29,7 @@ public class Constraint {
     private final double lowerBound;
     private final double upperBound;
     private final String name;
-    private final Map<IntVariable, Double> coefficients;
+    private final Map<Variable, Double> coefficients;
     private MPConstraint mpConstraint;
     private Status status;
 
@@ -43,7 +43,7 @@ public class Constraint {
         this.status = Status.INACTIVE;
     }
 
-    public void setCoefficient(IntVariable variable, double coeff) {
+    public void setCoefficient(Variable variable, double coeff) {
         assert status == Status.INACTIVE;
         coefficients.put(variable, coeff);
     }
@@ -51,7 +51,7 @@ public class Constraint {
     public void activate(MPSolver solver) {
         // TODO think about threading, idempotency
         this.mpConstraint = solver.makeConstraint(lowerBound, upperBound, name);
-        coefficients.forEach((var, coeff) -> mpConstraint.setCoefficient(var.mpVariable, coeff));
+        coefficients.forEach((var, coeff) -> mpConstraint.setCoefficient(var.mpVariable(), coeff));
         this.status = Status.ACTIVE;
     }
 
