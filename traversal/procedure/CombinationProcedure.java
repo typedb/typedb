@@ -18,22 +18,24 @@
 
 package com.vaticle.typedb.core.traversal.procedure;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 
 public class CombinationProcedure {
 
@@ -147,15 +149,15 @@ public class CombinationProcedure {
         return nextVertices;
     }
 
-    private ProcedureEdge<?, ?> createOut(ProcedureVertex.Type from, ProcedureVertex.Type to,
-                                          StructureEdge<?, ?> structureEdge, int order) {
+    private ProcedureEdge<?, ?> createOut(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge,
+                                          int order) {
         ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, order, true);
         registerEdge(edge);
         return edge;
     }
 
-    private ProcedureEdge<?, ?> createIn(ProcedureVertex.Type from, ProcedureVertex.Type to,
-                                         StructureEdge<?, ?> structureEdge, int order) {
+    private ProcedureEdge<?, ?> createIn(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge,
+                                         int order) {
         ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, order, false);
         registerEdge(edge);
         return edge;
@@ -175,11 +177,8 @@ public class CombinationProcedure {
             str.append("\n\t\t").append(v);
         }
         str.append("\n\tedges:");
-        forwardEdges.values().forEach(edges -> {
-            for (ProcedureEdge<?, ?> e : edges) {
-                str.append("\n\t\t").append(e);
-            }
-        });
+        forwardEdges.values().stream().flatMap(Collection::stream).sorted(Comparator.comparing(ProcedureEdge::order))
+                .forEachOrdered(edge -> str.append("\n\t\t").append(edge));
         str.append("\n}");
         return str.toString();
     }

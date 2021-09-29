@@ -118,6 +118,19 @@ public abstract class ProcedureEdge<
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ProcedureEdge<?, ?> that = (ProcedureEdge<?, ?>) o;
+        return from.equals(that.from) && to.equals(that.to) && order == that.order && direction == that.direction;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(from, to, order, direction);
+    }
+
     public abstract FunctionalIterator<? extends Vertex<?, ?>> branch(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                                       GraphTraversal.Thing.Parameters params);
 
@@ -276,7 +289,7 @@ public abstract class ProcedureEdge<
             VERTEX_NATIVE_FROM extends ProcedureVertex<?, ?>, VERTEX_NATIVE_TO extends ProcedureVertex<?, ?>
             > extends ProcedureEdge<VERTEX_NATIVE_FROM, VERTEX_NATIVE_TO> {
 
-        private final Encoding.Edge encoding;
+        final Encoding.Edge encoding;
 
         private Native(VERTEX_NATIVE_FROM from, VERTEX_NATIVE_TO to,
                        int order, Encoding.Direction.Edge direction, Encoding.Edge encoding) {
@@ -407,6 +420,14 @@ public abstract class ProcedureEdge<
                 super(from, to, order, direction, encoding);
             }
 
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                Type that = (Type) o;
+                return from.equals(that.from) && to.equals(that.to) && order() == that.order() && direction() == that.direction() && encoding == that.encoding;
+            }
+
             static Native.Type of(ProcedureVertex.Type from, ProcedureVertex.Type to,
                                   PlannerEdge.Native.Type.Directional edge) {
                 boolean isForward = edge.direction().isForward();
@@ -438,7 +459,7 @@ public abstract class ProcedureEdge<
                         else return new Sub.Backward(from, to, order, edge.isTransitive());
                     case OWNS:
                         if (isForward) return new Owns.Forward(from, to, order, false);
-                        else new Owns.Backward(from, to, order, false);
+                        else return new Owns.Backward(from, to, order, false);
                     case OWNS_KEY:
                         if (isForward) return new Owns.Forward(from, to, order, true);
                         else return new Owns.Backward(from, to, order, true);
