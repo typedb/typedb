@@ -26,47 +26,48 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNE
 
 public class BoolVariable extends Variable {
 
-    private Status status;
+    private ActivationStatus status;
     private Boolean initial;
     private Boolean solution;
-    MPVariable mpVariable;
+    private MPVariable mpVariable;
 
     public BoolVariable(String name) {
         super(name);
-        this.status = Status.INACTIVE;
+        this.status = ActivationStatus.INACTIVE;
     }
 
     @Override
-    MPVariable mpVariable() {
-        assert status == Status.ACTIVE;
-        return mpVariable;
-    }
-
-    @Override
-    public void recordValue() {
-        assert status == Status.ACTIVE;
-        if (mpVariable.solutionValue() == 0.0) solution = false;
-        else if (mpVariable.solutionValue() == 1.0) solution = true;
-        else throw TypeDBException.of(UNEXPECTED_OPTIMISER_VALUE);
-    }
-
-    public boolean solutionValue() {
+    public Boolean solutionValue() {
         assert solution != null;
         return solution;
     }
 
     @Override
-    public void activate(MPSolver mpSolver) {
-        assert status == Status.INACTIVE;
-        // TODO think about threading, idempotency
-        this.mpVariable = mpSolver.makeBoolVar(name);
-        this.status = Status.ACTIVE;
+    MPVariable mpVariable() {
+        assert status == ActivationStatus.ACTIVE;
+        return mpVariable;
     }
 
     @Override
-    public void deactivate() {
+    void recordValue() {
+        assert status == ActivationStatus.ACTIVE;
+        if (mpVariable.solutionValue() == 0.0) solution = false;
+        else if (mpVariable.solutionValue() == 1.0) solution = true;
+        else throw TypeDBException.of(UNEXPECTED_OPTIMISER_VALUE);
+    }
+
+    @Override
+    synchronized void activate(MPSolver mpSolver) {
+        assert status == ActivationStatus.INACTIVE;
+        this.mpVariable = mpSolver.makeBoolVar(name);
+        this.status = ActivationStatus.ACTIVE;
+    }
+
+    @Override
+    synchronized void deactivate() {
+        assert status == ActivationStatus.ACTIVE;
         this.mpVariable.delete();
-        this.status = Status.INACTIVE;
+        this.status = ActivationStatus.INACTIVE;
     }
 
     public void setInitial(boolean initial) {
@@ -74,7 +75,7 @@ public class BoolVariable extends Variable {
     }
 
     @Override
-    public boolean hasInitial() {
+    boolean hasInitial() {
         return initial != null;
     }
 
@@ -90,4 +91,8 @@ public class BoolVariable extends Variable {
         else return 0.0;
     }
 
+    @Override
+    public String toString() {
+        return name + "[Bool][status=" + status + "]";
+    }
 }

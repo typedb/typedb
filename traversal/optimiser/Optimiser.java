@@ -37,28 +37,24 @@ import static com.google.ortools.linearsolver.MPSolverParameters.PresolveValues.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class Solver {
+public class Optimiser {
 
     private final List<Variable> variables;
     private final Set<Constraint> constraints;
     private final Map<Variable, Double> objectiveCoefficients;
-    private SolverStatus status;
+    private ActivationStatus status;
     private MPSolver solver;
     private MPSolverParameters parameters;
 
-    private enum SolverStatus {
-        INACTIVE, ACTIVE
-    }
-
-    public Solver() {
+    public Optimiser() {
         variables = new ArrayList<>();
         constraints = new HashSet<>();
         objectiveCoefficients = new HashMap<>();
-        status = SolverStatus.INACTIVE;
+        status = ActivationStatus.INACTIVE;
     }
 
     public synchronized ResultStatus solve(long timeLimitMillis) {
-        if (status == SolverStatus.INACTIVE) activate();
+        if (status == ActivationStatus.INACTIVE) activate();
         solver.setTimeLimit(timeLimitMillis);
         ResultStatus resultStatus = ResultStatus.of(solver.solve(parameters));
         variables.forEach(Variable::recordValue);
@@ -66,15 +62,16 @@ public class Solver {
         return resultStatus;
     }
 
+
     public synchronized void deactivate() {
         solver.delete();
         parameters.delete();
         variables.forEach(Variable::deactivate);
         constraints.forEach(Constraint::deactivate);
-        status = SolverStatus.INACTIVE;
+        status = ActivationStatus.INACTIVE;
     }
 
-    private void activate() {
+    private synchronized void activate() {
         solver = MPSolver.createSolver("SCIP");
         solver.objective().setMinimization();
         parameters = new MPSolverParameters();
@@ -84,7 +81,7 @@ public class Solver {
         constraints.forEach(constraint -> constraint.activate(solver));
         applyObjective();
         applyInitialisation();
-        status = SolverStatus.ACTIVE;
+        status = ActivationStatus.ACTIVE;
     }
 
     private void applyObjective() {
@@ -103,31 +100,31 @@ public class Solver {
     }
 
     private void clearInitialisation() {
-        assert status == SolverStatus.ACTIVE;
+        assert status == ActivationStatus.ACTIVE;
         solver.setHint(new MPVariable[0], new double[0]);
     }
 
     public void setObjectiveCoefficient(Variable var, double coeff) {
         objectiveCoefficients.put(var, coeff);
-        if (status == SolverStatus.ACTIVE) solver.objective().setCoefficient(var.mpVariable(), coeff);
+        if (status == ActivationStatus.ACTIVE) solver.objective().setCoefficient(var.mpVariable(), coeff);
     }
 
     public Constraint makeConstraint(double lowerBound, double upperBound, String name) {
-        assert status == SolverStatus.INACTIVE;
+        assert status == ActivationStatus.INACTIVE;
         Constraint constraint = new Constraint(lowerBound, upperBound, name);
         constraints.add(constraint);
         return constraint;
     }
 
     public IntVariable makeIntVar(double lowerBound, double upperBound, String name) {
-        assert status == SolverStatus.INACTIVE;
+        assert status == ActivationStatus.INACTIVE;
         IntVariable var = new IntVariable(lowerBound, upperBound, name);
         variables.add(var);
         return var;
     }
 
     public BoolVariable makeBoolVar(String name) {
-        assert status == SolverStatus.INACTIVE;
+        assert status == ActivationStatus.INACTIVE;
         BoolVariable var = new BoolVariable(name);
         variables.add(var);
         return var;

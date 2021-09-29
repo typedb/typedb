@@ -31,32 +31,31 @@ public class Constraint {
     private final String name;
     private final Map<Variable, Double> coefficients;
     private MPConstraint mpConstraint;
-    private Status status;
-
-    private enum Status { INACTIVE, ACTIVE; }
+    private ActivationStatus status;
 
     public Constraint(double lowerBound, double upperBound, String name) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.coefficients = new HashMap<>();
         this.name = name;
-        this.status = Status.INACTIVE;
+        this.status = ActivationStatus.INACTIVE;
     }
 
     public void setCoefficient(Variable variable, double coeff) {
-        assert status == Status.INACTIVE;
+        assert status == ActivationStatus.INACTIVE;
         coefficients.put(variable, coeff);
     }
 
-    public void activate(MPSolver solver) {
-        // TODO think about threading, idempotency
+    synchronized void activate(MPSolver solver) {
+        assert status == ActivationStatus.INACTIVE;
         this.mpConstraint = solver.makeConstraint(lowerBound, upperBound, name);
         coefficients.forEach((var, coeff) -> mpConstraint.setCoefficient(var.mpVariable(), coeff));
-        this.status = Status.ACTIVE;
+        this.status = ActivationStatus.ACTIVE;
     }
 
-    public void deactivate() {
+    synchronized void deactivate() {
+        assert status == ActivationStatus.ACTIVE;
         this.mpConstraint.delete();
-        this.status = Status.INACTIVE;
+        this.status = ActivationStatus.INACTIVE;
     }
 }

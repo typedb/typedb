@@ -18,30 +18,6 @@
 
 package com.vaticle.typedb.core.traversal.optimiser;
 
-import com.google.ortools.linearsolver.MPSolver;
-import com.google.ortools.linearsolver.MPVariable;
-
-public abstract class Variable {
-
-    final String name;
-
-    Variable(String name) {
-        this.name = name;
-    }
-
-    public abstract Object solutionValue();
-
-    abstract MPVariable mpVariable();
-
-    abstract void recordValue();
-
-    public abstract void clearInitial();
-
-    abstract boolean hasInitial();
-
-    public abstract double getInitial();
-
-    abstract void activate(MPSolver solver);
-
-    abstract void deactivate();
+enum ActivationStatus {
+    INACTIVE, ACTIVE
 }

@@ -25,51 +25,52 @@ public class IntVariable extends Variable {
 
     private final double lowerBound;
     private final double upperBound;
-    private Status status;
+    private ActivationStatus status;
     private Integer initial;
     private Integer solution;
-    MPVariable mpVariable;
+    private MPVariable mpVariable;
 
     public IntVariable(double lowerBound, double upperBound, String name) {
         super(name);
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
-        this.status = Status.INACTIVE;
+        this.status = ActivationStatus.INACTIVE;
     }
 
     @Override
-    MPVariable mpVariable() {
-        assert status == Status.ACTIVE;
-        return mpVariable;
-    }
-
-    @Override
-    public void recordValue() {
-        assert status == Status.ACTIVE;
-        solution = (int) Math.round(mpVariable.solutionValue());
-    }
-
-    public int solutionValue() {
+    public Integer solutionValue() {
         assert solution != null;
         return solution;
     }
 
     @Override
-    public void activate(MPSolver mpSolver) {
-        assert status == Status.INACTIVE;
-        // TODO think about threading, idempotency
+    MPVariable mpVariable() {
+        assert status == ActivationStatus.ACTIVE;
+        return mpVariable;
+    }
+
+    @Override
+    public void recordValue() {
+        assert status == ActivationStatus.ACTIVE;
+        solution = (int) Math.round(mpVariable.solutionValue());
+    }
+
+    @Override
+    synchronized void activate(MPSolver mpSolver) {
+        assert status == ActivationStatus.INACTIVE;
         this.mpVariable = mpSolver.makeIntVar(lowerBound, upperBound, name);
-        this.status = Status.ACTIVE;
+        this.status = ActivationStatus.ACTIVE;
     }
 
     @Override
-    public void deactivate() {
+    synchronized void deactivate() {
+        assert status == ActivationStatus.ACTIVE;
         this.mpVariable.delete();
-        this.status = Status.INACTIVE;
+        this.status = ActivationStatus.INACTIVE;
     }
 
     @Override
-    public boolean hasInitial() {
+    boolean hasInitial() {
         return initial != null;
     }
 
@@ -88,4 +89,8 @@ public class IntVariable extends Variable {
         return initial;
     }
 
+    @Override
+    public String toString() {
+        return name + "[Int][status=" + status + "]";
+    }
 }
