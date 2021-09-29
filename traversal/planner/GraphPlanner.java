@@ -156,7 +156,7 @@ public class GraphPlanner implements Planner {
         return resultStatus == ERROR;
     }
 
-    Optimiser solver() {
+    Optimiser optimiser() {
         return optimiser;
     }
 
@@ -225,7 +225,7 @@ public class GraphPlanner implements Planner {
     private void initialiseConstraintsForVariables() {
         String conPrefix = "planner_vertex_con_";
         vertices.values().forEach(PlannerVertex::initialiseConstraints);
-        Constraint conOneStartingVertex = optimiser.makeConstraint(1, 1, conPrefix + "one_starting_vertex");
+        Constraint conOneStartingVertex = optimiser.constraint(1, 1, conPrefix + "one_starting_vertex");
         for (PlannerVertex<?> vertex : vertices.values()) {
             conOneStartingVertex.setCoefficient(vertex.varIsStartingVertex, 1);
         }
@@ -235,7 +235,7 @@ public class GraphPlanner implements Planner {
         String conPrefix = "planner_edge_con_";
         edges.forEach(PlannerEdge::initialiseConstraints);
         for (int i = 0; i < edges.size(); i++) {
-            Constraint conOneEdgeAtOrderI = optimiser.makeConstraint(1, 1, conPrefix + "one_edge_at_order_" + i);
+            Constraint conOneEdgeAtOrderI = optimiser.constraint(1, 1, conPrefix + "one_edge_at_order_" + i);
             for (PlannerEdge<?, ?> edge : edges) {
                 conOneEdgeAtOrderI.setCoefficient(edge.forward().varOrderAssignment[i], 1);
                 conOneEdgeAtOrderI.setCoefficient(edge.backward().varOrderAssignment[i], 1);
@@ -349,7 +349,7 @@ public class GraphPlanner implements Planner {
         totalDuration += allocatedDuration;
 
         start = Instant.now();
-        resultStatus = optimiser.solve(totalDuration);
+        resultStatus = optimiser.optimise(totalDuration);
         endSolver = Instant.now();
         if (isError()) throwPlanningError();
         else assert isPlanned();

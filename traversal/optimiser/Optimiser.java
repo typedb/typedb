@@ -53,7 +53,7 @@ public class Optimiser {
         status = ActivationStatus.INACTIVE;
     }
 
-    public synchronized ResultStatus solve(long timeLimitMillis) {
+    public synchronized ResultStatus optimise(long timeLimitMillis) {
         if (status == ActivationStatus.INACTIVE) activate();
         solver.setTimeLimit(timeLimitMillis);
         ResultStatus resultStatus = ResultStatus.of(solver.solve(parameters));
@@ -61,7 +61,6 @@ public class Optimiser {
         clearInitialisation();
         return resultStatus;
     }
-
 
     public synchronized void deactivate() {
         solver.delete();
@@ -109,23 +108,23 @@ public class Optimiser {
         if (status == ActivationStatus.ACTIVE) solver.objective().setCoefficient(var.mpVariable(), coeff);
     }
 
-    public Constraint makeConstraint(double lowerBound, double upperBound, String name) {
+    public Constraint constraint(double lowerBound, double upperBound, String name) {
         assert status == ActivationStatus.INACTIVE;
         Constraint constraint = new Constraint(lowerBound, upperBound, name);
         constraints.add(constraint);
         return constraint;
     }
 
-    public IntVariable makeIntVar(double lowerBound, double upperBound, String name) {
+    public IntVariable intVar(double lowerBound, double upperBound, String name) {
         assert status == ActivationStatus.INACTIVE;
         IntVariable var = new IntVariable(lowerBound, upperBound, name);
         variables.add(var);
         return var;
     }
 
-    public BoolVariable makeBoolVar(String name) {
+    public BooleanVariable booleanVar(String name) {
         assert status == ActivationStatus.INACTIVE;
-        BoolVariable var = new BoolVariable(name);
+        BooleanVariable var = new BooleanVariable(name);
         variables.add(var);
         return var;
     }
@@ -153,7 +152,7 @@ public class Optimiser {
 
     @Override
     public String toString() {
-        return "Optimiser [" + "status=" + status + ", variables=" + variables.size() +
+        return "Optimiser[" + "status=" + status + ", variables=" + variables.size() +
                 ", constraints=" + constraints.size() + "]" + (solver == null ? "" : solver.exportModelAsLpFormat());
     }
 }

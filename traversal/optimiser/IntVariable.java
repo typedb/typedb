@@ -50,7 +50,7 @@ public class IntVariable extends Variable {
     }
 
     @Override
-    public void recordValue() {
+    void recordValue() {
         assert status == ActivationStatus.ACTIVE;
         solution = (int) Math.round(mpVariable.solutionValue());
     }

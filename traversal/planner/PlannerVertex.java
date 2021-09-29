@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
-import com.vaticle.typedb.core.traversal.optimiser.BoolVariable;
+import com.vaticle.typedb.core.traversal.optimiser.BooleanVariable;
 import com.vaticle.typedb.core.traversal.optimiser.Constraint;
 
 import javax.annotation.Nullable;
@@ -47,10 +47,10 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     private boolean isInitialisedConstraints;
     private double costNext;
     double costLastRecorded;
-    BoolVariable varIsStartingVertex;
-    BoolVariable varIsEndingVertex;
-    BoolVariable varHasIncomingEdges;
-    BoolVariable varHasOutgoingEdges;
+    BooleanVariable varIsStartingVertex;
+    BooleanVariable varIsEndingVertex;
+    BooleanVariable varHasIncomingEdges;
+    BooleanVariable varHasOutgoingEdges;
 
     PlannerVertex(Identifier identifier, @Nullable GraphPlanner planner) {
         super(identifier);
@@ -102,10 +102,10 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     void initialiseVariables() {
         assert planner != null;
-        varIsStartingVertex = planner.solver().makeBoolVar(varPrefix + "is_starting_vertex");
-        varIsEndingVertex = planner.solver().makeBoolVar(varPrefix + "is_ending_vertex");
-        varHasIncomingEdges = planner.solver().makeBoolVar(varPrefix + "has_incoming_edges");
-        varHasOutgoingEdges = planner.solver().makeBoolVar(varPrefix + "has_outgoing_edges");
+        varIsStartingVertex = planner.optimiser().booleanVar(varPrefix + "is_starting_vertex");
+        varIsEndingVertex = planner.optimiser().booleanVar(varPrefix + "is_ending_vertex");
+        varHasIncomingEdges = planner.optimiser().booleanVar(varPrefix + "has_incoming_edges");
+        varHasOutgoingEdges = planner.optimiser().booleanVar(varPrefix + "has_outgoing_edges");
 
         isInitialisedVariables = true;
     }
@@ -121,24 +121,24 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     private void initialiseConstraintsForIncomingEdges() {
         assert !ins().isEmpty();
-        Constraint conHasIncomingEdges = planner.solver().makeConstraint(0, ins().size() - 1, conPrefix + "has_incoming_edges");
+        Constraint conHasIncomingEdges = planner.optimiser().constraint(0, ins().size() - 1, conPrefix + "has_incoming_edges");
         conHasIncomingEdges.setCoefficient(varHasIncomingEdges, ins().size());
         ins().forEach(edge -> conHasIncomingEdges.setCoefficient(edge.varIsSelected, -1));
     }
 
     private void initialiseConstraintsForOutgoingEdges() {
         assert !outs().isEmpty();
-        Constraint conHasOutgoingEdges = planner.solver().makeConstraint(0, outs().size() - 1, conPrefix + "has_outgoing_edges");
+        Constraint conHasOutgoingEdges = planner.optimiser().constraint(0, outs().size() - 1, conPrefix + "has_outgoing_edges");
         conHasOutgoingEdges.setCoefficient(varHasOutgoingEdges, outs().size());
         outs().forEach(edge -> conHasOutgoingEdges.setCoefficient(edge.varIsSelected, -1));
     }
 
     private void initialiseConstraintsForVertexFlow() {
-        Constraint conStartOrIncoming = planner.solver().makeConstraint(1, 1, conPrefix + "starting_or_incoming");
+        Constraint conStartOrIncoming = planner.optimiser().constraint(1, 1, conPrefix + "starting_or_incoming");
         conStartOrIncoming.setCoefficient(varIsStartingVertex, 1);
         conStartOrIncoming.setCoefficient(varHasIncomingEdges, 1);
 
-        Constraint conEndingOrOutgoing = planner.solver().makeConstraint(1, 1, conPrefix + "ending_or_outgoing");
+        Constraint conEndingOrOutgoing = planner.optimiser().constraint(1, 1, conPrefix + "ending_or_outgoing");
         conEndingOrOutgoing.setCoefficient(varIsEndingVertex, 1);
         conEndingOrOutgoing.setCoefficient(varHasOutgoingEdges, 1);
     }
@@ -148,7 +148,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         if (cost < INIT_ZERO) cost = INIT_ZERO;
         double exp = planner.edges().size() * planner.costExponentUnit;
         double coeff = cost * Math.pow(planner.branchingFactor, exp);
-        planner.solver().setObjectiveCoefficient(varIsStartingVertex, coeff);
+        planner.optimiser().setObjectiveCoefficient(varIsStartingVertex, coeff);
         costNext = cost;
         planner.updateCostNext(costLastRecorded, costNext);
     }
@@ -179,21 +179,17 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         varIsEndingVertex.setInitial(true);
         varIsStartingVertex.setInitial(false);
         varHasOutgoingEdges.setInitial(false);
-//        assert varIsStartingVertex.getHint() == 0;
-//        assert varHasOutgoingEdges.getHint() == 0;
         assert varHasIncomingEdges.getInitial() == 1;
     }
 
     void setHasOutgoingEdgesInitial() {
         varHasOutgoingEdges.setInitial(true);
         varIsEndingVertex.setInitial(false);
-//        assert varIsEndingVertex.getHint() == 0;
     }
 
     void setHasIncomingEdgesInitial() {
         varHasIncomingEdges.setInitial(true);
         varIsStartingVertex.setInitial(false);
-//        assert varIsStartingVertex.getHint() == 0;
     }
 
     public PlannerVertex.Thing asThing() {

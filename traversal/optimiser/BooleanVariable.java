@@ -24,14 +24,14 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_OPTIMISER_VALUE;
 
-public class BoolVariable extends Variable {
+public class BooleanVariable extends Variable {
 
     private ActivationStatus status;
     private Boolean initial;
     private Boolean solution;
     private MPVariable mpVariable;
 
-    public BoolVariable(String name) {
+    public BooleanVariable(String name) {
         super(name);
         this.status = ActivationStatus.INACTIVE;
     }

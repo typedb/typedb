@@ -118,19 +118,6 @@ public abstract class ProcedureEdge<
         }
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ProcedureEdge<?, ?> that = (ProcedureEdge<?, ?>) o;
-        return from.equals(that.from) && to.equals(that.to) && order == that.order && direction == that.direction;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(from, to, order, direction);
-    }
-
     public abstract FunctionalIterator<? extends Vertex<?, ?>> branch(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                                       GraphTraversal.Thing.Parameters params);
 
@@ -420,14 +407,6 @@ public abstract class ProcedureEdge<
                 super(from, to, order, direction, encoding);
             }
 
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                Type that = (Type) o;
-                return from.equals(that.from) && to.equals(that.to) && order() == that.order() && direction() == that.direction() && encoding == that.encoding;
-            }
-
             static Native.Type of(ProcedureVertex.Type from, ProcedureVertex.Type to,
                                   PlannerEdge.Native.Type.Directional edge) {
                 boolean isForward = edge.direction().isForward();
@@ -474,7 +453,7 @@ public abstract class ProcedureEdge<
                 }
             }
 
-            public static abstract class Sub extends Type {
+            static abstract class Sub extends Type {
 
                 final boolean isTransitive;
 
@@ -494,7 +473,7 @@ public abstract class ProcedureEdge<
                     return super.toString() + String.format(" { isTransitive: %s }", isTransitive);
                 }
 
-                public static class Forward extends Sub {
+                static class Forward extends Sub {
 
                     public Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isTransitive) {
                         super(from, to, order, FORWARD, isTransitive);
