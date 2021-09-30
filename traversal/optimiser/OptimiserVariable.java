@@ -26,8 +26,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNE
 
 public abstract class OptimiserVariable<T> {
 
-    private enum State {INACTIVE, ACTIVE}
-
     final String name;
 
     OptimiserVariable(String name) {
@@ -46,20 +44,23 @@ public abstract class OptimiserVariable<T> {
 
     public abstract double getInitial();
 
-    abstract void activate(MPSolver solver);
+    abstract void initialise(MPSolver solver);
 
-    abstract void deactivate();
+    abstract void free();
+
+    @Override
+    public String toString() {
+        return name + "[" + getClass().getSimpleName() + "]";
+    }
 
     public static class Boolean extends OptimiserVariable<java.lang.Boolean> {
 
-        private State state;
         private java.lang.Boolean initial;
         private java.lang.Boolean solution;
         private MPVariable mpVariable;
 
         public Boolean(String name) {
             super(name);
-            this.state = State.INACTIVE;
         }
 
         @Override
@@ -70,30 +71,24 @@ public abstract class OptimiserVariable<T> {
 
         @Override
         MPVariable mpVariable() {
-            assert state == State.ACTIVE;
             return mpVariable;
         }
 
         @Override
         void recordValue() {
-            assert state == State.ACTIVE;
             if (mpVariable.solutionValue() == 0.0) solution = false;
             else if (mpVariable.solutionValue() == 1.0) solution = true;
             else throw TypeDBException.of(UNEXPECTED_OPTIMISER_VALUE);
         }
 
         @Override
-        synchronized void activate(MPSolver mpSolver) {
-            assert state == State.INACTIVE;
+        synchronized void initialise(MPSolver mpSolver) {
             this.mpVariable = mpSolver.makeBoolVar(name);
-            this.state = State.ACTIVE;
         }
 
         @Override
-        synchronized void deactivate() {
-            assert state == State.ACTIVE;
+        synchronized void free() {
             this.mpVariable.delete();
-            this.state = State.INACTIVE;
         }
 
         public void setInitial(boolean initial) {
@@ -116,18 +111,12 @@ public abstract class OptimiserVariable<T> {
             if (initial) return 1.0;
             else return 0.0;
         }
-
-        @Override
-        public String toString() {
-            return name + "[Bool][status=" + state + "]";
-        }
     }
 
     public static class Integer extends OptimiserVariable<java.lang.Integer> {
 
         private final double lowerBound;
         private final double upperBound;
-        private State state;
         private java.lang.Integer initial;
         private java.lang.Integer solution;
         private MPVariable mpVariable;
@@ -136,7 +125,6 @@ public abstract class OptimiserVariable<T> {
             super(name);
             this.lowerBound = lowerBound;
             this.upperBound = upperBound;
-            this.state = State.INACTIVE;
         }
 
         @Override
@@ -147,28 +135,22 @@ public abstract class OptimiserVariable<T> {
 
         @Override
         MPVariable mpVariable() {
-            assert state == State.ACTIVE;
             return mpVariable;
         }
 
         @Override
         void recordValue() {
-            assert state == State.ACTIVE;
             solution = (int) Math.round(mpVariable.solutionValue());
         }
 
         @Override
-        synchronized void activate(MPSolver mpSolver) {
-            assert state == State.INACTIVE;
+        synchronized void initialise(MPSolver mpSolver) {
             this.mpVariable = mpSolver.makeIntVar(lowerBound, upperBound, name);
-            this.state = State.ACTIVE;
         }
 
         @Override
-        synchronized void deactivate() {
-            assert state == State.ACTIVE;
+        synchronized void free() {
             this.mpVariable.delete();
-            this.state = State.INACTIVE;
         }
 
         @Override
@@ -189,11 +171,6 @@ public abstract class OptimiserVariable<T> {
         public double getInitial() {
             assert hasInitial();
             return initial;
-        }
-
-        @Override
-        public String toString() {
-            return name + "[Int][status=" + state + "]";
         }
     }
 }

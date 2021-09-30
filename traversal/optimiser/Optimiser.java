@@ -42,51 +42,57 @@ public class Optimiser {
     private final List<OptimiserVariable<?>> variables;
     private final Set<OptimiserConstraint> constraints;
     private final Map<OptimiserVariable<?>, Double> objectiveCoefficients;
-    private State state;
     private MPSolver solver;
     private MPSolverParameters parameters;
-
-    private enum State {INACTIVE, ACTIVE}
+    private ResultStatus status;
+    private boolean solverActive;
 
     public Optimiser() {
         variables = new ArrayList<>();
         constraints = new HashSet<>();
         objectiveCoefficients = new HashMap<>();
-        state = State.INACTIVE;
+        status = ResultStatus.NOT_SOLVED;
+        solverActive = false;
     }
 
     public synchronized ResultStatus optimise(long timeLimitMillis) {
-        if (state == State.INACTIVE) activate();
+        if (isOptimal()) return status;
+        else if (!solverActive) initialiseSolver();
         solver.setTimeLimit(timeLimitMillis);
-        ResultStatus resultStatus = ResultStatus.of(solver.solve(parameters));
+        status = ResultStatus.of(solver.solve(parameters));
         variables.forEach(OptimiserVariable::recordValue);
         clearInitialisation();
-        return resultStatus;
+        if (isOptimal()) freeSolver();
+        return status;
     }
 
-    public boolean isActive() {
-        return state == State.ACTIVE;
+    private boolean isOptimal() {
+        return status == ResultStatus.OPTIMAL;
     }
 
-    public synchronized void deactivate() {
-        state = State.INACTIVE;
-        constraints.forEach(OptimiserConstraint::deactivate);
-        variables.forEach(OptimiserVariable::deactivate);
+    private boolean isFeasible() {
+        return status == ResultStatus.FEASIBLE;
+    }
+
+    private void freeSolver() {
+        constraints.forEach(OptimiserConstraint::free);
+        variables.forEach(OptimiserVariable::free);
         parameters.delete();
         solver.delete();
+        solverActive = false;
     }
 
-    private synchronized void activate() {
+    private void initialiseSolver() {
         solver = MPSolver.createSolver("SCIP");
         solver.objective().setMinimization();
         parameters = new MPSolverParameters();
         parameters.setIntegerParam(PRESOLVE, PRESOLVE_ON.swigValue());
         parameters.setIntegerParam(INCREMENTALITY, INCREMENTALITY_ON.swigValue());
-        variables.forEach(var -> var.activate(solver));
-        constraints.forEach(constraint -> constraint.activate(solver));
+        variables.forEach(var -> var.initialise(solver));
+        constraints.forEach(constraint -> constraint.initialise(solver));
         applyObjective();
         applyInitialisation();
-        state = State.ACTIVE;
+        solverActive = true;
     }
 
     private void applyObjective() {
@@ -105,31 +111,31 @@ public class Optimiser {
     }
 
     private void clearInitialisation() {
-        assert state == State.ACTIVE;
         solver.setHint(new MPVariable[0], new double[0]);
     }
 
     public void setObjectiveCoefficient(OptimiserVariable<?> var, double coeff) {
         objectiveCoefficients.put(var, coeff);
-        if (state == State.ACTIVE) solver.objective().setCoefficient(var.mpVariable(), coeff);
+        if (solverActive) solver.objective().setCoefficient(var.mpVariable(), coeff);
+        else if (isOptimal()) status = ResultStatus.FEASIBLE;
     }
 
     public OptimiserConstraint constraint(double lowerBound, double upperBound, String name) {
-        assert state == State.INACTIVE;
+        assert status == ResultStatus.NOT_SOLVED;
         OptimiserConstraint constraint = new OptimiserConstraint(lowerBound, upperBound, name);
         constraints.add(constraint);
         return constraint;
     }
 
     public OptimiserVariable.Integer intVar(double lowerBound, double upperBound, String name) {
-        assert state == State.INACTIVE;
+        assert status == ResultStatus.NOT_SOLVED;
         OptimiserVariable.Integer var = new OptimiserVariable.Integer(lowerBound, upperBound, name);
         variables.add(var);
         return var;
     }
 
     public OptimiserVariable.Boolean booleanVar(String name) {
-        assert state == State.INACTIVE;
+        assert status == ResultStatus.NOT_SOLVED;
         OptimiserVariable.Boolean var = new OptimiserVariable.Boolean(name);
         variables.add(var);
         return var;
@@ -158,8 +164,7 @@ public class Optimiser {
 
     @Override
     public String toString() {
-        return "Optimiser[" + "status=" + state + ", variables=" + variables.size() +
-                ", constraints=" + constraints.size() + "]" +
-                (state == State.ACTIVE ? solver.exportModelAsLpFormat() : "");
+        return "Optimiser[" + "solverActive=" + solverActive + ", variables=" + variables.size() +
+                ", constraints=" + constraints.size() + "]" + (solverActive ? solver.exportModelAsLpFormat() : "");
     }
 }
