@@ -72,10 +72,14 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         }
 
         @Override
-        public boolean isEqual() { return true; }
+        public boolean isEqual() {
+            return true;
+        }
 
         @Override
-        public Equal asEqual() { return this; }
+        public Equal asEqual() {
+            return this;
+        }
 
         @Override
         public boolean equals(Object o) {
@@ -108,10 +112,14 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         }
 
         @Override
-        public boolean isPredicate() { return true; }
+        public boolean isPredicate() {
+            return true;
+        }
 
         @Override
-        public Predicate asPredicate() { return this; }
+        public Predicate asPredicate() {
+            return this;
+        }
 
         @Override
         public boolean equals(Object o) {
@@ -153,12 +161,18 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         }
 
         @Override
-        public boolean isNative() { return true; }
+        public boolean isNative() {
+            return true;
+        }
 
         @Override
-        public Native<?, ?> asNative() { return this; }
+        public Native<?, ?> asNative() {
+            return this;
+        }
 
-        public boolean isRolePlayer() { return false; }
+        public boolean isRolePlayer() {
+            return false;
+        }
 
         public RolePlayer asRolePlayer() {
             throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(RolePlayer.class));
@@ -199,10 +213,14 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
             }
 
             @Override
-            public boolean isRolePlayer() { return true; }
+            public boolean isRolePlayer() {
+                return true;
+            }
 
             @Override
-            public RolePlayer asRolePlayer() { return this; }
+            public RolePlayer asRolePlayer() {
+                return this;
+            }
 
             @Override
             public boolean equals(Object o) {

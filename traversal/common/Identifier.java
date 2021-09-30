@@ -29,17 +29,29 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 
 public abstract class Identifier {
 
-    public boolean isScoped() { return false; }
+    public boolean isScoped() {
+        return false;
+    }
 
-    public boolean isVariable() { return false; }
+    public boolean isVariable() {
+        return false;
+    }
 
-    public boolean isRetrievable() { return false; }
+    public boolean isRetrievable() {
+        return false;
+    }
 
-    public boolean isName() { return false; }
+    public boolean isName() {
+        return false;
+    }
 
-    public boolean isAnonymous() { return false; }
+    public boolean isAnonymous() {
+        return false;
+    }
 
-    public boolean isLabel() { return false; }
+    public boolean isLabel() {
+        return false;
+    }
 
     public Scoped asScoped() {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Scoped.class));
@@ -83,10 +95,14 @@ public abstract class Identifier {
         }
 
         @Override
-        public boolean isScoped() { return true; }
+        public boolean isScoped() {
+            return true;
+        }
 
         @Override
-        public Scoped asScoped() { return this; }
+        public Scoped asScoped() {
+            return this;
+        }
 
         @Override
         public String toString() {
@@ -156,10 +172,14 @@ public abstract class Identifier {
         }
 
         @Override
-        public boolean isVariable() { return true; }
+        public boolean isVariable() {
+            return true;
+        }
 
         @Override
-        public Variable asVariable() { return this; }
+        public Variable asVariable() {
+            return this;
+        }
 
         public Retrievable asRetrievable() {
             throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Retrievable.class));
@@ -232,10 +252,14 @@ public abstract class Identifier {
             }
 
             @Override
-            public boolean isName() { return true; }
+            public boolean isName() {
+                return true;
+            }
 
             @Override
-            public Variable.Name asName() { return this; }
+            public Variable.Name asName() {
+                return this;
+            }
         }
 
         public static class Anonymous extends Retrievable {
@@ -254,10 +278,14 @@ public abstract class Identifier {
             }
 
             @Override
-            public boolean isAnonymous() { return true; }
+            public boolean isAnonymous() {
+                return true;
+            }
 
             @Override
-            public Variable.Anonymous asAnonymous() { return this; }
+            public Variable.Anonymous asAnonymous() {
+                return this;
+            }
         }
 
         public static class Label extends Variable {
@@ -272,10 +300,14 @@ public abstract class Identifier {
             }
 
             @Override
-            public boolean isLabel() { return true; }
+            public boolean isLabel() {
+                return true;
+            }
 
             @Override
-            public Variable.Label asLabel() { return this; }
+            public Variable.Label asLabel() {
+                return this;
+            }
         }
     }
 }

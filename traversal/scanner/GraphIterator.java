@@ -343,7 +343,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     @Override
-    public void recycle() {}
+    public void recycle() {
+    }
 
     public static class Scopes {
 

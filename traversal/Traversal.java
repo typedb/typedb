@@ -184,21 +184,37 @@ public abstract class Traversal {
                 return valueType;
             }
 
-            public boolean isBoolean() { return booleanVal != null; }
+            public boolean isBoolean() {
+                return booleanVal != null;
+            }
 
-            public boolean isLong() { return longVal != null; }
+            public boolean isLong() {
+                return longVal != null;
+            }
 
-            public boolean isDouble() { return doubleVal != null; }
+            public boolean isDouble() {
+                return doubleVal != null;
+            }
 
-            public boolean isDateTime() { return dateTimeVal != null; }
+            public boolean isDateTime() {
+                return dateTimeVal != null;
+            }
 
-            public boolean isString() { return stringVal != null; }
+            public boolean isString() {
+                return stringVal != null;
+            }
 
-            public boolean isRegex() { return regexPattern != null; }
+            public boolean isRegex() {
+                return regexPattern != null;
+            }
 
-            public Boolean getBoolean() { return booleanVal; }
+            public Boolean getBoolean() {
+                return booleanVal;
+            }
 
-            public Long getLong() { return longVal; }
+            public Long getLong() {
+                return longVal;
+            }
 
             public Double getDouble() {
                 if (isDouble()) return doubleVal;
@@ -206,11 +222,17 @@ public abstract class Traversal {
                 else return null;
             }
 
-            public LocalDateTime getDateTime() { return dateTimeVal; }
+            public LocalDateTime getDateTime() {
+                return dateTimeVal;
+            }
 
-            public String getString() { return stringVal; }
+            public String getString() {
+                return stringVal;
+            }
 
-            public Pattern getRegex() { return regexPattern; }
+            public Pattern getRegex() {
+                return regexPattern;
+            }
 
             @Override
             public String toString() {

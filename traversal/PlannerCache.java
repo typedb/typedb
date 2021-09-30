@@ -48,7 +48,7 @@ public class PlannerCache {
             if (planner.isOptimal() && optimalPlanners.getIfPresent(structure) == null) {
                 optimalPlanners.put(structure, planner);
                 activePlanners.invalidate(structure);
-            } else if (!planner.isOptimal() && activePlanners.getIfPresent(structure) == null){
+            } else if (!planner.isOptimal() && activePlanners.getIfPresent(structure) == null) {
                 activePlanners.put(structure, planner);
                 optimalPlanners.invalidate(structure);
             }

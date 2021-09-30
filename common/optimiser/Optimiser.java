@@ -160,7 +160,7 @@ public class Optimiser {
 
     @Override
     public String toString() {
-        return "Optimiser[" + "solverActive=" + hasSolver + ", variables=" + variables.size() +
+        return "Optimiser[" + "hasSolver=" + hasSolver + ", variables=" + variables.size() +
                 ", constraints=" + constraints.size() + "]" + (hasSolver ? solver.exportModelAsLpFormat() : "");
     }
 }

@@ -19,14 +19,14 @@
 package com.vaticle.typedb.core.traversal.planner;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.optimiser.OptimiserConstraint;
+import com.vaticle.typedb.core.common.optimiser.OptimiserVariable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
-import com.vaticle.typedb.core.common.optimiser.OptimiserConstraint;
-import com.vaticle.typedb.core.common.optimiser.OptimiserVariable;
 import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;

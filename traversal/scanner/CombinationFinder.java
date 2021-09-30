@@ -55,7 +55,7 @@ public class CombinationFinder {
     private enum State {CHANGED, UNCHANGED, EMPTY}
 
     public CombinationFinder(GraphManager graphMgr, Set<CombinationProcedure> procedures, Set<Retrievable> filter,
-                              Set<Retrievable> concreteVarIds) {
+                             Set<Retrievable> concreteVarIds) {
         assert filter.containsAll(concreteVarIds);
         this.graphMgr = graphMgr;
         this.procedures = procedures;

@@ -46,9 +46,13 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
 
     protected abstract PROPERTIES newProperties();
 
-    public boolean isThing() { return false; }
+    public boolean isThing() {
+        return false;
+    }
 
-    public boolean isType() { return false; }
+    public boolean isType() {
+        return false;
+    }
 
     public Identifier id() {
         return identifier;
@@ -152,7 +156,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
             @Override
             public String toString() {
                 return String.format("[thing] { hasIID: %s, types: %s, predicates: %s }",
-                                     hasIID, types, predicates);
+                        hasIID, types, predicates);
             }
 
             @Override
@@ -228,7 +232,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
             @Override
             public String toString() {
                 return String.format("[type] { labels: %s, abstract: %s, value: %s, regex: %s }",
-                                     labels, isAbstract, valueTypes, regex);
+                        labels, isAbstract, valueTypes, regex);
             }
 
             @Override

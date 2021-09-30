@@ -19,11 +19,11 @@
 package com.vaticle.typedb.core.traversal.planner;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.optimiser.Optimiser;
+import com.vaticle.typedb.core.common.optimiser.OptimiserConstraint;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
-import com.vaticle.typedb.core.common.optimiser.OptimiserConstraint;
-import com.vaticle.typedb.core.common.optimiser.Optimiser;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
