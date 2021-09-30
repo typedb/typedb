@@ -144,15 +144,15 @@ public class CombinationProcedure {
         return nextVertices;
     }
 
-    private ProcedureEdge<?, ?> createOut(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge,
-                                          int order) {
+    private ProcedureEdge<?, ?> createOut(ProcedureVertex.Type from, ProcedureVertex.Type to,
+                                          StructureEdge<?, ?> structureEdge, int order) {
         ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, order, true);
         registerEdge(edge);
         return edge;
     }
 
-    private ProcedureEdge<?, ?> createIn(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge,
-                                         int order) {
+    private ProcedureEdge<?, ?> createIn(ProcedureVertex.Type from, ProcedureVertex.Type to,
+                                         StructureEdge<?, ?> structureEdge, int order) {
         ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, order, false);
         registerEdge(edge);
         return edge;
