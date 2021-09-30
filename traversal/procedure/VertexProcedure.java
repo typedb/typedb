@@ -49,7 +49,8 @@ public class VertexProcedure implements PermutationProcedure {
     }
 
     public static VertexProcedure create(StructureVertex<?> structureVertex) {
-        ProcedureVertex<?, ?> procedureVertex = structureVertex.isType() ? new ProcedureVertex.Type(structureVertex.id(), true)
+        ProcedureVertex<?, ?> procedureVertex = structureVertex.isType()
+                ? new ProcedureVertex.Type(structureVertex.id(), true)
                 : new ProcedureVertex.Thing(structureVertex.id(), true);
         if (procedureVertex.isType()) procedureVertex.asType().props(structureVertex.asType().props());
         else procedureVertex.asThing().props(structureVertex.asThing().props());
