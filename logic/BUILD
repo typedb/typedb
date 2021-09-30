@@ -32,15 +32,14 @@ native_java_libraries(
     name = "logic",
     srcs = glob(["*.java", "tool/*.java", "**/*.java"], exclude = ["*Test.java", "*/*Test.java"]),
     native_libraries_deps = [
+        # Internal dependencies
+        "//common:common",
+        "//graph:graph",
         "//concept:concept",
         "//pattern:pattern",
         "//traversal:traversal",
     ],
     deps = [
-        # Internal dependencies
-        "//common",
-        "//graph",
-
         # Internal Repository Dependencies
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//common",
@@ -82,13 +81,13 @@ host_compatible_java_test(
         "resolvable/RetrievableTest.java",
     ],
     native_libraries_deps = [
+        # Internal dependencies
+        "//common:common",
         "//logic:logic",
         "//pattern:pattern",
     ],
     test_class = "com.vaticle.typedb.core.logic.resolvable.RetrievableTest",
     deps = [
-        # Internal dependencies
-        "//common",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",

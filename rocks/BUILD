@@ -29,12 +29,19 @@ package(
 native_java_libraries(
     name = "rocks",
     srcs = glob(["*.java"]),
-    deps = [
+    native_libraries_deps = [
         # Internal dependencies
+        "//:typedb",
         "//common:common",
         "//concurrent:concurrent",
         "//graph:graph",
-
+        "//concept:concept",
+        "//logic:logic",
+        "//query:query",
+        "//reasoner:reasoner",
+        "//traversal:traversal",
+    ],
+    deps = [
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
 
@@ -42,14 +49,7 @@ native_java_libraries(
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_slf4j_slf4j_api"
     ],
-    native_libraries_deps = [
-        "//:typedb",
-        "//concept:concept",
-        "//logic:logic",
-        "//query:query",
-        "//reasoner:reasoner",
-        "//traversal:traversal",
-    ],
+
     mac_deps = [
         "@maven//:com_google_ortools_ortools_darwin",
         "@maven//:com_google_ortools_ortools_darwin_java",

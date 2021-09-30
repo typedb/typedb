@@ -25,8 +25,6 @@ host_compatible_java_library(
         "SessionSteps.java",
     ],
     deps = [
-        # Internal dependencies
-        "//common:common",
         "//test/behaviour/connection:steps",
 
         # Internal Repository Dependencies
@@ -37,7 +35,9 @@ host_compatible_java_library(
         "@maven//:io_cucumber_cucumber_java",
     ],
     native_libraries_deps = [
+        # Internal dependencies
         "//:typedb",
+        "//common:common",
     ],
 )
 

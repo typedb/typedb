@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.traversal.optimiser;
+package com.vaticle.typedb.core.common.optimiser;
 
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPSolver;
@@ -48,7 +48,7 @@ public class OptimiserConstraint {
         coefficients.forEach((var, coeff) -> mpConstraint.setCoefficient(var.mpVariable(), coeff));
     }
 
-    synchronized void free() {
+    synchronized void release() {
         this.mpConstraint.delete();
     }
 }

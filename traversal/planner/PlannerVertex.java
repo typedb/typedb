@@ -25,8 +25,8 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
-import com.vaticle.typedb.core.traversal.optimiser.OptimiserConstraint;
-import com.vaticle.typedb.core.traversal.optimiser.OptimiserVariable;
+import com.vaticle.typedb.core.common.optimiser.OptimiserConstraint;
+import com.vaticle.typedb.core.common.optimiser.OptimiserVariable;
 
 import javax.annotation.Nullable;
 

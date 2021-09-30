@@ -24,14 +24,14 @@ host_compatible_java_library(
         "ReasonerSteps.java"
     ],
     native_libraries_deps = [
+        # Package dependencies
         "//:typedb",
+        "//common:common",
         "//rocks:rocks",
         "//concept:concept",
         "//test/behaviour/reasoner/verification:verification",
     ],
     deps = [
-        # Package dependencies
-        "//common",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",

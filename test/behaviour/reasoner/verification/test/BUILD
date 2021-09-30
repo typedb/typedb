@@ -28,15 +28,15 @@ host_compatible_java_test(
     classpath_resources = ["//common/test:logback-test"],
     test_class = "com.vaticle.typedb.core.test.behaviour.reasoner.verification.test.MaterialiserTest",
     native_libraries_deps = [
-        "//concept:concept",
         "//:typedb",
+        "//common:common",
+        "//concept:concept",
         "//logic:logic",
         "//rocks:rocks",
         "//test/behaviour/reasoner/verification:verification",
     ],
     deps = [
         "//test/integration/util:util",
-        "//common",
         # External dependencies from @vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
@@ -56,11 +56,11 @@ host_compatible_java_test(
     native_libraries_deps = [
         "//:typedb",
         "//rocks:rocks",
+        "//common",
+        "//common/test:util",
         "//test/behaviour/reasoner/verification:verification",
     ],
     deps = [
-        "//common",
-        "//common/test:util",
         "//test/integration/util",
         # External dependencies from @vaticle
         "@vaticle_typedb_common//:common",

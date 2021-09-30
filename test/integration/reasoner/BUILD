@@ -23,16 +23,16 @@ host_compatible_java_test(
     srcs = ["ReasonerTest.java"],
     test_class = "com.vaticle.typedb.core.reasoner.ReasonerTest",
     native_libraries_deps = [
-        "//rocks:rocks",
-        "//logic:logic",
         "//:typedb",
+        "//rocks:rocks",
+        "//common:common",
+        "//concurrent:concurrent",
+        "//logic:logic",
         "//concept:concept",
     ],
     deps = [
         # Internal dependencies
         "//test/integration/util:util",
-        "//common:common",
-        "//concurrent:concurrent",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
@@ -49,18 +49,18 @@ host_compatible_java_test(
     srcs = ["ExplanationTest.java"],
     test_class = "com.vaticle.typedb.core.reasoner.ExplanationTest",
     native_libraries_deps = [
+        "//:typedb",
+        "//rocks:rocks",
         "//concept:concept",
+        "//common:common",
+        "//concurrent:concurrent",
         "//logic:logic",
         "//reasoner:reasoner",
-        "//rocks:rocks",
         "//traversal:traversal",
-        "//:typedb",
     ],
     deps = [
         # Internal dependencies
         "//test/integration/util:util",
-        "//common:common",
-        "//concurrent:concurrent",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
@@ -77,18 +77,18 @@ host_compatible_java_test(
     srcs = ["resolution/ResolutionTest.java", "resolution/Util.java"],
     test_class = "com.vaticle.typedb.core.reasoner.resolution.ResolutionTest",
     native_libraries_deps = [
+        # Internal dependencies
+        "//:typedb",
+        "//rocks:rocks",
+        "//common:common",
         "//concept:concept",
+        "//concurrent:concurrent",
         "//logic:logic",
         "//pattern:pattern",
         "//reasoner:reasoner",
-        "//rocks:rocks",
         "//traversal:traversal",
-        "//:typedb",
     ],
     deps = [
-        # Internal dependencies
-        "//common:common",
-        "//concurrent:concurrent",
         "//test/integration/util",
 
         # External dependencies from Vaticle
@@ -106,18 +106,18 @@ host_compatible_java_test(
     srcs = ["resolution/ReiterationTest.java", "resolution/Util.java"],
     test_class = "com.vaticle.typedb.core.reasoner.resolution.ReiterationTest",
     native_libraries_deps = [
+        # Internal dependencies
+        "//:typedb",
+        "//rocks:rocks",
+        "//common:common",
+        "//concurrent:concurrent",
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
         "//reasoner:reasoner",
-        "//rocks:rocks",
         "//traversal:traversal",
-        "//:typedb",
     ],
     deps = [
-        # Internal dependencies
-        "//common:common",
-        "//concurrent:concurrent",
         "//test/integration/util",
 
         # External dependencies from Vaticle
@@ -136,17 +136,17 @@ host_compatible_java_test(
     srcs = ["resolution/PlannerTest.java", "resolution/Util.java"],
     test_class = "com.vaticle.typedb.core.reasoner.resolution.PlannerTest",
     native_libraries_deps = [
+        # Internal dependencies
         "//rocks:rocks",
         "//:typedb",
+        "//common:common",
         "//concept:concept",
         "//pattern:pattern",
         "//logic:logic",
         "//reasoner:reasoner",
     ],
     deps = [
-        # Internal dependencies
         "//test/integration/util",
-        "//common",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",

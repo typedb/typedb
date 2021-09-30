@@ -31,12 +31,13 @@ package(
 native_java_libraries(
     name = "traversal",
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"]),
-    deps = [
+    native_libraries_deps = [
         # Internal dependencies
         "//common:common",
         "//concurrent:concurrent",
         "//graph:graph",
-
+    ],
+    deps = [
         # Vaticle Dependencies
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//common:common",
@@ -48,18 +49,6 @@ native_java_libraries(
         "@maven//:com_github_ben_manes_caffeine_caffeine",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_slf4j_slf4j_api",
-    ],
-    mac_deps = [
-        "@maven//:com_google_ortools_ortools_darwin",
-        "@maven//:com_google_ortools_ortools_darwin_java",
-    ],
-    linux_deps = [
-        "@maven//:com_google_ortools_ortools_linux_x86_64",
-        "@maven//:com_google_ortools_ortools_linux_x86_64_java"
-    ],
-    windows_deps = [
-        "@maven//:com_google_ortools_ortools_win32_x86_64",
-        "@maven//:com_google_ortools_ortools_win32_x86_64_java"
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-traversal:{pom_version}"],
     visibility = ["//visibility:public"],

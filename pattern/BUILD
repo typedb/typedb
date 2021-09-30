@@ -43,9 +43,6 @@ native_java_libraries(
         exclude = ["*Test.java", "*/*Test.java"],
     ),
     deps = [
-        # Internal dependencies
-        "//common:common",
-
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_factory_tracing//client:client",
@@ -56,6 +53,8 @@ native_java_libraries(
         "@maven//:com_google_code_findbugs_jsr305",
     ],
     native_libraries_deps = [
+        # Internal dependencies
+        "//common:common",
         "//traversal:traversal",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-query-pattern:{pom_version}"],

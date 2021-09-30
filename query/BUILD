@@ -31,11 +31,17 @@ package(
 native_java_libraries(
     name = "query",
     srcs = glob(["*.java", "*/*.java"]),
-    deps = [
+    native_libraries_deps = [
         # Internal dependencies
         "//common:common",
         "//concurrent:concurrent",
-
+        "//concept:concept",
+        "//pattern:pattern",
+        "//logic:logic",
+        "//reasoner:reasoner",
+        "//traversal:traversal",
+    ],
+    deps = [
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_factory_tracing//client:client",
@@ -47,13 +53,6 @@ native_java_libraries(
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_slf4j_slf4j_api",
-    ],
-    native_libraries_deps = [
-        "//concept:concept",
-        "//pattern:pattern",
-        "//logic:logic",
-        "//reasoner:reasoner",
-        "//traversal:traversal",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-query:{pom_version}"],
     visibility = ["//visibility:public"],

@@ -24,6 +24,7 @@ native_java_libraries(
     visibility = ["//visibility:public"],
     native_libraries_deps = [
         "//:typedb",
+        "//common:common",
         "//rocks:rocks",
         "//concept:concept",
         "//traversal:traversal",
@@ -32,7 +33,6 @@ native_java_libraries(
         "//reasoner:reasoner",
     ],
     deps = [
-        "//common",
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
         "@vaticle_typeql_lang_java//common",

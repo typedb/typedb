@@ -23,16 +23,15 @@ host_compatible_java_test(
     srcs = ["BasicTest.java"],
     test_class = "com.vaticle.typedb.core.test.integration.BasicTest",
     native_libraries_deps = [
-        "//rocks:rocks",
+        # Internal dependencies
         "//:typedb",
+        "//common:common",
+        "//rocks:rocks",
         "//concept:concept",
         "//logic:logic",
     ],
     deps = [
-        # Internal dependencies
         "//test/integration/util:util",
-        "//common:common",
-
         # External dependencies from Vaticle
         "@vaticle_typeql_lang_java//pattern:pattern",
         "@vaticle_typeql_lang_java//:typeql-lang",
@@ -49,14 +48,14 @@ host_compatible_java_test(
     srcs = ["QueryTest.java"],
     test_class = "com.vaticle.typedb.core.test.integration.QueryTest",
     native_libraries_deps = [
-        "//rocks:rocks",
         "//:typedb",
+        "//rocks:rocks",
+        "//common:common",
         "//concept:concept",
     ],
     deps = [
         # Internal dependencies
         "//test/integration/util:util",
-        "//common:common",
 
         # External dependencies from Vaticle
         "@vaticle_typeql_lang_java//query:query",
@@ -74,15 +73,15 @@ host_compatible_java_test(
     srcs = ["ConsistencyTest.java"],
     test_class = "com.vaticle.typedb.core.test.integration.ConsistencyTest",
     native_libraries_deps = [
-        "//rocks:rocks",
+        # Internal dependencies
         "//:typedb",
+        "//rocks:rocks",
+        "//common:common",
         "//concept:concept",
         "//logic:logic",
     ],
     deps = [
-        # Internal dependencies
         "//test/integration/util:util",
-        "//common:common",
 
         # External dependencies from Vaticle
         "@vaticle_typeql_lang_java//:typeql-lang",

@@ -48,11 +48,15 @@ java_grpc_compile(
 native_java_libraries(
     name = "migrator",
     srcs = [":migrator-protocol-src", ":migrator-data-src"] + glob(["*.java", "*/*.java", "*/*/*.java"]),
-    deps = [
+    native_libraries_deps = [
         # Internal dependencies
+        "//:typedb",
         "//common:common",
-        "//concurrent",
-
+        "//concurrent:concurrent",
+        "//concept:concept",
+        "//logic:logic",
+    ],
+    deps = [
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//pattern:pattern",
@@ -66,11 +70,6 @@ native_java_libraries(
         "@maven//:io_grpc_grpc_stub",
         "@maven//:javax_annotation_javax_annotation_api", # gRPC needs this in order to compile in Java 11 and Java 14
         "@maven//:org_slf4j_slf4j_api",
-    ],
-    native_libraries_deps = [
-        "//:typedb",
-        "//concept:concept",
-        "//logic:logic",
     ],
     mac_deps = [
         "@maven//:org_rocksdb_rocksdbjni_dev"

@@ -16,11 +16,11 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 package(default_visibility = ["//visibility:public"])
 
-
-java_library(
+native_java_libraries(
     name = "common",
     srcs = glob(["*/*.java", "*/*/*.java"], exclude=["test/*", "*Test.java", "*/*Test.java"]),
     deps = [
@@ -34,20 +34,33 @@ java_library(
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_slf4j_slf4j_api",
     ],
+    mac_deps = [
+        "@maven//:com_google_ortools_ortools_darwin",
+        "@maven//:com_google_ortools_ortools_darwin_java",
+    ],
+    linux_deps = [
+        "@maven//:com_google_ortools_ortools_linux_x86_64",
+        "@maven//:com_google_ortools_ortools_linux_x86_64_java"
+    ],
+    windows_deps = [
+        "@maven//:com_google_ortools_ortools_win32_x86_64",
+        "@maven//:com_google_ortools_ortools_win32_x86_64_java"
+    ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-common:{pom_version}"],
 )
 
-java_test(
+host_compatible_java_test(
     name = "test-permutation-iterator",
     srcs = [
         "iterator/PermutationIteratorTest.java",
     ],
     test_class = "com.vaticle.typedb.core.common.iterator.PermutationIteratorTest",
     deps = [
-        "//common:common",
-
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
+    ],
+    native_libraries_deps = [
+        "//common:common",
     ],
 )
 

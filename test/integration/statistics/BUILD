@@ -23,14 +23,14 @@ host_compatible_java_test(
     srcs = ["StatisticsTest.java"],
     test_class = "com.vaticle.typedb.core.rocks.StatisticsTest",
     native_libraries_deps = [
-        "//rocks:rocks",
+        # Internal dependencies
         "//:typedb",
+        "//rocks:rocks",
+        "//common:common",
         "//concept:concept",
     ],
     deps = [
-        # Internal dependencies
         "//test/integration/util:util",
-        "//common:common",
 
         # External dependencies from Vaticle
         "@vaticle_typeql_lang_java//query:query",

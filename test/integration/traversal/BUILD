@@ -25,15 +25,15 @@ host_compatible_java_test(
     test_class = "com.vaticle.typedb.core.traversal.TraversalTest",
     size = "large",
     native_libraries_deps = [
-        "//rocks:rocks",
+        # Internal dependencies
         "//:typedb",
-        "//traversal",
+        "//common:common",
+        "//rocks:rocks",
+        "//traversal:traversal",
         "//concept:concept",
     ],
     deps = [
-        # Internal dependencies
         "//test/integration/util:util",
-        "//common:common",
 
         # External dependencies from Vaticle
         "@vaticle_typeql_lang_java//query:query",

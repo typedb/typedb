@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.traversal.optimiser;
+package com.vaticle.typedb.core.common.optimiser;
 
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
@@ -46,7 +46,7 @@ public abstract class OptimiserVariable<T> {
 
     abstract void initialise(MPSolver solver);
 
-    abstract void free();
+    abstract void release();
 
     @Override
     public String toString() {
@@ -87,7 +87,7 @@ public abstract class OptimiserVariable<T> {
         }
 
         @Override
-        synchronized void free() {
+        synchronized void release() {
             this.mpVariable.delete();
         }
 
@@ -149,7 +149,7 @@ public abstract class OptimiserVariable<T> {
         }
 
         @Override
-        synchronized void free() {
+        synchronized void release() {
             this.mpVariable.delete();
         }
 

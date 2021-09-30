@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.traversal.optimiser;
+package com.vaticle.typedb.core.common.optimiser;
 
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPSolverParameters;
@@ -45,24 +45,24 @@ public class Optimiser {
     private MPSolver solver;
     private MPSolverParameters parameters;
     private ResultStatus status;
-    private boolean solverActive;
+    private boolean hasSolver;
 
     public Optimiser() {
         variables = new ArrayList<>();
         constraints = new HashSet<>();
         objectiveCoefficients = new HashMap<>();
         status = ResultStatus.NOT_SOLVED;
-        solverActive = false;
+        hasSolver = false;
     }
 
     public synchronized ResultStatus optimise(long timeLimitMillis) {
         if (isOptimal()) return status;
-        else if (!solverActive) initialiseSolver();
+        else if (!hasSolver) initialiseSolver();
         solver.setTimeLimit(timeLimitMillis);
         status = ResultStatus.of(solver.solve(parameters));
         variables.forEach(OptimiserVariable::recordValue);
         clearInitialisation();
-        if (isOptimal()) freeSolver();
+        if (isOptimal()) releaseSolver();
         return status;
     }
 
@@ -80,15 +80,15 @@ public class Optimiser {
         constraints.forEach(constraint -> constraint.initialise(solver));
         applyObjective();
         applyInitialisation();
-        solverActive = true;
+        hasSolver = true;
     }
 
-    private void freeSolver() {
-        constraints.forEach(OptimiserConstraint::free);
-        variables.forEach(OptimiserVariable::free);
+    private void releaseSolver() {
+        constraints.forEach(OptimiserConstraint::release);
+        variables.forEach(OptimiserVariable::release);
         parameters.delete();
         solver.delete();
-        solverActive = false;
+        hasSolver = false;
     }
 
     private void applyObjective() {
@@ -112,7 +112,7 @@ public class Optimiser {
 
     public void setObjectiveCoefficient(OptimiserVariable<?> var, double coeff) {
         objectiveCoefficients.put(var, coeff);
-        if (solverActive) solver.objective().setCoefficient(var.mpVariable(), coeff);
+        if (hasSolver) solver.objective().setCoefficient(var.mpVariable(), coeff);
         else if (isOptimal()) status = ResultStatus.FEASIBLE;
     }
 
@@ -160,7 +160,7 @@ public class Optimiser {
 
     @Override
     public String toString() {
-        return "Optimiser[" + "solverActive=" + solverActive + ", variables=" + variables.size() +
-                ", constraints=" + constraints.size() + "]" + (solverActive ? solver.exportModelAsLpFormat() : "");
+        return "Optimiser[" + "solverActive=" + hasSolver + ", variables=" + variables.size() +
+                ", constraints=" + constraints.size() + "]" + (hasSolver ? solver.exportModelAsLpFormat() : "");
     }
 }

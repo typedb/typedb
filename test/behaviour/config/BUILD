@@ -22,17 +22,16 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_libr
 host_compatible_java_library(
     name = "parameters",
     srcs = ["Parameters.java"],
-    deps = [
+    native_libraries_deps = [
         # Internal dependencies
         "//common:common",
-
+        "//concept:concept",
+    ],
+    deps = [
         # External Maven Dependencies
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java"
     ],
-    native_libraries_deps = [
-        "//concept:concept",
-    ]
 )
 
 checkstyle_test(

@@ -25,11 +25,9 @@ host_compatible_java_library(
         "ThingSteps.java"
     ],
     deps = [
-        # Internal dependencies
         "//test/behaviour/config:parameters",
         "//test/behaviour/concept/type/thingtype:steps",
         "//test/behaviour/connection:steps",
-        "//common/test:util",
 
         # Internal Repository Dependencies
         # "@vaticle_typedb_common//:common",
@@ -39,7 +37,9 @@ host_compatible_java_library(
         "@maven//:io_cucumber_cucumber_java",
     ],
     native_libraries_deps = [
+        # Internal dependencies
         "//concept:concept",
+        "//common/test:util",
     ],
 )
 
