@@ -18,12 +18,8 @@
 
 package com.vaticle.typedb.core.traversal.planner;
 
-import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
-import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
 import com.vaticle.typedb.core.traversal.procedure.VertexProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
-import com.vaticle.typedb.core.traversal.structure.StructureEdge;
-import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
 public class VertexPlanner implements Planner {
 
@@ -35,25 +31,8 @@ public class VertexPlanner implements Planner {
 
     static VertexPlanner create(Structure structure) {
         assert structure.vertices().size() == 1;
-        ProcedureVertex<?, ?> plannerVertex = toProcedure(structure.vertices().iterator().next());
-        VertexProcedure proc = new VertexProcedure(plannerVertex);
+        VertexProcedure proc = VertexProcedure.create(structure.vertices().iterator().next());
         return new VertexPlanner(proc);
-    }
-
-    private static ProcedureVertex<?, ?> toProcedure(StructureVertex<?> structureVertex) {
-
-        ProcedureVertex<?, ?> vertex = structureVertex.isType() ? new ProcedureVertex.Type(structureVertex.id(), true)
-                : new ProcedureVertex.Thing(structureVertex.id(), true);
-
-        if (vertex.isType()) vertex.asType().props(structureVertex.asType().props());
-        else vertex.asThing().props(structureVertex.asThing().props());
-
-        int order = 0;
-        for (StructureEdge<?, ?> structureEdge : structureVertex.outs()) {
-            ProcedureEdge<?, ?> edge = ProcedureEdge.of(vertex, vertex, structureEdge, order, true);
-            vertex.out(edge);
-        }
-        return vertex;
     }
 
     @Override
