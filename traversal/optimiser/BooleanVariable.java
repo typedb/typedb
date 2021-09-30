@@ -24,16 +24,16 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_OPTIMISER_VALUE;
 
-public class BooleanVariable extends Variable {
+public class BooleanVariable extends Variable<Boolean> {
 
-    private ActivationStatus status;
+    private State state;
     private Boolean initial;
     private Boolean solution;
     private MPVariable mpVariable;
 
     public BooleanVariable(String name) {
         super(name);
-        this.status = ActivationStatus.INACTIVE;
+        this.state = State.INACTIVE;
     }
 
     @Override
@@ -44,13 +44,13 @@ public class BooleanVariable extends Variable {
 
     @Override
     MPVariable mpVariable() {
-        assert status == ActivationStatus.ACTIVE;
+        assert state == State.ACTIVE;
         return mpVariable;
     }
 
     @Override
     void recordValue() {
-        assert status == ActivationStatus.ACTIVE;
+        assert state == State.ACTIVE;
         if (mpVariable.solutionValue() == 0.0) solution = false;
         else if (mpVariable.solutionValue() == 1.0) solution = true;
         else throw TypeDBException.of(UNEXPECTED_OPTIMISER_VALUE);
@@ -58,16 +58,16 @@ public class BooleanVariable extends Variable {
 
     @Override
     synchronized void activate(MPSolver mpSolver) {
-        assert status == ActivationStatus.INACTIVE;
+        assert state == State.INACTIVE;
         this.mpVariable = mpSolver.makeBoolVar(name);
-        this.status = ActivationStatus.ACTIVE;
+        this.state = State.ACTIVE;
     }
 
     @Override
     synchronized void deactivate() {
-        assert status == ActivationStatus.ACTIVE;
+        assert state == State.ACTIVE;
         this.mpVariable.delete();
-        this.status = ActivationStatus.INACTIVE;
+        this.state = State.INACTIVE;
     }
 
     public void setInitial(boolean initial) {
@@ -93,6 +93,6 @@ public class BooleanVariable extends Variable {
 
     @Override
     public String toString() {
-        return name + "[Bool][status=" + status + "]";
+        return name + "[Bool][status=" + state + "]";
     }
 }

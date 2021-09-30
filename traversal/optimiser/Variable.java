@@ -21,7 +21,9 @@ package com.vaticle.typedb.core.traversal.optimiser;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 
-public abstract class Variable {
+public abstract class Variable<T> {
+
+    enum State { INACTIVE, ACTIVE }
 
     final String name;
 
@@ -29,7 +31,7 @@ public abstract class Variable {
         this.name = name;
     }
 
-    public abstract Object solutionValue();
+    public abstract T solutionValue();
 
     abstract MPVariable mpVariable();
 

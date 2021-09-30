@@ -39,22 +39,24 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Optimiser {
 
-    private final List<Variable> variables;
+    private final List<Variable<?>> variables;
     private final Set<Constraint> constraints;
-    private final Map<Variable, Double> objectiveCoefficients;
-    private ActivationStatus status;
+    private final Map<Variable<?>, Double> objectiveCoefficients;
+    private State state;
     private MPSolver solver;
     private MPSolverParameters parameters;
+
+    private enum State { INACTIVE, ACTIVE }
 
     public Optimiser() {
         variables = new ArrayList<>();
         constraints = new HashSet<>();
         objectiveCoefficients = new HashMap<>();
-        status = ActivationStatus.INACTIVE;
+        state = State.INACTIVE;
     }
 
     public synchronized ResultStatus optimise(long timeLimitMillis) {
-        if (status == ActivationStatus.INACTIVE) activate();
+        if (state == State.INACTIVE) activate();
         solver.setTimeLimit(timeLimitMillis);
         ResultStatus resultStatus = ResultStatus.of(solver.solve(parameters));
         variables.forEach(Variable::recordValue);
@@ -67,7 +69,7 @@ public class Optimiser {
         parameters.delete();
         variables.forEach(Variable::deactivate);
         constraints.forEach(Constraint::deactivate);
-        status = ActivationStatus.INACTIVE;
+        state = State.INACTIVE;
     }
 
     private synchronized void activate() {
@@ -80,7 +82,7 @@ public class Optimiser {
         constraints.forEach(constraint -> constraint.activate(solver));
         applyObjective();
         applyInitialisation();
-        status = ActivationStatus.ACTIVE;
+        state = State.ACTIVE;
     }
 
     private void applyObjective() {
@@ -99,31 +101,31 @@ public class Optimiser {
     }
 
     private void clearInitialisation() {
-        assert status == ActivationStatus.ACTIVE;
+        assert state == State.ACTIVE;
         solver.setHint(new MPVariable[0], new double[0]);
     }
 
     public void setObjectiveCoefficient(Variable var, double coeff) {
         objectiveCoefficients.put(var, coeff);
-        if (status == ActivationStatus.ACTIVE) solver.objective().setCoefficient(var.mpVariable(), coeff);
+        if (state == State.ACTIVE) solver.objective().setCoefficient(var.mpVariable(), coeff);
     }
 
     public Constraint constraint(double lowerBound, double upperBound, String name) {
-        assert status == ActivationStatus.INACTIVE;
+        assert state == State.INACTIVE;
         Constraint constraint = new Constraint(lowerBound, upperBound, name);
         constraints.add(constraint);
         return constraint;
     }
 
     public IntVariable intVar(double lowerBound, double upperBound, String name) {
-        assert status == ActivationStatus.INACTIVE;
+        assert state == State.INACTIVE;
         IntVariable var = new IntVariable(lowerBound, upperBound, name);
         variables.add(var);
         return var;
     }
 
     public BooleanVariable booleanVar(String name) {
-        assert status == ActivationStatus.INACTIVE;
+        assert state == State.INACTIVE;
         BooleanVariable var = new BooleanVariable(name);
         variables.add(var);
         return var;
@@ -152,7 +154,7 @@ public class Optimiser {
 
     @Override
     public String toString() {
-        return "Optimiser[" + "status=" + status + ", variables=" + variables.size() +
+        return "Optimiser[" + "status=" + state + ", variables=" + variables.size() +
                 ", constraints=" + constraints.size() + "]" + (solver == null ? "" : solver.exportModelAsLpFormat());
     }
 }

@@ -276,12 +276,9 @@ public abstract class ProcedureEdge<
             VERTEX_NATIVE_FROM extends ProcedureVertex<?, ?>, VERTEX_NATIVE_TO extends ProcedureVertex<?, ?>
             > extends ProcedureEdge<VERTEX_NATIVE_FROM, VERTEX_NATIVE_TO> {
 
-        final Encoding.Edge encoding;
-
         private Native(VERTEX_NATIVE_FROM from, VERTEX_NATIVE_TO to,
                        int order, Encoding.Direction.Edge direction, Encoding.Edge encoding) {
             super(from, to, order, direction, encoding.name());
-            this.encoding = encoding;
         }
 
         static Native<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,

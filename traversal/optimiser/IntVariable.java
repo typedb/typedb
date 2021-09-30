@@ -21,11 +21,11 @@ package com.vaticle.typedb.core.traversal.optimiser;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 
-public class IntVariable extends Variable {
+public class IntVariable extends Variable<Integer> {
 
     private final double lowerBound;
     private final double upperBound;
-    private ActivationStatus status;
+    private State state;
     private Integer initial;
     private Integer solution;
     private MPVariable mpVariable;
@@ -34,7 +34,7 @@ public class IntVariable extends Variable {
         super(name);
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
-        this.status = ActivationStatus.INACTIVE;
+        this.state = State.INACTIVE;
     }
 
     @Override
@@ -45,28 +45,28 @@ public class IntVariable extends Variable {
 
     @Override
     MPVariable mpVariable() {
-        assert status == ActivationStatus.ACTIVE;
+        assert state == State.ACTIVE;
         return mpVariable;
     }
 
     @Override
     void recordValue() {
-        assert status == ActivationStatus.ACTIVE;
+        assert state == State.ACTIVE;
         solution = (int) Math.round(mpVariable.solutionValue());
     }
 
     @Override
     synchronized void activate(MPSolver mpSolver) {
-        assert status == ActivationStatus.INACTIVE;
+        assert state == State.INACTIVE;
         this.mpVariable = mpSolver.makeIntVar(lowerBound, upperBound, name);
-        this.status = ActivationStatus.ACTIVE;
+        this.state = State.ACTIVE;
     }
 
     @Override
     synchronized void deactivate() {
-        assert status == ActivationStatus.ACTIVE;
+        assert state == State.ACTIVE;
         this.mpVariable.delete();
-        this.status = ActivationStatus.INACTIVE;
+        this.state = State.INACTIVE;
     }
 
     @Override
@@ -91,6 +91,6 @@ public class IntVariable extends Variable {
 
     @Override
     public String toString() {
-        return name + "[Int][status=" + status + "]";
+        return name + "[Int][status=" + state + "]";
     }
 }

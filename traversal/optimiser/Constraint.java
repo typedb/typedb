@@ -31,31 +31,33 @@ public class Constraint {
     private final String name;
     private final Map<Variable, Double> coefficients;
     private MPConstraint mpConstraint;
-    private ActivationStatus status;
+    private State state;
+
+    private enum State { INACTIVE, ACTIVE }
 
     public Constraint(double lowerBound, double upperBound, String name) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.coefficients = new HashMap<>();
         this.name = name;
-        this.status = ActivationStatus.INACTIVE;
+        this.state = State.INACTIVE;
     }
 
     public void setCoefficient(Variable variable, double coeff) {
-        assert status == ActivationStatus.INACTIVE;
+        assert state == State.INACTIVE;
         coefficients.put(variable, coeff);
     }
 
     synchronized void activate(MPSolver solver) {
-        assert status == ActivationStatus.INACTIVE;
+        assert state == State.INACTIVE;
         this.mpConstraint = solver.makeConstraint(lowerBound, upperBound, name);
         coefficients.forEach((var, coeff) -> mpConstraint.setCoefficient(var.mpVariable(), coeff));
-        this.status = ActivationStatus.ACTIVE;
+        this.state = State.ACTIVE;
     }
 
     synchronized void deactivate() {
-        assert status == ActivationStatus.ACTIVE;
+        assert state == State.ACTIVE;
         this.mpConstraint.delete();
-        this.status = ActivationStatus.INACTIVE;
+        this.state = State.INACTIVE;
     }
 }
