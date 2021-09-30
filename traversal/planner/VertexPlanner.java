@@ -31,8 +31,7 @@ public class VertexPlanner implements Planner {
 
     static VertexPlanner create(Structure structure) {
         assert structure.vertices().size() == 1;
-        VertexProcedure proc = VertexProcedure.create(structure.vertices().iterator().next());
-        return new VertexPlanner(proc);
+        return new VertexPlanner(VertexProcedure.create(structure.vertices().iterator().next()));
     }
 
     @Override
