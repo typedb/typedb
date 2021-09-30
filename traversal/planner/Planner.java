@@ -30,6 +30,8 @@ public interface Planner {
 
     PermutationProcedure procedure();
 
+    boolean isOptimal();
+
     default void tryOptimise(GraphManager graphMgr, boolean singleUse) {
         if (isGraph()) this.asGraph().mayOptimise(graphMgr, singleUse);
     }

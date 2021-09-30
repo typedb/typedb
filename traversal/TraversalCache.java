@@ -22,13 +22,37 @@ import com.vaticle.typedb.core.common.cache.CommonCache;
 import com.vaticle.typedb.core.traversal.planner.Planner;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
-public class TraversalCache extends CommonCache<Structure, Planner> {
+import java.util.Map;
+import java.util.function.Function;
+
+import static com.vaticle.typedb.core.common.cache.CommonCache.CACHE_TIMEOUT_MINUTES;
+
+public class TraversalCache {
+
+    private final CommonCache<Structure, Planner> activePlanners;
+    private final CommonCache<Structure, Planner> optimalPlanners;
 
     public TraversalCache() {
-        super(500, CACHE_TIMEOUT_MINUTES);
+        activePlanners = new CommonCache<>(30, CACHE_TIMEOUT_MINUTES);
+        optimalPlanners = new CommonCache<>(10000, CACHE_TIMEOUT_MINUTES);
     }
 
-    public TraversalCache(int size, int timeOutMinutes) {
-        super(size, timeOutMinutes);
+    public Planner get(Structure structure, Function<Structure, Planner> constructor) {
+        Planner planner = optimalPlanners.getIfPresent(structure);
+        if (planner != null) return planner;
+        return activePlanners.get(structure, constructor);
     }
+
+    public void update(Map<Structure, Planner> planners) {
+        planners.forEach((structure, planner) -> {
+            if (planner.isOptimal()) {
+                optimalPlanners.put(structure, planner);
+                activePlanners.invalidate(structure);
+            } else {
+                activePlanners.put(structure, planner);
+                optimalPlanners.invalidate(structure);
+            }
+        });
+    }
+
 }

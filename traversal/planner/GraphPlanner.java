@@ -148,7 +148,8 @@ public class GraphPlanner implements Planner {
         return resultStatus == FEASIBLE || resultStatus == OPTIMAL;
     }
 
-    private boolean isOptimal() {
+    @Override
+    public boolean isOptimal() {
         return resultStatus == OPTIMAL;
     }
 
@@ -338,6 +339,7 @@ public class GraphPlanner implements Planner {
         updateObjective(graph);
         if (isUpToDate() && isOptimal()) {
             if (LOG.isDebugEnabled()) LOG.debug("GraphPlanner still optimal and up-to-date");
+            assert !optimiser.isActive();
             return;
         }
 
@@ -353,6 +355,7 @@ public class GraphPlanner implements Planner {
         endSolver = Instant.now();
         if (isError()) throwPlanningError();
         else assert isPlanned();
+        if (isOptimal()) optimiser.deactivate();
 
         createProcedure();
         end = Instant.now();

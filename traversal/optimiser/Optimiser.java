@@ -64,12 +64,16 @@ public class Optimiser {
         return resultStatus;
     }
 
+    public boolean isActive() {
+        return state == State.ACTIVE;
+    }
+
     public synchronized void deactivate() {
-        solver.delete();
-        parameters.delete();
-        variables.forEach(Variable::deactivate);
-        constraints.forEach(Constraint::deactivate);
         state = State.INACTIVE;
+        constraints.forEach(Constraint::deactivate);
+        variables.forEach(Variable::deactivate);
+        parameters.delete();
+        solver.delete();
     }
 
     private synchronized void activate() {
@@ -155,6 +159,7 @@ public class Optimiser {
     @Override
     public String toString() {
         return "Optimiser[" + "status=" + state + ", variables=" + variables.size() +
-                ", constraints=" + constraints.size() + "]" + (solver == null ? "" : solver.exportModelAsLpFormat());
+                ", constraints=" + constraints.size() + "]" +
+                (state == State.ACTIVE ? solver.exportModelAsLpFormat() : "");
     }
 }

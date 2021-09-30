@@ -48,4 +48,9 @@ public class VertexPlanner implements Planner {
     public VertexPlanner asVertex() {
         return this;
     }
+
+    @Override
+    public boolean isOptimal() {
+        return true;
+    }
 }
