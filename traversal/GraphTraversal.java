@@ -187,7 +187,7 @@ public abstract class GraphTraversal extends Traversal {
             planners = new HashMap<>();
         }
 
-        private void initialise(TraversalCache cache) {
+        private void initialise(PlannerCache cache) {
             if (planners.isEmpty()) {
                 structures().forEachRemaining(structure -> {
                     Planner planner = cache.get(structure, Planner::create);
@@ -196,7 +196,7 @@ public abstract class GraphTraversal extends Traversal {
             }
         }
 
-        FunctionalIterator<VertexMap> permutationIterCaching(GraphManager graphMgr, TraversalCache cache) {
+        FunctionalIterator<VertexMap> permutationIterCaching(GraphManager graphMgr, PlannerCache cache) {
             initialise(cache);
             FunctionalIterator<VertexMap> permutations = permutation(graphMgr, planners.values(), false, filter());
             cache.update(planners);
@@ -208,7 +208,7 @@ public abstract class GraphTraversal extends Traversal {
             return permutation(graphMgr, structures().map(Planner::create).toList(), false, filter());
         }
 
-        FunctionalProducer<VertexMap> permutationProducerCaching(GraphManager graphMgr, TraversalCache cache,
+        FunctionalProducer<VertexMap> permutationProducerCaching(GraphManager graphMgr, PlannerCache cache,
                                                                  Either<Arguments.Query.Producer, Long> context,
                                                                  int parallelisation) {
             initialise(cache);

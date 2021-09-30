@@ -27,12 +27,12 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.cache.CommonCache.CACHE_TIMEOUT_MINUTES;
 
-public class TraversalCache {
+public class PlannerCache {
 
     private final CommonCache<Structure, Planner> activePlanners;
     private final CommonCache<Structure, Planner> optimalPlanners;
 
-    public TraversalCache() {
+    public PlannerCache() {
         activePlanners = new CommonCache<>(30, CACHE_TIMEOUT_MINUTES);
         optimalPlanners = new CommonCache<>(10000, CACHE_TIMEOUT_MINUTES);
     }

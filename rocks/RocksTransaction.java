@@ -34,7 +34,7 @@ import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.query.QueryManager;
 import com.vaticle.typedb.core.reasoner.Reasoner;
-import com.vaticle.typedb.core.traversal.TraversalCache;
+import com.vaticle.typedb.core.traversal.PlannerCache;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.rocksdb.RocksDBException;
 
@@ -64,8 +64,8 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
         this.context = new Context.Transaction(session.context(), options).type(type);
     }
 
-    void initialise(GraphManager graphMgr, TraversalCache traversalCache, LogicCache logicCache) {
-        traversalEng = new TraversalEngine(graphMgr, traversalCache);
+    void initialise(GraphManager graphMgr, PlannerCache plannerCache, LogicCache logicCache) {
+        traversalEng = new TraversalEngine(graphMgr, plannerCache);
         conceptMgr = new ConceptManager(graphMgr);
         logicMgr = new LogicManager(graphMgr, conceptMgr, traversalEng, logicCache);
         reasoner = new Reasoner(conceptMgr, logicMgr, traversalEng, context);
@@ -159,7 +159,7 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
             ThingGraph thingGraph = new ThingGraph(dataStorage, typeGraph);
 
             graphMgr = new GraphManager(typeGraph, thingGraph);
-            initialise(graphMgr, new TraversalCache(), new LogicCache());
+            initialise(graphMgr, new PlannerCache(), new LogicCache());
         }
 
         @Override
