@@ -70,18 +70,6 @@ public class Optimiser {
         return status == ResultStatus.OPTIMAL;
     }
 
-    private boolean isFeasible() {
-        return status == ResultStatus.FEASIBLE;
-    }
-
-    private void freeSolver() {
-        constraints.forEach(OptimiserConstraint::free);
-        variables.forEach(OptimiserVariable::free);
-        parameters.delete();
-        solver.delete();
-        solverActive = false;
-    }
-
     private void initialiseSolver() {
         solver = MPSolver.createSolver("SCIP");
         solver.objective().setMinimization();
@@ -93,6 +81,14 @@ public class Optimiser {
         applyObjective();
         applyInitialisation();
         solverActive = true;
+    }
+
+    private void freeSolver() {
+        constraints.forEach(OptimiserConstraint::free);
+        variables.forEach(OptimiserVariable::free);
+        parameters.delete();
+        solver.delete();
+        solverActive = false;
     }
 
     private void applyObjective() {

@@ -45,10 +45,10 @@ public class PlannerCache {
 
     public void update(Map<Structure, Planner> planners) {
         planners.forEach((structure, planner) -> {
-            if (planner.isOptimal()) {
+            if (planner.isOptimal() && optimalPlanners.getIfPresent(structure) == null) {
                 optimalPlanners.put(structure, planner);
                 activePlanners.invalidate(structure);
-            } else {
+            } else if (!planner.isOptimal() && activePlanners.getIfPresent(structure) == null){
                 activePlanners.put(structure, planner);
                 optimalPlanners.invalidate(structure);
             }
