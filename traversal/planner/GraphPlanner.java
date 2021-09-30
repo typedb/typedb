@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
-import com.vaticle.typedb.core.traversal.optimiser.Constraint;
+import com.vaticle.typedb.core.traversal.optimiser.OptimiserConstraint;
 import com.vaticle.typedb.core.traversal.optimiser.Optimiser;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
@@ -226,7 +226,7 @@ public class GraphPlanner implements Planner {
     private void initialiseConstraintsForVariables() {
         String conPrefix = "planner_vertex_con_";
         vertices.values().forEach(PlannerVertex::initialiseConstraints);
-        Constraint conOneStartingVertex = optimiser.constraint(1, 1, conPrefix + "one_starting_vertex");
+        OptimiserConstraint conOneStartingVertex = optimiser.constraint(1, 1, conPrefix + "one_starting_vertex");
         for (PlannerVertex<?> vertex : vertices.values()) {
             conOneStartingVertex.setCoefficient(vertex.varIsStartingVertex, 1);
         }
@@ -236,7 +236,7 @@ public class GraphPlanner implements Planner {
         String conPrefix = "planner_edge_con_";
         edges.forEach(PlannerEdge::initialiseConstraints);
         for (int i = 0; i < edges.size(); i++) {
-            Constraint conOneEdgeAtOrderI = optimiser.constraint(1, 1, conPrefix + "one_edge_at_order_" + i);
+            OptimiserConstraint conOneEdgeAtOrderI = optimiser.constraint(1, 1, conPrefix + "one_edge_at_order_" + i);
             for (PlannerEdge<?, ?> edge : edges) {
                 conOneEdgeAtOrderI.setCoefficient(edge.forward().varOrderAssignment[i], 1);
                 conOneEdgeAtOrderI.setCoefficient(edge.backward().varOrderAssignment[i], 1);

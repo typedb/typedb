@@ -25,9 +25,8 @@ import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
-import com.vaticle.typedb.core.traversal.optimiser.BooleanVariable;
-import com.vaticle.typedb.core.traversal.optimiser.Constraint;
-import com.vaticle.typedb.core.traversal.optimiser.IntVariable;
+import com.vaticle.typedb.core.traversal.optimiser.OptimiserConstraint;
+import com.vaticle.typedb.core.traversal.optimiser.OptimiserVariable;
 import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;
@@ -106,7 +105,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
     void initialiseConstraints() {
         String conPrefix = "edge_con_" + this.toString() + "_";
-        Constraint conOneDirection = planner.optimiser().constraint(1, 1, conPrefix + "one_direction");
+        OptimiserConstraint conOneDirection = planner.optimiser().constraint(1, 1, conPrefix + "one_direction");
         conOneDirection.setCoefficient(forward.varIsSelected, 1);
         conOneDirection.setCoefficient(backward.varIsSelected, 1);
 
@@ -137,9 +136,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
     public static abstract class Directional<VERTEX_DIR_FROM extends PlannerVertex<?>, VERTEX_DIR_TO extends PlannerVertex<?>>
             extends TraversalEdge<VERTEX_DIR_FROM, VERTEX_DIR_TO> {
 
-        BooleanVariable varIsSelected;
-        BooleanVariable[] varOrderAssignment;
-        private IntVariable varOrderNumber;
+        OptimiserVariable.Boolean varIsSelected;
+        OptimiserVariable.Boolean[] varOrderAssignment;
+        private OptimiserVariable.Integer varOrderNumber;
         private final String varPrefix;
         private final String conPrefix;
         private final GraphPlanner planner;
@@ -192,7 +191,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         void initialiseVariables() {
             varIsSelected = planner.optimiser().booleanVar(varPrefix + "is_selected");
             varOrderNumber = planner.optimiser().intVar(0, planner.edges().size(), varPrefix + "order_number");
-            varOrderAssignment = new BooleanVariable[planner.edges().size()];
+            varOrderAssignment = new OptimiserVariable.Boolean[planner.edges().size()];
             for (int i = 0; i < planner.edges().size(); i++) {
                 varOrderAssignment[i] = planner.optimiser().booleanVar(varPrefix + "order_assignment[" + i + "]");
             }
@@ -208,10 +207,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
 
         private void initialiseConstraintsForOrderNumber() {
-            Constraint conOrderIfSelected = planner.optimiser().constraint(0, 0, conPrefix + "order_if_selected");
+            OptimiserConstraint conOrderIfSelected = planner.optimiser().constraint(0, 0, conPrefix + "order_if_selected");
             conOrderIfSelected.setCoefficient(varIsSelected, -1);
 
-            Constraint conAssignOrderNumber = planner.optimiser().constraint(0, 0, conPrefix + "assign_order_number");
+            OptimiserConstraint conAssignOrderNumber = planner.optimiser().constraint(0, 0, conPrefix + "assign_order_number");
             conAssignOrderNumber.setCoefficient(varOrderNumber, -1);
 
             for (int i = 0; i < planner.edges().size(); i++) {
@@ -227,7 +226,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             int i = 0;
             for (Directional<?, ?> previousEdge : previousEdges) {
                 String name = conPrefix + "order_sequence_" + i++;
-                Constraint conOrderSequence = planner.optimiser().constraint(0, planner.edges().size() + 1, name);
+                OptimiserConstraint conOrderSequence = planner.optimiser().constraint(0, planner.edges().size() + 1, name);
                 conOrderSequence.setCoefficient(this.varOrderNumber, 1);
                 conOrderSequence.setCoefficient(this.opposite.varIsSelected, planner.edges().size() + 1);
                 conOrderSequence.setCoefficient(previousEdge.varOrderNumber, -1);
@@ -259,7 +258,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         private void resetInitialValue() {
             varIsSelected.clearInitial();
             varOrderNumber.clearInitial();
-            iterate(varOrderAssignment).forEachRemaining(BooleanVariable::clearInitial);
+            iterate(varOrderAssignment).forEachRemaining(OptimiserVariable.Boolean::clearInitial);
             hasInitialValue = false;
         }
 

@@ -25,8 +25,8 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
-import com.vaticle.typedb.core.traversal.optimiser.BooleanVariable;
-import com.vaticle.typedb.core.traversal.optimiser.Constraint;
+import com.vaticle.typedb.core.traversal.optimiser.OptimiserConstraint;
+import com.vaticle.typedb.core.traversal.optimiser.OptimiserVariable;
 
 import javax.annotation.Nullable;
 
@@ -47,10 +47,10 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     private boolean isInitialisedConstraints;
     private double costNext;
     double costLastRecorded;
-    BooleanVariable varIsStartingVertex;
-    BooleanVariable varIsEndingVertex;
-    BooleanVariable varHasIncomingEdges;
-    BooleanVariable varHasOutgoingEdges;
+    OptimiserVariable.Boolean varIsStartingVertex;
+    OptimiserVariable.Boolean varIsEndingVertex;
+    OptimiserVariable.Boolean varHasIncomingEdges;
+    OptimiserVariable.Boolean varHasOutgoingEdges;
 
     PlannerVertex(Identifier identifier, @Nullable GraphPlanner planner) {
         super(identifier);
@@ -121,24 +121,24 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     private void initialiseConstraintsForIncomingEdges() {
         assert !ins().isEmpty();
-        Constraint conHasIncomingEdges = planner.optimiser().constraint(0, ins().size() - 1, conPrefix + "has_incoming_edges");
+        OptimiserConstraint conHasIncomingEdges = planner.optimiser().constraint(0, ins().size() - 1, conPrefix + "has_incoming_edges");
         conHasIncomingEdges.setCoefficient(varHasIncomingEdges, ins().size());
         ins().forEach(edge -> conHasIncomingEdges.setCoefficient(edge.varIsSelected, -1));
     }
 
     private void initialiseConstraintsForOutgoingEdges() {
         assert !outs().isEmpty();
-        Constraint conHasOutgoingEdges = planner.optimiser().constraint(0, outs().size() - 1, conPrefix + "has_outgoing_edges");
+        OptimiserConstraint conHasOutgoingEdges = planner.optimiser().constraint(0, outs().size() - 1, conPrefix + "has_outgoing_edges");
         conHasOutgoingEdges.setCoefficient(varHasOutgoingEdges, outs().size());
         outs().forEach(edge -> conHasOutgoingEdges.setCoefficient(edge.varIsSelected, -1));
     }
 
     private void initialiseConstraintsForVertexFlow() {
-        Constraint conStartOrIncoming = planner.optimiser().constraint(1, 1, conPrefix + "starting_or_incoming");
+        OptimiserConstraint conStartOrIncoming = planner.optimiser().constraint(1, 1, conPrefix + "starting_or_incoming");
         conStartOrIncoming.setCoefficient(varIsStartingVertex, 1);
         conStartOrIncoming.setCoefficient(varHasIncomingEdges, 1);
 
-        Constraint conEndingOrOutgoing = planner.optimiser().constraint(1, 1, conPrefix + "ending_or_outgoing");
+        OptimiserConstraint conEndingOrOutgoing = planner.optimiser().constraint(1, 1, conPrefix + "ending_or_outgoing");
         conEndingOrOutgoing.setCoefficient(varIsEndingVertex, 1);
         conEndingOrOutgoing.setCoefficient(varHasOutgoingEdges, 1);
     }

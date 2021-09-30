@@ -39,14 +39,14 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Optimiser {
 
-    private final List<Variable<?>> variables;
-    private final Set<Constraint> constraints;
-    private final Map<Variable<?>, Double> objectiveCoefficients;
+    private final List<OptimiserVariable<?>> variables;
+    private final Set<OptimiserConstraint> constraints;
+    private final Map<OptimiserVariable<?>, Double> objectiveCoefficients;
     private State state;
     private MPSolver solver;
     private MPSolverParameters parameters;
 
-    private enum State { INACTIVE, ACTIVE }
+    private enum State {INACTIVE, ACTIVE}
 
     public Optimiser() {
         variables = new ArrayList<>();
@@ -59,7 +59,7 @@ public class Optimiser {
         if (state == State.INACTIVE) activate();
         solver.setTimeLimit(timeLimitMillis);
         ResultStatus resultStatus = ResultStatus.of(solver.solve(parameters));
-        variables.forEach(Variable::recordValue);
+        variables.forEach(OptimiserVariable::recordValue);
         clearInitialisation();
         return resultStatus;
     }
@@ -70,8 +70,8 @@ public class Optimiser {
 
     public synchronized void deactivate() {
         state = State.INACTIVE;
-        constraints.forEach(Constraint::deactivate);
-        variables.forEach(Variable::deactivate);
+        constraints.forEach(OptimiserConstraint::deactivate);
+        variables.forEach(OptimiserVariable::deactivate);
         parameters.delete();
         solver.delete();
     }
@@ -94,7 +94,7 @@ public class Optimiser {
     }
 
     private void applyInitialisation() {
-        assert iterate(variables).allMatch(Variable::hasInitial);
+        assert iterate(variables).allMatch(OptimiserVariable::hasInitial);
         MPVariable[] mpVariables = new MPVariable[variables.size()];
         double[] initialisations = new double[variables.size()];
         for (int i = 0; i < variables.size(); i++) {
@@ -109,28 +109,28 @@ public class Optimiser {
         solver.setHint(new MPVariable[0], new double[0]);
     }
 
-    public void setObjectiveCoefficient(Variable var, double coeff) {
+    public void setObjectiveCoefficient(OptimiserVariable<?> var, double coeff) {
         objectiveCoefficients.put(var, coeff);
         if (state == State.ACTIVE) solver.objective().setCoefficient(var.mpVariable(), coeff);
     }
 
-    public Constraint constraint(double lowerBound, double upperBound, String name) {
+    public OptimiserConstraint constraint(double lowerBound, double upperBound, String name) {
         assert state == State.INACTIVE;
-        Constraint constraint = new Constraint(lowerBound, upperBound, name);
+        OptimiserConstraint constraint = new OptimiserConstraint(lowerBound, upperBound, name);
         constraints.add(constraint);
         return constraint;
     }
 
-    public IntVariable intVar(double lowerBound, double upperBound, String name) {
+    public OptimiserVariable.Integer intVar(double lowerBound, double upperBound, String name) {
         assert state == State.INACTIVE;
-        IntVariable var = new IntVariable(lowerBound, upperBound, name);
+        OptimiserVariable.Integer var = new OptimiserVariable.Integer(lowerBound, upperBound, name);
         variables.add(var);
         return var;
     }
 
-    public BooleanVariable booleanVar(String name) {
+    public OptimiserVariable.Boolean booleanVar(String name) {
         assert state == State.INACTIVE;
-        BooleanVariable var = new BooleanVariable(name);
+        OptimiserVariable.Boolean var = new OptimiserVariable.Boolean(name);
         variables.add(var);
         return var;
     }
