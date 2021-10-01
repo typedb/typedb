@@ -178,8 +178,9 @@ public abstract class GraphTraversal extends Traversal {
 
     public static class Thing extends GraphTraversal {
 
-        private Map<Structure, Planner> planners;
+        private final Map<Structure, Planner> planners;
         private boolean modifiable;
+        private TraversalCache cache;
 
         public Thing() {
             super();
@@ -187,31 +188,27 @@ public abstract class GraphTraversal extends Traversal {
             planners = new HashMap<>();
         }
 
-        private void initialise(TraversalCache cache) {
-            if (planners.isEmpty()) {
-                structures().forEachRemaining(structure -> {
-                    Planner planner = cache.getPlanner(structure, Planner::create);
-                    planners.put(structure, planner);
-                });
-            }
-        }
-
-        FunctionalIterator<VertexMap> permutationIterCaching(GraphManager graphMgr, TraversalCache cache) {
-            initialise(cache);
-            FunctionalIterator<VertexMap> permutations = permutation(graphMgr, planners.values(), false, filter());
-            cache.updatePlanner(planners);
-            return permutations;
+        public void initialise(TraversalCache cache) {
+            assert planners.isEmpty();
+            this.cache = cache;
+            structures().forEachRemaining(structure -> {
+                Planner planner = cache.getPlanner(structure, Planner::create);
+                planners.put(structure, planner);
+            });
         }
 
         @Override
         FunctionalIterator<VertexMap> permutationIter(GraphManager graphMgr) {
-            return permutation(graphMgr, structures().map(Planner::create).toList(), false, filter());
+            assert !planners.isEmpty() && cache != null;
+            FunctionalIterator<VertexMap> iter = permutation(graphMgr, planners.values(), false, filter());
+            cache.updatePlanner(planners);
+            return iter;
         }
 
-        FunctionalProducer<VertexMap> permutationProducerCaching(GraphManager graphMgr, TraversalCache cache,
-                                                                 Either<Arguments.Query.Producer, Long> context,
-                                                                 int parallelisation) {
-            initialise(cache);
+        FunctionalProducer<VertexMap> permutationProducer(GraphManager graphMgr,
+                                                          Either<Arguments.Query.Producer, Long> context,
+                                                          int parallelisation) {
+            assert !planners.isEmpty() && cache != null;
             FunctionalProducer<VertexMap> producer;
             if (planners.size() == 1) {
                 planners.values().iterator().next().tryOptimise(graphMgr, false);

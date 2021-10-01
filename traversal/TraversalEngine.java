@@ -47,11 +47,13 @@ public class TraversalEngine {
 
     public FunctionalProducer<VertexMap> producer(GraphTraversal.Thing traversal, Either<Arguments.Query.Producer, Long> context,
                                                   int parallelisation) {
-        return traversal.permutationProducerCaching(graphMgr, cache, context, parallelisation);
+        traversal.initialise(cache);
+        return traversal.permutationProducer(graphMgr, context, parallelisation);
     }
 
     public FunctionalIterator<VertexMap> iterator(GraphTraversal.Thing traversal) {
-        return traversal.permutationIterCaching(graphMgr, cache);
+        traversal.initialise(cache);
+        return traversal.permutationIter(graphMgr);
     }
 
     public FunctionalIterator<VertexMap> iterator(GraphTraversal.Type traversal) {
