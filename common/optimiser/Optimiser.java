@@ -44,30 +44,38 @@ public class Optimiser {
     private final Map<OptimiserVariable<?>, Double> objectiveCoefficients;
     private MPSolver solver;
     private MPSolverParameters parameters;
-    private ResultStatus status;
+    private Status status;
     private boolean hasSolver;
 
     public Optimiser() {
         variables = new ArrayList<>();
         constraints = new HashSet<>();
         objectiveCoefficients = new HashMap<>();
-        status = ResultStatus.NOT_SOLVED;
+        status = Status.NOT_SOLVED;
         hasSolver = false;
     }
 
-    public synchronized ResultStatus optimise(long timeLimitMillis) {
+    public synchronized Status optimise(long timeLimitMillis) {
         if (isOptimal()) return status;
         else if (!hasSolver) initialiseSolver();
         solver.setTimeLimit(timeLimitMillis);
-        status = ResultStatus.of(solver.solve(parameters));
+        status = Status.of(solver.solve(parameters));
         variables.forEach(OptimiserVariable::recordValue);
         clearInitialisation();
         if (isOptimal()) releaseSolver();
         return status;
     }
 
-    private boolean isOptimal() {
-        return status == ResultStatus.OPTIMAL;
+    public boolean isOptimal() {
+        return status == Status.OPTIMAL;
+    }
+
+    public boolean isFeasible() {
+        return status == Status.FEASIBLE;
+    }
+
+    public boolean isError() {
+        return status == Status.ERROR;
     }
 
     private void initialiseSolver() {
@@ -113,34 +121,38 @@ public class Optimiser {
     public void setObjectiveCoefficient(OptimiserVariable<?> var, double coeff) {
         objectiveCoefficients.put(var, coeff);
         if (hasSolver) solver.objective().setCoefficient(var.mpVariable(), coeff);
-        else if (isOptimal()) status = ResultStatus.FEASIBLE;
+        else if (isOptimal()) status = Status.FEASIBLE;
     }
 
     public OptimiserConstraint constraint(double lowerBound, double upperBound, String name) {
-        assert status == ResultStatus.NOT_SOLVED;
+        assert status == Status.NOT_SOLVED;
         OptimiserConstraint constraint = new OptimiserConstraint(lowerBound, upperBound, name);
         constraints.add(constraint);
         return constraint;
     }
 
     public OptimiserVariable.Integer intVar(double lowerBound, double upperBound, String name) {
-        assert status == ResultStatus.NOT_SOLVED;
+        assert status == Status.NOT_SOLVED;
         OptimiserVariable.Integer var = new OptimiserVariable.Integer(lowerBound, upperBound, name);
         variables.add(var);
         return var;
     }
 
     public OptimiserVariable.Boolean booleanVar(String name) {
-        assert status == ResultStatus.NOT_SOLVED;
+        assert status == Status.NOT_SOLVED;
         OptimiserVariable.Boolean var = new OptimiserVariable.Boolean(name);
         variables.add(var);
         return var;
     }
 
-    public enum ResultStatus {
+    public Status status() {
+        return status;
+    }
+
+    public enum Status {
         NOT_SOLVED, OPTIMAL, FEASIBLE, ERROR;
 
-        static ResultStatus of(MPSolver.ResultStatus mpStatus) {
+        static Status of(MPSolver.ResultStatus mpStatus) {
             switch (mpStatus) {
                 case NOT_SOLVED:
                     return NOT_SOLVED;

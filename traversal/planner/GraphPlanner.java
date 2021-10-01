@@ -47,9 +47,6 @@ import java.util.concurrent.locks.StampedLock;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.optimiser.Optimiser.ResultStatus.ERROR;
-import static com.vaticle.typedb.core.common.optimiser.Optimiser.ResultStatus.FEASIBLE;
-import static com.vaticle.typedb.core.common.optimiser.Optimiser.ResultStatus.OPTIMAL;
 import static java.lang.Math.abs;
 import static java.time.Duration.between;
 import static java.util.Comparator.comparing;
@@ -73,7 +70,6 @@ public class GraphPlanner implements Planner {
     private final ReadWriteLock firstOptimisingLock;
 
     protected volatile GraphProcedure procedure;
-    private volatile Optimiser.ResultStatus resultStatus;
     private volatile boolean isUpToDate;
     private volatile long totalDuration;
     private volatile long snapshot;
@@ -90,7 +86,6 @@ public class GraphPlanner implements Planner {
         edges = new HashSet<>();
         isOptimising = new AtomicBoolean(false);
         firstOptimisingLock = new StampedLock().asReadWriteLock();
-        resultStatus = Optimiser.ResultStatus.NOT_SOLVED;
         isUpToDate = false;
         totalDuration = 0L;
         totalCostLastRecorded = INIT_ZERO;
@@ -145,16 +140,16 @@ public class GraphPlanner implements Planner {
     }
 
     private boolean isPlanned() {
-        return resultStatus == FEASIBLE || resultStatus == OPTIMAL;
+        return optimiser.isFeasible() || optimiser.isOptimal();
     }
 
     @Override
     public boolean isOptimal() {
-        return resultStatus == OPTIMAL;
+        return optimiser.isOptimal();
     }
 
     private boolean isError() {
-        return resultStatus == ERROR;
+        return optimiser.isError();
     }
 
     Optimiser optimiser() {
@@ -350,7 +345,7 @@ public class GraphPlanner implements Planner {
         totalDuration += allocatedDuration;
 
         start = Instant.now();
-        resultStatus = optimiser.optimise(totalDuration);
+        optimiser.optimise(totalDuration);
         endSolver = Instant.now();
         if (isError()) throwPlanningError();
         else assert isPlanned();
@@ -365,14 +360,14 @@ public class GraphPlanner implements Planner {
 
     private void throwPlanningError() {
         LOG.error(toString());
-        LOG.error("Optimisation status: {}", resultStatus);
+        LOG.error("Optimisation status: {}", optimiser.status());
         LOG.error(optimiser.toString());
         throw TypeDBException.of(UNEXPECTED_PLANNING_ERROR);
     }
 
     private void printDebug(Instant start, Instant endSolver, Instant end) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Optimisation status         : {}", resultStatus.name());
+            LOG.debug("Optimisation status         : {}", optimiser.status().name());
             LOG.debug("Solver duration             : {} (ms)", between(start, endSolver).toMillis());
             LOG.debug("Procedure creation duration : {} (ms)", between(endSolver, end).toMillis());
             LOG.debug("Total duration ------------ : {} (ms)", between(start, end).toMillis());
