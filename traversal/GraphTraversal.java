@@ -153,7 +153,7 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         @Override
-        FunctionalIterator<VertexMap> permutationIter(GraphManager graphMgr) {
+        FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
             return permutation(graphMgr, structures().map(Planner::create).toList(), true, filter());
         }
 
@@ -198,7 +198,7 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         @Override
-        FunctionalIterator<VertexMap> permutationIter(GraphManager graphMgr) {
+        FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
             assert !planners.isEmpty() && cache != null;
             FunctionalIterator<VertexMap> iter = permutation(graphMgr, planners.values(), false, filter());
             cache.updatePlanner(planners);

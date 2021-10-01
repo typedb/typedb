@@ -53,15 +53,15 @@ public class TraversalEngine {
 
     public FunctionalIterator<VertexMap> iterator(GraphTraversal.Thing traversal) {
         traversal.initialise(cache);
-        return traversal.permutationIter(graphMgr);
+        return traversal.permutationIterator(graphMgr);
     }
 
     public FunctionalIterator<VertexMap> iterator(GraphTraversal.Type traversal) {
-        return traversal.permutationIter(graphMgr);
+        return traversal.permutationIterator(graphMgr);
     }
 
     public FunctionalIterator<VertexMap> iterator(RelationTraversal traversal) {
-        return traversal.permutationIter(graphMgr);
+        return traversal.permutationIterator(graphMgr);
     }
 
     public Optional<Map<Retrievable, Set<TypeVertex>>> combination(GraphTraversal.Type traversal,

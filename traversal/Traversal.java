@@ -63,7 +63,7 @@ public abstract class Traversal {
         return parameters;
     }
 
-    abstract FunctionalIterator<VertexMap> permutationIter(GraphManager graphMgr);
+    abstract FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr);
 
     @Override
     public boolean equals(Object o) {
