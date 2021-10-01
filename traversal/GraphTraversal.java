@@ -187,19 +187,19 @@ public abstract class GraphTraversal extends Traversal {
             planners = new HashMap<>();
         }
 
-        private void initialise(PlannerCache cache) {
+        private void initialise(TraversalCache cache) {
             if (planners.isEmpty()) {
                 structures().forEachRemaining(structure -> {
-                    Planner planner = cache.get(structure, Planner::create);
+                    Planner planner = cache.getPlanner(structure, Planner::create);
                     planners.put(structure, planner);
                 });
             }
         }
 
-        FunctionalIterator<VertexMap> permutationIterCaching(GraphManager graphMgr, PlannerCache cache) {
+        FunctionalIterator<VertexMap> permutationIterCaching(GraphManager graphMgr, TraversalCache cache) {
             initialise(cache);
             FunctionalIterator<VertexMap> permutations = permutation(graphMgr, planners.values(), false, filter());
-            cache.update(planners);
+            cache.updatePlanner(planners);
             return permutations;
         }
 
@@ -208,7 +208,7 @@ public abstract class GraphTraversal extends Traversal {
             return permutation(graphMgr, structures().map(Planner::create).toList(), false, filter());
         }
 
-        FunctionalProducer<VertexMap> permutationProducerCaching(GraphManager graphMgr, PlannerCache cache,
+        FunctionalProducer<VertexMap> permutationProducerCaching(GraphManager graphMgr, TraversalCache cache,
                                                                  Either<Arguments.Query.Producer, Long> context,
                                                                  int parallelisation) {
             initialise(cache);
@@ -227,7 +227,7 @@ public abstract class GraphTraversal extends Traversal {
                     return VertexMap.of(combinedAnswers);
                 }));
             }
-            cache.update(planners);
+            cache.updatePlanner(planners);
             return producer;
         }
 
@@ -371,5 +371,4 @@ public abstract class GraphTraversal extends Traversal {
         }
 
     }
-
 }

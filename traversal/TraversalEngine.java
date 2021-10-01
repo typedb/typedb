@@ -34,9 +34,9 @@ import java.util.Set;
 public class TraversalEngine {
 
     private final GraphManager graphMgr;
-    private final PlannerCache cache;
+    private final TraversalCache cache;
 
-    public TraversalEngine(GraphManager graphMgr, PlannerCache cache) {
+    public TraversalEngine(GraphManager graphMgr, TraversalCache cache) {
         this.graphMgr = graphMgr;
         this.cache = cache;
     }

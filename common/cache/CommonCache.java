@@ -35,6 +35,10 @@ public class CommonCache<KEY, VALUE> {
         this(CACHE_SIZE, CACHE_TIMEOUT_MINUTES);
     }
 
+    public CommonCache(int size) {
+        this(size, CACHE_TIMEOUT_MINUTES);
+    }
+
     public CommonCache(int size, int timeoutMinutes) {
         cache = Caffeine.newBuilder().maximumSize(size).expireAfterAccess(timeoutMinutes, MINUTES).build();
     }

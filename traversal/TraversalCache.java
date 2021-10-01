@@ -27,23 +27,23 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.cache.CommonCache.CACHE_TIMEOUT_MINUTES;
 
-public class PlannerCache {
+public class TraversalCache {
 
     private final CommonCache<Structure, Planner> activePlanners;
     private final CommonCache<Structure, Planner> optimalPlanners;
 
-    public PlannerCache() {
-        activePlanners = new CommonCache<>(30, CACHE_TIMEOUT_MINUTES);
-        optimalPlanners = new CommonCache<>(10000, CACHE_TIMEOUT_MINUTES);
+    public TraversalCache() {
+        activePlanners = new CommonCache<>(30);
+        optimalPlanners = new CommonCache<>(10000);
     }
 
-    public Planner get(Structure structure, Function<Structure, Planner> constructor) {
+    public Planner getPlanner(Structure structure, Function<Structure, Planner> constructor) {
         Planner planner = optimalPlanners.getIfPresent(structure);
         if (planner != null) return planner;
         return activePlanners.get(structure, constructor);
     }
 
-    public void update(Map<Structure, Planner> planners) {
+    public void updatePlanner(Map<Structure, Planner> planners) {
         planners.forEach((structure, planner) -> {
             if (planner.isOptimal() && optimalPlanners.getIfPresent(structure) == null) {
                 optimalPlanners.put(structure, planner);
@@ -54,5 +54,4 @@ public class PlannerCache {
             }
         });
     }
-
 }

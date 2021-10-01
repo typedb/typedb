@@ -29,7 +29,7 @@ import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
 import com.vaticle.typedb.core.logic.LogicCache;
-import com.vaticle.typedb.core.traversal.PlannerCache;
+import com.vaticle.typedb.core.traversal.TraversalCache;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
 
@@ -531,7 +531,7 @@ public class RocksDatabase implements TypeDB.Database {
 
     static class Cache {
 
-        private final PlannerCache plannerCache;
+        private final TraversalCache traversalCache;
         private final LogicCache logicCache;
         private final TypeGraph typeGraph;
         private final RocksStorage schemaStorage;
@@ -541,14 +541,14 @@ public class RocksDatabase implements TypeDB.Database {
         private Cache(RocksDatabase database) {
             schemaStorage = new RocksStorage.Cache(database.rocksSchema());
             typeGraph = new TypeGraph(schemaStorage, true);
-            plannerCache = new PlannerCache();
+            traversalCache = new TraversalCache();
             logicCache = new LogicCache();
             borrowerCount = 0L;
             invalidated = false;
         }
 
-        public PlannerCache traversal() {
-            return plannerCache;
+        public TraversalCache traversal() {
+            return traversalCache;
         }
 
         public LogicCache logic() {
