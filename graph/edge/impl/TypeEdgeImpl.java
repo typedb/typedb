@@ -140,7 +140,8 @@ public abstract class TypeEdgeImpl implements TypeEdge {
                     else graph.storage().putUntracked(outIID().bytes());
                 }
                 if (encoding.in() != null) {
-                    graph.storage().putUntracked(inIID().bytes());
+                    if (overridden != null) graph.storage().putUntracked(inIID().bytes(), overridden.iid().bytes());
+                    else graph.storage().putUntracked(inIID().bytes());
                 }
             }
         }
@@ -231,12 +232,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
 
             deleted = new AtomicBoolean(false);
 
-            if (iid.isOutwards()) {
-                this.overriddenIID = overriddenIID;
-            } else {
-                this.overriddenIID = null;
-                assert overriddenIID == null;
-            }
+            if (overriddenIID != null) this.overriddenIID = overriddenIID;
         }
 
         @Override
@@ -292,6 +288,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             this.overridden = overridden;
             overriddenIID = overridden.iid();
             graph.storage().putUntracked(outIID.bytes(), overriddenIID.bytes());
+            graph.storage().putUntracked(inIID.bytes(), overriddenIID.bytes());
         }
 
         /**
