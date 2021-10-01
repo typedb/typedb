@@ -31,19 +31,19 @@ import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
-import com.vaticle.typedb.core.traversal.scanner.CombinationFinder;
 import com.vaticle.typedb.core.traversal.planner.Planner;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
 import com.vaticle.typedb.core.traversal.procedure.CombinationProcedure;
+import com.vaticle.typedb.core.traversal.scanner.CombinationFinder;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -81,12 +81,12 @@ public abstract class GraphTraversal extends Traversal {
 
     public abstract void filter(Set<? extends Identifier.Variable.Retrievable> filter);
 
-    FunctionalIterator<VertexMap> permutation(GraphManager graphMgr, List<Planner> planners, boolean singleUse,
-                                              Set<Identifier.Variable.Retrievable> filter) {
+    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, Collection<Planner> planners, boolean singleUse,
+                                                      Set<Identifier.Variable.Retrievable> filter) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
-            planners.get(0).tryOptimise(graphMgr, singleUse);
-            return planners.get(0).procedure().iterator(graphMgr, parameters, filter);
+            planners.iterator().next().tryOptimise(graphMgr, singleUse);
+            return planners.iterator().next().procedure().iterator(graphMgr, parameters, filter);
         } else {
             return cartesian(planners.parallelStream().map(planner -> {
                 planner.tryOptimise(graphMgr, singleUse);
@@ -153,8 +153,8 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         @Override
-        FunctionalIterator<VertexMap> permutation(GraphManager graphMgr) {
-            return permutation(graphMgr, structures().map(Planner::create).toList(), true, filter());
+        FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
+            return permutationIterator(graphMgr, structures().map(Planner::create).toList(), true, filter());
         }
 
         public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(
@@ -178,7 +178,8 @@ public abstract class GraphTraversal extends Traversal {
 
     public static class Thing extends GraphTraversal {
 
-        private List<Planner> planners;
+        private Map<Structure, Planner> planners;
+        private TraversalCache cache;
         private boolean modifiable;
 
         public Thing() {
@@ -186,31 +187,45 @@ public abstract class GraphTraversal extends Traversal {
             modifiable = true;
         }
 
-        void initialise(TraversalCache cache) {
-            planners = structures().map(s -> cache.get(s, Planner::create)).toList();
+        public void initialise(TraversalCache cache) {
+            assert planners == null;
+            this.cache = cache;
+            planners = new HashMap<>();
+            structures().forEachRemaining(structure -> {
+                Planner planner = this.cache.getPlanner(structure, Planner::create);
+                planners.put(structure, planner);
+            });
         }
 
-        FunctionalIterator<VertexMap> permutation(GraphManager graphMgr) {
-            return permutation(graphMgr, planners, false, filter());
+        @Override
+        FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
+            assert !planners.isEmpty() && cache != null;
+            FunctionalIterator<VertexMap> iter = permutationIterator(graphMgr, planners.values(), false, filter());
+            cache.mayUpdatePlanners(planners);
+            return iter;
         }
 
-        FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Either<Arguments.Query.Producer, Long> context,
-                                               int parallelisation) {
-            assert !planners.isEmpty();
+        FunctionalProducer<VertexMap> permutationProducer(GraphManager graphMgr,
+                                                          Either<Arguments.Query.Producer, Long> context,
+                                                          int parallelisation) {
+            assert !planners.isEmpty() && cache != null;
+            FunctionalProducer<VertexMap> producer;
             if (planners.size() == 1) {
-                planners.get(0).tryOptimise(graphMgr, false);
-                return planners.get(0).procedure().producer(graphMgr, parameters, filter(), parallelisation);
+                planners.values().iterator().next().tryOptimise(graphMgr, false);
+                producer = planners.values().iterator().next().procedure().producer(graphMgr, parameters, filter(), parallelisation);
             } else {
                 Either<Arguments.Query.Producer, Long> nestedCtx = context.isFirst() ? context : Either.first(INCREMENTAL);
-                return async(cartesian(planners.parallelStream().map(planner -> {
+                producer = async(cartesian(planners.values().parallelStream().map(planner -> {
                     planner.tryOptimise(graphMgr, false);
                     return planner.procedure().producer(graphMgr, parameters, filter(), parallelisation);
-                }).map(producer -> produce(producer, nestedCtx, async2())).collect(toList())).map(partialAnswers -> {
+                }).map(p -> produce(p, nestedCtx, async2())).collect(toList())).map(partialAnswers -> {
                     Map<Identifier.Variable.Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
                     partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
                     return VertexMap.of(combinedAnswers);
                 }));
             }
+            cache.mayUpdatePlanners(planners);
+            return producer;
         }
 
         // TODO: We should not dynamically calculate properties like this, and then guard against 'modifiable'.
@@ -353,5 +368,4 @@ public abstract class GraphTraversal extends Traversal {
         }
 
     }
-
 }

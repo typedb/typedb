@@ -35,12 +35,15 @@ native_java_libraries(
     srcs = glob([
         "**/*.java",
     ]),
-    deps = [
+    native_libraries_deps = [
         # Internal dependencies
         "//common:common",
         "//concurrent:concurrent",
         "//graph:graph",
-
+        "//pattern:pattern",
+        "//traversal:traversal",
+    ],
+    deps = [
         # Internal Repository Dependencies
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//common:common",
@@ -49,10 +52,6 @@ native_java_libraries(
 
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
-    ],
-    native_libraries_deps = [
-        "//pattern:pattern",
-        "//traversal:traversal",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-concept:{pom_version}"],
     visibility = ["//visibility:public"],

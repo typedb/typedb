@@ -23,15 +23,15 @@ host_compatible_java_test(
     srcs = ["MigratorTest.java"],
     test_class = "com.vaticle.typedb.core.migrator.MigratorTest",
     native_libraries_deps = [
+        "//:typedb",
+        "//common:common",
         "//server:server",
         "//rocks:rocks",
         "//migrator:migrator",
-        "//:typedb",
     ],
     deps = [
         # Internal dependencies
         "//test/integration/util:util",
-        "//common:common",
         "//server:version",
 
         # External dependencies from Vaticle

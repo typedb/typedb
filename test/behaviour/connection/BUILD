@@ -24,18 +24,17 @@ host_compatible_java_library(
     srcs = [
         "ConnectionSteps.java",
     ],
-    deps = [
+    native_libraries_deps = [
         # Internal dependencies
+        "//:typedb",
         "//common",
-
+        "//rocks:rocks",
+    ],
+    deps = [
         # External Maven Dependencies
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",
     ],
-    native_libraries_deps = [
-        "//:typedb",
-        "//rocks:rocks",
-    ]
 )
 
 checkstyle_test(

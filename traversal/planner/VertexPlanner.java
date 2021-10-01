@@ -20,8 +20,6 @@ package com.vaticle.typedb.core.traversal.planner;
 
 import com.vaticle.typedb.core.traversal.procedure.VertexProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
-import com.vaticle.typedb.core.traversal.structure.StructureEdge;
-import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
 public class VertexPlanner implements Planner {
 
@@ -33,34 +31,7 @@ public class VertexPlanner implements Planner {
 
     static VertexPlanner create(Structure structure) {
         assert structure.vertices().size() == 1;
-        PlannerVertex<?> plannerVertex = toPlanner(structure.vertices().iterator().next());
-        VertexProcedure proc = VertexProcedure.create(plannerVertex);
-        return new VertexPlanner(proc);
-    }
-
-    private static PlannerVertex<?> toPlanner(StructureVertex<?> structureVertex) {
-        PlannerVertex<?> plannerVertex = structureVertex.isType()
-                ? new PlannerVertex.Type(structureVertex.id())
-                : new PlannerVertex.Thing(structureVertex.id());
-        if (plannerVertex.isType()) plannerVertex.asType().props(structureVertex.asType().props());
-        else plannerVertex.asThing().props(structureVertex.asThing().props());
-        plannerVertex.setStartingVertex();
-
-        int order = 0;
-        for (StructureEdge<?, ?> structureEdge : structureVertex.outs()) {
-            PlannerEdge<?, ?> plannerEdge = PlannerEdge.of(plannerVertex, plannerVertex, structureEdge);
-            plannerEdge.backward().setUnselected();
-            plannerEdge.forward().setSelected();
-            plannerEdge.forward().setOrder(++order);
-            plannerVertex.out(plannerEdge);
-            plannerVertex.in(plannerEdge);
-        }
-        if (!structureVertex.outs().isEmpty()) {
-            plannerVertex.setHasOutGoingEdges();
-            plannerVertex.setHasIncomingEdges();
-        }
-
-        return plannerVertex;
+        return new VertexPlanner(VertexProcedure.create(structure.vertices().iterator().next()));
     }
 
     @Override
@@ -69,8 +40,17 @@ public class VertexPlanner implements Planner {
     }
 
     @Override
-    public boolean isVertex() { return true; }
+    public boolean isVertex() {
+        return true;
+    }
 
     @Override
-    public VertexPlanner asVertex() { return this; }
+    public VertexPlanner asVertex() {
+        return this;
+    }
+
+    @Override
+    public boolean isOptimal() {
+        return true;
+    }
 }

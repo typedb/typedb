@@ -37,17 +37,16 @@ exports_files(
 native_java_libraries(
     name = "typedb",
     srcs = glob(["*.java"]),
-    deps = [
+    native_libraries_deps = [
         # Internal dependencies
         "//common:common",
-
-        # Vaticle Dependencies
-        "@vaticle_typedb_common//:common",
-    ],
-    native_libraries_deps = [
         "//concept:concept",
         "//logic:logic",
         "//query:query",
+    ],
+    deps = [
+        # Vaticle Dependencies
+        "@vaticle_typedb_common//:common",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb:{pom_version}"],
     visibility = ["//visibility:public"],

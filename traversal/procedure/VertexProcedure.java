@@ -25,7 +25,8 @@ import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
-import com.vaticle.typedb.core.traversal.planner.PlannerVertex;
+import com.vaticle.typedb.core.traversal.structure.StructureEdge;
+import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,27 +48,18 @@ public class VertexProcedure implements PermutationProcedure {
         this.vertex = vertex;
     }
 
-    public static VertexProcedure create(PlannerVertex<?> plannerVertex) {
-        return new VertexProcedure(toProcedure(plannerVertex));
-    }
-
-    private static ProcedureVertex<?, ?> toProcedure(PlannerVertex<?> plannerVertex) {
-        assert plannerVertex.isStartingVertex();
-        ProcedureVertex<?, ?> procedureVertex = plannerVertex.isType()
-                ? new ProcedureVertex.Type(plannerVertex.id(), true)
-                : new ProcedureVertex.Thing(plannerVertex.id(), true);
-        if (procedureVertex.isType()) procedureVertex.asType().props(plannerVertex.asType().props());
-        else procedureVertex.asThing().props(plannerVertex.asThing().props());
-
-        plannerVertex.outs().forEach(plannerEdge -> {
-            if (plannerEdge.isSelected()) {
-                ProcedureEdge<?, ?> procedureEdge = ProcedureEdge.of(procedureVertex, procedureVertex, plannerEdge);
-                procedureVertex.out(procedureEdge);
-                procedureVertex.in(procedureEdge);
-            }
-        });
-
-        return procedureVertex;
+    public static VertexProcedure create(StructureVertex<?> structureVertex) {
+        ProcedureVertex<?, ?> procedureVertex = structureVertex.isType()
+                ? new ProcedureVertex.Type(structureVertex.id(), true)
+                : new ProcedureVertex.Thing(structureVertex.id(), true);
+        if (procedureVertex.isType()) procedureVertex.asType().props(structureVertex.asType().props());
+        else procedureVertex.asThing().props(structureVertex.asThing().props());
+        int order = 0;
+        for (StructureEdge<?, ?> structureEdge : structureVertex.outs()) {
+            ProcedureEdge<?, ?> edge = ProcedureEdge.of(procedureVertex, procedureVertex, structureEdge, order, true);
+            procedureVertex.out(edge);
+        }
+        return new VertexProcedure(procedureVertex);
     }
 
     @Override

@@ -25,10 +25,7 @@ host_compatible_java_library(
         "TransactionSteps.java"
     ],
     deps = [
-        # Internal dependencies
-        "//common:common",
         "//test/behaviour/connection:steps",
-        "//common/test:util",
 
         # Internal Repository Dependencies
         "@vaticle_typedb_common//:common",
@@ -38,7 +35,10 @@ host_compatible_java_library(
         "@maven//:io_cucumber_cucumber_java",
     ],
     native_libraries_deps = [
+        # Internal dependencies
         "//:typedb",
+        "//common:common",
+        "//common/test:util",
     ],
 )
 

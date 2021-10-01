@@ -28,7 +28,6 @@ host_compatible_java_library(
         # Internal dependencies
         "//test/behaviour/concept/thing:steps",
         "//test/behaviour/connection:steps",
-        "//common/test:util",
 
         # Internal Repository Dependencies
         # "@vaticle_typedb_common//:common",
@@ -39,6 +38,7 @@ host_compatible_java_library(
     ],
     native_libraries_deps = [
         "//concept:concept",
+        "//common/test:util",
     ],
 )
 

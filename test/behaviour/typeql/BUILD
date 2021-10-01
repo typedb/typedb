@@ -29,7 +29,6 @@ host_compatible_java_library(
         # Package dependencies
         "//test/behaviour/exception",
         "//test/behaviour/connection:steps",
-        "//common/test:util",
 
         # External dependencies from Vaticle
         "@vaticle_typeql_lang_java//:typeql-lang",
@@ -43,6 +42,7 @@ host_compatible_java_library(
     ],
     native_libraries_deps = [
         "//concept:concept",
+        "//common/test:util",
     ],
     runtime_deps = [
         "//test/behaviour/connection/database:steps",

@@ -18,23 +18,19 @@
 
 package com.vaticle.typedb.core.traversal.procedure;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 
 public class CombinationProcedure {
 
@@ -148,62 +144,16 @@ public class CombinationProcedure {
         return nextVertices;
     }
 
-    private ProcedureEdge<?, ?> createOut(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge,
-                                          int order) {
-        ProcedureEdge<?, ?> edge;
-        if (structureEdge.isNative()) {
-            switch (structureEdge.asNative().encoding().asType()) {
-                case SUB:
-                    edge = new ProcedureEdge.Native.Type.Sub.Forward(from, to, order, structureEdge.asNative().isTransitive());
-                    break;
-                case OWNS:
-                    edge = new ProcedureEdge.Native.Type.Owns.Forward(from, to, order, false);
-                    break;
-                case OWNS_KEY:
-                    edge = new ProcedureEdge.Native.Type.Owns.Forward(from, to, order, true);
-                    break;
-                case PLAYS:
-                    edge = new ProcedureEdge.Native.Type.Plays.Forward(from, to, order);
-                    break;
-                case RELATES:
-                    edge = new ProcedureEdge.Native.Type.Relates.Forward(from, to, order);
-                    break;
-                default:
-                    throw TypeDBException.of(UNRECOGNISED_VALUE);
-            }
-        } else if (structureEdge.isEqual()) {
-            return new ProcedureEdge.Equal(from, to, order, Encoding.Direction.Edge.FORWARD);
-        } else throw TypeDBException.of(ILLEGAL_STATE);
+    private ProcedureEdge<?, ?> createOut(ProcedureVertex.Type from, ProcedureVertex.Type to,
+                                          StructureEdge<?, ?> structureEdge, int order) {
+        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, order, true);
         registerEdge(edge);
         return edge;
     }
 
-    private ProcedureEdge<?, ?> createIn(ProcedureVertex.Type from, ProcedureVertex.Type to, StructureEdge<?, ?> structureEdge,
-                                         int order) {
-        ProcedureEdge<?, ?> edge;
-        if (structureEdge.isNative()) {
-            switch (structureEdge.asNative().encoding().asType()) {
-                case SUB:
-                    edge = new ProcedureEdge.Native.Type.Sub.Backward(from, to, order, structureEdge.asNative().isTransitive());
-                    break;
-                case OWNS:
-                    edge = new ProcedureEdge.Native.Type.Owns.Backward(from, to, order, false);
-                    break;
-                case OWNS_KEY:
-                    edge = new ProcedureEdge.Native.Type.Owns.Backward(from, to, order, true);
-                    break;
-                case PLAYS:
-                    edge = new ProcedureEdge.Native.Type.Plays.Backward(from, to, order);
-                    break;
-                case RELATES:
-                    edge = new ProcedureEdge.Native.Type.Relates.Backward(from, to, order);
-                    break;
-                default:
-                    throw TypeDBException.of(UNRECOGNISED_VALUE);
-            }
-        } else if (structureEdge.isEqual()) {
-            return new ProcedureEdge.Equal(from, to, order, Encoding.Direction.Edge.BACKWARD);
-        } else throw TypeDBException.of(ILLEGAL_STATE);
+    private ProcedureEdge<?, ?> createIn(ProcedureVertex.Type from, ProcedureVertex.Type to,
+                                         StructureEdge<?, ?> structureEdge, int order) {
+        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, order, false);
         registerEdge(edge);
         return edge;
     }
@@ -211,5 +161,20 @@ public class CombinationProcedure {
     private void registerEdge(ProcedureEdge<?, ?> edge) {
         edge.from().out(edge);
         edge.to().in(edge);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder str = new StringBuilder();
+        str.append("Combination Procedure: {");
+        str.append("\n\tvertices:");
+        for (ProcedureVertex<?, ?> v : vertices()) {
+            str.append("\n\t\t").append(v);
+        }
+        str.append("\n\tedges:");
+        forwardEdges.values().stream().flatMap(Collection::stream).sorted(Comparator.comparing(ProcedureEdge::order))
+                .forEachOrdered(edge -> str.append("\n\t\t").append(edge));
+        str.append("\n}");
+        return str.toString();
     }
 }

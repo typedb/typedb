@@ -16,17 +16,19 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 package(default_visibility = ["//visibility:public"])
 
-java_library(
+native_java_libraries(
     name = "util",
     srcs = glob(["*.java"]),
     deps = [
-        # Internal dependencies
-        "//common",
-
         # External Maven Dependencies
         "@maven//:junit_junit",
+    ],
+    native_libraries_deps = [
+        # Internal dependencies
+        "//common:common",
     ]
 )
 

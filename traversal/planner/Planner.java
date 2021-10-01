@@ -30,6 +30,8 @@ public interface Planner {
 
     PermutationProcedure procedure();
 
+    boolean isOptimal();
+
     default void tryOptimise(GraphManager graphMgr, boolean singleUse) {
         if (isGraph()) this.asGraph().mayOptimise(graphMgr, singleUse);
     }
@@ -39,9 +41,13 @@ public interface Planner {
         else return GraphPlanner.create(structure);
     }
 
-    default boolean isVertex() { return false; }
+    default boolean isVertex() {
+        return false;
+    }
 
-    default boolean isGraph() { return false; }
+    default boolean isGraph() {
+        return false;
+    }
 
     default VertexPlanner asVertex() {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(VertexPlanner.class));

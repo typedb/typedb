@@ -22,7 +22,11 @@ host_compatible_java_test(
     name = "test-rule",
     srcs = ["RuleTest.java"],
     native_libraries_deps = [
+        # Internal dependencies
         "//:typedb",
+        "//common",
+        "//graph",
+        "//common/test:util",
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
@@ -35,10 +39,6 @@ host_compatible_java_test(
     ],
     test_class = "com.vaticle.typedb.core.logic.RuleTest",
     deps = [
-        # Internal dependencies
-        "//common",
-        "//common/test:util",
-        "//graph",
         "//test/integration/util",
 
         # External dependencies from Vaticle
@@ -53,16 +53,16 @@ host_compatible_java_test(
     srcs = ["TypeInferenceTest.java"],
     test_class = "com.vaticle.typedb.core.logic.TypeInferenceTest",
     native_libraries_deps = [
-        "//concept:concept",
         "//:typedb",
+        "//rocks:rocks",
+        "//common",
+        "//common/test:util",
+        "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
-        "//rocks:rocks",
     ],
     deps = [
         # Internal dependencies
-        "//common",
-        "//common/test:util",
         "//test/integration/util",
 
         # External dependencies from Vaticle
@@ -81,8 +81,10 @@ host_compatible_java_test(
     name = "test-unification-relation-concludable",
     srcs = ["resolvable/UnifyRelationConcludableTest.java", "resolvable/Util.java"],
     native_libraries_deps = [
+        # Internal dependencies
         "//rocks:rocks",
         "//:typedb",
+        "//common:common",
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
@@ -90,9 +92,7 @@ host_compatible_java_test(
     ],
     test_class = "com.vaticle.typedb.core.logic.resolvable.UnifyRelationConcludableTest",
     deps = [
-        # Internal dependencies
         "//test/integration/util",
-        "//common",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
@@ -104,8 +104,10 @@ host_compatible_java_test(
     name = "test-unification-has-concludable",
     srcs = ["resolvable/UnifyHasConcludableTest.java", "resolvable/Util.java"],
     native_libraries_deps = [
-        "//rocks:rocks",
+        # Internal dependencies
         "//:typedb",
+        "//rocks:rocks",
+        "//common:common",
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
@@ -113,9 +115,7 @@ host_compatible_java_test(
     ],
     test_class = "com.vaticle.typedb.core.logic.resolvable.UnifyHasConcludableTest",
     deps = [
-        # Internal dependencies
         "//test/integration/util",
-        "//common",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
@@ -127,8 +127,10 @@ host_compatible_java_test(
     name = "test-unification-isa-concludable",
     srcs = ["resolvable/UnifyIsaConcludableTest.java", "resolvable/Util.java"],
     native_libraries_deps = [
-        "//rocks:rocks",
+        # Internal dependencies
         "//:typedb",
+        "//rocks:rocks",
+        "//common:common",
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
@@ -136,9 +138,7 @@ host_compatible_java_test(
     ],
     test_class = "com.vaticle.typedb.core.logic.resolvable.UnifyIsaConcludableTest",
     deps = [
-        # Internal dependencies
         "//test/integration/util",
-        "//common",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
@@ -154,8 +154,10 @@ host_compatible_java_test(
     name = "test-unification-attribute-concludable",
     srcs = ["resolvable/UnifyAttributeConcludableTest.java", "resolvable/Util.java"],
     native_libraries_deps = [
-        "//rocks:rocks",
+        # Internal dependencies
         "//:typedb",
+        "//common:common",
+        "//rocks:rocks",
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
@@ -163,9 +165,7 @@ host_compatible_java_test(
     ],
     test_class = "com.vaticle.typedb.core.logic.resolvable.UnifyAttributeConcludableTest",
     deps = [
-        # Internal dependencies
         "//test/integration/util",
-        "//common",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",

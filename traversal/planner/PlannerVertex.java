@@ -18,10 +18,10 @@
 
 package com.vaticle.typedb.core.traversal.planner;
 
-import com.google.ortools.linearsolver.MPConstraint;
-import com.google.ortools.linearsolver.MPVariable;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.optimiser.OptimiserConstraint;
+import com.vaticle.typedb.core.common.optimiser.OptimiserVariable;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -43,22 +43,14 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     private final String varPrefix = "vertex_var_" + id() + "_";
     private final String conPrefix = "vertex_con_" + id() + "_";
-    private int varIsStartingVertex_init;
-    private int varIsEndingVertex_init;
-    private int varHasIncomingEdges_init;
-    private int varHasOutgoingEdges_init;
-    private int varIsStartingVertex_result;
-    private int varIsEndingVertex_result;
-    private int varHasIncomingEdges_result;
-    private int varHasOutgoingEdges_result;
     private boolean isInitialisedVariables;
     private boolean isInitialisedConstraints;
     private double costNext;
     double costLastRecorded;
-    MPVariable varIsStartingVertex;
-    MPVariable varIsEndingVertex;
-    MPVariable varHasIncomingEdges;
-    MPVariable varHasOutgoingEdges;
+    OptimiserVariable.Boolean varIsStartingVertex;
+    OptimiserVariable.Boolean varIsEndingVertex;
+    OptimiserVariable.Boolean varHasIncomingEdges;
+    OptimiserVariable.Boolean varHasOutgoingEdges;
 
     PlannerVertex(Identifier identifier, @Nullable GraphPlanner planner) {
         super(identifier);
@@ -71,19 +63,19 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     abstract void updateObjective(GraphManager graph);
 
     public boolean isStartingVertex() {
-        return varIsStartingVertex_result == 1;
+        return varIsStartingVertex.solutionValue();
     }
 
     public boolean isEndingVertex() {
-        return varIsEndingVertex_result == 1;
+        return varIsEndingVertex.solutionValue();
     }
 
     public boolean hasIncomingEdges() {
-        return varHasIncomingEdges_result == 1;
+        return varHasIncomingEdges.solutionValue();
     }
 
     public boolean hasOutgoingEdges() {
-        return varHasOutgoingEdges_result == 1;
+        return varHasOutgoingEdges.solutionValue();
     }
 
     public boolean isInitialisedVariables() {
@@ -110,10 +102,10 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     void initialiseVariables() {
         assert planner != null;
-        varIsStartingVertex = planner.solver().makeIntVar(0, 1, varPrefix + "is_starting_vertex");
-        varIsEndingVertex = planner.solver().makeIntVar(0, 1, varPrefix + "is_ending_vertex");
-        varHasIncomingEdges = planner.solver().makeIntVar(0, 1, varPrefix + "has_incoming_edges");
-        varHasOutgoingEdges = planner.solver().makeIntVar(0, 1, varPrefix + "has_outgoing_edges");
+        varIsStartingVertex = planner.optimiser().booleanVar(varPrefix + "is_starting_vertex");
+        varIsEndingVertex = planner.optimiser().booleanVar(varPrefix + "is_ending_vertex");
+        varHasIncomingEdges = planner.optimiser().booleanVar(varPrefix + "has_incoming_edges");
+        varHasOutgoingEdges = planner.optimiser().booleanVar(varPrefix + "has_outgoing_edges");
 
         isInitialisedVariables = true;
     }
@@ -129,24 +121,24 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     private void initialiseConstraintsForIncomingEdges() {
         assert !ins().isEmpty();
-        MPConstraint conHasIncomingEdges = planner.solver().makeConstraint(0, ins().size() - 1, conPrefix + "has_incoming_edges");
+        OptimiserConstraint conHasIncomingEdges = planner.optimiser().constraint(0, ins().size() - 1, conPrefix + "has_incoming_edges");
         conHasIncomingEdges.setCoefficient(varHasIncomingEdges, ins().size());
         ins().forEach(edge -> conHasIncomingEdges.setCoefficient(edge.varIsSelected, -1));
     }
 
     private void initialiseConstraintsForOutgoingEdges() {
         assert !outs().isEmpty();
-        MPConstraint conHasOutgoingEdges = planner.solver().makeConstraint(0, outs().size() - 1, conPrefix + "has_outgoing_edges");
+        OptimiserConstraint conHasOutgoingEdges = planner.optimiser().constraint(0, outs().size() - 1, conPrefix + "has_outgoing_edges");
         conHasOutgoingEdges.setCoefficient(varHasOutgoingEdges, outs().size());
         outs().forEach(edge -> conHasOutgoingEdges.setCoefficient(edge.varIsSelected, -1));
     }
 
     private void initialiseConstraintsForVertexFlow() {
-        MPConstraint conStartOrIncoming = planner.solver().makeConstraint(1, 1, conPrefix + "starting_or_incoming");
+        OptimiserConstraint conStartOrIncoming = planner.optimiser().constraint(1, 1, conPrefix + "starting_or_incoming");
         conStartOrIncoming.setCoefficient(varIsStartingVertex, 1);
         conStartOrIncoming.setCoefficient(varHasIncomingEdges, 1);
 
-        MPConstraint conEndingOrOutgoing = planner.solver().makeConstraint(1, 1, conPrefix + "ending_or_outgoing");
+        OptimiserConstraint conEndingOrOutgoing = planner.optimiser().constraint(1, 1, conPrefix + "ending_or_outgoing");
         conEndingOrOutgoing.setCoefficient(varIsEndingVertex, 1);
         conEndingOrOutgoing.setCoefficient(varHasOutgoingEdges, 1);
     }
@@ -156,7 +148,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         if (cost < INIT_ZERO) cost = INIT_ZERO;
         double exp = planner.edges().size() * planner.costExponentUnit;
         double coeff = cost * Math.pow(planner.branchingFactor, exp);
-        planner.objective().setCoefficient(varIsStartingVertex, coeff);
+        planner.optimiser().setObjectiveCoefficient(varIsStartingVertex, coeff);
         costNext = cost;
         planner.updateCostNext(costLastRecorded, costNext);
     }
@@ -165,70 +157,39 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         costLastRecorded = costNext;
     }
 
-    void recordResults() {
-        varIsStartingVertex_result = (int) Math.round(varIsStartingVertex.solutionValue());
-        varIsEndingVertex_result = (int) Math.round(varIsEndingVertex.solutionValue());
-        varHasIncomingEdges_result = (int) Math.round(varHasIncomingEdges.solutionValue());
-        varHasOutgoingEdges_result = (int) Math.round(varHasOutgoingEdges.solutionValue());
-        assert !(isStartingVertex() && isEndingVertex());
-        assert (isStartingVertex() ^ hasIncomingEdges());
-        assert (isEndingVertex() ^ hasOutgoingEdges());
+    boolean validResults() {
+        return !(isStartingVertex() && isEndingVertex()) && (isStartingVertex() ^ hasIncomingEdges())
+                && (isEndingVertex() ^ hasOutgoingEdges());
     }
 
     void resetInitialValue() {
-        varIsStartingVertex_init = 0;
-        varIsEndingVertex_init = 0;
-        varHasIncomingEdges_init = 0;
-        varHasOutgoingEdges_init = 0;
+        varIsStartingVertex.clearInitial();
+        varIsEndingVertex.clearInitial();
+        varHasIncomingEdges.clearInitial();
+        varHasOutgoingEdges.clearInitial();
     }
 
     void setStartingVertexInitial() {
-        varIsStartingVertex_init = 1;
-        varIsEndingVertex_init = 0;
+        varIsStartingVertex.setInitial(true);
+        varIsEndingVertex.setInitial(false);
+        varHasIncomingEdges.setInitial(false);
     }
 
     void setEndingVertexInitial() {
-        varIsEndingVertex_init = 1;
-        assert varIsStartingVertex_init == 0;
-        assert varHasOutgoingEdges_init == 0;
-        assert varHasIncomingEdges_init == 1;
+        varIsEndingVertex.setInitial(true);
+        varIsStartingVertex.setInitial(false);
+        varHasOutgoingEdges.setInitial(false);
+        assert varHasIncomingEdges.getInitial() == 1;
     }
 
     void setHasOutgoingEdgesInitial() {
-        varHasOutgoingEdges_init = 1;
-        assert varIsEndingVertex_init == 0;
+        varHasOutgoingEdges.setInitial(true);
+        varIsEndingVertex.setInitial(false);
     }
 
     void setHasIncomingEdgesInitial() {
-        varHasIncomingEdges_init = 1;
-        assert varIsStartingVertex_init == 0;
-    }
-
-    int recordInitial(MPVariable[] variables, double[] initialValues, int index) {
-        variables[index] = varIsStartingVertex;
-        variables[index + 1] = varIsEndingVertex;
-        variables[index + 2] = varHasIncomingEdges;
-        variables[index + 3] = varHasOutgoingEdges;
-
-        initialValues[index] = varIsStartingVertex_init;
-        initialValues[index + 1] = varIsEndingVertex_init;
-        initialValues[index + 2] = varHasIncomingEdges_init;
-        initialValues[index + 3] = varHasOutgoingEdges_init;
-
-        return index + 4;
-    }
-
-    void setStartingVertex() {
-        varIsStartingVertex_result = 1;
-        varIsEndingVertex_result = 0;
-    }
-
-    void setHasOutGoingEdges() {
-        varHasOutgoingEdges_result = 1;
-    }
-
-    void setHasIncomingEdges() {
-        varHasIncomingEdges_result = 1;
+        varHasIncomingEdges.setInitial(true);
+        varIsStartingVertex.setInitial(false);
     }
 
     public PlannerVertex.Thing asThing() {
@@ -287,10 +248,14 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         }
 
         @Override
-        public boolean isThing() { return true; }
+        public boolean isThing() {
+            return true;
+        }
 
         @Override
-        public PlannerVertex.Thing asThing() { return this; }
+        public PlannerVertex.Thing asThing() {
+            return this;
+        }
     }
 
     public static class Type extends PlannerVertex<Properties.Type> {
@@ -328,9 +293,13 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         }
 
         @Override
-        public boolean isType() { return true; }
+        public boolean isType() {
+            return true;
+        }
 
         @Override
-        public PlannerVertex.Type asType() { return this; }
+        public PlannerVertex.Type asType() {
+            return this;
+        }
     }
 }

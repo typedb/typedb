@@ -16,6 +16,7 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 package(
     default_visibility = [
         "//concept:__pkg__",
@@ -25,15 +26,12 @@ package(
     ]
 )
 
-java_library(
+native_java_libraries(
     name = "graph",
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"]),
     deps = [
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-
-        # Internal dependencies
-        "//common:common",
 
         # External dependencies from Vaticle
         "@vaticle_typeql_lang_java//:typeql-lang",
@@ -42,6 +40,10 @@ java_library(
 
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
+    ],
+    native_libraries_deps = [
+        # Internal dependencies
+        "//common:common",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-graph:{pom_version}"],
     visibility = ["//visibility:public"],

@@ -44,9 +44,13 @@ public abstract class PredicateOperator {
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    boolean isEquality() { return false; }
+    boolean isEquality() {
+        return false;
+    }
 
-    boolean isSubString() { return false; }
+    boolean isSubString() {
+        return false;
+    }
 
     Equality asEquality() {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Equality.class));
@@ -86,57 +90,85 @@ public abstract class PredicateOperator {
         abstract Equality reflection();
 
         @Override
-        boolean isEquality() { return true; }
+        boolean isEquality() {
+            return true;
+        }
 
         @Override
-        Equality asEquality() { return this; }
+        Equality asEquality() {
+            return this;
+        }
 
         public static final Equality EQ = new Equality(TypeQLToken.Predicate.Equality.EQ) {
             @Override
-            boolean apply(int comparisonResult) { return comparisonResult == 0; }
+            boolean apply(int comparisonResult) {
+                return comparisonResult == 0;
+            }
 
             @Override
-            Equality reflection() { return this; }
+            Equality reflection() {
+                return this;
+            }
         };
 
         public static final Equality NEQ = new Equality(TypeQLToken.Predicate.Equality.NEQ) {
             @Override
-            boolean apply(int comparisonResult) { return comparisonResult != 0; }
+            boolean apply(int comparisonResult) {
+                return comparisonResult != 0;
+            }
 
             @Override
-            Equality reflection() { return this; }
+            Equality reflection() {
+                return this;
+            }
         };
 
         public static final Equality GT = new Equality(TypeQLToken.Predicate.Equality.GT) {
             @Override
-            boolean apply(int comparisonResult) { return comparisonResult > 0; }
+            boolean apply(int comparisonResult) {
+                return comparisonResult > 0;
+            }
 
             @Override
-            Equality reflection() { return LT; }
+            Equality reflection() {
+                return LT;
+            }
         };
 
         public static final Equality GTE = new Equality(TypeQLToken.Predicate.Equality.GTE) {
             @Override
-            boolean apply(int comparisonResult) { return comparisonResult >= 0; }
+            boolean apply(int comparisonResult) {
+                return comparisonResult >= 0;
+            }
 
             @Override
-            Equality reflection() { return LTE; }
+            Equality reflection() {
+                return LTE;
+            }
         };
 
         public static final Equality LT = new Equality(TypeQLToken.Predicate.Equality.LT) {
             @Override
-            boolean apply(int comparisonResult) { return comparisonResult < 0; }
+            boolean apply(int comparisonResult) {
+                return comparisonResult < 0;
+            }
 
             @Override
-            Equality reflection() { return GT; }
+            Equality reflection() {
+                return GT;
+            }
         };
 
         public static final Equality LTE = new Equality(TypeQLToken.Predicate.Equality.LTE) {
             @Override
-            boolean apply(int comparisonResult) { return comparisonResult <= 0; }
+            boolean apply(int comparisonResult) {
+                return comparisonResult <= 0;
+            }
 
             @Override
-            Equality reflection() { return GTE; }
+            Equality reflection() {
+                return GTE;
+            }
         };
 
         private static final Map<TypeQLToken.Predicate.Equality, Equality> operators = map(
@@ -162,10 +194,14 @@ public abstract class PredicateOperator {
         abstract boolean apply(String vertexValue, GraphTraversal.Thing.Parameters.Value predicateValue);
 
         @Override
-        boolean isSubString() { return true; }
+        boolean isSubString() {
+            return true;
+        }
 
         @Override
-        SubString asSubString() { return this; }
+        SubString asSubString() {
+            return this;
+        }
 
         private static final SubString CONTAINS = new SubString(TypeQLToken.Predicate.SubString.CONTAINS) {
             @Override

@@ -46,11 +46,20 @@ java_library(
 native_java_libraries(
     name = "server",
     srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["templates/**", "test/**"]),
-    deps = [
+    native_libraries_deps = [
         # Internal dependencies
-        ":version",
+        "//:typedb",
         "//common:common",
         "//concurrent:concurrent",
+        "//concept:concept",
+        "//logic:logic",
+        "//query:query",
+        "//rocks:rocks",
+        "//reasoner:reasoner",
+        "//migrator:migrator",
+    ],
+    deps = [
+        ":version",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
@@ -70,15 +79,6 @@ native_java_libraries(
         "@maven//:io_grpc_grpc_stub",
         "@maven//:io_netty_netty_all",
         "@maven//:org_slf4j_slf4j_api",
-    ],
-    native_libraries_deps = [
-        "//:typedb",
-        "//concept:concept",
-        "//logic:logic",
-        "//query:query",
-        "//rocks:rocks",
-        "//reasoner:reasoner",
-        "//migrator:migrator",
     ],
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",

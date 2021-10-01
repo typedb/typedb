@@ -39,16 +39,15 @@ native_java_libraries(
         ], exclude = ["*Test.java", "**/*Test.java"],
     ),
     native_libraries_deps = [
+        # Internal dependencies
+        "//common:common",
+        "//concurrent:concurrent",
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
         "//traversal:traversal",
     ],
     deps = [
-        # Internal dependencies
-        "//common:common",
-        "//concurrent:concurrent",
-
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//common",
@@ -72,14 +71,14 @@ host_compatible_java_test(
     ],
     test_class = "com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateTest",
     native_libraries_deps = [
+        # Internal dependencies
+        "//common:common",
         "//concept:concept",
         "//pattern:pattern",
         "//reasoner:reasoner",
         "//traversal:traversal",
     ],
     deps = [
-        # Internal dependencies
-        "//common",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",

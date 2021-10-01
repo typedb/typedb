@@ -36,8 +36,9 @@ import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
-import com.vaticle.typedb.core.traversal.scanner.GraphIterator;
 import com.vaticle.typedb.core.traversal.planner.PlannerEdge;
+import com.vaticle.typedb.core.traversal.scanner.GraphIterator;
+import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.HashSet;
@@ -103,6 +104,20 @@ public abstract class ProcedureEdge<
         }
     }
 
+    public static ProcedureEdge<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
+                                         StructureEdge<?, ?> structureEdge, int order, boolean isForward) {
+        Encoding.Direction.Edge dir = isForward ? FORWARD : BACKWARD;
+        if (structureEdge.isEqual()) {
+            return new Equal(from, to, order, dir);
+        } else if (structureEdge.isPredicate()) {
+            return new Predicate(from.asThing(), to.asThing(), order, dir, structureEdge.asPredicate().predicate());
+        } else if (structureEdge.isNative()) {
+            return Native.of(from, to, structureEdge.asNative(), order, isForward);
+        } else {
+            throw TypeDBException.of(UNRECOGNISED_VALUE);
+        }
+    }
+
     public abstract FunctionalIterator<? extends Vertex<?, ?>> branch(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                                       GraphTraversal.Thing.Parameters params);
 
@@ -121,21 +136,37 @@ public abstract class ProcedureEdge<
         return to().isStartingVertex() || order() > to().branchEdge().order();
     }
 
-    public boolean onlyStartsFromAttribute() { return false; }
+    public boolean onlyStartsFromAttribute() {
+        return false;
+    }
 
-    public boolean onlyStartsFromRelation() { return false; }
+    public boolean onlyStartsFromRelation() {
+        return false;
+    }
 
-    public boolean onlyEndsAtRelation() { return false; }
+    public boolean onlyEndsAtRelation() {
+        return false;
+    }
 
-    public boolean onlyStartsFromAttributeType() { return false; }
+    public boolean onlyStartsFromAttributeType() {
+        return false;
+    }
 
-    public boolean onlyStartsFromRelationType() { return false; }
+    public boolean onlyStartsFromRelationType() {
+        return false;
+    }
 
-    public boolean onlyStartsFromRoleType() { return false; }
+    public boolean onlyStartsFromRoleType() {
+        return false;
+    }
 
-    public boolean onlyStartsFromThingType() { return false; }
+    public boolean onlyStartsFromThingType() {
+        return false;
+    }
 
-    public boolean isRolePlayer() { return false; }
+    public boolean isRolePlayer() {
+        return false;
+    }
 
     public Native.Thing.RolePlayer asRolePlayer() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Native.Thing.RolePlayer.class));
@@ -150,7 +181,7 @@ public abstract class ProcedureEdge<
         }
     }
 
-    public abstract ProcedureEdge<?,?> reverse();
+    public abstract ProcedureEdge<?, ?> reverse();
 
     public static class Equal extends ProcedureEdge<ProcedureVertex<?, ?>, ProcedureVertex<?, ?>> {
 
@@ -198,7 +229,9 @@ public abstract class ProcedureEdge<
         }
 
         @Override
-        public boolean onlyStartsFromAttribute() { return true; }
+        public boolean onlyStartsFromAttribute() {
+            return true;
+        }
 
         @Override
         public FunctionalIterator<? extends Vertex<?, ?>> branch(
@@ -243,12 +276,9 @@ public abstract class ProcedureEdge<
             VERTEX_NATIVE_FROM extends ProcedureVertex<?, ?>, VERTEX_NATIVE_TO extends ProcedureVertex<?, ?>
             > extends ProcedureEdge<VERTEX_NATIVE_FROM, VERTEX_NATIVE_TO> {
 
-        private final Encoding.Edge encoding;
-
         private Native(VERTEX_NATIVE_FROM from, VERTEX_NATIVE_TO to,
                        int order, Encoding.Direction.Edge direction, Encoding.Edge encoding) {
             super(from, to, order, direction, encoding.name());
-            this.encoding = encoding;
         }
 
         static Native<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
@@ -263,6 +293,21 @@ public abstract class ProcedureEdge<
                 return Native.Type.of(from.asType(), to.asType(), edge.asType());
             } else if (edge.isThing()) {
                 return Native.Thing.of(from.asThing(), to.asThing(), edge.asThing());
+            } else {
+                throw TypeDBException.of(UNRECOGNISED_VALUE);
+            }
+        }
+
+        public static ProcedureEdge<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
+                                             StructureEdge.Native<?, ?> edge, int order, boolean isForward) {
+            if (edge.encoding().equals(ISA)) {
+                boolean isTransitive = edge.isTransitive();
+                if (isForward) return new Isa.Forward(from.asThing(), to.asType(), order, isTransitive);
+                else return new Isa.Backward(from.asType(), to.asThing(), order, isTransitive);
+            } else if (edge.encoding().isType()) {
+                return Native.Type.of(from.asType(), to.asType(), edge, order, isForward);
+            } else if (edge.encoding().isThing()) {
+                return Native.Thing.of(from.asThing(), to.asThing(), edge, order, isForward);
             } else {
                 throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
@@ -382,6 +427,29 @@ public abstract class ProcedureEdge<
                 }
             }
 
+            static ProcedureEdge<?, ?> of(ProcedureVertex.Type from, ProcedureVertex.Type to,
+                                          StructureEdge.Native<?, ?> edge, int order, boolean isForward) {
+                switch (edge.encoding().asType()) {
+                    case SUB:
+                        if (isForward) return new Sub.Forward(from, to, order, edge.isTransitive());
+                        else return new Sub.Backward(from, to, order, edge.isTransitive());
+                    case OWNS:
+                        if (isForward) return new Owns.Forward(from, to, order, false);
+                        else return new Owns.Backward(from, to, order, false);
+                    case OWNS_KEY:
+                        if (isForward) return new Owns.Forward(from, to, order, true);
+                        else return new Owns.Backward(from, to, order, true);
+                    case PLAYS:
+                        if (isForward) return new Plays.Forward(from, to, order);
+                        else return new Plays.Backward(from, to, order);
+                    case RELATES:
+                        if (isForward) return new Relates.Forward(from, to, order);
+                        else return new Relates.Backward(from, to, order);
+                    default:
+                        throw TypeDBException.of(UNRECOGNISED_VALUE);
+                }
+            }
+
             static abstract class Sub extends Type {
 
                 final boolean isTransitive;
@@ -404,7 +472,7 @@ public abstract class ProcedureEdge<
 
                 static class Forward extends Sub {
 
-                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isTransitive) {
+                    public Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isTransitive) {
                         super(from, to, order, FORWARD, isTransitive);
                     }
 
@@ -497,7 +565,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromThingType() { return true; }
+                    public boolean onlyStartsFromThingType() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<TypeVertex> branch(
@@ -527,7 +597,7 @@ public abstract class ProcedureEdge<
                     private FunctionalIterator<TypeVertex> overriddens(TypeVertex owner) {
                         if (isKey) return owner.outs().edge(OWNS_KEY).overridden().noNulls();
                         else return link(owner.outs().edge(OWNS).overridden().noNulls(),
-                                         owner.outs().edge(OWNS_KEY).overridden().noNulls());
+                                owner.outs().edge(OWNS_KEY).overridden().noNulls());
                     }
 
                     private FunctionalIterator<TypeVertex> declaredOwnersOfAttType(TypeVertex attType) {
@@ -543,7 +613,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromAttributeType() { return true; }
+                    public boolean onlyStartsFromAttributeType() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<TypeVertex> branch(
@@ -592,7 +664,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromThingType() { return true; }
+                    public boolean onlyStartsFromThingType() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<TypeVertex> branch(
@@ -626,7 +700,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromRoleType() { return true; }
+                    public boolean onlyStartsFromRoleType() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<TypeVertex> branch(
@@ -675,7 +751,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromRelationType() { return true; }
+                    public boolean onlyStartsFromRelationType() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<TypeVertex> branch(
@@ -709,7 +787,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromRoleType() { return true; }
+                    public boolean onlyStartsFromRoleType() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<TypeVertex> branch(
@@ -757,6 +837,26 @@ public abstract class ProcedureEdge<
                     PlannerEdge.Native.Thing.RolePlayer.Directional rp = edge.asRolePlayer();
                     if (isForward) return new RolePlayer.Forward(from, to, orderNumber, rp.roleTypes());
                     else return new RolePlayer.Backward(from, to, orderNumber, rp.roleTypes());
+                } else {
+                    throw TypeDBException.of(UNRECOGNISED_VALUE);
+                }
+            }
+
+            static ProcedureEdge<?, ?> of(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
+                                          StructureEdge.Native<?, ?> edge, int order, boolean isForward) {
+                Encoding.Edge.Thing encoding = edge.encoding().asThing();
+                if (encoding == HAS) {
+                    if (isForward) return new Has.Forward(from, to, order);
+                    else return new Has.Backward(from, to, order);
+                } else if (encoding == RELATING) {
+                    if (isForward) return new Relating.Forward(from, to, order);
+                    else return new Relating.Backward(from, to, order);
+                } else if (encoding == PLAYING) {
+                    if (isForward) return new Playing.Forward(from, to, order);
+                    else return new Playing.Backward(from, to, order);
+                } else if (encoding == ROLEPLAYER) {
+                    if (isForward) return new RolePlayer.Forward(from, to, order, edge.asRolePlayer().types());
+                    else return new RolePlayer.Backward(from, to, order, edge.asRolePlayer().types());
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
@@ -855,7 +955,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromAttribute() { return true; }
+                    public boolean onlyStartsFromAttribute() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<? extends Vertex<?, ?>> branch(
@@ -962,7 +1064,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromRelation() { return true; }
+                    public boolean onlyStartsFromRelation() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<? extends Vertex<?, ?>> branch(
@@ -1061,10 +1165,14 @@ public abstract class ProcedureEdge<
                 }
 
                 @Override
-                public boolean isRolePlayer() { return true; }
+                public boolean isRolePlayer() {
+                    return true;
+                }
 
                 @Override
-                public RolePlayer asRolePlayer() { return this; }
+                public RolePlayer asRolePlayer() {
+                    return this;
+                }
 
                 public Identifier.Variable scope() {
                     if (direction().isForward()) return from.id().asVariable();
@@ -1083,7 +1191,9 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromRelation() { return true; }
+                    public boolean onlyStartsFromRelation() {
+                        return true;
+                    }
 
                     @Override
                     public FunctionalIterator<ThingEdge> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
