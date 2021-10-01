@@ -188,7 +188,7 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         public void initialise(TraversalCache cache) {
-            assert planners.isEmpty();
+            assert planners == null;
             this.cache = cache;
             planners = new HashMap<>();
             structures().forEachRemaining(structure -> {
