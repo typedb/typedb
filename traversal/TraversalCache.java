@@ -32,7 +32,7 @@ public class TraversalCache {
 
     public TraversalCache() {
         activePlanners = new CommonCache<>(30);
-        optimalPlanners = new CommonCache<>(10000);
+        optimalPlanners = new CommonCache<>(10_000);
     }
 
     public Planner getPlanner(Structure structure, Function<Structure, Planner> constructor) {
@@ -41,7 +41,7 @@ public class TraversalCache {
         return activePlanners.get(structure, constructor);
     }
 
-    public void updatePlanner(Map<Structure, Planner> planners) {
+    public void mayUpdatePlanners(Map<Structure, Planner> planners) {
         planners.forEach((structure, planner) -> {
             if (planner.isOptimal() && optimalPlanners.getIfPresent(structure) == null) {
                 optimalPlanners.put(structure, planner);

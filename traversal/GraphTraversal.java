@@ -81,8 +81,8 @@ public abstract class GraphTraversal extends Traversal {
 
     public abstract void filter(Set<? extends Identifier.Variable.Retrievable> filter);
 
-    FunctionalIterator<VertexMap> permutation(GraphManager graphMgr, Collection<Planner> planners, boolean singleUse,
-                                              Set<Identifier.Variable.Retrievable> filter) {
+    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, Collection<Planner> planners, boolean singleUse,
+                                                      Set<Identifier.Variable.Retrievable> filter) {
         assert !planners.isEmpty();
         if (planners.size() == 1) {
             planners.iterator().next().tryOptimise(graphMgr, singleUse);
@@ -154,7 +154,7 @@ public abstract class GraphTraversal extends Traversal {
 
         @Override
         FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
-            return permutation(graphMgr, structures().map(Planner::create).toList(), true, filter());
+            return permutationIterator(graphMgr, structures().map(Planner::create).toList(), true, filter());
         }
 
         public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(
@@ -178,21 +178,21 @@ public abstract class GraphTraversal extends Traversal {
 
     public static class Thing extends GraphTraversal {
 
-        private final Map<Structure, Planner> planners;
-        private boolean modifiable;
+        private Map<Structure, Planner> planners;
         private TraversalCache cache;
+        private boolean modifiable;
 
         public Thing() {
             super();
             modifiable = true;
-            planners = new HashMap<>();
         }
 
         public void initialise(TraversalCache cache) {
             assert planners.isEmpty();
             this.cache = cache;
+            planners = new HashMap<>();
             structures().forEachRemaining(structure -> {
-                Planner planner = cache.getPlanner(structure, Planner::create);
+                Planner planner = this.cache.getPlanner(structure, Planner::create);
                 planners.put(structure, planner);
             });
         }
@@ -200,8 +200,8 @@ public abstract class GraphTraversal extends Traversal {
         @Override
         FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
             assert !planners.isEmpty() && cache != null;
-            FunctionalIterator<VertexMap> iter = permutation(graphMgr, planners.values(), false, filter());
-            cache.updatePlanner(planners);
+            FunctionalIterator<VertexMap> iter = permutationIterator(graphMgr, planners.values(), false, filter());
+            cache.mayUpdatePlanners(planners);
             return iter;
         }
 
@@ -224,7 +224,7 @@ public abstract class GraphTraversal extends Traversal {
                     return VertexMap.of(combinedAnswers);
                 }));
             }
-            cache.updatePlanner(planners);
+            cache.mayUpdatePlanners(planners);
             return producer;
         }
 
