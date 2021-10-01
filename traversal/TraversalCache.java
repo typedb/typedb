@@ -25,8 +25,6 @@ import com.vaticle.typedb.core.traversal.structure.Structure;
 import java.util.Map;
 import java.util.function.Function;
 
-import static com.vaticle.typedb.core.common.cache.CommonCache.CACHE_TIMEOUT_MINUTES;
-
 public class TraversalCache {
 
     private final CommonCache<Structure, Planner> activePlanners;

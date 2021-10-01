@@ -27,8 +27,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class CommonCache<KEY, VALUE> {
 
-    protected static final int CACHE_SIZE = 10_000; // TODO: parameterise this through typedb.properties
-    public static final int CACHE_TIMEOUT_MINUTES = 1_440;
+    private static final int CACHE_SIZE = 10_000; // TODO: parameterise this through typedb.properties
+    private static final int CACHE_TIMEOUT_MINUTES = 1_440;
     private final Cache<KEY, VALUE> cache;
 
     public CommonCache() {
