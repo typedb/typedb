@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -163,7 +164,7 @@ public final class ResolutionTracer {
 
         private void startFile() {
             write(String.format(
-                    "digraph request_%d_%d {\n" +
+                    "digraph request_%s_%d {\n" +
                             "node [fontsize=12 fontname=arial width=0.5 shape=box style=filled]\n" +
                             "edge [fontsize=10 fontname=arial width=0.5]",
                     trace.scope, trace.root()));
@@ -183,7 +184,7 @@ public final class ResolutionTracer {
         }
 
         private String filename() {
-            return String.format("resolution_trace_request_%d_%d.dot", trace.scope(), trace.root());
+            return String.format("resolution_trace_request_%s_%d.dot", trace.scope(), trace.root());
         }
 
         private void endFile() {
@@ -242,15 +243,15 @@ public final class ResolutionTracer {
 
     public static class Trace {
 
-        private final int scope;
+        private final UUID scope;
         private final int root;
 
-        private Trace(int scope, int root) {
+        private Trace(UUID scope, int root) {
             this.scope = scope;
             this.root = root;
         }
 
-        public static Trace create(int scope, int rootRequestId) {
+        public static Trace create(UUID scope, int rootRequestId) {
             return new Trace(scope, rootRequestId);
         }
 
@@ -258,7 +259,7 @@ public final class ResolutionTracer {
             return root;
         }
 
-        public int scope() {
+        public UUID scope() {
             return scope;
         }
 

@@ -35,10 +35,9 @@ import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.lang.Math.abs;
 
 public class ExplanationProducer implements Producer<Explanation> {
 
@@ -53,7 +52,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     private final AtomicInteger processing;
     private final Request.Template requestTemplate;
     private final Request.Visit defaultResolveRequest;
-    private final int traceId;
+    private final UUID traceId;
     private boolean done;
     private int requestTraceIdCounter;
     private Queue<Explanation> queue;
@@ -70,7 +69,7 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR : 1;
         this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.requestTraceIdCounter = 0;
-        this.traceId = abs(System.identityHashCode(this));
+        this.traceId = UUID.randomUUID();
         this.requestTemplate = requestTemplate();
         this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(traceId, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());

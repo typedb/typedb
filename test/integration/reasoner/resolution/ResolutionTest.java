@@ -49,6 +49,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -490,7 +491,7 @@ public class ResolutionTest {
         Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
         Request.Template requestFactory = Request.Template.create(root, downstream);
         for (int i = 0; i < n; i++) {
-            Trace trace = Trace.create(0, i);
+            Trace trace = Trace.create(UUID.randomUUID(), i);
             root.execute(actor -> actor.receiveVisit(requestFactory.createVisit(trace)));
         }
         int answersFound = 0;

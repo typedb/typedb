@@ -38,10 +38,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.lang.Math.abs;
 
 @ThreadSafe
 public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename to MatchProducer and create abstract supertype
@@ -57,7 +56,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     private final int computeSize;
     private final Request.Template requestTemplate;
     private final Request.Visit defaultResolveRequest;
-    private final int traceId;
+    private final UUID traceId;
     private boolean done;
     private Queue<ConceptMap> queue;
     private int requestIdCounter;
@@ -76,7 +75,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         this.requestIdCounter = 0;
-        this.traceId = abs(System.identityHashCode(this));
+        this.traceId = UUID.randomUUID();
         this.requestTemplate = requestTemplate(filter);
         this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(traceId, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
@@ -95,7 +94,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         this.requestIdCounter = 0;
-        this.traceId = abs(System.identityHashCode(this));
+        this.traceId = UUID.randomUUID();
         this.requestTemplate = requestTemplate(filter);
         this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(traceId, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
