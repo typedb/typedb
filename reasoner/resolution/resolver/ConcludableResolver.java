@@ -56,7 +56,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
             LOG.debug("{}: Creating a new BoundConcludableResolver for bounds: {}", name(), partial);
             // TODO: We could use the bounds to prune the applicable rules further
             BoundConcludableContext context = new BoundConcludableContext(driver(), concludable, conclusionResolvers);
-            return registry.registerBoundConcludable(context, partial.conceptMap(), partial.asConcludable().isExplain());
+            return registry.registerBoundConcludable(partial.conceptMap(), context, partial.asConcludable().isExplain());
         });
     }
 

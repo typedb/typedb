@@ -39,7 +39,7 @@ import java.util.function.Consumer;
 
 public interface RootResolver {
 
-    class Conjunction extends ConjunctionResolver<Conjunction> implements RootResolver {
+    class Conjunction extends ConjunctionResolver<Conjunction> {
 
         private static final Logger LOG = LoggerFactory.getLogger(Conjunction.class);
 
@@ -103,7 +103,7 @@ public interface RootResolver {
 
     }
 
-    class Disjunction extends DisjunctionResolver<Disjunction> implements RootResolver {
+    class Disjunction extends DisjunctionResolver<Disjunction> {
 
         private static final Logger LOG = LoggerFactory.getLogger(Disjunction.class);
         private final BiConsumer<Request, Finished> onAnswer;
@@ -161,7 +161,7 @@ public interface RootResolver {
 
     }
 
-    class Explain extends ConjunctionResolver<Explain> implements RootResolver {
+    class Explain extends ConjunctionResolver<Explain> {
 
         private static final Logger LOG = LoggerFactory.getLogger(Explain.class);
 
