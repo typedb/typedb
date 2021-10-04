@@ -262,8 +262,9 @@ public class ResolverRegistry {
         return resolverView;
     }
 
-    public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(BoundConcludableContext context,
-                                                                           ConceptMap bounds, boolean explain) {
+    public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(ConceptMap bounds,
+                                                                           BoundConcludableContext context,
+                                                                           boolean explain) {
         // TODO: Move this to the responsibility of the ConcludableResolver
         LOG.debug("Register BoundConcludableResolver, pattern: {} bounds: {}", context.concludable().pattern(), bounds);
         Actor.Driver<BoundConcludableResolver> resolver;
