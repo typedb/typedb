@@ -34,7 +34,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
 
     private static final Logger LOG = LoggerFactory.getLogger(CompoundResolver.class);
 
-    final Map<Request, RequestState> requestStates;
+    final Map<Request.Template, RequestState> requestStates;
     boolean isInitialised;
 
     protected CompoundResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
@@ -43,74 +43,74 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         this.isInitialised = false;
     }
 
-    protected abstract void nextAnswer(Request fromUpstream, RequestState requestState, int iteration);
+    protected void sendNextMessage(Request fromUpstream, RequestState requestState) {
+        if (requestState.downstreamManager().hasNextVisit()) {
+            visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream.trace()), fromUpstream);
+        } else if (requestState.downstreamManager().hasNextRevisit()) {
+            revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream.trace()), fromUpstream);
+        } else if (requestState.downstreamManager().hasNextBlocked()) {
+            blockToUpstream(fromUpstream, requestState.downstreamManager().cycles());
+        } else {
+            failToUpstream(fromUpstream);
+        }
+    }
 
     @Override
-    public void receiveRequest(Request fromUpstream, int iteration) {
-        LOG.trace("{}: received Request: {}", name(), fromUpstream);
+    public void receiveVisit(Request.Visit fromUpstream) {
+        LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
-
-        RequestState requestState = getOrUpdateRequestState(fromUpstream, iteration);
-        if (iteration < requestState.iteration()) {
-            // short circuit if the request came from a prior iteration
-            failToUpstream(fromUpstream, iteration);
-        } else {
-            assert iteration == requestState.iteration();
-            nextAnswer(fromUpstream, requestState, iteration);
-        }
+        RequestState requestState = requestStates.computeIfAbsent(fromUpstream.template(), this::requestStateCreate);
+        sendNextMessage(fromUpstream, requestState);
     }
 
     @Override
-    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-        LOG.trace("{}: received Exhausted, with iter {}: {}", name(), iteration, fromDownstream);
+    protected void receiveRevisit(Request.Revisit fromUpstream) {
+        LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
+        assert isInitialised;
         if (isTerminated()) return;
-
-        Request toDownstream = fromDownstream.sourceRequest();
-        Request fromUpstream = fromUpstream(toDownstream);
-        RequestState requestState = requestStates.get(fromUpstream);
-
-        if (iteration < requestState.iteration()) {
-            // short circuit old iteration failed messages back out of the actor model
-            failToUpstream(fromUpstream, iteration);
-            return;
-        }
-        requestState.downstreamManager().removeDownstream(fromDownstream.sourceRequest());
-        nextAnswer(fromUpstream, requestState, iteration);
+        RequestState requestState = requestStates.get(fromUpstream.visit().template());
+        requestState.downstreamManager().unblock(fromUpstream.cycles());
+        sendNextMessage(fromUpstream, requestState);
     }
 
-    private RequestState getOrUpdateRequestState(Request fromUpstream, int iteration) {
-        if (!requestStates.containsKey(fromUpstream)) {
-            requestStates.put(fromUpstream, requestStateCreate(fromUpstream, iteration));
-        } else {
-            RequestState requestState = requestStates.get(fromUpstream);
-
-            if (requestState.iteration() < iteration) {
-                // when the same request for the next iteration the first time, re-initialise required state
-                RequestState responseProducerNextIter = requestStateReiterate(fromUpstream, requestState, iteration);
-                this.requestStates.put(fromUpstream, responseProducerNextIter);
-            }
-        }
-        return requestStates.get(fromUpstream);
+    @Override
+    protected void receiveFail(Response.Fail fromDownstream) {
+        LOG.trace("{}: received Exhausted from {}", name(), fromDownstream);
+        if (isTerminated()) return;
+        Request.Template toDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = upstreamRequest(fromDownstream);
+        RequestState requestState = requestStates.get(fromUpstream.visit().template());
+        requestState.downstreamManager().remove(toDownstream);
+        sendNextMessage(fromUpstream, requestState);
     }
 
-    abstract RequestState requestStateCreate(Request fromUpstream, int iteration);
+    @Override
+    protected void receiveBlocked(Response.Blocked fromDownstream) {
+        LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
+        if (isTerminated()) return;
+        Request.Template blockingDownstream = fromDownstream.sourceRequest();
+        Request fromUpstream = upstreamRequest(fromDownstream);
+        RequestState requestState = this.requestStates.get(fromUpstream.visit().template());
+        if (requestState.downstreamManager().contains(blockingDownstream)) {
+            requestState.downstreamManager().block(blockingDownstream, fromDownstream.cycles());
+        }
+        sendNextMessage(fromUpstream, requestState);
+    }
 
-    abstract RequestState requestStateReiterate(Request fromUpstream, RequestState priorResponses, int iteration);
+    abstract RequestState requestStateCreate(Request.Template fromUpstream);
 
     // TODO: Align with the RequestState implementation used across the other resolvers
     static class RequestState {
 
-        private final int iteration;
         private final DownstreamManager downstreamManager;
         private final Set<ConceptMap> deduplicationSet;
 
-        public RequestState(int iteration) {
-            this(iteration, new HashSet<>());
+        public RequestState() {
+            this(new HashSet<>());
         }
 
-        public RequestState(int iteration, Set<ConceptMap> produced) {
-            this.iteration = iteration;
+        public RequestState(Set<ConceptMap> produced) {
             this.downstreamManager = new DownstreamManager();
             this.deduplicationSet = new HashSet<>(produced);
         }
@@ -119,12 +119,9 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
             return downstreamManager;
         }
 
-        public int iteration() {
-            return iteration;
-        }
-
         public Set<ConceptMap> deduplicationSet() {
             return deduplicationSet;
         }
+
     }
 }

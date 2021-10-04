@@ -20,11 +20,8 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
 
 public class RetrievableResolver extends SubsumptiveCoordinator<RetrievableResolver, BoundRetrievableResolver> {
 
@@ -38,8 +35,8 @@ public class RetrievableResolver extends SubsumptiveCoordinator<RetrievableResol
     }
 
     @Override
-    Driver<BoundRetrievableResolver> getOrCreateWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial) {
-        return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(partial.conceptMap(), p -> {
+    Driver<BoundRetrievableResolver> getOrCreateBoundResolver(AnswerState.Partial<?> partial) {
+        return workers.computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundRetrievableResolver for bounds: {}", name(), partial);
             return registry.registerBoundRetrievable(retrievable, partial.conceptMap());
         });

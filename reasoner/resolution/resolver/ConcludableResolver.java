@@ -23,14 +23,12 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver.BoundConcludableContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 
 public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResolver, BoundConcludableResolver> {
@@ -42,20 +40,23 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
 
     public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable, ResolverRegistry registry) {
         super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
-              registry);
+                registry);
         this.concludable = concludable;
         this.conclusionResolvers = new LinkedHashMap<>();
         this.isInitialised = false;
     }
 
+    public Concludable concludable() {
+        return concludable;
+    }
+
     @Override
-    Driver<BoundConcludableResolver> getOrCreateWorker(Driver<? extends Resolver<?>> root, AnswerState.Partial<?> partial) {
-        return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(partial.conceptMap(), p -> {
+    Driver<BoundConcludableResolver> getOrCreateBoundResolver(AnswerState.Partial<?> partial) {
+        return workers.computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundConcludableResolver for bounds: {}", name(), partial);
             // TODO: We could use the bounds to prune the applicable rules further
-            return registry.registerBoundConcludable(
-                    concludable, partial.conceptMap(), root,
-                    iterationByRoot.get(root), partial.asConcludable().isExplain());
+            BoundConcludableContext context = new BoundConcludableContext(driver(), concludable, conclusionResolvers);
+            return registry.registerBoundConcludable(partial.conceptMap(), context, partial.asConcludable().isExplain());
         });
     }
 
@@ -63,22 +64,16 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
     protected void initialiseDownstreamResolvers() {
         LOG.debug("{}: initialising downstream resolvers", name());
         concludable.getApplicableRules(registry.conceptManager(), registry.logicManager())
-                .forEachRemaining(rule -> concludable.getUnifiers(rule)
-                        .forEachRemaining(unifier -> {
-                            if (isTerminated()) return;
-                            try {
-                                Driver<ConclusionResolver> conclusionResolver =
-                                        registry.registerConclusion(rule.conclusion());
-                                conclusionResolvers.computeIfAbsent(conclusionResolver, r -> new HashSet<>()).add(unifier);
-                            } catch (TypeDBException e) {
-                                terminate(e);
-                            }
-                        }));
+                .forEachRemaining(rule -> concludable.getUnifiers(rule).forEachRemaining(unifier -> {
+                    if (isTerminated()) return;
+                    try {
+                        Driver<ConclusionResolver> conclusionResolver = registry.registerConclusion(rule.conclusion());
+                        conclusionResolvers.computeIfAbsent(conclusionResolver, r -> new HashSet<>()).add(unifier);
+                    } catch (TypeDBException e) {
+                        terminate(e);
+                    }
+                }));
         if (!isTerminated()) isInitialised = true;
-    }
-
-    Map<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers() {
-        return conclusionResolvers;
     }
 
 }

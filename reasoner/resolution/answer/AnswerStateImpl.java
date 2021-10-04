@@ -432,7 +432,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                     @Override
                     public Concludable.Explain toDownstream(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable) {
                         // note: we implement the method to conform to API, but do not use the conjunction when explaining
-                        return ConcludableImpl.ExplainImpl.childOf(mapping, this);
+                        return ConcludableImpl.ExplainImpl.childOf(mapping, concludable, this);
                     }
 
                     @Override
@@ -595,10 +595,18 @@ public abstract class AnswerStateImpl implements AnswerState {
                 extends PartialImpl<PRNT> implements Concludable<PRNT> {
 
             private final Mapping mapping;
+            private final com.vaticle.typedb.core.logic.resolvable.Concludable concludable;
 
-            ConcludableImpl(Mapping mapping, PRNT parent, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root) {
+            ConcludableImpl(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable,
+                            PRNT parent, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root) {
                 super(parent, conceptMap, root);
                 this.mapping = mapping;
+                this.concludable = concludable;
+            }
+
+            @Override
+            public com.vaticle.typedb.core.logic.resolvable.Concludable concludable() {
+                return concludable;
             }
 
             @Override
@@ -608,14 +616,13 @@ public abstract class AnswerStateImpl implements AnswerState {
 
             public static class MatchImpl<P extends Compound<P, ?>> extends ConcludableImpl<P> implements Match<P> {
 
-                private final com.vaticle.typedb.core.logic.resolvable.Concludable concludable;
                 private final boolean explainable;
                 private final int hash;
 
-                private MatchImpl(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable, P parent, ConceptMap conceptMap,
-                                  Actor.Driver<? extends Resolver<?>> root, boolean explainable) {
-                    super(mapping, parent, conceptMap, root);
-                    this.concludable = concludable;
+                private MatchImpl(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable,
+                                  P parent, ConceptMap conceptMap, Actor.Driver<? extends Resolver<?>> root,
+                                  boolean explainable) {
+                    super(mapping, concludable, parent, conceptMap, root);
                     this.explainable = explainable;
                     this.hash = Objects.hash(root(), parent(), conceptMap(),explainable(), mapping());
                 }
@@ -633,7 +640,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Match<P> with(ConceptMap extension) {
-                    return new MatchImpl<>(mapping(), concludable, parent(), extendAnswer(extension), root(), explainable());
+                    return new MatchImpl<>(mapping(), concludable(), parent(), extendAnswer(extension), root(), explainable());
                 }
 
                 @Override
@@ -655,10 +662,12 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 private ConceptMap withExplainable(ConceptMap conceptMap) {
-                    if (concludable.isRelation() || concludable.isAttribute() || concludable.isIsa()) {
-                        return conceptMap.withExplainableConcept(concludable.generating().get().id(), concludable.pattern());
-                    } else if (concludable.isHas()) {
-                        return conceptMap.withExplainableAttrOwnership(concludable.asHas().owner().id(), concludable.asHas().attribute().id(), concludable.pattern());
+                    if (concludable().isRelation() || concludable().isAttribute() || concludable().isIsa()) {
+                        return conceptMap.withExplainableConcept(concludable().generating().get().id(), concludable().pattern());
+                    } else if (concludable().isHas()) {
+                        return conceptMap.withExplainableAttrOwnership(
+                                concludable().asHas().owner().id(),
+                                concludable().asHas().attribute().id(), concludable().pattern());
                     } else {
                         throw TypeDBException.of(ILLEGAL_STATE);
                     }
@@ -692,22 +701,26 @@ public abstract class AnswerStateImpl implements AnswerState {
                 private final Explanation explanation;
                 private final int hash;
 
-                ExplainImpl(@Nullable Explanation explanation, Mapping mapping, Compound.Root.Explain parent, ConceptMap conceptMap,
+                ExplainImpl(@Nullable Explanation explanation, Mapping mapping,
+                            com.vaticle.typedb.core.logic.resolvable.Concludable concludable,
+                            Compound.Root.Explain parent, ConceptMap conceptMap,
                             Actor.Driver<? extends Resolver<?>> root) {
-                    super(mapping, parent, conceptMap, root);
+                    super(mapping, concludable, parent, conceptMap, root);
                     this.explanation = explanation;
                     this.hash = Objects.hash(root(), parent(), conceptMap(), mapping(), explanation);
                 }
 
-                static ExplainImpl childOf(Mapping mapping, Compound.Root.Explain parent) {
-                    return new ExplainImpl(null, mapping, parent, mapping.transform(parent.conceptMap()), parent.root());
+                static ExplainImpl childOf(Mapping mapping,
+                                           com.vaticle.typedb.core.logic.resolvable.Concludable concludable,
+                                           Compound.Root.Explain parent) {
+                    return new ExplainImpl(null, mapping, concludable, parent, mapping.transform(parent.conceptMap()), parent.root());
                 }
 
                 @Override
                 public Explain with(ConceptMap extension, Rule rule, ConceptMap conclusionAnser, Unifier unifier, ConceptMap conditionAnswer) {
                     assert this.explanation == null;
                     Explanation explanation = new Explanation(rule, transitiveMapping(mapping(), unifier), conclusionAnser, conditionAnswer);
-                    return new ExplainImpl(explanation, mapping(), parent(), extendAnswer(extension), root());
+                    return new ExplainImpl(explanation, mapping(), concludable(), parent(), extendAnswer(extension), root());
                 }
 
                 private Map<Identifier.Variable.Retrievable, Set<Identifier.Variable.Retrievable>> transitiveMapping(Mapping mapping, Unifier unifier) {

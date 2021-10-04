@@ -20,13 +20,12 @@ package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConclusionResolver;
-import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,15 +50,14 @@ public class Materialiser extends ReasonerActor<Materialiser> {
         if (isTerminated()) return;
         Optional<Map<Identifier.Variable, Concept>> materialisation = request.conclusion().materialise(
                 request.partialAnswer().conceptMap(), registry.traversalEngine(), registry.conceptManager());
+        Response response = new Response(request, materialisation.orElse(null), request.partialAnswer());
         if (registry.resolutionTracing()) {
             if (materialisation.isPresent()) {
-                ResolutionTracer.get().responseAnswer(
-                        this.name(), request.sender().name(), -1, materialisation.get().keySet().toString());
+                ResolutionTracer.get().responseAnswer(response, materialisation.get());
             } else {
-                ResolutionTracer.get().responseExhausted(this.name(), request.sender().name(), -1);
+                ResolutionTracer.get().responseExhausted(response);
             }
         }
-        Response response = new Response(request, materialisation.orElse(null), request.partialAnswer());
         request.sender().execute(actor -> actor.receiveMaterialisation(response));
     }
 
@@ -78,23 +76,26 @@ public class Materialiser extends ReasonerActor<Materialiser> {
     }
 
     public static class Request {
+        //TODO: Align with other Request types
 
         private final Driver<BoundConclusionResolver> sender;
         private final Actor.Driver<Materialiser> receiver;
+        private final Trace trace;
         private final Rule.Conclusion conclusion;
         private final AnswerState.Partial<?> partialAnswer;
 
-        private Request(Actor.Driver<BoundConclusionResolver> sender, Actor.Driver<Materialiser> receiver,
-                        Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
+        private Request(Driver<BoundConclusionResolver> sender, Driver<Materialiser> receiver,
+                        ResolutionTracer.Trace trace, Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
             this.sender = sender;
             this.receiver = receiver;
+            this.trace = trace;
             this.conclusion = conclusion;
             this.partialAnswer = partialAnswer;
         }
 
-        public static Request create(Actor.Driver<BoundConclusionResolver> sender, Actor.Driver<Materialiser> receiver,
-                                     Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
-            return new Request(sender, receiver, conclusion, partialAnswer);
+        public static Request create(Driver<BoundConclusionResolver> sender, Driver<Materialiser> receiver,
+                                     Trace trace, Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
+            return new Request(sender, receiver, trace, conclusion, partialAnswer);
         }
 
         public Rule.Conclusion conclusion() {
@@ -103,6 +104,10 @@ public class Materialiser extends ReasonerActor<Materialiser> {
 
         public AnswerState.Partial<?> partialAnswer() {
             return partialAnswer;
+        }
+
+        public Trace trace() {
+            return trace;
         }
 
         @Override
@@ -124,6 +129,7 @@ public class Materialiser extends ReasonerActor<Materialiser> {
     }
 
     public static class Response {
+        //TODO: Align with other Response types
 
         private final Request request;
         private final Map<Identifier.Variable, Concept> materialisation;
@@ -133,6 +139,18 @@ public class Materialiser extends ReasonerActor<Materialiser> {
             this.request = request;
             this.materialisation = materialisation;
             this.partialAnswer = partialAnswer;
+        }
+
+        public Actor.Driver<Materialiser> sender() {
+            return sourceRequest().receiver();
+        }
+
+        public Driver<BoundConclusionResolver> receiver() {
+            return sourceRequest().sender();
+        }
+
+        public Trace trace() {
+            return sourceRequest().trace();
         }
 
         public Optional<Map<Identifier.Variable, Concept>> materialisation() {

@@ -22,6 +22,7 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.poller.Poller;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
@@ -30,27 +31,35 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Blocked.Cycle;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
+import static com.vaticle.typedb.core.common.poller.Pollers.poll;
 
 public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends ReasonerActor<RESOLVER> {
+
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
-    private final Map<Request, Request> requestRouter;
+    private final Map<Request.Visit, Request.Visit> requestRouter;
     protected final ResolverRegistry registry;
 
     protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
@@ -75,50 +84,81 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         registry.terminate(e);
     }
 
-    public abstract void receiveRequest(Request fromUpstream, int iteration);
+    public abstract void receiveVisit(Request.Visit fromUpstream);
 
-    protected abstract void receiveAnswer(Response.Answer fromDownstream, int iteration);
+    protected abstract void receiveRevisit(Request.Revisit fromUpstream);
 
-    protected abstract void receiveFail(Response.Fail fromDownstream, int iteration);
+    protected abstract void receiveAnswer(Answer fromDownstream);
+
+    protected abstract void receiveFail(Response.Fail fromDownstream);
+
+    protected abstract void receiveBlocked(Response.Blocked fromDownstream);
 
     protected abstract void initialiseDownstreamResolvers(); //TODO: This method should only be required of the coordinating actors
 
-    protected Request fromUpstream(Request toDownstream) {
+    protected Request.Visit fromUpstream(Request.Visit toDownstream) {
         assert requestRouter.containsKey(toDownstream);
+        assert requestRouter.get(toDownstream).trace() == toDownstream.trace();
         return requestRouter.get(toDownstream);
     }
 
-    // TODO: Rename to sendRequest or request
-    protected void requestFromDownstream(Request request, Request fromUpstream, int iteration) {
-        LOG.trace("{} : Sending a new answer Request to downstream: {}", name(), request);
-        if (registry.resolutionTracing()) ResolutionTracer.get().request(
-                this.name(), request.receiver().name(), iteration,
-                request.partialAnswer().conceptMap().concepts().keySet().toString());
-        // TODO: we may overwrite if multiple identical requests are sent, when to clean up?
-        requestRouter.put(request, fromUpstream);
-        Driver<? extends Resolver<?>> receiver = request.receiver();
-        receiver.execute(actor -> actor.receiveRequest(request, iteration));
+    protected Request upstreamRequest(Response response) {
+        return fromUpstream(response.sourceRequest().createVisit(response.trace()));
     }
 
-    // TODO: Rename to sendResponse or respond
-    protected void answerToUpstream(AnswerState answer, Request fromUpstream, int iteration) {
+    protected Request.Template upstreamTemplate(Response response) {
+        return upstreamRequest(response).visit().template();
+    }
+
+    protected void visitDownstream(Request.Template downstream, Request fromUpstream) {
+        visitDownstream(downstream.createVisit(fromUpstream.trace()), fromUpstream);
+    }
+
+    protected void visitDownstream(Request.Visit visit, Request fromUpstream) {
+        LOG.trace("{} : Sending a new Visit request to downstream: {}", name(), visit);
+        if (registry.resolutionTracing()) ResolutionTracer.get().visit(visit);
+        requestRouter.put(visit, fromUpstream.visit());
+        visit.receiver().execute(actor -> actor.receiveVisit(visit));
+    }
+
+    protected void revisitDownstream(Request.Revisit revisit, Request fromUpstream) {
+        LOG.trace("{} : Sending a new Revisit request to downstream: {}", name(), revisit);
+        if (registry.resolutionTracing()) ResolutionTracer.get().revisit(revisit);
+        requestRouter.put(revisit.visit(), fromUpstream.visit());
+        revisit.visit().receiver().execute(actor -> actor.receiveRevisit(revisit));
+    }
+
+    protected void answerToUpstream(AnswerState answer, Request fromUpstream) {
         assert answer.isPartial();
-        Answer response = Answer.create(fromUpstream, answer.asPartial());
+        Answer response = Answer.create(fromUpstream.visit().template(), answer.asPartial(), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(
-                this.name(), fromUpstream.sender().name(), iteration,
-                response.asAnswer().answer().conceptMap().concepts().keySet().toString()
-        );
-        fromUpstream.sender().execute(actor -> actor.receiveAnswer(response, iteration));
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(response);
+        fromUpstream.visit().sender().execute(actor -> actor.receiveAnswer(response));
     }
 
-    protected void failToUpstream(Request fromUpstream, int iteration) {
-        Response.Fail response = new Response.Fail(fromUpstream);
+    protected void failToUpstream(Request fromUpstream) {
+        Response.Fail response = new Response.Fail(fromUpstream.visit().template(), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
-        if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(
-                this.name(), fromUpstream.sender().name(), iteration
-        );
-        fromUpstream.sender().execute(actor -> actor.receiveFail(response, iteration));
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(response);
+        fromUpstream.visit().sender().execute(actor -> actor.receiveFail(response));
+    }
+
+    protected void blockToUpstream(Request fromUpstream, Set<Cycle> cycles) {
+        assert !fromUpstream.visit().partialAnswer().parent().isTop();
+        Response.Blocked response = new Response.Blocked(fromUpstream.visit().template(), cycles,
+                                                         fromUpstream.trace());
+        LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response);
+        fromUpstream.visit().sender().execute(actor -> actor.receiveBlocked(response));
+    }
+
+    protected void blockToUpstream(Request fromUpstream, int numAnswersSeen) {
+        assert !fromUpstream.visit().partialAnswer().parent().isTop();
+        Cycle cycle = new Cycle(fromUpstream.visit().template().receiver(), numAnswersSeen);
+        Response.Blocked response = new Response.Blocked(fromUpstream.visit().template(), set(cycle), fromUpstream.trace());
+        LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
+        if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response);
+        fromUpstream.visit().sender().execute(actor -> actor.receiveBlocked(response));
     }
 
     protected FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
@@ -171,49 +211,144 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         return traversal;
     }
 
+    public abstract static class RequestState {
+
+        protected final Request.Template fromUpstream;
+
+        protected RequestState(Request.Template fromUpstream) {
+            this.fromUpstream = fromUpstream;
+        }
+
+        public Request.Template fromUpstream() {
+            return fromUpstream;
+        }
+
+        public abstract Optional<? extends AnswerState.Partial<?>> nextAnswer();
+
+        public interface Exploration {
+
+            boolean newAnswer(AnswerState.Partial<?> partial);
+
+            DownstreamManager downstreamManager();
+
+            boolean singleAnswerRequired();
+
+        }
+
+    }
+
+    public abstract static class CachingRequestState<ANSWER> extends RequestState {
+
+        protected final AnswerCache<ANSWER> answerCache;
+        protected Poller<? extends AnswerState.Partial<?>> cacheReader;
+        protected final Set<ConceptMap> deduplicationSet;
+
+        protected CachingRequestState(Request.Template fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate) {
+            super(fromUpstream);
+            this.answerCache = answerCache;
+            this.deduplicationSet = deduplicate ? new HashSet<>() : null;
+            this.cacheReader = answerCache.reader().flatMap(
+                    a -> poll(toUpstream(a).filter(
+                            partial -> !deduplicate || !deduplicationSet.contains(partial.conceptMap()))));
+        }
+
+        @Override
+        public Optional<? extends AnswerState.Partial<?>> nextAnswer() {
+            Optional<? extends AnswerState.Partial<?>> ans = cacheReader.poll();
+            if (ans.isPresent() && deduplicationSet != null) deduplicationSet.add(ans.get().conceptMap());
+            return ans;
+        }
+
+        protected abstract FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ANSWER answer);
+
+    }
+
     public static class DownstreamManager {
-        private final LinkedHashSet<Request> downstreams;
-        private Iterator<Request> downstreamSelector;
+        protected final List<Request.Template> visits;
+        protected Map<Request.Template, Set<Cycle>> revisits;
+        protected Map<Request.Template, Set<Cycle>> blocked;
 
         public DownstreamManager() {
-            this.downstreams = new LinkedHashSet<>();
-            this.downstreamSelector = downstreams.iterator();
+            this.visits = new ArrayList<>();
+            this.revisits = new LinkedHashMap<>();
+            this.blocked = new LinkedHashMap<>();
         }
 
-        public DownstreamManager(List<Request> downstreams) {
-            this.downstreams = new LinkedHashSet<>(downstreams);
-            this.downstreamSelector = downstreams.iterator();
+        public DownstreamManager(List<Request.Template> visits) {
+            this.visits = visits;
+            this.revisits = new LinkedHashMap<>();
+            this.blocked = new LinkedHashMap<>();
         }
 
-        public boolean hasDownstream() {
-            return !downstreams.isEmpty();
+        public Request.Visit nextVisit(Trace trace) {
+            return visits.get(0).createVisit(trace);
         }
 
-        public Request nextDownstream() {
-            if (!downstreamSelector.hasNext()) downstreamSelector = downstreams.iterator();
-            return downstreamSelector.next();
+        public Request.Revisit nextRevisit(Trace trace) {
+            Optional<Request.Template> downstream = iterate(revisits.keySet()).first();
+            assert downstream.isPresent();
+            return downstream.get().createRevisit(trace, revisits.get(downstream.get()));
         }
 
-        public void addDownstream(Request request) {
-            assert !(downstreams.contains(request)) : "downstream answer producer already contains this request";
-            downstreams.add(request);
-            downstreamSelector = downstreams.iterator();
+        public boolean hasNextVisit() {
+            return !visits.isEmpty();
         }
 
-        public void removeDownstream(Request request) {
-            boolean removed = downstreams.remove(request);
-            // only update the iterator when removing an element, to avoid resetting and reusing first request too often
-            // note: this is a large performance win when processing large batches of requests
-            if (removed) downstreamSelector = downstreams.iterator();
+        public boolean hasNextRevisit() {
+            return !revisits.isEmpty();
         }
 
-        public void clearDownstreams() {
-            downstreams.clear();
-            downstreamSelector = Iterators.empty();
+        public boolean hasNextBlocked() {
+            return !blocked.isEmpty();
         }
 
-        public boolean contains(Request downstreamRequest) {
-            return downstreams.contains(downstreamRequest);
+        public boolean contains(Request.Template downstream) {
+            return visits.contains(downstream) || revisits.containsKey(downstream) || blocked.containsKey(downstream);
+        }
+
+        public void add(Request.Template downstream) {
+            assert !(visits.contains(downstream)) : "downstream answer producer already contains this request";
+            visits.add(downstream);
+        }
+
+        public void remove(Request.Template downstream) {
+            visits.remove(downstream);
+            revisits.remove(downstream);
+            blocked.remove(downstream);
+        }
+
+        public void clear() {
+            visits.clear();
+            revisits.clear();
+            blocked.clear();
+        }
+
+        public Set<Cycle> cycles() {
+            return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
+        }
+
+        public void block(Request.Template toBlock, Set<Cycle> blockers) {
+            assert !blockers.isEmpty();
+            assert contains(toBlock);
+            visits.remove(toBlock);
+            revisits.remove(toBlock);
+            blocked.computeIfAbsent(toBlock, b -> new HashSet<>()).addAll(blockers);
+        }
+
+        public void unblock(Set<Cycle> cycles) {
+            assert !cycles.isEmpty();
+            Set<Request.Template> toRemove = new HashSet<>();
+            blocked.forEach((downstream, blockers) -> {
+                assert !visits.contains(downstream);
+                Set<Cycle> blockersToRevisit = new HashSet<>(cycles);
+                blockersToRevisit.retainAll(blockers);
+                if (!blockersToRevisit.isEmpty()) {
+                    this.revisits.computeIfAbsent(downstream, o -> new HashSet<>()).addAll(blockersToRevisit);
+                    blockers.removeAll(blockersToRevisit);
+                    if (blockers.isEmpty()) toRemove.add(downstream);
+                }
+            });
+            toRemove.forEach(r -> blocked.remove(r));
         }
     }
 }

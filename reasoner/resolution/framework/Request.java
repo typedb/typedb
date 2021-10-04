@@ -18,165 +18,230 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Blocked.Cycle;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
+import java.util.Set;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+public interface Request {
 
-public class Request {
+    Visit visit();
 
-    protected final Actor.Driver<? extends Resolver<?>> sender;
-    protected final Actor.Driver<? extends Resolver<?>> receiver;
-    protected final Partial<?> partialAnswer;
-    protected final int planIndex;
+    Trace trace();
 
-    private final int hash;
+    class Visit implements Request {
 
-    private Request(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                    Partial<?> partialAnswer, int planIndex) {
-        this.sender = sender;
-        this.receiver = receiver;
-        this.partialAnswer = partialAnswer;
-        this.planIndex = planIndex;
-        this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer);
-    }
+        protected final Actor.Driver<? extends Resolver<?>> sender;
+        protected final Actor.Driver<? extends Resolver<?>> receiver;
+        protected final AnswerState.Partial<?> partialAnswer;
+        protected final int planIndex;
+        private final Trace trace;
 
-    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer, int planIndex) {
-        return new Request(sender, receiver, partialAnswer, planIndex);
-    }
-
-    public static Request create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
-        return new Request(sender, receiver, partialAnswer, -1);
-    }
-
-    public static Request create(Actor.Driver<? extends Resolver<?>> receiver, Partial<?> partialAnswer) {
-        return new Request(null, receiver, partialAnswer, -1);
-    }
-
-    public Actor.Driver<? extends Resolver<?>> receiver() {
-        return receiver;
-    }
-
-    public Actor.Driver<? extends Resolver<?>> sender() {
-        return sender;
-    }
-
-    public Partial<?> partialAnswer() {
-        return partialAnswer;
-    }
-
-    public int planIndex() {
-        return planIndex;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Request request = (Request) o;
-        return Objects.equals(sender, request.sender) &&
-                Objects.equals(receiver, request.receiver) &&
-                Objects.equals(partialAnswer, request.partialAnswer());
-    }
-
-    @Override
-    public int hashCode() {
-        return hash;
-    }
-
-    @Override
-    public String toString() {
-        return "Request{" +
-                "sender=" + sender +
-                ", receiver=" + receiver +
-                ", partial=" + partialAnswer +
-                '}';
-    }
-
-    public boolean isToSubsumed() {
-        return false;
-    }
-
-    public ToSubsumed asToSubsumed() {
-        throw TypeDBException.of(ILLEGAL_STATE);
-    }
-
-    public boolean isToSubsumer() {
-        return false;
-    }
-
-    public ToSubsumer asToSubsumer() {
-        throw TypeDBException.of(ILLEGAL_STATE);
-    }
-
-    public static class ToSubsumed extends Request {
-
-        private final Actor.Driver<? extends Resolver<?>> subsumer;
-
-        private ToSubsumed(@Nullable Actor.Driver<? extends Resolver<?>> sender,
-                           Actor.Driver<? extends Resolver<?>> receiver,
-                           @Nullable Actor.Driver<? extends Resolver<?>> subsumer, Partial<?> partialAnswer,
-                           int planIndex) {
-            super(sender, receiver, partialAnswer, planIndex);
-            this.subsumer = subsumer;
+        private Visit(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                      AnswerState.Partial<?> partialAnswer, int planIndex, Trace trace) {
+            this.sender = sender;
+            this.receiver = receiver;
+            this.partialAnswer = partialAnswer;
+            this.planIndex = planIndex;
+            this.trace = trace;
         }
 
-        public static Request create(Actor.Driver<? extends Resolver<?>> sender,
-                                     Actor.Driver<? extends Resolver<?>> receiver,
-                                     Actor.Driver<? extends Resolver<?>> subsumer, Partial<?> partialAnswer) {
-            return new ToSubsumed(sender, receiver, subsumer, partialAnswer, -1);
+        public Actor.Driver<? extends Resolver<?>> receiver() {
+            return receiver;
         }
 
-        public Actor.Driver<? extends Resolver<?>> subsumer() {
-            return subsumer;
+        public Actor.Driver<? extends Resolver<?>> sender() {
+            return sender;
+        }
+
+        public AnswerState.Partial<?> partialAnswer() {
+            return partialAnswer;
+        }
+
+        public Template template() {
+            return Template.create(sender(), receiver(), partialAnswer(), planIndex());
         }
 
         @Override
-        public boolean isToSubsumed() {
-            return true;
-        }
-
-        @Override
-        public ToSubsumed asToSubsumed() {
+        public Visit visit() {
             return this;
         }
 
-    }
-
-    public static class ToSubsumer extends Request {
-
-        private final ToSubsumed toSubsumed;
-
-        private ToSubsumer(@Nullable Actor.Driver<? extends Resolver<?>> sender,
-                           Actor.Driver<? extends Resolver<?>> receiver,
-                           ToSubsumed toSubsumed, Partial<?> partialAnswer, int planIndex) {
-            super(sender, receiver, partialAnswer, planIndex);
-            this.toSubsumed = toSubsumed;
+        @Override
+        public Trace trace() {
+            return trace;
         }
 
-        public static ToSubsumer create(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<?
-                extends Resolver<?>> receiver, ToSubsumed toSubsumed, Partial<?> partialAnswer) {
-            return new ToSubsumer(sender, receiver, toSubsumed, partialAnswer, -1);
-        }
-
-        public ToSubsumed toSubsumed() {
-            return toSubsumed;
+        public int planIndex() {
+            return planIndex;
         }
 
         @Override
-        public boolean isToSubsumer() {
-            return true;
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Visit visit = (Visit) o;
+            return Objects.equals(sender, visit.sender) &&
+                    Objects.equals(receiver, visit.receiver) &&
+                    Objects.equals(partialAnswer, visit.partialAnswer) &&
+                    Objects.equals(trace, visit.trace);
         }
 
         @Override
-        public ToSubsumer asToSubsumer() {
-            return this;
+        public int hashCode() {
+            return Objects.hash(this.sender, this.receiver, this.partialAnswer, this.trace);
+        }
+
+        @Override
+        public String toString() {
+            return "Visit{" +
+                    "sender=" + sender +
+                    ", receiver=" + receiver +
+                    ", partial=" + partialAnswer +
+                    ", trace=" + trace +
+                    '}';
         }
 
     }
 
+    class Revisit implements Request {
+
+        private final Visit visit;
+        private final Set<Cycle> cycles;
+
+        protected Revisit(Visit visit, Set<Cycle> cycles) {
+            this.visit = visit;
+            this.cycles = cycles;
+        }
+
+        public static Revisit create(Visit visit, Set<Cycle> cycles) {
+            return new Revisit(visit, cycles);
+        }
+
+        @Override
+        public Visit visit() {
+            return visit;
+        }
+
+        @Override
+        public Trace trace() {
+            return visit().trace;
+        }
+
+        public Set<Cycle> cycles() {
+            return cycles;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Revisit revisit = (Revisit) o;
+            return visit.equals(revisit.visit) &&
+                    cycles.equals(revisit.cycles);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(visit, cycles);
+        }
+
+        @Override
+        public String toString() {
+            return "Revisit{" +
+                    "visit=" + visit +
+                    ", cycles=" + cycles +
+                    '}';
+        }
+    }
+
+    class Template {
+
+        private final Actor.Driver<? extends Resolver<?>> sender;
+        private final Actor.Driver<? extends Resolver<?>> receiver;
+        private final AnswerState.Partial<?> partialAnswer;
+        private final int planIndex;
+        private final int hash;
+
+        protected Template(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                           AnswerState.Partial<?> partialAnswer, int planIndex) {
+            this.sender = sender;
+            this.receiver = receiver;
+            this.partialAnswer = partialAnswer;
+            this.planIndex = planIndex;
+            this.hash = Objects.hash(this.sender, this.receiver, this.partialAnswer, this.planIndex);
+        }
+
+        public static Template create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                                      AnswerState.Partial<?> partialAnswer, int planIndex) {
+            return new Template(sender, receiver, partialAnswer, planIndex);
+        }
+
+        public static Template create(Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
+                                      AnswerState.Partial<?> partialAnswer) {
+            return new Template(sender, receiver, partialAnswer, -1);
+        }
+
+        public static Template create(Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer) {
+            return new Template(null, receiver, partialAnswer, -1);
+        }
+
+        public static Template of(Visit request) {
+            return Template.create(request.sender(), request.receiver(), request.partialAnswer(), request.planIndex());
+        }
+
+        public Visit createVisit(Trace trace) {
+            return new Visit(sender, receiver, partialAnswer, planIndex, trace);
+        }
+
+        public Revisit createRevisit(Trace trace, Set<Cycle> cycles) {
+            return new Revisit(createVisit(trace), cycles);
+        }
+
+        public AnswerState.Partial<?> partialAnswer() {
+            return partialAnswer;
+        }
+
+        public Actor.Driver<? extends Resolver<?>> receiver() {
+            return receiver;
+        }
+
+        public Actor.Driver<? extends Resolver<?>> sender() {
+            return sender;
+        }
+
+        public int planIndex() {
+            return planIndex;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Template template = (Template) o;
+            return planIndex == template.planIndex &&
+                    Objects.equals(sender, template.sender) &&
+                    receiver.equals(template.receiver) &&
+                    partialAnswer.equals(template.partialAnswer);
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+
+        @Override
+        public String toString() {
+            return "Template{" +
+                    "sender=" + sender +
+                    ", receiver=" + receiver +
+                    ", partialAnswer=" + partialAnswer +
+                    ", planIndex=" + planIndex +
+                    '}';
+        }
+    }
 }

@@ -21,17 +21,12 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.CachingRequestState;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState.Exploration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
 
@@ -39,23 +34,23 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
 
     private final AnswerCache<AnswerState.Partial.Concludable<?>> cache;
 
-    public ExplainBoundConcludableResolver(Driver<BoundConcludableResolver> driver, Concludable concludable,
+    public ExplainBoundConcludableResolver(Driver<BoundConcludableResolver> driver, BoundConcludableContext context,
                                            ConceptMap bounds, ResolverRegistry registry) {
-        super(driver, concludable, bounds, registry);
-        this.cache = new AnswerCache<>(Iterators::empty); // TODO How is this working without doing traversal?
+        super(driver, context, bounds, registry);
+        this.cache = new AnswerCache<>(Iterators::empty);
     }
 
     @Override
-    protected CachingRequestState<?> createRequestState(Request fromUpstream, int iteration) {
-        LOG.debug("{}: Creating new request state for iteration{}, request: {}", name(), iteration, fromUpstream);
-        return new RequestState(fromUpstream, cache, iteration, true, true);
+    ExploringRequestState<?> createExploringRequestState(Request.Template fromUpstream) {
+        LOG.debug("{}: Creating new exploring request state for request: {}", name(), fromUpstream);
+        return new ExploringRequestState<>(fromUpstream, cache(), ruleDownstreams(fromUpstream), false,
+                                           new ExplainUpstream(), false);
     }
 
     @Override
-    CachingRequestState<?> createExploringRequestState(Request fromUpstream, int iteration) {
-        LOG.debug("{}: Creating new exploring request state for iteration{}, request: {}", name(), iteration,
-                  fromUpstream);
-        return new ExploringRequestState(fromUpstream, cache, iteration, ruleDownstreams(fromUpstream));
+    BlockedRequestState<?> createBlockedRequestState(Request.Template fromUpstream) {
+        LOG.debug("{}: Creating new blocked request state for request: {}", name(), fromUpstream);
+        return new BlockedRequestState<>(fromUpstream, cache(), false, new ExplainUpstream(), false);
     }
 
     @Override
@@ -63,57 +58,18 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
         return cache;
     }
 
-    private static class RequestState extends CachingRequestState<AnswerState.Partial.Concludable<?>> {
+    private static class ExplainUpstream implements UpstreamBehaviour<AnswerState.Partial.Concludable<?>> {
 
-        public RequestState(Request fromUpstream,
-                            AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
-                            int iteration, boolean deduplicate, boolean isSubscriber) {
-            super(fromUpstream, answerCache, iteration, deduplicate, isSubscriber);
+        @Override
+        public AnswerState.Partial.Concludable<?> answerFromPartial(AnswerState.Partial<?> partial) {
+            return partial.asConcludable();
         }
 
         @Override
-        protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(
-                AnswerState.Partial.Concludable<?> partial) {
+        public FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Template fromUpstream,
+                                                                               AnswerState.Partial.Concludable<?> partial) {
             return Iterators.single(partial.asExplain().toUpstreamInferred());
         }
-    }
-
-    private static class ExploringRequestState extends RequestState implements Exploration {
-
-        private final DownstreamManager downstreamManager;
-
-        public ExploringRequestState(Request fromUpstream,
-                                     AnswerCache<AnswerState.Partial.Concludable<?>> answerCache,
-                                     int iteration, List<Request> ruleDownstreams) {
-            super(fromUpstream, answerCache, iteration, false, false);
-            this.downstreamManager = new DownstreamManager(ruleDownstreams);
-        }
-
-        @Override
-        public boolean isExploration() {
-            return true;
-        }
-
-        @Override
-        public Exploration asExploration() {
-            return this;
-        }
-
-        @Override
-        public DownstreamManager downstreamManager() {
-            return downstreamManager;
-        }
-
-        @Override
-        public void newAnswer(AnswerState.Partial<?> partial) {
-            if (!answerCache.isComplete()) answerCache.add(partial.asConcludable());
-        }
-
-        @Override
-        public boolean singleAnswerRequired() {
-            return false;
-        }
-
     }
 
 }

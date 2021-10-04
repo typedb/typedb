@@ -21,11 +21,8 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
 
 public class ConclusionResolver extends SubsumptiveCoordinator<ConclusionResolver, BoundConclusionResolver> {
 
@@ -51,8 +48,8 @@ public class ConclusionResolver extends SubsumptiveCoordinator<ConclusionResolve
     }
 
     @Override
-    Driver<BoundConclusionResolver> getOrCreateWorker(Driver<? extends Resolver<?>> root, Partial<?> partial) {
-        return workersByRoot.computeIfAbsent(root, r -> new HashMap<>()).computeIfAbsent(partial.conceptMap(), p -> {
+    Driver<BoundConclusionResolver> getOrCreateBoundResolver(Partial<?> partial) {
+        return workers.computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundConclusionResolver for bounds: {}", name(), partial);
             return registry.registerBoundConclusion(conclusion, partial.conceptMap());
         });

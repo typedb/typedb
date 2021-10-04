@@ -19,19 +19,25 @@
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 
 import java.util.Objects;
+import java.util.Set;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 
 public interface Response {
-    Request sourceRequest();
+
+    Request.Template sourceRequest();
 
     boolean isAnswer();
 
     boolean isFail();
+
+    Trace trace();
 
     default Answer asAnswer() {
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Answer.class));
@@ -41,26 +47,41 @@ public interface Response {
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Fail.class));
     }
 
-    class Answer implements Response {
-        private final Request sourceRequest;
-        private final Partial<?> answer;
+    default Actor.Driver<? extends Resolver<?>> receiver() {
+        return sourceRequest().sender();
+    }
 
-        private Answer(Request sourceRequest, Partial<?> answer) {
+    default Actor.Driver<? extends Resolver<?>> sender() {
+        return sourceRequest().receiver();
+    }
+
+    class Answer implements Response {
+        private final Request.Template sourceRequest;
+        private final Partial<?> answer;
+        private final Trace trace;
+
+        private Answer(Request.Template sourceRequest, Partial<?> answer, Trace trace) {
             this.sourceRequest = sourceRequest;
             this.answer = answer;
+            this.trace = trace;
         }
 
-        public static Answer create(Request sourceRequest, Partial<?> answer) {
-            return new Answer(sourceRequest, answer);
+        public static Answer create(Request.Template sourceRequest, Partial<?> answer, Trace trace) {
+            return new Answer(sourceRequest, answer, trace);
         }
 
         @Override
-        public Request sourceRequest() {
+        public Request.Template sourceRequest() {
             return sourceRequest;
         }
 
         public Partial<?> answer() {
             return answer;
+        }
+
+        @Override
+        public Trace trace() {
+            return trace;
         }
 
         public int planIndex() {
@@ -106,15 +127,22 @@ public interface Response {
     }
 
     class Fail implements Response {
-        private final Request sourceRequest;
+        private final Request.Template sourceRequest;
+        private final Trace trace;
 
-        public Fail(Request sourceRequest) {
+        public Fail(Request.Template sourceRequest, Trace trace) {
             this.sourceRequest = sourceRequest;
+            this.trace = trace;
         }
 
         @Override
-        public Request sourceRequest() {
+        public Request.Template sourceRequest() {
             return sourceRequest;
+        }
+
+        @Override
+        public Trace trace() {
+            return trace;
         }
 
         @Override
@@ -138,6 +166,98 @@ public interface Response {
             return "Exhausted{" +
                     "sourceRequest=" + sourceRequest +
                     '}';
+        }
+    }
+
+    class Blocked implements Response {
+
+        private final Request.Template sourceRequest;
+        private final Trace trace;
+        protected Set<Cycle> cycles;
+
+        public Blocked(Request.Template sourceRequest, Set<Cycle> cycles, Trace trace) {
+            this.sourceRequest = sourceRequest;
+            this.cycles = cycles;
+            this.trace = trace;
+        }
+
+        @Override
+        public Request.Template sourceRequest() {
+            return sourceRequest;
+        }
+
+        @Override
+        public Trace trace() {
+            return trace;
+        }
+
+        @Override
+        public boolean isAnswer() {
+            return false;
+        }
+
+        @Override
+        public boolean isFail() {
+            return false;
+        }
+
+        public Set<Cycle> cycles() {
+            return cycles;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Blocked blocked = (Blocked) o;
+            return sourceRequest.equals(blocked.sourceRequest) &&
+                    cycles.equals(blocked.cycles);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(sourceRequest, cycles);
+        }
+
+        public static class Cycle {
+
+            private final int numAnswersSeen;
+            private final Actor.Driver<? extends Resolver<?>> end;
+
+            public Cycle(Actor.Driver<? extends Resolver<?>> end, int numAnswersSeen) {
+                this.end = end;
+                this.numAnswersSeen = numAnswersSeen;
+            }
+
+            public Actor.Driver<? extends Resolver<?>> end() {
+                return end;
+            }
+
+            public int numAnswersSeen() {
+                return numAnswersSeen;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                Cycle cycle = (Cycle) o;
+                return numAnswersSeen == cycle.numAnswersSeen &&
+                        end.equals(cycle.end);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(numAnswersSeen, end);
+            }
+
+            @Override
+            public String toString() {
+                return "Cycle{" +
+                        "resolver=" + end.toString() +
+                        ", numAnswersSeen=" + numAnswersSeen +
+                        '}';
+            }
         }
     }
 }

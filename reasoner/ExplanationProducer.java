@@ -30,10 +30,12 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,33 +43,41 @@ public class ExplanationProducer implements Producer<Explanation> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ExplanationProducer.class);
 
+    private final ConceptMap bounds;
     private final ExplainablesManager explainablesManager;
     private final Options.Query options;
     private final Actor.Driver<RootResolver.Explain> explainer;
-    private final Request explainRequest;
     private final int computeSize;
     private final AtomicInteger required;
     private final AtomicInteger processing;
-    private int iteration;
-    private boolean requiresReiteration;
+    private final Request.Template requestTemplate;
+    private final Request.Visit defaultResolveRequest;
+    private final UUID traceId;
     private boolean done;
+    private int requestTraceIdCounter;
     private Queue<Explanation> queue;
 
     public ExplanationProducer(Conjunction conjunction, ConceptMap bounds, Options.Query options,
                                ResolverRegistry registry, ExplainablesManager explainablesManager) {
+        this.bounds = bounds;
         this.explainablesManager = explainablesManager;
         this.options = options;
         this.queue = null;
-        this.iteration = 0;
-        this.requiresReiteration = false;
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR : 1;
         this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
-        Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
-        this.explainRequest = Request.create(explainer, downstream);
+        this.requestTraceIdCounter = 0;
+        this.traceId = UUID.randomUUID();
+        this.requestTemplate = requestTemplate();
+        this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(traceId, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
+    }
+
+    private Request.Template requestTemplate() {
+        Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
+        return Request.Template.create(explainer, downstream);
     }
 
     @Override
@@ -84,13 +94,21 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     private void requestExplanation() {
-        if (options.traceInference()) ResolutionTracer.get().start();
-        explainer.execute(explainer -> explainer.receiveRequest(explainRequest, iteration));
+        Request.Visit resolveRequest;
+        if (options.traceInference()) {
+            Trace trace = Trace.create(traceId, requestTraceIdCounter);
+            resolveRequest = requestTemplate.createVisit(trace);
+            ResolutionTracer.get().start(resolveRequest);
+            requestTraceIdCounter += 1;
+        } else {
+            resolveRequest = defaultResolveRequest;
+        }
+        explainer.execute(actor -> actor.receiveVisit(resolveRequest));
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestAnswered(Explain.Finished explainedAnswer) {
-        if (options.traceInference()) ResolutionTracer.get().finish();
+    private void requestAnswered(Request requestAnswered, Explain.Finished explainedAnswer) {
+        if (options.traceInference()) ResolutionTracer.get().finish(requestAnswered);
         Explanation explanation = explainedAnswer.explanation();
         explainablesManager.setAndRecordExplainables(explanation.conditionAnswer());
         queue.put(explanation);
@@ -99,39 +117,23 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestFailed(int iteration) {
-        LOG.trace("Failed to find answer to request in iteration: " + iteration);
-        if (options.traceInference()) ResolutionTracer.get().finish();
-        if (!done && iteration == this.iteration && !mustReiterate()) {
+    private void requestFailed(Request failedRequest) {
+        LOG.trace("Failed to find answer to request {}", failedRequest);
+        if (options.traceInference()) ResolutionTracer.get().finish(failedRequest);
+        finish();
+    }
+
+    private void finish() {
+        if (!done) {
             // query is completely terminated
             done = true;
             queue.done();
             required.set(0);
-            return;
         }
-
-        if (!done) {
-            if (iteration == this.iteration) prepareNextIteration();
-            assert iteration < this.iteration;
-            retryInNewIteration();
-        }
-    }
-
-    private boolean mustReiterate() {
-        return requiresReiteration;
-    }
-
-    private void prepareNextIteration() {
-        iteration++;
-        requiresReiteration = false;
-    }
-
-    private void retryInNewIteration() {
-        requestExplanation();
     }
 
     private void exception(Throwable e) {
-        if (options.traceInference()) ResolutionTracer.get().finish();
+        if (options.traceInference()) ResolutionTracer.get().exception();
         if (!done) {
             done = true;
             required.set(0);

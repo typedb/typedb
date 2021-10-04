@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.RequestState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 
@@ -39,7 +38,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver> {
 
     private final AnswerCache<ConceptMap> cache;
-    private final Map<Request, RequestState> requestStates;
+    private final Map<Request.Template, RequestState> requestStates;
     private final ConceptMap bounds;
 
     public BoundRetrievableResolver(Driver<BoundRetrievableResolver> driver, Retrievable retrievable, ConceptMap bounds,
@@ -52,80 +51,40 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     }
 
     @Override
-    public void receiveRequest(Request fromUpstream, int iteration) {
-        if (fromUpstream.isToSubsumed()) {
-            assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
-            receiveSubsumedRequest(fromUpstream.asToSubsumed(), iteration);
-        } else if (fromUpstream.isToSubsumer()) {
-            receiveSubsumerRequest(fromUpstream.asToSubsumer(), iteration);
-        } else {
-            assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
-            receiveDirectRequest(fromUpstream, iteration);
-        }
-    }
-
-    private void receiveSubsumedRequest(Request.ToSubsumed fromUpstream, int iteration) {
-        RequestState requestState = requestStates.computeIfAbsent(
-                fromUpstream, request -> new BoundRequestState(request, cache, iteration));
-        if (cache.sourceExhausted()) {
-            sendAnswerOrFail(fromUpstream, iteration, requestState);
-        } else {
-            cache.clearSource();
-            Optional<? extends AnswerState.Partial<?>> upstreamAnswer;
-            upstreamAnswer = requestState.nextAnswer();
-            if (upstreamAnswer.isPresent()) {
-                answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
-            } else {
-                requestFromSubsumer(fromUpstream, iteration);
-            }
-        }
-    }
-
-    private void receiveSubsumerRequest(Request.ToSubsumer fromUpstream, int iteration) {
-        sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
-                fromUpstream, request -> new SubsumerRequestState(request, cache, iteration)));
-    }
-
-    private void receiveDirectRequest(Request fromUpstream, int iteration) {
-        sendAnswerOrFail(fromUpstream, iteration, requestStates.computeIfAbsent(
-                fromUpstream, request -> new BoundRequestState(request, cache, iteration)));
+    public void receiveVisit(Request.Visit fromUpstream) {
+        assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
+        sendNextMessage(fromUpstream, requestStates.computeIfAbsent(
+                fromUpstream.template(), request -> new BoundRequestState(request, cache)));
     }
 
     @Override
-    protected void receiveAnswer(Response.Answer fromDownstream, int iteration) {
-        Request.ToSubsumed fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
-        if (cache.sourceExhausted()) sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
-        else {
-            cache.add(fromDownstream.answer().conceptMap());
-            Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestStates.get(fromUpstream).nextAnswer();
-            if (upstreamAnswer.isPresent()) {
-                answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
-            } else {
-                requestFromSubsumer(fromUpstream, iteration);
-            }
-        }
+    protected void receiveRevisit(Request.Revisit fromUpstream) {
+        assert fromUpstream.visit().partialAnswer().conceptMap().equals(bounds);
+        receiveVisit(fromUpstream.visit());
     }
 
     @Override
-    protected void receiveFail(Response.Fail fromDownstream, int iteration) {
-        cache.setComplete();
-        Request fromUpstream = fromDownstream.sourceRequest().asToSubsumer().toSubsumed();
-        sendAnswerOrFail(fromUpstream, iteration, requestStates.get(fromUpstream));
+    protected void receiveAnswer(Response.Answer fromDownstream) {
+        throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private void sendAnswerOrFail(Request fromUpstream, int iteration, RequestState requestState) {
+    @Override
+    protected void receiveFail(Response.Fail fromDownstream) {
+        throw TypeDBException.of(ILLEGAL_STATE);
+    }
+
+    @Override
+    protected void receiveBlocked(Response.Blocked fromDownstream) {
+        throw TypeDBException.of(ILLEGAL_STATE);
+    }
+
+    private void sendNextMessage(Request fromUpstream, RequestState requestState) {
         Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
-            answerToUpstream(upstreamAnswer.get(), fromUpstream, iteration);
+            answerToUpstream(upstreamAnswer.get(), fromUpstream);
         } else {
-            failToUpstream(fromUpstream, iteration);
+            failToUpstream(fromUpstream);
         }
-    }
-
-    private void requestFromSubsumer(Request.ToSubsumed fromUpstream, int iteration) {
-        Request toSubsumer = Request.ToSubsumer.create(driver(), fromUpstream.subsumer(),
-                                                       fromUpstream, fromUpstream.partialAnswer());
-        requestFromDownstream(toSubsumer, fromUpstream, iteration);
     }
 
     @Override
@@ -133,35 +92,15 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private static class BoundRequestState extends RequestState.CachingRequestState<ConceptMap> {
+    private static class BoundRequestState extends CachingRequestState<ConceptMap> {
 
-        public BoundRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
-            super(fromUpstream, answerCache, iteration, false, false);
+        public BoundRequestState(Request.Template fromUpstream, AnswerCache<ConceptMap> answerCache) {
+            super(fromUpstream, answerCache, false);
         }
 
         @Override
         protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ConceptMap answer) {
             return Iterators.single(fromUpstream.partialAnswer().asRetrievable().aggregateToUpstream(answer));
-        }
-    }
-
-    private class SubsumerRequestState extends RequestState.CachingRequestState<ConceptMap> {
-
-        public SubsumerRequestState(Request fromUpstream, AnswerCache<ConceptMap> answerCache, int iteration) {  // TODO: Iteration shouldn't be needed
-            super(fromUpstream, answerCache, iteration, false, false);
-        }
-
-        @Override
-        protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ConceptMap answer) {
-            if (subsumesBounds(answer)) {
-                return Iterators.single(fromUpstream.partialAnswer().asRetrievable().with(answer));
-            } else {
-                return Iterators.empty();
-            }
-        }
-
-        private boolean subsumesBounds(ConceptMap subsumer) {
-            return subsumer.concepts().entrySet().containsAll(bounds.concepts().entrySet());
         }
     }
 }

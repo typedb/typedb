@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.resolution;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -36,8 +35,10 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver.BoundConcludableContext;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConclusionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundRetrievableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConcludableResolver;
@@ -59,10 +60,12 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -78,10 +81,11 @@ public class ResolverRegistry {
 
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
-    private final Map<Pair<Actor.Driver<? extends Resolver<?>>, Integer>, Set<Actor.Driver<BoundConcludableResolver>>> boundConcludables;
     private final Map<Concludable, Actor.Driver<ConcludableResolver>> concludableResolvers;
+    private final Map<Actor.Driver<ConcludableResolver>, Set<Concludable>> resolverConcludables;
     private final ConcurrentMap<Rule, Actor.Driver<ConditionResolver>> ruleConditions;
     private final ConcurrentMap<Rule, Actor.Driver<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
+    private final ConcurrentMap<Actor.Driver<ConclusionResolver>, Rule> conclusionRule;
     private final Set<Actor.Driver<? extends Resolver<?>>> resolvers;
     private final TraversalEngine traversalEngine;
     private final boolean resolutionTracing;
@@ -96,14 +100,14 @@ public class ResolverRegistry {
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
         this.concludableResolvers = new HashMap<>();
-        this.boundConcludables = new HashMap<>();
+        this.resolverConcludables = new HashMap<>();
         this.ruleConditions = new ConcurrentHashMap<>();
         this.ruleConclusions = new ConcurrentHashMap<>();
+        this.conclusionRule = new ConcurrentHashMap<>();
         this.resolvers = new ConcurrentSet<>();
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
-        this.materialiser = Actor.driver(driver -> new Materialiser(
-                driver, this), executorService);
+        this.materialiser = Actor.driver(driver -> new Materialiser(driver, this), executorService);
     }
 
     public TraversalEngine traversalEngine() {
@@ -129,8 +133,10 @@ public class ResolverRegistry {
         }
     }
 
-    public Actor.Driver<RootResolver.Conjunction> root(Conjunction conjunction, Consumer<Match.Finished> onAnswer,
-                                                       Consumer<Integer> onFail, Consumer<Throwable> onException) {
+    public Actor.Driver<RootResolver.Conjunction> root(Conjunction conjunction,
+                                                       BiConsumer<Request, Match.Finished> onAnswer,
+                                                       Consumer<Request> onFail,
+                                                       Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
         Actor.Driver<RootResolver.Conjunction> resolver = Actor.driver(driver -> new RootResolver.Conjunction(
                 driver, conjunction, onAnswer, onFail, onException, this), executorService);
@@ -139,8 +145,10 @@ public class ResolverRegistry {
         return resolver;
     }
 
-    public Actor.Driver<RootResolver.Disjunction> root(Disjunction disjunction, Consumer<Match.Finished> onAnswer,
-                                                       Consumer<Integer> onExhausted, Consumer<Throwable> onException) {
+    public Actor.Driver<RootResolver.Disjunction> root(Disjunction disjunction,
+                                                       BiConsumer<Request, Match.Finished> onAnswer,
+                                                       Consumer<Request> onExhausted,
+                                                       Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         Actor.Driver<RootResolver.Disjunction> resolver = Actor.driver(driver -> new RootResolver.Disjunction(
                 driver, disjunction, onAnswer, onExhausted, onException, this), executorService);
@@ -159,7 +167,7 @@ public class ResolverRegistry {
         return ResolverView.negation(negatedResolver, filter);
     }
 
-    private Set<Variable.Retrievable> filter(Conjunction scope, Negated inner) {
+    private static Set<Variable.Retrievable> filter(Conjunction scope, Negated inner) {
         return scope.variables().stream()
                 .filter(var -> var.id().isRetrievable() && inner.retrieves().contains(var.id().asRetrievable()))
                 .map(var -> var.id().asRetrievable())
@@ -180,6 +188,7 @@ public class ResolverRegistry {
         LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
         Actor.Driver<ConclusionResolver> resolver = ruleConclusions.computeIfAbsent(conclusion.rule(), r -> Actor.driver(
                 driver -> new ConclusionResolver(driver, conclusion, this), executorService));
+        conclusionRule.put(resolver, conclusion.rule());
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
@@ -220,45 +229,55 @@ public class ResolverRegistry {
         return resolver;
     }
 
-    // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
-    private synchronized ResolverView.MappedConcludable registerConcludable(Concludable concludable) {
-        LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
+    private Optional<ResolverView.MappedConcludable> getConcludableResolver(Concludable concludable) {
         for (Map.Entry<Concludable, Actor.Driver<ConcludableResolver>> c : concludableResolvers.entrySet()) {
             // TODO: This needs to be optimised from a linear search to use an alpha hash
             AlphaEquivalence alphaEquality = concludable.alphaEquals(c.getKey());
             if (alphaEquality.isValid()) {
-                return ResolverView.concludable(c.getValue(), alphaEquality.asValid().idMapping());
+                return Optional.of(ResolverView.concludable(c.getValue(), alphaEquality.asValid().idMapping()));
             }
         }
-        Actor.Driver<ConcludableResolver> resolver = Actor.driver(driver -> new ConcludableResolver(
-                driver, concludable, this), executorService);
-        concludableResolvers.put(concludable, resolver);
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
-        return ResolverView.concludable(resolver, identity(concludable));
+        return Optional.empty();
     }
 
-    public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(
-            Concludable concludable, ConceptMap bounds,
-            Actor.Driver<? extends Resolver<?>> root, int iteration, boolean explain) {
-        LOG.debug("Register BoundConcludableResolver, pattern: {} bounds: {}", concludable.pattern(), bounds);
+    // note: must be thread safe. We could move to a ConcurrentHashMap if we create an alpha-equivalence wrapper
+    private synchronized ResolverView.MappedConcludable registerConcludable(Concludable concludable) {
+        LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
+        Optional<ResolverView.MappedConcludable> resolverViewOpt = getConcludableResolver(concludable);
+        ResolverView.MappedConcludable resolverView;
+        if (resolverViewOpt.isPresent()) {
+            resolverView = resolverViewOpt.get();
+            resolverConcludables.get(resolverView.resolver()).add(concludable);
+        } else {
+            Actor.Driver<ConcludableResolver> resolver = Actor.driver(driver -> new ConcludableResolver(
+                    driver, concludable, this), executorService);
+            resolverView = ResolverView.concludable(resolver, identity(concludable));
+            resolvers.add(resolver);
+            concludableResolvers.put(concludable, resolverView.resolver());
+            Set<Concludable> concludables = new HashSet<>();
+            concludables.add(concludable);
+            resolverConcludables.put(resolverView.resolver(), concludables);
+        }
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return resolverView;
+    }
+
+    public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(ConceptMap bounds,
+                                                                           BoundConcludableContext context,
+                                                                           boolean explain) {
+        // TODO: Move this to the responsibility of the ConcludableResolver
+        LOG.debug("Register BoundConcludableResolver, pattern: {} bounds: {}", context.concludable().pattern(), bounds);
         Actor.Driver<BoundConcludableResolver> resolver;
         if (explain) {
             resolver = Actor.driver(
-                    driver -> new ExplainBoundConcludableResolver(driver, concludable, bounds, this), executorService);
+                    driver -> new ExplainBoundConcludableResolver(driver, context, bounds, this), executorService);
         } else {
             resolver = Actor.driver(
-                    driver -> new MatchBoundConcludableResolver(driver, concludable, bounds, this), executorService);
+                    driver -> new MatchBoundConcludableResolver(driver, context, bounds, this), executorService);
         }
         resolvers.add(resolver);
-        boundConcludables.computeIfAbsent(new Pair<>(root, iteration), r -> new HashSet<>()).add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
-    }
-
-    public Set<Actor.Driver<BoundConcludableResolver>> boundConcludables(
-            Actor.Driver<? extends Resolver<?>> root, int iteration) {
-        return boundConcludables.computeIfAbsent(new Pair<>(root, iteration), p -> new HashSet<>());
     }
 
     public Actor.Driver<ConjunctionResolver.Nested> nested(Conjunction conjunction) {
@@ -279,12 +298,13 @@ public class ResolverRegistry {
         return resolver;
     }
 
-    private Map<Variable.Retrievable, Variable.Retrievable> identity(Resolvable<Conjunction> conjunctionResolvable) {
+    private static Map<Variable.Retrievable, Variable.Retrievable> identity(Resolvable<Conjunction> conjunctionResolvable) {
         return conjunctionResolvable.retrieves().stream().collect(toMap(Function.identity(), Function.identity()));
     }
 
-    public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction, Consumer<Explain.Finished> requestAnswered,
-                                                        Consumer<Integer> requestFailed, Consumer<Throwable> exception) {
+    public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction,
+                                                        BiConsumer<Request, Explain.Finished> requestAnswered,
+                                                        Consumer<Request> requestFailed, Consumer<Throwable> exception) {
         Actor.Driver<RootResolver.Explain> resolver = Actor.driver(
                 driver -> new RootResolver.Explain(
                         driver, conjunction, requestAnswered, requestFailed, exception, this), executorService);
@@ -305,8 +325,12 @@ public class ResolverRegistry {
         return ruleConditions.get(rule);
     }
 
-    public Actor.Driver<ConcludableResolver> concludableResolvers(Concludable concludable) {
-        return concludableResolvers.get(concludable);
+    public Set<Concludable> concludables(Actor.Driver<ConcludableResolver> resolver) {
+        return resolverConcludables.get(resolver);
+    }
+
+    public Rule conclusionRule(Actor.Driver<ConclusionResolver> resolver) {
+        return conclusionRule.get(resolver);
     }
 
     public static abstract class ResolverView {
@@ -403,7 +427,7 @@ public class ResolverRegistry {
 
         public static class FilteredRetrievable extends ResolverView {
             private final Actor.Driver<RetrievableResolver> resolver;
-            private Set<Variable.Retrievable> filter;
+            private final Set<Variable.Retrievable> filter;
 
             public FilteredRetrievable(Actor.Driver<RetrievableResolver> resolver, Set<Variable.Retrievable> filter) {
                 this.resolver = resolver;

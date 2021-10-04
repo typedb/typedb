@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Co
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
 import com.vaticle.typedb.core.rocks.RocksSession;
@@ -48,6 +49,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -136,7 +138,7 @@ public class ResolutionTest {
                 LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
                 Actor.Driver<RootResolver.Conjunction> root;
                 try {
-                    root = registry.root(conjunctionPattern, responses::add, iterDone -> doneReceived.incrementAndGet(), exceptions::add);
+                    root = registry.root(conjunctionPattern, (r, f) -> responses.add(f), (r) -> doneReceived.incrementAndGet(), exceptions::add);
                 } catch (TypeDBException e) {
                     fail();
                 }
@@ -455,7 +457,7 @@ public class ResolutionTest {
         AtomicLong doneReceived = new AtomicLong(0L);
         Actor.Driver<RootResolver.Disjunction> root;
         try {
-            root = registry.root(disjunction, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
+            root = registry.root(disjunction, (r, f) -> responses.add(f), (r) -> doneReceived.incrementAndGet(), (throwable) -> fail());
         } catch (TypeDBException e) {
             fail();
             return;
@@ -473,7 +475,7 @@ public class ResolutionTest {
                 .forEachRemaining(filter::add);
         Actor.Driver<RootResolver.Conjunction> root;
         try {
-            root = registry.root(conjunction, responses::add, iterDone -> doneReceived.incrementAndGet(), (throwable) -> fail());
+            root = registry.root(conjunction, (r, f) -> responses.add(f), (r) -> doneReceived.incrementAndGet(), (throwable) -> fail());
         } catch (TypeDBException e) {
             fail();
             return;
@@ -486,9 +488,11 @@ public class ResolutionTest {
                                  long answerCount, long explainableAnswers) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
+        Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
+        Request.Template requestFactory = Request.Template.create(root, downstream);
         for (int i = 0; i < n; i++) {
-            Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
-            root.execute(actor -> actor.receiveRequest(Request.create(root, downstream), 0));
+            Trace trace = Trace.create(UUID.randomUUID(), i);
+            root.execute(actor -> actor.receiveVisit(requestFactory.createVisit(trace)));
         }
         int answersFound = 0;
         int explainableAnswersFound = 0;

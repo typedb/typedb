@@ -28,23 +28,22 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ReiterationQuery;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @ThreadSafe
-public class ReasonerProducer implements Producer<ConceptMap> {
+public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename to MatchProducer and create abstract supertype
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
@@ -54,15 +53,13 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     private final Options.Query options;
     private final ResolverRegistry resolverRegistry;
     private final ExplainablesManager explainablesManager;
-    private final Request resolveRequest;
-    private final ReiterationQuery.Request reiterationRequest;
     private final int computeSize;
+    private final Request.Template requestTemplate;
+    private final Request.Visit defaultResolveRequest;
+    private final UUID traceId;
     private boolean done;
-    private int iteration;
     private Queue<ConceptMap> queue;
-    private Set<Actor.Driver<BoundConcludableResolver>> boundConcludables;
-    private boolean requiresReiteration;
-    private boolean sentReiterationRequests;
+    private int requestIdCounter;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
@@ -71,18 +68,16 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.resolverRegistry = resolverRegistry;
         this.explainablesManager = explainablesManager;
         this.queue = null;
-        this.iteration = 0;
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
         this.rootResolver = this.resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        this.resolveRequest = Request.create(rootResolver, downstream);
-        this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
-        this.sentReiterationRequests = false;
-        this.requiresReiteration = false;
+        this.requestIdCounter = 0;
+        this.traceId = UUID.randomUUID();
+        this.requestTemplate = requestTemplate(filter);
+        this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(traceId, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -92,19 +87,22 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.resolverRegistry = resolverRegistry;
         this.explainablesManager = explainablesManager;
         this.queue = null;
-        this.iteration = 0;
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
         this.rootResolver = this.resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        this.resolveRequest = Request.create(rootResolver, downstream);
-        this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
-        this.sentReiterationRequests = false;
-        this.requiresReiteration = false;
+        this.requestIdCounter = 0;
+        this.traceId = UUID.randomUUID();
+        this.requestTemplate = requestTemplate(filter);
+        this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(traceId, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
+    }
+
+    private Request.Template requestTemplate(Set<Identifier.Variable.Retrievable> filter) {
+        Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
+        return Request.Template.create(rootResolver, downstream);
     }
 
     @Override
@@ -121,11 +119,13 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     @Override
-    public void recycle() {}
+    public void recycle() {
+
+    }
 
     // note: root resolver calls this single-threaded, so is thread safe
-    private void requestAnswered(Finished answer) {
-        if (options.traceInference()) ResolutionTracer.get().finish();
+    private void requestAnswered(Request answeredRequest, Finished answer) {
+        if (options.traceInference()) ResolutionTracer.get().finish(answeredRequest);
         ConceptMap conceptMap = answer.conceptMap();
         if (options.explain() && !conceptMap.explainables().isEmpty()) {
             explainablesManager.setAndRecordExplainables(conceptMap);
@@ -136,14 +136,10 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
-    private void requestFailed(int iteration) {
-        LOG.trace("Failed to find answer to request in iteration: " + iteration);
-        if (options.traceInference()) ResolutionTracer.get().finish();
-        if (resolverRegistry.boundConcludables(rootResolver, iteration).size() == 0) {
-            finish();
-        } else if (!sentReiterationRequests && iteration == this.iteration) {
-            sendReiterationRequests();
-        }
+    private void requestFailed(Request failedRequest) {
+        LOG.trace("Failed to find answer to request {}", failedRequest);
+        if (options.traceInference()) ResolutionTracer.get().finish(failedRequest);
+        finish();
     }
 
     private void finish() {
@@ -163,41 +159,16 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         }
     }
 
-    private void sendReiterationRequests() {
-        assert boundConcludables == null || boundConcludables.isEmpty();
-        sentReiterationRequests = true;
-        boundConcludables = new HashSet<>(resolverRegistry.boundConcludables(rootResolver, iteration));
-        resolverRegistry.boundConcludables(rootResolver, iteration)
-                .forEach(res -> res.execute(actor -> actor.receiveReiterationQuery(reiterationRequest)));
-    }
-
-    private synchronized void receiveReiterationResponse(ReiterationQuery.Response response) {
-        if (response.reiterate()) requiresReiteration = true;
-        assert boundConcludables.contains(response.sender());
-        boundConcludables.remove(response.sender());
-
-        if (boundConcludables.isEmpty()) {
-            if (requiresReiteration) {
-                prepareNextIteration();
-                retryInNewIteration();
-            } else {
-                finish();
-            }
-        }
-    }
-
-    private void prepareNextIteration() {
-        iteration++;
-        sentReiterationRequests = false;
-        requiresReiteration = false;
-    }
-
-    private void retryInNewIteration() {
-        requestAnswer();
-    }
-
     private void requestAnswer() {
-        if (options.traceInference()) ResolutionTracer.get().start();
-        rootResolver.execute(actor -> actor.receiveRequest(resolveRequest, iteration));
+        Request.Visit visitRequest;
+        if (options.traceInference()) {
+            Trace trace = Trace.create(traceId, requestIdCounter);
+            visitRequest = requestTemplate.createVisit(trace);
+            ResolutionTracer.get().start(visitRequest);
+            requestIdCounter += 1;
+        } else {
+            visitRequest = defaultResolveRequest;
+        }
+        rootResolver.execute(actor -> actor.receiveVisit(visitRequest));
     }
 }
