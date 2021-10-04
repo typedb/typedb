@@ -50,7 +50,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     private static final Logger LOG = LoggerFactory.getLogger(BoundConcludableResolver.class);
 
     protected final ConceptMap bounds;
-    private final Map<Request.Template, BoundConcludableRequestState<?>> requestStates;
+    private final Map<Request.Factory, BoundConcludableRequestState<?>> requestStates;
     protected final BoundConcludableContext context;
 
     protected BoundConcludableResolver(Driver<BoundConcludableResolver> driver, BoundConcludableContext context,
@@ -67,16 +67,16 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (isTerminated()) return;
         assert fromUpstream.partialAnswer().isConcludable();
-        getOrCreateRequestState(fromUpstream.template()).receiveVisit(fromUpstream.trace());
+        getOrCreateRequestState(fromUpstream.factory()).receiveVisit(fromUpstream.trace());
     }
 
     @Override
     protected void receiveRevisit(Request.Revisit fromUpstream) {
         assert fromUpstream.visit().partialAnswer().isConcludable();
-        getOrCreateRequestState(fromUpstream.visit().template()).receiveRevisit(fromUpstream.trace(), fromUpstream.cycles());
+        getOrCreateRequestState(fromUpstream.visit().factory()).receiveRevisit(fromUpstream.trace(), fromUpstream.cycles());
     }
 
-    private BoundConcludableRequestState<?> getOrCreateRequestState(Request.Template fromUpstream) {
+    private BoundConcludableRequestState<?> getOrCreateRequestState(Request.Factory fromUpstream) {
         if (isCycle(fromUpstream.partialAnswer())) {
             return requestStates.computeIfAbsent(fromUpstream, request -> createBlockedRequestState(fromUpstream));
         } else {
@@ -97,28 +97,28 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         return false;
     }
 
-    abstract ExploringRequestState<?> createExploringRequestState(Request.Template fromUpstream);
+    abstract ExploringRequestState<?> createExploringRequestState(Request.Factory fromUpstream);
 
-    abstract BlockedRequestState<?> createBlockedRequestState(Request.Template fromUpstream);
+    abstract BlockedRequestState<?> createBlockedRequestState(Request.Factory fromUpstream);
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream) {
         if (isTerminated()) return;
-        this.requestStates.get(upstreamTemplate(fromDownstream)).receiveAnswer(fromDownstream);
+        this.requestStates.get(upstreamFactory(fromDownstream)).receiveAnswer(fromDownstream);
     }
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream) {
         LOG.trace("{}: received Fail: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        this.requestStates.get(upstreamTemplate(fromDownstream)).receiveFail(fromDownstream);
+        this.requestStates.get(upstreamFactory(fromDownstream)).receiveFail(fromDownstream);
     }
 
     @Override
     protected void receiveBlocked(Response.Blocked fromDownstream) {
         LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        this.requestStates.get(upstreamTemplate(fromDownstream)).receiveBlocked(fromDownstream);
+        this.requestStates.get(upstreamFactory(fromDownstream)).receiveBlocked(fromDownstream);
     }
 
     @Override
@@ -134,15 +134,15 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         requestStates.clear();
     }
 
-    protected List<Request.Template> ruleDownstreams(Request.Template fromUpstream) {
-        List<Request.Template> downstreams = new ArrayList<>();
+    protected List<Request.Factory> ruleDownstreams(Request.Factory fromUpstream) {
+        List<Request.Factory> downstreams = new ArrayList<>();
         Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
         for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry: context.conclusionResolvers().entrySet()) {
             Driver<ConclusionResolver> conclusionResolver = entry.getKey();
             Rule rule = registry.conclusionRule(conclusionResolver);
             for (Unifier unifier : entry.getValue()) {
                 partialAnswer.toDownstream(unifier, rule).ifPresent(
-                        conclusion -> downstreams.add(Request.Template.create(driver(), conclusionResolver, conclusion)));
+                        conclusion -> downstreams.add(Request.Factory.create(driver(), conclusionResolver, conclusion)));
             }
         }
         return downstreams;
@@ -152,7 +152,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         ANSWER answerFromPartial(Partial<?> partial);
 
-        FunctionalIterator<? extends Partial<?>> toUpstream(Request.Template fromUpstream, ANSWER partial);
+        FunctionalIterator<? extends Partial<?>> toUpstream(Request.Factory fromUpstream, ANSWER partial);
 
     }
 
@@ -160,7 +160,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         protected final UpstreamBehaviour<ANSWER> upstreamBehaviour;
         protected final boolean singleAnswerRequired;
 
-        protected BoundConcludableRequestState(Request.Template fromUpstream, AnswerCache<ANSWER> answerCache,
+        protected BoundConcludableRequestState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache,
                                                boolean deduplicate, UpstreamBehaviour<ANSWER> upstreamBehaviour,
                                                boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate);
@@ -203,7 +203,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     protected class BlockedRequestState<ANSWER> extends BoundConcludableRequestState<ANSWER> {
 
-        public BlockedRequestState(Request.Template fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate,
+        public BlockedRequestState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate,
                                    UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate, upstreamBehaviour, singleAnswerRequired);
         }
@@ -246,8 +246,8 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         private final DownstreamManager downstreamManager;
 
-        protected ExploringRequestState(Request.Template fromUpstream, AnswerCache<ANSWER> answerCache,
-                                        List<Request.Template> ruleDownstreams, boolean deduplicate,
+        protected ExploringRequestState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache,
+                                        List<Request.Factory> ruleDownstreams, boolean deduplicate,
                                         UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate, upstreamBehaviour, singleAnswerRequired);
             this.downstreamManager = new DownstreamManager(ruleDownstreams);
@@ -281,7 +281,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         @Override
         void receiveBlocked(Response.Blocked fromDownstream) {
-            Request.Template blockingDownstream = fromDownstream.sourceRequest();
+            Request.Factory blockingDownstream = fromDownstream.sourceRequest();
             if (downstreamManager().contains(blockingDownstream)) {
                 downstreamManager().block(blockingDownstream, fromDownstream.cycles());
                 Set<Cycle> outdated = outdatedCycles(downstreamManager().cycles());

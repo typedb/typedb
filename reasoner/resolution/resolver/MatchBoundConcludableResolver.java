@@ -48,14 +48,14 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
-    BoundConcludableResolver.ExploringRequestState<?> createExploringRequestState(Request.Template fromUpstream) {
+    BoundConcludableResolver.ExploringRequestState<?> createExploringRequestState(Request.Factory fromUpstream) {
         LOG.debug("{}: Creating new exploring request state for request: {}", name(), fromUpstream);
         return new ExploringRequestState<>(fromUpstream, cache(), ruleDownstreams(fromUpstream), true,
                                            new MatchUpstream(), singleAnswerRequired);
     }
 
     @Override
-    BlockedRequestState<?> createBlockedRequestState(Request.Template fromUpstream) {
+    BlockedRequestState<?> createBlockedRequestState(Request.Factory fromUpstream) {
         LOG.debug("{}: Creating new blocked request state for request: {}", name(), fromUpstream);
         return new BlockedRequestState<>(fromUpstream, cache(), true, new MatchUpstream(), singleAnswerRequired);
     }
@@ -86,7 +86,7 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         }
 
         @Override
-        public FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Template fromUpstream,
+        public FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Factory fromUpstream,
                                                                                ConceptMap conceptMap) {
             return Iterators.single(fromUpstream.partialAnswer().asConcludable().asMatch().toUpstreamLookup(
                     conceptMap, context.concludable().isInferredAnswer(conceptMap)));

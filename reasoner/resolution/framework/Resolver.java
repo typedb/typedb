@@ -106,11 +106,11 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         return fromUpstream(response.sourceRequest().createVisit(response.trace()));
     }
 
-    protected Request.Template upstreamTemplate(Response response) {
-        return upstreamRequest(response).visit().template();
+    protected Request.Factory upstreamFactory(Response response) {
+        return upstreamRequest(response).visit().factory();
     }
 
-    protected void visitDownstream(Request.Template downstream, Request fromUpstream) {
+    protected void visitDownstream(Request.Factory downstream, Request fromUpstream) {
         visitDownstream(downstream.createVisit(fromUpstream.trace()), fromUpstream);
     }
 
@@ -130,14 +130,14 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected void answerToUpstream(AnswerState answer, Request fromUpstream) {
         assert answer.isPartial();
-        Answer response = Answer.create(fromUpstream.visit().template(), answer.asPartial(), fromUpstream.trace());
+        Answer response = Answer.create(fromUpstream.visit().factory(), answer.asPartial(), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(response);
         fromUpstream.visit().sender().execute(actor -> actor.receiveAnswer(response));
     }
 
     protected void failToUpstream(Request fromUpstream) {
-        Response.Fail response = new Response.Fail(fromUpstream.visit().template(), fromUpstream.trace());
+        Response.Fail response = new Response.Fail(fromUpstream.visit().factory(), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(response);
         fromUpstream.visit().sender().execute(actor -> actor.receiveFail(response));
@@ -145,7 +145,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected void blockToUpstream(Request fromUpstream, Set<Cycle> cycles) {
         assert !fromUpstream.visit().partialAnswer().parent().isTop();
-        Response.Blocked response = new Response.Blocked(fromUpstream.visit().template(), cycles,
+        Response.Blocked response = new Response.Blocked(fromUpstream.visit().factory(), cycles,
                                                          fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response);
@@ -154,8 +154,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected void blockToUpstream(Request fromUpstream, int numAnswersSeen) {
         assert !fromUpstream.visit().partialAnswer().parent().isTop();
-        Cycle cycle = new Cycle(fromUpstream.visit().template().receiver(), numAnswersSeen);
-        Response.Blocked response = new Response.Blocked(fromUpstream.visit().template(), set(cycle), fromUpstream.trace());
+        Cycle cycle = new Cycle(fromUpstream.visit().factory().receiver(), numAnswersSeen);
+        Response.Blocked response = new Response.Blocked(fromUpstream.visit().factory(), set(cycle), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response);
         fromUpstream.visit().sender().execute(actor -> actor.receiveBlocked(response));
@@ -213,13 +213,13 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     public abstract static class RequestState {
 
-        protected final Request.Template fromUpstream;
+        protected final Request.Factory fromUpstream;
 
-        protected RequestState(Request.Template fromUpstream) {
+        protected RequestState(Request.Factory fromUpstream) {
             this.fromUpstream = fromUpstream;
         }
 
-        public Request.Template fromUpstream() {
+        public Request.Factory fromUpstream() {
             return fromUpstream;
         }
 
@@ -243,7 +243,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         protected Poller<? extends AnswerState.Partial<?>> cacheReader;
         protected final Set<ConceptMap> deduplicationSet;
 
-        protected CachingRequestState(Request.Template fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate) {
+        protected CachingRequestState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate) {
             super(fromUpstream);
             this.answerCache = answerCache;
             this.deduplicationSet = deduplicate ? new HashSet<>() : null;
@@ -264,9 +264,9 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     }
 
     public static class DownstreamManager {
-        protected final List<Request.Template> visits;
-        protected Map<Request.Template, Set<Cycle>> revisits;
-        protected Map<Request.Template, Set<Cycle>> blocked;
+        protected final List<Request.Factory> visits;
+        protected Map<Request.Factory, Set<Cycle>> revisits;
+        protected Map<Request.Factory, Set<Cycle>> blocked;
 
         public DownstreamManager() {
             this.visits = new ArrayList<>();
@@ -274,7 +274,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             this.blocked = new LinkedHashMap<>();
         }
 
-        public DownstreamManager(List<Request.Template> visits) {
+        public DownstreamManager(List<Request.Factory> visits) {
             this.visits = visits;
             this.revisits = new LinkedHashMap<>();
             this.blocked = new LinkedHashMap<>();
@@ -285,7 +285,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         }
 
         public Request.Revisit nextRevisit(Trace trace) {
-            Optional<Request.Template> downstream = iterate(revisits.keySet()).first();
+            Optional<Request.Factory> downstream = iterate(revisits.keySet()).first();
             assert downstream.isPresent();
             return downstream.get().createRevisit(trace, revisits.get(downstream.get()));
         }
@@ -302,16 +302,16 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             return !blocked.isEmpty();
         }
 
-        public boolean contains(Request.Template downstream) {
+        public boolean contains(Request.Factory downstream) {
             return visits.contains(downstream) || revisits.containsKey(downstream) || blocked.containsKey(downstream);
         }
 
-        public void add(Request.Template downstream) {
+        public void add(Request.Factory downstream) {
             assert !(visits.contains(downstream)) : "downstream answer producer already contains this request";
             visits.add(downstream);
         }
 
-        public void remove(Request.Template downstream) {
+        public void remove(Request.Factory downstream) {
             visits.remove(downstream);
             revisits.remove(downstream);
             blocked.remove(downstream);
@@ -327,7 +327,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
         }
 
-        public void block(Request.Template toBlock, Set<Cycle> blockers) {
+        public void block(Request.Factory toBlock, Set<Cycle> blockers) {
             assert !blockers.isEmpty();
             assert contains(toBlock);
             visits.remove(toBlock);
@@ -337,7 +337,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
         public void unblock(Set<Cycle> cycles) {
             assert !cycles.isEmpty();
-            Set<Request.Template> toRemove = new HashSet<>();
+            Set<Request.Factory> toRemove = new HashSet<>();
             blocked.forEach((downstream, blockers) -> {
                 assert !visits.contains(downstream);
                 Set<Cycle> blockersToRevisit = new HashSet<>(cycles);

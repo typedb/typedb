@@ -41,14 +41,14 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
-    ExploringRequestState<?> createExploringRequestState(Request.Template fromUpstream) {
+    ExploringRequestState<?> createExploringRequestState(Request.Factory fromUpstream) {
         LOG.debug("{}: Creating new exploring request state for request: {}", name(), fromUpstream);
         return new ExploringRequestState<>(fromUpstream, cache(), ruleDownstreams(fromUpstream), false,
                                            new ExplainUpstream(), false);
     }
 
     @Override
-    BlockedRequestState<?> createBlockedRequestState(Request.Template fromUpstream) {
+    BlockedRequestState<?> createBlockedRequestState(Request.Factory fromUpstream) {
         LOG.debug("{}: Creating new blocked request state for request: {}", name(), fromUpstream);
         return new BlockedRequestState<>(fromUpstream, cache(), false, new ExplainUpstream(), false);
     }
@@ -66,7 +66,7 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
         }
 
         @Override
-        public FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Template fromUpstream,
+        public FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Factory fromUpstream,
                                                                                AnswerState.Partial.Concludable<?> partial) {
             return Iterators.single(partial.asExplain().toUpstreamInferred());
         }

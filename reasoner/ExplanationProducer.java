@@ -50,7 +50,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     private final int computeSize;
     private final AtomicInteger required;
     private final AtomicInteger processing;
-    private final Request.Template requestTemplate;
+    private final Request.Factory requestFactory;
     private final Request.Visit defaultResolveRequest;
     private final UUID traceId;
     private boolean done;
@@ -70,14 +70,14 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.requestTraceIdCounter = 0;
         this.traceId = UUID.randomUUID();
-        this.requestTemplate = requestTemplate();
-        this.defaultResolveRequest = requestTemplate.createVisit(Trace.create(traceId, 0));
+        this.requestFactory = requestFactory();
+        this.defaultResolveRequest = requestFactory.createVisit(Trace.create(traceId, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
-    private Request.Template requestTemplate() {
+    private Request.Factory requestFactory() {
         Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
-        return Request.Template.create(explainer, downstream);
+        return Request.Factory.create(explainer, downstream);
     }
 
     @Override
@@ -97,7 +97,7 @@ public class ExplanationProducer implements Producer<Explanation> {
         Request.Visit resolveRequest;
         if (options.traceInference()) {
             Trace trace = Trace.create(traceId, requestTraceIdCounter);
-            resolveRequest = requestTemplate.createVisit(trace);
+            resolveRequest = requestFactory.createVisit(trace);
             ResolutionTracer.get().start(resolveRequest);
             requestTraceIdCounter += 1;
         } else {

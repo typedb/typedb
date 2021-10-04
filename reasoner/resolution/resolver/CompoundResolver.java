@@ -34,7 +34,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
 
     private static final Logger LOG = LoggerFactory.getLogger(CompoundResolver.class);
 
-    final Map<Request.Template, RequestState> requestStates;
+    final Map<Request.Factory, RequestState> requestStates;
     boolean isInitialised;
 
     protected CompoundResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
@@ -60,7 +60,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
-        RequestState requestState = requestStates.computeIfAbsent(fromUpstream.template(), this::requestStateCreate);
+        RequestState requestState = requestStates.computeIfAbsent(fromUpstream.factory(), this::requestStateCreate);
         sendNextMessage(fromUpstream, requestState);
     }
 
@@ -69,7 +69,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
         assert isInitialised;
         if (isTerminated()) return;
-        RequestState requestState = requestStates.get(fromUpstream.visit().template());
+        RequestState requestState = requestStates.get(fromUpstream.visit().factory());
         requestState.downstreamManager().unblock(fromUpstream.cycles());
         sendNextMessage(fromUpstream, requestState);
     }
@@ -78,9 +78,9 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     protected void receiveFail(Response.Fail fromDownstream) {
         LOG.trace("{}: received Exhausted from {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Request.Template toDownstream = fromDownstream.sourceRequest();
+        Request.Factory toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = upstreamRequest(fromDownstream);
-        RequestState requestState = requestStates.get(fromUpstream.visit().template());
+        RequestState requestState = requestStates.get(fromUpstream.visit().factory());
         requestState.downstreamManager().remove(toDownstream);
         sendNextMessage(fromUpstream, requestState);
     }
@@ -89,16 +89,16 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     protected void receiveBlocked(Response.Blocked fromDownstream) {
         LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Request.Template blockingDownstream = fromDownstream.sourceRequest();
+        Request.Factory blockingDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = upstreamRequest(fromDownstream);
-        RequestState requestState = this.requestStates.get(fromUpstream.visit().template());
+        RequestState requestState = this.requestStates.get(fromUpstream.visit().factory());
         if (requestState.downstreamManager().contains(blockingDownstream)) {
             requestState.downstreamManager().block(blockingDownstream, fromDownstream.cycles());
         }
         sendNextMessage(fromUpstream, requestState);
     }
 
-    abstract RequestState requestStateCreate(Request.Template fromUpstream);
+    abstract RequestState requestStateCreate(Request.Factory fromUpstream);
 
     // TODO: Align with the RequestState implementation used across the other resolvers
     static class RequestState {

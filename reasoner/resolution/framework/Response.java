@@ -31,7 +31,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVA
 
 public interface Response {
 
-    Request.Template sourceRequest();
+    Request.Factory sourceRequest();
 
     boolean isAnswer();
 
@@ -56,22 +56,22 @@ public interface Response {
     }
 
     class Answer implements Response {
-        private final Request.Template sourceRequest;
+        private final Request.Factory sourceRequest;
         private final Partial<?> answer;
         private final Trace trace;
 
-        private Answer(Request.Template sourceRequest, Partial<?> answer, Trace trace) {
+        private Answer(Request.Factory sourceRequest, Partial<?> answer, Trace trace) {
             this.sourceRequest = sourceRequest;
             this.answer = answer;
             this.trace = trace;
         }
 
-        public static Answer create(Request.Template sourceRequest, Partial<?> answer, Trace trace) {
+        public static Answer create(Request.Factory sourceRequest, Partial<?> answer, Trace trace) {
             return new Answer(sourceRequest, answer, trace);
         }
 
         @Override
-        public Request.Template sourceRequest() {
+        public Request.Factory sourceRequest() {
             return sourceRequest;
         }
 
@@ -127,16 +127,16 @@ public interface Response {
     }
 
     class Fail implements Response {
-        private final Request.Template sourceRequest;
+        private final Request.Factory sourceRequest;
         private final Trace trace;
 
-        public Fail(Request.Template sourceRequest, Trace trace) {
+        public Fail(Request.Factory sourceRequest, Trace trace) {
             this.sourceRequest = sourceRequest;
             this.trace = trace;
         }
 
         @Override
-        public Request.Template sourceRequest() {
+        public Request.Factory sourceRequest() {
             return sourceRequest;
         }
 
@@ -171,18 +171,18 @@ public interface Response {
 
     class Blocked implements Response {
 
-        private final Request.Template sourceRequest;
+        private final Request.Factory sourceRequest;
         private final Trace trace;
         protected Set<Cycle> cycles;
 
-        public Blocked(Request.Template sourceRequest, Set<Cycle> cycles, Trace trace) {
+        public Blocked(Request.Factory sourceRequest, Set<Cycle> cycles, Trace trace) {
             this.sourceRequest = sourceRequest;
             this.cycles = cycles;
             this.trace = trace;
         }
 
         @Override
-        public Request.Template sourceRequest() {
+        public Request.Factory sourceRequest() {
             return sourceRequest;
         }
 
