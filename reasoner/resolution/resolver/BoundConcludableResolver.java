@@ -50,7 +50,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     private static final Logger LOG = LoggerFactory.getLogger(BoundConcludableResolver.class);
 
     protected final ConceptMap bounds;
-    private final Map<Request.Factory, BoundConcludableRequestState<?>> requestStates;
+    private final Map<Request, BoundConcludableRequestState<?>> requestStates;
     protected final BoundConcludableContext context;
 
     protected BoundConcludableResolver(Driver<BoundConcludableResolver> driver, BoundConcludableContext context,
@@ -67,20 +67,33 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (isTerminated()) return;
         assert fromUpstream.partialAnswer().isConcludable();
-        getOrCreateRequestState(fromUpstream.factory()).receiveVisit(fromUpstream.trace());
+        getOrCreateRequestState(fromUpstream).receiveVisit(fromUpstream.trace());
     }
 
     @Override
     protected void receiveRevisit(Request.Revisit fromUpstream) {
         assert fromUpstream.visit().partialAnswer().isConcludable();
-        getOrCreateRequestState(fromUpstream.visit().factory()).receiveRevisit(fromUpstream.trace(), fromUpstream.cycles());
+        getOrCreateRequestState(fromUpstream.visit()).receiveRevisit(fromUpstream.trace(), fromUpstream.cycles());
     }
 
-    private BoundConcludableRequestState<?> getOrCreateRequestState(Request.Factory fromUpstream) {
-        if (isCycle(fromUpstream.partialAnswer())) {
-            return requestStates.computeIfAbsent(fromUpstream, request -> createBlockedRequestState(fromUpstream));
+    private BoundConcludableRequestState<?> getOrCreateRequestState(Request.Visit fromUpstream) {
+        // TODO: shouldn't check for cycling every time, can search for a requestState first
+        BoundConcludableRequestState<?> requestState = requestStates.get(fromUpstream);
+        if (requestState != null) {
+            return requestState;
         } else {
-            return requestStates.computeIfAbsent(fromUpstream, request -> createExploringRequestState(fromUpstream));
+            for (BoundConcludableRequestState<?> rs : requestStates.values()) {
+                // Linear search, optimise using state
+                if (fromUpstream.factory().equals(rs.fromUpstream())) {
+                    requestStates.put(fromUpstream, rs);
+                    return rs;
+                }
+            }
+            BoundConcludableRequestState<?> rs;
+            if (isCycle(fromUpstream.partialAnswer())) rs = createBlockedRequestState(fromUpstream.factory());
+            else rs = createExploringRequestState(fromUpstream.factory());
+            requestStates.put(fromUpstream, rs);
+            return rs;
         }
     }
 
@@ -104,21 +117,21 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream) {
         if (isTerminated()) return;
-        this.requestStates.get(upstreamFactory(fromDownstream)).receiveAnswer(fromDownstream);
+        this.requestStates.get(upstreamRequest(fromDownstream)).receiveAnswer(fromDownstream);
     }
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream) {
         LOG.trace("{}: received Fail: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        this.requestStates.get(upstreamFactory(fromDownstream)).receiveFail(fromDownstream);
+        this.requestStates.get(upstreamRequest(fromDownstream)).receiveFail(fromDownstream);
     }
 
     @Override
     protected void receiveBlocked(Response.Blocked fromDownstream) {
         LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        this.requestStates.get(upstreamFactory(fromDownstream)).receiveBlocked(fromDownstream);
+        this.requestStates.get(upstreamRequest(fromDownstream)).receiveBlocked(fromDownstream);
     }
 
     @Override

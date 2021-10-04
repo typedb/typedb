@@ -211,6 +211,25 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         return traversal;
     }
 
+    public class RequestStateRegistry<REQUEST_STATE extends RequestState> {
+        private final Map<Request, REQUEST_STATE> requestStates;
+        private final Map<REQUEST_STATE, Set<Request>> requests;
+
+        public RequestStateRegistry() {
+            this.requestStates = new HashMap<>();
+            this.requests = new HashMap<>();
+        }
+
+        public Optional<REQUEST_STATE> get(Request request) {
+            return Optional.ofNullable(requestStates.get(request));
+        }
+
+        public void register(Request request, REQUEST_STATE state) {
+            requestStates.put(request, state);
+            requests.computeIfAbsent(state, s -> new HashSet<>()).add(request);
+        }
+    }
+
     public abstract static class RequestState {
 
         protected final Request.Factory fromUpstream;
