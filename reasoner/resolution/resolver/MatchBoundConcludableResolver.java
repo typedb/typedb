@@ -78,15 +78,16 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
         return missingBounds;
     }
 
-    private class MatchUpstream extends UpstreamBehaviour<ConceptMap> {
+    private class MatchUpstream implements UpstreamBehaviour<ConceptMap> {
 
         @Override
-        ConceptMap answerFromPartial(AnswerState.Partial<?> partial) {
+        public ConceptMap answerFromPartial(AnswerState.Partial<?> partial) {
             return partial.conceptMap();
         }
 
         @Override
-        FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Template fromUpstream, ConceptMap conceptMap) {
+        public FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Template fromUpstream,
+                                                                               ConceptMap conceptMap) {
             return Iterators.single(fromUpstream.partialAnswer().asConcludable().asMatch().toUpstreamLookup(
                     conceptMap, context.concludable().isInferredAnswer(conceptMap)));
         }

@@ -58,15 +58,16 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
         return cache;
     }
 
-    private static class ExplainUpstream extends UpstreamBehaviour<AnswerState.Partial.Concludable<?>> {
+    private static class ExplainUpstream implements UpstreamBehaviour<AnswerState.Partial.Concludable<?>> {
 
         @Override
-        AnswerState.Partial.Concludable<?> answerFromPartial(AnswerState.Partial<?> partial) {
+        public AnswerState.Partial.Concludable<?> answerFromPartial(AnswerState.Partial<?> partial) {
             return partial.asConcludable();
         }
 
         @Override
-        FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Template fromUpstream, AnswerState.Partial.Concludable<?> partial) {
+        public FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Template fromUpstream,
+                                                                               AnswerState.Partial.Concludable<?> partial) {
             return Iterators.single(partial.asExplain().toUpstreamInferred());
         }
     }

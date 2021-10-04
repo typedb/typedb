@@ -148,11 +148,11 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         return downstreams;
     }
 
-    protected abstract static class UpstreamBehaviour<ANSWER> {
+    protected interface UpstreamBehaviour<ANSWER> {
 
-        abstract ANSWER answerFromPartial(Partial<?> partial);
+        ANSWER answerFromPartial(Partial<?> partial);
 
-        abstract FunctionalIterator<? extends Partial<?>> toUpstream(Request.Template fromUpstream, ANSWER partial);
+        FunctionalIterator<? extends Partial<?>> toUpstream(Request.Template fromUpstream, ANSWER partial);
 
     }
 
