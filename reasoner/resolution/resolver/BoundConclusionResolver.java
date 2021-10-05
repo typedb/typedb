@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Materialiser;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
@@ -74,7 +74,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (isTerminated()) return;
         assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
         ConclusionResolutionState<? extends Concludable<?>> resolutionState = resolutionStates.computeIfAbsent(
-                fromUpstream.factory(), r -> createResolutionState(fromUpstream.factory()));
+                fromUpstream.factory(), r -> createResolutionState(fromUpstream.partialAnswer()));
         if (resolutionState.materialisationsCounter > 0) {
             resolutionState.replayBuffer().addVisit(fromUpstream);
         } else {
@@ -162,7 +162,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     }
 
     private void sendNextMessage(ConclusionResolutionState<? extends Concludable<?>> resolutionState, Request fromUpstream) {
-        Optional<? extends AnswerState.Partial<?>> upstreamAnswer = resolutionState.nextAnswer();
+        Optional<? extends Partial<?>> upstreamAnswer = resolutionState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream);
         } else if (!resolutionState.isComplete() && resolutionState.downstreamManager().hasNextVisit()) {
@@ -187,13 +187,13 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private ConclusionResolutionState<?> createResolutionState(Request.Factory fromUpstream) {
+    private ConclusionResolutionState<?> createResolutionState(Partial<?> fromUpstream) {
         LOG.debug("{}: Creating a new ConclusionResponse for request: {}", name(), fromUpstream);
 
         ConclusionResolutionState<?> resolutionState;
-        if (fromUpstream.partialAnswer().asConclusion().isExplain()) {
+        if (fromUpstream.asConclusion().isExplain()) {
             resolutionState = new ConclusionResolutionState.Explain(fromUpstream, conditionDownstreams(fromUpstream), new ReplayBuffer());
-        } else if (fromUpstream.partialAnswer().asConclusion().isMatch()) {
+        } else if (fromUpstream.asConclusion().isMatch()) {
             resolutionState = new ConclusionResolutionState.Match(fromUpstream, conditionDownstreams(fromUpstream), new ReplayBuffer());
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
@@ -202,11 +202,11 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         return resolutionState;
     }
 
-    private List<Request.Factory> conditionDownstreams(Request.Factory fromUpstream) {
+    private List<Request.Factory> conditionDownstreams(Partial<?> fromUpstream) {
         // we do a extra traversal to expand the partial answer if we already have the concept that is meant to be generated
         // and if there's extra variables to be populated
-        AnswerState.Partial.Conclusion<?, ?> partialAnswer = fromUpstream.partialAnswer().asConclusion();
-        assert fromUpstream.partialAnswer().isConclusion();
+        Partial.Conclusion<?, ?> partialAnswer = fromUpstream.asConclusion();
+        assert fromUpstream.isConclusion();
         assert conclusion.retrievableIds().containsAll(partialAnswer.conceptMap().concepts().keySet());
 
         List<Request.Factory> downstreams = new ArrayList<>();
@@ -221,8 +221,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         return downstreams;
     }
 
-    private FunctionalIterator<AnswerState.Partial.Compound<?, ?>> candidateAnswers(
-            AnswerState.Partial.Conclusion<?, ?> partialAnswer) {
+    private FunctionalIterator<Partial.Compound<?, ?>> candidateAnswers(
+            Partial.Conclusion<?, ?> partialAnswer) {
         GraphTraversal.Thing traversal = boundTraversal(conclusion.conjunction().traversal(), partialAnswer.conceptMap());
         Set<Identifier.Variable.Retrievable> named = iterate(conclusion.retrievableIds()).filter(Identifier::isName).toSet();
         return registry.traversalEngine().iterator(traversal)
@@ -284,7 +284,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         private int materialisationsCounter;
         protected FunctionalIterator<CONCLUDABLE> materialisations;
 
-        protected ConclusionResolutionState(Request.Factory fromUpstream, List<Request.Factory> conditionDownstreams, ReplayBuffer replayBuffer) {
+        protected ConclusionResolutionState(Partial<?> fromUpstream, List<Request.Factory> conditionDownstreams, ReplayBuffer replayBuffer) {
             super(fromUpstream);
             this.downstreamManager = new DownstreamManager(conditionDownstreams);
             this.materialisations = Iterators.empty();
@@ -308,10 +308,10 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             complete = true;
         }
 
-        protected abstract FunctionalIterator<CONCLUDABLE> toUpstream(AnswerState.Partial<?> fromDownstream,
+        protected abstract FunctionalIterator<CONCLUDABLE> toUpstream(Partial<?> fromDownstream,
                                                                       Map<Identifier.Variable, Concept> answer);
 
-        public void newMaterialisation(AnswerState.Partial<?> fromDownstream,
+        public void newMaterialisation(Partial<?> fromDownstream,
                                        Map<Identifier.Variable, Concept> materialisation) {
             this.materialisations = this.materialisations.link(toUpstream(fromDownstream, materialisation));
         }
@@ -324,13 +324,13 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
             private final Set<ConceptMap> deduplicationSet;
 
-            private Match(Request.Factory fromUpstream, List<Request.Factory> conditionDownstreams, ReplayBuffer replayBuffer) {
+            private Match(Partial<?> fromUpstream, List<Request.Factory> conditionDownstreams, ReplayBuffer replayBuffer) {
                 super(fromUpstream, conditionDownstreams, replayBuffer);
                 this.deduplicationSet = new HashSet<>();
             }
 
             @Override
-            protected FunctionalIterator<Concludable.Match<?>> toUpstream(AnswerState.Partial<?> fromDownstream,
+            protected FunctionalIterator<Concludable.Match<?>> toUpstream(Partial<?> fromDownstream,
                                                                           Map<Identifier.Variable, Concept> answer) {
                 return fromDownstream.asConclusion().asMatch().aggregateToUpstream(answer);
             }
@@ -351,12 +351,12 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
         private static class Explain extends ConclusionResolutionState<Concludable.Explain> {
 
-            private Explain(Request.Factory fromUpstream, List<Request.Factory> conditionDownstreams, ReplayBuffer replayBuffer) {
+            private Explain(Partial<?> fromUpstream, List<Request.Factory> conditionDownstreams, ReplayBuffer replayBuffer) {
                 super(fromUpstream, conditionDownstreams, replayBuffer);
             }
 
             @Override
-            protected FunctionalIterator<Concludable.Explain> toUpstream(AnswerState.Partial<?> fromDownstream,
+            protected FunctionalIterator<Concludable.Explain> toUpstream(Partial<?> fromDownstream,
                                                                          Map<Identifier.Variable, Concept> answer) {
                 return fromDownstream.asConclusion().asExplain().aggregateToUpstream(answer);
             }

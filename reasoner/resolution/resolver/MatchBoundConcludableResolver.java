@@ -22,9 +22,8 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,14 +47,14 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
-    ExploringResolutionState<?> createExploringResolutionState(Request.Factory fromUpstream) {
+    ExploringResolutionState<?> createExploringResolutionState(Partial<?> fromUpstream) {
         LOG.debug("{}: Creating new exploring request state for request: {}", name(), fromUpstream);
         return new ExploringResolutionState<>(fromUpstream, cache(), ruleDownstreams(fromUpstream), true,
                                               new MatchUpstream(), singleAnswerRequired);
     }
 
     @Override
-    BlockedResolutionState<?> createBlockedResolutionState(Request.Factory fromUpstream) {
+    BlockedResolutionState<?> createBlockedResolutionState(Partial<?> fromUpstream) {
         LOG.debug("{}: Creating new blocked request state for request: {}", name(), fromUpstream);
         return new BlockedResolutionState<>(fromUpstream, cache(), true, new MatchUpstream(), singleAnswerRequired);
     }
@@ -81,14 +80,14 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     private class MatchUpstream implements UpstreamBehaviour<ConceptMap> {
 
         @Override
-        public ConceptMap answerFromPartial(AnswerState.Partial<?> partial) {
+        public ConceptMap answerFromPartial(Partial<?> partial) {
             return partial.conceptMap();
         }
 
         @Override
-        public FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Factory fromUpstream,
-                                                                               ConceptMap conceptMap) {
-            return Iterators.single(fromUpstream.partialAnswer().asConcludable().asMatch().toUpstreamLookup(
+        public FunctionalIterator<? extends Partial<?>> toUpstream(Partial<?> fromUpstream,
+                                                                   ConceptMap conceptMap) {
+            return Iterators.single(fromUpstream.asConcludable().asMatch().toUpstreamLookup(
                     conceptMap, context.concludable().isInferredAnswer(conceptMap)));
         }
     }

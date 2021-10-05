@@ -28,7 +28,6 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Blocked.Cycle;
@@ -67,13 +66,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (isTerminated()) return;
         assert fromUpstream.partialAnswer().isConcludable();
-        getOrCreateResolutionState(fromUpstream).receiveVisit(fromUpstream.trace());
+        getOrCreateResolutionState(fromUpstream).receiveVisit(fromUpstream);
     }
 
     @Override
     protected void receiveRevisit(Request.Revisit fromUpstream) {
         assert fromUpstream.visit().partialAnswer().isConcludable();
-        getOrCreateResolutionState(fromUpstream.visit()).receiveRevisit(fromUpstream.trace(), fromUpstream.cycles());
+        getOrCreateResolutionState(fromUpstream.visit()).receiveRevisit(fromUpstream, fromUpstream.cycles());
     }
 
     private BoundConcludableResolutionState<?> getOrCreateResolutionState(Request.Visit fromUpstream) {
@@ -84,14 +83,14 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         } else {
             for (BoundConcludableResolutionState<?> rs : resolutionStates.values()) {
                 // Linear search, optimise using state
-                if (fromUpstream.factory().equals(rs.fromUpstream())) {
+                if (fromUpstream.partialAnswer().equals(rs.fromUpstream())) {
                     resolutionStates.put(fromUpstream, rs);
                     return rs;
                 }
             }
             BoundConcludableResolutionState<?> rs;
-            if (isCycle(fromUpstream.partialAnswer())) rs = createBlockedResolutionState(fromUpstream.factory());
-            else rs = createExploringResolutionState(fromUpstream.factory());
+            if (isCycle(fromUpstream.partialAnswer())) rs = createBlockedResolutionState(fromUpstream.partialAnswer());
+            else rs = createExploringResolutionState(fromUpstream.partialAnswer());
             resolutionStates.put(fromUpstream, rs);
             return rs;
         }
@@ -110,9 +109,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         return false;
     }
 
-    abstract ExploringResolutionState<?> createExploringResolutionState(Request.Factory fromUpstream);
+    abstract ExploringResolutionState<?> createExploringResolutionState(Partial<?> fromUpstream);
 
-    abstract BlockedResolutionState<?> createBlockedResolutionState(Request.Factory fromUpstream);
+    abstract BlockedResolutionState<?> createBlockedResolutionState(Partial<?> fromUpstream);
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream) {
@@ -147,9 +146,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         resolutionStates.clear();
     }
 
-    protected List<Request.Factory> ruleDownstreams(Request.Factory fromUpstream) {
+    protected List<Request.Factory> ruleDownstreams(Partial<?> fromUpstream) {
         List<Request.Factory> downstreams = new ArrayList<>();
-        Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
+        Partial.Concludable<?> partialAnswer = fromUpstream.asConcludable();
         for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry: context.conclusionResolvers().entrySet()) {
             Driver<ConclusionResolver> conclusionResolver = entry.getKey();
             Rule rule = registry.conclusionRule(conclusionResolver);
@@ -165,7 +164,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         ANSWER answerFromPartial(Partial<?> partial);
 
-        FunctionalIterator<? extends Partial<?>> toUpstream(Request.Factory fromUpstream, ANSWER partial);
+        FunctionalIterator<? extends Partial<?>> toUpstream(Partial<?> fromUpstream, ANSWER partial);
 
     }
 
@@ -173,7 +172,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         protected final UpstreamBehaviour<ANSWER> upstreamBehaviour;
         protected final boolean singleAnswerRequired;
 
-        protected BoundConcludableResolutionState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache,
+        protected BoundConcludableResolutionState(Partial<?> fromUpstream, AnswerCache<ANSWER> answerCache,
                                                   boolean deduplicate, UpstreamBehaviour<ANSWER> upstreamBehaviour,
                                                   boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate);
@@ -194,13 +193,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
             return upstreamBehaviour.toUpstream(fromUpstream, answer);
         }
 
-        abstract void sendNextMessage(Trace trace);
+        abstract void sendNextMessage(Request.Visit visit);
 
-        protected void receiveVisit(Trace trace) {
-            sendNextMessage(trace);
+        protected void receiveVisit(Request.Visit visit) {
+            sendNextMessage(visit);
         }
 
-        abstract void receiveRevisit(Trace trace, Set<Cycle> cycles);
+        abstract void receiveRevisit(Request.Revisit revisit, Set<Cycle> cycles);
 
         abstract void receiveAnswer(Response.Answer fromDownstream);
 
@@ -216,27 +215,27 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     protected class BlockedResolutionState<ANSWER> extends BoundConcludableResolutionState<ANSWER> {
 
-        public BlockedResolutionState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate,
+        public BlockedResolutionState(Partial<?> fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate,
                                       UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate, upstreamBehaviour, singleAnswerRequired);
         }
 
         @Override
-        void sendNextMessage(Trace trace) {
+        void sendNextMessage(Request.Visit visit) {
             Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer();
             if (upstreamAnswer.isPresent()) {
                 if (singleAnswerRequired()) cache().setComplete();
-                answerToUpstream(upstreamAnswer.get(), fromUpstream().createVisit(trace));
+                answerToUpstream(upstreamAnswer.get(), visit);
             } else if (cache().isComplete()) {
-                failToUpstream(fromUpstream().createVisit(trace));
+                failToUpstream(visit);
             } else {
-                blockToUpstream(fromUpstream().createVisit(trace), cache().size());
+                blockToUpstream(visit, cache().size());
             }
         }
 
         @Override
-        void receiveRevisit(Trace trace, Set<Cycle> cycles) {
-            sendNextMessage(trace);
+        void receiveRevisit(Request.Revisit revisit, Set<Cycle> cycles) {
+            sendNextMessage(revisit.visit());
         }
 
         @Override
@@ -259,7 +258,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         private final DownstreamManager downstreamManager;
 
-        protected ExploringResolutionState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache,
+        protected ExploringResolutionState(Partial<?> fromUpstream, AnswerCache<ANSWER> answerCache,
                                            List<Request.Factory> ruleDownstreams, boolean deduplicate,
                                            UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate, upstreamBehaviour, singleAnswerRequired);
@@ -272,9 +271,9 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
 
         @Override
-        void receiveRevisit(Trace trace, Set<Cycle> cycles) {
+        void receiveRevisit(Request.Revisit revisit, Set<Cycle> cycles) {
             downstreamManager().unblock(cycles);
-            sendNextMessage(trace);
+            sendNextMessage(revisit.visit());
         }
 
         @Override
@@ -283,13 +282,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                 Set<Cycle> outdated = outdatedCycles(downstreamManager().cycles());
                 if (!outdated.isEmpty()) downstreamManager().unblock(outdated);
             }
-            sendNextMessage(fromDownstream.trace());
+            sendNextMessage(upstreamRequest(fromDownstream).visit());
         }
 
         @Override
         void receiveFail(Response.Fail fromDownstream) {
             downstreamManager().remove(fromDownstream.sourceRequest());
-            sendNextMessage(fromDownstream.trace());
+            sendNextMessage(upstreamRequest(fromDownstream).visit());
         }
 
         @Override
@@ -300,11 +299,11 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                 Set<Cycle> outdated = outdatedCycles(downstreamManager().cycles());
                 if (!outdated.isEmpty()) downstreamManager().unblock(outdated);
             }
-            sendNextMessage(fromDownstream.trace());
+            sendNextMessage(upstreamRequest(fromDownstream).visit());
         }
 
         @Override
-        protected void sendNextMessage(Trace trace) {
+        protected void sendNextMessage(Request.Visit visit) {
             Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer();
             if (upstreamAnswer.isPresent()) {
                 if (singleAnswerRequired()) {
@@ -320,18 +319,18 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                     downstreamManager().clear();
                     cache().setComplete();
                 }
-                answerToUpstream(upstreamAnswer.get(), fromUpstream().createVisit(trace));
+                answerToUpstream(upstreamAnswer.get(), visit);
             } else if (cache().isComplete()) {
-                failToUpstream(fromUpstream().createVisit(trace));
+                failToUpstream(visit);
             } else if (downstreamManager().hasNextVisit()) {
-                visitDownstream(downstreamManager().nextVisit(trace), fromUpstream().createVisit(trace));
+                visitDownstream(downstreamManager().nextVisit(visit.trace()), visit);
             } else if (downstreamManager().hasNextRevisit()) {
-                revisitDownstream(downstreamManager().nextRevisit(trace), fromUpstream().createVisit(trace));
+                revisitDownstream(downstreamManager().nextRevisit(visit.trace()), visit);
             } else if (startsHere(downstreamManager().cycles())) {
                 cache().setComplete();
-                failToUpstream(fromUpstream().createVisit(trace));
+                failToUpstream(visit);
             } else {
-                blockToUpstream(fromUpstream().createVisit(trace), startingElsewhere(downstreamManager().cycles()));
+                blockToUpstream(visit, startingElsewhere(downstreamManager().cycles()));
             }
         }
 

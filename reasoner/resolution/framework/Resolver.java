@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Blocked.Cycle;
@@ -232,21 +233,21 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     public abstract static class ResolutionState {
 
-        protected final Request.Factory fromUpstream;
+        protected final Partial<?> fromUpstream;
 
-        protected ResolutionState(Request.Factory fromUpstream) {
+        protected ResolutionState(Partial<?> fromUpstream) {
             this.fromUpstream = fromUpstream;
         }
 
-        public Request.Factory fromUpstream() {
+        public Partial<?> fromUpstream() {
             return fromUpstream;
         }
 
-        public abstract Optional<? extends AnswerState.Partial<?>> nextAnswer();
+        public abstract Optional<? extends Partial<?>> nextAnswer();
 
         public interface Exploration {
 
-            boolean newAnswer(AnswerState.Partial<?> partial);
+            boolean newAnswer(Partial<?> partial);
 
             DownstreamManager downstreamManager();
 
@@ -259,10 +260,10 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     public abstract static class CachingResolutionState<ANSWER> extends ResolutionState {
 
         protected final AnswerCache<ANSWER> answerCache;
-        protected Poller<? extends AnswerState.Partial<?>> cacheReader;
+        protected Poller<? extends Partial<?>> cacheReader;
         protected final Set<ConceptMap> deduplicationSet;
 
-        protected CachingResolutionState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate) {
+        protected CachingResolutionState(Partial<?> fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate) {
             super(fromUpstream);
             this.answerCache = answerCache;
             this.deduplicationSet = deduplicate ? new HashSet<>() : null;
@@ -272,13 +273,13 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         }
 
         @Override
-        public Optional<? extends AnswerState.Partial<?>> nextAnswer() {
-            Optional<? extends AnswerState.Partial<?>> ans = cacheReader.poll();
+        public Optional<? extends Partial<?>> nextAnswer() {
+            Optional<? extends Partial<?>> ans = cacheReader.poll();
             if (ans.isPresent() && deduplicationSet != null) deduplicationSet.add(ans.get().conceptMap());
             return ans;
         }
 
-        protected abstract FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ANSWER answer);
+        protected abstract FunctionalIterator<? extends Partial<?>> toUpstream(ANSWER answer);
 
     }
 

@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
@@ -54,7 +54,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     public void receiveVisit(Request.Visit fromUpstream) {
         assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
         sendNextMessage(fromUpstream, resolutionStates.computeIfAbsent(
-                fromUpstream.factory(), request -> new BoundResolutionState(request, cache)));
+                fromUpstream.factory(), request -> new BoundResolutionState(request.partialAnswer(), cache)));
     }
 
     @Override
@@ -79,7 +79,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     }
 
     private void sendNextMessage(Request fromUpstream, ResolutionState resolutionState) {
-        Optional<? extends AnswerState.Partial<?>> upstreamAnswer = resolutionState.nextAnswer();
+        Optional<? extends Partial<?>> upstreamAnswer = resolutionState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream);
         } else {
@@ -94,13 +94,13 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
 
     private static class BoundResolutionState extends CachingResolutionState<ConceptMap> {
 
-        public BoundResolutionState(Request.Factory fromUpstream, AnswerCache<ConceptMap> answerCache) {
+        public BoundResolutionState(Partial<?> fromUpstream, AnswerCache<ConceptMap> answerCache) {
             super(fromUpstream, answerCache, false);
         }
 
         @Override
-        protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ConceptMap answer) {
-            return Iterators.single(fromUpstream.partialAnswer().asRetrievable().aggregateToUpstream(answer));
+        protected FunctionalIterator<? extends Partial<?>> toUpstream(ConceptMap answer) {
+            return Iterators.single(fromUpstream.asRetrievable().aggregateToUpstream(answer));
         }
     }
 }

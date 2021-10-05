@@ -22,9 +22,8 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +31,7 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(ExplainBoundConcludableResolver.class);
 
-    private final AnswerCache<AnswerState.Partial.Concludable<?>> cache;
+    private final AnswerCache<Partial.Concludable<?>> cache;
 
     public ExplainBoundConcludableResolver(Driver<BoundConcludableResolver> driver, BoundConcludableContext context,
                                            ConceptMap bounds, ResolverRegistry registry) {
@@ -41,33 +40,33 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
-    ExploringResolutionState<?> createExploringResolutionState(Request.Factory fromUpstream) {
+    ExploringResolutionState<?> createExploringResolutionState(Partial<?> fromUpstream) {
         LOG.debug("{}: Creating new exploring request state for request: {}", name(), fromUpstream);
         return new ExploringResolutionState<>(fromUpstream, cache(), ruleDownstreams(fromUpstream), false,
                                               new ExplainUpstream(), false);
     }
 
     @Override
-    BlockedResolutionState<?> createBlockedResolutionState(Request.Factory fromUpstream) {
+    BlockedResolutionState<?> createBlockedResolutionState(Partial<?> fromUpstream) {
         LOG.debug("{}: Creating new blocked request state for request: {}", name(), fromUpstream);
         return new BlockedResolutionState<>(fromUpstream, cache(), false, new ExplainUpstream(), false);
     }
 
     @Override
-    protected AnswerCache<AnswerState.Partial.Concludable<?>> cache() {
+    protected AnswerCache<Partial.Concludable<?>> cache() {
         return cache;
     }
 
-    private static class ExplainUpstream implements UpstreamBehaviour<AnswerState.Partial.Concludable<?>> {
+    private static class ExplainUpstream implements UpstreamBehaviour<Partial.Concludable<?>> {
 
         @Override
-        public AnswerState.Partial.Concludable<?> answerFromPartial(AnswerState.Partial<?> partial) {
+        public Partial.Concludable<?> answerFromPartial(Partial<?> partial) {
             return partial.asConcludable();
         }
 
         @Override
-        public FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(Request.Factory fromUpstream,
-                                                                               AnswerState.Partial.Concludable<?> partial) {
+        public FunctionalIterator<? extends Partial<?>> toUpstream(Partial<?> fromUpstream,
+                                                                   Partial.Concludable<?> partial) {
             return Iterators.single(partial.asExplain().toUpstreamInferred());
         }
     }
