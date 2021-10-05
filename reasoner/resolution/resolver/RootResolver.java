@@ -97,8 +97,8 @@ public interface RootResolver {
         }
 
         @Override
-        RequestState requestStateNew() {
-            return new RequestState();
+        ResolutionState resolutionStateNew() {
+            return new ResolutionState();
         }
 
     }
@@ -141,9 +141,9 @@ public interface RootResolver {
 
         @Override
         protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream) {
-            RequestState requestState = requestStates.get(fromUpstream.visit().factory());
-            if (!requestState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
-                requestState.deduplicationSet().add(upstreamAnswer.conceptMap());
+            ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().factory());
+            if (!resolutionState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
+                resolutionState.deduplicationSet().add(upstreamAnswer.conceptMap());
                 answerToUpstream(upstreamAnswer, fromUpstream);
                 return true;
             } else {
@@ -223,8 +223,8 @@ public interface RootResolver {
         }
 
         @Override
-        RequestState requestStateNew() {
-            return new RequestState();
+        ResolutionState resolutionStateNew() {
+            return new ResolutionState();
         }
 
         @Override

@@ -57,8 +57,8 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
     }
 
     @Override
-    RequestState requestStateNew() {
-        return new RequestState();
+    ResolutionState resolutionStateNew() {
+        return new ResolutionState();
     }
 
     @Override

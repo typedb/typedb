@@ -38,7 +38,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver> {
 
     private final AnswerCache<ConceptMap> cache;
-    private final Map<Request.Factory, RequestState> requestStates;
+    private final Map<Request.Factory, ResolutionState> resolutionStates;
     private final ConceptMap bounds;
 
     public BoundRetrievableResolver(Driver<BoundRetrievableResolver> driver, Retrievable retrievable, ConceptMap bounds,
@@ -47,14 +47,14 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
                 " bounds: " + bounds.toString() + ")", registry);
         this.bounds = bounds;
         this.cache = new AnswerCache<>(() -> traversalIterator(retrievable.pattern(), bounds));
-        this.requestStates = new HashMap<>();
+        this.resolutionStates = new HashMap<>();
     }
 
     @Override
     public void receiveVisit(Request.Visit fromUpstream) {
         assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
-        sendNextMessage(fromUpstream, requestStates.computeIfAbsent(
-                fromUpstream.factory(), request -> new BoundRequestState(request, cache)));
+        sendNextMessage(fromUpstream, resolutionStates.computeIfAbsent(
+                fromUpstream.factory(), request -> new BoundResolutionState(request, cache)));
     }
 
     @Override
@@ -78,8 +78,8 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private void sendNextMessage(Request fromUpstream, RequestState requestState) {
-        Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestState.nextAnswer();
+    private void sendNextMessage(Request fromUpstream, ResolutionState resolutionState) {
+        Optional<? extends AnswerState.Partial<?>> upstreamAnswer = resolutionState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream);
         } else {
@@ -92,9 +92,9 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private static class BoundRequestState extends CachingRequestState<ConceptMap> {
+    private static class BoundResolutionState extends CachingResolutionState<ConceptMap> {
 
-        public BoundRequestState(Request.Factory fromUpstream, AnswerCache<ConceptMap> answerCache) {
+        public BoundResolutionState(Request.Factory fromUpstream, AnswerCache<ConceptMap> answerCache) {
             super(fromUpstream, answerCache, false);
         }
 

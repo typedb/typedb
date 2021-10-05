@@ -48,16 +48,16 @@ public class MatchBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
-    BoundConcludableResolver.ExploringRequestState<?> createExploringRequestState(Request.Factory fromUpstream) {
+    ExploringResolutionState<?> createExploringResolutionState(Request.Factory fromUpstream) {
         LOG.debug("{}: Creating new exploring request state for request: {}", name(), fromUpstream);
-        return new ExploringRequestState<>(fromUpstream, cache(), ruleDownstreams(fromUpstream), true,
-                                           new MatchUpstream(), singleAnswerRequired);
+        return new ExploringResolutionState<>(fromUpstream, cache(), ruleDownstreams(fromUpstream), true,
+                                              new MatchUpstream(), singleAnswerRequired);
     }
 
     @Override
-    BlockedRequestState<?> createBlockedRequestState(Request.Factory fromUpstream) {
+    BlockedResolutionState<?> createBlockedResolutionState(Request.Factory fromUpstream) {
         LOG.debug("{}: Creating new blocked request state for request: {}", name(), fromUpstream);
-        return new BlockedRequestState<>(fromUpstream, cache(), true, new MatchUpstream(), singleAnswerRequired);
+        return new BlockedResolutionState<>(fromUpstream, cache(), true, new MatchUpstream(), singleAnswerRequired);
     }
 
     @Override

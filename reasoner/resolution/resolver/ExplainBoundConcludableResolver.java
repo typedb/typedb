@@ -41,16 +41,16 @@ public class ExplainBoundConcludableResolver extends BoundConcludableResolver {
     }
 
     @Override
-    ExploringRequestState<?> createExploringRequestState(Request.Factory fromUpstream) {
+    ExploringResolutionState<?> createExploringResolutionState(Request.Factory fromUpstream) {
         LOG.debug("{}: Creating new exploring request state for request: {}", name(), fromUpstream);
-        return new ExploringRequestState<>(fromUpstream, cache(), ruleDownstreams(fromUpstream), false,
-                                           new ExplainUpstream(), false);
+        return new ExploringResolutionState<>(fromUpstream, cache(), ruleDownstreams(fromUpstream), false,
+                                              new ExplainUpstream(), false);
     }
 
     @Override
-    BlockedRequestState<?> createBlockedRequestState(Request.Factory fromUpstream) {
+    BlockedResolutionState<?> createBlockedResolutionState(Request.Factory fromUpstream) {
         LOG.debug("{}: Creating new blocked request state for request: {}", name(), fromUpstream);
-        return new BlockedRequestState<>(fromUpstream, cache(), false, new ExplainUpstream(), false);
+        return new BlockedResolutionState<>(fromUpstream, cache(), false, new ExplainUpstream(), false);
     }
 
     @Override

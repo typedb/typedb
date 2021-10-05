@@ -55,12 +55,12 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         if (isTerminated()) return;
 
         Request fromUpstream = upstreamRequest(fromDownstream);
-        RequestState requestState = requestStates.get(fromUpstream.visit().factory());
+        ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().factory());
 
         assert fromDownstream.answer().isCompound();
         AnswerState answer = toUpstreamAnswer(fromDownstream.answer().asCompound(), fromDownstream);
         boolean acceptedAnswer = tryAcceptUpstreamAnswer(answer, fromUpstream);
-        if (!acceptedAnswer) sendNextMessage(fromUpstream, requestState);
+        if (!acceptedAnswer) sendNextMessage(fromUpstream, resolutionState);
     }
 
     protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream);
@@ -82,17 +82,17 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     }
 
     @Override
-    protected RequestState requestStateCreate(Request.Factory fromUpstream) {
-        LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
+    protected ResolutionState resolutionStateCreate(Request.Factory fromUpstream) {
+        LOG.debug("{}: Creating a new ResolutionState for request: {}", name(), fromUpstream);
         assert fromUpstream.partialAnswer().isCompound();
-        RequestState requestState = new RequestState();
+        ResolutionState resolutionState = new ResolutionState();
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
             Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
                     .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
             Request.Factory request = Request.Factory.create(driver(), conjunctionResolver, downstream);
-            requestState.downstreamManager().add(request);
+            resolutionState.downstreamManager().add(request);
         }
-        return requestState;
+        return resolutionState;
     }
 
     private static Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(

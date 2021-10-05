@@ -50,7 +50,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     private static final Logger LOG = LoggerFactory.getLogger(BoundConcludableResolver.class);
 
     protected final ConceptMap bounds;
-    private final Map<Request, BoundConcludableRequestState<?>> requestStates;
+    private final Map<Request, BoundConcludableResolutionState<?>> resolutionStates;
     protected final BoundConcludableContext context;
 
     protected BoundConcludableResolver(Driver<BoundConcludableResolver> driver, BoundConcludableContext context,
@@ -59,7 +59,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                 context.concludable().pattern() + ", bounds: " + bounds.concepts().toString() + ")", registry);
         this.context = context;
         this.bounds = bounds;
-        this.requestStates = new HashMap<>();
+        this.resolutionStates = new HashMap<>();
     }
 
     @Override
@@ -67,32 +67,32 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (isTerminated()) return;
         assert fromUpstream.partialAnswer().isConcludable();
-        getOrCreateRequestState(fromUpstream).receiveVisit(fromUpstream.trace());
+        getOrCreateResolutionState(fromUpstream).receiveVisit(fromUpstream.trace());
     }
 
     @Override
     protected void receiveRevisit(Request.Revisit fromUpstream) {
         assert fromUpstream.visit().partialAnswer().isConcludable();
-        getOrCreateRequestState(fromUpstream.visit()).receiveRevisit(fromUpstream.trace(), fromUpstream.cycles());
+        getOrCreateResolutionState(fromUpstream.visit()).receiveRevisit(fromUpstream.trace(), fromUpstream.cycles());
     }
 
-    private BoundConcludableRequestState<?> getOrCreateRequestState(Request.Visit fromUpstream) {
-        // TODO: shouldn't check for cycling every time, can search for a requestState first
-        BoundConcludableRequestState<?> requestState = requestStates.get(fromUpstream);
-        if (requestState != null) {
-            return requestState;
+    private BoundConcludableResolutionState<?> getOrCreateResolutionState(Request.Visit fromUpstream) {
+        // TODO: shouldn't check for cycling every time, can search for a resolutionState first
+        BoundConcludableResolutionState<?> resolutionState = resolutionStates.get(fromUpstream);
+        if (resolutionState != null) {
+            return resolutionState;
         } else {
-            for (BoundConcludableRequestState<?> rs : requestStates.values()) {
+            for (BoundConcludableResolutionState<?> rs : resolutionStates.values()) {
                 // Linear search, optimise using state
                 if (fromUpstream.factory().equals(rs.fromUpstream())) {
-                    requestStates.put(fromUpstream, rs);
+                    resolutionStates.put(fromUpstream, rs);
                     return rs;
                 }
             }
-            BoundConcludableRequestState<?> rs;
-            if (isCycle(fromUpstream.partialAnswer())) rs = createBlockedRequestState(fromUpstream.factory());
-            else rs = createExploringRequestState(fromUpstream.factory());
-            requestStates.put(fromUpstream, rs);
+            BoundConcludableResolutionState<?> rs;
+            if (isCycle(fromUpstream.partialAnswer())) rs = createBlockedResolutionState(fromUpstream.factory());
+            else rs = createExploringResolutionState(fromUpstream.factory());
+            resolutionStates.put(fromUpstream, rs);
             return rs;
         }
     }
@@ -110,28 +110,28 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         return false;
     }
 
-    abstract ExploringRequestState<?> createExploringRequestState(Request.Factory fromUpstream);
+    abstract ExploringResolutionState<?> createExploringResolutionState(Request.Factory fromUpstream);
 
-    abstract BlockedRequestState<?> createBlockedRequestState(Request.Factory fromUpstream);
+    abstract BlockedResolutionState<?> createBlockedResolutionState(Request.Factory fromUpstream);
 
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream) {
         if (isTerminated()) return;
-        this.requestStates.get(upstreamRequest(fromDownstream)).receiveAnswer(fromDownstream);
+        this.resolutionStates.get(upstreamRequest(fromDownstream)).receiveAnswer(fromDownstream);
     }
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream) {
         LOG.trace("{}: received Fail: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        this.requestStates.get(upstreamRequest(fromDownstream)).receiveFail(fromDownstream);
+        this.resolutionStates.get(upstreamRequest(fromDownstream)).receiveFail(fromDownstream);
     }
 
     @Override
     protected void receiveBlocked(Response.Blocked fromDownstream) {
         LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        this.requestStates.get(upstreamRequest(fromDownstream)).receiveBlocked(fromDownstream);
+        this.resolutionStates.get(upstreamRequest(fromDownstream)).receiveBlocked(fromDownstream);
     }
 
     @Override
@@ -144,7 +144,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     @Override
     public void terminate(Throwable cause) {
         super.terminate(cause);
-        requestStates.clear();
+        resolutionStates.clear();
     }
 
     protected List<Request.Factory> ruleDownstreams(Request.Factory fromUpstream) {
@@ -169,13 +169,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     }
 
-    abstract static class BoundConcludableRequestState<ANSWER> extends CachingRequestState<ANSWER> {
+    abstract static class BoundConcludableResolutionState<ANSWER> extends CachingResolutionState<ANSWER> {
         protected final UpstreamBehaviour<ANSWER> upstreamBehaviour;
         protected final boolean singleAnswerRequired;
 
-        protected BoundConcludableRequestState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache,
-                                               boolean deduplicate, UpstreamBehaviour<ANSWER> upstreamBehaviour,
-                                               boolean singleAnswerRequired) {
+        protected BoundConcludableResolutionState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache,
+                                                  boolean deduplicate, UpstreamBehaviour<ANSWER> upstreamBehaviour,
+                                                  boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate);
             this.upstreamBehaviour = upstreamBehaviour;
             this.singleAnswerRequired = singleAnswerRequired;
@@ -214,10 +214,10 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
     }
 
-    protected class BlockedRequestState<ANSWER> extends BoundConcludableRequestState<ANSWER> {
+    protected class BlockedResolutionState<ANSWER> extends BoundConcludableResolutionState<ANSWER> {
 
-        public BlockedRequestState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate,
-                                   UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
+        public BlockedResolutionState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate,
+                                      UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate, upstreamBehaviour, singleAnswerRequired);
         }
 
@@ -255,13 +255,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
     }
 
-    protected class ExploringRequestState<ANSWER> extends BoundConcludableRequestState<ANSWER> implements RequestState.Exploration {
+    protected class ExploringResolutionState<ANSWER> extends BoundConcludableResolutionState<ANSWER> implements ResolutionState.Exploration {
 
         private final DownstreamManager downstreamManager;
 
-        protected ExploringRequestState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache,
-                                        List<Request.Factory> ruleDownstreams, boolean deduplicate,
-                                        UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
+        protected ExploringResolutionState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache,
+                                           List<Request.Factory> ruleDownstreams, boolean deduplicate,
+                                           UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate, upstreamBehaviour, singleAnswerRequired);
             this.downstreamManager = new DownstreamManager(ruleDownstreams);
         }

@@ -211,30 +211,30 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         return traversal;
     }
 
-    public class RequestStateRegistry<REQUEST_STATE extends RequestState> {
-        private final Map<Request, REQUEST_STATE> requestStates;
-        private final Map<REQUEST_STATE, Set<Request>> requests;
+    public class ResolutionStateRegistry<RESOLUTION_STATE extends ResolutionState> {
+        private final Map<Request, RESOLUTION_STATE> resolutionStates;
+        private final Map<RESOLUTION_STATE, Set<Request>> requests;
 
-        public RequestStateRegistry() {
-            this.requestStates = new HashMap<>();
+        public ResolutionStateRegistry() {
+            this.resolutionStates = new HashMap<>();
             this.requests = new HashMap<>();
         }
 
-        public Optional<REQUEST_STATE> get(Request request) {
-            return Optional.ofNullable(requestStates.get(request));
+        public Optional<RESOLUTION_STATE> get(Request request) {
+            return Optional.ofNullable(resolutionStates.get(request));
         }
 
-        public void register(Request request, REQUEST_STATE state) {
-            requestStates.put(request, state);
+        public void register(Request request, RESOLUTION_STATE state) {
+            resolutionStates.put(request, state);
             requests.computeIfAbsent(state, s -> new HashSet<>()).add(request);
         }
     }
 
-    public abstract static class RequestState {
+    public abstract static class ResolutionState {
 
         protected final Request.Factory fromUpstream;
 
-        protected RequestState(Request.Factory fromUpstream) {
+        protected ResolutionState(Request.Factory fromUpstream) {
             this.fromUpstream = fromUpstream;
         }
 
@@ -256,13 +256,13 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     }
 
-    public abstract static class CachingRequestState<ANSWER> extends RequestState {
+    public abstract static class CachingResolutionState<ANSWER> extends ResolutionState {
 
         protected final AnswerCache<ANSWER> answerCache;
         protected Poller<? extends AnswerState.Partial<?>> cacheReader;
         protected final Set<ConceptMap> deduplicationSet;
 
-        protected CachingRequestState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate) {
+        protected CachingResolutionState(Request.Factory fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate) {
             super(fromUpstream);
             this.answerCache = answerCache;
             this.deduplicationSet = deduplicate ? new HashSet<>() : null;

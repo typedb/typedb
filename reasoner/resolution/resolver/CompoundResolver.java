@@ -34,22 +34,22 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
 
     private static final Logger LOG = LoggerFactory.getLogger(CompoundResolver.class);
 
-    final Map<Request.Factory, RequestState> requestStates;
+    final Map<Request.Factory, ResolutionState> resolutionStates;
     boolean isInitialised;
 
     protected CompoundResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
         super(driver, name, registry);
-        this.requestStates = new HashMap<>();
+        this.resolutionStates = new HashMap<>();
         this.isInitialised = false;
     }
 
-    protected void sendNextMessage(Request fromUpstream, RequestState requestState) {
-        if (requestState.downstreamManager().hasNextVisit()) {
-            visitDownstream(requestState.downstreamManager().nextVisit(fromUpstream.trace()), fromUpstream);
-        } else if (requestState.downstreamManager().hasNextRevisit()) {
-            revisitDownstream(requestState.downstreamManager().nextRevisit(fromUpstream.trace()), fromUpstream);
-        } else if (requestState.downstreamManager().hasNextBlocked()) {
-            blockToUpstream(fromUpstream, requestState.downstreamManager().cycles());
+    protected void sendNextMessage(Request fromUpstream, ResolutionState resolutionState) {
+        if (resolutionState.downstreamManager().hasNextVisit()) {
+            visitDownstream(resolutionState.downstreamManager().nextVisit(fromUpstream.trace()), fromUpstream);
+        } else if (resolutionState.downstreamManager().hasNextRevisit()) {
+            revisitDownstream(resolutionState.downstreamManager().nextRevisit(fromUpstream.trace()), fromUpstream);
+        } else if (resolutionState.downstreamManager().hasNextBlocked()) {
+            blockToUpstream(fromUpstream, resolutionState.downstreamManager().cycles());
         } else {
             failToUpstream(fromUpstream);
         }
@@ -60,8 +60,8 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
-        RequestState requestState = requestStates.computeIfAbsent(fromUpstream.factory(), this::requestStateCreate);
-        sendNextMessage(fromUpstream, requestState);
+        ResolutionState resolutionState = resolutionStates.computeIfAbsent(fromUpstream.factory(), this::resolutionStateCreate);
+        sendNextMessage(fromUpstream, resolutionState);
     }
 
     @Override
@@ -69,9 +69,9 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
         assert isInitialised;
         if (isTerminated()) return;
-        RequestState requestState = requestStates.get(fromUpstream.visit().factory());
-        requestState.downstreamManager().unblock(fromUpstream.cycles());
-        sendNextMessage(fromUpstream, requestState);
+        ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().factory());
+        resolutionState.downstreamManager().unblock(fromUpstream.cycles());
+        sendNextMessage(fromUpstream, resolutionState);
     }
 
     @Override
@@ -80,9 +80,9 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         if (isTerminated()) return;
         Request.Factory toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = upstreamRequest(fromDownstream);
-        RequestState requestState = requestStates.get(fromUpstream.visit().factory());
-        requestState.downstreamManager().remove(toDownstream);
-        sendNextMessage(fromUpstream, requestState);
+        ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().factory());
+        resolutionState.downstreamManager().remove(toDownstream);
+        sendNextMessage(fromUpstream, resolutionState);
     }
 
     @Override
@@ -91,26 +91,26 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         if (isTerminated()) return;
         Request.Factory blockingDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = upstreamRequest(fromDownstream);
-        RequestState requestState = this.requestStates.get(fromUpstream.visit().factory());
-        if (requestState.downstreamManager().contains(blockingDownstream)) {
-            requestState.downstreamManager().block(blockingDownstream, fromDownstream.cycles());
+        ResolutionState resolutionState = this.resolutionStates.get(fromUpstream.visit().factory());
+        if (resolutionState.downstreamManager().contains(blockingDownstream)) {
+            resolutionState.downstreamManager().block(blockingDownstream, fromDownstream.cycles());
         }
-        sendNextMessage(fromUpstream, requestState);
+        sendNextMessage(fromUpstream, resolutionState);
     }
 
-    abstract RequestState requestStateCreate(Request.Factory fromUpstream);
+    abstract ResolutionState resolutionStateCreate(Request.Factory fromUpstream);
 
-    // TODO: Align with the RequestState implementation used across the other resolvers
-    static class RequestState {
+    // TODO: Align with the ResolutionState implementation used across the other resolvers
+    static class ResolutionState {
 
         private final DownstreamManager downstreamManager;
         private final Set<ConceptMap> deduplicationSet;
 
-        public RequestState() {
+        public ResolutionState() {
             this(new HashSet<>());
         }
 
-        public RequestState(Set<ConceptMap> produced) {
+        public ResolutionState(Set<ConceptMap> produced) {
             this.downstreamManager = new DownstreamManager();
             this.deduplicationSet = new HashSet<>(produced);
         }
