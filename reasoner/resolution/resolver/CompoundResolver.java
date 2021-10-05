@@ -19,6 +19,7 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
@@ -34,7 +35,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
 
     private static final Logger LOG = LoggerFactory.getLogger(CompoundResolver.class);
 
-    final Map<Request.Factory, ResolutionState> resolutionStates;
+    final Map<Compound<?, ?>, ResolutionState> resolutionStates;
     boolean isInitialised;
 
     protected CompoundResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
@@ -60,7 +61,8 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
-        ResolutionState resolutionState = resolutionStates.computeIfAbsent(fromUpstream.factory(), this::resolutionStateCreate);
+        ResolutionState resolutionState = resolutionStates.computeIfAbsent(fromUpstream.partialAnswer().asCompound(),
+                                                                           this::resolutionStateCreate);
         sendNextMessage(fromUpstream, resolutionState);
     }
 
@@ -69,7 +71,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
         assert isInitialised;
         if (isTerminated()) return;
-        ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().factory());
+        ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
         resolutionState.downstreamManager().unblock(fromUpstream.cycles());
         sendNextMessage(fromUpstream, resolutionState);
     }
@@ -80,7 +82,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         if (isTerminated()) return;
         Request.Factory toDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = upstreamRequest(fromDownstream);
-        ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().factory());
+        ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
         resolutionState.downstreamManager().remove(toDownstream);
         sendNextMessage(fromUpstream, resolutionState);
     }
@@ -91,14 +93,14 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         if (isTerminated()) return;
         Request.Factory blockingDownstream = fromDownstream.sourceRequest();
         Request fromUpstream = upstreamRequest(fromDownstream);
-        ResolutionState resolutionState = this.resolutionStates.get(fromUpstream.visit().factory());
+        ResolutionState resolutionState = this.resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
         if (resolutionState.downstreamManager().contains(blockingDownstream)) {
             resolutionState.downstreamManager().block(blockingDownstream, fromDownstream.cycles());
         }
         sendNextMessage(fromUpstream, resolutionState);
     }
 
-    abstract ResolutionState resolutionStateCreate(Request.Factory fromUpstream);
+    abstract ResolutionState resolutionStateCreate(Compound<?, ?> fromUpstream);
 
     // TODO: Align with the ResolutionState implementation used across the other resolvers
     static class ResolutionState {

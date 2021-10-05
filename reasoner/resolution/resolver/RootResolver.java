@@ -141,7 +141,7 @@ public interface RootResolver {
 
         @Override
         protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream) {
-            ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().factory());
+            ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
             if (!resolutionState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
                 resolutionState.deduplicationSet().add(upstreamAnswer.conceptMap());
                 answerToUpstream(upstreamAnswer, fromUpstream);

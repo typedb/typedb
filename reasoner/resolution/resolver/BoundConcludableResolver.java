@@ -49,7 +49,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     private static final Logger LOG = LoggerFactory.getLogger(BoundConcludableResolver.class);
 
     protected final ConceptMap bounds;
-    private final Map<Request, BoundConcludableResolutionState<?>> resolutionStates;
+    private final Map<Partial.Concludable<?>, BoundConcludableResolutionState<?>> resolutionStates;
     protected final BoundConcludableContext context;
 
     protected BoundConcludableResolver(Driver<BoundConcludableResolver> driver, BoundConcludableContext context,
@@ -76,24 +76,10 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     }
 
     private BoundConcludableResolutionState<?> getOrCreateResolutionState(Request.Visit fromUpstream) {
-        // TODO: shouldn't check for cycling every time, can search for a resolutionState first
-        BoundConcludableResolutionState<?> resolutionState = resolutionStates.get(fromUpstream);
-        if (resolutionState != null) {
-            return resolutionState;
-        } else {
-            for (BoundConcludableResolutionState<?> rs : resolutionStates.values()) {
-                // Linear search, optimise using state
-                if (fromUpstream.partialAnswer().equals(rs.fromUpstream())) {
-                    resolutionStates.put(fromUpstream, rs);
-                    return rs;
-                }
-            }
-            BoundConcludableResolutionState<?> rs;
-            if (isCycle(fromUpstream.partialAnswer())) rs = createBlockedResolutionState(fromUpstream.partialAnswer());
-            else rs = createExploringResolutionState(fromUpstream.partialAnswer());
-            resolutionStates.put(fromUpstream, rs);
-            return rs;
-        }
+        return resolutionStates.computeIfAbsent(fromUpstream.partialAnswer().asConcludable(), partial -> {
+            if (isCycle(partial)) return createBlockedResolutionState(fromUpstream.partialAnswer());
+            else return createExploringResolutionState(fromUpstream.partialAnswer());
+        });
     }
 
     private boolean isCycle(Partial<?> partialAnswer) {
@@ -116,21 +102,21 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
     @Override
     protected void receiveAnswer(Response.Answer fromDownstream) {
         if (isTerminated()) return;
-        this.resolutionStates.get(upstreamRequest(fromDownstream)).receiveAnswer(fromDownstream);
+        this.resolutionStates.get(partialFromUpstream(fromDownstream).asConcludable()).receiveAnswer(fromDownstream);
     }
 
     @Override
     protected void receiveFail(Response.Fail fromDownstream) {
         LOG.trace("{}: received Fail: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        this.resolutionStates.get(upstreamRequest(fromDownstream)).receiveFail(fromDownstream);
+        this.resolutionStates.get(partialFromUpstream(fromDownstream).asConcludable()).receiveFail(fromDownstream);
     }
 
     @Override
     protected void receiveBlocked(Response.Blocked fromDownstream) {
         LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        this.resolutionStates.get(upstreamRequest(fromDownstream)).receiveBlocked(fromDownstream);
+        this.resolutionStates.get(partialFromUpstream(fromDownstream).asConcludable()).receiveBlocked(fromDownstream);
     }
 
     @Override

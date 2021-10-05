@@ -55,7 +55,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         if (isTerminated()) return;
 
         Request fromUpstream = upstreamRequest(fromDownstream);
-        ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().factory());
+        ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
 
         assert fromDownstream.answer().isCompound();
         AnswerState answer = toUpstreamAnswer(fromDownstream.answer().asCompound(), fromDownstream);
@@ -82,13 +82,11 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     }
 
     @Override
-    protected ResolutionState resolutionStateCreate(Request.Factory fromUpstream) {
+    protected ResolutionState resolutionStateCreate(Compound<?, ?> fromUpstream) {
         LOG.debug("{}: Creating a new ResolutionState for request: {}", name(), fromUpstream);
-        assert fromUpstream.partialAnswer().isCompound();
         ResolutionState resolutionState = new ResolutionState();
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
-            Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
-                    .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
+            Compound.Nestable downstream = fromUpstream.filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
             Request.Factory request = Request.Factory.create(driver(), conjunctionResolver, downstream);
             resolutionState.downstreamManager().add(request);
         }

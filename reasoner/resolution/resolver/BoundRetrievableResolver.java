@@ -38,7 +38,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver> {
 
     private final AnswerCache<ConceptMap> cache;
-    private final Map<Request.Factory, ResolutionState> resolutionStates;
+    private final Map<Partial.Retrievable<?>, ResolutionState> resolutionStates;
     private final ConceptMap bounds;
 
     public BoundRetrievableResolver(Driver<BoundRetrievableResolver> driver, Retrievable retrievable, ConceptMap bounds,
@@ -54,7 +54,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     public void receiveVisit(Request.Visit fromUpstream) {
         assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
         sendNextMessage(fromUpstream, resolutionStates.computeIfAbsent(
-                fromUpstream.factory(), request -> new BoundResolutionState(request.partialAnswer(), cache)));
+                fromUpstream.partialAnswer().asRetrievable(), retrievable -> new BoundResolutionState(retrievable, cache)));
     }
 
     @Override

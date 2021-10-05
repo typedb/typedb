@@ -107,8 +107,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         return fromUpstream(response.sourceRequest().createVisit(response.trace()));
     }
 
-    protected Request.Factory upstreamFactory(Response response) {
-        return upstreamRequest(response).visit().factory();
+    protected Partial<?> partialFromUpstream(Response response) {
+        return upstreamRequest(response).visit().partialAnswer();
     }
 
     protected void visitDownstream(Request.Factory downstream, Request fromUpstream) {
@@ -210,25 +210,6 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             }
         });
         return traversal;
-    }
-
-    public class ResolutionStateRegistry<RESOLUTION_STATE extends ResolutionState> {
-        private final Map<Request, RESOLUTION_STATE> resolutionStates;
-        private final Map<RESOLUTION_STATE, Set<Request>> requests;
-
-        public ResolutionStateRegistry() {
-            this.resolutionStates = new HashMap<>();
-            this.requests = new HashMap<>();
-        }
-
-        public Optional<RESOLUTION_STATE> get(Request request) {
-            return Optional.ofNullable(resolutionStates.get(request));
-        }
-
-        public void register(Request request, RESOLUTION_STATE state) {
-            resolutionStates.put(request, state);
-            requests.computeIfAbsent(state, s -> new HashSet<>()).add(request);
-        }
     }
 
     public abstract static class ResolutionState {
