@@ -41,12 +41,14 @@ public abstract class SubsumptiveCoordinator<
 
     private static final Logger LOG = LoggerFactory.getLogger(SubsumptiveCoordinator.class);
     protected final Map<ConceptMap, Driver<WORKER>> workers;
+    private final Map<AnswerState.Partial<?>, Request.Factory> requestFactories;
     protected boolean isInitialised;
 
     public SubsumptiveCoordinator(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
         super(driver, name, registry);
         this.isInitialised = false;
         this.workers = new HashMap<>();
+        this.requestFactories = new HashMap<>();
     }
 
     @Override
@@ -55,7 +57,7 @@ public abstract class SubsumptiveCoordinator<
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
         Driver<WORKER> worker = getOrCreateBoundResolver(fromUpstream.partialAnswer());
-        Request.Factory requestFactory = Request.Factory.create(driver(), worker, fromUpstream.partialAnswer());
+        Request.Factory requestFactory = getOrCreateRequestFactory(fromUpstream.partialAnswer(), worker);
         Request.Visit visit = requestFactory.createVisit(fromUpstream.trace());
         visitDownstream(visit, fromUpstream);
     }
@@ -66,17 +68,20 @@ public abstract class SubsumptiveCoordinator<
         assert isInitialised;
         if (isTerminated()) return;
         Driver<WORKER> worker = getOrCreateBoundResolver(fromUpstream.visit().partialAnswer());
-        Request.Factory requestFactory = Request.Factory.create(driver(), worker, fromUpstream.visit().partialAnswer());
+        Request.Factory requestFactory = getOrCreateRequestFactory(fromUpstream.visit().partialAnswer(), worker);
         Request.Revisit revisit = requestFactory.createRevisit(fromUpstream.trace(), fromUpstream.cycles());
         revisitDownstream(revisit, fromUpstream);
+    }
+
+    private Request.Factory getOrCreateRequestFactory(AnswerState.Partial<?> partial, Driver<WORKER> receiver) {
+        return requestFactories.computeIfAbsent(partial, p -> Request.Factory.create(driver(), receiver, p));
     }
 
     @Override
     protected void receiveBlocked(Response.Blocked fromDownstream) {
         LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        blockToUpstream(fromUpstream(fromDownstream.sourceFactory().createVisit(fromDownstream.trace())),
-                        fromDownstream.cycles());
+        blockToUpstream(fromUpstream(fromDownstream.sourceRequest().visit()), fromDownstream.cycles());
     }
 
     abstract Driver<WORKER> getOrCreateBoundResolver(AnswerState.Partial<?> partial);
