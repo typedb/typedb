@@ -20,8 +20,6 @@ REM needs to be called such that software installed
 REM by Chocolatey in prepare.bat is accessible
 CALL refreshenv
 
-mkdir C:\log
-
 REM build typedb-all-windows archive
 bazel test //test/assembly:assembly --test_output=streamed --experimental_enable_runfiles --test_env=PATH --java_language_version=11 --javacopt="--release 11"
 
