@@ -49,7 +49,7 @@ public class ConclusionResolver extends SubsumptiveCoordinator<ConclusionResolve
 
     @Override
     Driver<BoundConclusionResolver> getOrCreateBoundResolver(Partial<?> partial) {
-        return workers.computeIfAbsent(partial.conceptMap(), p -> {
+        return boundResolvers.computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundConclusionResolver for bounds: {}", name(), partial);
             return registry.registerBoundConclusion(conclusion, partial.conceptMap());
         });

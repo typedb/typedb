@@ -52,7 +52,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
 
     @Override
     Driver<BoundConcludableResolver> getOrCreateBoundResolver(AnswerState.Partial<?> partial) {
-        return workers.computeIfAbsent(partial.conceptMap(), p -> {
+        return boundResolvers.computeIfAbsent(partial.conceptMap(), p -> {
             LOG.debug("{}: Creating a new BoundConcludableResolver for bounds: {}", name(), partial);
             // TODO: We could use the bounds to prune the applicable rules further
             BoundConcludableContext context = new BoundConcludableContext(driver(), concludable, conclusionResolvers);

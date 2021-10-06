@@ -43,7 +43,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
     private static final Logger LOG = LoggerFactory.getLogger(NegationResolver.class);
 
     private final Negated negated;
-    private final Map<ConceptMap, BoundsState> boundsStates;  // TODO: Indicates this should have bound workers too
+    private final Map<ConceptMap, BoundsState> boundsStates;  // TODO: Indicates this should have bound resolvers too
     private boolean isInitialised;
     private Driver<? extends Resolver<?>> downstream;
 

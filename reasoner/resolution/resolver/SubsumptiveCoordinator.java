@@ -40,14 +40,14 @@ public abstract class SubsumptiveCoordinator<
         WORKER extends Resolver<WORKER>> extends Resolver<RESOLVER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(SubsumptiveCoordinator.class);
-    protected final Map<ConceptMap, Driver<WORKER>> workers;
+    protected final Map<ConceptMap, Driver<WORKER>> boundResolvers;
     private final Map<AnswerState.Partial<?>, Request.Factory> requestFactories;
     protected boolean isInitialised;
 
     public SubsumptiveCoordinator(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
         super(driver, name, registry);
         this.isInitialised = false;
-        this.workers = new HashMap<>();
+        this.boundResolvers = new HashMap<>();
         this.requestFactories = new HashMap<>();
     }
 
