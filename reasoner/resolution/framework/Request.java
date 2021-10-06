@@ -35,19 +35,26 @@ public interface Request {
 
     class Visit implements Request {
 
+        private final Factory factory;
+        private final Trace trace;
         protected final Actor.Driver<? extends Resolver<?>> sender;
         protected final Actor.Driver<? extends Resolver<?>> receiver;
         protected final AnswerState.Partial<?> partialAnswer;
         protected final int planIndex;
-        private final Trace trace;
 
-        private Visit(@Nullable Actor.Driver<? extends Resolver<?>> sender, Actor.Driver<? extends Resolver<?>> receiver,
-                      AnswerState.Partial<?> partialAnswer, int planIndex, Trace trace) {
+        private Visit(Factory factory, @Nullable Actor.Driver<? extends Resolver<?>> sender,
+                      Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer, int planIndex,
+                      Trace trace) {
+            this.factory = factory;
             this.sender = sender;
             this.receiver = receiver;
             this.partialAnswer = partialAnswer;
             this.planIndex = planIndex;
             this.trace = trace;
+        }
+
+        public Factory factory() {
+            return factory;
         }
 
         public Actor.Driver<? extends Resolver<?>> receiver() {
@@ -60,10 +67,6 @@ public interface Request {
 
         public AnswerState.Partial<?> partialAnswer() {
             return partialAnswer;
-        }
-
-        public Factory factory() {
-            return Factory.create(sender(), receiver(), partialAnswer(), planIndex());
         }
 
         @Override
@@ -195,7 +198,7 @@ public interface Request {
         }
 
         public Visit createVisit(Trace trace) {
-            return new Visit(sender, receiver, partialAnswer, planIndex, trace);
+            return new Visit(this, sender, receiver, partialAnswer, planIndex, trace);
         }
 
         public Revisit createRevisit(Trace trace, Set<Cycle> cycles) {

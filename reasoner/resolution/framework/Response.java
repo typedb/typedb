@@ -28,13 +28,11 @@ import java.util.Set;
 public abstract class Response {
 
     private final Request.Visit sourceRequest;
-    private final Request.Factory sourceFactory;
     private final Trace trace;
     private final int hash;
 
     private Response(Request.Visit sourceRequest, Trace trace) {
         this.sourceRequest = sourceRequest;
-        this.sourceFactory = sourceRequest.factory();
         this.trace = trace;
         this.hash = Objects.hash(sourceRequest, trace);
     }
@@ -43,20 +41,16 @@ public abstract class Response {
         return sourceRequest;
     }
 
-    public Request.Factory sourceFactory() {
-        return sourceFactory;
-    }
-
     public Trace trace() {
         return trace;
     }
 
     Actor.Driver<? extends Resolver<?>> receiver() {
-        return sourceFactory().sender();
+        return sourceRequest.sender();
     }
 
     Actor.Driver<? extends Resolver<?>> sender() {
-        return sourceFactory().receiver();
+        return sourceRequest.receiver();
     }
 
     @Override
@@ -72,7 +66,6 @@ public abstract class Response {
     public String toString() {
         return "Response{" +
                 "sourceRequest=" + sourceRequest +
-                ", sourceFactory=" + sourceFactory +
                 ", trace=" + trace +
                 '}';
     }
@@ -101,7 +94,7 @@ public abstract class Response {
         }
 
         public int planIndex() {
-            return sourceFactory().planIndex();
+            return sourceRequest().visit().planIndex();
         }
 
         @Override

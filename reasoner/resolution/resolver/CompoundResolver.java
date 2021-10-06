@@ -80,10 +80,9 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     protected void receiveFail(Response.Fail fromDownstream) {
         LOG.trace("{}: received Exhausted from {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Request.Factory toDownstream = fromDownstream.sourceFactory();
         Request fromUpstream = upstreamRequest(fromDownstream);
         ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
-        resolutionState.downstreamManager().remove(toDownstream);
+        resolutionState.downstreamManager().remove(fromDownstream.sourceRequest().visit().factory());
         sendNextMessage(fromUpstream, resolutionState);
     }
 
@@ -91,9 +90,9 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     protected void receiveBlocked(Response.Blocked fromDownstream) {
         LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        Request.Factory blockingDownstream = fromDownstream.sourceFactory();
         Request fromUpstream = upstreamRequest(fromDownstream);
         ResolutionState resolutionState = this.resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
+        Request.Factory blockingDownstream = fromDownstream.sourceRequest().visit().factory();
         if (resolutionState.downstreamManager().contains(blockingDownstream)) {
             resolutionState.downstreamManager().block(blockingDownstream, fromDownstream.cycles());
         }

@@ -273,13 +273,13 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
 
         @Override
         void receiveFail(Response.Fail fromDownstream) {
-            downstreamManager().remove(fromDownstream.sourceFactory());
+            downstreamManager().remove(fromDownstream.sourceRequest().visit().factory());
             sendNextMessage(upstreamRequest(fromDownstream).visit());
         }
 
         @Override
         void receiveBlocked(Response.Blocked fromDownstream) {
-            Request.Factory blockingDownstream = fromDownstream.sourceFactory();
+            Request.Factory blockingDownstream = fromDownstream.sourceRequest().visit().factory();
             if (downstreamManager().contains(blockingDownstream)) {
                 downstreamManager().block(blockingDownstream, fromDownstream.cycles());
                 Set<Cycle> outdated = outdatedCycles(downstreamManager().cycles());

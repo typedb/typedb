@@ -75,7 +75,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Request.Factory toDownstream = fromDownstream.sourceFactory();
+        Request.Factory toDownstream = fromDownstream.sourceRequest().visit().factory();
         Request fromUpstream = upstreamRequest(fromDownstream);
         ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
 
@@ -131,7 +131,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         if (isTerminated()) return;
         Request fromUpstream = upstreamRequest(fromDownstream);
         ResolutionState resolutionState = this.resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
-        resolutionState.downstreamManager().remove(fromDownstream.sourceFactory());
+        resolutionState.downstreamManager().remove(fromDownstream.sourceRequest().visit().factory());
         sendNextMessage(fromUpstream, resolutionState);
     }
 

@@ -122,7 +122,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (resolutionState.materialisationsCounter > 0) {
             resolutionState.replayBuffer().addBlocked(fromDownstream);
         } else {
-            Request.Factory downstream = fromDownstream.sourceFactory();
+            Request.Factory downstream = fromDownstream.sourceRequest().visit().factory();
             if (resolutionState.downstreamManager().contains(downstream)) {
                 resolutionState.downstreamManager().block(downstream, fromDownstream.cycles());
             }
@@ -140,7 +140,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (resolutionState.materialisationsCounter > 0) {
             resolutionState.replayBuffer().addFail(fromDownstream);
         } else {
-            resolutionState.downstreamManager().remove(fromDownstream.sourceFactory());
+            resolutionState.downstreamManager().remove(fromDownstream.sourceRequest().visit().factory());
             sendNextMessage(resolutionState, fromUpstream);
         }
     }
