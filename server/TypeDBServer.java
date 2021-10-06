@@ -71,6 +71,7 @@ public class TypeDBServer implements AutoCloseable {
     private TypeDBServer(RunOptions.Server command) {
         this(command, new RocksFactory());
     }
+
     protected TypeDBServer(RunOptions.Server command, Factory factory) {
         this.command = command;
         configureAndVerifyJavaVersion();
