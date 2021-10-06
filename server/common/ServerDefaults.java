@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.server.common;
 
+import com.vaticle.typedb.common.util.OS;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,7 +29,9 @@ public class ServerDefaults {
     public static final Path TYPEDB_DIR = getTypedbDir();
     public static final Path DATA_DIR = TYPEDB_DIR.resolve("server/data");
     public static final Path LOGS_DIR = TYPEDB_DIR.resolve("server/logs");
-    public static final File PROPERTIES_FILE = TYPEDB_DIR.resolve("server/conf/typedb.properties").toFile();
+    public static final File PROPERTIES_FILE = OS.detect() == OS.WINDOWS ?
+            TYPEDB_DIR.resolve("server/conf/windows/typedb.properties").toFile() :
+            TYPEDB_DIR.resolve("server/conf/mac-linux/typedb.properties").toFile();
     public static final File ASCII_LOGO_FILE = TYPEDB_DIR.resolve("server/resources/typedb-ascii.txt").toFile();
     public static final int DEFAULT_DATABASE_PORT = 1729;
 

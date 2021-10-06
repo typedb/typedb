@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load(":assemble.bzl", "assemble_files_mac_linux", "assemble_files_windows",
+                      "permissions_mac_linux", "permissions_windows")
 load("@vaticle_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip", "java_deps")
@@ -82,6 +84,7 @@ native_java_libraries(
     ],
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
+        "@maven//:org_codehaus_janino_janino",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server:{pom_version}"],
     visibility = ["//visibility:public"],
@@ -93,10 +96,10 @@ java_binary(
     runtime_deps = [":server-mac"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
     classpath_resources = [
-        "//server/conf:logback.xml",
-        "//server/conf:typedb-properties"
+        "//server/conf/mac-linux:logback.xml",
+        "//server/conf/mac-linux:typedb-properties"
     ],
-    data = [ "//server/conf:typedb-properties" ], # Separately needed for com.vaticle.typedb.core.server.common.Util
+    data = [ "//server/conf/mac-linux:typedb-properties" ], # Separately needed for com.vaticle.typedb.core.server.common.Util
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-mac can depend directly on :server-mac (lib)
@@ -112,10 +115,10 @@ java_binary(
     runtime_deps = [":server-linux"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
     classpath_resources = [
-        "//server/conf:logback.xml",
-        "//server/conf:typedb-properties"
+        "//server/conf/mac-linux:logback.xml",
+        "//server/conf/mac-linux:typedb-properties"
     ],
-    data = [ "//server/conf:typedb-properties" ], # Separately needed for com.vaticle.typedb.core.server.common.Util
+    data = [ "//server/conf/mac-linux:typedb-properties" ], # Separately needed for com.vaticle.typedb.core.server.common.Util
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-linux can depend directly on :server-linux (lib)
@@ -131,10 +134,10 @@ java_binary(
     runtime_deps = [":server-windows"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
     classpath_resources = [
-        "//server/conf:logback.xml",
-        "//server/conf:typedb-properties"
+        "//server/conf/windows:logback.xml",
+        "//server/conf/windows:typedb-properties"
     ],
-    data = [ "//server/conf:typedb-properties" ], # Separately needed for com.vaticle.typedb.core.server.common.Util
+    data = [ "//server/conf/windows:typedb-properties" ], # Separately needed for com.vaticle.typedb.core.server.common.Util
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-windows can depend directly on :server-windows (lib)
@@ -189,25 +192,11 @@ assemble_deps_common = [
     ":server-deps-prod",
 ]
 
-assemble_files = {
-    "//server/conf:logback": "server/conf/logback.xml",
-    "//server/conf:logback-debug": "server/conf/logback-debug.xml",
-    "//server/conf:typedb-properties": "server/conf/typedb.properties",
-    "//server/resources:logo": "server/resources/typedb-ascii.txt",
-    "//:LICENSE": "LICENSE",
-}
-
-permissions = {
-    "server/conf/typedb.properties": "0755",
-    "server/conf/logback.xml": "0755",
-    "server/conf/logback-debug.xml": "0755",
-}
-
 assemble_targz(
     name = "assemble-linux-targz",
     targets = ["server-deps-linux", "@vaticle_typedb_common//binary:assemble-bash-targz"],
-    additional_files = assemble_files,
-    permissions = permissions,
+    additional_files = assemble_files_mac_linux,
+    permissions = permissions_mac_linux,
     output_filename = "typedb-server-linux",
     visibility = ["//:__pkg__", "//test:__subpackages__"]
 )
@@ -215,8 +204,8 @@ assemble_targz(
 assemble_zip(
     name = "assemble-mac-zip",
     targets = assemble_deps_common + ["server-deps-mac", "@vaticle_typedb_common//binary:assemble-bash-targz"],
-    additional_files = assemble_files,
-    permissions = permissions,
+    additional_files = assemble_files_mac_linux,
+    permissions = permissions_mac_linux,
     output_filename = "typedb-server-mac",
     visibility = ["//:__pkg__", "//test:__subpackages__"]
 )
@@ -224,8 +213,8 @@ assemble_zip(
 assemble_zip(
     name = "assemble-windows-zip",
     targets = ["server-deps-windows", "@vaticle_typedb_common//binary:assemble-bat-targz"],
-    additional_files = assemble_files,
-    permissions = permissions,
+    additional_files = assemble_files_windows,
+    permissions = permissions_windows,
     output_filename = "typedb-server-windows",
     visibility = ["//:__pkg__", "//test:__subpackages__"]
 )
@@ -269,7 +258,7 @@ assemble_apt(
     workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
     archives = [":server-deps-linux"],
     installation_dir = "/opt/typedb/core/",
-    files = assemble_files,
+    files = assemble_files_mac_linux,
     empty_dirs = [
         "opt/typedb/core/server/lib/dev",
         "opt/typedb/core/server/lib/prod",

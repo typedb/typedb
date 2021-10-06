@@ -38,6 +38,7 @@ artifacts = [
     "io.grpc:grpc-stub",
     "io.netty:netty-all",
     "junit:junit",
+    "org.codehaus.janino:janino",
     "org.rocksdb:rocksdbjni",
     "org.rocksdb:rocksdbjni-dev",
     "org.rocksdb:rocksdbjni-dev-linux",

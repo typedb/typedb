@@ -136,6 +136,10 @@
 @maven//:org_apiguardian_apiguardian_api_1_1_0
 @maven//:org_checkerframework_checker_qual
 @maven//:org_checkerframework_checker_qual_3_7_0
+@maven//:org_codehaus_janino_commons_compiler
+@maven//:org_codehaus_janino_commons_compiler_3_1_6
+@maven//:org_codehaus_janino_janino
+@maven//:org_codehaus_janino_janino_3_1_6
 @maven//:org_codehaus_mojo_animal_sniffer_annotations
 @maven//:org_codehaus_mojo_animal_sniffer_annotations_1_18
 @maven//:org_hamcrest_hamcrest

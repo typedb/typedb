@@ -18,8 +18,16 @@
 <configuration debug="true" scan="true" scanPeriod="10 seconds" packagingData="true">
 
     <property resource="typedb.properties"/>
-    <property name="directory" value="${typedb.dir}/${server.logs}"/>
-    <property name="filename" value="typedb.log"/>
+    <if condition='property("server.logs").startsWith("/")'>
+        <then>
+            <property name="directory" value="${server.logs}"/>
+            <property name="filename" value="typedb.log"/>
+        </then>
+        <else>
+            <property name="directory" value="${typedb.dir}/${server.logs}"/>
+            <property name="filename" value="typedb.log"/>
+        </else>
+    </if>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>

@@ -16,6 +16,8 @@
 #
 
 load("//:deployment.bzl", deployment_github = "deployment", deployment_docker = "deployment")
+load("//server:assemble.bzl", "assemble_files_mac_linux", "assemble_files_windows",
+                              "permissions_mac_linux", "permissions_windows")
 load("@vaticle_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@vaticle_bazel_distribution//brew:rules.bzl", "deploy_brew")
@@ -52,20 +54,6 @@ native_java_libraries(
     visibility = ["//visibility:public"],
 )
 
-assemble_files = {
-    "//server/conf:logback": "server/conf/logback.xml",
-    "//server/conf:logback-debug": "server/conf/logback-debug.xml",
-    "//server/conf:typedb-properties": "server/conf/typedb.properties",
-    "//server/resources:logo": "server/resources/typedb-ascii.txt",
-    "//:LICENSE": "LICENSE",
-}
-
-permissions = {
-    "server/conf/typedb.properties": "0755",
-    "server/conf/logback.xml": "0755",
-    "server/conf/logback-debug.xml": "0755",
-}
-
 artifact_repackage(
     name = "console-artifact-jars",
     # Jars produced for all platforms are the same
@@ -76,24 +64,24 @@ artifact_repackage(
 assemble_targz(
     name = "assemble-linux-targz",
     targets = ["//server:server-deps-linux", ":console-artifact-jars", "@vaticle_typedb_common//binary:assemble-bash-targz"],
-    additional_files = assemble_files,
-    permissions = permissions,
+    additional_files = assemble_files_mac_linux,
+    permissions = permissions_mac_linux,
     output_filename = "typedb-all-linux",
 )
 
 assemble_zip(
     name = "assemble-mac-zip",
     targets = ["//server:server-deps-mac", "//server:server-deps-prod", ":console-artifact-jars", "@vaticle_typedb_common//binary:assemble-bash-targz"],
-    additional_files = assemble_files,
-    permissions = permissions,
+    additional_files = assemble_files_mac_linux,
+    permissions = permissions_mac_linux,
     output_filename = "typedb-all-mac",
 )
 
 assemble_zip(
     name = "assemble-windows-zip",
     targets = ["//server:server-deps-windows", ":console-artifact-jars", "@vaticle_typedb_common//binary:assemble-bat-targz"],
-    additional_files = assemble_files,
-    permissions = permissions,
+    additional_files = assemble_files_windows,
+    permissions = permissions_windows,
     output_filename = "typedb-all-windows",
 )
 

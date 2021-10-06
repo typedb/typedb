@@ -18,8 +18,16 @@
 <configuration debug="false" scan="true" scanPeriod="30 seconds">
 
     <property resource="typedb.properties"/>
-    <property name="directory" value="${typedb.dir}/${server.logs}"/>
-    <property name="filename" value="typedb.log"/>
+    <if condition='property("server.logs").startsWith("\\") || property("server.logs").substring(1,3).equals(":/")'>
+        <then>
+            <property name="directory" value="${server.logs}"/>
+            <property name="filename" value="typedb.log"/>
+        </then>
+        <else>
+            <property name="directory" value="${typedb.dir}\${server.logs}"/>
+            <property name="filename" value="typedb.log"/>
+        </else>
+    </if>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -28,7 +36,7 @@
     </appender>
 
     <appender name="LOGFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${directory}/${filename}</file>
+        <file>${directory}\${filename}</file>
         <encoder>
             <pattern>%date{ISO8601} [%thread] [%-5level] %logger{36} - %msg%n</pattern>
         </encoder>
