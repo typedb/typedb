@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
@@ -26,179 +25,134 @@ import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Tr
 import java.util.Objects;
 import java.util.Set;
 
-import static com.vaticle.typedb.common.util.Objects.className;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
+public abstract class Response {
 
-public interface Response {
+    private final Request.Visit sourceRequest;
+    private final Request.Factory sourceFactory;
+    private final Trace trace;
+    private final int hash;
 
-    Request.Factory sourceRequest();
-
-    boolean isAnswer();
-
-    boolean isFail();
-
-    Trace trace();
-
-    default Answer asAnswer() {
-        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Answer.class));
+    private Response(Request.Visit sourceRequest, Trace trace) {
+        this.sourceRequest = sourceRequest;
+        this.sourceFactory = sourceRequest.factory();
+        this.trace = trace;
+        this.hash = Objects.hash(sourceRequest, trace);
     }
 
-    default Fail asFail() {
-        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Fail.class));
+    public Request sourceRequest() {
+        return sourceRequest;
     }
 
-    default Actor.Driver<? extends Resolver<?>> receiver() {
-        return sourceRequest().sender();
+    public Request.Factory sourceFactory() {
+        return sourceFactory;
     }
 
-    default Actor.Driver<? extends Resolver<?>> sender() {
-        return sourceRequest().receiver();
+    public Trace trace() {
+        return trace;
     }
 
-    class Answer implements Response {
-        private final Request.Factory sourceRequest;
+    Actor.Driver<? extends Resolver<?>> receiver() {
+        return sourceFactory().sender();
+    }
+
+    Actor.Driver<? extends Resolver<?>> sender() {
+        return sourceFactory().receiver();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Response response = (Response) o;
+        return sourceRequest.equals(response.sourceRequest) &&
+                trace.equals(response.trace);
+    }
+
+    @Override
+    public String toString() {
+        return "Response{" +
+                "sourceRequest=" + sourceRequest +
+                ", sourceFactory=" + sourceFactory +
+                ", trace=" + trace +
+                '}';
+    }
+
+    @Override
+    public int hashCode() {
+        return hash;
+    }
+
+    public static class Answer extends Response {
         private final Partial<?> answer;
-        private final Trace trace;
+        private final int hash;
 
-        private Answer(Request.Factory sourceRequest, Partial<?> answer, Trace trace) {
-            this.sourceRequest = sourceRequest;
+        private Answer(Request.Visit sourceRequest, Partial<?> answer, Trace trace) {
+            super(sourceRequest, trace);
             this.answer = answer;
-            this.trace = trace;
+            this.hash = Objects.hash(super.hashCode(), answer);
         }
 
-        public static Answer create(Request.Factory sourceRequest, Partial<?> answer, Trace trace) {
+        public static Answer create(Request.Visit sourceRequest, Partial<?> answer, Trace trace) {
             return new Answer(sourceRequest, answer, trace);
-        }
-
-        @Override
-        public Request.Factory sourceRequest() {
-            return sourceRequest;
         }
 
         public Partial<?> answer() {
             return answer;
         }
 
-        @Override
-        public Trace trace() {
-            return trace;
-        }
-
         public int planIndex() {
-            return sourceRequest.planIndex();
-        }
-
-        @Override
-        public boolean isAnswer() {
-            return true;
-        }
-
-        @Override
-        public boolean isFail() {
-            return false;
-        }
-
-        @Override
-        public Answer asAnswer() {
-            return this;
+            return sourceFactory().planIndex();
         }
 
         @Override
         public String toString() {
-            return "\nAnswer{" +
-                    "\nsourceRequest=" + sourceRequest +
-                    ",\nanswer=" + answer +
-                    "\n}\n";
+            return "Answer{" +
+                    "sourceRequest=" + sourceRequest() +
+                    ", answer=" + answer +
+                    ", trace=" + trace() +
+                    '}';
         }
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            final Answer that = (Answer) o;
-            return Objects.equals(sourceRequest, that.sourceRequest) &&
-                    Objects.equals(answer, that.answer);
+            if (!super.equals(o)) return false;
+            Answer that = (Answer) o;
+            return answer.equals(that.answer);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(sourceRequest, answer);
+            return hash;
         }
+
     }
 
-    class Fail implements Response {
-        private final Request.Factory sourceRequest;
-        private final Trace trace;
+    public static class Fail extends Response {
 
-        public Fail(Request.Factory sourceRequest, Trace trace) {
-            this.sourceRequest = sourceRequest;
-            this.trace = trace;
+        public Fail(Request.Visit sourceRequest, Trace trace) {
+            super(sourceRequest, trace);
         }
-
-        @Override
-        public Request.Factory sourceRequest() {
-            return sourceRequest;
-        }
-
-        @Override
-        public Trace trace() {
-            return trace;
-        }
-
-        @Override
-        public boolean isAnswer() {
-            return false;
-        }
-
-        @Override
-        public boolean isFail() {
-            return true;
-        }
-
-        @Override
-        public Fail asFail() {
-            return this;
-        }
-
 
         @Override
         public String toString() {
-            return "Exhausted{" +
-                    "sourceRequest=" + sourceRequest +
+            return "Fail{" +
+                    "sourceRequest=" + sourceRequest() +
+                    ", trace=" + trace() +
                     '}';
         }
     }
 
-    class Blocked implements Response {
+    public static class Blocked extends Response {
 
-        private final Request.Factory sourceRequest;
-        private final Trace trace;
         protected Set<Cycle> cycles;
+        private final int hash;
 
-        public Blocked(Request.Factory sourceRequest, Set<Cycle> cycles, Trace trace) {
-            this.sourceRequest = sourceRequest;
+        public Blocked(Request.Visit sourceRequest, Set<Cycle> cycles, Trace trace) {
+            super(sourceRequest, trace);
             this.cycles = cycles;
-            this.trace = trace;
-        }
-
-        @Override
-        public Request.Factory sourceRequest() {
-            return sourceRequest;
-        }
-
-        @Override
-        public Trace trace() {
-            return trace;
-        }
-
-        @Override
-        public boolean isAnswer() {
-            return false;
-        }
-
-        @Override
-        public boolean isFail() {
-            return false;
+            this.hash = Objects.hash(super.hashCode(), cycles);
         }
 
         public Set<Cycle> cycles() {
@@ -206,17 +160,26 @@ public interface Response {
         }
 
         @Override
+        public String toString() {
+            return "Blocked{" +
+                    "sourceRequest=" + sourceRequest() +
+                    ", cycles=" + cycles +
+                    ", trace=" + trace() +
+                    '}';
+        }
+
+        @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
             Blocked blocked = (Blocked) o;
-            return sourceRequest.equals(blocked.sourceRequest) &&
-                    cycles.equals(blocked.cycles);
+            return cycles.equals(blocked.cycles);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(sourceRequest, cycles);
+            return hash;
         }
 
         public static class Cycle {
@@ -242,8 +205,7 @@ public interface Response {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 Cycle cycle = (Cycle) o;
-                return numAnswersSeen == cycle.numAnswersSeen &&
-                        end.equals(cycle.end);
+                return numAnswersSeen == cycle.numAnswersSeen && end.equals(cycle.end);
             }
 
             @Override

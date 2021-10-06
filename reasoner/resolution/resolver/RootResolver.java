@@ -154,7 +154,7 @@ public interface RootResolver {
         @Override
         protected AnswerState toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer, Response.Answer fromDownstream) {
             assert partialAnswer.isRoot() && partialAnswer.isMatch();
-            Driver<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
+            Driver<? extends Resolver<?>> sender = fromDownstream.sourceFactory().receiver();
             com.vaticle.typedb.core.pattern.Conjunction patternAnswered = downstreamResolvers.get(sender);
             return partialAnswer.asRoot().asMatch().toFinishedTop(patternAnswered);
         }

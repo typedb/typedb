@@ -104,7 +104,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     }
 
     protected Request upstreamRequest(Response response) {
-        return fromUpstream(response.sourceRequest().createVisit(response.trace()));
+        return fromUpstream(response.sourceRequest().visit());
     }
 
     protected Partial<?> partialFromUpstream(Response response) {
@@ -131,14 +131,14 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected void answerToUpstream(AnswerState answer, Request fromUpstream) {
         assert answer.isPartial();
-        Answer response = Answer.create(fromUpstream.visit().factory(), answer.asPartial(), fromUpstream.trace());
+        Answer response = Answer.create(fromUpstream.visit(), answer.asPartial(), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseAnswer(response);
         fromUpstream.visit().sender().execute(actor -> actor.receiveAnswer(response));
     }
 
     protected void failToUpstream(Request fromUpstream) {
-        Response.Fail response = new Response.Fail(fromUpstream.visit().factory(), fromUpstream.trace());
+        Response.Fail response = new Response.Fail(fromUpstream.visit(), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Answer to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseExhausted(response);
         fromUpstream.visit().sender().execute(actor -> actor.receiveFail(response));
@@ -146,7 +146,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     protected void blockToUpstream(Request fromUpstream, Set<Cycle> cycles) {
         assert !fromUpstream.visit().partialAnswer().parent().isTop();
-        Response.Blocked response = new Response.Blocked(fromUpstream.visit().factory(), cycles, fromUpstream.trace());
+        Response.Blocked response = new Response.Blocked(fromUpstream.visit(), cycles, fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response);
         fromUpstream.visit().sender().execute(actor -> actor.receiveBlocked(response));
@@ -155,7 +155,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     protected void blockToUpstream(Request fromUpstream, int numAnswersSeen) {
         assert !fromUpstream.visit().partialAnswer().parent().isTop();
         Cycle cycle = new Cycle(fromUpstream.visit().receiver(), numAnswersSeen);
-        Response.Blocked response = new Response.Blocked(fromUpstream.visit().factory(), set(cycle), fromUpstream.trace());
+        Response.Blocked response = new Response.Blocked(fromUpstream.visit(), set(cycle), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response);
         fromUpstream.visit().sender().execute(actor -> actor.receiveBlocked(response));

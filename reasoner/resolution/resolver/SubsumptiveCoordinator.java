@@ -75,7 +75,7 @@ public abstract class SubsumptiveCoordinator<
     protected void receiveBlocked(Response.Blocked fromDownstream) {
         LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        blockToUpstream(fromUpstream(fromDownstream.sourceRequest().createVisit(fromDownstream.trace())),
+        blockToUpstream(fromUpstream(fromDownstream.sourceFactory().createVisit(fromDownstream.trace())),
                         fromDownstream.cycles());
     }
 
