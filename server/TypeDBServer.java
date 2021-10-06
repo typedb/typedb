@@ -71,13 +71,7 @@ public class TypeDBServer implements AutoCloseable {
     private TypeDBServer(RunOptions.Server command) {
         this(command, new RocksFactory());
     }
-
     protected TypeDBServer(RunOptions.Server command, Factory factory) {
-
-        LoggerContext context = (LoggerContext)LoggerFactory.getILoggerFactory();
-        LOG.error("LOGGER DIR:")
-        LOG.error(context.getProperty("directory"));
-
         this.command = command;
         configureAndVerifyJavaVersion();
         configureAndVerifyDataDir();

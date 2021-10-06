@@ -23,7 +23,7 @@ CALL refreshenv
 mkdir C:\log
 
 REM build typedb-all-windows archive
-bazel test //test/assembly:assembly --test_output=streamed --experimental_enable_runfiles --test_env=PATH --java_language_version=11 --javacopt="--release 11"
+bazel test //test/assembly:assembly --test_output=streamed --experimental_enable_runfiles --test_env=PATH --java_language_version=11 --javacopt="--release 11" --spawn_strategy=local
 
 :error
 IF %errorlevel% NEQ 0 EXIT /b %errorlevel%
