@@ -24,7 +24,7 @@
             <property name="filename" value="typedb.log"/>
         </then>
         <else>
-            <property name="directory" value="${typedb.dir}\${server.logs}"/>
+            <property name="directory" value="${typedb.dir}\\${server.logs}"/>
             <property name="filename" value="typedb.log"/>
         </else>
     </if>
@@ -36,12 +36,12 @@
     </appender>
 
     <appender name="LOGFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${directory}\${filename}</file>
+        <file>${directory}\\${filename}</file>
         <encoder>
             <pattern>%date{ISO8601} [%thread] [%-5level] %logger{36} - %msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${directory}\${filename}-%d{yyyy-MM}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${directory}\\${filename}-%d{yyyy-MM}.%i.log.gz</fileNamePattern>
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
