@@ -68,11 +68,6 @@ public abstract class RunOptions {
                 description = "Directory in which database server data will be stored")
         protected String data;
 
-        @CommandLine.Option(descriptionKey = "server.logs",
-                names = {"--logs"},
-                description = "Directory in which database server logs will be stored")
-        protected String logs;
-
         @CommandLine.Option(descriptionKey = "server.port",
                 names = {"--port"},
                 defaultValue = ServerDefaults.DEFAULT_DATABASE_PORT + "",
