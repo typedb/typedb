@@ -205,22 +205,6 @@ public interface Request {
             return new Revisit(createVisit(trace), cycles);
         }
 
-        public AnswerState.Partial<?> partialAnswer() {
-            return partialAnswer;
-        }
-
-        public Actor.Driver<? extends Resolver<?>> receiver() {
-            return receiver;
-        }
-
-        public Actor.Driver<? extends Resolver<?>> sender() {
-            return sender;
-        }
-
-        public int planIndex() {
-            return planIndex;
-        }
-
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;

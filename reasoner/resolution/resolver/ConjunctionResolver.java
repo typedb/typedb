@@ -75,7 +75,6 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         LOG.trace("{}: received Answer: {}", name(), fromDownstream);
         if (isTerminated()) return;
 
-        Request.Factory toDownstream = fromDownstream.sourceRequest().visit().factory();
         Request fromUpstream = upstreamRequest(fromDownstream);
         ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
 
@@ -84,7 +83,9 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         // TODO: this is a bit of a hack, we want requests to a negation to be "single use", otherwise we can end up in an infinite loop
         //  where the request to the negation never gets removed and we constantly re-request from it!
         //  this could be either implemented with a different response type: FinalAnswer, or splitting Visit into ReusableRequest vs SingleRequest
-        if (plan.get(toDownstream.planIndex()).isNegated()) resolutionState.downstreamManager().remove(toDownstream);
+        if (plan.get(fromDownstream.sourceRequest().visit().planIndex()).isNegated()) {
+            resolutionState.downstreamManager().remove(fromDownstream.sourceRequest().visit().factory());
+        }
 
         Partial.Compound<?, ?> partialAnswer = fromDownstream.answer().asCompound();
         if (plan.isLast(fromDownstream.planIndex())) {
