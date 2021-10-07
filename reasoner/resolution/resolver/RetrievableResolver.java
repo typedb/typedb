@@ -17,21 +17,27 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RetrievableResolver extends SubsumptiveCoordinator<RetrievableResolver, BoundRetrievableResolver> {
+import java.util.HashMap;
+import java.util.Map;
+
+public class RetrievableResolver extends SubsumptiveCoordinator<RetrievableResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(RetrievableResolver.class);
 
     private final Retrievable retrievable;
+    protected final Map<ConceptMap, Driver<BoundRetrievableResolver>> boundResolvers;
 
     public RetrievableResolver(Driver<RetrievableResolver> driver, Retrievable retrievable, ResolverRegistry registry) {
         super(driver, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ")", registry);
         this.retrievable = retrievable;
+        this.boundResolvers = new HashMap<>();
     }
 
     @Override

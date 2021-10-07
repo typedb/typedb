@@ -35,19 +35,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public abstract class SubsumptiveCoordinator<
-        RESOLVER extends SubsumptiveCoordinator<RESOLVER, WORKER>,
-        WORKER extends Resolver<WORKER>> extends Resolver<RESOLVER> {
+public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordinator<RESOLVER>> extends Resolver<RESOLVER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(SubsumptiveCoordinator.class);
-    protected final Map<ConceptMap, Driver<WORKER>> boundResolvers;
     private final Map<AnswerState.Partial<?>, Request.Factory> requestFactories;
     protected boolean isInitialised;
 
     public SubsumptiveCoordinator(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
         super(driver, name, registry);
         this.isInitialised = false;
-        this.boundResolvers = new HashMap<>();
         this.requestFactories = new HashMap<>();
     }
 
@@ -56,7 +52,7 @@ public abstract class SubsumptiveCoordinator<
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
-        Driver<WORKER> worker = getOrCreateBoundResolver(fromUpstream.partialAnswer());
+        Driver<? extends Resolver<?>> worker = getOrCreateBoundResolver(fromUpstream.partialAnswer());
         Request.Factory requestFactory = getOrCreateRequestFactory(fromUpstream.partialAnswer(), worker);
         Request.Visit visit = requestFactory.createVisit(fromUpstream.trace());
         visitDownstream(visit, fromUpstream);
@@ -67,13 +63,13 @@ public abstract class SubsumptiveCoordinator<
         LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
         assert isInitialised;
         if (isTerminated()) return;
-        Driver<WORKER> worker = getOrCreateBoundResolver(fromUpstream.visit().partialAnswer());
+        Driver<? extends Resolver<?>> worker = getOrCreateBoundResolver(fromUpstream.visit().partialAnswer());
         Request.Factory requestFactory = getOrCreateRequestFactory(fromUpstream.visit().partialAnswer(), worker);
         Request.Revisit revisit = requestFactory.createRevisit(fromUpstream.trace(), fromUpstream.cycles());
         revisitDownstream(revisit, fromUpstream);
     }
 
-    private Request.Factory getOrCreateRequestFactory(AnswerState.Partial<?> partial, Driver<WORKER> receiver) {
+    private Request.Factory getOrCreateRequestFactory(AnswerState.Partial<?> partial, Driver<? extends Resolver<?>> receiver) {
         return requestFactories.computeIfAbsent(partial, p -> Request.Factory.create(driver(), receiver, p));
     }
 
@@ -84,7 +80,7 @@ public abstract class SubsumptiveCoordinator<
         blockToUpstream(fromUpstream(fromDownstream.sourceRequest().visit()), fromDownstream.cycles());
     }
 
-    abstract Driver<WORKER> getOrCreateBoundResolver(AnswerState.Partial<?> partial);
+    abstract Driver<? extends Resolver<?>> getOrCreateBoundResolver(AnswerState.Partial<?> partial);
 
     @Override
     protected void receiveAnswer(Answer answer) {

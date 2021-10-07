@@ -35,6 +35,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Materialiser;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver;
@@ -46,9 +47,6 @@ import com.vaticle.typedb.core.reasoner.resolution.resolver.ConclusionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConditionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConjunctionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.DisjunctionResolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.ExplainBoundConcludableResolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.MatchBoundConcludableResolver;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Materialiser;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.NegationResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RetrievableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
@@ -262,19 +260,21 @@ public class ResolverRegistry {
         return resolverView;
     }
 
-    public Actor.Driver<BoundConcludableResolver> registerBoundConcludable(ConceptMap bounds,
-                                                                           BoundConcludableContext context,
-                                                                           boolean explain) {
-        // TODO: Move this to the responsibility of the ConcludableResolver
-        LOG.debug("Register BoundConcludableResolver, pattern: {} bounds: {}", context.concludable().pattern(), bounds);
-        Actor.Driver<BoundConcludableResolver> resolver;
-        if (explain) {
-            resolver = Actor.driver(
-                    driver -> new ExplainBoundConcludableResolver(driver, context, bounds, this), executorService);
-        } else {
-            resolver = Actor.driver(
-                    driver -> new MatchBoundConcludableResolver(driver, context, bounds, this), executorService);
-        }
+    public Actor.Driver<BoundConcludableResolver.Exploring> registerExploring(ConceptMap bounds,
+                                                                              BoundConcludableContext context) {
+        LOG.debug("Register Exploring BoundConcludableResolver, pattern: {} bounds: {}", context.concludable().pattern(), bounds);
+        Actor.Driver<BoundConcludableResolver.Exploring> resolver = Actor.driver(
+                driver -> new BoundConcludableResolver.Exploring(driver, context, bounds, this), executorService);
+        resolvers.add(resolver);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return resolver;
+    }
+
+    public Actor.Driver<BoundConcludableResolver.Blocked> registerBlocked(ConceptMap bounds,
+                                                                          BoundConcludableContext context) {
+        LOG.debug("Register Blocked BoundConcludableResolver, pattern: {} bounds: {}", context.concludable().pattern(), bounds);
+        Actor.Driver<BoundConcludableResolver.Blocked> resolver = Actor.driver(
+                driver -> new BoundConcludableResolver.Blocked(driver, context, bounds, this), executorService);
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
