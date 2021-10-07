@@ -37,7 +37,7 @@ public class AnswerCache<ANSWER> {
 
     private final List<ANSWER> answers;
     private final Set<ANSWER> answersSet;
-    private final Supplier<FunctionalIterator<ANSWER>> answerSourceSupplier;
+    private Supplier<FunctionalIterator<ANSWER>> answerSourceSupplier;
     private FunctionalIterator<ANSWER> answerSource;
     private boolean complete;
     private boolean sourceCleared;
@@ -56,6 +56,11 @@ public class AnswerCache<ANSWER> {
     public boolean add(ANSWER answer) {
         assert !isComplete();
         return addIfAbsent(answer);
+    }
+
+    public void setSource(Supplier<FunctionalIterator<ANSWER>> answerSourceSupplier) {
+        this.answerSource.recycle();
+        this.answerSourceSupplier = answerSourceSupplier;
     }
 
     public void clearSource() {

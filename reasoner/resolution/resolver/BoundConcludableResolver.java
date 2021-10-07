@@ -71,7 +71,6 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    // TODO: Should be used
     protected List<Request.Factory> ruleDownstreams(Partial<?> fromUpstream) {
         List<Request.Factory> downstreams = new ArrayList<>();
         Partial.Concludable<?> partialAnswer = fromUpstream.asConcludable();
@@ -142,6 +141,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             return answerCache;
         }
 
+        public abstract void resetCacheSource();
     }
 
     class MatchResolutionState extends BoundConcludableResolutionState<ConceptMap> {
@@ -161,6 +161,11 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             return Iterators.single(fromUpstream.asConcludable().asMatch().toUpstreamLookup(
                     conceptMap, context.concludable().isInferredAnswer(conceptMap)));
         }
+
+        @Override
+        public void resetCacheSource() {
+            answerCache.setSource(() -> traversalIterator(context.concludable().pattern(), bounds));
+        }
     }
 
     static class ExplainResolutionState extends BoundConcludableResolutionState<Partial.Concludable<?>> {
@@ -178,6 +183,11 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
         public FunctionalIterator<? extends Partial<?>> toUpstream(Partial<?> fromUpstream,
                                                                    Partial.Concludable<?> partial) {
             return Iterators.single(partial.asExplain().toUpstreamInferred());
+        }
+
+        @Override
+        public void resetCacheSource() {
+            answerCache.setSource(Iterators::empty);
         }
     }
 
@@ -309,7 +319,8 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
 
         private DownstreamManager getOrCreateDownstreamManager(Request.Visit fromUpstream) {
             return downstreamManagers.computeIfAbsent(fromUpstream.partialAnswer().asConcludable(),
-                                                      partial -> new DownstreamManager());
+                                                      partial -> new DownstreamManager(
+                                                              ruleDownstreams(fromUpstream.visit().partialAnswer())));
         }
 
         private BoundConcludableResolutionState<?> getResolutionState(Response response) {
@@ -363,7 +374,26 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
             if (isTerminated()) return;
             assert fromUpstream.visit().partialAnswer().isConcludable();
-            sendNextMessage(fromUpstream.visit(), getOrCreateResolutionState(fromUpstream.visit()));
+            BoundConcludableResolutionState<?> resolutionState = getOrCreateResolutionState(fromUpstream.visit());
+
+            // Similar to sendNextMessage
+            Optional<Partial.Compound<?, ?>> upstreamAnswer = resolutionState.upstreamAnswer();
+            if (upstreamAnswer.isPresent()) {
+                if (resolutionState.singleAnswerRequired()) resolutionState.cache().setComplete();
+                answerToUpstream(upstreamAnswer.get(), fromUpstream.visit());
+            } else if (resolutionState.cache().isComplete()) {
+                failToUpstream(fromUpstream.visit());
+            } else {
+                blockToUpstream(fromUpstream.visit(), resolutionState.cache().size());
+                resolutionState.resetCacheSource();
+                upstreamAnswer = resolutionState.upstreamAnswer();
+                if (upstreamAnswer.isPresent()) {
+                    if (resolutionState.singleAnswerRequired()) resolutionState.cache().setComplete();
+                    answerToUpstream(upstreamAnswer.get(), fromUpstream.visit());
+                } else {
+                    blockToUpstream(fromUpstream.visit(), resolutionState.cache().size());
+                }
+            }
         }
 
         @Override
