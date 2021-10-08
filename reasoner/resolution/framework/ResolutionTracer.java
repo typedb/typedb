@@ -167,7 +167,7 @@ public final class ResolutionTracer {
                     "digraph request_%s_%d {\n" +
                             "node [fontsize=12 fontname=arial width=0.5 shape=box style=filled]\n" +
                             "edge [fontsize=10 fontname=arial width=0.5]",
-                    trace.scope, trace.root()));
+                    trace.scope().toString().replace('-', '_'), trace.root()));
         }
 
         public void finish() {
