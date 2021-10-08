@@ -64,7 +64,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
         this.context = context;
         this.bounds = bounds;
         this.matchCache = new AnswerCache<>(() -> traversalIterator(context.concludable().pattern(), bounds));
-        this.explainCache = new AnswerCache<>(Iterators::empty);  // TODO: This does nothing useful, delete it
+        this.explainCache = new AnswerCache<>(Iterators::empty);  // TODO: This does nothing useful, delete it when answers are used directly as soon as they are found
     }
 
     @Override
