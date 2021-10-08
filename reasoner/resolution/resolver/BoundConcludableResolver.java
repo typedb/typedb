@@ -46,6 +46,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.common.collection.Collections.set;
 
 public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludableResolver<RESOLVER>> extends Resolver<RESOLVER>  {
 
@@ -309,7 +310,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
         }
 
         private boolean startsHere(Cycle cycle) {
-            return cycle.end().equals(driver());
+            return cycle.end().equals(context.concludable());
         }
 
         private BoundConcludableResolutionState<?> getOrCreateResolutionState(Request.Visit fromUpstream) {
@@ -357,7 +358,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             } else if (resolutionState.cache().isComplete()) {
                 failToUpstream(visit);
             } else {
-                blockToUpstream(visit, resolutionState.cache().size());
+                blockToUpstream(visit, set(new Cycle(context.concludable(), resolutionState.cache().size())));
             }
         }
 
@@ -384,14 +385,13 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             } else if (resolutionState.cache().isComplete()) {
                 failToUpstream(fromUpstream.visit());
             } else {
-                blockToUpstream(fromUpstream.visit(), resolutionState.cache().size());
                 resolutionState.resetCacheSource();
                 upstreamAnswer = resolutionState.upstreamAnswer();
                 if (upstreamAnswer.isPresent()) {
                     if (resolutionState.singleAnswerRequired()) resolutionState.cache().setComplete();
                     answerToUpstream(upstreamAnswer.get(), fromUpstream.visit());
                 } else {
-                    blockToUpstream(fromUpstream.visit(), resolutionState.cache().size());
+                    blockToUpstream(fromUpstream.visit(), set(new Cycle(context.concludable(), resolutionState.cache().size())));
                 }
             }
         }

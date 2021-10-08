@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 
@@ -178,14 +179,14 @@ public abstract class Response {
         public static class Cycle {
 
             private final int numAnswersSeen;
-            private final Actor.Driver<? extends Resolver<?>> end;
+            private final Concludable end;
 
-            public Cycle(Actor.Driver<? extends Resolver<?>> end, int numAnswersSeen) {
+            public Cycle(Concludable end, int numAnswersSeen) {
                 this.end = end;
                 this.numAnswersSeen = numAnswersSeen;
             }
 
-            public Actor.Driver<? extends Resolver<?>> end() {
+            public Concludable end() {
                 return end;
             }
 

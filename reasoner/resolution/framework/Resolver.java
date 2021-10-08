@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.concurrent.producer.Producers;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
@@ -147,15 +148,6 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     protected void blockToUpstream(Request fromUpstream, Set<Cycle> cycles) {
         assert !fromUpstream.visit().partialAnswer().parent().isTop();
         Response.Blocked response = new Response.Blocked(fromUpstream.visit(), cycles, fromUpstream.trace());
-        LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
-        if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response);
-        fromUpstream.visit().sender().execute(actor -> actor.receiveBlocked(response));
-    }
-
-    protected void blockToUpstream(Request fromUpstream, int numAnswersSeen) {
-        assert !fromUpstream.visit().partialAnswer().parent().isTop();
-        Cycle cycle = new Cycle(fromUpstream.visit().receiver(), numAnswersSeen);
-        Response.Blocked response = new Response.Blocked(fromUpstream.visit(), set(cycle), fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
         if (registry.resolutionTracing()) ResolutionTracer.get().responseBlocked(response);
         fromUpstream.visit().sender().execute(actor -> actor.receiveBlocked(response));

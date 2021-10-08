@@ -59,7 +59,10 @@ public class AnswerCache<ANSWER> {
     }
 
     public void setSource(Supplier<FunctionalIterator<ANSWER>> answerSourceSupplier) {
-        this.answerSource.recycle();
+        answerSource.recycle();
+        answerSource = null;
+        sourceCleared = false;
+        sourceExhausted = false;
         this.answerSourceSupplier = answerSourceSupplier;
     }
 
