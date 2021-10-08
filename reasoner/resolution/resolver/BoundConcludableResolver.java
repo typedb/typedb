@@ -127,13 +127,6 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
 
         protected abstract ANSWER answerFromPartial(Partial<?> partial);
 
-        @Override
-        protected FunctionalIterator<? extends Partial<?>> toUpstream(ANSWER answer) {
-            return toUpstream(fromUpstream, answer);
-        }
-
-        abstract FunctionalIterator<? extends Partial<?>> toUpstream(Partial<?> fromUpstream, ANSWER answer);
-
         protected Optional<Partial.Compound<?, ?>> upstreamAnswer() {
             return nextAnswer().map(Partial::asCompound);
         }
@@ -158,7 +151,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
         }
 
         @Override
-        public FunctionalIterator<? extends Partial<?>> toUpstream(Partial<?> fromUpstream, ConceptMap conceptMap) {
+        public FunctionalIterator<? extends Partial<?>> toUpstream(ConceptMap conceptMap) {
             return Iterators.single(fromUpstream.asConcludable().asMatch().toUpstreamLookup(
                     conceptMap, context.concludable().isInferredAnswer(conceptMap)));
         }
@@ -181,8 +174,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
         }
 
         @Override
-        public FunctionalIterator<? extends Partial<?>> toUpstream(Partial<?> fromUpstream,
-                                                                   Partial.Concludable<?> partial) {
+        public FunctionalIterator<? extends Partial<?>> toUpstream(Partial.Concludable<?> partial) {
             return Iterators.single(partial.asExplain().toUpstreamInferred());
         }
 
