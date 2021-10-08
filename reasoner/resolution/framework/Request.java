@@ -31,12 +31,12 @@ public interface Request {
 
     Visit visit();
 
-    Trace trace();
+    @Nullable Trace trace();
 
     class Visit implements Request {
 
         private final Factory factory;
-        private final Trace trace;
+        private final @Nullable Trace trace;
         protected final Actor.Driver<? extends Resolver<?>> sender;
         protected final Actor.Driver<? extends Resolver<?>> receiver;
         protected final AnswerState.Partial<?> partialAnswer;
@@ -44,7 +44,7 @@ public interface Request {
 
         private Visit(Factory factory, @Nullable Actor.Driver<? extends Resolver<?>> sender,
                       Actor.Driver<? extends Resolver<?>> receiver, AnswerState.Partial<?> partialAnswer, int planIndex,
-                      Trace trace) {
+                      @Nullable Trace trace) {
             this.factory = factory;
             this.sender = sender;
             this.receiver = receiver;
@@ -75,7 +75,7 @@ public interface Request {
         }
 
         @Override
-        public Trace trace() {
+        public @Nullable Trace trace() {
             return trace;
         }
 
@@ -131,7 +131,7 @@ public interface Request {
         }
 
         @Override
-        public Trace trace() {
+        public @Nullable Trace trace() {
             return visit().trace;
         }
 
@@ -197,7 +197,11 @@ public interface Request {
             return Factory.create(request.sender(), request.receiver(), request.partialAnswer(), request.planIndex());
         }
 
-        public Visit createVisit(Trace trace) {
+        public Visit createVisit() {
+            return new Visit(this, sender, receiver, partialAnswer, planIndex, null);
+        }
+
+        public Visit createVisit(@Nullable Trace trace) {
             return new Visit(this, sender, receiver, partialAnswer, planIndex, trace);
         }
 

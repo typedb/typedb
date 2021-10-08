@@ -104,7 +104,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
                 this.resolutionStates.get(fromUpstream.visit().partialAnswer().asConclusion());
         if (!resolutionState.isComplete()) {
             Materialiser.Request request = Materialiser.Request.create(
-                    driver(), registry.materialiser(), fromUpstream.trace(), conclusion, fromDownstream.answer());
+                    driver(), registry.materialiser(), conclusion, fromDownstream.answer(), fromUpstream.trace());
             requestFromMaterialiser(request, fromUpstream);
             resolutionState.materialisationsCounter += 1;
         } else {

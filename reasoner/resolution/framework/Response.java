@@ -23,16 +23,17 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
 
 public abstract class Response {
 
     private final Request.Visit sourceRequest;
-    private final Trace trace;
+    private final @Nullable Trace trace;
     private final int hash;
 
-    private Response(Request.Visit sourceRequest, Trace trace) {
+    private Response(Request.Visit sourceRequest, @Nullable Trace trace) {
         this.sourceRequest = sourceRequest;
         this.trace = trace;
         this.hash = Objects.hash(sourceRequest, trace);
@@ -42,7 +43,7 @@ public abstract class Response {
         return sourceRequest;
     }
 
-    public Trace trace() {
+    public @Nullable Trace trace() {
         return trace;
     }
 
@@ -80,13 +81,13 @@ public abstract class Response {
         private final Partial<?> answer;
         private final int hash;
 
-        private Answer(Request.Visit sourceRequest, Partial<?> answer, Trace trace) {
+        private Answer(Request.Visit sourceRequest, Partial<?> answer, @Nullable Trace trace) {
             super(sourceRequest, trace);
             this.answer = answer;
             this.hash = Objects.hash(super.hashCode(), answer);
         }
 
-        public static Answer create(Request.Visit sourceRequest, Partial<?> answer, Trace trace) {
+        public static Answer create(Request.Visit sourceRequest, Partial<?> answer, @Nullable Trace trace) {
             return new Answer(sourceRequest, answer, trace);
         }
 
@@ -125,7 +126,7 @@ public abstract class Response {
 
     public static class Fail extends Response {
 
-        public Fail(Request.Visit sourceRequest, Trace trace) {
+        public Fail(Request.Visit sourceRequest, @Nullable Trace trace) {
             super(sourceRequest, trace);
         }
 
@@ -143,7 +144,7 @@ public abstract class Response {
         protected Set<Cycle> cycles;
         private final int hash;
 
-        public Blocked(Request.Visit sourceRequest, Set<Cycle> cycles, Trace trace) {
+        public Blocked(Request.Visit sourceRequest, Set<Cycle> cycles, @Nullable Trace trace) {
             super(sourceRequest, trace);
             this.cycles = cycles;
             this.hash = Objects.hash(super.hashCode(), cycles);

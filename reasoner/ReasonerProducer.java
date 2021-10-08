@@ -55,7 +55,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     private final ExplainablesManager explainablesManager;
     private final int computeSize;
     private final Request.Factory requestFactory;
-    private final Request.Visit defaultResolveRequest;
+    private final Request.Visit untracedResolveRequest;
     private final UUID traceId;
     private boolean done;
     private Queue<ConceptMap> queue;
@@ -77,7 +77,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.requestIdCounter = 0;
         this.traceId = UUID.randomUUID();
         this.requestFactory = requestFactory(filter);
-        this.defaultResolveRequest = requestFactory.createVisit(Trace.create(traceId, 0));
+        this.untracedResolveRequest = requestFactory.createVisit(Trace.create(traceId, 0));
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -96,7 +96,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.requestIdCounter = 0;
         this.traceId = UUID.randomUUID();
         this.requestFactory = requestFactory(filter);
-        this.defaultResolveRequest = requestFactory.createVisit(Trace.create(traceId, 0));
+        this.untracedResolveRequest = requestFactory.createVisit();
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -167,7 +167,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
             ResolutionTracer.get().start(visitRequest);
             requestIdCounter += 1;
         } else {
-            visitRequest = defaultResolveRequest;
+            visitRequest = untracedResolveRequest;
         }
         rootResolver.execute(actor -> actor.receiveVisit(visitRequest));
     }

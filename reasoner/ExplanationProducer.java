@@ -51,7 +51,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     private final AtomicInteger required;
     private final AtomicInteger processing;
     private final Request.Factory requestFactory;
-    private final Request.Visit defaultResolveRequest;
+    private final Request.Visit untracedResolveRequest;
     private final UUID traceId;
     private boolean done;
     private int requestTraceIdCounter;
@@ -71,7 +71,7 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.requestTraceIdCounter = 0;
         this.traceId = UUID.randomUUID();
         this.requestFactory = requestFactory();
-        this.defaultResolveRequest = requestFactory.createVisit(Trace.create(traceId, 0));
+        this.untracedResolveRequest = requestFactory.createVisit();
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -101,7 +101,7 @@ public class ExplanationProducer implements Producer<Explanation> {
             ResolutionTracer.get().start(resolveRequest);
             requestTraceIdCounter += 1;
         } else {
-            resolveRequest = defaultResolveRequest;
+            resolveRequest = untracedResolveRequest;
         }
         explainer.execute(actor -> actor.receiveVisit(resolveRequest));
     }
