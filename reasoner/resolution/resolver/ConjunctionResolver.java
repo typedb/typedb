@@ -84,7 +84,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         //  where the request to the negation never gets removed and we constantly re-request from it!
         //  this could be either implemented with a different response type: FinalAnswer, or splitting Visit into ReusableRequest vs SingleRequest
         if (plan.get(fromDownstream.sourceRequest().visit().planIndex()).isNegated()) {
-            resolutionState.downstreamManager().remove(fromDownstream.sourceRequest().visit().factory());
+            resolutionState.explorationManager().remove(fromDownstream.sourceRequest().visit().factory());
         }
 
         Partial.Compound<?, ?> partialAnswer = fromDownstream.answer().asCompound();
@@ -121,8 +121,8 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
                                                             nextResolverIndex);
         visitDownstream(downstream, fromUpstream);
         // negated requests can be used twice in a parallel setting, and return the same answer twice
-        if (!nextResolvable.isNegated() || (nextResolvable.isNegated() && !resolutionState.downstreamManager().contains(downstream))) {
-            resolutionState.downstreamManager().add(downstream);
+        if (!nextResolvable.isNegated() || (nextResolvable.isNegated() && !resolutionState.explorationManager().contains(downstream))) {
+            resolutionState.explorationManager().add(downstream);
         }
     }
 
@@ -132,7 +132,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         if (isTerminated()) return;
         Request fromUpstream = upstreamRequest(fromDownstream);
         ResolutionState resolutionState = this.resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
-        resolutionState.downstreamManager().remove(fromDownstream.sourceRequest().visit().factory());
+        resolutionState.explorationManager().remove(fromDownstream.sourceRequest().visit().factory());
         sendNextMessage(fromUpstream, resolutionState);
     }
 
@@ -175,7 +175,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     private void initialiseResolutionState(ResolutionState resolutionState, Partial.Compound<?, ?> fromUpstream, Plans.Plan plan) {
         ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
         Partial<?> downstream = toDownstream(fromUpstream, childResolver, plan.get(0));
-        resolutionState.downstreamManager().add(Request.Factory.create(driver(), childResolver.resolver(), downstream, 0));
+        resolutionState.explorationManager().add(Request.Factory.create(driver(), childResolver.resolver(), downstream, 0));
     }
 
     private Partial<?> toDownstream(Partial.Compound<?, ?> partialAnswer, ResolverRegistry.ResolverView nextDownstream,

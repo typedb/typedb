@@ -89,7 +89,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (resolutionState.materialisationsCounter > 0) {
             resolutionState.replayBuffer().addRevisit(fromUpstream);
         } else {
-            resolutionState.downstreamManager().unblock(fromUpstream.cycles());
+            resolutionState.explorationManager().unblock(fromUpstream.cycles());
             sendNextMessage(resolutionState, fromUpstream);
         }
     }
@@ -123,8 +123,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
             resolutionState.replayBuffer().addBlocked(fromDownstream);
         } else {
             Request.Factory downstream = fromDownstream.sourceRequest().visit().factory();
-            if (resolutionState.downstreamManager().contains(downstream)) {
-                resolutionState.downstreamManager().block(downstream, fromDownstream.cycles());
+            if (resolutionState.explorationManager().contains(downstream)) {
+                resolutionState.explorationManager().block(downstream, fromDownstream.cycles());
             }
             sendNextMessage(resolutionState, fromUpstream);
         }
@@ -140,7 +140,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (resolutionState.materialisationsCounter > 0) {
             resolutionState.replayBuffer().addFail(fromDownstream);
         } else {
-            resolutionState.downstreamManager().remove(fromDownstream.sourceRequest().visit().factory());
+            resolutionState.explorationManager().remove(fromDownstream.sourceRequest().visit().factory());
             sendNextMessage(resolutionState, fromUpstream);
         }
     }
@@ -169,12 +169,12 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         Optional<? extends Partial<?>> upstreamAnswer = resolutionState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream);
-        } else if (!resolutionState.isComplete() && resolutionState.downstreamManager().hasNextVisit()) {
-            visitDownstream(resolutionState.downstreamManager().nextVisit(fromUpstream.trace()), fromUpstream);
-        } else if (!resolutionState.isComplete() && resolutionState.downstreamManager().hasNextRevisit()) {
-            revisitDownstream(resolutionState.downstreamManager().nextRevisit(fromUpstream.trace()), fromUpstream);
-        } else if (resolutionState.downstreamManager().hasNextBlocked()) {
-            blockToUpstream(fromUpstream, resolutionState.downstreamManager().cycles());
+        } else if (!resolutionState.isComplete() && resolutionState.explorationManager().hasNextVisit()) {
+            visitDownstream(resolutionState.explorationManager().nextVisit(fromUpstream.trace()), fromUpstream);
+        } else if (!resolutionState.isComplete() && resolutionState.explorationManager().hasNextRevisit()) {
+            revisitDownstream(resolutionState.explorationManager().nextRevisit(fromUpstream.trace()), fromUpstream);
+        } else if (resolutionState.explorationManager().hasNextBlocked()) {
+            blockToUpstream(fromUpstream, resolutionState.explorationManager().cycles());
         } else {
             resolutionState.setComplete();
             failToUpstream(fromUpstream);
@@ -282,7 +282,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
     private static abstract class ConclusionResolutionState<CONCLUDABLE extends Concludable<?>> extends ResolutionState {
 
-        private final DownstreamManager downstreamManager;
+        private final ExplorationManager explorationManager;
         private final ReplayBuffer replayBuffer;
         private boolean complete;
         private int materialisationsCounter;
@@ -290,15 +290,15 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
 
         protected ConclusionResolutionState(Partial<?> fromUpstream, List<Request.Factory> conditionDownstreams, ReplayBuffer replayBuffer) {
             super(fromUpstream);
-            this.downstreamManager = new DownstreamManager(conditionDownstreams);
+            this.explorationManager = new ExplorationManager(conditionDownstreams);
             this.materialisations = Iterators.empty();
             this.complete = false;
             this.materialisationsCounter = 0;
             this.replayBuffer = replayBuffer;
         }
 
-        public DownstreamManager downstreamManager() {
-            return downstreamManager;
+        public ExplorationManager explorationManager() {
+            return explorationManager;
         }
 
         public boolean isComplete() {

@@ -45,12 +45,12 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     }
 
     protected void sendNextMessage(Request fromUpstream, ResolutionState resolutionState) {
-        if (resolutionState.downstreamManager().hasNextVisit()) {
-            visitDownstream(resolutionState.downstreamManager().nextVisit(fromUpstream.trace()), fromUpstream);
-        } else if (resolutionState.downstreamManager().hasNextRevisit()) {
-            revisitDownstream(resolutionState.downstreamManager().nextRevisit(fromUpstream.trace()), fromUpstream);
-        } else if (resolutionState.downstreamManager().hasNextBlocked()) {
-            blockToUpstream(fromUpstream, resolutionState.downstreamManager().cycles());
+        if (resolutionState.explorationManager().hasNextVisit()) {
+            visitDownstream(resolutionState.explorationManager().nextVisit(fromUpstream.trace()), fromUpstream);
+        } else if (resolutionState.explorationManager().hasNextRevisit()) {
+            revisitDownstream(resolutionState.explorationManager().nextRevisit(fromUpstream.trace()), fromUpstream);
+        } else if (resolutionState.explorationManager().hasNextBlocked()) {
+            blockToUpstream(fromUpstream, resolutionState.explorationManager().cycles());
         } else {
             failToUpstream(fromUpstream);
         }
@@ -72,7 +72,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         assert isInitialised;
         if (isTerminated()) return;
         ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
-        resolutionState.downstreamManager().unblock(fromUpstream.cycles());
+        resolutionState.explorationManager().unblock(fromUpstream.cycles());
         sendNextMessage(fromUpstream, resolutionState);
     }
 
@@ -82,7 +82,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         if (isTerminated()) return;
         Request fromUpstream = upstreamRequest(fromDownstream);
         ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
-        resolutionState.downstreamManager().remove(fromDownstream.sourceRequest().visit().factory());
+        resolutionState.explorationManager().remove(fromDownstream.sourceRequest().visit().factory());
         sendNextMessage(fromUpstream, resolutionState);
     }
 
@@ -93,8 +93,8 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         Request fromUpstream = upstreamRequest(fromDownstream);
         ResolutionState resolutionState = this.resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
         Request.Factory blockingDownstream = fromDownstream.sourceRequest().visit().factory();
-        if (resolutionState.downstreamManager().contains(blockingDownstream)) {
-            resolutionState.downstreamManager().block(blockingDownstream, fromDownstream.cycles());
+        if (resolutionState.explorationManager().contains(blockingDownstream)) {
+            resolutionState.explorationManager().block(blockingDownstream, fromDownstream.cycles());
         }
         sendNextMessage(fromUpstream, resolutionState);
     }
@@ -104,7 +104,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     // TODO: Align with the ResolutionState implementation used across the other resolvers
     static class ResolutionState {
 
-        private final DownstreamManager downstreamManager;
+        private final ExplorationManager explorationManager;
         private final Set<ConceptMap> deduplicationSet;
 
         public ResolutionState() {
@@ -112,12 +112,12 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         }
 
         public ResolutionState(Set<ConceptMap> produced) {
-            this.downstreamManager = new DownstreamManager();
+            this.explorationManager = new ExplorationManager();
             this.deduplicationSet = new HashSet<>(produced);
         }
 
-        public DownstreamManager downstreamManager() {
-            return downstreamManager;
+        public ExplorationManager explorationManager() {
+            return explorationManager;
         }
 
         public Set<ConceptMap> deduplicationSet() {

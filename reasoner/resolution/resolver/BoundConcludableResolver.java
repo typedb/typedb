@@ -187,17 +187,17 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
     public static class Exploring extends BoundConcludableResolver<Exploring> {
 
         private final Map<Partial.Concludable<?>, BoundConcludableResolutionState<?>> resolutionStates;
-        private final Map<Partial.Concludable<?>, DownstreamManager> downstreamManagers;
+        private final Map<Partial.Concludable<?>, ExplorationManager> explorationManagers;
 
         public Exploring(Driver<Exploring> driver, BoundConcludableContext context,
                          ConceptMap bounds, ResolverRegistry registry) {
             super(driver, context, bounds, registry);
             this.resolutionStates = new HashMap<>();
-            this.downstreamManagers = new HashMap<>();
+            this.explorationManagers = new HashMap<>();
         }
 
         protected void sendNextMessage(Request.Visit visit, BoundConcludableResolutionState<?> resolutionState,
-                                       DownstreamManager downstreamManager) {
+                                       ExplorationManager explorationManager) {
             Optional<Partial.Compound<?, ?>> upstreamAnswer = resolutionState.upstreamAnswer();
             if (upstreamAnswer.isPresent()) {
                 if (resolutionState.singleAnswerRequired()) {
@@ -210,21 +210,21 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
                     first one finds an answer, we respond for all N ahead of time. Then, when the rules actually
                     return an answer to this concludable, we do nothing.
                      */
-                    downstreamManager.clear();
+                    explorationManager.clear();
                     resolutionState.cache().setComplete();
                 }
                 answerToUpstream(upstreamAnswer.get(), visit);
             } else if (resolutionState.cache().isComplete()) {
                 failToUpstream(visit);
-            } else if (downstreamManager.hasNextVisit()) {
-                visitDownstream(downstreamManager.nextVisit(visit.trace()), visit);
-            } else if (downstreamManager.hasNextRevisit()) {
-                revisitDownstream(downstreamManager.nextRevisit(visit.trace()), visit);
-            } else if (startsHere(downstreamManager.cycles())) {
+            } else if (explorationManager.hasNextVisit()) {
+                visitDownstream(explorationManager.nextVisit(visit.trace()), visit);
+            } else if (explorationManager.hasNextRevisit()) {
+                revisitDownstream(explorationManager.nextRevisit(visit.trace()), visit);
+            } else if (startsHere(explorationManager.cycles())) {
                 resolutionState.cache().setComplete();
                 failToUpstream(visit);
             } else {
-                blockToUpstream(visit, startingElsewhere(downstreamManager.cycles()));
+                blockToUpstream(visit, startingElsewhere(explorationManager.cycles()));
             }
         }
 
@@ -233,7 +233,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             LOG.trace("{}: received Visit: {}", name(), fromUpstream);
             if (isTerminated()) return;
             assert fromUpstream.partialAnswer().isConcludable();
-            sendNextMessage(fromUpstream, getOrCreateResolutionState(fromUpstream), getOrCreateDownstreamManager(fromUpstream));
+            sendNextMessage(fromUpstream, getOrCreateResolutionState(fromUpstream), getOrCreateExplorationManager(fromUpstream));
         }
 
         @Override
@@ -242,9 +242,9 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             if (isTerminated()) return;
             assert fromUpstream.visit().partialAnswer().isConcludable();
             BoundConcludableResolutionState<?> resolutionState = getOrCreateResolutionState(fromUpstream.visit());
-            DownstreamManager downstreamManager = getOrCreateDownstreamManager(fromUpstream.visit());
-            downstreamManager.unblock(fromUpstream.cycles());
-            sendNextMessage(fromUpstream.visit(), resolutionState, downstreamManager);
+            ExplorationManager explorationManager = getOrCreateExplorationManager(fromUpstream.visit());
+            explorationManager.unblock(fromUpstream.cycles());
+            sendNextMessage(fromUpstream.visit(), resolutionState, explorationManager);
         }
 
         @Override
@@ -252,12 +252,12 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             LOG.trace("{}: received Answer: {}", name(), fromDownstream);
             if (isTerminated()) return;
             BoundConcludableResolutionState<?> resolutionState = getResolutionState(fromDownstream);
-            DownstreamManager downstreamManager = getDownstreamManager(fromDownstream);
+            ExplorationManager explorationManager = getExplorationManager(fromDownstream);
             if (resolutionState.newAnswer(fromDownstream.answer())) {
-                Set<Cycle> outdated = outdatedCycles(downstreamManager.cycles());
-                if (!outdated.isEmpty()) downstreamManager.unblock(outdated);
+                Set<Cycle> outdated = outdatedCycles(explorationManager.cycles());
+                if (!outdated.isEmpty()) explorationManager.unblock(outdated);
             }
-            sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, downstreamManager);
+            sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, explorationManager);
         }
 
         @Override
@@ -265,9 +265,9 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             LOG.trace("{}: received Fail: {}", name(), fromDownstream);
             if (isTerminated()) return;
             BoundConcludableResolutionState<?> resolutionState = getResolutionState(fromDownstream);
-            DownstreamManager downstreamManager = getDownstreamManager(fromDownstream);
-            downstreamManager.remove(fromDownstream.sourceRequest().visit().factory());
-            sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, downstreamManager);
+            ExplorationManager explorationManager = getExplorationManager(fromDownstream);
+            explorationManager.remove(fromDownstream.sourceRequest().visit().factory());
+            sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, explorationManager);
         }
 
         @Override
@@ -275,14 +275,14 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
             if (isTerminated()) return;
             BoundConcludableResolutionState<?> resolutionState = getResolutionState(fromDownstream);
-            DownstreamManager downstreamManager = getDownstreamManager(fromDownstream);
+            ExplorationManager explorationManager = getExplorationManager(fromDownstream);
             Request.Factory blockingDownstream = fromDownstream.sourceRequest().visit().factory();
-            if (downstreamManager.contains(blockingDownstream)) {
-                downstreamManager.block(blockingDownstream, fromDownstream.cycles());
-                Set<Cycle> outdated = outdatedCycles(downstreamManager.cycles());
-                if (!outdated.isEmpty()) downstreamManager.unblock(outdated);
+            if (explorationManager.contains(blockingDownstream)) {
+                explorationManager.block(blockingDownstream, fromDownstream.cycles());
+                Set<Cycle> outdated = outdatedCycles(explorationManager.cycles());
+                if (!outdated.isEmpty()) explorationManager.unblock(outdated);
             }
-            sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, downstreamManager);
+            sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, explorationManager);
         }
 
         private Set<Cycle> outdatedCycles(Set<Cycle> cycles) {
@@ -310,9 +310,9 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
                                                     partial -> createResolutionState(fromUpstream.partialAnswer()));
         }
 
-        private DownstreamManager getOrCreateDownstreamManager(Request.Visit fromUpstream) {
-            return downstreamManagers.computeIfAbsent(fromUpstream.partialAnswer().asConcludable(),
-                                                      partial -> new DownstreamManager(
+        private ExplorationManager getOrCreateExplorationManager(Request.Visit fromUpstream) {
+            return explorationManagers.computeIfAbsent(fromUpstream.partialAnswer().asConcludable(),
+                                                      partial -> new ExplorationManager(
                                                               ruleDownstreams(fromUpstream.visit().partialAnswer())));
         }
 
@@ -320,15 +320,15 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             return resolutionStates.get(partialFromUpstream(response).asConcludable());
         }
 
-        private DownstreamManager getDownstreamManager(Response response) {
-            return downstreamManagers.get(partialFromUpstream(response).asConcludable());
+        private ExplorationManager getExplorationManager(Response response) {
+            return explorationManagers.get(partialFromUpstream(response).asConcludable());
         }
 
         @Override
         public void terminate(Throwable cause) {
             super.terminate(cause);
             resolutionStates.clear();
-            downstreamManagers.clear();
+            explorationManagers.clear();
         }
     }
 

@@ -27,7 +27,6 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.concurrent.producer.Producers;
-import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
@@ -221,7 +220,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
             boolean newAnswer(Partial<?> partial);
 
-            DownstreamManager downstreamManager();
+            ExplorationManager explorationManager();
 
             boolean singleAnswerRequired();
 
@@ -255,18 +254,18 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     }
 
-    public static class DownstreamManager {
+    public static class ExplorationManager {
         protected final List<Request.Factory> visits;
         protected Map<Request.Factory, Set<Cycle>> revisits;
         protected Map<Request.Factory, Set<Cycle>> blocked;
 
-        public DownstreamManager() {
+        public ExplorationManager() {
             this.visits = new ArrayList<>();
             this.revisits = new LinkedHashMap<>();
             this.blocked = new LinkedHashMap<>();
         }
 
-        public DownstreamManager(List<Request.Factory> visits) {
+        public ExplorationManager(List<Request.Factory> visits) {
             this.visits = visits;
             this.revisits = new LinkedHashMap<>();
             this.blocked = new LinkedHashMap<>();

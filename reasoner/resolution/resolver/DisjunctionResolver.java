@@ -88,7 +88,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
             Compound.Nestable downstream = fromUpstream.filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
             Request.Factory request = Request.Factory.create(driver(), conjunctionResolver, downstream);
-            resolutionState.downstreamManager().add(request);
+            resolutionState.explorationManager().add(request);
         }
         return resolutionState;
     }
