@@ -167,7 +167,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         LOG.debug("{}: Creating a new ResolutionState for request: {}", name(), fromUpstream);
         Plans.Plan plan = plans.create(fromUpstream, resolvables, negateds);
         assert !plan.isEmpty();
-        ResolutionState resolutionState = resolutionStateNew();
+        ResolutionState resolutionState = createResolutionState();
         initialiseResolutionState(resolutionState, fromUpstream, plan);
         return resolutionState;
     }
@@ -193,7 +193,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
     }
 
-    abstract ResolutionState resolutionStateNew();
+    abstract ResolutionState createResolutionState();
 
     static class Plans {
         private final Map<ConceptMap, Plan> plans;
@@ -289,7 +289,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
         }
 
         @Override
-        ResolutionState resolutionStateNew() {
+        ResolutionState createResolutionState() {
             return new ResolutionState();
         }
 

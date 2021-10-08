@@ -97,7 +97,7 @@ public interface RootResolver {
         }
 
         @Override
-        ResolutionState resolutionStateNew() {
+        ResolutionState createResolutionState() {
             return new ResolutionState();
         }
 
@@ -223,7 +223,7 @@ public interface RootResolver {
         }
 
         @Override
-        ResolutionState resolutionStateNew() {
+        ResolutionState createResolutionState() {
             return new ResolutionState();
         }
 
