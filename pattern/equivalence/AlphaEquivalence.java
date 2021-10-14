@@ -17,262 +17,100 @@
 
 package com.vaticle.typedb.core.pattern.equivalence;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import javax.annotation.Nullable;
 import java.util.AbstractMap;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public abstract class AlphaEquivalence {
+public class AlphaEquivalence {
 
-    public static Valid valid() {
-        return new Valid(new HashMap<>(), new HashMap<>());
+    private final Map<Variable, Variable> map;
+    private final Map<Variable, Variable> reverseMap;
+
+    private AlphaEquivalence(Map<Variable, Variable> map, Map<Variable, Variable> reverseMap) {
+        assert map.size() == reverseMap.size();
+        assert map.keySet().equals(set(reverseMap.values()));
+        this.map = map;
+        this.reverseMap = reverseMap;
     }
 
-    public static Invalid invalid() {
-        return new Invalid();
+    public static AlphaEquivalence valid() {
+        return new AlphaEquivalence(new HashMap<>(), new HashMap<>());
     }
 
-    public abstract AlphaEquivalence validIf(boolean invalidate);
-
-    public abstract <T extends AlphaEquivalent<T>> AlphaEquivalence validIfAlphaEqual(T member1, T member2);
-
-    public abstract <T extends AlphaEquivalent<T>> AlphaEquivalence validIfAlphaEqual(Set<T> set1, Set<T> set2);
-
-    public abstract AlphaEquivalence addMapping(Variable from, Variable to);
-
-    public abstract boolean isValid();
-
-    public abstract Valid asValid();
-
-    public abstract AlphaEquivalence addOrInvalidate(Supplier<AlphaEquivalence> mappingSupplier);
-
-    protected abstract AlphaEquivalence addOrInvalidate(AlphaEquivalence mapping);
-
-    static AlphaEquivalence create(Map<Variable, Variable> map) {
-        Map<Variable, Variable> reverseMap = new HashMap<>();
-        for (Map.Entry<Variable, Variable> e : map.entrySet()) {
-            reverseMap.put(e.getValue(), e.getKey());
+    public FunctionalIterator<AlphaEquivalence> addOrInvalidate(AlphaEquivalence alphaMap) {
+        Optional<Map<Variable, Variable>> m = mergeVariableMapping(variableMapping(), alphaMap.variableMapping());
+        Optional<Map<Variable, Variable>> r = mergeVariableMapping(reverseVariableMapping(), alphaMap.reverseVariableMapping());
+        if (m.isPresent() && r.isPresent()) {
+            if (m.get().size() != r.get().size()) return Iterators.empty();
+            return Iterators.single(new AlphaEquivalence(m.get(), r.get()));
+        } else {
+            return Iterators.empty();
         }
-        if (map.size() != reverseMap.size()) return new AlphaEquivalence.Invalid();
-        return new AlphaEquivalence.Valid(map, reverseMap);
     }
 
-    public static class Valid extends AlphaEquivalence {
-
-        private Map<Variable, Variable> map;
-        private Map<Variable, Variable> reverseMap;
-
-        private Valid(Map<Variable, Variable> map, Map<Variable, Variable> reverseMap) {
-            assert map.size() == reverseMap.size();
-            assert map.keySet().equals(set(reverseMap.values()));
-            this.map = map;
-            this.reverseMap = reverseMap;
-        }
-
-        public static AlphaEquivalence.Valid create() {
-            return new AlphaEquivalence.Valid(new HashMap<>(), new HashMap<>());
-        }
-
-        @Override
-        public AlphaEquivalence addOrInvalidate(AlphaEquivalence alphaMap) {
-            if (!alphaMap.isValid()) return AlphaEquivalence.invalid();
-            Optional<Map<Variable, Variable>> m = mergeVariableMapping(variableMapping(), alphaMap.asValid().variableMapping());
-            Optional<Map<Variable, Variable>> r = mergeVariableMapping(reverseVariableMapping(), alphaMap.asValid().reverseVariableMapping());
-            if (m.isPresent() && r.isPresent()) {
-                map = m.get();
-                reverseMap = r.get();
-                if (map.size() != reverseMap.size()) return AlphaEquivalence.invalid();
-                return this;
+    private static Optional<Map<Variable, Variable>> mergeVariableMapping(Map<Variable, Variable> existing,
+                                                                          Map<Variable, Variable> toMerge) {
+        for (Map.Entry<Variable, Variable> e : toMerge.entrySet()) {
+            Variable var = toMerge.get(e.getKey());
+            if (existing.containsKey(e.getKey())) {
+                if (!var.equals(e.getValue())) return Optional.empty();
             } else {
-                return AlphaEquivalence.invalid();
+                existing.put(e.getKey(), var);
             }
         }
-
-        private Optional<Map<Variable, Variable>> mergeVariableMapping(Map<Variable, Variable> existing, Map<Variable, Variable> toMerge) {
-            for (Map.Entry<Variable, Variable> e : toMerge.entrySet()) {
-                Variable var = toMerge.get(e.getKey());
-                if (existing.containsKey(e.getKey())) {
-                    if (!var.equals(e.getValue())) return Optional.empty();
-                } else {
-                    existing.put(e.getKey(), var);
-                }
-            }
-            return Optional.of(existing);
-        }
-
-        @Override
-        public AlphaEquivalence addOrInvalidate(Supplier<AlphaEquivalence> mappingSupplier) {
-            return addOrInvalidate(mappingSupplier.get());
-        }
-
-        @Override
-        public <T extends AlphaEquivalent<T>> AlphaEquivalence validIfAlphaEqual(Set<T> set1, Set<T> set2) {
-            return addOrInvalidate(EquivalenceSet.of(set1).alphaEquals(EquivalenceSet.of(set2)));
-        }
-
-        @Override
-        public <T extends AlphaEquivalent<T>> AlphaEquivalence validIfAlphaEqual(@Nullable T member1, @Nullable T member2) {
-            if (member1 == null && member2 == null) return this;
-            if (member1 != null && member2 != null) return addOrInvalidate(member1.alphaEquals(member2));
-            return AlphaEquivalence.invalid();
-        }
-
-        @Override
-        public Valid addMapping(Variable from, Variable to) {
-            map.put(from, to);
-            reverseMap.put(to, from);
-            assert from.reference().isName() == to.reference().isName();
-            return this;
-        }
-
-        @Override
-        public AlphaEquivalence validIf(boolean valid) {
-            if (!valid) return AlphaEquivalence.invalid();
-            return this;
-        }
-
-        @Override
-        public boolean isValid() {
-            return true;
-        }
-
-        @Override
-        public Valid asValid() {
-            return this;
-        }
-
-        public Map<Retrievable, Retrievable> idMapping() {
-            return variableMapping().entrySet().stream()
-                    .map(e -> new AbstractMap.SimpleEntry<>(
-                            e.getKey().id(),
-                            e.getValue().id()))
-                    .filter(e -> {
-                        assert e.getKey().isRetrievable() == e.getValue().isRetrievable();
-                        return e.getKey().isRetrievable();
-                    })
-                    .collect(Collectors.toMap(
-                            e -> e.getKey().asRetrievable(),
-                            e -> e.getValue().asRetrievable()
-                    ));
-        }
-
-        Map<Variable, Variable> variableMapping() {
-            return new HashMap<>(map);
-        }
-
-        private Map<Variable, Variable> reverseVariableMapping() {
-            return new HashMap<>(reverseMap);
-        }
+        return Optional.of(existing);
     }
 
-    public static class Invalid extends AlphaEquivalence {
-
-        @Override
-        public Invalid addOrInvalidate(AlphaEquivalence mapping) {
-            return this;
-        }
-
-        @Override
-        public AlphaEquivalence addOrInvalidate(Supplier<AlphaEquivalence> mappingSupplier) {
-            return this;
-        }
-
-        @Override
-        public <T extends AlphaEquivalent<T>> Invalid validIfAlphaEqual(T member1, T member2) {
-            return this;
-        }
-
-        @Override
-        public Invalid addMapping(Variable from, Variable to) {
-            return this;
-        }
-
-        @Override
-        public Invalid validIf(boolean invalidate) {
-            return this;
-        }
-
-        @Override
-        public boolean isValid() {
-            return false;
-        }
-
-        @Override
-        public Valid asValid() {
-            throw new ClassCastException("Cannot cast " + this.getClass().getSimpleName() + " to " + Valid.class.getSimpleName());
-        }
-
-        @Override
-        public <T extends AlphaEquivalent<T>> AlphaEquivalence validIfAlphaEqual(Set<T> set1, Set<T> set2) {
-            return this;
-        }
+    public <T extends AlphaEquivalent<T>> FunctionalIterator<AlphaEquivalence> validIfAlphaEqual(@Nullable T member1, @Nullable T member2) {
+        if (member1 == null && member2 == null) return Iterators.single(this);
+        if (member1 != null && member2 != null) return member1.alphaEquals(member2).flatMap(this::addOrInvalidate);
+        return Iterators.empty();
     }
 
-    public static class EquivalenceSet<T extends AlphaEquivalent<T>> implements AlphaEquivalent<EquivalenceSet<T>> {
+    public AlphaEquivalence addMapping(Variable from, Variable to) {
+        assert from.reference().isName() == to.reference().isName();
+        Map<Variable, Variable> newMap = variableMapping();
+        newMap.put(from, to);
+        Map<Variable, Variable> reverseMap = reverseVariableMapping();
+        reverseMap.put(to, from);
+        return new AlphaEquivalence(newMap, reverseMap);
+    }
 
-        private final Set<T> set;
+    public FunctionalIterator<AlphaEquivalence> validIf(boolean valid) {
+        if (valid) return Iterators.single(this);
+        else return Iterators.empty();
+    }
 
-        private EquivalenceSet(Set<T> set) {
-            this.set = set;
-        }
+    public Map<Retrievable, Retrievable> idMapping() {
+        return variableMapping().entrySet().stream()
+                .map(e -> new AbstractMap.SimpleEntry<>(
+                        e.getKey().id(),
+                        e.getValue().id()))
+                .filter(e -> {
+                    assert e.getKey().isRetrievable() == e.getValue().isRetrievable();
+                    return e.getKey().isRetrievable();
+                })
+                .collect(Collectors.toMap(
+                        e -> e.getKey().asRetrievable(),
+                        e -> e.getValue().asRetrievable()
+                ));
+    }
 
-        public static <S extends AlphaEquivalent<S>> EquivalenceSet<S> of(Set<S> set) {
-            return new EquivalenceSet<>(set);
-        }
+    Map<Variable, Variable> variableMapping() {
+        return new HashMap<>(map);
+    }
 
-        @Override
-        public AlphaEquivalence alphaEquals(EquivalenceSet<T> that) { // TODO: Should be able to accept a set not an alpha set?
-            if (that.size() != size()) return AlphaEquivalence.invalid();
-            try {
-                return containsAll(that);
-            } catch (NullPointerException unused) {
-                return AlphaEquivalence.invalid();
-            }
-        }
-
-        private int size() {
-            return set.size();
-        }
-
-        private Iterator<T> iterator() {
-            return set.iterator();
-        }
-
-        private AlphaEquivalence containsAll(EquivalenceSet<T> c) {
-            AlphaEquivalence alphaMap = Valid.create();
-            for (T e : c.set()) alphaMap = alphaMap.addOrInvalidate(contains(e));
-            if (!alphaMap.isValid()) return alphaMap;
-            return alphaMap;
-        }
-
-        private AlphaEquivalence contains(T o) {
-            Iterator<T> it = iterator();
-            if (o == null) {
-                while (it.hasNext()) {
-                    if (it.next() == null) return Valid.create();
-                }
-            } else {
-                while (it.hasNext()) {
-                    AlphaEquivalence alphaMap = it.next().alphaEquals(o);
-                    if (alphaMap.isValid()) return Valid.create(alphaMap.asValid().variableMapping());
-                }
-            }
-            return AlphaEquivalence.invalid();
-        }
-
-        private Set<T> set() {
-            return set;
-        }
-
+    private Map<Variable, Variable> reverseVariableMapping() {
+        return new HashMap<>(reverseMap);
     }
 }

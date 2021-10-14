@@ -122,7 +122,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
     public abstract boolean isInferredAnswer(ConceptMap conceptMap);
 
-    public abstract AlphaEquivalence alphaEquals(Concludable that);
+    public abstract FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that);
 
     public boolean isRelation() { return false; }
 
@@ -315,6 +315,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             return relation;
         }
 
+        public IsaConstraint isa() {
+            return isa;
+        }
+
         @Override
         public Set<Constraint> concludableConstraints() {
             Set<Constraint> c = new HashSet<>(labels);
@@ -446,9 +450,18 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(Concludable that) {
-            if (!that.isRelation()) return AlphaEquivalence.invalid();
-            return relation().owner().alphaEquals(that.asRelation().relation().owner());
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
+            if (!that.isRelation()) return Iterators.empty();
+            ThingVariable thatVar = that.asRelation().relation().owner();
+            ThingVariable thisVar = relation().owner();
+            assert thisVar.isa().isPresent() && thatVar.isa().isPresent();
+            return AlphaEquivalence.valid()
+                    .validIf(that.isRelation())
+                    .flatMap(a -> a.validIf(thisVar.id().isName() == thatVar.id().isName()))
+                    .flatMap(a -> a.validIf(thisVar.inferredTypes().equals(thatVar.inferredTypes())))
+                    .flatMap(a -> a.validIfAlphaEqual(isa, that.asRelation().isa()))
+                    .flatMap(a -> a.validIfAlphaEqual(relation, that.asRelation().relation()))
+                    .map(a -> a.addMapping(thisVar, thatVar));
         }
     }
 
@@ -583,8 +596,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(Concludable that) {
-            if (!that.isHas()) return AlphaEquivalence.invalid();
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
+            if (!that.isHas()) return Iterators.empty();
             return has().owner().alphaEquals(that.asHas().has().owner());
         }
 
@@ -697,8 +710,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(Concludable that) {
-            if (!that.isIsa()) return AlphaEquivalence.invalid();
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
+            if (!that.isIsa()) return Iterators.empty();
             return isa().owner().alphaEquals(that.asIsa().isa().owner());
         }
     }
@@ -807,8 +820,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(Concludable that) {
-            if (!that.isAttribute()) return AlphaEquivalence.invalid();
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
+            if (!that.isAttribute()) return Iterators.empty();
             return attribute.alphaEquals(that.asAttribute().attribute);
         }
     }

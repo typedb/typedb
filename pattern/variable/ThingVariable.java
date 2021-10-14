@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.pattern.variable;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.pattern.constraint.Constraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IIDConstraint;
@@ -249,14 +250,10 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     }
 
     @Override
-    public AlphaEquivalence alphaEquals(ThingVariable that) {
+    public FunctionalIterator<AlphaEquivalence> alphaEquals(ThingVariable that) {
         return AlphaEquivalence.valid()
                 .validIf(id().isName() == that.id().isName())
-                .validIf(this.inferredTypes().equals(that.inferredTypes()))
-                .validIfAlphaEqual(this.isaConstraint, that.isaConstraint)
-                .validIfAlphaEqual(this.relationConstraint, that.relationConstraint)
-                .validIfAlphaEqual(this.hasConstraints, that.hasConstraints)
-                .validIfAlphaEqual(this.valueConstraints, that.valueConstraints)
-                .addMapping(this, that);
+                .flatMap(a -> a.validIf(this.inferredTypes().equals(that.inferredTypes())))
+                .map(a -> a.addMapping(this, that));
     }
 }

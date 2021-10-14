@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.resolution;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
@@ -230,9 +231,9 @@ public class ResolverRegistry {
     private Optional<ResolverView.MappedConcludable> getConcludableResolver(Concludable concludable) {
         for (Map.Entry<Concludable, Actor.Driver<ConcludableResolver>> c : concludableResolvers.entrySet()) {
             // TODO: This needs to be optimised from a linear search to use an alpha hash
-            AlphaEquivalence alphaEquality = concludable.alphaEquals(c.getKey());
-            if (alphaEquality.isValid()) {
-                return Optional.of(ResolverView.concludable(c.getValue(), alphaEquality.asValid().idMapping()));
+            Optional<AlphaEquivalence> alphaEquality = concludable.alphaEquals(c.getKey()).first();
+            if (alphaEquality.isPresent()) {
+                return Optional.of(ResolverView.concludable(c.getValue(), alphaEquality.get().idMapping()));
             }
         }
         return Optional.empty();
