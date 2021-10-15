@@ -61,23 +61,6 @@ native_java_libraries(
 )
 
 host_compatible_java_test(
-    name = "test-alpha-equivalence",
-    srcs = [
-        "equivalence/AlphaEquivalenceTest.java",
-    ],
-    test_class = "com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalenceTest",
-    native_libraries_deps = [
-        "//pattern:pattern",
-    ],
-    deps = [
-        # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
-        "@vaticle_typeql_lang_java//pattern",
-        "@vaticle_typeql_lang_java//:typeql-lang",
-    ],
-)
-
-host_compatible_java_test(
     name = "test-conjunction",
     srcs = [
         "ConjunctionTest.java",

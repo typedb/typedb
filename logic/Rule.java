@@ -182,7 +182,7 @@ public class Rule {
 
 
     /**
-     * Remove type hints in the `then` pattern that are not valid in the `when` pattern
+     * Remove inferred types in the `then` pattern that are not valid in the `when` pattern
      */
     private void pruneThenResolvedTypes() {
         then.variables().stream().filter(variable -> variable.id().isName())

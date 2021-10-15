@@ -71,7 +71,8 @@ public class AlphaEquivalence {
         return Optional.of(existing);
     }
 
-    public <T extends AlphaEquivalent<T>> FunctionalIterator<AlphaEquivalence> validIfAlphaEqual(@Nullable T member1, @Nullable T member2) {
+    public <T extends AlphaEquivalent<T>> FunctionalIterator<AlphaEquivalence> validIfAlphaEqual(@Nullable T member1,
+                                                                                                 @Nullable T member2) {
         if (member1 == null && member2 == null) return Iterators.single(this);
         if (member1 != null && member2 != null) return member1.alphaEquals(member2).flatMap(this::addOrInvalidate);
         return Iterators.empty();
@@ -106,7 +107,7 @@ public class AlphaEquivalence {
                 ));
     }
 
-    Map<Variable, Variable> variableMapping() {
+    public Map<Variable, Variable> variableMapping() {
         return new HashMap<>(map);
     }
 
