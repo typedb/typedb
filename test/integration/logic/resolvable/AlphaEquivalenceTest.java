@@ -390,6 +390,40 @@ public class AlphaEquivalenceTest {
     }
 
     @Test
+    public void test_isa() {
+        schema("define number sub attribute, value long; other-number sub attribute, value long;");
+        List<Concludable> concludables = Iterators.iterate(
+                concludable("$a 3 isa number"),
+                isa(concludable("$a isa number", "$a = 3")),
+                isa(concludable("$a isa number", "$a < 4", "$a > 2")),
+                isa(concludable("$a isa number", "$a < 4")),
+                concludable("$a isa number"),
+                concludable("$a isa other-number"),
+                concludable("$a 3 isa other-number")
+        ).toList();
+        testAlphaEquivalenceSymmetricReflexive(concludables.get(0), concludables, set(1));
+        testAlphaEquivalenceSymmetricReflexive(concludables.get(1), concludables, set(0));
+        testAlphaEquivalenceSymmetricReflexive(concludables.get(2), concludables, set());
+        testAlphaEquivalenceSymmetricReflexive(concludables.get(3), concludables, set());
+        testAlphaEquivalenceSymmetricReflexive(concludables.get(4), concludables, set());
+        testAlphaEquivalenceSymmetricReflexive(concludables.get(5), concludables, set());
+        testAlphaEquivalenceSymmetricReflexive(concludables.get(6), concludables, set());
+    }
+
+    @Test
+    public void test_attribute() {
+        schema("define number sub attribute, value long; other-number sub attribute, value long;");
+        List<Concludable> concludables = Iterators.iterate(
+                concludable("$a = 3"),
+                attribute(concludable("$a < 4", "$a > 2")),
+                concludable("$a < 4")
+        ).toList();
+        testAlphaEquivalenceSymmetricReflexive(concludables.get(0), concludables, set());
+        testAlphaEquivalenceSymmetricReflexive(concludables.get(1), concludables, set());
+        testAlphaEquivalenceSymmetricReflexive(concludables.get(2), concludables, set());
+    }
+
+    @Test
     public void test_relation_different_inequivalent_variants() {
         schema("define parentship sub relation, relates parent, relates child; " +
                        "person sub entity, plays parentship:parent, plays parentship:child;");
