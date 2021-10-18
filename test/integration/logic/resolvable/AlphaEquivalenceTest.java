@@ -336,7 +336,8 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_relation_with_typed_roleplayers() {
         schema("define employment sub relation, relates employer, relates employee; organisation sub entity, plays " +
-                       "employment:employer, plays employment:employee; company sub organisation;");
+                       "employment:employer, plays employment:employee; company sub organisation; person sub entity, plays " +
+                       "employment:employer, plays employment:employee;");
         List<Concludable> concludables = Iterators.iterate(
                 relation(concludable("($x, $y)", "$x isa organisation")),
                 relation(concludable("($x, $y)", "$y isa organisation")),
@@ -368,21 +369,22 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_relation_attributes_as_roleplayers() {
         schema("define name sub attribute, value string, plays signature:name; signature sub relation, relates name, " +
-                       "relates form; paper sub entity, plays signature:form;");
+                       "relates form; paper sub entity, plays signature:form; scribble sub attribute, value string, " +
+                       "plays signature:name, plays signature:form;");
         List<Concludable> concludables = Iterators.iterate(
-                concludable("$r1 ($x, $y)"),
-                relation(concludable("$r2 ($x, $y)", "$x isa name")),
-                relation(concludable("$r3 ($x, $y)", "$x 'Bob' isa name")),
-                relation(concludable("$r4 ($x, $y)", "$y 'Bob' isa name")),
-                relation(concludable("$r5 ($x, $y)", "$y 'Alice' isa name")),
-                relation(concludable("$r6 ($x, $y)", "$x 'Bob' isa name", "$y 'Alice' isa name")),
-                relation(concludable("$r7 ($x, $y)", "$y 'Bob' isa name", "$x 'Alice' isa name"))
+                concludable("$r0 ($x, $y)"),
+                relation(concludable("$r1 ($x, $y)", "$x isa name")),
+                relation(concludable("$r2 ($x, $y)", "$x 'Bob' isa name")),
+                relation(concludable("$r3 ($x, $y)", "$y 'Bob' isa name")),
+                relation(concludable("$r4 ($x, $y)", "$y 'Alice' isa name")),
+                relation(concludable("$r5 ($x, $y)", "$x 'Bob' isa name", "$y 'Alice' isa name")),
+                relation(concludable("$r6 ($x, $y)", "$y 'Bob' isa name", "$x 'Alice' isa name"))
         ).toList();
         testAlphaEquivalenceSymmetricReflexive(concludables.get(0), concludables, new HashSet<>());
-        testAlphaEquivalenceSymmetricReflexive(concludables.get(1), concludables, new HashSet<>());
-        testAlphaEquivalenceSymmetricReflexive(concludables.get(2), concludables, set(3));
-        testAlphaEquivalenceSymmetricReflexive(concludables.get(3), concludables, set(2));
-        testAlphaEquivalenceSymmetricReflexive(concludables.get(4), concludables, new HashSet<>());
+        testAlphaEquivalenceSymmetricReflexive(concludables.get(1), concludables, set(2, 3, 4));
+        testAlphaEquivalenceSymmetricReflexive(concludables.get(2), concludables, set(1, 3, 4));
+        testAlphaEquivalenceSymmetricReflexive(concludables.get(3), concludables, set(1, 2, 4));
+        testAlphaEquivalenceSymmetricReflexive(concludables.get(4), concludables, set(1, 2, 3));
         testAlphaEquivalenceSymmetricReflexive(concludables.get(5), concludables, set(6));
         testAlphaEquivalenceSymmetricReflexive(concludables.get(6), concludables, set(5));
     }

@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -113,5 +114,19 @@ public class AlphaEquivalence {
 
     private Map<Variable, Variable> reverseVariableMapping() {
         return new HashMap<>(reverseMap);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AlphaEquivalence that = (AlphaEquivalence) o;
+        return map.equals(that.map) &&
+                reverseMap.equals(that.reverseMap);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(map, reverseMap);
     }
 }

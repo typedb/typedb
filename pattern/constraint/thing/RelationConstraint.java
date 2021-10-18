@@ -153,7 +153,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
                 if (permutationMap == null ) return Iterators.empty();
             }
             return Iterators.single(permutationMap);
-        });
+        }).distinct();
     }
 
     public static class RolePlayer implements AlphaEquivalent<RolePlayer> {
