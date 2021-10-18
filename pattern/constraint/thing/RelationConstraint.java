@@ -138,18 +138,19 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
     @Override
     public FunctionalIterator<AlphaEquivalence> alphaEquals(RelationConstraint that) {
-        return AlphaEquivalence.valid()
-                .validIf(players().size() == that.players().size())
-                .flatMap(a -> roleplayerEquivalences(that).flatMap(a::addOrInvalidate));
+        return AlphaEquivalence.empty()
+                .alphaEqualIf(players().size() == that.players().size())
+                .flatMap(a -> roleplayerEquivalences(that).flatMap(a::extendIfCompatible));
     }
 
     private FunctionalIterator<AlphaEquivalence> roleplayerEquivalences(RelationConstraint that) {
         return Iterators.permutation(players()).flatMap(playersPermutation -> {
             Iterator<RolePlayer> thisRolePlayersIt = playersPermutation.iterator();
             Iterator<RolePlayer> thatRolePlayersIt = that.players().iterator();
-            AlphaEquivalence permutationMap = AlphaEquivalence.valid();
+            AlphaEquivalence permutationMap = AlphaEquivalence.empty();
             while (thisRolePlayersIt.hasNext() && thatRolePlayersIt.hasNext()) {
-                permutationMap = permutationMap.validIfAlphaEqual(thisRolePlayersIt.next(), thatRolePlayersIt.next()).firstOrNull();
+                permutationMap = thisRolePlayersIt.next().alphaEquals(thatRolePlayersIt.next())
+                        .flatMap(permutationMap::extendIfCompatible).firstOrNull();
                 if (permutationMap == null ) return Iterators.empty();
             }
             return Iterators.single(permutationMap);
@@ -224,9 +225,8 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
         @Override
         public FunctionalIterator<AlphaEquivalence> alphaEquals(RolePlayer that) {
-            return AlphaEquivalence.valid()
-                    .validIfAlphaEqual(roleType, that.roleType)
-                    .flatMap(a -> a.validIfAlphaEqual(player, that.player));
+            return AlphaEquivalence.alphaEquals(roleType, that.roleType)
+                    .flatMap(a -> player.alphaEquals(that.player).flatMap(a::extendIfCompatible));
         }
 
         public RolePlayer clone(Conjunction.Cloner cloner) {

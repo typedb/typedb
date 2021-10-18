@@ -44,11 +44,16 @@ public class AlphaEquivalence {
         this.reverseMap = reverseMap;
     }
 
-    public static AlphaEquivalence valid() {
+    public static AlphaEquivalence empty() {
         return new AlphaEquivalence(new HashMap<>(), new HashMap<>());
     }
 
-    public FunctionalIterator<AlphaEquivalence> addOrInvalidate(AlphaEquivalence alphaMap) {
+    public FunctionalIterator<AlphaEquivalence> alphaEqualIf(boolean condition) {
+        if (condition) return Iterators.single(this);
+        else return Iterators.empty();
+    }
+
+    public FunctionalIterator<AlphaEquivalence> extendIfCompatible(AlphaEquivalence alphaMap) {
         Optional<Map<Variable, Variable>> m = mergeVariableMapping(variableMapping(), alphaMap.variableMapping());
         Optional<Map<Variable, Variable>> r = mergeVariableMapping(reverseVariableMapping(), alphaMap.reverseVariableMapping());
         if (m.isPresent() && r.isPresent()) {
@@ -72,14 +77,7 @@ public class AlphaEquivalence {
         return Optional.of(existing);
     }
 
-    public <T extends AlphaEquivalent<T>> FunctionalIterator<AlphaEquivalence> validIfAlphaEqual(@Nullable T member1,
-                                                                                                 @Nullable T member2) {
-        if (member1 == null && member2 == null) return Iterators.single(this);
-        if (member1 != null && member2 != null) return member1.alphaEquals(member2).flatMap(this::addOrInvalidate);
-        return Iterators.empty();
-    }
-
-    public AlphaEquivalence addMapping(Variable from, Variable to) {
+    public AlphaEquivalence extend(Variable from, Variable to) {
         assert from.reference().isName() == to.reference().isName();
         Map<Variable, Variable> newMap = variableMapping();
         newMap.put(from, to);
@@ -88,12 +86,22 @@ public class AlphaEquivalence {
         return new AlphaEquivalence(newMap, reverseMap);
     }
 
-    public FunctionalIterator<AlphaEquivalence> validIf(boolean valid) {
-        if (valid) return Iterators.single(this);
-        else return Iterators.empty();
+    public static  <T extends AlphaEquivalent<T>> FunctionalIterator<AlphaEquivalence> alphaEquals(@Nullable T member1,
+                                                                                                   @Nullable T member2) {
+        if (member1 == null && member2 == null) return Iterators.single(empty());
+        if (member1 == null || member2 == null) return Iterators.empty();
+        else return member1.alphaEquals(member2);
     }
 
-    public Map<Retrievable, Retrievable> idMapping() {
+    public Map<Variable, Variable> variableMapping() {
+        return new HashMap<>(map);
+    }
+
+    private Map<Variable, Variable> reverseVariableMapping() {
+        return new HashMap<>(reverseMap);
+    }
+
+    public Map<Retrievable, Retrievable> retrievableMapping() {
         return variableMapping().entrySet().stream()
                 .map(e -> new AbstractMap.SimpleEntry<>(
                         e.getKey().id(),
@@ -108,21 +116,12 @@ public class AlphaEquivalence {
                 ));
     }
 
-    public Map<Variable, Variable> variableMapping() {
-        return new HashMap<>(map);
-    }
-
-    private Map<Variable, Variable> reverseVariableMapping() {
-        return new HashMap<>(reverseMap);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AlphaEquivalence that = (AlphaEquivalence) o;
-        return map.equals(that.map) &&
-                reverseMap.equals(that.reverseMap);
+        return map.equals(that.map) && reverseMap.equals(that.reverseMap);
     }
 
     @Override

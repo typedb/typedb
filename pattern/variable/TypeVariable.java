@@ -257,9 +257,9 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     @Override
     public FunctionalIterator<AlphaEquivalence> alphaEquals(TypeVariable that) {
         assert !inferredTypes().isEmpty();
-        return AlphaEquivalence.valid()
-                .validIf(id().isName() == that.id().isName())
-                .flatMap(a -> a.validIf(inferredTypes().equals(that.inferredTypes())))
-                .map(a -> a.addMapping(this, that));
+        return AlphaEquivalence.empty()
+                .alphaEqualIf(id().isName() == that.id().isName())
+                .flatMap(a -> a.alphaEqualIf(inferredTypes().equals(that.inferredTypes())))
+                .map(a -> a.extend(this, that));
     }
 }

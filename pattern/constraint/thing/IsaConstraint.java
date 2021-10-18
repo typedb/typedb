@@ -108,9 +108,9 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
 
     @Override
     public FunctionalIterator<AlphaEquivalence> alphaEquals(IsaConstraint that) {
-        return AlphaEquivalence.valid()
-                .validIf(isExplicit() == that.isExplicit())
-                .flatMap(a -> a.validIfAlphaEqual(type, that.type));
+        return AlphaEquivalence.empty()
+                .alphaEqualIf(isExplicit() == that.isExplicit())
+                .flatMap(a -> type.alphaEquals(that.type).flatMap(a::extendIfCompatible));
     }
 
     @Override

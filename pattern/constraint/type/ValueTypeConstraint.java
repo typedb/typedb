@@ -91,7 +91,7 @@ public class ValueTypeConstraint extends TypeConstraint implements AlphaEquivale
 
     @Override
     public FunctionalIterator<AlphaEquivalence> alphaEquals(ValueTypeConstraint that) {
-        return AlphaEquivalence.valid().validIf(valueType().equals(that.valueType()));
+        return AlphaEquivalence.empty().alphaEqualIf(valueType().equals(that.valueType()));
     }
 
     @Override

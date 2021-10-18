@@ -184,15 +184,15 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
     @Override
     public FunctionalIterator<AlphaEquivalence> alphaEquals(ValueConstraint<?> that) {
-        return AlphaEquivalence.valid()
-                .validIf(isLong() == that.isLong())
-                .flatMap(a -> a.validIf(isDouble() == that.isDouble()))
-                .flatMap(a -> a.validIf(isBoolean() == that.isBoolean()))
-                .flatMap(a -> a.validIf(isString() == that.isString()))
-                .flatMap(a -> a.validIf(isDateTime() == that.isDateTime()))
-                .flatMap(a -> a.validIf(!isVariable() && !that.isVariable()))
-                .flatMap(a -> a.validIf(this.predicate.equals(that.predicate)))
-                .flatMap(a -> a.validIf(this.value.equals(that.value)));
+        return AlphaEquivalence.empty()
+                .alphaEqualIf(isLong() == that.isLong())
+                .flatMap(a -> a.alphaEqualIf(isDouble() == that.isDouble()))
+                .flatMap(a -> a.alphaEqualIf(isBoolean() == that.isBoolean()))
+                .flatMap(a -> a.alphaEqualIf(isString() == that.isString()))
+                .flatMap(a -> a.alphaEqualIf(isDateTime() == that.isDateTime()))
+                .flatMap(a -> a.alphaEqualIf(!isVariable() && !that.isVariable()))
+                .flatMap(a -> a.alphaEqualIf(this.predicate.equals(that.predicate)))
+                .flatMap(a -> a.alphaEqualIf(this.value.equals(that.value)));
     }
 
     public static class Long extends ValueConstraint<java.lang.Long> {
@@ -389,11 +389,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public FunctionalIterator<AlphaEquivalence> alphaEquals(ValueConstraint<?> that) {
-            return AlphaEquivalence.valid()
-                    .validIf(isVariable() && that.isVariable())
-                    .flatMap(a -> a.validIf(this.predicate.equals(that.predicate)))
-                    .flatMap(a -> a.validIf(isVariable() && that.isVariable()))
-                    .flatMap(a -> a.validIfAlphaEqual(this.value, that.asVariable().value()));
+            return AlphaEquivalence.empty()
+                    .alphaEqualIf(isVariable() && that.isVariable())
+                    .flatMap(a -> a.alphaEqualIf(this.predicate.equals(that.predicate)))
+                    .flatMap(a -> a.alphaEqualIf(isVariable() && that.isVariable()))
+                    .flatMap(a -> this.value.alphaEquals(that.asVariable().value()).flatMap(a::extendIfCompatible));
         }
 
         @Override

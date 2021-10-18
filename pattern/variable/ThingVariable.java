@@ -251,9 +251,9 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
 
     @Override
     public FunctionalIterator<AlphaEquivalence> alphaEquals(ThingVariable that) {
-        return AlphaEquivalence.valid()
-                .validIf(id().isName() == that.id().isName())
-                .flatMap(a -> a.validIf(this.inferredTypes().equals(that.inferredTypes())))
-                .map(a -> a.addMapping(this, that));
+        return AlphaEquivalence.empty()
+                .alphaEqualIf(id().isName() == that.id().isName())
+                .flatMap(a -> a.alphaEqualIf(this.inferredTypes().equals(that.inferredTypes())))
+                .map(a -> a.extend(this, that));
     }
 }
