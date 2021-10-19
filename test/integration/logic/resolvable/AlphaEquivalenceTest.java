@@ -277,6 +277,76 @@ public class AlphaEquivalenceTest {
     }
 
     @Test
+    public void test_symmetric_relation_has_multiple_reflexive_results() {
+        schema("define siblingship sub relation, relates sibling; person sub entity, plays siblingship:sibling;");
+        Concludable r = relation(concludable("$r(sibling: $p, sibling: $c) isa siblingship", "$p isa person"));
+        Set<Map<String, String>> alphaMaps = r.alphaEquals(r).map(AlphaEquivalenceTest::alphaMapToStringMap).toSet();
+        Map<String, String> map1 = new HashMap<String, String>() {{
+            put("$r", "$r");
+            put("$p", "$p");
+            put("$c", "$c");
+            put("$_siblingship:sibling", "$_siblingship:sibling");
+            put("$_siblingship", "$_siblingship");
+        }};
+        Map<String, String> map2 = new HashMap<String, String>() {{
+            put("$r", "$r");
+            put("$p", "$c");
+            put("$c", "$p");
+            put("$_siblingship:sibling", "$_siblingship:sibling");
+            put("$_siblingship", "$_siblingship");
+        }};
+        assertEquals(set(map1, map2), alphaMaps);
+    }
+
+    @Test
+    public void test_symmetric_relation_by_roles_has_multiple_reflexive_results() {
+        schema("define employment sub relation, relates employee, relates employer; person sub entity, plays " +
+                       "employment:employee, plays employment:employer;");
+        Concludable r = relation(concludable("$r($role1: $p, $role2: $p) isa employment", "$p isa person"));
+        Set<Map<String, String>> alphaMaps = r.alphaEquals(r).map(AlphaEquivalenceTest::alphaMapToStringMap).toSet();
+        Map<String, String> map1 = new HashMap<String, String>() {{
+            put("$r", "$r");
+            put("$p", "$p");
+            put("$role1", "$role1");
+            put("$role2", "$role2");
+            put("$_employment", "$_employment");
+        }};
+        Map<String, String> map2 = new HashMap<String, String>() {{
+            put("$r", "$r");
+            put("$p", "$p");
+            put("$role1", "$role2");
+            put("$role2", "$role1");
+            put("$_employment", "$_employment");
+        }};
+        assertEquals(set(map1, map2), alphaMaps);
+    }
+
+    @Test
+    public void test_symmetric_relation_by_roles_and_roleplayers_has_multiple_reflexive_results() {
+        schema("define employment sub relation, relates employee, relates employer; person sub entity, plays " +
+                       "employment:employee, plays employment:employer;");
+        Concludable r = relation(concludable("$r($role1: $p1, $role2: $p2) isa employment", "$p isa person"));
+        Set<Map<String, String>> alphaMaps = r.alphaEquals(r).map(AlphaEquivalenceTest::alphaMapToStringMap).toSet();
+        Map<String, String> map1 = new HashMap<String, String>() {{
+            put("$r", "$r");
+            put("$p1", "$p1");
+            put("$p2", "$p2");
+            put("$role1", "$role1");
+            put("$role2", "$role2");
+            put("$_employment", "$_employment");
+        }};
+        Map<String, String> map2 = new HashMap<String, String>() {{
+            put("$r", "$r");
+            put("$p1", "$p2");
+            put("$p2", "$p1");
+            put("$role1", "$role2");
+            put("$role2", "$role1");
+            put("$_employment", "$_employment");
+        }};
+        assertEquals(set(map1, map2), alphaMaps);
+    }
+
+    @Test
     public void test_relation_with_duplicate_roleplayers_equivalent() {
         schema("define friendship sub relation, relates friend; " +
                        "person sub entity, plays friendship:friend;");
