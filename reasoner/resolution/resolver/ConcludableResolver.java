@@ -86,8 +86,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
     }
 
     protected AnswerState.Partial<?> applyRemapping(AnswerState.Partial<?> partial, Mapping mapping) {
-        partial.asConcludable().remap(mapping);
-        return partial;
+        return partial.asConcludable().remap(mapping);
     }
 
     private boolean isCycle(AnswerState.Partial<?> partialAnswer) {
