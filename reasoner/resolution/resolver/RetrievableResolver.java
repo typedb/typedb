@@ -21,11 +21,15 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+
+import static com.vaticle.typedb.common.collection.Collections.set;
 
 public class RetrievableResolver extends SubsumptiveCoordinator<RetrievableResolver> {
 
@@ -35,17 +39,23 @@ public class RetrievableResolver extends SubsumptiveCoordinator<RetrievableResol
     protected final Map<ConceptMap, Driver<BoundRetrievableResolver>> boundResolvers;
 
     public RetrievableResolver(Driver<RetrievableResolver> driver, Retrievable retrievable, ResolverRegistry registry) {
-        super(driver, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ")", registry);
+        super(driver, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ")",
+              createEquivalentMappings(retrievable), registry);
         this.retrievable = retrievable;
         this.boundResolvers = new HashMap<>();
     }
 
     @Override
-    Driver<BoundRetrievableResolver> getOrCreateBoundResolver(AnswerState.Partial<?> partial) {
-        return boundResolvers.computeIfAbsent(partial.conceptMap(), p -> {
-            LOG.debug("{}: Creating a new BoundRetrievableResolver for bounds: {}", name(), partial);
-            return registry.registerBoundRetrievable(retrievable, partial.conceptMap());
+    protected Driver<BoundRetrievableResolver> getOrCreateBoundResolver(AnswerState.Partial<?> partial, ConceptMap mapped) {
+        return boundResolvers.computeIfAbsent(mapped, p -> {
+            LOG.debug("{}: Creating a new BoundRetrievableResolver for bounds: {}", name(), mapped);
+            return registry.registerBoundRetrievable(retrievable, mapped);
         });
+    }
+
+    private static Set<Mapping> createEquivalentMappings(Retrievable retrievable) {
+        // TODO: compute all possible reflexive mappings. Requires conjunction equality. For now we use an identity mapping.
+        return set(Mapping.identity(retrievable.retrieves()));
     }
 
     @Override

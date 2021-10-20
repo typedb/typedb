@@ -22,11 +22,16 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
+import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
+import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+
+import static com.vaticle.typedb.common.collection.Collections.set;
 
 public class ConclusionResolver extends SubsumptiveCoordinator<ConclusionResolver> {
 
@@ -36,7 +41,8 @@ public class ConclusionResolver extends SubsumptiveCoordinator<ConclusionResolve
     protected final Map<ConceptMap, Driver<BoundConclusionResolver>> boundResolvers;
 
     public ConclusionResolver(Driver<ConclusionResolver> driver, Rule.Conclusion conclusion, ResolverRegistry registry) {
-        super(driver, ConclusionResolver.class.getSimpleName() + "(" + conclusion + ")", registry);
+        super(driver, ConclusionResolver.class.getSimpleName() + "(" + conclusion + ")", createEquivalentMappings(conclusion),
+              registry);
         this.conclusion = conclusion;
         this.isInitialised = false;
         this.boundResolvers = new HashMap<>();
@@ -53,11 +59,17 @@ public class ConclusionResolver extends SubsumptiveCoordinator<ConclusionResolve
         }
     }
 
+    private static Set<Mapping> createEquivalentMappings(Rule.Conclusion conclusion) {
+        // TODO: compute all possible reflexive mappings. Requires computation over the rule's `when`, requiring
+        //  conjunction equality. For now we use an identity mapping.
+        return set(Mapping.identity(conclusion.retrievableIds()));
+    }
+
     @Override
-    Driver<BoundConclusionResolver> getOrCreateBoundResolver(Partial<?> partial) {
-        return boundResolvers.computeIfAbsent(partial.conceptMap(), p -> {
-            LOG.debug("{}: Creating a new BoundConclusionResolver for bounds: {}", name(), partial);
-            return registry.registerBoundConclusion(conclusion, partial.conceptMap());
+    protected Driver<? extends Resolver<?>> getOrCreateBoundResolver(Partial<?> partial, ConceptMap mapped) {
+        return boundResolvers.computeIfAbsent(mapped, p -> {
+            LOG.debug("{}: Creating a new BoundConclusionResolver for bounds: {}", name(), mapped);
+            return registry.registerBoundConclusion(conclusion, mapped);
         });
     }
 

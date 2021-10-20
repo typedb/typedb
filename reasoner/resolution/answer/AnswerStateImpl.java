@@ -595,6 +595,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                 extends PartialImpl<PRNT> implements Concludable<PRNT> {
 
             private final Mapping mapping;
+            private Mapping remapping;
             private final com.vaticle.typedb.core.logic.resolvable.Concludable concludable;
 
             ConcludableImpl(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable,
@@ -602,6 +603,7 @@ public abstract class AnswerStateImpl implements AnswerState {
                 super(parent, conceptMap, root);
                 this.mapping = mapping;
                 this.concludable = concludable;
+                this.remapping = null;
             }
 
             @Override
@@ -631,6 +633,11 @@ public abstract class AnswerStateImpl implements AnswerState {
                                                                        P parent, boolean explainable) {
                     return new MatchImpl<>(mapping, concludable, parent, mapping.transform(parent.conceptMap()),
                                            parent.root(), explainable);
+                }
+
+                @Override
+                public Match<P> remap(Mapping remapping) {
+                    return new MatchImpl<>(mapping().combine(remapping), concludable(), parent(), remapping.transform(conceptMap()), root(), explainable());
                 }
 
                 @Override
@@ -714,6 +721,11 @@ public abstract class AnswerStateImpl implements AnswerState {
                                            com.vaticle.typedb.core.logic.resolvable.Concludable concludable,
                                            Compound.Root.Explain parent) {
                     return new ExplainImpl(null, mapping, concludable, parent, mapping.transform(parent.conceptMap()), parent.root());
+                }
+
+                @Override
+                public Explain remap(Mapping remapping) {
+                    return new ExplainImpl(explanation, mapping().combine(remapping), concludable(), parent(), remapping.transform(conceptMap()), root());
                 }
 
                 @Override

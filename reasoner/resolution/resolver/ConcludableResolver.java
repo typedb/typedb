@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver.BoundConcludableContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,8 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
     private final Map<ConceptMap, Driver<BoundConcludableResolver.Exploring>> exploringBoundResolvers;
 
     public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable, ResolverRegistry registry) {
-        super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")", registry);
+        super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
+              createEquivalentMappings(concludable), registry);
         this.concludable = concludable;
         this.conclusionResolvers = new LinkedHashMap<>();
         this.isInitialised = false;
@@ -58,23 +60,34 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
         return concludable;
     }
 
+    private static Set<Mapping> createEquivalentMappings(Concludable concludable) {
+        return concludable.alphaEquals(concludable).map(am -> Mapping.of(am.retrievableMapping())).toSet();
+    }
+
     @Override
-    Driver<? extends BoundConcludableResolver<?>> getOrCreateBoundResolver(AnswerState.Partial<?> partial) {
+    protected Driver<? extends BoundConcludableResolver<?>> getOrCreateBoundResolver(AnswerState.Partial<?> partial, ConceptMap mapped) {
+        // TODO: partial answer only needed for cycle detection
+        // Note: `mapped` is a different ConceptMap to that of the partial answer, an important optimisation.
         return boundResolversByPartial.computeIfAbsent(partial.asConcludable(), p -> {
             if (isCycle(p)) {
-                return blockedBoundResolvers.computeIfAbsent(partial.conceptMap(), conceptMap -> {
+                return blockedBoundResolvers.computeIfAbsent(mapped, conceptMap -> {
                     LOG.debug("{}: Creating a new BoundConcludableResolver.Blocked for bounds: {}", name(), partial);
                     BoundConcludableContext context = new BoundConcludableContext(concludable, conclusionResolvers);
                     return registry.registerBlocked(conceptMap, context);
                 });
             } else {
-                return exploringBoundResolvers.computeIfAbsent(partial.conceptMap(), conceptMap -> {
+                return exploringBoundResolvers.computeIfAbsent(mapped, conceptMap -> {
                     LOG.debug("{}: Creating a new BoundConcludableResolver.Exploring for bounds: {}", name(), partial);
                     BoundConcludableContext context = new BoundConcludableContext(concludable, conclusionResolvers);
                     return registry.registerExploring(conceptMap, context);
                 });
             }
         });
+    }
+
+    protected AnswerState.Partial<?> applyRemapping(AnswerState.Partial<?> partial, Mapping mapping) {
+        partial.asConcludable().remap(mapping);
+        return partial;
     }
 
     private boolean isCycle(AnswerState.Partial<?> partialAnswer) {

@@ -19,11 +19,13 @@ package com.vaticle.typedb.core.reasoner.resolution.answer;
 
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Mapping {
@@ -40,6 +42,12 @@ public class Mapping {
         return new Mapping(variableMap);
     }
 
+    public static Mapping identity(Set<? extends Retrievable> variables) {
+        Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable> mapping = new HashMap<>();
+        variables.forEach(var -> mapping.put(var, var));
+        return Mapping.of(mapping);
+    }
+
     public ConceptMap transform(ConceptMap conceptMap) {
         Map<Retrievable, Concept> transformed = new HashMap<>();
         for (Map.Entry<Retrievable, ? extends Concept> entry : conceptMap.concepts().entrySet()) {
@@ -54,7 +62,7 @@ public class Mapping {
     }
 
     public ConceptMap unTransform(ConceptMap conceptMap) {
-        assert reverseMapping.size() == conceptMap.concepts().size();
+        assert reverseMapping.size() >= conceptMap.concepts().size();
         Map<Retrievable, Concept> transformed = new HashMap<>();
         for (Map.Entry<Retrievable, ? extends Concept> entry : conceptMap.concepts().entrySet()) {
             Retrievable id = entry.getKey();
@@ -90,4 +98,13 @@ public class Mapping {
                 '}';
     }
 
+    public Mapping combine(Mapping remapping) {
+        Map<Retrievable, Retrievable> newMap = new HashMap<>();
+        mapping().forEach((key, value) -> {
+            Retrievable newVal = remapping.mapping().get(value);
+            assert newVal != null;
+            newMap.put(key, newVal);
+        });
+        return new Mapping(newMap);
+    }
 }
