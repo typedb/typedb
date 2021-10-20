@@ -59,8 +59,8 @@ public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordin
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
         ConceptMap conceptMap = fromUpstream.partialAnswer().conceptMap();
-        computeReflexiveMappings(conceptMap);
         Mapping mapping = reflexiveMappings.get(conceptMap);
+        if (mapping == null) mapping = computeReflexiveMappings(conceptMap);
         Driver<? extends Resolver<?>> worker = getOrCreateBoundResolver(fromUpstream.partialAnswer(),
                                                                         mapping.transform(conceptMap));
         Request.Factory requestFactory = getOrCreateRequestFactory(fromUpstream.partialAnswer(), worker, mapping);
@@ -74,8 +74,8 @@ public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordin
         assert isInitialised;
         if (isTerminated()) return;
         ConceptMap conceptMap = fromUpstream.visit().partialAnswer().conceptMap();
-        computeReflexiveMappings(conceptMap);
         Mapping mapping = reflexiveMappings.get(conceptMap);
+        if (mapping == null) mapping = computeReflexiveMappings(conceptMap);
         Driver<? extends Resolver<?>> worker = getOrCreateBoundResolver(fromUpstream.visit().partialAnswer(),
                                                                         mapping.transform(conceptMap));
         Request.Factory requestFactory = getOrCreateRequestFactory(fromUpstream.visit().partialAnswer(), worker, mapping);
@@ -83,10 +83,9 @@ public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordin
         revisitDownstream(revisit, fromUpstream);
     }
 
-    protected void computeReflexiveMappings(ConceptMap conceptMap) {
-        if (reflexiveMappings.get(conceptMap) == null) {
-            equivalentMappings.forEach(m -> reflexiveMappings.put(m.unTransform(conceptMap), m));
-        }
+    protected Mapping computeReflexiveMappings(ConceptMap conceptMap) {
+        equivalentMappings.forEach(m -> reflexiveMappings.put(m.unTransform(conceptMap), m));
+        return reflexiveMappings.get(conceptMap);
     }
 
     private Request.Factory getOrCreateRequestFactory(AnswerState.Partial<?> partial, Driver<? extends Resolver<?>> receiver, Mapping mapping) {

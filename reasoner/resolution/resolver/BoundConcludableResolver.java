@@ -57,10 +57,9 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
     protected final AnswerCache<ConceptMap> matchCache;
     private final AnswerCache<Partial.Concludable<?>> explainCache;
 
-    protected BoundConcludableResolver(Driver<RESOLVER> driver, BoundConcludableContext context,
+    protected BoundConcludableResolver(Driver<RESOLVER> driver, String name, BoundConcludableContext context,
                                        ConceptMap bounds, ResolverRegistry registry) {
-        super(driver, BoundConcludableResolver.class.getSimpleName() + "(pattern: " +
-                context.concludable().pattern() + ", bounds: " + bounds.concepts().toString() + ")", registry);
+        super(driver, name, registry);
         this.context = context;
         this.bounds = bounds;
         this.matchCache = new AnswerCache<>(() -> traversalIterator(context.concludable().pattern(), bounds));
@@ -191,7 +190,9 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
 
         public Exploring(Driver<Exploring> driver, BoundConcludableContext context,
                          ConceptMap bounds, ResolverRegistry registry) {
-            super(driver, context, bounds, registry);
+            super(driver, BoundConcludableResolver.Exploring.class.getSimpleName() + "(pattern: " +
+                    context.concludable().pattern() + ", bounds: " + bounds.concepts().toString() + ")", context,
+                  bounds, registry);
             this.resolutionStates = new HashMap<>();
             this.explorationManagers = new HashMap<>();
         }
@@ -338,7 +339,9 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
 
         public Blocked(Driver<Blocked> driver, BoundConcludableContext context, ConceptMap bounds,
                        ResolverRegistry registry) {
-            super(driver, context, bounds, registry);
+            super(driver, BoundConcludableResolver.Blocked.class.getSimpleName() + "(pattern: " +
+                          context.concludable().pattern() + ", bounds: " + bounds.concepts().toString() + ")",
+                  context, bounds, registry);
             this.resolutionStates = new HashMap<>();
         }
 

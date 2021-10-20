@@ -100,6 +100,7 @@ public class Mapping {
 
     public Mapping combine(Mapping remapping) {
         Map<Retrievable, Retrievable> newMap = new HashMap<>();
+        assert mapping().size() == remapping.mapping().size();
         mapping().forEach((key, value) -> {
             Retrievable newVal = remapping.mapping().get(value);
             assert newVal != null;
