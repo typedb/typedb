@@ -55,6 +55,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -883,14 +884,16 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         private void fromConstraint(HasConstraint hasConstraint) {
             Set<LabelConstraint> labelConstraints = set(labelConstraints(hasConstraint), hasConstraint.attribute().isa().map(Extractor::labelConstraints).orElse(set()));
-            concludables.add(Has.of(hasConstraint, hasConstraint.attribute().isa().orElse(null), hasConstraint.attribute().value(), labelConstraints));
+            Set<ValueConstraint<?>> valueConstraints = Iterators.iterate(hasConstraint.attribute().value()).filter(v -> !v.isVariable()).toSet();
+            concludables.add(Has.of(hasConstraint, hasConstraint.attribute().isa().orElse(null), valueConstraints, labelConstraints));
             isaOwnersToSkip.add(hasConstraint.attribute());
             valueOwnersToSkip.add(hasConstraint.attribute());
         }
 
         public void fromConstraint(IsaConstraint isaConstraint) {
             if (isaOwnersToSkip.contains(isaConstraint.owner())) return;
-            concludables.add(Concludable.Isa.of(isaConstraint, isaConstraint.owner().value(), labelConstraints(isaConstraint)));
+            Set<ValueConstraint<?>> valueConstraints = Iterators.iterate(isaConstraint.owner().value()).filter(v -> !v.isVariable()).toSet();
+            concludables.add(Concludable.Isa.of(isaConstraint, valueConstraints, labelConstraints(isaConstraint)));
             isaOwnersToSkip.add(isaConstraint.owner());
             valueOwnersToSkip.add(isaConstraint.owner());
         }
