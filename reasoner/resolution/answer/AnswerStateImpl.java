@@ -637,7 +637,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Match<P> remap(Mapping remapping) {
-                    return new MatchImpl<>(mapping().combine(remapping), concludable(), parent(), remapping.transform(conceptMap()), root(), explainable());
+                    return new MatchImpl<>(mapping().remap(remapping), concludable(), parent(), remapping.transform(conceptMap()), root(), explainable());
                 }
 
                 @Override
@@ -725,7 +725,7 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Explain remap(Mapping remapping) {
-                    return new ExplainImpl(explanation, mapping().combine(remapping), concludable(), parent(), remapping.transform(conceptMap()), root());
+                    return new ExplainImpl(explanation, mapping().remap(remapping), concludable(), parent(), remapping.transform(conceptMap()), root());
                 }
 
                 @Override
