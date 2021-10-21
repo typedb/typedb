@@ -69,7 +69,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
         // TODO: partial answer only needed for cycle detection
         // Note: `mapped` is a different ConceptMap to that of the partial answer, an important optimisation.
         return boundResolversByPartial.computeIfAbsent(partial.asConcludable(), p -> {
-            if (isCycle(p)) {
+            if (isCycle(p, mapped)) {
                 return blockedBoundResolvers.computeIfAbsent(mapped, conceptMap -> {
                     LOG.debug("{}: Creating a new BoundConcludableResolver.Blocked for bounds: {}", name(), partial);
                     BoundConcludableContext context = new BoundConcludableContext(concludable, conclusionResolvers);
@@ -89,8 +89,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
         return partial.asConcludable().remap(mapping);
     }
 
-    private boolean isCycle(AnswerState.Partial<?> partialAnswer) {
-        ConceptMap bounds = partialAnswer.conceptMap();
+    private boolean isCycle(AnswerState.Partial<?> partialAnswer, ConceptMap bounds) {
         AnswerState.Partial<?> ans = partialAnswer;
         while (ans.parent().isPartial()) {
             ans = ans.parent().asPartial();
