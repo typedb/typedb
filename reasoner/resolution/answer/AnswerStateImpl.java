@@ -595,7 +595,6 @@ public abstract class AnswerStateImpl implements AnswerState {
                 extends PartialImpl<PRNT> implements Concludable<PRNT> {
 
             private final Mapping mapping;
-            private Mapping remapping;
             private final com.vaticle.typedb.core.logic.resolvable.Concludable concludable;
 
             ConcludableImpl(Mapping mapping, com.vaticle.typedb.core.logic.resolvable.Concludable concludable,
@@ -603,7 +602,6 @@ public abstract class AnswerStateImpl implements AnswerState {
                 super(parent, conceptMap, root);
                 this.mapping = mapping;
                 this.concludable = concludable;
-                this.remapping = null;
             }
 
             @Override
@@ -725,13 +723,14 @@ public abstract class AnswerStateImpl implements AnswerState {
 
                 @Override
                 public Explain remap(Mapping remapping) {
-                    return new ExplainImpl(explanation, mapping().remap(remapping), concludable(), parent(), remapping.transform(conceptMap()), root());
+                    assert explanation == null;
+                    return new ExplainImpl(null, mapping().remap(remapping), concludable(), parent(), remapping.transform(conceptMap()), root());
                 }
 
                 @Override
-                public Explain with(ConceptMap extension, Rule rule, ConceptMap conclusionAnser, Unifier unifier, ConceptMap conditionAnswer) {
+                public Explain with(ConceptMap extension, Rule rule, ConceptMap conclusionAnswer, Unifier unifier, ConceptMap conditionAnswer) {
                     assert this.explanation == null;
-                    Explanation explanation = new Explanation(rule, transitiveMapping(mapping(), unifier), conclusionAnser, conditionAnswer);
+                    Explanation explanation = new Explanation(rule, transitiveMapping(mapping(), unifier), conclusionAnswer, conditionAnswer);
                     return new ExplainImpl(explanation, mapping(), concludable(), parent(), extendAnswer(extension), root());
                 }
 

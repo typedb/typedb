@@ -73,7 +73,7 @@ public class Mapping {
         return new ConceptMap(transformed); // we ignore explainables because they can't be mapped here
     }
 
-    Map<Retrievable, Retrievable> mapping() {
+    public Map<Retrievable, Retrievable> mapping() {
         return mapping;
     }
 
