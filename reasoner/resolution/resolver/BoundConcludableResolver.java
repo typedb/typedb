@@ -362,6 +362,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             LOG.trace("{}: received Visit: {}", name(), fromUpstream);
             if (isTerminated()) return;
             assert fromUpstream.partialAnswer().isConcludable();
+            assert !fromUpstream.partialAnswer().asConcludable().isExplain();
             sendNextMessage(fromUpstream, getOrCreateResolutionState(fromUpstream));
         }
 
@@ -370,6 +371,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
             if (isTerminated()) return;
             assert fromUpstream.visit().partialAnswer().isConcludable();
+            assert !fromUpstream.visit().partialAnswer().asConcludable().isExplain();
             BoundConcludableResolutionState<?> resolutionState = getOrCreateResolutionState(fromUpstream.visit());
 
             // Similar to sendNextMessage
