@@ -122,7 +122,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
     public abstract boolean isInferredAnswer(ConceptMap conceptMap);
 
-    public abstract AlphaEquivalence alphaEquals(Concludable that);
+    public abstract FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that);
 
     public boolean isRelation() { return false; }
 
@@ -265,6 +265,17 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         return predicateFn;
     }
 
+    private static FunctionalIterator<AlphaEquivalence> alphaEqualValueConstraints(Set<ValueConstraint<?>> set1,
+                                                                                   Set<ValueConstraint<?>> set2) {
+        if (set1.size() != set2.size()) return Iterators.empty();
+        else {
+            for (ValueConstraint<?> s1 : set1) {
+                if (!Iterators.iterate(set2).flatMap(s1::alphaEquals).first().isPresent()) return Iterators.empty();
+            }
+            return Iterators.single(AlphaEquivalence.empty());
+        }
+    }
+
     protected void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values,
                                                 Retrievable id, Retrievable unifiedId) {
         for (ValueConstraint<?> value : equalsConstantConstraints(values)) {
@@ -313,6 +324,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         public RelationConstraint relation() {
             return relation;
+        }
+
+        public IsaConstraint isa() {
+            return isa;
         }
 
         @Override
@@ -446,9 +461,12 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(Concludable that) {
-            if (!that.isRelation()) return AlphaEquivalence.invalid();
-            return relation().owner().alphaEquals(that.asRelation().relation().owner());
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
+            return AlphaEquivalence.empty()
+                    .alphaEqualIf(that.isRelation())
+                    .flatMap(a -> relation().owner().alphaEquals(that.asRelation().relation().owner()).flatMap(a::extendIfCompatible))
+                    .flatMap(a -> AlphaEquivalence.alphaEquals(isa(), that.asRelation().isa()).flatMap(a::extendIfCompatible))
+                    .flatMap(a -> relation().alphaEquals(that.asRelation().relation()).flatMap(a::extendIfCompatible));
         }
     }
 
@@ -502,6 +520,14 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         public HasConstraint has() {
             return has;
+        }
+
+        public Set<ValueConstraint<?>> values() {
+            return values;
+        }
+
+        public Optional<IsaConstraint> isa() {
+            return Optional.ofNullable(isa);
         }
 
         @Override
@@ -583,9 +609,14 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(Concludable that) {
-            if (!that.isHas()) return AlphaEquivalence.invalid();
-            return has().owner().alphaEquals(that.asHas().has().owner());
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
+            return AlphaEquivalence.empty().alphaEqualIf(that.isHas())
+                    .flatMap(a -> owner().alphaEquals(that.asHas().owner()).flatMap(a::extendIfCompatible))
+                    .flatMap(a -> has().alphaEquals(that.asHas().has()).flatMap(a::extendIfCompatible))
+                    .flatMap(a -> AlphaEquivalence.alphaEquals(isa().orElse(null), that.asHas().isa().orElse(null))
+                            .flatMap(a::extendIfCompatible))
+                    .flatMap(a -> alphaEqualValueConstraints(values(), that.asHas().values())
+                            .flatMap(a::extendIfCompatible));
         }
 
     }
@@ -617,6 +648,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         public IsaConstraint isa() {
             return isa;
+        }
+
+        public Set<ValueConstraint<?>> values() {
+            return values;
         }
 
         @Override
@@ -697,9 +732,11 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(Concludable that) {
-            if (!that.isIsa()) return AlphaEquivalence.invalid();
-            return isa().owner().alphaEquals(that.asIsa().isa().owner());
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
+            return AlphaEquivalence.empty().alphaEqualIf(that.isIsa())
+                    .flatMap(a -> isa().owner().alphaEquals(that.asIsa().isa().owner()).flatMap(a::extendIfCompatible))
+                    .flatMap(a -> isa().alphaEquals(that.asIsa().isa()).flatMap(a::extendIfCompatible))
+                    .flatMap(a -> alphaEqualValueConstraints(values(), that.asIsa().values()).flatMap(a::extendIfCompatible));
         }
     }
 
@@ -750,6 +787,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         public ThingVariable attribute() {
             return attribute;
+        }
+
+        public Set<ValueConstraint<?>> values() {
+            return values;
         }
 
         @Override
@@ -807,9 +848,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(Concludable that) {
-            if (!that.isAttribute()) return AlphaEquivalence.invalid();
-            return attribute.alphaEquals(that.asAttribute().attribute);
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
+            return AlphaEquivalence.empty().alphaEqualIf(that.isAttribute())
+                    .flatMap(a -> attribute().alphaEquals(that.asAttribute().attribute()).flatMap(a::extendIfCompatible))
+                    .flatMap(a -> alphaEqualValueConstraints(values(), that.asAttribute().values()).flatMap(a::extendIfCompatible));
         }
     }
 

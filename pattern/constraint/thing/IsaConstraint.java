@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.pattern.constraint.thing;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
@@ -106,10 +107,10 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
     }
 
     @Override
-    public AlphaEquivalence alphaEquals(IsaConstraint that) {
-        return AlphaEquivalence.valid()
-                .validIf(isExplicit() == that.isExplicit())
-                .validIfAlphaEqual(type, that.type);
+    public FunctionalIterator<AlphaEquivalence> alphaEquals(IsaConstraint that) {
+        return AlphaEquivalence.empty()
+                .alphaEqualIf(isExplicit() == that.isExplicit())
+                .flatMap(a -> type.alphaEquals(that.type).flatMap(a::extendIfCompatible));
     }
 
     @Override

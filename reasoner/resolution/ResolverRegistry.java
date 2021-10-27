@@ -230,9 +230,9 @@ public class ResolverRegistry {
     private Optional<ResolverView.MappedConcludable> getConcludableResolver(Concludable concludable) {
         for (Map.Entry<Concludable, Actor.Driver<ConcludableResolver>> c : concludableResolvers.entrySet()) {
             // TODO: This needs to be optimised from a linear search to use an alpha hash
-            AlphaEquivalence alphaEquality = concludable.alphaEquals(c.getKey());
-            if (alphaEquality.isValid()) {
-                return Optional.of(ResolverView.concludable(c.getValue(), alphaEquality.asValid().idMapping()));
+            Optional<AlphaEquivalence> alphaEquality = concludable.alphaEquals(c.getKey()).first();
+            if (alphaEquality.isPresent()) {
+                return Optional.of(ResolverView.concludable(c.getValue(), alphaEquality.get().retrievableMapping()));
             }
         }
         return Optional.empty();

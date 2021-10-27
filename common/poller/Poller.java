@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.common.poller;
 
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 public interface Poller<T> {
 

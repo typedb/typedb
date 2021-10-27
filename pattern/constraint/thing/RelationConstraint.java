@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.pattern.constraint.thing;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
@@ -136,19 +137,24 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
     }
 
     @Override
-    public AlphaEquivalence alphaEquals(RelationConstraint that) {
-        return AlphaEquivalence.valid()
-                .validIf(players().size() == that.players().size())
-                .addOrInvalidate(() -> Iterators.permutation(players()).stream().map(playersPermutation -> {
-                    Iterator<RolePlayer> thisRolePlayersIt = playersPermutation.iterator();
-                    Iterator<RolePlayer> thatRolePlayersIt = that.players().iterator();
-                    AlphaEquivalence permutationMap = AlphaEquivalence.valid();
-                    while (thisRolePlayersIt.hasNext() && thatRolePlayersIt.hasNext()) {
-                        permutationMap = permutationMap.validIfAlphaEqual(thisRolePlayersIt.next(), thatRolePlayersIt.next());
-                        if (!permutationMap.isValid()) return permutationMap;
-                    }
-                    return permutationMap;
-                }).filter(AlphaEquivalence::isValid).findFirst().orElse(AlphaEquivalence.invalid()));
+    public FunctionalIterator<AlphaEquivalence> alphaEquals(RelationConstraint that) {
+        return AlphaEquivalence.empty()
+                .alphaEqualIf(players().size() == that.players().size())
+                .flatMap(a -> roleplayerEquivalences(that).flatMap(a::extendIfCompatible));
+    }
+
+    private FunctionalIterator<AlphaEquivalence> roleplayerEquivalences(RelationConstraint that) {
+        return Iterators.permutation(players()).flatMap(playersPermutation -> {
+            Iterator<RolePlayer> thisRolePlayersIt = playersPermutation.iterator();
+            Iterator<RolePlayer> thatRolePlayersIt = that.players().iterator();
+            AlphaEquivalence permutationMap = AlphaEquivalence.empty();
+            while (thisRolePlayersIt.hasNext() && thatRolePlayersIt.hasNext()) {
+                permutationMap = thisRolePlayersIt.next().alphaEquals(thatRolePlayersIt.next())
+                        .flatMap(permutationMap::extendIfCompatible).firstOrNull();
+                if (permutationMap == null ) return Iterators.empty();
+            }
+            return Iterators.single(permutationMap);
+        }).distinct();
     }
 
     public static class RolePlayer implements AlphaEquivalent<RolePlayer> {
@@ -218,10 +224,9 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(RolePlayer that) {
-            return AlphaEquivalence.valid()
-                    .validIfAlphaEqual(roleType, that.roleType)
-                    .validIfAlphaEqual(player, that.player);
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(RolePlayer that) {
+            return AlphaEquivalence.alphaEquals(roleType, that.roleType)
+                    .flatMap(a -> player.alphaEquals(that.player).flatMap(a::extendIfCompatible));
         }
 
         public RolePlayer clone(Conjunction.Cloner cloner) {

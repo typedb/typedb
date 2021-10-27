@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 
 public class AnswerCache<ANSWER> {
 

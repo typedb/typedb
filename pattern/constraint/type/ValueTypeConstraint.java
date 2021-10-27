@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.pattern.constraint.type;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
@@ -89,8 +90,8 @@ public class ValueTypeConstraint extends TypeConstraint implements AlphaEquivale
     }
 
     @Override
-    public AlphaEquivalence alphaEquals(ValueTypeConstraint that) {
-        return AlphaEquivalence.valid().validIf(valueType().equals(that.valueType()));
+    public FunctionalIterator<AlphaEquivalence> alphaEquals(ValueTypeConstraint that) {
+        return AlphaEquivalence.empty().alphaEqualIf(valueType().equals(that.valueType()));
     }
 
     @Override
