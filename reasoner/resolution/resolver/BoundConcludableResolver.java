@@ -297,11 +297,11 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
         }
 
         private boolean startsHere(Set<Cycle> cycles) {
-            return iterate(cycles).filter(c -> !startsHere(c)).first().isEmpty();
+            return iterate(cycles).filter(c -> startsHere(c)).first().isPresent();
         }
 
         private boolean startsHere(Cycle cycle) {
-            return cycle.end().equals(context.concludable());
+            return cycle.endConcludable().equals(context.concludable()) && cycle.endBounds().equals(bounds);
         }
 
         private BoundConcludableResolutionState<?> getOrCreateResolutionState(Request.Visit fromUpstream) {
@@ -351,7 +351,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             } else if (resolutionState.cache().isComplete()) {
                 failToUpstream(visit);
             } else {
-                blockToUpstream(visit, set(new Cycle(context.concludable(), resolutionState.cache().size())));
+                blockToUpstream(visit, set(new Cycle(context.concludable(), bounds, resolutionState.cache().size())));
             }
         }
 
@@ -386,7 +386,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
                     if (resolutionState.singleAnswerRequired()) resolutionState.cache().setComplete();
                     answerToUpstream(upstreamAnswer.get(), fromUpstream.visit());
                 } else {
-                    blockToUpstream(fromUpstream.visit(), set(new Cycle(context.concludable(), resolutionState.cache().size())));
+                    blockToUpstream(fromUpstream.visit(), set(new Cycle(context.concludable(), bounds, resolutionState.cache().size())));
                 }
             }
         }

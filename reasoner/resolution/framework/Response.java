@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
@@ -179,16 +180,22 @@ public abstract class Response {
 
         public static class Cycle {
 
+            private final Concludable endConcludable;
+            private final ConceptMap endBounds;
             private final int numAnswersSeen;
-            private final Concludable end;
 
-            public Cycle(Concludable end, int numAnswersSeen) {
-                this.end = end;
+            public Cycle(Concludable endConcludable, ConceptMap endBounds, int numAnswersSeen) {
+                this.endConcludable = endConcludable;
+                this.endBounds = endBounds;
                 this.numAnswersSeen = numAnswersSeen;
             }
 
-            public Concludable end() {
-                return end;
+            public Concludable endConcludable() {
+                return endConcludable;
+            }
+
+            public ConceptMap endBounds() {
+                return endBounds;
             }
 
             public int numAnswersSeen() {
@@ -200,18 +207,21 @@ public abstract class Response {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 Cycle cycle = (Cycle) o;
-                return numAnswersSeen == cycle.numAnswersSeen && end.equals(cycle.end);
+                return numAnswersSeen == cycle.numAnswersSeen &&
+                        endConcludable.equals(cycle.endConcludable) &&
+                        endBounds.equals(cycle.endBounds);
             }
 
             @Override
             public int hashCode() {
-                return Objects.hash(numAnswersSeen, end);
+                return Objects.hash(endConcludable, endBounds, numAnswersSeen);
             }
 
             @Override
             public String toString() {
                 return "Cycle{" +
-                        "resolver=" + end.toString() +
+                        "endConcludable=" + endConcludable.pattern().toString() +
+                        ", endBounds=" + endBounds +
                         ", numAnswersSeen=" + numAnswersSeen +
                         '}';
             }
