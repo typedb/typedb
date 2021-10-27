@@ -21,11 +21,12 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Answer;
-import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,12 +40,17 @@ public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordin
 
     private static final Logger LOG = LoggerFactory.getLogger(SubsumptiveCoordinator.class);
     private final Map<AnswerState.Partial<?>, Request.Factory> requestFactories;
+    protected final Set<Mapping> equivalentMappings;
+    protected final Map<ConceptMap, Mapping> reflexiveMappings;
     protected boolean isInitialised;
 
-    public SubsumptiveCoordinator(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
+    protected SubsumptiveCoordinator(Driver<RESOLVER> driver, String name, Set<Mapping> equivalentMappings,
+                                     ResolverRegistry registry) {
         super(driver, name, registry);
         this.isInitialised = false;
         this.requestFactories = new HashMap<>();
+        this.equivalentMappings = equivalentMappings;
+        this.reflexiveMappings = new HashMap<>();
     }
 
     @Override
@@ -52,8 +58,12 @@ public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordin
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
-        Driver<? extends Resolver<?>> worker = getOrCreateBoundResolver(fromUpstream.partialAnswer());
-        Request.Factory requestFactory = getOrCreateRequestFactory(fromUpstream.partialAnswer(), worker);
+        ConceptMap conceptMap = fromUpstream.partialAnswer().conceptMap();
+        Mapping mapping = reflexiveMappings.get(conceptMap);
+        if (mapping == null) mapping = computeReflexiveMappings(conceptMap);
+        Driver<? extends Resolver<?>> worker = getOrCreateBoundResolver(fromUpstream.partialAnswer(),
+                                                                        mapping.transform(conceptMap));
+        Request.Factory requestFactory = getOrCreateRequestFactory(fromUpstream.partialAnswer(), worker, mapping);
         Request.Visit visit = requestFactory.createVisit(fromUpstream.trace());
         visitDownstream(visit, fromUpstream);
     }
@@ -63,14 +73,28 @@ public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordin
         LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
         assert isInitialised;
         if (isTerminated()) return;
-        Driver<? extends Resolver<?>> worker = getOrCreateBoundResolver(fromUpstream.visit().partialAnswer());
-        Request.Factory requestFactory = getOrCreateRequestFactory(fromUpstream.visit().partialAnswer(), worker);
+        ConceptMap conceptMap = fromUpstream.visit().partialAnswer().conceptMap();
+        Mapping mapping = reflexiveMappings.get(conceptMap);
+        if (mapping == null) mapping = computeReflexiveMappings(conceptMap);
+        Driver<? extends Resolver<?>> worker = getOrCreateBoundResolver(fromUpstream.visit().partialAnswer(),
+                                                                        mapping.transform(conceptMap));
+        Request.Factory requestFactory = getOrCreateRequestFactory(fromUpstream.visit().partialAnswer(), worker, mapping);
         Request.Revisit revisit = requestFactory.createRevisit(fromUpstream.trace(), fromUpstream.cycles());
         revisitDownstream(revisit, fromUpstream);
     }
 
-    private Request.Factory getOrCreateRequestFactory(AnswerState.Partial<?> partial, Driver<? extends Resolver<?>> receiver) {
-        return requestFactories.computeIfAbsent(partial, p -> Request.Factory.create(driver(), receiver, p));
+    protected Mapping computeReflexiveMappings(ConceptMap conceptMap) {
+        equivalentMappings.forEach(m -> reflexiveMappings.put(m.unTransform(conceptMap), m));
+        return reflexiveMappings.get(conceptMap);
+    }
+
+    private Request.Factory getOrCreateRequestFactory(AnswerState.Partial<?> partial, Driver<? extends Resolver<?>> receiver, Mapping mapping) {
+        return requestFactories.computeIfAbsent(partial, p -> Request.Factory.create(driver(), receiver, applyRemapping(p, mapping)));
+    }
+
+    protected AnswerState.Partial<?> applyRemapping(AnswerState.Partial<?> partial, Mapping mapping) {
+        // TODO: This is a no-op for Retrievable and Conclusion until they can be reflexively re-mapped.
+        return partial;
     }
 
     @Override
@@ -80,7 +104,7 @@ public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordin
         blockToUpstream(fromUpstream(fromDownstream.sourceRequest().visit()), fromDownstream.cycles());
     }
 
-    abstract Driver<? extends Resolver<?>> getOrCreateBoundResolver(AnswerState.Partial<?> partial);
+    protected abstract Driver<? extends Resolver<?>> getOrCreateBoundResolver(AnswerState.Partial<?> partial, ConceptMap mapped);  // TODO: partial answer only required for cycle detection
 
     @Override
     protected void receiveAnswer(Answer answer) {
@@ -128,7 +152,7 @@ public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordin
 
         private Set<ConceptMap> subsumingConceptMaps(ConceptMap fromUpstream) {
             Set<ConceptMap> subsumers = new HashSet<>();
-            Map<Identifier.Variable.Retrievable, Concept> concepts = new HashMap<>(fromUpstream.concepts());
+            Map<Retrievable, Concept> concepts = new HashMap<>(fromUpstream.concepts());
             powerSet(concepts.entrySet()).forEach(c -> subsumers.add(toConceptMap(c)));
             subsumers.remove(fromUpstream);
             return subsumers;
@@ -145,8 +169,8 @@ public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordin
             return powerSet;
         }
 
-        private ConceptMap toConceptMap(Set<Map.Entry<Identifier.Variable.Retrievable, Concept>> conceptsEntrySet) {
-            HashMap<Identifier.Variable.Retrievable, Concept> map = new HashMap<>();
+        private ConceptMap toConceptMap(Set<Map.Entry<Retrievable, Concept>> conceptsEntrySet) {
+            HashMap<Retrievable, Concept> map = new HashMap<>();
             conceptsEntrySet.forEach(entry -> map.put(entry.getKey(), entry.getValue()));
             return new ConceptMap(map);
         }

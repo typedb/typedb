@@ -55,16 +55,13 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
     protected final ConceptMap bounds;
     protected final BoundConcludableContext context;
     protected final AnswerCache<ConceptMap> matchCache;
-    private final AnswerCache<Partial.Concludable<?>> explainCache;
 
-    protected BoundConcludableResolver(Driver<RESOLVER> driver, BoundConcludableContext context,
+    protected BoundConcludableResolver(Driver<RESOLVER> driver, String name, BoundConcludableContext context,
                                        ConceptMap bounds, ResolverRegistry registry) {
-        super(driver, BoundConcludableResolver.class.getSimpleName() + "(pattern: " +
-                context.concludable().pattern() + ", bounds: " + bounds.concepts().toString() + ")", registry);
+        super(driver, name, registry);
         this.context = context;
         this.bounds = bounds;
         this.matchCache = new AnswerCache<>(() -> traversalIterator(context.concludable().pattern(), bounds));
-        this.explainCache = new AnswerCache<>(Iterators::empty);  // TODO: This does nothing useful, delete it when answers are used directly as soon as they are found
     }
 
     @Override
@@ -101,7 +98,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
 
     protected BoundConcludableResolutionState<?> createResolutionState(Partial<?> fromUpstream) {
         if (fromUpstream.asConcludable().isExplain()) {
-            return new ExplainResolutionState(fromUpstream, explainCache);
+            return new ExplainResolutionState(fromUpstream, new AnswerCache<>(Iterators::empty));  // TODO: This cache is only useful when the same exact explain request is made more than once. Delete it when answers are used directly as soon as they are found.
         } else {
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars());
             return new MatchResolutionState(fromUpstream, matchCache, singleAnswerRequired);
@@ -191,7 +188,9 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
 
         public Exploring(Driver<Exploring> driver, BoundConcludableContext context,
                          ConceptMap bounds, ResolverRegistry registry) {
-            super(driver, context, bounds, registry);
+            super(driver, BoundConcludableResolver.Exploring.class.getSimpleName() + "(pattern: " +
+                    context.concludable().pattern() + ", bounds: " + bounds.concepts().toString() + ")", context,
+                  bounds, registry);
             this.resolutionStates = new HashMap<>();
             this.explorationManagers = new HashMap<>();
         }
@@ -338,7 +337,9 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
 
         public Blocked(Driver<Blocked> driver, BoundConcludableContext context, ConceptMap bounds,
                        ResolverRegistry registry) {
-            super(driver, context, bounds, registry);
+            super(driver, BoundConcludableResolver.Blocked.class.getSimpleName() + "(pattern: " +
+                          context.concludable().pattern() + ", bounds: " + bounds.concepts().toString() + ")",
+                  context, bounds, registry);
             this.resolutionStates = new HashMap<>();
         }
 
@@ -359,6 +360,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             LOG.trace("{}: received Visit: {}", name(), fromUpstream);
             if (isTerminated()) return;
             assert fromUpstream.partialAnswer().isConcludable();
+            assert !fromUpstream.partialAnswer().asConcludable().isExplain();
             sendNextMessage(fromUpstream, getOrCreateResolutionState(fromUpstream));
         }
 
@@ -367,6 +369,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
             if (isTerminated()) return;
             assert fromUpstream.visit().partialAnswer().isConcludable();
+            assert !fromUpstream.visit().partialAnswer().asConcludable().isExplain();
             BoundConcludableResolutionState<?> resolutionState = getOrCreateResolutionState(fromUpstream.visit());
 
             // Similar to sendNextMessage

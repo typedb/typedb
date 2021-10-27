@@ -634,6 +634,11 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 @Override
+                public Match<P> remap(Mapping remapping) {
+                    return new MatchImpl<>(mapping().remap(remapping), concludable(), parent(), remapping.transform(conceptMap()), root(), explainable());
+                }
+
+                @Override
                 public boolean explainable() {
                     return explainable;
                 }
@@ -717,9 +722,15 @@ public abstract class AnswerStateImpl implements AnswerState {
                 }
 
                 @Override
-                public Explain with(ConceptMap extension, Rule rule, ConceptMap conclusionAnser, Unifier unifier, ConceptMap conditionAnswer) {
+                public Explain remap(Mapping remapping) {
+                    assert explanation == null;
+                    return new ExplainImpl(null, mapping().remap(remapping), concludable(), parent(), remapping.transform(conceptMap()), root());
+                }
+
+                @Override
+                public Explain with(ConceptMap extension, Rule rule, ConceptMap conclusionAnswer, Unifier unifier, ConceptMap conditionAnswer) {
                     assert this.explanation == null;
-                    Explanation explanation = new Explanation(rule, transitiveMapping(mapping(), unifier), conclusionAnser, conditionAnswer);
+                    Explanation explanation = new Explanation(rule, transitiveMapping(mapping(), unifier), conclusionAnswer, conditionAnswer);
                     return new ExplainImpl(explanation, mapping(), concludable(), parent(), extendAnswer(extension), root());
                 }
 

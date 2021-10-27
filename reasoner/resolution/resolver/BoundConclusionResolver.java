@@ -209,8 +209,8 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     private List<Request.Factory> conditionDownstreams(Partial<?> fromUpstream) {
         // we do a extra traversal to expand the partial answer if we already have the concept that is meant to be generated
         // and if there's extra variables to be populated
-        Partial.Conclusion<?, ?> partialAnswer = fromUpstream.asConclusion();
         assert fromUpstream.isConclusion();
+        Partial.Conclusion<?, ?> partialAnswer = fromUpstream.asConclusion();
         assert conclusion.retrievableIds().containsAll(partialAnswer.conceptMap().concepts().keySet());
 
         List<Request.Factory> downstreams = new ArrayList<>();

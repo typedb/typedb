@@ -344,6 +344,8 @@ public interface AnswerState {
 
             com.vaticle.typedb.core.logic.resolvable.Concludable concludable();
 
+            Concludable<?> remap(Mapping mapping);
+
             interface Match<P extends Compound<P, ?>> extends Concludable<P>, Explainable {
 
                 @Override
