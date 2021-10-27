@@ -97,8 +97,8 @@ public interface RootResolver {
         }
 
         @Override
-        RequestState requestStateNew() {
-            return new RequestState();
+        ResolutionState createResolutionState() {
+            return new ResolutionState();
         }
 
     }
@@ -141,9 +141,9 @@ public interface RootResolver {
 
         @Override
         protected boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream) {
-            RequestState requestState = requestStates.get(fromUpstream.visit().template());
-            if (!requestState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
-                requestState.deduplicationSet().add(upstreamAnswer.conceptMap());
+            ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
+            if (!resolutionState.deduplicationSet().contains(upstreamAnswer.conceptMap())) {
+                resolutionState.deduplicationSet().add(upstreamAnswer.conceptMap());
                 answerToUpstream(upstreamAnswer, fromUpstream);
                 return true;
             } else {
@@ -154,7 +154,7 @@ public interface RootResolver {
         @Override
         protected AnswerState toUpstreamAnswer(Partial.Compound<?, ?> partialAnswer, Response.Answer fromDownstream) {
             assert partialAnswer.isRoot() && partialAnswer.isMatch();
-            Driver<? extends Resolver<?>> sender = fromDownstream.sourceRequest().receiver();
+            Driver<? extends Resolver<?>> sender = fromDownstream.sourceRequest().visit().receiver();
             com.vaticle.typedb.core.pattern.Conjunction patternAnswered = downstreamResolvers.get(sender);
             return partialAnswer.asRoot().asMatch().toFinishedTop(patternAnswered);
         }
@@ -223,8 +223,8 @@ public interface RootResolver {
         }
 
         @Override
-        RequestState requestStateNew() {
-            return new RequestState();
+        ResolutionState createResolutionState() {
+            return new ResolutionState();
         }
 
         @Override

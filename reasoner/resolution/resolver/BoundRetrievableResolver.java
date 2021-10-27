@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
@@ -38,7 +38,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver> {
 
     private final AnswerCache<ConceptMap> cache;
-    private final Map<Request.Template, RequestState> requestStates;
+    private final Map<Partial.Retrievable<?>, ResolutionState> resolutionStates;
     private final ConceptMap bounds;
 
     public BoundRetrievableResolver(Driver<BoundRetrievableResolver> driver, Retrievable retrievable, ConceptMap bounds,
@@ -47,14 +47,14 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
                 " bounds: " + bounds.toString() + ")", registry);
         this.bounds = bounds;
         this.cache = new AnswerCache<>(() -> traversalIterator(retrievable.pattern(), bounds));
-        this.requestStates = new HashMap<>();
+        this.resolutionStates = new HashMap<>();
     }
 
     @Override
     public void receiveVisit(Request.Visit fromUpstream) {
         assert fromUpstream.partialAnswer().conceptMap().equals(bounds);
-        sendNextMessage(fromUpstream, requestStates.computeIfAbsent(
-                fromUpstream.template(), request -> new BoundRequestState(request, cache)));
+        sendNextMessage(fromUpstream, resolutionStates.computeIfAbsent(
+                fromUpstream.partialAnswer().asRetrievable(), retrievable -> new BoundResolutionState(retrievable, cache)));
     }
 
     @Override
@@ -78,8 +78,8 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private void sendNextMessage(Request fromUpstream, RequestState requestState) {
-        Optional<? extends AnswerState.Partial<?>> upstreamAnswer = requestState.nextAnswer();
+    private void sendNextMessage(Request fromUpstream, ResolutionState resolutionState) {
+        Optional<? extends Partial<?>> upstreamAnswer = resolutionState.nextAnswer();
         if (upstreamAnswer.isPresent()) {
             answerToUpstream(upstreamAnswer.get(), fromUpstream);
         } else {
@@ -92,15 +92,15 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private static class BoundRequestState extends CachingRequestState<ConceptMap> {
+    private static class BoundResolutionState extends CachingResolutionState<ConceptMap> {
 
-        public BoundRequestState(Request.Template fromUpstream, AnswerCache<ConceptMap> answerCache) {
+        public BoundResolutionState(Partial<?> fromUpstream, AnswerCache<ConceptMap> answerCache) {
             super(fromUpstream, answerCache, false);
         }
 
         @Override
-        protected FunctionalIterator<? extends AnswerState.Partial<?>> toUpstream(ConceptMap answer) {
-            return Iterators.single(fromUpstream.partialAnswer().asRetrievable().aggregateToUpstream(answer));
+        protected FunctionalIterator<? extends Partial<?>> toUpstream(ConceptMap answer) {
+            return Iterators.single(fromUpstream.asRetrievable().aggregateToUpstream(answer));
         }
     }
 }

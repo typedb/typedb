@@ -35,18 +35,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-public abstract class SubsumptiveCoordinator<
-        RESOLVER extends SubsumptiveCoordinator<RESOLVER, WORKER>,
-        WORKER extends Resolver<WORKER>> extends Resolver<RESOLVER> {
+public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordinator<RESOLVER>> extends Resolver<RESOLVER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(SubsumptiveCoordinator.class);
-    protected final Map<ConceptMap, Driver<WORKER>> workers;
+    private final Map<AnswerState.Partial<?>, Request.Factory> requestFactories;
     protected boolean isInitialised;
 
     public SubsumptiveCoordinator(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
         super(driver, name, registry);
         this.isInitialised = false;
-        this.workers = new HashMap<>();
+        this.requestFactories = new HashMap<>();
     }
 
     @Override
@@ -54,9 +52,9 @@ public abstract class SubsumptiveCoordinator<
         LOG.trace("{}: received Visit: {}", name(), fromUpstream);
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
-        Driver<WORKER> worker = getOrCreateBoundResolver(fromUpstream.partialAnswer());
-        Request.Template requestTemplate = Request.Template.create(driver(), worker, fromUpstream.partialAnswer());
-        Request.Visit visit = requestTemplate.createVisit(fromUpstream.trace());
+        Driver<? extends Resolver<?>> worker = getOrCreateBoundResolver(fromUpstream.partialAnswer());
+        Request.Factory requestFactory = getOrCreateRequestFactory(fromUpstream.partialAnswer(), worker);
+        Request.Visit visit = requestFactory.createVisit(fromUpstream.trace());
         visitDownstream(visit, fromUpstream);
     }
 
@@ -65,21 +63,24 @@ public abstract class SubsumptiveCoordinator<
         LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
         assert isInitialised;
         if (isTerminated()) return;
-        Driver<WORKER> worker = getOrCreateBoundResolver(fromUpstream.visit().partialAnswer());
-        Request.Template requestTemplate = Request.Template.create(driver(), worker, fromUpstream.visit().partialAnswer());
-        Request.Revisit revisit = requestTemplate.createRevisit(fromUpstream.trace(), fromUpstream.cycles());
+        Driver<? extends Resolver<?>> worker = getOrCreateBoundResolver(fromUpstream.visit().partialAnswer());
+        Request.Factory requestFactory = getOrCreateRequestFactory(fromUpstream.visit().partialAnswer(), worker);
+        Request.Revisit revisit = requestFactory.createRevisit(fromUpstream.trace(), fromUpstream.cycles());
         revisitDownstream(revisit, fromUpstream);
+    }
+
+    private Request.Factory getOrCreateRequestFactory(AnswerState.Partial<?> partial, Driver<? extends Resolver<?>> receiver) {
+        return requestFactories.computeIfAbsent(partial, p -> Request.Factory.create(driver(), receiver, p));
     }
 
     @Override
     protected void receiveBlocked(Response.Blocked fromDownstream) {
         LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
         if (isTerminated()) return;
-        blockToUpstream(fromUpstream(fromDownstream.sourceRequest().createVisit(fromDownstream.trace())),
-                        fromDownstream.cycles());
+        blockToUpstream(fromUpstream(fromDownstream.sourceRequest().visit()), fromDownstream.cycles());
     }
 
-    abstract Driver<WORKER> getOrCreateBoundResolver(AnswerState.Partial<?> partial);
+    abstract Driver<? extends Resolver<?>> getOrCreateBoundResolver(AnswerState.Partial<?> partial);
 
     @Override
     protected void receiveAnswer(Answer answer) {

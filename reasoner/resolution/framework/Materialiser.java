@@ -80,22 +80,22 @@ public class Materialiser extends ReasonerActor<Materialiser> {
 
         private final Driver<BoundConclusionResolver> sender;
         private final Actor.Driver<Materialiser> receiver;
-        private final Trace trace;
         private final Rule.Conclusion conclusion;
         private final AnswerState.Partial<?> partialAnswer;
+        private final @Nullable Trace trace;
 
         private Request(Driver<BoundConclusionResolver> sender, Driver<Materialiser> receiver,
-                        ResolutionTracer.Trace trace, Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
+                        Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer, @Nullable Trace trace) {
             this.sender = sender;
             this.receiver = receiver;
-            this.trace = trace;
             this.conclusion = conclusion;
             this.partialAnswer = partialAnswer;
+            this.trace = trace;
         }
 
         public static Request create(Driver<BoundConclusionResolver> sender, Driver<Materialiser> receiver,
-                                     Trace trace, Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer) {
-            return new Request(sender, receiver, trace, conclusion, partialAnswer);
+                                     Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer, Trace trace) {
+            return new Request(sender, receiver, conclusion, partialAnswer, trace);
         }
 
         public Rule.Conclusion conclusion() {
@@ -106,7 +106,7 @@ public class Materialiser extends ReasonerActor<Materialiser> {
             return partialAnswer;
         }
 
-        public Trace trace() {
+        public @Nullable Trace trace() {
             return trace;
         }
 
@@ -149,7 +149,7 @@ public class Materialiser extends ReasonerActor<Materialiser> {
             return sourceRequest().sender();
         }
 
-        public Trace trace() {
+        public @Nullable Trace trace() {
             return sourceRequest().trace();
         }
 

@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -28,15 +29,16 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Response.Blocked.Cycle;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,81 +46,25 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.common.collection.Collections.set;
 
-public abstract class BoundConcludableResolver extends Resolver<BoundConcludableResolver>  {
+public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludableResolver<RESOLVER>> extends Resolver<RESOLVER>  {
 
     private static final Logger LOG = LoggerFactory.getLogger(BoundConcludableResolver.class);
 
     protected final ConceptMap bounds;
-    private final Map<Request.Template, BoundConcludableRequestState<?>> requestStates;
     protected final BoundConcludableContext context;
+    protected final AnswerCache<ConceptMap> matchCache;
+    private final AnswerCache<Partial.Concludable<?>> explainCache;
 
-    protected BoundConcludableResolver(Driver<BoundConcludableResolver> driver, BoundConcludableContext context,
+    protected BoundConcludableResolver(Driver<RESOLVER> driver, BoundConcludableContext context,
                                        ConceptMap bounds, ResolverRegistry registry) {
         super(driver, BoundConcludableResolver.class.getSimpleName() + "(pattern: " +
                 context.concludable().pattern() + ", bounds: " + bounds.concepts().toString() + ")", registry);
         this.context = context;
         this.bounds = bounds;
-        this.requestStates = new HashMap<>();
-    }
-
-    @Override
-    public void receiveVisit(Request.Visit fromUpstream) {
-        LOG.trace("{}: received Visit: {}", name(), fromUpstream);
-        if (isTerminated()) return;
-        assert fromUpstream.partialAnswer().isConcludable();
-        getOrCreateRequestState(fromUpstream.template()).receiveVisit(fromUpstream.trace());
-    }
-
-    @Override
-    protected void receiveRevisit(Request.Revisit fromUpstream) {
-        assert fromUpstream.visit().partialAnswer().isConcludable();
-        getOrCreateRequestState(fromUpstream.visit().template()).receiveRevisit(fromUpstream.trace(), fromUpstream.cycles());
-    }
-
-    private BoundConcludableRequestState<?> getOrCreateRequestState(Request.Template fromUpstream) {
-        if (isCycle(fromUpstream.partialAnswer())) {
-            return requestStates.computeIfAbsent(fromUpstream, request -> createBlockedRequestState(fromUpstream));
-        } else {
-            return requestStates.computeIfAbsent(fromUpstream, request -> createExploringRequestState(fromUpstream));
-        }
-    }
-
-    private boolean isCycle(Partial<?> partialAnswer) {
-        Partial<?> a = partialAnswer;
-        while (a.parent().isPartial()) {
-            a = a.parent().asPartial();
-            if (a.isConcludable()
-                    && registry.concludables(context.parent()).contains(a.asConcludable().concludable())
-                    && a.conceptMap().equals(bounds)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    abstract ExploringRequestState<?> createExploringRequestState(Request.Template fromUpstream);
-
-    abstract BlockedRequestState<?> createBlockedRequestState(Request.Template fromUpstream);
-
-    @Override
-    protected void receiveAnswer(Response.Answer fromDownstream) {
-        if (isTerminated()) return;
-        this.requestStates.get(upstreamTemplate(fromDownstream)).receiveAnswer(fromDownstream);
-    }
-
-    @Override
-    protected void receiveFail(Response.Fail fromDownstream) {
-        LOG.trace("{}: received Fail: {}", name(), fromDownstream);
-        if (isTerminated()) return;
-        this.requestStates.get(upstreamTemplate(fromDownstream)).receiveFail(fromDownstream);
-    }
-
-    @Override
-    protected void receiveBlocked(Response.Blocked fromDownstream) {
-        LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
-        if (isTerminated()) return;
-        this.requestStates.get(upstreamTemplate(fromDownstream)).receiveBlocked(fromDownstream);
+        this.matchCache = new AnswerCache<>(() -> traversalIterator(context.concludable().pattern(), bounds));
+        this.explainCache = new AnswerCache<>(Iterators::empty);  // TODO: This does nothing useful, delete it when answers are used directly as soon as they are found
     }
 
     @Override
@@ -126,45 +72,48 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    protected abstract AnswerCache<?> cache();
-
-    @Override
-    public void terminate(Throwable cause) {
-        super.terminate(cause);
-        requestStates.clear();
-    }
-
-    protected List<Request.Template> ruleDownstreams(Request.Template fromUpstream) {
-        List<Request.Template> downstreams = new ArrayList<>();
-        Partial.Concludable<?> partialAnswer = fromUpstream.partialAnswer().asConcludable();
+    protected List<Request.Factory> ruleDownstreams(Partial<?> fromUpstream) {
+        List<Request.Factory> downstreams = new ArrayList<>();
+        Partial.Concludable<?> partialAnswer = fromUpstream.asConcludable();
         for (Map.Entry<Driver<ConclusionResolver>, Set<Unifier>> entry: context.conclusionResolvers().entrySet()) {
             Driver<ConclusionResolver> conclusionResolver = entry.getKey();
             Rule rule = registry.conclusionRule(conclusionResolver);
             for (Unifier unifier : entry.getValue()) {
                 partialAnswer.toDownstream(unifier, rule).ifPresent(
-                        conclusion -> downstreams.add(Request.Template.create(driver(), conclusionResolver, conclusion)));
+                        conclusion -> downstreams.add(Request.Factory.create(driver(), conclusionResolver, conclusion)));
             }
         }
         return downstreams;
     }
 
-    protected interface UpstreamBehaviour<ANSWER> {
-
-        ANSWER answerFromPartial(Partial<?> partial);
-
-        FunctionalIterator<? extends Partial<?>> toUpstream(Request.Template fromUpstream, ANSWER partial);
-
+    private Set<Identifier.Variable.Retrievable> unboundVars() {
+        Set<Identifier.Variable.Retrievable> missingBounds = new HashSet<>();
+        iterate(context.concludable().pattern().variables())
+                .filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
+            if (var.isType() && !var.asType().label().isPresent()) {
+                missingBounds.add(var.asType().id().asRetrievable());
+            } else if (var.isThing() && !var.asThing().iid().isPresent()) {
+                missingBounds.add(var.asThing().id().asRetrievable());
+            }
+        });
+        return missingBounds;
     }
 
-    abstract static class BoundConcludableRequestState<ANSWER> extends CachingRequestState<ANSWER> {
-        protected final UpstreamBehaviour<ANSWER> upstreamBehaviour;
+    protected BoundConcludableResolutionState<?> createResolutionState(Partial<?> fromUpstream) {
+        if (fromUpstream.asConcludable().isExplain()) {
+            return new ExplainResolutionState(fromUpstream, explainCache);
+        } else {
+            boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars());
+            return new MatchResolutionState(fromUpstream, matchCache, singleAnswerRequired);
+        }
+    }
+
+    abstract static class BoundConcludableResolutionState<ANSWER> extends CachingResolutionState<ANSWER> {
         protected final boolean singleAnswerRequired;
 
-        protected BoundConcludableRequestState(Request.Template fromUpstream, AnswerCache<ANSWER> answerCache,
-                                               boolean deduplicate, UpstreamBehaviour<ANSWER> upstreamBehaviour,
-                                               boolean singleAnswerRequired) {
+        protected BoundConcludableResolutionState(Partial<?> fromUpstream, AnswerCache<ANSWER> answerCache,
+                                                  boolean deduplicate, boolean singleAnswerRequired) {
             super(fromUpstream, answerCache, deduplicate);
-            this.upstreamBehaviour = upstreamBehaviour;
             this.singleAnswerRequired = singleAnswerRequired;
         }
 
@@ -173,128 +122,85 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
 
         public boolean newAnswer(Partial<?> partial) {
-            return !answerCache.isComplete() && answerCache.add(upstreamBehaviour.answerFromPartial(partial));
+            return !answerCache.isComplete() && answerCache.add(answerFromPartial(partial));
         }
 
-        @Override
-        protected FunctionalIterator<? extends Partial<?>> toUpstream(ANSWER answer) {
-            return upstreamBehaviour.toUpstream(fromUpstream, answer);
-        }
-
-        abstract void sendNextMessage(Trace trace);
-
-        protected void receiveVisit(Trace trace) {
-            sendNextMessage(trace);
-        }
-
-        abstract void receiveRevisit(Trace trace, Set<Cycle> cycles);
-
-        abstract void receiveAnswer(Response.Answer fromDownstream);
-
-        abstract void receiveFail(Response.Fail fromDownstream);
-
-        abstract void receiveBlocked(Response.Blocked fromDownstream);
+        protected abstract ANSWER answerFromPartial(Partial<?> partial);
 
         protected Optional<Partial.Compound<?, ?>> upstreamAnswer() {
             return nextAnswer().map(Partial::asCompound);
         }
 
+        protected AnswerCache<ANSWER> cache() {
+            return answerCache;
+        }
+
+        public abstract void resetCacheSource();
     }
 
-    protected class BlockedRequestState<ANSWER> extends BoundConcludableRequestState<ANSWER> {
+    class MatchResolutionState extends BoundConcludableResolutionState<ConceptMap> {
 
-        public BlockedRequestState(Request.Template fromUpstream, AnswerCache<ANSWER> answerCache, boolean deduplicate,
-                                   UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
-            super(fromUpstream, answerCache, deduplicate, upstreamBehaviour, singleAnswerRequired);
+        protected MatchResolutionState(Partial<?> fromUpstream, AnswerCache<ConceptMap> answerCache,
+                                       boolean singleAnswerRequired) {
+            super(fromUpstream, answerCache, true, singleAnswerRequired);
         }
 
         @Override
-        void sendNextMessage(Trace trace) {
-            Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer();
-            if (upstreamAnswer.isPresent()) {
-                if (singleAnswerRequired()) cache().setComplete();
-                answerToUpstream(upstreamAnswer.get(), fromUpstream().createVisit(trace));
-            } else if (cache().isComplete()) {
-                failToUpstream(fromUpstream().createVisit(trace));
-            } else {
-                blockToUpstream(fromUpstream().createVisit(trace), cache().size());
-            }
+        public ConceptMap answerFromPartial(Partial<?> partial) {
+            return partial.conceptMap();
         }
 
         @Override
-        void receiveRevisit(Trace trace, Set<Cycle> cycles) {
-            sendNextMessage(trace);
+        public FunctionalIterator<? extends Partial<?>> toUpstream(ConceptMap conceptMap) {
+            return Iterators.single(fromUpstream.asConcludable().asMatch().toUpstreamLookup(
+                    conceptMap, context.concludable().isInferredAnswer(conceptMap)));
         }
 
         @Override
-        void receiveAnswer(Response.Answer fromDownstream) {
-            throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
-        @Override
-        void receiveFail(Response.Fail fromDownstream) {
-            throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
-        @Override
-        void receiveBlocked(Response.Blocked fromDownstream) {
-            throw TypeDBException.of(ILLEGAL_STATE);
+        public void resetCacheSource() {
+            answerCache.setSource(() -> traversalIterator(context.concludable().pattern(), bounds));
         }
     }
 
-    protected class ExploringRequestState<ANSWER> extends BoundConcludableRequestState<ANSWER> implements RequestState.Exploration {
+    static class ExplainResolutionState extends BoundConcludableResolutionState<Partial.Concludable<?>> {
 
-        private final DownstreamManager downstreamManager;
-
-        protected ExploringRequestState(Request.Template fromUpstream, AnswerCache<ANSWER> answerCache,
-                                        List<Request.Template> ruleDownstreams, boolean deduplicate,
-                                        UpstreamBehaviour<ANSWER> upstreamBehaviour, boolean singleAnswerRequired) {
-            super(fromUpstream, answerCache, deduplicate, upstreamBehaviour, singleAnswerRequired);
-            this.downstreamManager = new DownstreamManager(ruleDownstreams);
+        protected ExplainResolutionState(Partial<?> fromUpstream, AnswerCache<Partial.Concludable<?>> answerCache) {
+            super(fromUpstream, answerCache, false, false);
         }
 
         @Override
-        public DownstreamManager downstreamManager() {
-            return downstreamManager;
+        public Partial.Concludable<?> answerFromPartial(Partial<?> partial) {
+            return partial.asConcludable();
         }
 
         @Override
-        void receiveRevisit(Trace trace, Set<Cycle> cycles) {
-            downstreamManager().unblock(cycles);
-            sendNextMessage(trace);
+        public FunctionalIterator<? extends Partial<?>> toUpstream(Partial.Concludable<?> partial) {
+            return Iterators.single(partial.asExplain().toUpstreamInferred());
         }
 
         @Override
-        void receiveAnswer(Response.Answer fromDownstream) {
-            if (newAnswer(fromDownstream.answer())) {
-                Set<Cycle> outdated = outdatedCycles(downstreamManager().cycles());
-                if (!outdated.isEmpty()) downstreamManager().unblock(outdated);
-            }
-            sendNextMessage(fromDownstream.trace());
+        public void resetCacheSource() {
+            answerCache.setSource(Iterators::empty);
+        }
+    }
+
+    public static class Exploring extends BoundConcludableResolver<Exploring> {
+
+        private final Map<Partial.Concludable<?>, BoundConcludableResolutionState<?>> resolutionStates;
+        private final Map<Partial.Concludable<?>, ExplorationManager> explorationManagers;
+
+        public Exploring(Driver<Exploring> driver, BoundConcludableContext context,
+                         ConceptMap bounds, ResolverRegistry registry) {
+            super(driver, context, bounds, registry);
+            this.resolutionStates = new HashMap<>();
+            this.explorationManagers = new HashMap<>();
         }
 
-        @Override
-        void receiveFail(Response.Fail fromDownstream) {
-            downstreamManager().remove(fromDownstream.sourceRequest());
-            sendNextMessage(fromDownstream.trace());
-        }
-
-        @Override
-        void receiveBlocked(Response.Blocked fromDownstream) {
-            Request.Template blockingDownstream = fromDownstream.sourceRequest();
-            if (downstreamManager().contains(blockingDownstream)) {
-                downstreamManager().block(blockingDownstream, fromDownstream.cycles());
-                Set<Cycle> outdated = outdatedCycles(downstreamManager().cycles());
-                if (!outdated.isEmpty()) downstreamManager().unblock(outdated);
-            }
-            sendNextMessage(fromDownstream.trace());
-        }
-
-        @Override
-        protected void sendNextMessage(Trace trace) {
-            Optional<Partial.Compound<?, ?>> upstreamAnswer = upstreamAnswer();
+        protected void sendNextMessage(Request.Visit visit, BoundConcludableResolutionState<?> resolutionState,
+                                       ExplorationManager explorationManager) {
+            Optional<Partial.Compound<?, ?>> upstreamAnswer = resolutionState.upstreamAnswer();
             if (upstreamAnswer.isPresent()) {
-                if (singleAnswerRequired()) {
+                if (resolutionState.singleAnswerRequired()) {
                     /*
                     When we only require 1 answer (eg. when the conjunction is already fully bound), we can short
                     circuit and prevent exploration of further rules.
@@ -304,22 +210,79 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
                     first one finds an answer, we respond for all N ahead of time. Then, when the rules actually
                     return an answer to this concludable, we do nothing.
                      */
-                    downstreamManager().clear();
-                    cache().setComplete();
+                    explorationManager.clear();
+                    resolutionState.cache().setComplete();
                 }
-                answerToUpstream(upstreamAnswer.get(), fromUpstream().createVisit(trace));
-            } else if (cache().isComplete()) {
-                failToUpstream(fromUpstream().createVisit(trace));
-            } else if (downstreamManager().hasNextVisit()) {
-                visitDownstream(downstreamManager().nextVisit(trace), fromUpstream().createVisit(trace));
-            } else if (downstreamManager().hasNextRevisit()) {
-                revisitDownstream(downstreamManager().nextRevisit(trace), fromUpstream().createVisit(trace));
-            } else if (startsHere(downstreamManager().cycles())) {
-                cache().setComplete();
-                failToUpstream(fromUpstream().createVisit(trace));
+                answerToUpstream(upstreamAnswer.get(), visit);
+            } else if (resolutionState.cache().isComplete()) {
+                failToUpstream(visit);
+            } else if (explorationManager.hasNextVisit()) {
+                visitDownstream(explorationManager.nextVisit(visit.trace()), visit);
+            } else if (explorationManager.hasNextRevisit()) {
+                revisitDownstream(explorationManager.nextRevisit(visit.trace()), visit);
+            } else if (startsHere(explorationManager.cycles())) {
+                resolutionState.cache().setComplete();
+                failToUpstream(visit);
             } else {
-                blockToUpstream(fromUpstream().createVisit(trace), startingElsewhere(downstreamManager().cycles()));
+                blockToUpstream(visit, startingElsewhere(explorationManager.cycles()));
             }
+        }
+
+        @Override
+        public void receiveVisit(Request.Visit fromUpstream) {
+            LOG.trace("{}: received Visit: {}", name(), fromUpstream);
+            if (isTerminated()) return;
+            assert fromUpstream.partialAnswer().isConcludable();
+            sendNextMessage(fromUpstream, getOrCreateResolutionState(fromUpstream), getOrCreateExplorationManager(fromUpstream));
+        }
+
+        @Override
+        protected void receiveRevisit(Request.Revisit fromUpstream) {
+            LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
+            if (isTerminated()) return;
+            assert fromUpstream.visit().partialAnswer().isConcludable();
+            BoundConcludableResolutionState<?> resolutionState = getOrCreateResolutionState(fromUpstream.visit());
+            ExplorationManager explorationManager = getOrCreateExplorationManager(fromUpstream.visit());
+            explorationManager.unblock(fromUpstream.cycles());
+            sendNextMessage(fromUpstream.visit(), resolutionState, explorationManager);
+        }
+
+        @Override
+        protected void receiveAnswer(Response.Answer fromDownstream) {
+            LOG.trace("{}: received Answer: {}", name(), fromDownstream);
+            if (isTerminated()) return;
+            BoundConcludableResolutionState<?> resolutionState = getResolutionState(fromDownstream);
+            ExplorationManager explorationManager = getExplorationManager(fromDownstream);
+            if (resolutionState.newAnswer(fromDownstream.answer())) {
+                Set<Cycle> outdated = outdatedCycles(explorationManager.cycles());
+                if (!outdated.isEmpty()) explorationManager.unblock(outdated);
+            }
+            sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, explorationManager);
+        }
+
+        @Override
+        protected void receiveFail(Response.Fail fromDownstream) {
+            LOG.trace("{}: received Fail: {}", name(), fromDownstream);
+            if (isTerminated()) return;
+            BoundConcludableResolutionState<?> resolutionState = getResolutionState(fromDownstream);
+            ExplorationManager explorationManager = getExplorationManager(fromDownstream);
+            explorationManager.remove(fromDownstream.sourceRequest().visit().factory());
+            sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, explorationManager);
+        }
+
+        @Override
+        protected void receiveBlocked(Response.Blocked fromDownstream) {
+            LOG.trace("{}: received Blocked: {}", name(), fromDownstream);
+            if (isTerminated()) return;
+            BoundConcludableResolutionState<?> resolutionState = getResolutionState(fromDownstream);
+            ExplorationManager explorationManager = getExplorationManager(fromDownstream);
+            Request.Factory blockingDownstream = fromDownstream.sourceRequest().visit().factory();
+            if (explorationManager.contains(blockingDownstream)) {
+                explorationManager.block(blockingDownstream, fromDownstream.cycles());
+                Set<Cycle> outdated = outdatedCycles(explorationManager.cycles());
+                if (!outdated.isEmpty()) explorationManager.unblock(outdated);
+            }
+            sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, explorationManager);
         }
 
         private Set<Cycle> outdatedCycles(Set<Cycle> cycles) {
@@ -331,7 +294,7 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
 
         private boolean isOutdated(Cycle cycle) {
-            return startsHere(cycle) && cycle.numAnswersSeen() < cache().size();
+            return startsHere(cycle) && cycle.numAnswersSeen() < matchCache.size();
         }
 
         private boolean startsHere(Set<Cycle> cycles) {
@@ -339,28 +302,129 @@ public abstract class BoundConcludableResolver extends Resolver<BoundConcludable
         }
 
         private boolean startsHere(Cycle cycle) {
-            return cycle.end().equals(driver());
+            return cycle.end().equals(context.concludable());
+        }
+
+        private BoundConcludableResolutionState<?> getOrCreateResolutionState(Request.Visit fromUpstream) {
+            return resolutionStates.computeIfAbsent(fromUpstream.partialAnswer().asConcludable(),
+                                                    partial -> createResolutionState(fromUpstream.partialAnswer()));
+        }
+
+        private ExplorationManager getOrCreateExplorationManager(Request.Visit fromUpstream) {
+            return explorationManagers.computeIfAbsent(fromUpstream.partialAnswer().asConcludable(),
+                                                      partial -> new ExplorationManager(
+                                                              ruleDownstreams(fromUpstream.visit().partialAnswer())));
+        }
+
+        private BoundConcludableResolutionState<?> getResolutionState(Response response) {
+            return resolutionStates.get(partialFromUpstream(response).asConcludable());
+        }
+
+        private ExplorationManager getExplorationManager(Response response) {
+            return explorationManagers.get(partialFromUpstream(response).asConcludable());
+        }
+
+        @Override
+        public void terminate(Throwable cause) {
+            super.terminate(cause);
+            resolutionStates.clear();
+            explorationManagers.clear();
+        }
+    }
+
+    public static class Blocked extends BoundConcludableResolver<Blocked> {
+
+        private final Map<Partial.Concludable<?>, BoundConcludableResolutionState<?>> resolutionStates;
+
+        public Blocked(Driver<Blocked> driver, BoundConcludableContext context, ConceptMap bounds,
+                       ResolverRegistry registry) {
+            super(driver, context, bounds, registry);
+            this.resolutionStates = new HashMap<>();
+        }
+
+        void sendNextMessage(Request.Visit visit, BoundConcludableResolutionState<?> resolutionState) {
+            Optional<Partial.Compound<?, ?>> upstreamAnswer = resolutionState.upstreamAnswer();
+            if (upstreamAnswer.isPresent()) {
+                if (resolutionState.singleAnswerRequired()) resolutionState.cache().setComplete();
+                answerToUpstream(upstreamAnswer.get(), visit);
+            } else if (resolutionState.cache().isComplete()) {
+                failToUpstream(visit);
+            } else {
+                blockToUpstream(visit, set(new Cycle(context.concludable(), resolutionState.cache().size())));
+            }
+        }
+
+        @Override
+        public void receiveVisit(Request.Visit fromUpstream) {
+            LOG.trace("{}: received Visit: {}", name(), fromUpstream);
+            if (isTerminated()) return;
+            assert fromUpstream.partialAnswer().isConcludable();
+            sendNextMessage(fromUpstream, getOrCreateResolutionState(fromUpstream));
+        }
+
+        @Override
+        protected void receiveRevisit(Request.Revisit fromUpstream) {
+            LOG.trace("{}: received Revisit: {}", name(), fromUpstream);
+            if (isTerminated()) return;
+            assert fromUpstream.visit().partialAnswer().isConcludable();
+            BoundConcludableResolutionState<?> resolutionState = getOrCreateResolutionState(fromUpstream.visit());
+
+            // Similar to sendNextMessage
+            Optional<Partial.Compound<?, ?>> upstreamAnswer = resolutionState.upstreamAnswer();
+            if (upstreamAnswer.isPresent()) {
+                if (resolutionState.singleAnswerRequired()) resolutionState.cache().setComplete();
+                answerToUpstream(upstreamAnswer.get(), fromUpstream.visit());
+            } else if (resolutionState.cache().isComplete()) {
+                failToUpstream(fromUpstream.visit());
+            } else {
+                resolutionState.resetCacheSource();
+                upstreamAnswer = resolutionState.upstreamAnswer();
+                if (upstreamAnswer.isPresent()) {
+                    if (resolutionState.singleAnswerRequired()) resolutionState.cache().setComplete();
+                    answerToUpstream(upstreamAnswer.get(), fromUpstream.visit());
+                } else {
+                    blockToUpstream(fromUpstream.visit(), set(new Cycle(context.concludable(), resolutionState.cache().size())));
+                }
+            }
+        }
+
+        @Override
+        protected void receiveAnswer(Response.Answer fromDownstream) {
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        @Override
+        protected void receiveFail(Response.Fail fromDownstream) {
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        @Override
+        protected void receiveBlocked(Response.Blocked fromDownstream) {
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        private BoundConcludableResolutionState<?> getOrCreateResolutionState(Request.Visit fromUpstream) {
+            return resolutionStates.computeIfAbsent(fromUpstream.partialAnswer().asConcludable(),
+                                                    partial -> createResolutionState(fromUpstream.partialAnswer()));
+        }
+
+        @Override
+        public void terminate(Throwable cause) {
+            super.terminate(cause);
+            resolutionStates.clear();
         }
 
     }
 
     public static class BoundConcludableContext {
 
-        private final Driver<ConcludableResolver> parent;
         private final Concludable concludable;
         private final Map<Driver<ConclusionResolver>, Set<Unifier>> conclusionUnifiers;
 
-        BoundConcludableContext(Driver<ConcludableResolver> parent,
-                                Concludable concludable,
+        BoundConcludableContext(Concludable concludable,
                                 Map<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers) {
-
-            this.parent = parent;
             this.concludable = concludable;
             this.conclusionUnifiers = conclusionResolvers;
-        }
-
-        Driver<ConcludableResolver> parent() {
-            return parent;
         }
 
         public Concludable concludable() {

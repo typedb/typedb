@@ -37,11 +37,9 @@ public class AnswerCache<ANSWER> {
 
     private final List<ANSWER> answers;
     private final Set<ANSWER> answersSet;
-    private final Supplier<FunctionalIterator<ANSWER>> answerSourceSupplier;
+    private Supplier<FunctionalIterator<ANSWER>> answerSourceSupplier;
     private FunctionalIterator<ANSWER> answerSource;
     private boolean complete;
-    private boolean sourceCleared;
-    private boolean sourceExhausted;
 
     public AnswerCache(Supplier<FunctionalIterator<ANSWER>> answerSourceSupplier) {
         this.answerSourceSupplier = answerSourceSupplier;
@@ -49,8 +47,6 @@ public class AnswerCache<ANSWER> {
         this.answers = new ArrayList<>(); // TODO: Replace answer list and deduplication set with a bloom filter
         this.answersSet = new HashSet<>();
         this.complete = false;
-        this.sourceCleared = false;
-        this.sourceExhausted = false;
     }
 
     public boolean add(ANSWER answer) {
@@ -58,11 +54,10 @@ public class AnswerCache<ANSWER> {
         return addIfAbsent(answer);
     }
 
-    public void clearSource() {
-        // TODO: useful when subsumption is active
-        if (answerSource != null) answerSource.recycle();
-        answerSource = empty();
-        sourceCleared = true;
+    public void setSource(Supplier<FunctionalIterator<ANSWER>> answerSourceSupplier) {
+        answerSource.recycle();
+        answerSource = null;
+        this.answerSourceSupplier = answerSourceSupplier;
     }
 
     public Poller<ANSWER> reader() {
@@ -71,20 +66,10 @@ public class AnswerCache<ANSWER> {
 
     public void setComplete() {
         complete = true;
-        setSourceExhausted();
     }
 
     public boolean isComplete() {
         return complete;
-    }
-
-    public void setSourceExhausted() {
-        sourceExhausted = true;
-        if (answerSource != null) answerSource.recycle();
-    }
-
-    public boolean sourceExhausted() {
-        return sourceExhausted;
     }
 
     private boolean addIfAbsent(ANSWER answer) {
@@ -130,7 +115,6 @@ public class AnswerCache<ANSWER> {
                 ANSWER answer = answerSource.next();
                 if (addIfAbsent(answer)) return Optional.of(answer);
             }
-            if (!sourceCleared) setSourceExhausted();
             return Optional.empty();
         }
 

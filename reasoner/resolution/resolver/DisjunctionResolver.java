@@ -55,12 +55,12 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
         if (isTerminated()) return;
 
         Request fromUpstream = upstreamRequest(fromDownstream);
-        RequestState requestState = requestStates.get(fromUpstream.visit().template());
+        ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
 
         assert fromDownstream.answer().isCompound();
         AnswerState answer = toUpstreamAnswer(fromDownstream.answer().asCompound(), fromDownstream);
         boolean acceptedAnswer = tryAcceptUpstreamAnswer(answer, fromUpstream);
-        if (!acceptedAnswer) sendNextMessage(fromUpstream, requestState);
+        if (!acceptedAnswer) sendNextMessage(fromUpstream, resolutionState);
     }
 
     protected abstract boolean tryAcceptUpstreamAnswer(AnswerState upstreamAnswer, Request fromUpstream);
@@ -82,17 +82,15 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     }
 
     @Override
-    protected RequestState requestStateCreate(Request.Template fromUpstream) {
-        LOG.debug("{}: Creating a new RequestState for request: {}", name(), fromUpstream);
-        assert fromUpstream.partialAnswer().isCompound();
-        RequestState requestState = new RequestState();
+    protected ResolutionState resolutionStateCreate(Compound<?, ?> fromUpstream) {
+        LOG.debug("{}: Creating a new ResolutionState for request: {}", name(), fromUpstream);
+        ResolutionState resolutionState = new ResolutionState();
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {
-            Compound.Nestable downstream = fromUpstream.partialAnswer().asCompound()
-                    .filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
-            Request.Template request = Request.Template.create(driver(), conjunctionResolver, downstream);
-            requestState.downstreamManager().add(request);
+            Compound.Nestable downstream = fromUpstream.filterToNestable(conjunctionRetrievedIds(conjunctionResolver));
+            Request.Factory request = Request.Factory.create(driver(), conjunctionResolver, downstream);
+            resolutionState.explorationManager().add(request);
         }
-        return requestState;
+        return resolutionState;
     }
 
     private static Set<Identifier.Variable.Retrievable> conjunctionRetrievedIds(

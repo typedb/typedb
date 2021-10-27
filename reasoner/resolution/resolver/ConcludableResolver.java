@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
@@ -27,23 +28,30 @@ import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableReso
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
-public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResolver, BoundConcludableResolver> {
+public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResolver> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConcludableResolver.class);
 
     private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers;
     private final Concludable concludable;
+    private final Map<AnswerState.Partial.Concludable<?>, Driver<? extends BoundConcludableResolver<?>>> boundResolversByPartial;
+    private final Map<ConceptMap, Driver<BoundConcludableResolver.Blocked>> blockedBoundResolvers;
+    private final Map<ConceptMap, Driver<BoundConcludableResolver.Exploring>> exploringBoundResolvers;
 
     public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable, ResolverRegistry registry) {
-        super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
-                registry);
+        super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")", registry);
         this.concludable = concludable;
         this.conclusionResolvers = new LinkedHashMap<>();
         this.isInitialised = false;
+        this.boundResolversByPartial = new HashMap<>();
+        this.blockedBoundResolvers = new HashMap<>();
+        this.exploringBoundResolvers = new HashMap<>();
     }
 
     public Concludable concludable() {
@@ -51,13 +59,36 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
     }
 
     @Override
-    Driver<BoundConcludableResolver> getOrCreateBoundResolver(AnswerState.Partial<?> partial) {
-        return workers.computeIfAbsent(partial.conceptMap(), p -> {
-            LOG.debug("{}: Creating a new BoundConcludableResolver for bounds: {}", name(), partial);
-            // TODO: We could use the bounds to prune the applicable rules further
-            BoundConcludableContext context = new BoundConcludableContext(driver(), concludable, conclusionResolvers);
-            return registry.registerBoundConcludable(partial.conceptMap(), context, partial.asConcludable().isExplain());
+    Driver<? extends BoundConcludableResolver<?>> getOrCreateBoundResolver(AnswerState.Partial<?> partial) {
+        return boundResolversByPartial.computeIfAbsent(partial.asConcludable(), p -> {
+            if (isCycle(p)) {
+                return blockedBoundResolvers.computeIfAbsent(partial.conceptMap(), conceptMap -> {
+                    LOG.debug("{}: Creating a new BoundConcludableResolver.Blocked for bounds: {}", name(), partial);
+                    BoundConcludableContext context = new BoundConcludableContext(concludable, conclusionResolvers);
+                    return registry.registerBlocked(conceptMap, context);
+                });
+            } else {
+                return exploringBoundResolvers.computeIfAbsent(partial.conceptMap(), conceptMap -> {
+                    LOG.debug("{}: Creating a new BoundConcludableResolver.Exploring for bounds: {}", name(), partial);
+                    BoundConcludableContext context = new BoundConcludableContext(concludable, conclusionResolvers);
+                    return registry.registerExploring(conceptMap, context);
+                });
+            }
         });
+    }
+
+    private boolean isCycle(AnswerState.Partial<?> partialAnswer) {
+        ConceptMap bounds = partialAnswer.conceptMap();
+        AnswerState.Partial<?> ans = partialAnswer;
+        while (ans.parent().isPartial()) {
+            ans = ans.parent().asPartial();
+            if (ans.isConcludable()
+                    && registry.concludables(driver()).contains(ans.asConcludable().concludable())
+                    && ans.conceptMap().equals(bounds)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

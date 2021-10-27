@@ -489,7 +489,7 @@ public class ResolutionTest {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
-        Request.Template requestFactory = Request.Template.create(root, downstream);
+        Request.Factory requestFactory = Request.Factory.create(root, downstream);
         for (int i = 0; i < n; i++) {
             Trace trace = Trace.create(UUID.randomUUID(), i);
             root.execute(actor -> actor.receiveVisit(requestFactory.createVisit(trace)));
