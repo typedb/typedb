@@ -29,11 +29,9 @@ import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableReso
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -71,7 +69,6 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
         // TODO: partial answer only needed for cycle detection
         // Note: `mapped` is a different ConceptMap to that of the partial answer, an important optimisation.
         return boundResolversByPartial.computeIfAbsent(partial.asConcludable(), p -> {
-            List<String> states = pastStates(p);
             if (isCycle(p, mapped)) {
                 return blockedBoundResolvers.computeIfAbsent(mapped, conceptMap -> {
                     LOG.debug("{}: Creating a new BoundConcludableResolver.Blocked for bounds: {}", name(), partial);
@@ -90,17 +87,6 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
 
     protected AnswerState.Partial<?> applyRemapping(AnswerState.Partial<?> partial, Mapping mapping) {
         return partial.asConcludable().remap(mapping);
-    }
-
-    private List<String> pastStates(AnswerState.Partial<?> ans) {
-        List<String> states = new ArrayList<>();
-        while (ans.parent().isPartial()) {
-            ans = ans.parent().asPartial();
-            if (ans.isConcludable()) {
-                states.add(ans.asConcludable().concludable().pattern().toString() + " " + ans.conceptMap().toString());
-            }
-        }
-        return states;
     }
 
     private boolean isCycle(AnswerState.Partial<?> partialAnswer, ConceptMap bounds) {
