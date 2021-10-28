@@ -18,15 +18,19 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
+
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public abstract class Response {
 
@@ -180,22 +184,31 @@ public abstract class Response {
 
         public static class Cycle {
 
-            private final Concludable endConcludable;
-            private final ConceptMap endBounds;
+            private final Partial.Concludable<?> origin;
             private final int numAnswersSeen;
 
-            public Cycle(Concludable endConcludable, ConceptMap endBounds, int numAnswersSeen) {
-                this.endConcludable = endConcludable;
-                this.endBounds = endBounds;
+            public static Cycle create(Partial.Concludable<?> initial, Concludable concludable, ConceptMap conceptMap,
+                                       int numAnswersSeen) {
+                AnswerState.Partial<?> ans = initial;
+                while (ans.parent().isPartial()) {
+                    ans = ans.parent().asPartial();
+                    if (ans.isConcludable()) {
+                        if (ans.asConcludable().concludable().alphaEquals(concludable).first().isPresent()
+                                && ans.conceptMap().equals(conceptMap)) {
+                            return new Cycle(ans.asConcludable(), numAnswersSeen);
+                        }
+                    }
+                }
+                throw TypeDBException.of(ILLEGAL_STATE);
+            }
+
+            public Cycle(Partial.Concludable<?> origin, int numAnswersSeen) {
+                this.origin = origin;
                 this.numAnswersSeen = numAnswersSeen;
             }
 
-            public Concludable endConcludable() {
-                return endConcludable;
-            }
-
-            public ConceptMap endBounds() {
-                return endBounds;
+            public Partial.Concludable<?> origin() {
+                return origin;
             }
 
             public int numAnswersSeen() {
@@ -208,20 +221,18 @@ public abstract class Response {
                 if (o == null || getClass() != o.getClass()) return false;
                 Cycle cycle = (Cycle) o;
                 return numAnswersSeen == cycle.numAnswersSeen &&
-                        endConcludable.equals(cycle.endConcludable) &&
-                        endBounds.equals(cycle.endBounds);
+                        origin.equals(cycle.origin);
             }
 
             @Override
             public int hashCode() {
-                return Objects.hash(endConcludable, endBounds, numAnswersSeen);
+                return Objects.hash(origin, numAnswersSeen);
             }
 
             @Override
             public String toString() {
                 return "Cycle{" +
-                        "endConcludable=" + endConcludable.pattern().toString() +
-                        ", endBounds=" + endBounds +
+                        "origin=" + origin +
                         ", numAnswersSeen=" + numAnswersSeen +
                         '}';
             }
