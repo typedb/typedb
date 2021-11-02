@@ -121,10 +121,6 @@ public interface Request {
             this.cycles = cycles;
         }
 
-        public static Revisit create(Visit visit, Set<Cycle> cycles) {
-            return new Revisit(visit, cycles);
-        }
-
         @Override
         public Visit visit() {
             return visit;

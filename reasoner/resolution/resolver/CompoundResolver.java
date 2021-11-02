@@ -50,7 +50,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         } else if (resolutionState.explorationManager().hasNextRevisit()) {
             revisitDownstream(resolutionState.explorationManager().nextRevisit(fromUpstream.trace()), fromUpstream);
         } else if (resolutionState.explorationManager().hasNextBlocked()) {
-            blockToUpstream(fromUpstream, resolutionState.explorationManager().cycles());
+            blockToUpstream(fromUpstream, resolutionState.explorationManager().blockingCycles());
         } else {
             failToUpstream(fromUpstream);
         }
@@ -72,7 +72,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         assert isInitialised;
         if (isTerminated()) return;
         ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
-        resolutionState.explorationManager().unblock(fromUpstream.cycles());
+        resolutionState.explorationManager().revisit(fromUpstream.cycles());
         sendNextMessage(fromUpstream, resolutionState);
     }
 

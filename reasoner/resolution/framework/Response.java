@@ -27,8 +27,9 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
@@ -66,7 +67,7 @@ public abstract class Response {
         if (o == null || getClass() != o.getClass()) return false;
         Response response = (Response) o;
         return sourceRequest.equals(response.sourceRequest) &&
-                trace.equals(response.trace);
+                Objects.equals(trace, response.trace);
     }
 
     @Override
@@ -146,16 +147,16 @@ public abstract class Response {
 
     public static class Blocked extends Response {
 
-        protected Set<Cycle> cycles;
+        protected Map<Cycle, Integer> cycles;
         private final int hash;
 
-        public Blocked(Request.Visit sourceRequest, Set<Cycle> cycles, @Nullable Trace trace) {
+        public Blocked(Request.Visit sourceRequest, Map<Cycle, Integer> cycles, @Nullable Trace trace) {
             super(sourceRequest, trace);
             this.cycles = cycles;
             this.hash = Objects.hash(super.hashCode(), cycles);
         }
 
-        public Set<Cycle> cycles() {
+        public Map<Cycle, Integer> cycles() {
             return cycles;
         }
 
@@ -185,34 +186,31 @@ public abstract class Response {
         public static class Cycle {
 
             private final Partial.Concludable<?> origin;
-            private final int numAnswersSeen;
 
-            public static Cycle create(Partial.Concludable<?> initial, Concludable concludable, ConceptMap conceptMap,
-                                       int numAnswersSeen) {
+            public static Map<Cycle, Integer> create(Partial.Concludable<?> initial, Concludable concludable,
+                                                     ConceptMap conceptMap, int numAnswersSeen) {
                 AnswerState.Partial<?> ans = initial;
                 while (ans.parent().isPartial()) {
                     ans = ans.parent().asPartial();
                     if (ans.isConcludable()) {
                         if (ans.asConcludable().concludable().alphaEquals(concludable).first().isPresent()
                                 && ans.conceptMap().equals(conceptMap)) {
-                            return new Cycle(ans.asConcludable(), numAnswersSeen);
+                            Cycle cycle = new Cycle(ans.asConcludable());
+                            Map<Cycle, Integer> cyclesMap = new HashMap<>();
+                            cyclesMap.put(cycle, numAnswersSeen);
+                            return cyclesMap;
                         }
                     }
                 }
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
 
-            public Cycle(Partial.Concludable<?> origin, int numAnswersSeen) {
+            public Cycle(Partial.Concludable<?> origin) {
                 this.origin = origin;
-                this.numAnswersSeen = numAnswersSeen;
             }
 
             public Partial.Concludable<?> origin() {
                 return origin;
-            }
-
-            public int numAnswersSeen() {
-                return numAnswersSeen;
             }
 
             @Override
@@ -220,20 +218,18 @@ public abstract class Response {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 Cycle cycle = (Cycle) o;
-                return numAnswersSeen == cycle.numAnswersSeen &&
-                        origin.equals(cycle.origin);
+                return origin.equals(cycle.origin);
             }
 
             @Override
             public int hashCode() {
-                return Objects.hash(origin, numAnswersSeen);
+                return Objects.hash(origin);
             }
 
             @Override
             public String toString() {
                 return "Cycle{" +
                         "origin=" + origin +
-                        ", numAnswersSeen=" + numAnswersSeen +
                         '}';
             }
         }

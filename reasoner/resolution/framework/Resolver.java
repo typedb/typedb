@@ -143,7 +143,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         fromUpstream.visit().sender().execute(actor -> actor.receiveFail(response));
     }
 
-    protected void blockToUpstream(Request fromUpstream, Set<Cycle> cycles) {
+    protected void blockToUpstream(Request fromUpstream, Map<Cycle, Integer> cycles) {
         assert !fromUpstream.visit().partialAnswer().parent().isTop();
         Response.Blocked response = new Response.Blocked(fromUpstream.visit(), cycles, fromUpstream.trace());
         LOG.trace("{} : Sending a new Response.Blocked to upstream", name());
@@ -255,19 +255,22 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     public static class ExplorationManager {
         protected final List<Request.Factory> visits;
-        protected Map<Request.Factory, Set<Cycle>> revisits;
-        protected Map<Request.Factory, Set<Cycle>> blocked;
+        protected final Map<Request.Factory, Set<Cycle>> revisits;
+        protected final Map<Request.Factory, Set<Cycle>> blocked;
+        protected final Map<Cycle, Integer> numAnswersSeen;
 
         public ExplorationManager() {
             this.visits = new ArrayList<>();
             this.revisits = new LinkedHashMap<>();
             this.blocked = new LinkedHashMap<>();
+            this.numAnswersSeen = new HashMap<>();
         }
 
         public ExplorationManager(List<Request.Factory> visits) {
             this.visits = visits;
             this.revisits = new LinkedHashMap<>();
             this.blocked = new LinkedHashMap<>();
+            this.numAnswersSeen = new HashMap<>();
         }
 
         public Request.Visit nextVisit(Trace trace) {
@@ -313,19 +316,43 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             blocked.clear();
         }
 
-        public Set<Cycle> cycles() {
-            return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
+        public Map<Cycle, Integer> blockingCycles() {
+            Map<Cycle, Integer> blockingCycles = new HashMap<>();
+            iterate(blocked.values()).flatMap(Iterators::iterate)
+                    .forEachRemaining(c -> blockingCycles.put(c, numAnswersSeen.get(c)));
+            return blockingCycles;
         }
 
-        public void block(Request.Factory toBlock, Set<Cycle> blockers) {
-            assert !blockers.isEmpty();
+        public void block(Request.Factory toBlock, Map<Cycle, Integer> blockers) {
             assert contains(toBlock);
             visits.remove(toBlock);
             revisits.remove(toBlock);
-            blocked.computeIfAbsent(toBlock, b -> new HashSet<>()).addAll(blockers);
+            blocked.computeIfAbsent(toBlock, b -> new HashSet<>()).addAll(updateNumAnswersSeen(blockers));
         }
 
-        public void unblock(Set<Cycle> cycles) {
+        private Set<Cycle> updateNumAnswersSeen(Map<Cycle, Integer> blockers) {
+            Map<Cycle, Integer> filtered = filterOutdated(blockers);
+            numAnswersSeen.putAll(filtered);
+            return filtered.keySet();
+        }
+
+        private Map<Cycle, Integer> filterOutdated(Map<Cycle, Integer> blockers) {
+            Map<Cycle, Integer> filtered = new HashMap<>();
+            blockers.forEach((c, n) -> {
+                Integer seen = numAnswersSeen.get(c);
+                if (seen == null || n >= seen) filtered.put(c, n);
+            });
+            return filtered;
+        }
+
+        public static Set<Cycle> cyclesToRevisit(Map<Cycle, Integer> cycles, Partial.Concludable<?> partial,
+                                                 int numAnswers) {
+            return iterate(cycles.entrySet())
+                    .filter(e -> startsHere(e.getKey(), partial) && e.getValue() < numAnswers)
+                    .map(Map.Entry::getKey).toSet();
+        }
+
+        public void revisit(Set<Cycle> cycles) {
             assert !cycles.isEmpty();
             Set<Request.Factory> toRemove = new HashSet<>();
             blocked.forEach((downstream, blockers) -> {
@@ -333,12 +360,33 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
                 Set<Cycle> blockersToRevisit = new HashSet<>(cycles);
                 blockersToRevisit.retainAll(blockers);
                 if (!blockersToRevisit.isEmpty()) {
-                    this.revisits.computeIfAbsent(downstream, o -> new HashSet<>()).addAll(blockersToRevisit);
+                    revisits.computeIfAbsent(downstream, o -> new HashSet<>()).addAll(blockersToRevisit);
                     blockers.removeAll(blockersToRevisit);
                     if (blockers.isEmpty()) toRemove.add(downstream);
                 }
             });
-            toRemove.forEach(r -> blocked.remove(r));
+            toRemove.forEach(blocked::remove);
+        }
+
+        public boolean allBlockedStartHere(Partial.Concludable<?> concludable) {
+            assert visits.isEmpty() && revisits.isEmpty();
+            for (Set<Cycle> cycles : blocked.values()) {
+                if (cycles.size() > 1 || (cycles.size() == 1 && !startsHere(iterate(cycles).next(), concludable))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public Map<Cycle, Integer> blockersStartingElsewhere(Partial.Concludable<?> partial) {
+            Map<Cycle, Integer> startingElsewhere = new HashMap<>();
+            iterate(blocked.values()).flatMap(cycles -> iterate(cycles).filter(c -> !startsHere(c, partial)))
+                    .forEachRemaining(cycle -> startingElsewhere.put(cycle, numAnswersSeen.get(cycle)));
+            return startingElsewhere;
+        }
+
+        public static boolean startsHere(Cycle cycle, Partial.Concludable<?> partial) {
+            return cycle.origin().equals(partial);
         }
     }
 }

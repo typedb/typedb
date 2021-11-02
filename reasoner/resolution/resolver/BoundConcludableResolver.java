@@ -44,9 +44,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.reasoner.resolution.framework.Resolver.ExplorationManager.cyclesToRevisit;
 
 public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludableResolver<RESOLVER>> extends Resolver<RESOLVER>  {
 
@@ -219,11 +219,11 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
                 visitDownstream(explorationManager.nextVisit(visit.trace()), visit);
             } else if (explorationManager.hasNextRevisit()) {
                 revisitDownstream(explorationManager.nextRevisit(visit.trace()), visit);
-            } else if (startsHere(explorationManager.cycles(), resolutionState.fromUpstream().asConcludable())) {
+            } else if (explorationManager.allBlockedStartHere(resolutionState.fromUpstream().asConcludable())) {
                 resolutionState.cache().setComplete();
                 failToUpstream(visit);
             } else {
-                blockToUpstream(visit, startingElsewhere(explorationManager.cycles(), resolutionState.fromUpstream().asConcludable()));
+                blockToUpstream(visit, explorationManager.blockersStartingElsewhere(resolutionState.fromUpstream().asConcludable()));
             }
         }
 
@@ -242,7 +242,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             assert fromUpstream.visit().partialAnswer().isConcludable();
             BoundConcludableResolutionState<?> resolutionState = getOrCreateResolutionState(fromUpstream.visit());
             ExplorationManager explorationManager = getOrCreateExplorationManager(fromUpstream.visit());
-            explorationManager.unblock(fromUpstream.cycles());
+            explorationManager.revisit(fromUpstream.cycles());
             sendNextMessage(fromUpstream.visit(), resolutionState, explorationManager);
         }
 
@@ -253,8 +253,9 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             BoundConcludableResolutionState<?> resolutionState = getResolutionState(fromDownstream);
             ExplorationManager explorationManager = getExplorationManager(fromDownstream);
             if (resolutionState.newAnswer(fromDownstream.answer())) {
-                Set<Cycle> outdated = outdatedCycles(explorationManager.cycles(), fromDownstream.answer().asConcludable());
-                if (!outdated.isEmpty()) explorationManager.unblock(outdated);
+                Set<Cycle> toRevisit = cyclesToRevisit(explorationManager.blockingCycles(),
+                                                       fromDownstream.answer().asConcludable(), matchCache.size());
+                if (!toRevisit.isEmpty()) explorationManager.revisit(toRevisit);
             }
             sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, explorationManager);
         }
@@ -278,30 +279,12 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             Request.Factory blockingDownstream = fromDownstream.sourceRequest().visit().factory();
             if (explorationManager.contains(blockingDownstream)) {
                 explorationManager.block(blockingDownstream, fromDownstream.cycles());
-                Set<Cycle> outdated = outdatedCycles(explorationManager.cycles(), resolutionState.fromUpstream().asConcludable());
-                if (!outdated.isEmpty()) explorationManager.unblock(outdated);
+                Set<Cycle> toRevisit = cyclesToRevisit(explorationManager.blockingCycles(),
+                                                       resolutionState.fromUpstream().asConcludable(),
+                                                       matchCache.size());
+                if (!toRevisit.isEmpty()) explorationManager.revisit(toRevisit);
             }
             sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, explorationManager);
-        }
-
-        private Set<Cycle> outdatedCycles(Set<Cycle> cycles, Partial.Concludable<?> partial) {
-            return iterate(cycles).filter(c -> isOutdated(c, partial)).toSet();
-        }
-
-        private Set<Cycle> startingElsewhere(Set<Cycle> cycles, Partial.Concludable<?> partial) {
-            return iterate(cycles).filter(c -> !startsHere(c, partial)).toSet();
-        }
-
-        private boolean isOutdated(Cycle cycle, Partial.Concludable<?> partial) {
-            return startsHere(cycle, partial) && cycle.numAnswersSeen() < matchCache.size();
-        }
-
-        private boolean startsHere(Set<Cycle> cycles, Partial.Concludable<?> partial) {
-            return iterate(cycles).filter(c -> !startsHere(c, partial)).first().isEmpty();
-        }
-
-        private boolean startsHere(Cycle cycle, Partial.Concludable<?> partial) {
-            return cycle.origin().equals(partial);
         }
 
         private BoundConcludableResolutionState<?> getOrCreateResolutionState(Request.Visit fromUpstream) {
@@ -311,8 +294,8 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
 
         private ExplorationManager getOrCreateExplorationManager(Request.Visit fromUpstream) {
             return explorationManagers.computeIfAbsent(fromUpstream.partialAnswer().asConcludable(),
-                                                      partial -> new ExplorationManager(
-                                                              ruleDownstreams(fromUpstream.visit().partialAnswer())));
+                                                       partial -> new ExplorationManager(
+                                                               ruleDownstreams(fromUpstream.visit().partialAnswer())));
         }
 
         private BoundConcludableResolutionState<?> getResolutionState(Response response) {
@@ -351,9 +334,10 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             } else if (resolutionState.cache().isComplete()) {
                 failToUpstream(visit);
             } else {
-                blockToUpstream(visit, set(Cycle.create(visit.partialAnswer().asConcludable(),
-                                                        context.concludable(), bounds,
-                                                        resolutionState.cache().size())));
+                Map<Cycle, Integer> cycles = Cycle.create(visit.partialAnswer().asConcludable(),
+                                                          context.concludable(), bounds,
+                                                          resolutionState.cache().size());
+                blockToUpstream(visit, cycles);
             }
         }
 
@@ -388,9 +372,10 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
                     if (resolutionState.singleAnswerRequired()) resolutionState.cache().setComplete();
                     answerToUpstream(upstreamAnswer.get(), fromUpstream.visit());
                 } else {
-                    blockToUpstream(fromUpstream.visit(),
-                                    set(Cycle.create(fromUpstream.visit().partialAnswer().asConcludable(),
-                                                     context.concludable(), bounds, resolutionState.cache().size())));
+                    Map<Cycle, Integer> cycles = Cycle.create(fromUpstream.visit().partialAnswer().asConcludable(),
+                                                              context.concludable(), bounds,
+                                                              resolutionState.cache().size());
+                    blockToUpstream(fromUpstream.visit(), cycles);
                 }
             }
         }
