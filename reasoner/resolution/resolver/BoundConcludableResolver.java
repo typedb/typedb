@@ -254,7 +254,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             ExplorationManager explorationManager = getExplorationManager(fromDownstream);
             if (resolutionState.newAnswer(fromDownstream.answer())) {
                 Set<Cycle> toRevisit = cyclesToRevisit(explorationManager.blockingCycles(),
-                                                       fromDownstream.answer().asConcludable(), matchCache.size());
+                                                       resolutionState.fromUpstream().asConcludable(), matchCache.size());
                 if (!toRevisit.isEmpty()) explorationManager.revisit(toRevisit);
             }
             sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, explorationManager);
