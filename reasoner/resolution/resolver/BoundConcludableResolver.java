@@ -46,7 +46,6 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.resolution.framework.Resolver.ExplorationManager.cyclesToRevisit;
 
 public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludableResolver<RESOLVER>> extends Resolver<RESOLVER>  {
 
@@ -253,8 +252,8 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             BoundConcludableResolutionState<?> resolutionState = getResolutionState(fromDownstream);
             ExplorationManager explorationManager = getExplorationManager(fromDownstream);
             if (resolutionState.newAnswer(fromDownstream.answer())) {
-                Set<Cycle> toRevisit = cyclesToRevisit(explorationManager.blockingCycles(),
-                                                       resolutionState.fromUpstream().asConcludable(), matchCache.size());
+                Set<Cycle> toRevisit = explorationManager.cyclesToRevisit(
+                        resolutionState.fromUpstream().asConcludable(), matchCache.size());
                 if (!toRevisit.isEmpty()) explorationManager.revisit(toRevisit);
             }
             sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, explorationManager);
@@ -279,9 +278,8 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             Request.Factory blockingDownstream = fromDownstream.sourceRequest().visit().factory();
             if (explorationManager.contains(blockingDownstream)) {
                 explorationManager.block(blockingDownstream, fromDownstream.cycles());
-                Set<Cycle> toRevisit = cyclesToRevisit(explorationManager.blockingCycles(),
-                                                       resolutionState.fromUpstream().asConcludable(),
-                                                       matchCache.size());
+                Set<Cycle> toRevisit = explorationManager.cyclesToRevisit(
+                        resolutionState.fromUpstream().asConcludable(), matchCache.size());
                 if (!toRevisit.isEmpty()) explorationManager.revisit(toRevisit);
             }
             sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, explorationManager);

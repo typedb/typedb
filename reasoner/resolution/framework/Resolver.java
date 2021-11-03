@@ -345,9 +345,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             return filtered;
         }
 
-        public static Set<Cycle> cyclesToRevisit(Map<Cycle, Integer> cycles, Partial.Concludable<?> partial,
-                                                 int numAnswers) {
-            return iterate(cycles.entrySet())
+        public Set<Cycle> cyclesToRevisit(Partial.Concludable<?> partial, int numAnswers) {
+            return iterate(blockingCycles().entrySet())
                     .filter(e -> startsHere(e.getKey(), partial) && e.getValue() < numAnswers)
                     .map(Map.Entry::getKey).toSet();
         }
