@@ -36,7 +36,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 public abstract class Response {
 
     private final Request.Visit sourceRequest;
-    private final @Nullable Trace trace;
+    private final Trace trace;
     private final int hash;
 
     private Response(Request.Visit sourceRequest, @Nullable Trace trace) {
@@ -49,7 +49,7 @@ public abstract class Response {
         return sourceRequest;
     }
 
-    public @Nullable Trace trace() {
+    public Trace trace() {
         return trace;
     }
 

@@ -31,12 +31,12 @@ public interface Request {
 
     Visit visit();
 
-    @Nullable Trace trace();
+    Trace trace();
 
     class Visit implements Request {
 
         private final Factory factory;
-        private final @Nullable Trace trace;
+        private final Trace trace;
         protected final Actor.Driver<? extends Resolver<?>> sender;
         protected final Actor.Driver<? extends Resolver<?>> receiver;
         protected final AnswerState.Partial<?> partialAnswer;
@@ -75,7 +75,7 @@ public interface Request {
         }
 
         @Override
-        public @Nullable Trace trace() {
+        public Trace trace() {
             return trace;
         }
 
@@ -127,7 +127,7 @@ public interface Request {
         }
 
         @Override
-        public @Nullable Trace trace() {
+        public Trace trace() {
             return visit().trace;
         }
 
