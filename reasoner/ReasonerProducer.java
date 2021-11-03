@@ -77,7 +77,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.requestIdCounter = 0;
         this.traceId = UUID.randomUUID();
         this.requestFactory = requestFactory(filter);
-        this.untracedResolveRequest = requestFactory.createVisit(Trace.create(traceId, 0));
+        this.untracedResolveRequest = requestFactory.createVisit();
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
