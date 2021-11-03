@@ -60,7 +60,11 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
         super(driver, name, registry);
         this.context = context;
         this.bounds = bounds;
-        this.matchCache = new AnswerCache<>(() -> traversalIterator(context.concludable().pattern(), bounds));
+        this.matchCache = new AnswerCache<>(this::createTraversal);
+    }
+
+    private FunctionalIterator<ConceptMap> createTraversal() {
+        return traversalIterator(context.concludable().pattern(), bounds);
     }
 
     @Override
@@ -85,13 +89,14 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
     private Set<Identifier.Variable.Retrievable> unboundVars() {
         Set<Identifier.Variable.Retrievable> missingBounds = new HashSet<>();
         iterate(context.concludable().pattern().variables())
-                .filter(var -> var.id().isRetrievable()).forEachRemaining(var -> {
-            if (var.isType() && !var.asType().label().isPresent()) {
-                missingBounds.add(var.asType().id().asRetrievable());
-            } else if (var.isThing() && !var.asThing().iid().isPresent()) {
-                missingBounds.add(var.asThing().id().asRetrievable());
-            }
-        });
+                .filter(var -> var.id().isRetrievable())
+                .forEachRemaining(var -> {
+                    if (var.isType() && !var.asType().label().isPresent()) {
+                        missingBounds.add(var.asType().id().asRetrievable());
+                    } else if (var.isThing() && !var.asThing().iid().isPresent()) {
+                        missingBounds.add(var.asThing().id().asRetrievable());
+                    }
+                });
         return missingBounds;
     }
 
@@ -154,7 +159,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
 
         @Override
         public void resetCacheSource() {
-            answerCache.setSource(() -> traversalIterator(context.concludable().pattern(), bounds));
+            answerCache.setSource(BoundConcludableResolver.this::createTraversal);
         }
     }
 

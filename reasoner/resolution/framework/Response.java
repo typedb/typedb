@@ -37,12 +37,10 @@ public abstract class Response {
 
     private final Request.Visit sourceRequest;
     private final Trace trace;
-    private final int hash;
 
     private Response(Request.Visit sourceRequest, @Nullable Trace trace) {
         this.sourceRequest = sourceRequest;
         this.trace = trace;
-        this.hash = Objects.hash(sourceRequest, trace);
     }
 
     public Request sourceRequest() {
@@ -71,16 +69,16 @@ public abstract class Response {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(sourceRequest, trace);
+    }
+
+    @Override
     public String toString() {
         return "Response{" +
                 "sourceRequest=" + sourceRequest +
                 ", trace=" + trace +
                 '}';
-    }
-
-    @Override
-    public int hashCode() {
-        return hash;
     }
 
     public static class Answer extends Response {
