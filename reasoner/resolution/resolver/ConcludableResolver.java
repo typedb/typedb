@@ -65,9 +65,9 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
     }
 
     @Override
-    protected Driver<? extends BoundConcludableResolver<?>> getOrCreateBoundResolver(AnswerState.Partial<?> partial, ConceptMap mapped) {
+    protected Driver<? extends BoundConcludableResolver<?>> getOrCreateBoundResolver(AnswerState.Partial<?> partial, Mapping mapping) {
         // TODO: partial answer only needed for cycle detection
-        // Note: `mapped` is a different ConceptMap to that of the partial answer, an important optimisation.
+        ConceptMap mapped = mapping.transform(partial.conceptMap());
         boolean cycle = isCycle.computeIfAbsent(partial.asConcludable(), p -> isCycle(p, mapped));
         if (cycle) {
             return blockedBoundResolvers.computeIfAbsent(mapped, conceptMap -> {
@@ -84,6 +84,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
         }
     }
 
+    @Override
     protected AnswerState.Partial<?> applyRemapping(AnswerState.Partial<?> partial, Mapping mapping) {
         return partial.asConcludable().remap(mapping);
     }

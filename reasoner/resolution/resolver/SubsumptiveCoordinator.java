@@ -40,17 +40,17 @@ public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordin
 
     private static final Logger LOG = LoggerFactory.getLogger(SubsumptiveCoordinator.class);
     private final Map<AnswerState.Partial<?>, Request.Factory> requestFactories;
-    protected final Set<Mapping> equivalentMappings;
-    protected final Map<ConceptMap, Mapping> reflexiveMappings;
+    protected final Set<Mapping> symmetricMappings;
+    protected final Map<ConceptMap, Mapping> boundsRedirectionMappings;
     protected boolean isInitialised;
 
-    protected SubsumptiveCoordinator(Driver<RESOLVER> driver, String name, Set<Mapping> equivalentMappings,
+    protected SubsumptiveCoordinator(Driver<RESOLVER> driver, String name, Set<Mapping> symmetricMappings,
                                      ResolverRegistry registry) {
         super(driver, name, registry);
         this.isInitialised = false;
         this.requestFactories = new HashMap<>();
-        this.equivalentMappings = equivalentMappings;
-        this.reflexiveMappings = new HashMap<>();
+        this.symmetricMappings = symmetricMappings;
+        this.boundsRedirectionMappings = new HashMap<>();
     }
 
     @Override
@@ -59,10 +59,8 @@ public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordin
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
         ConceptMap conceptMap = fromUpstream.partialAnswer().conceptMap();
-        Mapping mapping = reflexiveMappings.get(conceptMap);
-        if (mapping == null) mapping = computeReflexiveMappings(conceptMap);
-        Driver<? extends Resolver<?>> worker = getOrCreateBoundResolver(fromUpstream.partialAnswer(),
-                                                                        mapping.transform(conceptMap));
+        Mapping mapping = computeReflexiveMapping(conceptMap);
+        Driver<? extends Resolver<?>> worker = getOrCreateBoundResolver(fromUpstream.partialAnswer(), mapping);
         Request.Factory requestFactory = getOrCreateRequestFactory(fromUpstream.partialAnswer(), worker, mapping);
         Request.Visit visit = requestFactory.createVisit(fromUpstream.trace());
         visitDownstream(visit, fromUpstream);
@@ -74,18 +72,20 @@ public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordin
         assert isInitialised;
         if (isTerminated()) return;
         ConceptMap conceptMap = fromUpstream.visit().partialAnswer().conceptMap();
-        Mapping mapping = reflexiveMappings.get(conceptMap);
-        if (mapping == null) mapping = computeReflexiveMappings(conceptMap);
-        Driver<? extends Resolver<?>> worker = getOrCreateBoundResolver(fromUpstream.visit().partialAnswer(),
-                                                                        mapping.transform(conceptMap));
+        Mapping mapping = computeReflexiveMapping(conceptMap);
+        Driver<? extends Resolver<?>> worker = getOrCreateBoundResolver(fromUpstream.visit().partialAnswer(), mapping);
         Request.Factory requestFactory = getOrCreateRequestFactory(fromUpstream.visit().partialAnswer(), worker, mapping);
         Request.Revisit revisit = requestFactory.createRevisit(fromUpstream.trace(), fromUpstream.cycles());
         revisitDownstream(revisit, fromUpstream);
     }
 
-    protected Mapping computeReflexiveMappings(ConceptMap conceptMap) {
-        equivalentMappings.forEach(m -> reflexiveMappings.put(m.unTransform(conceptMap), m));
-        return reflexiveMappings.get(conceptMap);
+    protected Mapping computeReflexiveMapping(ConceptMap conceptMap) {
+        Mapping mapping = boundsRedirectionMappings.get(conceptMap);
+        if (mapping != null) return mapping;
+        else {
+            symmetricMappings.forEach(m -> boundsRedirectionMappings.put(m.unTransform(conceptMap), m));
+            return boundsRedirectionMappings.get(conceptMap);
+        }
     }
 
     private Request.Factory getOrCreateRequestFactory(AnswerState.Partial<?> partial, Driver<? extends Resolver<?>> receiver, Mapping mapping) {
@@ -104,7 +104,7 @@ public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordin
         blockToUpstream(fromUpstream(fromDownstream.sourceRequest().visit()), fromDownstream.cycles());
     }
 
-    protected abstract Driver<? extends Resolver<?>> getOrCreateBoundResolver(AnswerState.Partial<?> partial, ConceptMap mapped);  // TODO: partial answer only required for cycle detection
+    protected abstract Driver<? extends Resolver<?>> getOrCreateBoundResolver(AnswerState.Partial<?> partial, Mapping mapping);  // TODO: partial answer only required for cycle detection
 
     @Override
     protected void receiveAnswer(Answer answer) {
