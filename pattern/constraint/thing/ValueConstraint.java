@@ -184,8 +184,8 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
     @Override
     public FunctionalIterator<AlphaEquivalence> alphaEquals(ValueConstraint<?> that) {
-        return AlphaEquivalence.empty()
-                .alphaEqualIf(isLong() == that.isLong())
+        return owner.alphaEquals(that.owner)
+                .flatMap(a -> a.alphaEqualIf(isLong() == that.isLong()))
                 .flatMap(a -> a.alphaEqualIf(isDouble() == that.isDouble()))
                 .flatMap(a -> a.alphaEqualIf(isBoolean() == that.isBoolean()))
                 .flatMap(a -> a.alphaEqualIf(isString() == that.isString()))
@@ -389,10 +389,10 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public FunctionalIterator<AlphaEquivalence> alphaEquals(ValueConstraint<?> that) {
-            return AlphaEquivalence.empty()
-                    .alphaEqualIf(isVariable() && that.isVariable())
-                    .flatMap(a -> a.alphaEqualIf(this.predicate.equals(that.predicate)))
+            return owner.alphaEquals(that.owner)
                     .flatMap(a -> a.alphaEqualIf(isVariable() && that.isVariable()))
+                    .flatMap(a -> value.alphaEquals(that.asVariable().value).flatMap(a::extendIfCompatible))
+                    .flatMap(a -> a.alphaEqualIf(this.predicate.equals(that.predicate)))
                     .flatMap(a -> this.value.alphaEquals(that.asVariable().value()).flatMap(a::extendIfCompatible));
         }
 

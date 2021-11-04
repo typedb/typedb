@@ -94,7 +94,8 @@ public class HasConstraint extends ThingConstraint implements AlphaEquivalent<Ha
 
     @Override
     public FunctionalIterator<AlphaEquivalence> alphaEquals(HasConstraint that) {
-        return attribute.alphaEquals(that.attribute);
+        return owner.alphaEquals(that.owner)
+                .flatMap(a -> attribute.alphaEquals(that.attribute).flatMap(a::extendIfCompatible));
     }
 
     @Override
