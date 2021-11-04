@@ -41,7 +41,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
 
     private final LinkedHashMap<Driver<ConclusionResolver>, Set<Unifier>> conclusionResolvers;
     private final Concludable concludable;
-    private final Map<AnswerState.Partial.Concludable<?>, Driver<? extends BoundConcludableResolver<?>>> boundResolversByPartial;
+    private final Map<AnswerState.Partial.Concludable<?>, Boolean> isCycle;
     private final Map<ConceptMap, Driver<BoundConcludableResolver.Blocked>> blockedBoundResolvers;
     private final Map<ConceptMap, Driver<BoundConcludableResolver.Exploring>> exploringBoundResolvers;
 
@@ -51,7 +51,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
         this.concludable = concludable;
         this.conclusionResolvers = new LinkedHashMap<>();
         this.isInitialised = false;
-        this.boundResolversByPartial = new HashMap<>();
+        this.isCycle = new HashMap<>();
         this.blockedBoundResolvers = new HashMap<>();
         this.exploringBoundResolvers = new HashMap<>();
     }
@@ -68,21 +68,20 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
     protected Driver<? extends BoundConcludableResolver<?>> getOrCreateBoundResolver(AnswerState.Partial<?> partial, ConceptMap mapped) {
         // TODO: partial answer only needed for cycle detection
         // Note: `mapped` is a different ConceptMap to that of the partial answer, an important optimisation.
-        return boundResolversByPartial.computeIfAbsent(partial.asConcludable(), p -> {
-            if (isCycle(p, mapped)) {
-                return blockedBoundResolvers.computeIfAbsent(mapped, conceptMap -> {
-                    LOG.debug("{}: Creating a new BoundConcludableResolver.Blocked for bounds: {}", name(), partial);
-                    BoundConcludableContext context = new BoundConcludableContext(concludable, conclusionResolvers);
-                    return registry.registerBlocked(conceptMap, context);
-                });
-            } else {
-                return exploringBoundResolvers.computeIfAbsent(mapped, conceptMap -> {
-                    LOG.debug("{}: Creating a new BoundConcludableResolver.Exploring for bounds: {}", name(), partial);
-                    BoundConcludableContext context = new BoundConcludableContext(concludable, conclusionResolvers);
-                    return registry.registerExploring(conceptMap, context);
-                });
-            }
-        });
+        boolean cycle = isCycle.computeIfAbsent(partial.asConcludable(), p -> isCycle(p, mapped));
+        if (cycle) {
+            return blockedBoundResolvers.computeIfAbsent(mapped, conceptMap -> {
+                LOG.debug("{}: Creating a new BoundConcludableResolver.Blocked for bounds: {}", name(), partial);
+                BoundConcludableContext context = new BoundConcludableContext(concludable, conclusionResolvers);
+                return registry.registerBlocked(conceptMap, context);
+            });
+        } else {
+            return exploringBoundResolvers.computeIfAbsent(mapped, conceptMap -> {
+                LOG.debug("{}: Creating a new BoundConcludableResolver.Exploring for bounds: {}", name(), partial);
+                BoundConcludableContext context = new BoundConcludableContext(concludable, conclusionResolvers);
+                return registry.registerExploring(conceptMap, context);
+            });
+        }
     }
 
     protected AnswerState.Partial<?> applyRemapping(AnswerState.Partial<?> partial, Mapping mapping) {
