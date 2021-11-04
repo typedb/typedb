@@ -62,7 +62,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
         ResolutionState resolutionState = resolutionStates.computeIfAbsent(fromUpstream.partialAnswer().asCompound(),
-                                                                           this::resolutionStateCreate);
+                                                                           this::createResolutionState);
         sendNextMessage(fromUpstream, resolutionState);
     }
 
@@ -99,7 +99,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         sendNextMessage(fromUpstream, resolutionState);
     }
 
-    abstract ResolutionState resolutionStateCreate(Compound<?, ?> fromUpstream);
+    abstract ResolutionState createResolutionState(Compound<?, ?> fromUpstream);
 
     // TODO: Align with the ResolutionState implementation used across the other resolvers
     static class ResolutionState {
