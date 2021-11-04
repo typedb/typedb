@@ -21,8 +21,6 @@ class Typedb < Formula
   url "https://github.com/vaticle/typedb/releases/download/{version}/typedb-all-mac-{version}.zip"
   sha256 "{sha256}"
 
-  bottle :unneeded
-
   depends_on "openjdk@11"
 
   def setup_directory(dir)
