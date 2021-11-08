@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+# RUN COMMAND: ./docs/deps.sh //... package-structure
+
 popd > /dev/null
 
 [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
