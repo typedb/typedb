@@ -27,9 +27,8 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
@@ -145,16 +144,16 @@ public abstract class Response {
 
     public static class Blocked extends Response {
 
-        protected Map<Cycle, Integer> cycles;
+        protected Set<Cycle> cycles;
         private final int hash;
 
-        public Blocked(Request.Visit sourceRequest, Map<Cycle, Integer> cycles, @Nullable Trace trace) {
+        public Blocked(Request.Visit sourceRequest, Set<Cycle> cycles, @Nullable Trace trace) {
             super(sourceRequest, trace);
             this.cycles = cycles;
             this.hash = Objects.hash(super.hashCode(), cycles);
         }
 
-        public Map<Cycle, Integer> cycles() {
+        public Set<Cycle> cycles() {
             return cycles;
         }
 
@@ -184,31 +183,34 @@ public abstract class Response {
         public static class Cycle {
 
             private final Partial.Concludable<?> origin;
+            private final int answersSeen;
 
-            public static Map<Cycle, Integer> create(Partial.Concludable<?> initial, Concludable concludable,
-                                                     ConceptMap conceptMap, int numAnswersSeen) {
+            public static Cycle create(Partial.Concludable<?> initial, Concludable concludable, ConceptMap conceptMap,
+                                       int answersSeen) {
                 AnswerState.Partial<?> ans = initial;
                 while (ans.parent().isPartial()) {
                     ans = ans.parent().asPartial();
                     if (ans.isConcludable()) {
                         if (ans.asConcludable().concludable().alphaEquals(concludable).first().isPresent()
                                 && ans.conceptMap().equals(conceptMap)) {
-                            Cycle cycle = new Cycle(ans.asConcludable());
-                            Map<Cycle, Integer> cyclesMap = new HashMap<>();
-                            cyclesMap.put(cycle, numAnswersSeen);
-                            return cyclesMap;
+                            return new Cycle(ans.asConcludable(), answersSeen);
                         }
                     }
                 }
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
 
-            public Cycle(Partial.Concludable<?> origin) {
+            private Cycle(Partial.Concludable<?> origin, int answersSeen) {
                 this.origin = origin;
+                this.answersSeen = answersSeen;
             }
 
             public Partial.Concludable<?> origin() {
                 return origin;
+            }
+
+            public int answersSeen() {
+                return answersSeen;
             }
 
             @Override
@@ -216,18 +218,20 @@ public abstract class Response {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 Cycle cycle = (Cycle) o;
-                return origin.equals(cycle.origin);
+                return answersSeen == cycle.answersSeen &&
+                        origin.equals(cycle.origin);
             }
 
             @Override
             public int hashCode() {
-                return Objects.hash(origin);
+                return Objects.hash(origin, answersSeen);
             }
 
             @Override
             public String toString() {
                 return "Cycle{" +
                         "origin=" + origin +
+                        ", numAnswersSeen=" + answersSeen +
                         '}';
             }
         }
