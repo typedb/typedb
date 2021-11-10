@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -277,7 +278,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         public Request.Revisit nextRevisit(Trace trace) {
             Optional<Request.Factory> downstream = iterate(revisits.keySet()).first();
             assert downstream.isPresent();
-            return downstream.get().createRevisit(trace, revisits.get(downstream.get()));
+            assert !revisits.get(downstream.get()).isEmpty();
+            return downstream.get().createRevisit(trace, set(revisits.get(downstream.get())));
         }
 
         public boolean hasNextVisit() {
@@ -318,44 +320,38 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         }
 
         public void block(Request.Factory toBlock, Set<Cycle> cycles) {
-            assert contains(toBlock);
+            assert contains(toBlock) && !cycles.isEmpty();
             visits.remove(toBlock);
             Set<Cycle> revisitCycles = revisits.get(toBlock);
-            if (revisitCycles != null) removeEquivalentCycles(revisitCycles, cycles);
+            if (revisitCycles != null) {
+                removeEquivalentCycles(revisitCycles, cycles);
+                if (revisitCycles.isEmpty()) revisits.remove(toBlock);
+            }
             mergeNewerCycles(blocked.computeIfAbsent(toBlock, b -> new HashSet<>()), cycles);
         }
 
         private void removeEquivalentCycles(Set<Cycle> cycles, Set<Cycle> toRemove) {
-            FunctionalIterator<Cycle> i = iterate(cycles);
-            while (i.hasNext()) {
-                Cycle cycle = i.next();
-                if (iterate(toRemove).anyMatch(r -> r.origin().equals(cycle.origin()))) i.remove();
-            }
+            cycles.removeAll(iterate(cycles).filter(cycle -> findEquivalent(toRemove, cycle).isPresent()).toSet());
         }
 
         private void retainEquivalentCycles(Set<Cycle> cycles, Set<Cycle> toRetain) {
-            FunctionalIterator<Cycle> i = iterate(cycles);
-            while (i.hasNext()) {
-                Cycle cycle = i.next();
-                if (!iterate(toRetain).anyMatch(r -> r.origin().equals(cycle.origin()))) i.remove();
-            }
+            cycles.removeAll(iterate(cycles).filter(cycle -> findEquivalent(toRetain, cycle).isEmpty()).toSet());
         }
 
         private void mergeNewerCycles(Set<Cycle> cycles, Set<Cycle> toMerge) {
-            FunctionalIterator<Cycle> i = iterate(cycles);
-            Set<Cycle> updatedCycles = new HashSet<>();
-            while (i.hasNext()) {
-                Cycle cycle = i.next();
-                Optional<Cycle> updatedCycle = iterate(toMerge).filter(
-                        newCycle -> newCycle.origin().equals(cycle.origin())
-                                && newCycle.answersSeen() > cycle.answersSeen()
-                ).first();
-                if (updatedCycle.isPresent()) {
-                    i.remove();
-                    updatedCycles.add(updatedCycle.get());
+            iterate(toMerge).forEachRemaining(m -> {
+                Optional<Cycle> equivalentCycle = findEquivalent(cycles, m);
+                if (equivalentCycle.isPresent() && m.answersSeen() > equivalentCycle.get().answersSeen()) {
+                    cycles.remove(equivalentCycle.get());
+                    cycles.add(m);
+                } else if (equivalentCycle.isEmpty()) {
+                    cycles.add(m);
                 }
-            }
-            cycles.addAll(updatedCycles);
+            });
+        }
+
+        private Optional<Cycle> findEquivalent(Set<Cycle> cycles, Cycle cycle) {
+            return iterate(cycles).filter(c -> c.origin().equals(cycle.origin())).first();
         }
 
         public Set<Cycle> cyclesToRevisit(Partial.Concludable<?> partial, int numAnswers) {
@@ -371,7 +367,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
                 Set<Cycle> blockersToRevisit = new HashSet<>(blockers);
                 retainEquivalentCycles(blockersToRevisit, cycles);
                 if (!blockersToRevisit.isEmpty()) {
-                    mergeNewerCycles(revisits.computeIfAbsent(downstream, o -> new HashSet<>()), blockersToRevisit);
+                    revisits.computeIfAbsent(downstream, o -> new HashSet<>()).addAll(blockersToRevisit);
+//                    mergeNewerCycles(revisits.computeIfAbsent(downstream, o -> new HashSet<>()), blockersToRevisit);
                     blockers.removeAll(blockersToRevisit);
                     if (blockers.isEmpty()) toRemove.add(downstream);
                 }
@@ -382,9 +379,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         public boolean allBlockedStartHere(Partial.Concludable<?> concludable) {
             assert visits.isEmpty() && revisits.isEmpty();
             for (Set<Cycle> cycles : blocked.values()) {
-                if (cycles.size() > 1 || (cycles.size() == 1 && !startsHere(iterate(cycles).next(), concludable))) {
-                    return false;
-                }
+                if (iterate(cycles).anyMatch(c -> !startsHere(c, concludable))) return false;
             }
             return true;
         }
