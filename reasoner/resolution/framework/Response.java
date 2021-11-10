@@ -18,19 +18,16 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
-
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public abstract class Response {
 
@@ -182,30 +179,19 @@ public abstract class Response {
 
         public static class Cycle {
 
-            private final Partial.Concludable<?> origin;
+            private final Pair<Concludable, ConceptMap> origin;
             private final int answersSeen;
 
-            public static Cycle create(Partial.Concludable<?> initial, Concludable concludable, ConceptMap conceptMap,
-                                       int answersSeen) {
-                AnswerState.Partial<?> ans = initial;
-                while (ans.parent().isPartial()) {
-                    ans = ans.parent().asPartial();
-                    if (ans.isConcludable()) {
-                        if (ans.asConcludable().concludable().alphaEquals(concludable).first().isPresent()
-                                && ans.conceptMap().equals(conceptMap)) {
-                            return new Cycle(ans.asConcludable(), answersSeen);
-                        }
-                    }
-                }
-                throw TypeDBException.of(ILLEGAL_STATE);
-            }
-
-            private Cycle(Partial.Concludable<?> origin, int answersSeen) {
-                this.origin = origin;
+            private Cycle(Concludable concludable, ConceptMap conceptMap, int answersSeen) {
+                this.origin = new Pair<>(concludable, conceptMap);
                 this.answersSeen = answersSeen;
             }
 
-            public Partial.Concludable<?> origin() {
+            public static Cycle create(Concludable concludable, ConceptMap conceptMap, int answersSeen) {
+                return new Cycle(concludable, conceptMap, answersSeen);
+            }
+
+            public Pair<Concludable, ConceptMap> origin() {
                 return origin;
             }
 

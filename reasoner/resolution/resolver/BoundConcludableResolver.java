@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
-import com.vaticle.typedb.common.collection.Collections;
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
@@ -225,11 +225,11 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
                 visitDownstream(explorationManager.nextVisit(visit.trace()), visit);
             } else if (explorationManager.hasNextRevisit()) {
                 revisitDownstream(explorationManager.nextRevisit(visit.trace()), visit);
-            } else if (explorationManager.allBlockedStartHere(resolutionState.fromUpstream().asConcludable())) {
+            } else if (explorationManager.allBlockedStartHere(new Pair<>(context.concludable(), bounds))) {
                 resolutionState.cache().setComplete();
                 failToUpstream(visit);
             } else {
-                blockToUpstream(visit, explorationManager.blockersStartingElsewhere(resolutionState.fromUpstream().asConcludable()));
+                blockToUpstream(visit, explorationManager.blockersStartingElsewhere(new Pair<>(context.concludable(), bounds)));
             }
         }
 
@@ -259,8 +259,8 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             BoundConcludableResolutionState<?> resolutionState = getResolutionState(fromDownstream);
             ExplorationManager explorationManager = getExplorationManager(fromDownstream);
             if (resolutionState.newAnswer(fromDownstream.answer())) {
-                Set<Cycle> toRevisit = explorationManager.cyclesToRevisit(
-                        resolutionState.fromUpstream().asConcludable(), matchCache.size());
+                Set<Cycle> toRevisit = explorationManager.cyclesToRevisit(new Pair<>(context.concludable(), bounds),
+                                                                          matchCache.size());
                 if (!toRevisit.isEmpty()) explorationManager.revisit(toRevisit);
             }
             sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, explorationManager);
@@ -285,8 +285,8 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             Request.Factory blockingDownstream = fromDownstream.sourceRequest().visit().factory();
             if (explorationManager.contains(blockingDownstream)) {
                 explorationManager.block(blockingDownstream, fromDownstream.cycles());
-                Set<Cycle> toRevisit = explorationManager.cyclesToRevisit(
-                        resolutionState.fromUpstream().asConcludable(), matchCache.size());
+                Set<Cycle> toRevisit = explorationManager.cyclesToRevisit(new Pair<>(context.concludable(), bounds),
+                                                                          matchCache.size());
                 if (!toRevisit.isEmpty()) explorationManager.revisit(toRevisit);
             }
             sendNextMessage(upstreamRequest(fromDownstream).visit(), resolutionState, explorationManager);
@@ -339,9 +339,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
             } else if (resolutionState.cache().isComplete()) {
                 failToUpstream(visit);
             } else {
-                Cycle cycle = Cycle.create(visit.partialAnswer().asConcludable(),
-                                            context.concludable(), bounds,
-                                            resolutionState.cache().size());
+                Cycle cycle = Cycle.create(context.concludable(), bounds, resolutionState.cache().size());
                 blockToUpstream(visit, set(cycle));
             }
         }
@@ -377,9 +375,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
                     if (resolutionState.singleAnswerRequired()) resolutionState.cache().setComplete();
                     answerToUpstream(upstreamAnswer.get(), fromUpstream.visit());
                 } else {
-                    Cycle cycle = Cycle.create(fromUpstream.visit().partialAnswer().asConcludable(),
-                                                context.concludable(), bounds,
-                                                resolutionState.cache().size());
+                    Cycle cycle = Cycle.create(context.concludable(), bounds, resolutionState.cache().size());
                     blockToUpstream(fromUpstream.visit(), set(cycle));
                 }
             }

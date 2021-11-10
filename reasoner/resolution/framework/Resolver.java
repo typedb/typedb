@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
@@ -27,6 +28,7 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.concurrent.producer.Producers;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
@@ -216,16 +218,6 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
         public abstract Optional<? extends Partial<?>> nextAnswer();
 
-        public interface Exploration {
-
-            boolean newAnswer(Partial<?> partial);
-
-            ExplorationManager explorationManager();
-
-            boolean singleAnswerRequired();
-
-        }
-
     }
 
     public abstract static class CachingResolutionState<ANSWER> extends ResolutionState {
@@ -354,9 +346,9 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             return iterate(cycles).filter(c -> c.origin().equals(cycle.origin())).first();
         }
 
-        public Set<Cycle> cyclesToRevisit(Partial.Concludable<?> partial, int numAnswers) {
+        public Set<Cycle> cyclesToRevisit(Pair<Concludable, ConceptMap> origin, int numAnswers) {
             return iterate(blockingCycles())
-                    .filter(cycle -> startsHere(cycle, partial) && cycle.answersSeen() < numAnswers).toSet();
+                    .filter(cycle -> startsHere(cycle, origin) && cycle.answersSeen() < numAnswers).toSet();
         }
 
         public void revisit(Set<Cycle> cycles) {
@@ -367,8 +359,7 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
                 Set<Cycle> blockersToRevisit = new HashSet<>(blockers);
                 retainEquivalentCycles(blockersToRevisit, cycles);
                 if (!blockersToRevisit.isEmpty()) {
-                    revisits.computeIfAbsent(downstream, o -> new HashSet<>()).addAll(blockersToRevisit);
-//                    mergeNewerCycles(revisits.computeIfAbsent(downstream, o -> new HashSet<>()), blockersToRevisit);
+                    mergeNewerCycles(revisits.computeIfAbsent(downstream, o -> new HashSet<>()), blockersToRevisit);
                     blockers.removeAll(blockersToRevisit);
                     if (blockers.isEmpty()) toRemove.add(downstream);
                 }
@@ -376,21 +367,21 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             toRemove.forEach(blocked::remove);
         }
 
-        public boolean allBlockedStartHere(Partial.Concludable<?> concludable) {
+        public boolean allBlockedStartHere(Pair<Concludable, ConceptMap> origin) {
             assert visits.isEmpty() && revisits.isEmpty();
             for (Set<Cycle> cycles : blocked.values()) {
-                if (iterate(cycles).anyMatch(c -> !startsHere(c, concludable))) return false;
+                if (iterate(cycles).anyMatch(c -> !startsHere(c, origin))) return false;
             }
             return true;
         }
 
-        public Set<Cycle> blockersStartingElsewhere(Partial.Concludable<?> partial) {
+        public Set<Cycle> blockersStartingElsewhere(Pair<Concludable, ConceptMap> origin) {
             return iterate(blocked.values()).flatMap(
-                    cycles -> iterate(cycles).filter(c -> !startsHere(c, partial))).toSet();
+                    cycles -> iterate(cycles).filter(c -> !startsHere(c, origin))).toSet();
         }
 
-        public static boolean startsHere(Cycle cycle, Partial.Concludable<?> partial) {
-            return cycle.origin().equals(partial);
+        public static boolean startsHere(Cycle cycle, Pair<Concludable, ConceptMap> origin) {
+            return cycle.origin().equals(origin);
         }
     }
 }
