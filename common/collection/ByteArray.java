@@ -257,7 +257,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     }
 
     public static ByteArray encodeStringAsSorted(String value, Charset encoding) throws TypeDBCheckedException {
-        byte[] bytes = value.getBytes();
+        byte[] bytes = value.getBytes(encoding);
         if (bytes.length > SHORT_UNSIGNED_MAX_VALUE) {
             throw TypeDBCheckedException.of(ILLEGAL_STRING_SIZE, SHORT_UNSIGNED_MAX_VALUE);
         }
