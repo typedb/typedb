@@ -149,7 +149,7 @@ java_deps(
     target = ":server-bin-deps-mac",
     java_deps_root = "server/lib/common/",
     java_deps_root_overrides = {
-        "rocksdbjni-dev-*": "server/lib/dev/",
+        "rocksdbjni-dev-mac-*": "server/lib/dev/",
     },
     visibility = ["//:__pkg__"],
     maven_name = True,

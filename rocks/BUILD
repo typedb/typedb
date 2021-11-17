@@ -49,11 +49,10 @@ native_java_libraries(
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_slf4j_slf4j_api"
     ],
-
     mac_deps = [
         "@maven//:com_google_ortools_ortools_darwin",
         "@maven//:com_google_ortools_ortools_darwin_java",
-        "@maven//:org_rocksdb_rocksdbjni_dev",
+        "@maven//:org_rocksdb_rocksdbjni_dev_mac",
     ],
     linux_deps = [
         "@maven//:com_google_ortools_ortools_linux_x86_64",
