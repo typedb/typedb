@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.stream;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.reasoner.stream.Processor.Buffer;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Inlet;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Outlet;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Pipe;
@@ -33,23 +34,23 @@ public class ConcludableController extends Controller {
     private ConcludableController() {
     }
 
-    private void createConcludableWorker(ConceptMap bounds) {
+    private void createConcludableProcessor(ConceptMap bounds) {
         // TODO: Change source and sink to refer to inlets and outlets (except the traversalSource which is actually a
         //  source). These can then be typed and we can keep a record of whether we can message children to add extra inlets or outlets.
-        Buffer buffer = new Buffer();
+        Buffer<ConceptMap> buffer = new Buffer<>();
         OutletController.DynamicMulti multiOutletController = OutletController.dynamicMulti();
         InletController.DynamicMulti multiInletController = InletController.dynamicMulti();
 
-        Pipe<INPUT, ConceptMap> downstreamOp = Pipe.input().flatMapOrRetry(a -> a.unUnify(a.conceptMap(), requirements));
-        Pipe<INPUT, ConceptMap> traversalOp = Source.fromIterator(createTraversal(concludable, bounds)).asOp();  // TODO: Delay opening the traversal until needed. Use a non-eager traversal wrapper.
-        Pipe<INPUT, ConceptMap> op = Pipe.orderedJoin(traversalOp, downstreamOp);  // TODO: Could be a fluent .join(). Perhaps instead this should be attached as one of the inlets? But the inlets and outlets are currently the actor boundaries, so maybe not.
+        Pipe<ConceptMap, ConceptMap> downstreamOp = Pipe.input().flatMapOrRetry(a -> a.unUnify(a.conceptMap(), requirements));
+        Pipe<ConceptMap, ConceptMap> traversalOp = Source.fromIterator(createTraversal(concludable, bounds)).asPipe();  // TODO: Delay opening the traversal until needed. Use a non-eager traversal wrapper.
+        Pipe<ConceptMap, ConceptMap> op = Pipe.orderedJoin(traversalOp, downstreamOp);  // TODO: Could be a fluent .join(). Perhaps instead this should be attached as one of the inlets? But the inlets and outlets are currently the actor boundaries, so maybe not.
         boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars());  // Determines whether to use findFirst() or find all results
         if (singleAnswerRequired) {
             op = op.findFirst();  // Will finish the stream once one answer is found
         }
         op = op.buffer(buffer);
         // TODO: toUpstreamLookup? Requires concludable to determine whether answer is inferred
-        ProcessorRef processor = buildProcessor(op, multiInletController, multiOutletController);
+        ProcessorRef<ConceptMap, ConceptMap, InletController.DynamicMulti, OutletController.DynamicMulti> processor = buildProcessor(op, multiInletController, multiOutletController);
         concludableProcessors.put(bounds, processor);
     }
 

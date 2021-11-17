@@ -23,13 +23,13 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 
 import java.util.function.Function;
 
-public class Processor<INLET extends Processor.Inlet, OUTLET extends Processor.Outlet> extends Actor<Processor<INLET, OUTLET>> {
+public class Processor<INPUT, OUTPUT, INLET extends Processor.Inlet<INPUT>, OUTLET extends Processor.Outlet<OUTPUT>> extends Actor<Processor<INPUT, OUTPUT, INLET, OUTLET>> {
 
-    private final Pipe<INPUT, T> pipe;
+    private final Pipe<INPUT, OUTPUT> pipe;
     private final INLET inlet;
     private final OUTLET outlet;
 
-    public Processor(Driver<Processor<INLET, OUTLET>> driver, String name, Pipe<INPUT, T> pipe, INLET inlet, OUTLET outlet) {
+    public Processor(Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> driver, String name, Pipe<INPUT, OUTPUT> pipe, INLET inlet, OUTLET outlet) {
         super(driver, name);
         this.pipe = pipe;
         this.inlet = inlet;
@@ -49,19 +49,20 @@ public class Processor<INLET extends Processor.Inlet, OUTLET extends Processor.O
 
     }
 
-    public static class Outlet {
-        public void connect(Pipe<INPUT, T> pipe) {
+    public static class Outlet<OUTPUT> {
+        public void connect(Pipe<?, OUTPUT> pipe) {
             // TODO: set the pipe to pull from when answers required
         }
 
-        public static class Single extends Outlet {}
-        public static class DynamicMulti extends Outlet {
-            public void add(Driver<? extends Processor<?, ?>> newOutlet) {}
+        public static class Single<OUTPUT> extends Outlet<OUTPUT> {}
+        public static class DynamicMulti<OUTPUT> extends Outlet<OUTPUT> {
+            public void add(Driver<? extends Processor<OUTPUT, ?, ?, ?>> newOutlet) {}
         }
     }
-    public static class Inlet {
-        public static class Single extends Inlet {}
-        public static class DynamicMulti extends Inlet {
+
+    public static class Inlet<INPUT> {
+        public static class Single<INPUT> extends Inlet<INPUT> {}
+        public static class DynamicMulti<INPUT> extends Inlet<INPUT> {
             public void add() {}
         }
     }
@@ -89,14 +90,14 @@ public class Processor<INLET extends Processor.Inlet, OUTLET extends Processor.O
 
         }
 
-        public Pipe<INPUT, OUTPUT> buffer(Buffer buffer) {
+        public Pipe<INPUT, OUTPUT> buffer(Buffer<OUTPUT> buffer) {
 
         }
 
-        public void connect(Inlet inlet) {
+        public void connect(Inlet<INPUT> inlet) {
 
         }
     }
 
-    private static class Buffer {}
+    public static class Buffer<T> {}
 }

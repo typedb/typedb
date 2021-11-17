@@ -34,8 +34,8 @@ public abstract class Controller {
         this.executorService = executorService;
     }
 
-    <T, INLET extends Inlet, OUTLET extends Processor.Outlet> ProcessorRef<INLET, OUTLET> buildProcessor(Pipe<INPUT, T> pipe, InletController<INLET> inletController, OutletController<OUTLET> outletController) {
-        Actor.Driver<Processor<INLET, OUTLET>> processorDriver = Actor.driver(driver -> new Processor<>(driver, "name", pipe, inletController.inlet(), outletController.outlet()), executorService);
+    <INPUT, OUTPUT, INLET extends Inlet<INPUT>, OUTLET extends Processor.Outlet<OUTPUT>> ProcessorRef<INLET, OUTLET> buildProcessor(Pipe<INPUT, OUTPUT> pipe, InletController<INLET> inletController, OutletController<OUTLET> outletController) {
+        Actor.Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> processorDriver = Actor.driver(driver -> new Processor<>(driver, "name", pipe, inletController.inlet(), outletController.outlet()), executorService);
         return new ProcessorRef<>(processorDriver, inletController, outletController);
     }
 
@@ -43,16 +43,10 @@ public abstract class Controller {
         return traversalIterator(context.concludable().pattern(), bounds);
     }
 
-    public void createSubscription(SubscriptionPrototype proto) {
-        Stream stream = boundStreams.get(proto.subscriber().bounds());
-        // Add a new subscriber to the actor. Will send a message to the actor under the hood
-        stream.sink().asFanOut().add(proto.subscriber());  // TODO: How can we know that this is a fanOut sink and we can add more subscribers? Only if we keep a local object here that defines this.
-    }
+    static class Source<INPUT> {
+        public static <INPUT> Source<INPUT> fromIterator(FunctionalIterator<INPUT> traversal){}
 
-    static class Source {
-        public static Source fromIterator(FunctionalIterator<ConceptMap> traversal){}
-
-        public OperationBuilder asOp() {
+        public Pipe<INPUT, INPUT> asPipe() {
 
         }
     }
@@ -108,22 +102,16 @@ public abstract class Controller {
         }
     }
 
-    private static class ProcessorRef<INLET extends Inlet, OUTLET extends Processor.Outlet> {
+    private static class ProcessorRef<INPUT, OUTPUT, INLET extends Inlet<INPUT>, OUTLET extends Processor.Outlet<OUTPUT>> {
 
-        private final Actor.Driver<Processor<INLET, OUTLET>> processorDriver;
+        private final Actor.Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> processorDriver;
         private final InletController<INLET> inletController;
         private final OutletController<OUTLET> outletController;
 
-        public ProcessorRef(Actor.Driver<Processor<INLET, OUTLET>> processorDriver, InletController<INLET> inletController, OutletController<OUTLET> outletController) {
+        public ProcessorRef(Actor.Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> processorDriver, InletController<INLET> inletController, OutletController<OUTLET> outletController) {
             this.processorDriver = processorDriver;
             this.inletController = inletController;
             this.outletController = outletController;
-        }
-    }
-
-    private class SubscriptionPrototype {
-
-        public Processor subscriber() {
         }
     }
 
