@@ -110,7 +110,6 @@ host_compatible_java_test(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql_lang_java//pattern:pattern",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
     resources = [

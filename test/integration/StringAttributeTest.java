@@ -36,6 +36,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static org.junit.Assert.assertEquals;
@@ -54,11 +55,11 @@ public class StringAttributeTest {
         try (TypeDB typedb = RocksTypeDB.open(options)) {
             typedb.databases().create(database);
 
+            // unicode defines an integer for each representable symbol in the range 0 to 0x10FFFF
             int start = 0x0;
-            int end = 0x10FFFF; // unicode end is 0x10FFFF, however these are non-characters
-            Pair<Integer, Integer> excludes = pair(0xD800, 0xDFFF); // since RFC 3629 (November 2003), this range (inclusive) is not valid unicode
-
-            System.out.println("Number of code points: " + ((end - start) - (excludes.second() - excludes.first())));
+            int end = 0x10FFFF;
+            // since RFC 3629 (November 2003), this range (inclusive) is not valid unicode
+            Pair<Integer, Integer> exclude = pair(0xD800, 0xDFFF);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -73,7 +74,7 @@ public class StringAttributeTest {
                     AttributeType.String attrType = txn.concepts().getAttributeType("string-value").asString();
 
                     for (int codePoint = 0; codePoint <= end; codePoint++) {
-                        if (!exclude(codePoint, excludes)) {
+                        if (!exclude(codePoint, exclude)) {
                             // convert each code point into the string equivalent
                             // for interest: in Java < 9, strings are UTF_16 encoded.
                             // in Java >= 9 they are "compact strings" which use 1 byte when possible
@@ -85,8 +86,6 @@ public class StringAttributeTest {
                     }
                     txn.commit();
                 }
-
-                System.out.println("Generated all unicode characters.");
 
                 // do a point-lookup for each generated string
                 for (String generated : generatedStrings) {
@@ -109,12 +108,12 @@ public class StringAttributeTest {
                     }
                 }
 
-                // iterate over all inserted strings and retrieve they are equal to the list of strings inserted
+                // all strings stored in DB are correct
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     AttributeType.String attrType = txn.concepts().getAttributeType("string-value").asString();
-                    List<String> strings = attrType.getInstances().map(a -> a.asString().getValue()).toList();
-                    // because we retrieve them in sorted order, we can actually check the exact lists are equal!
-                    assertEquals(generatedStrings, strings);
+                    Set<String> strings = attrType.getInstances().map(a -> a.asString().getValue()).toSet();
+                    assertEquals(strings.size(), generatedStrings.size());
+                    assertTrue(strings.containsAll(generatedStrings));
                 }
             }
         }

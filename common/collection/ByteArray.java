@@ -258,11 +258,12 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     }
 
     public static ByteArray encodeStringAsSorted(String value, Charset encoding) throws TypeDBCheckedException {
-        byte[] bytes = value.getBytes();
+        if (!encoding.newEncoder().canEncode(value)) { // note: cannot cache encoder because it is not thread safe
+            throw TypeDBCheckedException.of(ILLEGAL_ENCODED_STRING, value, encoding.name());
+        }
+        byte[] bytes = value.getBytes(encoding);
         if (bytes.length > SHORT_UNSIGNED_MAX_VALUE) {
             throw TypeDBCheckedException.of(ILLEGAL_STRING_SIZE, SHORT_UNSIGNED_MAX_VALUE);
-        } else if (!encoding.newEncoder().canEncode(value)) { // note: cannot cache encoder because it is not thread safe
-            throw TypeDBCheckedException.of(ILLEGAL_ENCODED_STRING, value, encoding.name());
         }
         return join(encodeUnsignedShort(bytes.length), of(bytes));
     }
