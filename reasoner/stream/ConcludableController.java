@@ -23,13 +23,13 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Buffer;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Inlet;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Outlet;
-import com.vaticle.typedb.core.reasoner.stream.Processor.Pipe;
+import com.vaticle.typedb.core.reasoner.stream.Processor.Operation;
 
 import java.util.List;
 import java.util.Map;
 
 public class ConcludableController extends Controller {
-    Map<ConceptMap, Actor.Driver<ConcludableProcessor>> concludableProcessors;
+    Map<ConceptMap, ProcessorRef<>> concludableProcessors;
 
     private ConcludableController() {
     }
@@ -38,36 +38,25 @@ public class ConcludableController extends Controller {
         // TODO: Change source and sink to refer to inlets and outlets (except the traversalSource which is actually a
         //  source). These can then be typed and we can keep a record of whether we can message children to add extra inlets or outlets.
         Buffer<ConceptMap> buffer = new Buffer<>();
-        OutletController.DynamicMulti multiOutletController = OutletController.dynamicMulti();
-        InletController.DynamicMulti multiInletController = InletController.dynamicMulti();
 
-        Pipe<ConceptMap, ConceptMap> downstreamOp = Pipe.input().flatMapOrRetry(a -> a.unUnify(a.conceptMap(), requirements));
-        Pipe<ConceptMap, ConceptMap> traversalOp = Source.fromIterator(createTraversal(concludable, bounds)).asPipe();  // TODO: Delay opening the traversal until needed. Use a non-eager traversal wrapper.
-        Pipe<ConceptMap, ConceptMap> op = Pipe.orderedJoin(traversalOp, downstreamOp);  // TODO: Could be a fluent .join(). Perhaps instead this should be attached as one of the inlets? But the inlets and outlets are currently the actor boundaries, so maybe not.
+        Operation<ConceptMap, ConceptMap> downstreamOp = Operation.input().flatMapOrRetry(a -> a.unUnify(a.conceptMap(), requirements));
+        Operation<ConceptMap, ConceptMap> traversalOp = Source.fromIterator(createTraversal(concludable, bounds)).asOperation();  // TODO: Delay opening the traversal until needed. Use a non-eager traversal wrapper.
+        Operation<ConceptMap, ConceptMap> op = Operation.orderedJoin(traversalOp, downstreamOp);  // TODO: Could be a fluent .join(). Perhaps instead this should be attached as one of the inlets? But the inlets and outlets are currently the actor boundaries, so maybe not.
         boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars());  // Determines whether to use findFirst() or find all results
         if (singleAnswerRequired) {
             op = op.findFirst();  // Will finish the stream once one answer is found
         }
         op = op.buffer(buffer);
         // TODO: toUpstreamLookup? Requires concludable to determine whether answer is inferred
-        ProcessorRef<ConceptMap, ConceptMap, InletController.DynamicMulti, OutletController.DynamicMulti> processor = buildProcessor(op, multiInletController, multiOutletController);
+
+        OutletController.DynamicMulti multiOutletController = OutletController.dynamicMulti();
+        InletController.DynamicMulti multiInletController = InletController.dynamicMulti();
+        ProcessorRef<Inlet<ConceptMap>, Outlet<ConceptMap>, InletController.DynamicMulti, OutletController.DynamicMulti> processor = buildProcessor(op, multiInletController, multiOutletController);
         concludableProcessors.put(bounds, processor);
     }
 
     protected List<Stream> ruleDownstreams(ConceptMap bounds) {}
 
-//    ProcessorRef buildProcessor(Pipe operationBuilder, InletController inletBuilder, OutletController OutletController) {
-//        // TODO: Make this a method in Controller, just need to figure out the generics for that.
-//        Inlet.DynamicMulti inlet = null;
-//        Outlet.DynamicMulti outlet = null;
-//        ActorExecutorGroup executorService = null;
-//        Actor.Driver<ConcludableProcessor> processorDriver = Actor.driver(driver -> new Processor(driver, "name", inlet, outlet), executorService);
-//        return new ProcessorRef(processorDriver, inlet, outlet);
-//    }
-
-    public void addOutlet(Processor<?, Outlet.DynamicMulti> processor, Processor<Inlet.DynamicMulti, ?> newOutlet) {
-        processor.driver().execute(processor -> processor.outlet().add(newOutlet));
-    }
 
     static class ConcludableProcessor extends Processor<Inlet.DynamicMulti, Outlet.DynamicMulti> {
         protected ConcludableProcessor(Driver<Processor<Inlet.DynamicMulti, Outlet.DynamicMulti>> driver, String name, Inlet.DynamicMulti inlet, Outlet.DynamicMulti outlet) {

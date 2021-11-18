@@ -22,8 +22,10 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
+import com.vaticle.typedb.core.pattern.Pattern;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Inlet;
-import com.vaticle.typedb.core.reasoner.stream.Processor.Pipe;
+import com.vaticle.typedb.core.reasoner.stream.Processor.Operation;
+import com.vaticle.typedb.core.reasoner.stream.Processor.Outlet;
 
 
 public abstract class Controller {
@@ -34,85 +36,115 @@ public abstract class Controller {
         this.executorService = executorService;
     }
 
-    <INPUT, OUTPUT, INLET extends Inlet<INPUT>, OUTLET extends Processor.Outlet<OUTPUT>> ProcessorRef<INLET, OUTLET> buildProcessor(Pipe<INPUT, OUTPUT> pipe, InletController<INLET> inletController, OutletController<OUTLET> outletController) {
-        Actor.Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> processorDriver = Actor.driver(driver -> new Processor<>(driver, "name", pipe, inletController.inlet(), outletController.outlet()), executorService);
+    <INPUT, OUTPUT, INLET extends Inlet<INPUT>, OUTLET extends Outlet<OUTPUT>> ProcessorRef<INPUT, OUTPUT, INLET, OUTLET> buildProcessor(Processor.Operation<INPUT, OUTPUT> operation, InletController<INLET> inletController, OutletController<OUTLET> outletController) {
+        Actor.Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> processorDriver = Actor.driver(driver -> new Processor<>(driver, "name", operation, inletController.inlet(), outletController.outlet()), executorService);
         return new ProcessorRef<>(processorDriver, inletController, outletController);
     }
 
-    protected FunctionalIterator<ConceptMap> createTraversal(ConceptMap bounds) {
-        return traversalIterator(context.concludable().pattern(), bounds);
+    public FunctionalIterator<ConceptMap> createTraversal(Pattern pattern, ConceptMap bounds) {
+        return null; // TODO
     }
 
     static class Source<INPUT> {
-        public static <INPUT> Source<INPUT> fromIterator(FunctionalIterator<INPUT> traversal){}
+        public static <INPUT> Source<INPUT> fromIterator(FunctionalIterator<INPUT> traversal) {
+            return null;  // TODO
+        }
 
-        public Pipe<INPUT, INPUT> asPipe() {
-
+        public Operation<INPUT, INPUT> asOperation() {
+            return null; // TODO
         }
     }
 
-    static abstract class InletController<INLET extends Inlet> {
+    static abstract class InletController<INLET extends Inlet<?>> {
         // Has exactly one output
 
         public static DynamicMulti dynamicMulti() {
-
+            return new DynamicMulti();
         }
 
         abstract INLET inlet();
 
-        static class DynamicMulti extends InletController<Inlet.DynamicMulti> {
+        static class DynamicMulti extends InletController<Inlet.DynamicMulti<?>> {
 
-            private final Inlet.DynamicMulti inlet;
+            private final Inlet.DynamicMulti<?> inlet;
 
-            DynamicMulti() {
-                inlet = new Inlet.DynamicMulti();
+            private DynamicMulti() {
+                inlet = new Inlet.DynamicMulti<>();
             }
 
             @Override
-            Inlet.DynamicMulti inlet() {
+            Inlet.DynamicMulti<?> inlet() {
                 return inlet;
             }
+
+            public <T> void addPipe(ProcessorRef<Inlet.DynamicMulti<T>, ?, ?, ?> processorRef, ProcessorRef<?, ? extends Outlet<T>, ?, ?> newPipe) {
+                processorRef.processorDriver().execute(processor -> processor.inlet().add(newPipe.processorDriver()));
+            }
+
         }
     }
 
-    static abstract class OutletController<OUTLET extends Processor.Outlet> {
+    static abstract class OutletController<OUTLET extends Outlet<?>> {
         public static DynamicMulti dynamicMulti() {
             return new DynamicMulti();
+        }
+
+        public static <OUTPUT> Single<OUTPUT> single() {
+            return new Single<>();
         }
 
         abstract OUTLET outlet();
 
         // Has exactly one input
-        static class DynamicMulti extends OutletController<Processor.Outlet.DynamicMulti> {
+        static class DynamicMulti extends OutletController<Outlet.DynamicMulti<?>> {
 
-            private final Processor.Outlet.DynamicMulti outlet;
+            private final Outlet.DynamicMulti<?> outlet;
 
-            DynamicMulti() {
-                outlet = new Processor.Outlet.DynamicMulti();
+            private DynamicMulti() {
+                outlet = new Outlet.DynamicMulti<>();
             }
 
             @Override
-            Processor.Outlet.DynamicMulti outlet() {
+            Outlet.DynamicMulti<?> outlet() {
                 return outlet;
+            }
+
+            public <T> void addPipe(ProcessorRef<?, Outlet.DynamicMulti<T>, ?, ?> processorRef, ProcessorRef<? extends Inlet<T>, ?, ?, ?> newPipe) {
+                processorRef.processorDriver().execute(processor -> processor.outlet().add(newPipe.processorDriver()));
             }
         }
 
-        private static class Single extends OutletController {
+        private static class Single<OUTPUT> extends OutletController<Outlet.Single<OUTPUT>> {
 
+            private final Outlet.Single<OUTPUT> outlet;
+
+            private Single() {
+                this.outlet = new Outlet.Single<>();
+            }
+
+            @Override
+            Outlet.Single<OUTPUT> outlet() {
+                return outlet;
+            }
         }
     }
 
-    private static class ProcessorRef<INPUT, OUTPUT, INLET extends Inlet<INPUT>, OUTLET extends Processor.Outlet<OUTPUT>> {
+    public static class ProcessorRef<INLET extends Inlet<?>, OUTLET extends Outlet<?>, INLET_CONTROLLER extends InletController<INLET>, OUTLET_CONTROLLER extends OutletController<OUTLET>> {
 
-        private final Actor.Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> processorDriver;
-        private final InletController<INLET> inletController;
-        private final OutletController<OUTLET> outletController;
+        private final Actor.Driver<? extends Processor<?, ?, INLET, OUTLET>> processorDriver;
+        private final INLET_CONTROLLER inletController;
+        private final OUTLET_CONTROLLER outletController;
 
-        public ProcessorRef(Actor.Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> processorDriver, InletController<INLET> inletController, OutletController<OUTLET> outletController) {
+        public ProcessorRef(Actor.Driver<? extends Processor<?, ?, INLET, OUTLET>> processorDriver, INLET_CONTROLLER inletController, OUTLET_CONTROLLER outletController) {
             this.processorDriver = processorDriver;
             this.inletController = inletController;
             this.outletController = outletController;
         }
+
+        public Actor.Driver<? extends Processor<?, ?, INLET, OUTLET>> processorDriver() {
+            return processorDriver;
+        }
     }
 
+    private static class Pipe {}
 }

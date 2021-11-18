@@ -23,26 +23,33 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 
 import java.util.function.Function;
 
-public class Processor<INPUT, OUTPUT, INLET extends Processor.Inlet<INPUT>, OUTLET extends Processor.Outlet<OUTPUT>> extends Actor<Processor<INPUT, OUTPUT, INLET, OUTLET>> {
+public class Processor<INPUT, OUTPUT, INLET extends Processor.Inlet<INPUT>, OUTLET extends Processor.Outlet<OUTPUT>>
+        extends Actor<Processor<INPUT, OUTPUT, INLET, OUTLET>> {
 
-    private final Pipe<INPUT, OUTPUT> pipe;
+    private final Operation<INPUT, OUTPUT> operation;
     private final INLET inlet;
     private final OUTLET outlet;
 
-    public Processor(Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> driver, String name, Pipe<INPUT, OUTPUT> pipe, INLET inlet, OUTLET outlet) {
+    public Processor(Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> driver, String name,
+                     Operation<INPUT, OUTPUT> operation, INLET inlet, OUTLET outlet) {
         super(driver, name);
-        this.pipe = pipe;
+        this.operation = operation;
         this.inlet = inlet;
         this.outlet = outlet;
-        this.pipe.connect(this.inlet);
-        this.outlet.connect(this.pipe);
+        this.operation.connect(this.inlet);
+        this.outlet.connect(this.operation);
     }
 
-    public INLET inlet() {}
+    public INLET inlet() {
+        return inlet;
+    }
 
-    public OUTLET outlet() {}
+    public OUTLET outlet() {
+        return outlet;
+    }
 
     public ConceptMap bounds() {}  // TODO: This shouldn't know about ConceptMaps
+    //    public State state() {}  // TODO: Consider this instead
 
     @Override
     protected void exception(Throwable e) {
@@ -50,53 +57,47 @@ public class Processor<INPUT, OUTPUT, INLET extends Processor.Inlet<INPUT>, OUTL
     }
 
     public static class Outlet<OUTPUT> {
-        public void connect(Pipe<?, OUTPUT> pipe) {
-            // TODO: set the pipe to pull from when answers required
+        public void connect(Operation<?, OUTPUT> operation) {
+            // TODO: set the operation to pull from when answers required
         }
 
         public static class Single<OUTPUT> extends Outlet<OUTPUT> {}
         public static class DynamicMulti<OUTPUT> extends Outlet<OUTPUT> {
-            public void add(Driver<? extends Processor<OUTPUT, ?, ?, ?>> newOutlet) {}
+            public void add(Driver<? extends Processor<OUTPUT, ?, ?, ?>> newOutletPipe) {
+                // TODO: Store the pipe
+            }
         }
     }
 
     public static class Inlet<INPUT> {
         public static class Single<INPUT> extends Inlet<INPUT> {}
         public static class DynamicMulti<INPUT> extends Inlet<INPUT> {
-            public void add() {}
+            public void add(Driver<? extends Processor<?, INPUT, ?, ?>> newInletPipe) {
+                // TODO: Store the pipe
+            }
         }
     }
 
-    public static class Pipe<INPUT, OUTPUT> {
-        public static <T> Pipe<T, T> input() {
+    public static abstract class Operation<INPUT, OUTPUT> {
+        public static <T> Operation<T, T> input() {
+            return null;  // TODO
         }
 
-        public static <T> Pipe<T, T> orderedJoin(Pipe<?, T> pipe1, Pipe<?, T> pipe2) {
+        public static <T> Operation<T, T> orderedJoin(Operation<?, T> operation1, Operation<?, T> operation2) {
+            return null;  // TODO
         }
 
-        public <NEW_OUTPUT> Pipe<INPUT, NEW_OUTPUT> flatMapOrRetry(Function<OUTPUT, NEW_OUTPUT> function) {
+        abstract <NEW_OUTPUT> Operation<INPUT, NEW_OUTPUT> flatMapOrRetry(Function<OUTPUT, NEW_OUTPUT> function);
 
-        }
+        abstract <NEW_OUTPUT> Operation<INPUT, NEW_OUTPUT> map(Function<OUTPUT, NEW_OUTPUT> function);
 
-        public <NEW_OUTPUT> Pipe<INPUT, NEW_OUTPUT> map(Function<OUTPUT, NEW_OUTPUT> function) {
+        abstract Operation<INPUT, OUTPUT> filter(Function<OUTPUT, Boolean> function);
 
-        }
+        abstract Operation<INPUT, OUTPUT> findFirst();
 
-        public Pipe<INPUT, OUTPUT> filter(Function<OUTPUT, Boolean> function) {
+        abstract Operation<INPUT, OUTPUT> buffer(Buffer<OUTPUT> buffer);
 
-        }
-
-        public Pipe<INPUT, OUTPUT> findFirst() {
-
-        }
-
-        public Pipe<INPUT, OUTPUT> buffer(Buffer<OUTPUT> buffer) {
-
-        }
-
-        public void connect(Inlet<INPUT> inlet) {
-
-        }
+        abstract void connect(Inlet<INPUT> inlet);
     }
 
     public static class Buffer<T> {}
