@@ -31,21 +31,13 @@ import com.vaticle.typeql.lang.TypeQL;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
-import static com.vaticle.typedb.common.collection.Collections.set;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -63,14 +55,10 @@ public class StringAttributeTest {
             typedb.databases().create(database);
 
             int start = 0x0;
-            int end = 0x2FFFF; // unicode end is 0x10FFFF, however these are non-characters
-            List<Pair<Integer, Integer>> excludes = list(pair(0xD800, 0xDFFF), pair(0xFDD0, 0xFDEF));
-            Set<Integer> nonCharacter = set(0xFFFE , 0xFFFF, 0x1FFFE , 0x1FFFF, 0x2FFFE , 0x2FFFF,
-                     0x3FFFE , 0x3FFFF, 0x4FFFE , 0x4FFFF, 0x5FFFE , 0x5FFFF, 0x6FFFE , 0x6FFFF, 0x7FFFE , 0x7FFFF,
-                     0x8FFFE , 0x8FFFF, 0x9FFFE , 0x9FFFF, 0xaFFFE , 0xAFFFF, 0xbFFFE , 0xBFFFF, 0xcFFFE , 0xCFFFF,
-                     0xdFFFE , 0xDFFFF, 0xeFFFE , 0xEFFFF, 0xfFFFE , 0xFFFFF, 0x10FFFE ,0x10FFFF);
+            int end = 0x10FFFF; // unicode end is 0x10FFFF, however these are non-characters
+            Pair<Integer, Integer> excludes = pair(0xD800, 0xDFFF); // since RFC 3629 (November 2003), this range (inclusive) is not valid unicode
 
-            System.out.println("Code point range: " + (end - start));
+            System.out.println("Number of code points: " + ((end - start) - (excludes.second() - excludes.first())));
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -83,10 +71,13 @@ public class StringAttributeTest {
                 List<String> generatedStrings = new ArrayList<>();
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     AttributeType.String attrType = txn.concepts().getAttributeType("string-value").asString();
-                    for (int codePoint = 0; codePoint <= end; codePoint ++) {
-                        if (!exclude(codePoint, excludes) && !nonCharacter.contains(codePoint)) {
-                            if (codePoint % 1_000 == 0) System.out.println("Generating and inserting: " + codePoint);
+
+                    for (int codePoint = 0; codePoint <= end; codePoint++) {
+                        if (!exclude(codePoint, excludes)) {
                             // convert each code point into the string equivalent
+                            // for interest: in Java < 9, strings are UTF_16 encoded.
+                            // in Java >= 9 they are "compact strings" which use 1 byte when possible
+                            // otherwise reverts to UTF-16 which uses 2 byte/1 char as a code unit
                             String string = new String(new int[]{codePoint}, 0, 1);
                             generatedStrings.add(string);
                             attrType.put(string);
@@ -95,8 +86,9 @@ public class StringAttributeTest {
                     txn.commit();
                 }
 
+                System.out.println("Generated all unicode characters.");
+
                 // do a point-lookup for each generated string
-                int success = 0;
                 for (String generated : generatedStrings) {
                     // using Concept API
                     try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -107,26 +99,28 @@ public class StringAttributeTest {
                     // using match query
                     try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                         // TODO escaping this doesn't work in TypeQL parser?
-//                        String escaped = generated.replace("\\", "\\\\").replace("\"", "\\\"");
-                        if (!(generated.contains("\\") || generated.contains("\\\""))) {
-                            Optional<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $a \"" + generated + "\" isa string-value;").asMatch()).first();
+                        // String escaped = generated.replace("\\", "\\\\").replace("\"", "\\\"");
+                        if (!(generated.contains("\\") || generated.contains("\""))) {
+                            Optional<ConceptMap> ans = txn.query().match(TypeQL.parseQuery(
+                                    "match $a \"" + generated + "\" isa string-value;").asMatch()).first();
                             assertTrue(ans.isPresent());
                             assertEquals(generated, ans.get().get("a").asAttribute().asString().getValue());
-                            success++;
-                            System.out.println("success: " + success);
                         }
                     }
                 }
+
+                // iterate over all inserted strings and retrieve they are equal to the list of strings inserted
+                try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                    AttributeType.String attrType = txn.concepts().getAttributeType("string-value").asString();
+                    List<String> strings = attrType.getInstances().map(a -> a.asString().getValue()).toList();
+                    // because we retrieve them in sorted order, we can actually check the exact lists are equal!
+                    assertEquals(generatedStrings, strings);
+                }
             }
         }
-
     }
 
-    private boolean exclude(int codePoint, List<Pair<Integer, Integer>> excludes) {
-        for (Pair<Integer, Integer> range : excludes) {
-            if (codePoint >= range.first() && codePoint < range.second()) return true;
-        }
-        return false;
+    private boolean exclude(int codePoint, Pair<Integer, Integer> excludes) {
+        return codePoint >= excludes.first() && codePoint <= excludes.second();
     }
-
 }
