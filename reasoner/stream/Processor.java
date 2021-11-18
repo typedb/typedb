@@ -48,7 +48,9 @@ public class Processor<INPUT, OUTPUT, INLET extends Processor.Inlet<INPUT>, OUTL
         return outlet;
     }
 
-    public ConceptMap bounds() {}  // TODO: This shouldn't know about ConceptMaps
+    public ConceptMap bounds() {
+        return null;
+    }  // TODO: This shouldn't know about ConceptMaps
     //    public State state() {}  // TODO: Consider this instead
 
     @Override

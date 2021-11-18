@@ -31,9 +31,9 @@ public class CompoundController {
 //        Processor.Operation<ConceptMap, Inlet<ConceptMap>> traversalOp = Controller.Source.fromIterator(createTraversal(concludable, bounds)).asOperation();  // TODO: Delay opening the traversal until needed. Use a non-eager traversal wrapper.
 //        Processor.Operation<ConceptMap, ConceptMap> op = Processor.Operation.orderedJoin(traversalOp, downstreamOp);  // TODO: Could be a fluent .join(). Perhaps instead this should be attached as one of the inlets? But the inlets and outlets are currently the actor boundaries, so maybe not.
 
-        Controller.OutletController.DynamicMulti multiOutletController = Controller.OutletController.dynamicMulti();
-        Controller.InletController.DynamicMulti multiInletController = Controller.InletController.dynamicMulti();
-        Controller.ProcessorRef<Processor.Inlet<ConceptMap>, Processor.Outlet<ConceptMap>, Controller.InletController.DynamicMulti, Controller.OutletController.DynamicMulti> processor = buildProcessor(op, multiInletController, multiOutletController);
+        Controller.OutletController.DynamicMulti<OUTPUT> multiOutletController = Controller.OutletController.dynamicMulti();
+        Controller.InletController.DynamicMulti<INPUT> multiInletController = Controller.InletController.dynamicMulti();
+        Controller.ProcessorRef<INPUT, OUTPUT, Processor.Inlet<ConceptMap>, Processor.Outlet<ConceptMap>, Controller.InletController.DynamicMulti<INPUT>, Controller.OutletController.DynamicMulti<OUTPUT>> processor = buildProcessor(op, multiInletController, multiOutletController);
         compoundProcessors.put(bounds, processor);
     }
 

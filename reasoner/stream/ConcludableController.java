@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.stream;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Buffer;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Inlet;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Outlet;
@@ -31,7 +31,8 @@ import java.util.Map;
 public class ConcludableController extends Controller {
     Map<ConceptMap, ProcessorRef<>> concludableProcessors;
 
-    private ConcludableController() {
+    protected ConcludableController(Driver<Controller> driver, String name, ActorExecutorGroup executorService) {
+        super(driver, name, executorService);
     }
 
     private void createConcludableProcessor(ConceptMap bounds) {
@@ -49,18 +50,13 @@ public class ConcludableController extends Controller {
         op = op.buffer(buffer);
         // TODO: toUpstreamLookup? Requires concludable to determine whether answer is inferred
 
-        OutletController.DynamicMulti multiOutletController = OutletController.dynamicMulti();
-        InletController.DynamicMulti multiInletController = InletController.dynamicMulti();
-        ProcessorRef<Inlet<ConceptMap>, Outlet<ConceptMap>, InletController.DynamicMulti, OutletController.DynamicMulti> processor = buildProcessor(op, multiInletController, multiOutletController);
+        OutletController.DynamicMulti<ConceptMap> multiOutletController = OutletController.dynamicMulti();
+        InletController.DynamicMulti<ConceptMap> multiInletController = InletController.dynamicMulti();
+        ProcessorRef<ConceptMap, ConceptMap, Inlet.DynamicMulti<ConceptMap>, Outlet.DynamicMulti<ConceptMap>, InletController.DynamicMulti<ConceptMap>, OutletController.DynamicMulti<ConceptMap>> processor = buildProcessor(op, multiInletController, multiOutletController);
         concludableProcessors.put(bounds, processor);
     }
 
     protected List<Stream> ruleDownstreams(ConceptMap bounds) {}
 
 
-    static class ConcludableProcessor extends Processor<Inlet.DynamicMulti, Outlet.DynamicMulti> {
-        protected ConcludableProcessor(Driver<Processor<Inlet.DynamicMulti, Outlet.DynamicMulti>> driver, String name, Inlet.DynamicMulti inlet, Outlet.DynamicMulti outlet) {
-            super(driver, name, inlet, outlet);
-        }
-    }
 }
