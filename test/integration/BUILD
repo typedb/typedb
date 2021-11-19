@@ -94,7 +94,7 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-string-attribute",
+    name = "test-attribute-string",
     srcs = ["StringAttributeTest.java"],
     test_class = "com.vaticle.typedb.core.test.integration.StringAttributeTest",
     native_libraries_deps = [

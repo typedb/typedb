@@ -36,7 +36,7 @@ import static com.vaticle.typedb.core.common.collection.Bytes.INTEGER_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_UNSIGNED_MAX_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ENCODED_STRING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.UNENCODABLE_STRING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
@@ -259,7 +259,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     public static ByteArray encodeStringAsSorted(String value, Charset encoding) throws TypeDBCheckedException {
         if (!encoding.newEncoder().canEncode(value)) { // note: cannot cache encoder because it is not thread safe
-            throw TypeDBCheckedException.of(ILLEGAL_ENCODED_STRING, value, encoding.name());
+            throw TypeDBCheckedException.of(UNENCODABLE_STRING, value, encoding.name());
         }
         byte[] bytes = value.getBytes(encoding);
         if (bytes.length > SHORT_UNSIGNED_MAX_VALUE) {

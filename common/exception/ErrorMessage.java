@@ -278,7 +278,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new ThingWrite(1, "Attempted an illegal write of a new '%s' of abstract type '%s'.");
         public static final ThingWrite ILLEGAL_STRING_SIZE =
                 new ThingWrite(2, "Attempted to insert a string larger than the maximum possible size: %s bytes.");
-        public static final ThingWrite ILLEGAL_ENCODED_STRING =
+        public static final ThingWrite UNENCODABLE_STRING =
                 new ThingWrite(3, "The string '%s' cannot be encoded to bytes using the encoding '%s'.");
         public static final ThingWrite THING_HAS_BEEN_DELETED =
                 new ThingWrite(4, "The thing with iid '%s' has been deleted and cannot be modified any further.");
