@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.common.collection;
 import com.google.common.primitives.UnsignedBytes;
 import com.vaticle.typedb.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -258,8 +259,9 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     }
 
     public static ByteArray encodeStringAsSorted(String value, Charset encoding) throws TypeDBCheckedException {
-        if (!encoding.newEncoder().canEncode(value)) { // note: cannot cache encoder because it is not thread safe
-            throw TypeDBCheckedException.of(UNENCODABLE_STRING, value, encoding.name());
+        // note: cannot cache encoder because it is not thread safe
+        if (!encoding.newEncoder().canEncode(value)) {
+            throw TypeDBException.of(UNENCODABLE_STRING, value, encoding.name());
         }
         byte[] bytes = value.getBytes(encoding);
         if (bytes.length > SHORT_UNSIGNED_MAX_VALUE) {

@@ -20,6 +20,8 @@ package com.vaticle.typedb.core.test.integration;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -49,17 +51,17 @@ public class StringAttributeTest {
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
 
+    // unicode defines an integer for each representable symbol in the range 0 to 0x10FFFF
+    private static final int UNICODE_CODE_POINT_START = 0x0;
+    private static final int UNICODE_CODE_POINT_END = 0x10FFFF;
+    // since RFC 3629 (November 2003), this range (inclusive) is not valid unicode
+    private static final Pair<Integer, Integer> UNICODE_INVALID_RANGE = pair(0xD800, 0xDFFF);
+
     @Test
-    public void test_all_unicode_strings() throws IOException {
+    public void all_unicode_strings_are_valid() throws IOException {
         Util.resetDirectory(dataDir);
         try (TypeDB typedb = RocksTypeDB.open(options)) {
             typedb.databases().create(database);
-
-            // unicode defines an integer for each representable symbol in the range 0 to 0x10FFFF
-            int start = 0x0;
-            int end = 0x10FFFF;
-            // since RFC 3629 (November 2003), this range (inclusive) is not valid unicode
-            Pair<Integer, Integer> exclude = pair(0xD800, 0xDFFF);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -73,8 +75,8 @@ public class StringAttributeTest {
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     AttributeType.String attrType = txn.concepts().getAttributeType("string-value").asString();
 
-                    for (int codePoint = 0; codePoint <= end; codePoint++) {
-                        if (!exclude(codePoint, exclude)) {
+                    for (int codePoint = UNICODE_CODE_POINT_START; codePoint <= UNICODE_CODE_POINT_END; codePoint++) {
+                        if (!isInRange(codePoint, UNICODE_INVALID_RANGE)) {
                             // convert each code point into the string equivalent
                             // for interest: in Java < 9, strings are UTF_16 encoded.
                             // in Java >= 9 they are "compact strings" which use 1 byte when possible
@@ -89,15 +91,15 @@ public class StringAttributeTest {
 
                 // do a point-lookup for each generated string
                 for (String generated : generatedStrings) {
-                    // using Concept API
+                    // using Concept API, one tx per lookup to avoid any caching effects
                     try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                         AttributeType.String attrType = txn.concepts().getAttributeType("string-value").asString();
                         Attribute.String retrievedAttr = attrType.get(generated);
                         assertEquals(generated, retrievedAttr.getValue());
                     }
-                    // using match query
+                    // using match query, one tx per lookup to avoid any caching effects
                     try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                        // TODO escaping this doesn't work in TypeQL parser?
+                        // TODO escaping this doesn't work in TypeQL parser? It needs to remove the backslashes from parsed queries
                         // String escaped = generated.replace("\\", "\\\\").replace("\"", "\\\"");
                         if (!(generated.contains("\\") || generated.contains("\""))) {
                             Optional<ConceptMap> ans = txn.query().match(TypeQL.parseQuery(
@@ -119,7 +121,36 @@ public class StringAttributeTest {
         }
     }
 
-    private boolean exclude(int codePoint, Pair<Integer, Integer> excludes) {
-        return codePoint >= excludes.first() && codePoint <= excludes.second();
+    @Test
+    public void invalid_string_throws() throws IOException {
+        Util.resetDirectory(dataDir);
+        try (TypeDB typedb = RocksTypeDB.open(options)) {
+            typedb.databases().create(database);
+
+            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    txn.concepts().putAttributeType("string-value", AttributeType.ValueType.STRING);
+                    txn.commit();
+                }
+            }
+
+            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA)) {
+                try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    AttributeType.String attrType = txn.concepts().getAttributeType("string-value").asString();
+                    int unicodeExcludedCodePoint = UNICODE_INVALID_RANGE.first() + 1;
+                    String excludedString = new String(new int[]{unicodeExcludedCodePoint}, 0, 1);
+                    try {
+                        attrType.put(excludedString);
+                    } catch (TypeDBException e) {
+                        assertTrue(e.code().isPresent());
+                        assertEquals(ErrorMessage.ThingWrite.UNENCODABLE_STRING.code(), e.code().get());
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isInRange(int value, Pair<Integer, Integer> range) {
+        return value >= range.first() && value <= range.second();
     }
 }
