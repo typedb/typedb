@@ -22,8 +22,8 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Buffer;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Inlet;
-import com.vaticle.typedb.core.reasoner.stream.Processor.Outlet;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Operation;
+import com.vaticle.typedb.core.reasoner.stream.Processor.Outlet;
 
 import java.util.List;
 import java.util.Map;

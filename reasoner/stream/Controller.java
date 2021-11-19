@@ -27,21 +27,39 @@ import com.vaticle.typedb.core.reasoner.stream.Processor.Inlet;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Operation;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Outlet;
 
+import java.util.HashMap;
+import java.util.Map;
 
-public abstract class Controller extends Actor<Controller> {
+
+public abstract class Controller<INPUT, OUTPUT, INLET extends Inlet<INPUT>, OUTLET extends Outlet<OUTPUT>, INLET_CONTROLLER extends Controller.InletController<INPUT, INLET>, OUTLET_CONTROLLER extends Controller.OutletController<OUTPUT, OUTLET>> extends Actor<Controller<INPUT, OUTPUT, INLET, OUTLET, INLET_CONTROLLER, OUTLET_CONTROLLER>> {
 
     private final ActorExecutorGroup executorService;
+    private final Map<INPUT, ProcessorRef> processors;
 
-    protected Controller(Driver<Controller> driver, String name, ActorExecutorGroup executorService) {
+    protected Controller(Driver<Controller<INPUT, OUTPUT, INLET, OUTLET, INLET_CONTROLLER, OUTLET_CONTROLLER>> driver, String name, ActorExecutorGroup executorService) {
         super(driver, name);
         this.executorService = executorService;
+        this.processors = new HashMap<>();
     }
 
-    <INPUT, OUTPUT, INLET extends Inlet<INPUT>, OUTLET extends Outlet<OUTPUT>, INLET_CONTROLLER extends InletController<INPUT, INLET>, OUTLET_CONTROLLER extends OutletController<OUTPUT, OUTLET>>
+
     ProcessorRef<INPUT, OUTPUT, INLET, OUTLET, INLET_CONTROLLER, OUTLET_CONTROLLER> buildProcessor(Processor.Operation<INPUT, OUTPUT> operation, INLET_CONTROLLER inletController, OUTLET_CONTROLLER outletController) {
         Actor.Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> processorDriver = Actor.driver(driver -> new Processor<>(driver, "name", operation, inletController.inlet(), outletController.outlet()), executorService);
         return new ProcessorRef<>(processorDriver, inletController, outletController);
     }
+
+    public void attachProcessor(INPUT input) {
+        ProcessorRef processorRef = processors.computeIfAbsent(
+                conceptMap -> buildProcessor(operation(), inletController(), outletController())
+        );
+
+    }
+
+    protected abstract Operation<INPUT,OUTPUT> operation();
+
+    protected abstract INLET_CONTROLLER inletController();
+
+    protected abstract OUTLET_CONTROLLER outletController();
 
     public FunctionalIterator<ConceptMap> createTraversal(Pattern pattern, ConceptMap bounds) {
         return null; // TODO
@@ -115,7 +133,7 @@ public abstract class Controller extends Actor<Controller> {
             }
         }
 
-        private static class Single<OUTPUT> extends OutletController<OUTPUT, Outlet.Single<OUTPUT>> {
+        public static class Single<OUTPUT> extends OutletController<OUTPUT, Outlet.Single<OUTPUT>> {
 
             private final Outlet.Single<OUTPUT> outlet;
 

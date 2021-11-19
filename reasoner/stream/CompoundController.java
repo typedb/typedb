@@ -19,22 +19,66 @@
 package com.vaticle.typedb.core.reasoner.stream;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
+import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.resolver.ConcludableResolver;
+import com.vaticle.typedb.core.reasoner.stream.Processor.Inlet;
+import com.vaticle.typedb.core.reasoner.stream.Processor.Operation;
+import com.vaticle.typedb.core.reasoner.stream.Processor.Outlet;
 
-public class CompoundController {
+import java.util.HashMap;
+import java.util.Map;
+
+public class CompoundController extends Controller {
+
+    private final Map<ConceptMap, ProcessorRef<ConceptMap, ConceptMap, ?, ?, InletController.DynamicMulti<ConceptMap>, OutletController.Single<ConceptMap>>> compoundProcessors;
+    private final ResolverRegistry registry;
+    private final Map<Resolvable<?>, Controller<?, ?, ?, ?>> downstreamResolvers;
+
+    protected CompoundController(Driver<Controller> driver, String name, ActorExecutorGroup executorService, ResolverRegistry registry) {
+        super(driver, name, executorService);
+        this.registry = registry;
+        this.compoundProcessors = new HashMap<>();
+        this.downstreamResolvers = new HashMap<Resolvable<?>, Processor<?, ?, ?, ?>>();
+    }
 
     private void createCompoundProcessor(ConceptMap bounds) {
         // TODO: Change source and sink to refer to inlets and outlets (except the traversalSource which is actually a
         //  source). These can then be typed and we can keep a record of whether we can message children to add extra inlets or outlets.
-        Processor.Buffer<ConceptMap> buffer = new Processor.Buffer<>();
 
-        Processor.Operation<ConceptMap, Processor.Inlet<ConceptMap>> downstreamOp = Processor.Operation.input().flatMapOrRetry(a -> createNextDownstream(a));
-//        Processor.Operation<ConceptMap, Inlet<ConceptMap>> traversalOp = Controller.Source.fromIterator(createTraversal(concludable, bounds)).asOperation();  // TODO: Delay opening the traversal until needed. Use a non-eager traversal wrapper.
-//        Processor.Operation<ConceptMap, ConceptMap> op = Processor.Operation.orderedJoin(traversalOp, downstreamOp);  // TODO: Could be a fluent .join(). Perhaps instead this should be attached as one of the inlets? But the inlets and outlets are currently the actor boundaries, so maybe not.
 
-        Controller.OutletController.DynamicMulti<OUTPUT> multiOutletController = Controller.OutletController.dynamicMulti();
-        Controller.InletController.DynamicMulti<INPUT> multiInletController = Controller.InletController.dynamicMulti();
-        Controller.ProcessorRef<INPUT, OUTPUT, Processor.Inlet<ConceptMap>, Processor.Outlet<ConceptMap>, Controller.InletController.DynamicMulti<INPUT>, Controller.OutletController.DynamicMulti<OUTPUT>> processor = buildProcessor(op, multiInletController, multiOutletController);
+        // TODO: An interesting point here is the initialisation. When we start we don't have any answers and so we want to create the first downstream
+        Operation<ConceptMap, ConceptMap> op1 = Operation.input();
+        Operation<ConceptMap, Inlet<ConceptMap>> op = op1.flatMapOrRetry(a -> createNextDownstream(a));
+
+        OutletController.Single<ConceptMap> outletController = OutletController.single();
+        InletController.DynamicMulti<ConceptMap> multiInletController = InletController.dynamicMulti();
+
+
+        ProcessorRef<ConceptMap, ConceptMap, ?, ?, InletController.DynamicMulti<ConceptMap>, OutletController.Single<ConceptMap>> processor = buildProcessor(op, multiInletController, outletController);
         compoundProcessors.put(bounds, processor);
+    }
+
+    private Inlet<ConceptMap> createNextDownstream(ConceptMap answer) {
+        // TODO: Maybe this is overcomplicated and we should use the registry instead. We should really consider this point.
+        Resolvable<?> nextResolvable = null;  // TODO: Somehow we'll get the next resolvable
+        // Get the Controller
+        Driver<Controller<?, ?, ?, ?>> d = downstreamResolvers.computeIfAbsent(answer -> registry.registerController(nextResolvable));
+
+        ConceptMap bounds = null;
+        d.execute(actor -> actor.attachProcessor(bounds)); // TODO: Ideally block until receiving a response for this.
+
+    }
+
+    // TODO: Can't see a use for this abstraction yet
+    class CompoundProcessorRef extends ProcessorRef<ConceptMap, ConceptMap, Inlet.DynamicMulti<ConceptMap>, Outlet.Single<ConceptMap>, InletController.DynamicMulti<ConceptMap>, OutletController.Single<ConceptMap>> {
+
+        public CompoundProcessorRef(Driver<Processor<ConceptMap, ConceptMap, Inlet.DynamicMulti<ConceptMap>,
+                Outlet.Single<ConceptMap>>> processorDriver, InletController.DynamicMulti<ConceptMap> inletController,
+                                    OutletController.Single<ConceptMap> outletController) {
+            super(processorDriver, inletController, outletController);
+        }
     }
 
 }

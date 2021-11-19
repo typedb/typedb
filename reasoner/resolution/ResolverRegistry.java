@@ -50,6 +50,8 @@ import com.vaticle.typedb.core.reasoner.resolution.resolver.DisjunctionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.NegationResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RetrievableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
+import com.vaticle.typedb.core.reasoner.stream.Controller;
+import com.vaticle.typedb.core.reasoner.stream.Processor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import org.slf4j.Logger;
@@ -207,6 +209,14 @@ public class ResolverRegistry {
         } else if (resolvable.isConcludable()) {
             return registerConcludable(resolvable.asConcludable());
         } else throw TypeDBException.of(ILLEGAL_STATE);
+    }
+
+    public Actor.Driver<Processor<?, ?, ?, ?>> registerProcessor(Resolvable<?> resolvable) {
+        // TODO: Actually we intend to let the controllers handle this
+    }
+
+    public Actor.Driver<Controller<?, ?, ?, ?>> registerController(Resolvable<?> resolvable) {
+        // TODO: Actually we intend to let the controllers handle this
     }
 
     private ResolverView.FilteredRetrievable registerRetrievable(com.vaticle.typedb.core.logic.resolvable.Retrievable retrievable) {
