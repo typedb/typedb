@@ -23,9 +23,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Pattern;
-import com.vaticle.typedb.core.reasoner.stream.Processor.Inlet;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Operation;
-import com.vaticle.typedb.core.reasoner.stream.Processor.Outlet;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,25 +32,34 @@ import java.util.Map;
 public abstract class Controller<INPUT, OUTPUT, INLET extends Inlet<INPUT>, OUTLET extends Outlet<OUTPUT>, INLET_CONTROLLER extends Controller.InletController<INPUT, INLET>, OUTLET_CONTROLLER extends Controller.OutletController<OUTPUT, OUTLET>> extends Actor<Controller<INPUT, OUTPUT, INLET, OUTLET, INLET_CONTROLLER, OUTLET_CONTROLLER>> {
 
     private final ActorExecutorGroup executorService;
-    private final Map<INPUT, ProcessorRef> processors;
+    private final boolean dynamicInlets;
+    private final boolean dynamicOutlets;
+    private final Map<IDENTIFIER, Actor.Driver<Processor<INPUT, OUTPUT>>> processors;
 
     protected Controller(Driver<Controller<INPUT, OUTPUT, INLET, OUTLET, INLET_CONTROLLER, OUTLET_CONTROLLER>> driver, String name, ActorExecutorGroup executorService) {
         super(driver, name);
         this.executorService = executorService;
+        this.dynamicInlets = dynamicInlets;
+        this.dynamicOutlets = dynamicOutlets;
         this.processors = new HashMap<>();
     }
 
+    protected abstract Operation<INPUT, OUTPUT> operation(IDENTIFIER id);
 
-    ProcessorRef<INPUT, OUTPUT, INLET, OUTLET, INLET_CONTROLLER, OUTLET_CONTROLLER> buildProcessor(Processor.Operation<INPUT, OUTPUT> operation, INLET_CONTROLLER inletController, OUTLET_CONTROLLER outletController) {
-        Actor.Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> processorDriver = Actor.driver(driver -> new Processor<>(driver, "name", operation, inletController.inlet(), outletController.outlet()), executorService);
-        return new ProcessorRef<>(processorDriver, inletController, outletController);
+    Actor.Driver<Processor<INPUT, OUTPUT>> buildProcessor(IDENTIFIER id) {
+        Actor.Driver<Processor<INPUT, OUTPUT>> processor = Actor.driver(
+                driver -> new Processor<>(driver, "name", operation(id), dynamicInlets, dynamicOutlets), executorService);
+        processors.put(id, processor);
+        return processor;
     }
 
-    public void attachProcessor(INPUT input) {
-        ProcessorRef processorRef = processors.computeIfAbsent(
-                conceptMap -> buildProcessor(operation(), inletController(), outletController())
-        );
+    public Driver<Processor<INPUT, OUTPUT>> attachProcessor(IDENTIFIER identifier) {
+        // TODO: misleading naming, doesn't attach anything
+        return processors.computeIfAbsent(identifier, i -> buildProcessor(identifier));
+    }
 
+    public <UPSTREAM_OUTPUT> void addInlet(Actor.Driver<Processor<INPUT, OUTPUT>> processor, Actor.Driver<Processor<UPSTREAM_OUTPUT, INPUT>> newInlet) {
+        processor.execute(actor -> actor.inlet().add(newInlet));
     }
 
     protected abstract Operation<INPUT,OUTPUT> operation();
@@ -72,100 +79,6 @@ public abstract class Controller<INPUT, OUTPUT, INLET extends Inlet<INPUT>, OUTL
 
         public Operation<INPUT, INPUT> asOperation() {
             return null; // TODO
-        }
-    }
-
-    static abstract class InletController<R, INLET extends Inlet<R>> {
-        // Has exactly one output
-
-        public static <INPUT> DynamicMulti<INPUT> dynamicMulti() {
-            return new DynamicMulti<>();
-        }
-
-        abstract INLET inlet();
-
-        static class DynamicMulti<T> extends InletController<T, Inlet.DynamicMulti<T>> {
-
-            private final Inlet.DynamicMulti<T> inlet;
-
-            private DynamicMulti() {
-                inlet = new Inlet.DynamicMulti<>();
-            }
-
-            @Override
-            Inlet.DynamicMulti<T> inlet() {
-                return inlet;
-            }
-
-            public void addPipe(ProcessorRef<T, ?, Inlet.DynamicMulti<T>, ?, ?, ?> processorRef, ProcessorRef<?, T, ?, ? extends Outlet<T>, ?, ?> newPipe) {
-                processorRef.processorDriver().execute(processor -> processor.inlet().add(newPipe.processorDriver()));
-            }
-
-        }
-    }
-
-    static abstract class OutletController<R, OUTLET extends Outlet<R>> {
-        public static <T> DynamicMulti<T> dynamicMulti() {
-            return new DynamicMulti<>();
-        }
-
-        public static <OUTPUT> Single<OUTPUT> single() {
-            return new Single<>();
-        }
-
-        abstract OUTLET outlet();
-
-        static class DynamicMulti<T> extends OutletController<T, Outlet.DynamicMulti<T>> {
-
-            private final Outlet.DynamicMulti<T> outlet;
-
-            private DynamicMulti() {
-                outlet = new Outlet.DynamicMulti<>();
-            }
-
-            @Override
-            Outlet.DynamicMulti<T> outlet() {
-                return outlet;
-            }
-
-            public void addPipe(ProcessorRef<?, T, ?, Outlet.DynamicMulti<T>, ?, ?> processorRef, ProcessorRef<T, ?, ? extends Inlet<T>, ?, ?, ?> newPipe) {
-                processorRef.processorDriver().execute(processor -> processor.outlet().add(newPipe.processorDriver()));
-            }
-        }
-
-        public static class Single<OUTPUT> extends OutletController<OUTPUT, Outlet.Single<OUTPUT>> {
-
-            private final Outlet.Single<OUTPUT> outlet;
-
-            private Single() {
-                this.outlet = new Outlet.Single<>();
-            }
-
-            @Override
-            Outlet.Single<OUTPUT> outlet() {
-                return outlet;
-            }
-        }
-    }
-
-    public static class ProcessorRef<
-            INPUT, OUTPUT,
-            INLET extends Inlet<INPUT>, OUTLET extends Outlet<OUTPUT>,
-            INLET_CONTROLLER extends InletController<INPUT, INLET>, OUTLET_CONTROLLER extends OutletController<OUTPUT, OUTLET>
-            > {
-
-        private final Actor.Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> processorDriver;
-        private final INLET_CONTROLLER inletController;
-        private final OUTLET_CONTROLLER outletController;
-
-        public ProcessorRef(Actor.Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> processorDriver, INLET_CONTROLLER inletController, OUTLET_CONTROLLER outletController) {
-            this.processorDriver = processorDriver;
-            this.inletController = inletController;
-            this.outletController = outletController;
-        }
-
-        public Actor.Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> processorDriver() {
-            return processorDriver;
         }
     }
 

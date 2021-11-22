@@ -21,18 +21,15 @@ package com.vaticle.typedb.core.reasoner.stream;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Buffer;
-import com.vaticle.typedb.core.reasoner.stream.Processor.Inlet;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Operation;
-import com.vaticle.typedb.core.reasoner.stream.Processor.Outlet;
 
 import java.util.List;
-import java.util.Map;
 
-public class ConcludableController extends Controller {
-    Map<ConceptMap, ProcessorRef<>> concludableProcessors;
+public class ConcludableController extends Controller<ConceptMap, ConceptMap, ConceptMap> {
 
-    protected ConcludableController(Driver<Controller> driver, String name, ActorExecutorGroup executorService) {
-        super(driver, name, executorService);
+    protected ConcludableController(Driver<Controller<ConceptMap, ConceptMap, ConceptMap>> driver, String name,
+                                    ActorExecutorGroup executorService) {
+        super(driver, name, executorService, true, true);
     }
 
     private void createConcludableProcessor(ConceptMap bounds) {
@@ -59,4 +56,21 @@ public class ConcludableController extends Controller {
     protected List<Stream> ruleDownstreams(ConceptMap bounds) {}
 
 
+    @Override
+    protected Operation<ConceptMap, ConceptMap> operation(ConceptMap bounds) {
+        // TODO: Change source and sink to refer to inlets and outlets (except the traversalSource which is actually a
+        //  source). These can then be typed and we can keep a record of whether we can message children to add extra inlets or outlets.
+        Buffer<ConceptMap> buffer = new Buffer<>();
+
+        Operation<ConceptMap, ConceptMap> downstreamOp = Operation.input().flatMapOrRetry(a -> a.unUnify(a.conceptMap(), requirements));
+        Operation<ConceptMap, ConceptMap> traversalOp = Source.fromIterator(createTraversal(concludable, bounds)).asOperation();  // TODO: Delay opening the traversal until needed. Use a non-eager traversal wrapper.
+        Operation<ConceptMap, ConceptMap> op = Operation.orderedJoin(traversalOp, downstreamOp);  // TODO: Could be a fluent .join(). Perhaps instead this should be attached as one of the inlets? But the inlets and outlets are currently the actor boundaries, so maybe not.
+        boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars());  // Determines whether to use findFirst() or find all results
+        if (singleAnswerRequired) {
+            op = op.findFirst();  // Will finish the stream once one answer is found
+        }
+        op = op.buffer(buffer);
+        // TODO: toUpstreamLookup? Requires concludable to determine whether answer is inferred
+        return op;
+    }
 }

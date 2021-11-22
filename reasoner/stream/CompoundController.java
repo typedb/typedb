@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.stream;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
@@ -30,55 +31,39 @@ import com.vaticle.typedb.core.reasoner.stream.Processor.Outlet;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CompoundController extends Controller {
+public class CompoundController extends Controller<ConceptMap, ConceptMap, ConceptMap> {
 
-    private final Map<ConceptMap, ProcessorRef<ConceptMap, ConceptMap, ?, ?, InletController.DynamicMulti<ConceptMap>, OutletController.Single<ConceptMap>>> compoundProcessors;
     private final ResolverRegistry registry;
-    private final Map<Resolvable<?>, Controller<?, ?, ?, ?>> downstreamResolvers;
+    private final Map<Resolvable<?>, Actor.Driver<Controller<ConceptMap, ConceptMap, ConceptMap>> downstreamResolvers;
 
-    protected CompoundController(Driver<Controller> driver, String name, ActorExecutorGroup executorService, ResolverRegistry registry) {
-        super(driver, name, executorService);
+    protected CompoundController(Driver<Controller<ConceptMap, ConceptMap, ConceptMap>> driver, String name,
+                                 ActorExecutorGroup executorService, boolean dynamicInlets, boolean dynamicOutlets,
+                                 ResolverRegistry registry) {
+        super(driver, name, executorService, dynamicInlets, dynamicOutlets);
         this.registry = registry;
-        this.compoundProcessors = new HashMap<>();
-        this.downstreamResolvers = new HashMap<Resolvable<?>, Processor<?, ?, ?, ?>>();
+        this.downstreamResolvers = new HashMap<>();
     }
 
-    private void createCompoundProcessor(ConceptMap bounds) {
+    @Override
+    protected Operation<ConceptMap, ConceptMap> operation(ConceptMap bounds) {
         // TODO: Change source and sink to refer to inlets and outlets (except the traversalSource which is actually a
         //  source). These can then be typed and we can keep a record of whether we can message children to add extra inlets or outlets.
-
 
         // TODO: An interesting point here is the initialisation. When we start we don't have any answers and so we want to create the first downstream
         Operation<ConceptMap, ConceptMap> op1 = Operation.input();
         Operation<ConceptMap, Inlet<ConceptMap>> op = op1.flatMapOrRetry(a -> createNextDownstream(a));
-
-        OutletController.Single<ConceptMap> outletController = OutletController.single();
-        InletController.DynamicMulti<ConceptMap> multiInletController = InletController.dynamicMulti();
-
-
-        ProcessorRef<ConceptMap, ConceptMap, ?, ?, InletController.DynamicMulti<ConceptMap>, OutletController.Single<ConceptMap>> processor = buildProcessor(op, multiInletController, outletController);
-        compoundProcessors.put(bounds, processor);
+        return op;
     }
 
     private Inlet<ConceptMap> createNextDownstream(ConceptMap answer) {
         // TODO: Maybe this is overcomplicated and we should use the registry instead. We should really consider this point.
         Resolvable<?> nextResolvable = null;  // TODO: Somehow we'll get the next resolvable
         // Get the Controller
-        Driver<Controller<?, ?, ?, ?>> d = downstreamResolvers.computeIfAbsent(answer -> registry.registerController(nextResolvable));
+        Driver<Controller<ConceptMap, ConceptMap, ConceptMap>> downstreamController = downstreamResolvers.computeIfAbsent(nextResolvable, a -> registry.registerController(nextResolvable));
 
         ConceptMap bounds = null;
-        d.execute(actor -> actor.attachProcessor(bounds)); // TODO: Ideally block until receiving a response for this.
+        downstreamController.execute(actor -> actor.attachProcessor(bounds)); // TODO: Ideally block until receiving a response for this.
 
-    }
-
-    // TODO: Can't see a use for this abstraction yet
-    class CompoundProcessorRef extends ProcessorRef<ConceptMap, ConceptMap, Inlet.DynamicMulti<ConceptMap>, Outlet.Single<ConceptMap>, InletController.DynamicMulti<ConceptMap>, OutletController.Single<ConceptMap>> {
-
-        public CompoundProcessorRef(Driver<Processor<ConceptMap, ConceptMap, Inlet.DynamicMulti<ConceptMap>,
-                Outlet.Single<ConceptMap>>> processorDriver, InletController.DynamicMulti<ConceptMap> inletController,
-                                    OutletController.Single<ConceptMap> outletController) {
-            super(processorDriver, inletController, outletController);
-        }
     }
 
 }

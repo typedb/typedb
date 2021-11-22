@@ -211,12 +211,8 @@ public class ResolverRegistry {
         } else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    public Actor.Driver<Processor<?, ?, ?, ?>> registerProcessor(Resolvable<?> resolvable) {
-        // TODO: Actually we intend to let the controllers handle this
-    }
-
-    public Actor.Driver<Controller<?, ?, ?, ?>> registerController(Resolvable<?> resolvable) {
-        // TODO: Actually we intend to let the controllers handle this
+    public <IDENTIFIER, INPUT, OUTPUT> Actor.Driver<Controller<IDENTIFIER, INPUT, OUTPUT>> registerController(Resolvable<?> resolvable) {
+        return null;  // TODO
     }
 
     private ResolverView.FilteredRetrievable registerRetrievable(com.vaticle.typedb.core.logic.resolvable.Retrievable retrievable) {

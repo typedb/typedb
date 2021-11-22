@@ -18,33 +18,35 @@
 
 package com.vaticle.typedb.core.reasoner.stream;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 
 import java.util.function.Function;
 
-public class Processor<INPUT, OUTPUT, INLET extends Processor.Inlet<INPUT>, OUTLET extends Processor.Outlet<OUTPUT>>
-        extends Actor<Processor<INPUT, OUTPUT, INLET, OUTLET>> {
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+
+public class Processor<INPUT, OUTPUT> extends Actor<Processor<INPUT, OUTPUT>> {
 
     private final Operation<INPUT, OUTPUT> operation;
-    private final INLET inlet;
-    private final OUTLET outlet;
+    private final Inlet<INPUT> inlet;
+    private final Outlet<OUTPUT> outlet;
 
-    public Processor(Driver<Processor<INPUT, OUTPUT, INLET, OUTLET>> driver, String name,
-                     Operation<INPUT, OUTPUT> operation, INLET inlet, OUTLET outlet) {
+    public Processor(Driver<Processor<INPUT, OUTPUT>> driver, String name, Operation<INPUT, OUTPUT> operation,
+                     boolean dynamicInlets, boolean dynamicOutlets) {
         super(driver, name);
         this.operation = operation;
-        this.inlet = inlet;
-        this.outlet = outlet;
+        this.inlet = dynamicInlets ? new Inlet.DynamicMulti<>() : new Inlet.Single<>();
+        this.outlet = dynamicOutlets ? new Outlet.DynamicMulti<>() : new Outlet.DynamicMulti<>();
         this.operation.connect(this.inlet);
         this.outlet.connect(this.operation);
     }
 
-    public INLET inlet() {
+    public Inlet<INPUT> inlet() {
         return inlet;
     }
 
-    public OUTLET outlet() {
+    public Outlet<OUTPUT> outlet() {
         return outlet;
     }
 
@@ -65,8 +67,9 @@ public class Processor<INPUT, OUTPUT, INLET extends Processor.Inlet<INPUT>, OUTL
 
         public static class Single<OUTPUT> extends Outlet<OUTPUT> {}
         public static class DynamicMulti<OUTPUT> extends Outlet<OUTPUT> {
-            public void add(Driver<? extends Processor<OUTPUT, ?, ?, ?>> newOutletPipe) {
-                // TODO: Store the pipe
+            @Override
+            public <DOWNSTREAM_OUTPUT> void add(Driver<Processor<OUTPUT, DOWNSTREAM_OUTPUT>> newOutlet) {
+                // TODO: Store the new outlet
             }
         }
     }
@@ -74,8 +77,9 @@ public class Processor<INPUT, OUTPUT, INLET extends Processor.Inlet<INPUT>, OUTL
     public static class Inlet<INPUT> {
         public static class Single<INPUT> extends Inlet<INPUT> {}
         public static class DynamicMulti<INPUT> extends Inlet<INPUT> {
-            public void add(Driver<? extends Processor<?, INPUT, ?, ?>> newInletPipe) {
-                // TODO: Store the pipe
+            @Override
+            public <UPSTREAM_INPUT> void add(Driver<Processor<UPSTREAM_INPUT, INPUT>> newInlet) {
+                // TODO: Store the new inlet
             }
         }
     }
