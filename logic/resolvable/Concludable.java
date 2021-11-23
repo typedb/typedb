@@ -717,13 +717,13 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         private final ThingVariable attribute;
 
         private Attribute(ThingVariable attribute, Set<ValueConstraint<?>> values) {
-            super(new Conjunction(set(attribute), set()));
+            super(new Conjunction(set(attribute), list()));
             this.attribute = attribute;
             this.values = values;
         }
 
         private Attribute(IsaConstraint isa) {
-            super(new Conjunction(isa.variables(), set()));
+            super(new Conjunction(isa.variables(), list()));
             attribute = isa.owner();
             values = set();
         }

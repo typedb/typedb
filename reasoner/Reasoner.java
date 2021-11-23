@@ -96,7 +96,7 @@ public class Reasoner {
     private boolean mayReason(Disjunction disjunction) {
         for (Conjunction conj : disjunction.conjunctions()) {
             Set<Variable> vars = conj.variables();
-            Set<Negation> negs = conj.negations();
+            List<Negation> negs = conj.negations();
             if (iterate(vars).flatMap(v -> iterate(v.inferredTypes())).distinct().anyMatch(this::hasRule)) return true;
             if (!negs.isEmpty() && iterate(negs).anyMatch(n -> mayReason(n.disjunction()))) return true;
         }

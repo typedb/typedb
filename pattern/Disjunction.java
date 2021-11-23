@@ -87,6 +87,7 @@ public class Disjunction implements Pattern, Cloneable {
         if (o == null || getClass() != o.getClass()) return false;
 
         Disjunction that = (Disjunction) o;
+        // TODO this isn't right because it is positional-equality too!
         return this.conjunctions.equals(that.conjunctions);
     }
 
