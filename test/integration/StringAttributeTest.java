@@ -58,7 +58,7 @@ public class StringAttributeTest {
     private static final Pair<Integer, Integer> UNICODE_INVALID_RANGE = pair(0xD800, 0xDFFF);
 
     @Test
-    public void all_unicode_strings_are_valid() throws IOException {
+    public void all_unicode_characters_are_valid() throws IOException {
         Util.resetDirectory(dataDir);
         try (TypeDB typedb = RocksTypeDB.open(options)) {
             typedb.databases().create(database);
