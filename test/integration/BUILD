@@ -93,6 +93,32 @@ host_compatible_java_test(
     size = "large",
 )
 
+host_compatible_java_test(
+    name = "test-attribute-string",
+    srcs = ["StringAttributeTest.java"],
+    test_class = "com.vaticle.typedb.core.test.integration.StringAttributeTest",
+    native_libraries_deps = [
+        # Internal dependencies
+        "//:typedb",
+        "//common:common",
+        "//rocks:rocks",
+        "//concept:concept",
+        "//logic:logic",
+    ],
+    deps = [
+        "//test/integration/util:util",
+
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql_lang_java//:typeql-lang",
+    ],
+    resources = [
+        "//common/test:logback-test"
+    ],
+    resource_strip_prefix = "common/test",
+    size = "large",
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob([
