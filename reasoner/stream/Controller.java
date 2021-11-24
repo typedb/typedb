@@ -27,53 +27,61 @@ import com.vaticle.typedb.core.reasoner.stream.Processor.Operation;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 
 public abstract class Controller<INPUT, OUTPUT, INLET extends Inlet<INPUT>, OUTLET extends Outlet<OUTPUT>, INLET_CONTROLLER extends Controller.InletController<INPUT, INLET>, OUTLET_CONTROLLER extends Controller.OutletController<OUTPUT, OUTLET>> extends Actor<Controller<INPUT, OUTPUT, INLET, OUTLET, INLET_CONTROLLER, OUTLET_CONTROLLER>> {
 
     private final ActorExecutorGroup executorService;
-    private final boolean dynamicInlets;
-    private final boolean dynamicOutlets;
-    private final Map<IDENTIFIER, Actor.Driver<Processor<INPUT, OUTPUT>>> processors;
+    private final Map<IDENTIFIER, Actor.Driver<Processor<UPSTREAM_IDENTIFIER, INPUT, OUTPUT>>> processors;
+    private final Map<UPSTREAM_IDENTIFIER, Driver<Processor<UPSTREAM_IDENTIFIER, INPUT, OUTPUT>>> processorRequesters;
 
-    protected Controller(Driver<Controller<INPUT, OUTPUT, INLET, OUTLET, INLET_CONTROLLER, OUTLET_CONTROLLER>> driver, String name, ActorExecutorGroup executorService) {
+    protected Controller(Driver<CONTROLLER> driver, String name, ActorExecutorGroup executorService) {
         super(driver, name);
         this.executorService = executorService;
-        this.dynamicInlets = dynamicInlets;
-        this.dynamicOutlets = dynamicOutlets;
         this.processors = new HashMap<>();
+        this.processorRequesters = new HashMap<>();
     }
+
+    protected abstract Processor.InletManager<INPUT> createInletManager(IDENTIFIER id);
+
+    protected abstract Processor.OutletManager<OUTPUT> createOutletManager(IDENTIFIER id);
 
     protected abstract Operation<INPUT, OUTPUT> operation(IDENTIFIER id);
 
-    Actor.Driver<Processor<INPUT, OUTPUT>> buildProcessor(IDENTIFIER id) {
-        Actor.Driver<Processor<INPUT, OUTPUT>> processor = Actor.driver(
-                driver -> new Processor<>(driver, "name", operation(id), dynamicInlets, dynamicOutlets), executorService);
+    Actor.Driver<Processor<UPSTREAM_IDENTIFIER, INPUT, OUTPUT>> buildProcessor(IDENTIFIER id) {
+        Actor.Driver<Processor<UPSTREAM_IDENTIFIER, INPUT, OUTPUT>> processor = Actor.driver(
+                driver -> new Processor<>(driver, driver(), id.toString(), operation(id), createInletManager(id), createOutletManager(id)), executorService);
         processors.put(id, processor);
         return processor;
     }
 
-    public Driver<Processor<INPUT, OUTPUT>> attachProcessor(IDENTIFIER identifier) {
-        // TODO: misleading naming, doesn't attach anything
-        return processors.computeIfAbsent(identifier, i -> buildProcessor(identifier));
+    public void receiveDownstreamProcessorRequest(UPSTREAM_IDENTIFIER id, Driver<Processor<UPSTREAM_IDENTIFIER, INPUT, OUTPUT>> requester) {
+        // Message downstream controller responsible for creating processors as per the id.
+        Driver<? extends Controller<UPSTREAM_IDENTIFIER, ?, ?, INPUT, ?>> controller = getControllerForId(id);
+        processorRequesters.put(id, requester);
+        controller.execute(actor -> actor.receiveProcessorRequest(id, driver()));
     }
 
-    public <UPSTREAM_OUTPUT> void addInlet(Actor.Driver<Processor<INPUT, OUTPUT>> processor, Actor.Driver<Processor<UPSTREAM_OUTPUT, INPUT>> newInlet) {
-        processor.execute(actor -> actor.inlet().add(newInlet));
+    protected abstract Driver<? extends Controller<UPSTREAM_IDENTIFIER, ?, ?, INPUT, ?>> getControllerForId(UPSTREAM_IDENTIFIER id);  // TODO: Looks up the downstream controller by (pattern, bounds), either via registry or has already stored them.
+
+    public void receiveProcessorRequest(IDENTIFIER id, Driver<? extends Controller<?, IDENTIFIER, OUTPUT, ?, ?>> requester) {
+        Driver<Processor<UPSTREAM_IDENTIFIER, INPUT, OUTPUT>> processor = processors.computeIfAbsent(id, this::buildProcessor);
+        requester.execute(actor -> actor.receiveRequestedProcessor(id, processor));
     }
 
-    protected abstract Operation<INPUT,OUTPUT> operation();
+    public <UPSTREAM_INPUT> void receiveRequestedProcessor(UPSTREAM_IDENTIFIER id, Driver<Processor<UPSTREAM_IDENTIFIER, UPSTREAM_INPUT, INPUT>> processor) {
+        Driver<Processor<UPSTREAM_IDENTIFIER, INPUT, OUTPUT>> requester = processorRequesters.remove(id);
+        assert requester != null;
+        requester.execute(actor -> actor.inletManager().add(processor));
+    }
 
-    protected abstract INLET_CONTROLLER inletController();
-
-    protected abstract OUTLET_CONTROLLER outletController();
-
-    public FunctionalIterator<ConceptMap> createTraversal(Pattern pattern, ConceptMap bounds) {
+    public FunctionalIterator<ConceptMap> createTraversal(Pattern pattern, ConceptMap bounds) {  // TODO: This framework shouldn't know about Patterns or ConceptMaps
         return null; // TODO
     }
 
     static class Source<INPUT> {
-        public static <INPUT> Source<INPUT> fromIterator(FunctionalIterator<INPUT> traversal) {
+        public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<ConceptMap>> traversal) {
             return null;  // TODO
         }
 

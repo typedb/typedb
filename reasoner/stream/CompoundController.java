@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConcludableResolver;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Inlet;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Operation;
-import com.vaticle.typedb.core.reasoner.stream.Processor.Outlet;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,36 +33,40 @@ import java.util.Map;
 public class CompoundController extends Controller<ConceptMap, ConceptMap, ConceptMap> {
 
     private final ResolverRegistry registry;
-    private final Map<Resolvable<?>, Actor.Driver<Controller<ConceptMap, ConceptMap, ConceptMap>> downstreamResolvers;
+    private final Map<Resolvable<?>, Actor.Driver<Controller<ConceptMap, ConceptMap, ConceptMap>>> conclusionControllers;
+//    private final Map<Resolvable<?>, Actor.Driver<ConclusionController>> downstreamConrollers;  // TODO: Ought to work but generics don't play nicely
 
     protected CompoundController(Driver<Controller<ConceptMap, ConceptMap, ConceptMap>> driver, String name,
-                                 ActorExecutorGroup executorService, boolean dynamicInlets, boolean dynamicOutlets,
-                                 ResolverRegistry registry) {
-        super(driver, name, executorService, dynamicInlets, dynamicOutlets);
+                                 ActorExecutorGroup executorService, ResolverRegistry registry) {
+        super(driver, name, executorService);
         this.registry = registry;
-        this.downstreamResolvers = new HashMap<>();
+        this.conclusionControllers = new HashMap<>();
     }
 
     @Override
     protected Operation<ConceptMap, ConceptMap> operation(ConceptMap bounds) {
-        // TODO: Change source and sink to refer to inlets and outlets (except the traversalSource which is actually a
-        //  source). These can then be typed and we can keep a record of whether we can message children to add extra inlets or outlets.
+        return new CompoundOperation(conclusionControllers);
+    }
 
+    private static Operation<ConceptMap, ConceptMap> defineOperation(ConceptMap bounds) {
+        // This is a static method so that we don't accidentally leak state from the controller into the operation
         // TODO: An interesting point here is the initialisation. When we start we don't have any answers and so we want to create the first downstream
-        Operation<ConceptMap, ConceptMap> op1 = Operation.input();
-        Operation<ConceptMap, Inlet<ConceptMap>> op = op1.flatMapOrRetry(a -> createNextDownstream(a));
+        //  the controller should initialise by constructing the first downstream and supplying it on or just after construction.
+        Operation<?, ConceptMap> op1 = Operation.input();
+        Operation<ConceptMap, InletManager<ConceptMap>> op = op1.forEach(a -> {
+            processor().requestNewInlet(a)
+        });
         return op;
     }
 
-    private Inlet<ConceptMap> createNextDownstream(ConceptMap answer) {
+    private InletManager<ConceptMap> createNextInlet(ConceptMap answer) {
         // TODO: Maybe this is overcomplicated and we should use the registry instead. We should really consider this point.
         Resolvable<?> nextResolvable = null;  // TODO: Somehow we'll get the next resolvable
         // Get the Controller
-        Driver<Controller<ConceptMap, ConceptMap, ConceptMap>> downstreamController = downstreamResolvers.computeIfAbsent(nextResolvable, a -> registry.registerController(nextResolvable));
+        Driver<Controller<ConceptMap, ConceptMap, ConceptMap>> downstreamController = conclusionControllers.computeIfAbsent(nextResolvable, a -> registry.registerController(nextResolvable));
 
         ConceptMap bounds = null;
-        downstreamController.execute(actor -> actor.attachProcessor(bounds)); // TODO: Ideally block until receiving a response for this.
-
+//        downstreamController.execute(actor -> actor.newOutlet(bounds)); // TODO: We shouldn't create a new outlet, we should be creating a new inlet
     }
 
 }
