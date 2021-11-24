@@ -40,7 +40,6 @@ artifacts = [
     "junit:junit",
     "org.rocksdb:rocksdbjni",
     "org.rocksdb:rocksdbjni-dev-mac",
-    "org.rocksdb:rocksdbjni-dev-linux",
     "org.slf4j:slf4j-api",
     "org.zeroturnaround:zt-exec"
 ]
