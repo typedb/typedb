@@ -72,7 +72,7 @@ native_java_libraries(
         "@maven//:org_slf4j_slf4j_api",
     ],
     mac_deps = [
-        "@maven//:org_rocksdb_rocksdbjni_dev"
+        "@maven//:org_rocksdb_rocksdbjni_dev_mac"
     ],
     linux_deps = [
         "@maven//:org_rocksdb_rocksdbjni",
