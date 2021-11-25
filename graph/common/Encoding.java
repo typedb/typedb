@@ -79,7 +79,7 @@ public class Encoding {
         PERSISTED(2),
         IMMUTABLE(3);
 
-        private int status;
+        private final int status;
 
         Status(int status) {
             this.status = status;
@@ -1007,6 +1007,7 @@ public class Encoding {
 
     public enum System {
 
+        // WARNING: do not change encoding version key, or compatibility checks may break
         ENCODING_VERSION_KEY(0),
         TRANSACTION_DUMMY_WRITE(1);
 

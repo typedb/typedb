@@ -157,7 +157,7 @@ public class RocksDatabase implements TypeDB.Database {
 
     private void validateEncodingVersion(RocksTransaction.Schema txn) {
         ByteArray encoding = txn.schemaStorage().get(ENCODING_VERSION_KEY.bytes());
-        if (encoding == null) { // no encoding version is version 1
+        if (encoding == null || encoding.isEmpty()) { // no or missing encoding version is version 1
             throw TypeDBException.of(DATABASE_INCOMPATIBLE_ENCODING, name(), 1, ENCODING_VERSION);
         } else if (encoding.decodeInt() < ENCODING_VERSION || encoding.decodeInt() > ENCODING_VERSION) {
             throw TypeDBException.of(DATABASE_INCOMPATIBLE_ENCODING, name(), encoding.decodeInt(), ENCODING_VERSION);
