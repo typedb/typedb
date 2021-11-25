@@ -53,17 +53,13 @@ native_java_libraries(
 )
 
 assemble_files = {
-    "//server/conf:logback": "server/conf/logback.xml",
-    "//server/conf:logback-debug": "server/conf/logback-debug.xml",
-    "//server/conf:typedb-properties": "server/conf/typedb.properties",
+    "//server/conf:typedb-defaults": "server/conf/defaults.yml",
     "//server/resources:logo": "server/resources/typedb-ascii.txt",
     "//:LICENSE": "LICENSE",
 }
 
 permissions = {
-    "server/conf/typedb.properties": "0755",
-    "server/conf/logback.xml": "0755",
-    "server/conf/logback-debug.xml": "0755",
+    "server/conf/defaults.yml" : "0444",
 }
 
 artifact_repackage(

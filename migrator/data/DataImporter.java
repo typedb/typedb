@@ -83,18 +83,16 @@ public class DataImporter {
     private final int parallelisation;
 
     private final Path dataFile;
-    private final Map<String, String> remapLabels;
     private final IDMapper IDMapper;
     private final String version;
     private final Status status;
     private final ConcurrentSet<DataProto.Item.Relation> skippedRelations;
     private Checksum checksum;
 
-    public DataImporter(TypeDB typedb, String database, Path dataFile, Map<String, String> remapLabels, String version) {
+    public DataImporter(TypeDB typedb, String database, Path dataFile, String version) {
         if (!Files.exists(dataFile)) throw TypeDBException.of(FILE_NOT_FOUND, dataFile);
         this.session = typedb.session(database, Arguments.Session.Type.DATA);
         this.dataFile = dataFile;
-        this.remapLabels = remapLabels;
         this.version = version;
         assert com.vaticle.typedb.core.concurrent.executor.Executors.isInitialised();
         this.parallelisation = com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
@@ -298,8 +296,8 @@ public class DataImporter {
         }
 
         private void insertAttribute(TypeDB.Transaction transaction, DataProto.Item.Attribute attrMsg) {
-            AttributeType type = transaction.concepts().getAttributeType(relabel(attrMsg.getLabel()));
-            if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, relabel(attrMsg.getLabel()), attrMsg.getLabel());
+            AttributeType type = transaction.concepts().getAttributeType(attrMsg.getLabel());
+            if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, attrMsg.getLabel());
             DataProto.ValueObject valueMsg = attrMsg.getValue();
             Attribute attribute;
             switch (valueMsg.getValueCase()) {
@@ -347,8 +345,8 @@ public class DataImporter {
         }
 
         private void insertEntity(TypeDB.Transaction transaction, DataProto.Item.Entity msg) {
-            EntityType type = transaction.concepts().getEntityType(relabel(msg.getLabel()));
-            if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, relabel(msg.getLabel()), msg.getLabel());
+            EntityType type = transaction.concepts().getEntityType(msg.getLabel());
+            if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, msg.getLabel());
             Entity entity = type.create();
             recordCreated(entity.getIID(), msg.getId());
             status.entityCount.incrementAndGet();
@@ -375,10 +373,10 @@ public class DataImporter {
         }
 
         private Optional<Integer> tryInsertCompleteRelation(DataProto.Item.Relation relationMsg) {
-            RelationType relationType = transaction.concepts().getRelationType(relabel(relationMsg.getLabel()));
+            RelationType relationType = transaction.concepts().getRelationType(relationMsg.getLabel());
             Optional<List<Pair<RoleType, Thing>>> players;
             if (relationType == null) {
-                throw TypeDBException.of(TYPE_NOT_FOUND, relabel(relationMsg.getLabel()), relationMsg.getLabel());
+                throw TypeDBException.of(TYPE_NOT_FOUND, relationMsg.getLabel());
             } else if ((players = getAllPlayers(relationType, relationMsg)).isPresent()) {
                 assert players.get().size() > 0;
                 Relation relation = relationType.create();
@@ -409,13 +407,13 @@ public class DataImporter {
     private void importSkippedRelations() {
         try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
             skippedRelations.forEach(msg -> {
-                RelationType relType = transaction.concepts().getRelationType(relabel(msg.getLabel()));
-                if (relType == null) throw TypeDBException.of(TYPE_NOT_FOUND, relabel(msg.getLabel()), msg.getLabel());
+                RelationType relType = transaction.concepts().getRelationType(msg.getLabel());
+                if (relType == null) throw TypeDBException.of(TYPE_NOT_FOUND, msg.getLabel());
                 IDMapper.put(msg.getId(), relType.create().getIID());
             });
 
             skippedRelations.forEach(msg -> {
-                RelationType relType = transaction.concepts().getRelationType(relabel(msg.getLabel()));
+                RelationType relType = transaction.concepts().getRelationType(msg.getLabel());
                 Relation relation = transaction.concepts().getThing(IDMapper.get(msg.getId())).asRelation();
                 msg.getRoleList().forEach(roleMsg -> {
                     RoleType roleType = getRoleType(relType, roleMsg);
@@ -432,17 +430,13 @@ public class DataImporter {
 
     private RoleType getRoleType(RelationType relationType, DataProto.Item.Relation.Role roleMsg) {
         String unscopedRoleLabel;
-        String roleLabel = relabel(roleMsg.getLabel());
+        String roleLabel = roleMsg.getLabel();
         if (roleLabel.contains(":")) unscopedRoleLabel = roleLabel.split(":")[1];
         else unscopedRoleLabel = roleLabel;
         RoleType roleType = relationType.getRelates(unscopedRoleLabel);
         if (roleType == null) {
-            throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, roleLabel, roleMsg.getLabel(), relationType.getLabel().name());
+            throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, roleLabel, relationType.getLabel().name());
         } else return roleType;
-    }
-
-    private String relabel(String label) {
-        return remapLabels.getOrDefault(label, label);
     }
 
     private static class IDMapper {

@@ -43,34 +43,64 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Server(3, "Exited with error.");
         public static final Server UNCAUGHT_EXCEPTION =
                 new Server(4, "Uncaught exception thrown at thread '%s'.");
+        public static final Server CONFIG_FILE_NOT_FOUND =
+                new Server(5, "Could not find/read the configuration file '%s'.");
+        public static final Server UNRECOGNISED_CLI_COMMAND =
+                new Server(6, "The command '%s' was not recognised.");
+        public static final Server CLI_ARGUMENT_MISSING_PREFIX =
+                new Server(7, "All arguments should be prefixed with '%s', which '%s' is missing.");
+        public static final Server DUPLICATE_CLI_ARGUMENT =
+                new Server(8, "Unexpected duplicate command line arguments '%s'.");
+        public static final Server CLI_FLAG_OPTION_HAS_VALUE =
+                new Server(9, "Command line option '%s' does not take a value.");
+        public static final Server CLI_OPTION_REQUIRES_VALUE_TYPE =
+                new Server(10, "Command line option '%s' requires a '%s' value.");
+        public static final Server CLI_OPTION_REQUIRES_VALUE =
+                new Server(11, "Command line option '%s' requires a value.");
+        public static final Server CLI_OPTION_REQUIRED =
+                new Server(12, "Missing required command line option: '%s'.");
+        public static final Server CLI_OPTION_UNRECOGNISED =
+                new Server(13, "Unrecognized command line option: '%s'.");
+        public static final Server CONFIG_YAML_MUST_BE_MAP =
+                new Server(14, "The configuration file must be key-value map in YAML format.");
+        public static final Server CONFIG_SECTION_MUST_BE_MAP =
+                new Server(15, "The configuration section with key '%s' must be a key-value map.");
+        public static final Server MISSING_CONFIG_OPTION =
+                new Server(16, "Required configuration '%s' is missing.");
+        public static final Server UNRECOGNISED_CONFIGURATION_OPTIONS =
+                new Server(17, "The provided configuration(s) '%s' are unrecognised.");
+        public static final Server CONFIG_UNEXPECTED_VALUE_TYPE =
+                new Server(18, "Configuration '%s' received a value '%s' with unexpected type. It must be a '%s'.");
+        public static final Server CONFIG_ENUM_UNEXPECTED_VALUE =
+                new Server(19, "Configuration '%s' received an unexpected value '%s'. It must be one of '%s'.");
+        public static final Server CONFIG_OUTPUT_UNRECOGNISED =
+                new Server(20, "Configuration output named '%s' was not recognised (check the output definition names).");
+        public static final Server CONFIG_REASONER_REQUIRES_DIR_OUTPUT =
+                new Server(21, "Reasoner debugger configuration requires a directory output");
         public static final Server FAILED_AT_STOPPING =
-                new Server(5, "Exception occurred while attempting to stop the server");
-        public static final Server PROPERTIES_FILE_NOT_FOUND =
-                new Server(6, "Could not find/read default properties file '%s'.");
-        public static final Server FAILED_PARSE_PROPERTIES =
-                new Server(7, "Failed at parsing properties file.");
+                new Server(22, "Exception occurred while attempting to stop the server.");
         public static final Server ENV_VAR_NOT_FOUND =
-                new Server(8, "Environment variable '%s' is not defined.");
+                new Server(23, "Environment variable '%s' is not defined.");
         public static final Server SERVER_SHUTDOWN =
-                new Server(9, "TypeDB server has been shutdown.");
+                new Server(24, "TypeDB server has been shutdown.");
         public static final Server MISSING_FIELD =
-                new Server(10, "The request message does not contain the required field '%s'.");
+                new Server(25, "The request message does not contain the required field '%s'.");
         public static final Server MISSING_CONCEPT =
-                new Server(11, "Concept does not exist.");
+                new Server(26, "Concept does not exist.");
         public static final Server BAD_VALUE_TYPE =
-                new Server(12, "The value type '%s' was not recognised.");
+                new Server(27, "The value type '%s' was not recognised.");
         public static final Server EMPTY_TRANSACTION_REQUEST =
-                new Server(13, "Empty transaction request.");
+                new Server(28, "Empty transaction request.");
         public static final Server UNKNOWN_REQUEST_TYPE =
-                new Server(14, "The request message was not recognised.");
+                new Server(29, "The request message was not recognised.");
         public static final Server ITERATION_WITH_UNKNOWN_ID =
-                new Server(15, "Iteration was requested for ID '%s', but this ID does not correspond to an existing query iterator.");
+                new Server(30, "Iteration was requested for ID '%s', but this ID does not correspond to an existing query iterator.");
         public static final Server DUPLICATE_REQUEST =
-                new Server(16, "The request with ID '%s' is a duplicate.");
+                new Server(31, "The request with ID '%s' is a duplicate.");
         public static final Server ALREADY_RUNNING =
-                new Server(17, "Another instance of TypeDB server is already running at this port: '%s'.");
+                new Server(32, "Another instance of TypeDB server is already running at this port: '%s'.");
         public static final Server INCOMPATIBLE_JAVA_RUNTIME =
-                new Server(18, "Incompatible Java runtime version: '%s'. Please use Java 11 or above.");
+                new Server(33, "Incompatible Java runtime version: '%s'. Please use Java 11 or above.");
 
         private static final String codePrefix = "SRV";
         private static final String messagePrefix = "Invalid Server Operation";
@@ -556,24 +586,22 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Migrator(1, "The database '%s' was not found.");
         public static final Migrator FILE_NOT_FOUND =
                 new Migrator(2, "The specified file path '%s' could not be found.");
-        public static final Migrator FILE_NOT_READABLE =
-                new Migrator(3, "The specified file '%s' cannot be opened for read.");
         public static final Migrator FILE_NOT_WRITABLE =
-                new Migrator(4, "The specified file '%s' cannot be opened for write.");
+                new Migrator(3, "The specified file '%s' cannot be opened for write.");
         public static final Migrator TYPE_NOT_FOUND =
-                new Migrator(5, "The type '%s' (originally '%s') is not defined in the schema.");
+                new Migrator(4, "The type '%s' is not defined in the schema.");
         public static final Migrator ROLE_TYPE_NOT_FOUND =
-                new Migrator(6, "The role type '%s' (originally '%s') is not defined for relation type '%s. Please confirm schema was migrated correctly.");
+                new Migrator(5, "The role type '%s'is not defined for relation type '%s. Please confirm schema was migrated correctly.");
         public static final Migrator PLAYER_NOT_FOUND =
-                new Migrator(7, "A player for relation type '%s' was expected but not found.");
+                new Migrator(6, "A player for relation type '%s' was expected but not found.");
         public static final Migrator NO_PLAYERS =
-                new Migrator(8, "The relation of type '%'s with original ID '%s' has no role players");
+                new Migrator(7, "The relation of type '%'s with original ID '%s' has no role players");
         public static final Migrator INVALID_DATA =
-                new Migrator(9, "The data being imported is invalid.");
+                new Migrator(8, "The data being imported is invalid.");
         public static final Migrator MISSING_HEADER =
-                new Migrator(10, "The data being imported is invalid - the header is missing.");
+                new Migrator(9, "The data being imported is invalid - the header is missing.");
         public static final Migrator IMPORT_CHECKSUM_MISMATCH =
-                new Migrator(11, "The import has finished but mismatches the required checksums.");
+                new Migrator(10, "The import has finished but mismatches the required checksums.");
 
         private static final String codePrefix = "MIG";
         private static final String messagePrefix = "Migrator failure";

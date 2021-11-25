@@ -67,7 +67,7 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         Root.Explain downstream = new AnswerStateImpl.TopImpl.ExplainImpl.InitialImpl(bounds, explainer).toDownstream();
         this.explainRequest = Request.create(explainer, downstream);
-        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
+        if (options.traceInference()) ResolutionTracer.initialise(options.reasonerDebuggerDir());
     }
 
     @Override

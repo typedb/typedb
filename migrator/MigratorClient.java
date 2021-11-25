@@ -24,7 +24,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
@@ -41,11 +40,10 @@ public class MigratorClient {
         stub = MigratorGrpc.newStub(channel);
     }
 
-    public boolean importData(String database, String filename, Map<String, String> remapLabels) {
+    public boolean importData(String database, String filename) {
         MigratorProto.Import.Req req = MigratorProto.Import.Req.newBuilder()
                 .setDatabase(database)
                 .setFilename(filename)
-                .putAllRemapLabels(remapLabels)
                 .build();
         ResponseObserver.Import streamObserver = new ResponseObserver.Import(new ProgressPrinter.Import());
         stub.importData(req, streamObserver);
@@ -69,7 +67,7 @@ public class MigratorClient {
         private final CountDownLatch latch;
         private boolean success;
 
-        public ResponseObserver() {
+        ResponseObserver() {
             this.latch = new CountDownLatch(1);
         }
 
@@ -77,7 +75,7 @@ public class MigratorClient {
 
             private final ProgressPrinter.Import progressPrinter;
 
-            public Import(ProgressPrinter.Import progressPrinter) {
+            private Import(ProgressPrinter.Import progressPrinter) {
                 super();
                 this.progressPrinter = progressPrinter;
             }
@@ -98,7 +96,7 @@ public class MigratorClient {
 
             private final ProgressPrinter.Export progressPrinter;
 
-            public Export(ProgressPrinter.Export progressPrinter) {
+            private Export(ProgressPrinter.Export progressPrinter) {
                 super();
                 this.progressPrinter = progressPrinter;
             }
@@ -149,7 +147,7 @@ public class MigratorClient {
         private int linesPrinted = 0;
         Status status = Status.STARTING;
 
-        public ProgressPrinter() {
+        private ProgressPrinter() {
             TimerTask task = new TimerTask() {
                 @Override
                 public void run() {

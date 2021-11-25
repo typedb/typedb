@@ -52,7 +52,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     protected Boolean prefetch = null;
     protected Path typeDBDir = null;
     protected Path dataDir = null;
-    protected Path logsDir = null;
+    protected Path reasonerDebuggerDir = null;
 
     abstract SELF getThis();
 
@@ -161,9 +161,9 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    public Path logsDir() {
-        if (logsDir != null) return logsDir;
-        else if (parent != null) return parent.logsDir();
+    public Path reasonerDebuggerDir() {
+        if (reasonerDebuggerDir != null) return reasonerDebuggerDir;
+        else if (parent != null) return parent.reasonerDebuggerDir();
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
@@ -188,8 +188,8 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
             return this;
         }
 
-        public Database logsDir(Path logsDir) {
-            this.logsDir = logsDir;
+        public Database reasonerDebuggerDir(Path debuggerDir) {
+            this.reasonerDebuggerDir = debuggerDir;
             return this;
         }
     }

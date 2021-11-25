@@ -17,9 +17,9 @@
 
 package com.vaticle.typedb.core.migrator;
 
+import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.migrator.data.DataExporter;
 import com.vaticle.typedb.core.migrator.data.DataImporter;
-import com.vaticle.typedb.core.TypeDB;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -59,8 +59,7 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
 
     @Override
     public void importData(MigratorProto.Import.Req request, StreamObserver<MigratorProto.Import.Progress> responseObserver) {
-        DataImporter importer = new DataImporter(typedb, request.getDatabase(), Paths.get(request.getFilename()),
-                request.getRemapLabelsMap(), version);
+        DataImporter importer = new DataImporter(typedb, request.getDatabase(), Paths.get(request.getFilename()), version);
         try {
             CompletableFuture<Void> migratorJob = CompletableFuture.runAsync(importer::run);
             while (!migratorJob.isDone()) {

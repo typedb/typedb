@@ -15,17 +15,35 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//server:__subpackages__", "//:__pkg__"])
+data: server/data
+port: 1729
+log:
+  custom-logger-invalid: 123
+  output:
+    stdout:
+      type: stdout
+    dir:
+      type: directory
+      path: server/logs
+      maxFileMB: 50
+      maxFilesCount: 60
+      maxFilesGB: 1
+  logger:
+    default:
+      level: warn
+      output: [ stdout, dir ]
+    typedb:
+      filter: com.vaticle.typedb.core
+      level: info
+      output: [ stdout, dir ]
+  debugger:
+    reasoner:
+      enable: false
+      type: reasoner
+      output: dir
 
-load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-
-filegroup(
-    name = "typedb-defaults",
-    srcs = ["defaults.yml"],
-)
-
-checkstyle_test(
-    name = "checkstyle",
-    include = glob(["*"]),
-    license_type = "agpl",
-)
+vaticle-factory:
+  trace: false
+#  uri: "https://tracing.factory.vaticle.com:7979"
+#  username: $FACTORY_USERNAME
+#  token: $FACTORY_TOKEN

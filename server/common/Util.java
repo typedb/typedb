@@ -18,27 +18,44 @@
 
 package com.vaticle.typedb.core.server.common;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.layout.TTLLLayout;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.ConsoleAppender;
+import ch.qos.logback.core.encoder.LayoutWrappingEncoder;
+import ch.qos.logback.core.rolling.RollingFileAppender;
+import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
+import ch.qos.logback.core.util.FileSize;
+import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import picocli.CommandLine;
 
-import java.io.FileInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
 
+import static ch.qos.logback.core.util.FileSize.GB_COEFFICIENT;
+import static ch.qos.logback.core.util.FileSize.MB_COEFFICIENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_FILE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_YAML_MUST_BE_MAP;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ENV_VAR_NOT_FOUND;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_PARSE_PROPERTIES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PROPERTIES_FILE_NOT_FOUND;
-import static com.vaticle.typedb.core.server.common.ServerDefaults.ASCII_LOGO_FILE;
-import static com.vaticle.typedb.core.server.common.ServerDefaults.PROPERTIES_FILE;
+import static com.vaticle.typedb.core.server.common.Configuration.Log.Logger.Filtered;
+import static com.vaticle.typedb.core.server.common.Configuration.Log.Logger.Unfiltered;
+import static com.vaticle.typedb.core.server.common.Configuration.Log.Output.Type;
+import static com.vaticle.typedb.core.server.common.Constants.ASCII_LOGO_FILE;
+import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE;
+import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_ARCHIVE_SUFFIX;
 
 public class Util {
-    private static final Logger LOG = LoggerFactory.getLogger(Util.class);
 
     public static void printASCIILogo() throws IOException {
         if (ASCII_LOGO_FILE.exists()) {
@@ -46,66 +63,147 @@ public class Util {
         }
     }
 
-    public static Properties parseProperties() {
-        Properties properties = new Properties();
-        boolean error = false;
-
-        try {
-            properties.load(new FileInputStream(PROPERTIES_FILE));
-        } catch (IOException e) {
-            LOG.warn(PROPERTIES_FILE_NOT_FOUND.message(PROPERTIES_FILE.toString()));
-            return new Properties();
-        }
-
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            String val = (String) entry.getValue();
-            if (val.startsWith("$")) {
-                String envVarName = val.substring(1);
-                if (System.getenv(envVarName) == null) {
-                    LOG.error(ENV_VAR_NOT_FOUND.message(val));
-                    error = true;
-                } else {
-                    properties.put(entry.getKey(), System.getenv(envVarName));
-                }
-            }
-        }
-
-        if (error) throw TypeDBException.of(FAILED_PARSE_PROPERTIES);
-        else return properties;
+    public static CommandLine commandLine() {
+        return new CommandLine()
+                .command(new Command.Server.Parser(new Configuration.Parser()))
+                .command(new Command.Import.Parser())
+                .command(new Command.Export.Parser());
     }
 
-    public static Optional<RunOptions> parseCommandLine(Properties properties, String[] args) {
-        RunOptions.Server serverOptions = new RunOptions.Server();
-        RunOptions.DataImport importDataOptions = new RunOptions.DataImport(serverOptions);
-        RunOptions.DataExport exportDataOptions = new RunOptions.DataExport(serverOptions);
-        CommandLine commandLine = new CommandLine(serverOptions)
-                .addSubcommand(importDataOptions)
-                .addSubcommand(exportDataOptions);
-        commandLine.setDefaultValueProvider(new CommandLine.PropertiesDefaultProvider(properties));
-
-        try {
-            CommandLine.ParseResult parseResult = commandLine.parseArgs(args);
-            if (commandLine.isUsageHelpRequested()) {
-                commandLine.usage(commandLine.getOut());
-                return Optional.empty();
-            } else if (commandLine.isVersionHelpRequested()) {
-                commandLine.printVersionHelp(commandLine.getOut());
-                return Optional.empty();
-            } else {
-                if (parseResult.hasSubcommand()) {
-                    assert parseResult.subcommand().asCommandLineList().size() == 1;
-                    return Optional.of(parseResult.subcommand().asCommandLineList().get(0).getCommand());
-                } else {
-                    assert parseResult.asCommandLineList().size() == 1;
-                    return Optional.of(parseResult.asCommandLineList().get(0).getCommand());
-                }
-            }
-        } catch (CommandLine.ParameterException ex) {
-            commandLine.getErr().println(ex.getMessage());
-            if (!CommandLine.UnmatchedArgumentException.printSuggestions(ex, commandLine.getErr())) {
-                ex.getCommandLine().usage(commandLine.getErr());
-            }
-            return Optional.empty();
+    public static Path getTypedbDir() {
+        String homeDir;
+        if ((homeDir = System.getProperty("typedb.dir")) == null) {
+            homeDir = System.getProperty("user.dir");
         }
+        return Paths.get(homeDir);
+    }
+
+    public static Path getConfigPath(Path relativeOrAbsolutePath) {
+        if (relativeOrAbsolutePath.isAbsolute()) return relativeOrAbsolutePath;
+        else {
+            Path typeDBDir = getTypedbDir();
+            return typeDBDir.resolve(relativeOrAbsolutePath);
+        }
+    }
+
+    static Yaml.Map readConfig(Path path) {
+        try {
+            Yaml yaml = Yaml.load(path);
+            if (!yaml.isMap()) throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP);
+            replaceEnvVars(yaml.asMap());
+            return yaml.asMap();
+        } catch (FileNotFoundException e) {
+            throw TypeDBException.of(CONFIG_FILE_NOT_FOUND, path);
+        }
+    }
+
+    private static void replaceEnvVars(Yaml.Map yaml) {
+        for (String key : yaml.keys()) {
+            if (yaml.get(key).isString()) {
+                String value = yaml.get(key).asString().value();
+                if (value.startsWith("$")) {
+                    String envVarName = value.substring(1);
+                    if (System.getenv(envVarName) == null) throw TypeDBException.of(ENV_VAR_NOT_FOUND, value);
+                    else yaml.put(key, Yaml.load(System.getenv(envVarName)));
+                }
+            } else if (yaml.get(key).isMap()) {
+                replaceEnvVars(yaml.get(key).asMap());
+            }
+        }
+    }
+
+    static String scopeKey(String scope, String key) {
+        return scope.isEmpty() ? key : scope + "." + key;
+    }
+
+    static void setValue(Yaml.Map yaml, String[] path, Yaml value) {
+        Yaml.Map nested = yaml.asMap();
+        for (int i = 0; i < path.length - 1; i++) {
+            String key = path[i];
+            if (!nested.containsKey(key)) nested.put(key, new Yaml.Map(new HashMap<>()));
+            nested = nested.get(key).asMap();
+        }
+        nested.put(path[path.length - 1], value);
+    }
+
+    public static void configureLogback(LoggerContext context, Configuration configuration) {
+        // all appenders use the same layout
+        LayoutWrappingEncoder<ILoggingEvent> encoder = new LayoutWrappingEncoder<>();
+        encoder.setContext(context);
+        TTLLLayout layout = new TTLLLayout(); // "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+        layout.setContext(context);
+        layout.start();
+        encoder.setLayout(layout);
+
+        Map<String, Appender<ILoggingEvent>> appenders = new HashMap<>();
+        configuration.log().output().outputs().forEach((name, outputType) -> {
+            if (outputType.isStdout()) {
+                appenders.put(name, consoleAppender(name, context, encoder, layout));
+            } else if (outputType.isDirectory()) {
+                appenders.put(name, directoryAppender(name, context, encoder, layout, outputType.asDirectory()));
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+        });
+
+        configureRootLogger(configuration.log().logger().defaultLogger(), context, appenders);
+        configuration.log().logger().filteredLoggers().values().forEach(l -> configureLogger(l, context, appenders));
+    }
+
+    private static void configureLogger(Filtered logger, LoggerContext context,
+                                        Map<String, Appender<ILoggingEvent>> appenders) {
+        Logger log = context.getLogger(logger.filter());
+        log.setAdditive(false);
+        log.setLevel(Level.valueOf(logger.level()));
+        logger.outputs().forEach(outputName -> {
+            assert appenders.containsKey(outputName);
+            log.addAppender(appenders.get(outputName));
+        });
+    }
+
+    private static void configureRootLogger(Unfiltered defaultLogger, LoggerContext context,
+                                            Map<String, Appender<ILoggingEvent>> appenders) {
+        Logger root = context.getLogger(Logger.ROOT_LOGGER_NAME);
+        root.detachAndStopAllAppenders();
+        root.setAdditive(false);
+        root.setLevel(Level.valueOf(defaultLogger.level()));
+        defaultLogger.outputs().forEach(outputName -> {
+            assert appenders.containsKey(outputName);
+            root.addAppender(appenders.get(outputName));
+        });
+    }
+
+    private static RollingFileAppender<ILoggingEvent> directoryAppender(String name, LoggerContext context,
+                                                                        LayoutWrappingEncoder<ILoggingEvent> encoder,
+                                                                        TTLLLayout layout, Type.Directory outputType) {
+        RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
+        appender.setContext(context);
+        appender.setName(name);
+        appender.setAppend(true);
+        String logPath = outputType.asDirectory().path().resolve(TYPEDB_LOG_FILE).toAbsolutePath().toString();
+        appender.setFile(logPath);
+        appender.setLayout(layout);
+        appender.setEncoder(encoder);
+        SizeAndTimeBasedRollingPolicy<?> policy = new SizeAndTimeBasedRollingPolicy<>();
+        policy.setContext(context);
+        policy.setFileNamePattern(logPath + TYPEDB_LOG_FILE_ARCHIVE_SUFFIX);
+        policy.setMaxFileSize(new FileSize(outputType.asDirectory().maxFileMB() * MB_COEFFICIENT));
+        policy.setTotalSizeCap(new FileSize(outputType.asDirectory().maxFilesGB() * GB_COEFFICIENT));
+        policy.setMaxHistory(outputType.asDirectory().maxFilesCount());
+        policy.setParent(appender);
+        policy.start();
+        appender.setRollingPolicy(policy);
+        appender.start();
+        return appender;
+    }
+
+    private static ConsoleAppender<ILoggingEvent> consoleAppender(String name, LoggerContext context,
+                                                                  LayoutWrappingEncoder<ILoggingEvent> encoder,
+                                                                  TTLLLayout layout) {
+        ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>();
+        appender.setContext(context);
+        appender.setName(name);
+        appender.setEncoder(encoder);
+        appender.setLayout(layout);
+        appender.start();
+        return appender;
     }
 }

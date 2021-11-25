@@ -67,7 +67,7 @@ public class UnifyIsaConcludableTest {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("unify-isa-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
     private static final String database = "unify-isa-test";
     private static RocksTypeDB typedb;
     private static RocksSession session;

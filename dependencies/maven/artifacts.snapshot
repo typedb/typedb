@@ -156,5 +156,7 @@
 @maven//:org_rocksdb_rocksdbjni_dev_linux_6_15_2
 @maven//:org_slf4j_slf4j_api
 @maven//:org_slf4j_slf4j_api_1_7_28
+@maven//:org_yaml_snakeyaml
+@maven//:org_yaml_snakeyaml_1_25
 @maven//:org_zeroturnaround_zt_exec
 @maven//:org_zeroturnaround_zt_exec_1_10

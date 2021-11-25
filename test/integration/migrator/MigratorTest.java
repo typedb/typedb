@@ -38,7 +38,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
@@ -48,7 +47,7 @@ public class MigratorTest {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("migrator-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
+    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
     private static final String database = "typedb";
     private static final Path schemaPath = Paths.get("test/integration/migrator/schema.tql");
     private final Path dataPath = Paths.get("test/integration/migrator/data.typedb");
@@ -73,7 +72,7 @@ public class MigratorTest {
             typedb.databases().create(database);
             String schema = new String(Files.readAllBytes(schemaPath), UTF_8);
             runSchema(typedb, schema);
-            new DataImporter(typedb, database, dataPath, new HashMap<>(), Version.VERSION).run();
+            new DataImporter(typedb, database, dataPath, Version.VERSION).run();
             new DataExporter(typedb, database, exportDataPath, Version.VERSION).run();
             assertEquals(getChecksums(dataPath), getChecksums(exportDataPath));
         }
