@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.reasoner.stream;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 
-public class ConclusionController extends Controller<ConceptMap, ConceptMap, ConceptMap, ConclusionController> {
+public class ConclusionController extends Controller<CONTROLLER_ID, ConceptMap, PROCESSOR, ConceptMap, ConclusionController> {
 
     protected ConclusionController(Driver<ConclusionController> driver, String name, ActorExecutorGroup executorService) {
         super(driver, name, executorService);

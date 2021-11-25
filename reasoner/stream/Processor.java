@@ -19,117 +19,90 @@
 package com.vaticle.typedb.core.reasoner.stream;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.stream.Controller.Source;
 
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public class Processor<UPSTREAM_ID, INPUT, OUTPUT> extends Actor<Processor<UPSTREAM_ID, INPUT, OUTPUT>> {
+public abstract class Processor<CONTROLLER_ID, PROCESSOR_ID, OUTPUT, PROCESSOR extends Processor<CONTROLLER_ID, PROCESSOR_ID, OUTPUT, PROCESSOR>> extends Actor<PROCESSOR> {
 
-    private final Driver<? extends Controller<?, UPSTREAM_ID, INPUT, OUTPUT, ?>> controller;
-    private final Operation<INPUT, OUTPUT> operation;
-    private final InletManager<INPUT> inletManager;
-    private final OutletManager<OUTPUT> outletManager;
+    private final Driver<? extends Controller<CONTROLLER_ID, PROCESSOR_ID, PROCESSOR, OUTPUT, ?>> controller;
+    private final OutletManager outletManager;
 
-    public Processor(Driver<Processor<UPSTREAM_ID, INPUT, OUTPUT>> driver,
-                     Driver<? extends Controller<?, UPSTREAM_ID, INPUT, OUTPUT, ?>> controller,
-                     String name, Operation<INPUT, OUTPUT> operation,
-                     InletManager<INPUT> inletManager, OutletManager<OUTPUT> outletManager) {
+    public Processor(Driver<PROCESSOR> driver,
+                     Driver<? extends Controller<CONTROLLER_ID, PROCESSOR_ID, PROCESSOR, OUTPUT, ?>> controller,
+                     String name, OutletManager outletManager) {
         super(driver, name);
         this.controller = controller;
-        this.operation = operation;
-        this.inletManager = inletManager;
         this.outletManager = outletManager;
-        this.operation.connect(this.inletManager);
-        this.outletManager.connect(this.operation);
     }
 
-    public InletManager<INPUT> inletManager() {
-        return inletManager;
-    }
-
-    public OutletManager<OUTPUT> outletManager() {
+    public OutletManager outletManager() {
         return outletManager;
     }
 
-    public ConceptMap bounds() {
-        return null;
-    }  // TODO: This shouldn't know about ConceptMaps
-    //    public State state() {}  // TODO: Consider this instead
-
     @Override
-    protected void exception(Throwable e) {
+    protected void exception(Throwable e) {}
 
+    protected <INLET_ID, UPSTREAM_ID> void requestInletStream(INLET_ID inletId, UPSTREAM_ID processor_id) {
+        // TODO: Can be called when:
+        //  1. initialising a fixed set of upstream processors (would we like to do this a non async way instead?)
+        //  2. an answer is found in a conjunction and is passed to the sibling
+        //  3. an answer from a condition is passed up and needs to be materialised only when granted a lease from a lease processor
+        // Starts a series of messages that will add a new inlet stream to the processor from a processor of the given id
+        controller.execute(actor -> actor.receiveUpstreamProcessorRequest(inletId, processor_id, driver()));
     }
 
-    public static class Outlet<OUTPUT> {
-        public void connect(Operation<?, OUTPUT> operation) {
-            // TODO: set the operation to pull from when answers required
-        }
-
-        public static class Single<OUTPUT> extends Outlet<OUTPUT> {}
-        public static class DynamicMulti<OUTPUT> extends Outlet<OUTPUT> {
-            @Override
-            public <UPSTREAM_IDENTIFIER, DOWNSTREAM_OUTPUT> void add(Driver<Processor<UPSTREAM_IDENTIFIER, OUTPUT,
-                    DOWNSTREAM_OUTPUT>> newOutlet) {
-                // TODO: Store the new outlet
-            }
-        }
-
-    }
+    // TODO: InletManagers are identified by upstream controller ids. These types are unknown so should be handled by child class, which will require casting
+    public abstract <INLET_ID, UPSTREAM_PROCESSOR extends Processor<CONTROLLER_ID, INLET_ID, INPUT, UPSTREAM_PROCESSOR>, INPUT, UPSTREAM_CONTROLLER_ID> InletManager<INLET_ID,INPUT,UPSTREAM_PROCESSOR> getInletManager(UPSTREAM_CONTROLLER_ID controllerId);
 
     interface Pullable<T> {
-        Optional<T> pull();
+        Optional<T> pull();  // TODO: Never returns anything for async implementations. Is it a smell that this could be sync or async or actually a good abstraction?
 
     }
 
-    public static class Inlet<INPUT> implements Pullable<INPUT> {
-
-        @Override
-        public Optional<INPUT> pull() {
-            return Optional.empty();
-        }
-
+    interface AsyncPullable {
+        void pull();
     }
 
-    public static abstract class InletManager<INPUT> implements Pullable<INPUT> {
+    // TODO: Note that the identifier for an upstream controller (e.g. resolvable) is different to for an upstream processor (resolvable plus bounds). So inletmanagers are managed based on the former.
 
-        public abstract <UPSTREAM_IDENTIFIER, UPSTREAM_INPUT> void add(Driver<Processor<UPSTREAM_IDENTIFIER,
-                UPSTREAM_INPUT, INPUT>> newInlet);
+    public abstract class InletManager<INLET_ID, INPUT, UPSTREAM_PROCESSOR extends Processor<CONTROLLER_ID, INLET_ID, INPUT, UPSTREAM_PROCESSOR>> implements Pullable<INPUT> {
 
-        public static class Single<INPUT> extends InletManager<INPUT> {
+        public abstract void newInlet(INLET_ID id, Driver<UPSTREAM_PROCESSOR> newInlet);  // TODO: Should be called by a handler in the controller
+
+        public class Single extends InletManager<INLET_ID, INPUT, UPSTREAM_PROCESSOR> {
+
             @Override
             public Optional<INPUT> pull() {
-                return Optional.empty();  // TODO
+                return Optional.empty(); // TODO
             }
 
             @Override
-            public <UPSTREAM_IDENTIFIER, UPSTREAM_INPUT> void add(Driver<Processor<UPSTREAM_IDENTIFIER,
-                    UPSTREAM_INPUT, INPUT>> newInlet) {
+            public void newInlet(INLET_ID id, Driver<UPSTREAM_PROCESSOR> newInlet) {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
+
         }
 
-        public static class DynamicMulti<INPUT, PROCESSOR_REQ> extends InletManager<INPUT> {
+        public class DynamicMulti extends InletManager<INLET_ID, INPUT, UPSTREAM_PROCESSOR> {
 
-            Set<Inlet<INPUT>> inlets;
+            LinkedHashMap<INLET_ID, Inlet> inlets;  // TODO: Does this need to be a map?
 
-            DynamicMulti(FunctionalIterator<PROCESSOR_REQ> processorRequests) {
-                this.inlets = new HashSet<>();
+            DynamicMulti() {
+                this.inlets = new LinkedHashMap<>();
             }
 
             @Override
-            public <UPSTREAM_IDENTIFIER, UPSTREAM_INPUT> void add(Driver<Processor<UPSTREAM_IDENTIFIER,
-                    UPSTREAM_INPUT, INPUT>> newInlet) {
-                // TODO: Store the new inlet
+            public void newInlet(INLET_ID id, Driver<UPSTREAM_PROCESSOR> upstreamProcessor) {
+                Connection connection = new Connection(upstreamProcessor, driver());
+                upstreamProcessor.execute(actor -> actor.outletManager().makeConnection(connection));  // TODO: Fix warning
+                inlets.put(id, new Inlet(connection));
             }
 
             @Override
@@ -138,9 +111,99 @@ public class Processor<UPSTREAM_ID, INPUT, OUTPUT> extends Actor<Processor<UPSTR
                 // TODO: How will this work without blocking to see if an answer is returned? Likely we will always end
                 //  up requesting a pull from more than one downstream even if the first would have sufficed. This is
                 //  because we can't guarantee that any inlet will ever fail (it could be a cycle)
-                return Optional.empty();  // TODO
+
+                for (Inlet inlet : inlets.values()) {
+                    if (inlet.hasPacketReady()) return Optional.of(inlet.nextPacket());
+                }
+                for (Inlet inlet : inlets.values()) inlet.pull();
+                return Optional.empty();
             }
         }
+
+        public class Inlet implements AsyncPullable {
+
+            private final Connection connection;
+            private boolean isPulling;
+
+            protected Inlet(Connection connection) {
+                this.connection = connection;
+                this.isPulling = false;
+            }
+
+            protected boolean hasPacketReady() {
+                return true;  // TODO
+            }
+
+            protected INPUT nextPacket() {
+                return null;  // TODO: return any buffered packets
+            }
+
+            @Override
+            public void pull() {
+                if (!isPulling) {
+                    connection.upstreamProcessor().execute(actor -> actor.outletManager().pull());
+                    isPulling = true;
+                }
+            }
+
+        }
+
+        public class Connection {
+
+            private final Driver<PROCESSOR> downstreamProcessor;
+            private final Driver<UPSTREAM_PROCESSOR> upstreamProcessor;
+
+            protected Connection(Driver<UPSTREAM_PROCESSOR> upstreamProcessor, Driver<PROCESSOR> downstreamProcessor) {
+                this.downstreamProcessor = downstreamProcessor;
+                this.upstreamProcessor = upstreamProcessor;
+            }
+
+            private Driver<UPSTREAM_PROCESSOR> upstreamProcessor() {
+                return upstreamProcessor;
+            }
+
+            Driver<PROCESSOR> downstreamProcessor() {
+                return downstreamProcessor;
+            }
+
+        }
+
+    }
+
+    public abstract class OutletManager<INLET_ID, INPUT> implements AsyncPullable {
+
+        public abstract void makeConnection(InletManager.Connection newOutlet);  // TODO: Fix override error
+
+        public void connect(Operation<?, OUTPUT> operation) {
+            // TODO: set the operation to pull from when answers required
+        }
+
+        public class Single extends OutletManager {
+
+            @Override
+            public void makeConnection(InletManager.Connection newOutlet) {
+                throw TypeDBException.of(ILLEGAL_STATE);
+            }
+
+            @Override
+            public void pull() {
+                // TODO
+            }
+        }
+
+        public class DynamicMulti extends OutletManager {
+
+            @Override
+            public void makeConnection(InletManager.Connection newOutlet) {
+                // TODO: Store the new outlet
+            }
+
+            @Override
+            public void pull() {
+                // TODO
+            }
+        }
+
     }
 
     public static abstract class Operation<INPUT, OUTPUT> {
@@ -164,7 +227,6 @@ public class Processor<UPSTREAM_ID, INPUT, OUTPUT> extends Actor<Processor<UPSTR
 
         abstract Operation<INPUT, OUTPUT> buffer(Buffer<OUTPUT> buffer);
 
-        abstract void connect(InletManager<INPUT> inlet);
     }
 
     public static class Buffer<T> {}

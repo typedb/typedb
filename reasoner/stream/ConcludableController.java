@@ -42,7 +42,7 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class ConcludableController extends Controller<ConceptMap, Partial.Conclusion<?, ?>, ConceptMap, ConcludableController> {
+public class ConcludableController extends Controller<CONTROLLER_ID, ConceptMap, PROCESSOR, ConceptMap, ConcludableController> {
 
     private final Concludable concludable;
     private final ResolverRegistry registry;

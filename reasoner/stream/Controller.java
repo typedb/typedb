@@ -18,66 +18,87 @@
 
 package com.vaticle.typedb.core.reasoner.stream;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
-import com.vaticle.typedb.core.pattern.Pattern;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Operation;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 
 public abstract class Controller<INPUT, OUTPUT, INLET extends Inlet<INPUT>, OUTLET extends Outlet<OUTPUT>, INLET_CONTROLLER extends Controller.InletController<INPUT, INLET>, OUTLET_CONTROLLER extends Controller.OutletController<OUTPUT, OUTLET>> extends Actor<Controller<INPUT, OUTPUT, INLET, OUTLET, INLET_CONTROLLER, OUTLET_CONTROLLER>> {
 
     private final ActorExecutorGroup executorService;
-    private final Map<IDENTIFIER, Actor.Driver<Processor<UPSTREAM_IDENTIFIER, INPUT, OUTPUT>>> processors;
-    private final Map<UPSTREAM_IDENTIFIER, Driver<Processor<UPSTREAM_IDENTIFIER, INPUT, OUTPUT>>> processorRequesters;
+    private final Map<PROCESSOR_ID, Actor.Driver<PROCESSOR>> processors;
+
 
     protected Controller(Driver<CONTROLLER> driver, String name, ActorExecutorGroup executorService) {
         super(driver, name);
         this.executorService = executorService;
         this.processors = new HashMap<>();
-        this.processorRequesters = new HashMap<>();
     }
 
-    protected abstract Processor.InletManager<INPUT> createInletManager(IDENTIFIER id);
+    private CONTROLLER_ID id() {
+        return null;  // TODO: provide via constructor
+    }
 
-    protected abstract Processor.OutletManager<OUTPUT> createOutletManager(IDENTIFIER id);
-
-    protected abstract Operation<INPUT, OUTPUT> operation(IDENTIFIER id);
-
-    Actor.Driver<Processor<UPSTREAM_IDENTIFIER, INPUT, OUTPUT>> buildProcessor(IDENTIFIER id) {
-        Actor.Driver<Processor<UPSTREAM_IDENTIFIER, INPUT, OUTPUT>> processor = Actor.driver(
-                driver -> new Processor<>(driver, driver(), id.toString(), operation(id), createInletManager(id), createOutletManager(id)), executorService);
+    Actor.Driver<PROCESSOR> buildProcessor(PROCESSOR_ID id) {
+        Actor.Driver<PROCESSOR> processor = Actor.driver(createProcessorFunc(), executorService);
         processors.put(id, processor);
         return processor;
     }
 
-    public void receiveDownstreamProcessorRequest(UPSTREAM_IDENTIFIER id, Driver<Processor<UPSTREAM_IDENTIFIER, INPUT, OUTPUT>> requester) {
+    abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc();
+
+    protected abstract class UpstreamHandler<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID> {
+
+        private final Map<Pair<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID>, Driver<PROCESSOR>> processorRequesters;
+
+        UpstreamHandler() {
+            this.processorRequesters = new HashMap<>();
+        }
+
+        protected abstract Driver<? extends Controller<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, ?, ?, ?>> getControllerForId(UPSTREAM_CONTROLLER_ID id);  // TODO: Looks up the downstream controller by (pattern, bounds), either via registry or has already stored them.
+    }
+
+    // TODO: Child classes implement a retrieval mechanism based on the type of upstream id to find a handler for it.
+    // TODO: the casting required here can't be done without the framework having knowledge of the identifier types, this needs solving
+    protected abstract <UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID> UpstreamHandler<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID> getHandler(UPSTREAM_CONTROLLER_ID id);
+
+    public <UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID> void receiveUpstreamProcessorRequest(UPSTREAM_CONTROLLER_ID controllerId, UPSTREAM_PROCESSOR_ID processorId, Driver<PROCESSOR> requester) {
+        // TODO: How do I initialise this controller to be aware of multiple other types of controller? The processor
+        //  also needs to be aware in this way. e.g. it needs to be given 4 resolvable controllers of different types
+        //  if its a conjunction, and a condition and a lease controller if its a conclusion
+        UpstreamHandler<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID> handler = getHandler(controllerId);
+
         // Message downstream controller responsible for creating processors as per the id.
-        Driver<? extends Controller<UPSTREAM_IDENTIFIER, ?, ?, INPUT, ?>> controller = getControllerForId(id);
-        processorRequesters.put(id, requester);
-        controller.execute(actor -> actor.receiveProcessorRequest(id, driver()));
+        Driver<? extends Controller<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, ?, ?, ?>> controller = handler.getControllerForId(controllerId);
+        handler.processorRequesters.put(new Pair<>(controllerId, processorId), requester);
+        sendProcessorRequest(processorId, controller);
     }
 
-    protected abstract Driver<? extends Controller<UPSTREAM_IDENTIFIER, ?, ?, INPUT, ?>> getControllerForId(UPSTREAM_IDENTIFIER id);  // TODO: Looks up the downstream controller by (pattern, bounds), either via registry or has already stored them.
-
-    public void receiveProcessorRequest(IDENTIFIER id, Driver<? extends Controller<?, IDENTIFIER, OUTPUT, ?, ?>> requester) {
-        Driver<Processor<UPSTREAM_IDENTIFIER, INPUT, OUTPUT>> processor = processors.computeIfAbsent(id, this::buildProcessor);
-        requester.execute(actor -> actor.receiveRequestedProcessor(id, processor));
+    private <UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID> void sendProcessorRequest(UPSTREAM_PROCESSOR_ID processorId, Driver<? extends Controller<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, ?, ?, ?>> controller) {
+        controller.execute(actor -> actor.receiveProcessorRequest(processorId, driver()));
     }
 
-    public <UPSTREAM_INPUT> void receiveRequestedProcessor(UPSTREAM_IDENTIFIER id, Driver<Processor<UPSTREAM_IDENTIFIER, UPSTREAM_INPUT, INPUT>> processor) {
-        Driver<Processor<UPSTREAM_IDENTIFIER, INPUT, OUTPUT>> requester = processorRequesters.remove(id);
+    public void receiveProcessorRequest(PROCESSOR_ID processorId, Driver<? extends Controller<?, ?, ?, ?, ?>> requester) {
+        sendRequestedProcessor(processorId, requester, processors.computeIfAbsent(processorId, this::buildProcessor));
+    }
+
+    private void sendRequestedProcessor(PROCESSOR_ID processorId, Driver<? extends Controller<?, ?, ?, ?, ?>> requester, Driver<PROCESSOR> processor) {
+        requester.execute(actor -> actor.receiveRequestedProcessor(id(), processorId, processor));
+    }
+
+    public <UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, UPSTREAM_PROCESSOR extends Processor<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, ?, UPSTREAM_PROCESSOR>> void receiveRequestedProcessor(UPSTREAM_CONTROLLER_ID controllerId, UPSTREAM_PROCESSOR_ID processorId, Driver<UPSTREAM_PROCESSOR> processor) {
+        UpstreamHandler<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID> handler = getHandler(controllerId);
+        Driver<PROCESSOR> requester = handler.processorRequesters.remove(new Pair<>(controllerId, processorId));
         assert requester != null;
-        requester.execute(actor -> actor.inletManager().add(processor));
-    }
-
-    public FunctionalIterator<ConceptMap> createTraversal(Pattern pattern, ConceptMap bounds) {  // TODO: This framework shouldn't know about Patterns or ConceptMaps
-        return null; // TODO
+        requester.execute(actor -> actor.getInletManager(controllerId).newInlet(processorId, processor));
     }
 
     static class Source<INPUT> {
