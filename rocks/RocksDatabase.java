@@ -55,6 +55,7 @@ import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.collection.Collections.hasIntersection;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_INCOMPATIBLE_ENCODING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
@@ -67,6 +68,8 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.D
 import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ENCODING_VERSION;
+import static com.vaticle.typedb.core.graph.common.Encoding.System.ENCODING_VERSION_KEY;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -136,6 +139,7 @@ public class RocksDatabase implements TypeDB.Database {
             try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
                 if (txn.graph().isInitialised()) throw TypeDBException.of(DIRTY_INITIALISATION);
                 txn.graph().initialise();
+                txn.schemaStorage().putUntracked(ENCODING_VERSION_KEY.bytes(), ByteArray.encodeInt(ENCODING_VERSION));
                 txn.commit();
             }
         }
@@ -144,9 +148,19 @@ public class RocksDatabase implements TypeDB.Database {
     protected void load() {
         try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
             try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
+                validateEncodingVersion(txn);
                 schemaKeyGenerator.sync(txn.schemaStorage());
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
+        }
+    }
+
+    private void validateEncodingVersion(RocksTransaction.Schema txn) {
+        ByteArray encoding = txn.schemaStorage().get(ENCODING_VERSION_KEY.bytes());
+        if (encoding == null) { // no encoding version is version 1
+            throw TypeDBException.of(DATABASE_INCOMPATIBLE_ENCODING, name(), 1, ENCODING_VERSION);
+        } else if (encoding.decodeInt() < ENCODING_VERSION || encoding.decodeInt() > ENCODING_VERSION) {
+            throw TypeDBException.of(DATABASE_INCOMPATIBLE_ENCODING, name(), encoding.decodeInt(), ENCODING_VERSION);
         }
     }
 
