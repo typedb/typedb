@@ -223,7 +223,7 @@ public abstract class ConfigKVParser implements Option.CliHelp {
                     (yaml) -> yaml.asBoolean().value(),
                     "<boolean>"
             );
-            static final Leaf<Path> PATH = new Leaf<>(
+            public static final Leaf<Path> PATH = new Leaf<>(
                     (yaml) -> yaml.isString(),
                     (yaml) -> Paths.get(yaml.asString().value()),
                     "<path>"

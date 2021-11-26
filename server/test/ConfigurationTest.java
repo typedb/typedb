@@ -50,11 +50,10 @@ public class ConfigurationTest {
         assertEquals(1729, configuration.port());
         assertFalse(configuration.vaticleFactory().trace());
         assertTrue(configuration.log().output().outputs().containsKey("stdout"));
-        assertTrue(configuration.log().output().outputs().containsKey("dir"));
-        assertTrue(configuration.log().output().outputs().get("dir").asDirectory().path().toString().endsWith("server/logs"));
-        assertTrue(configuration.log().output().outputs().get("dir").asDirectory().maxFileMB() > 0);
-        assertTrue(configuration.log().output().outputs().get("dir").asDirectory().maxFilesCount() > 0);
-        assertTrue(configuration.log().output().outputs().get("dir").asDirectory().maxFilesGB() > 0);
+        assertTrue(configuration.log().output().outputs().containsKey("file"));
+        assertTrue(configuration.log().output().outputs().get("file").asFile().path().toString().endsWith("server/logs"));
+        assertEquals("50mb", configuration.log().output().outputs().get("file").asFile().fileSizeCap());
+        assertEquals("1gb", configuration.log().output().outputs().get("file").asFile().archivesSizeCap());
         assertNotNull(configuration.log().logger().defaultLogger());
         assertFalse(configuration.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("warn", configuration.log().logger().defaultLogger().level());
@@ -69,11 +68,10 @@ public class ConfigurationTest {
         assertEquals(1730, configuration.port());
         assertFalse(configuration.vaticleFactory().trace());
         assertTrue(configuration.log().output().outputs().containsKey("stdout"));
-        assertTrue(configuration.log().output().outputs().containsKey("dir"));
-        assertTrue(configuration.log().output().outputs().get("dir").asDirectory().path().isAbsolute());
-        assertTrue(configuration.log().output().outputs().get("dir").asDirectory().maxFileMB() > 0);
-        assertTrue(configuration.log().output().outputs().get("dir").asDirectory().maxFilesCount() > 0);
-        assertTrue(configuration.log().output().outputs().get("dir").asDirectory().maxFilesGB() > 0);
+        assertTrue(configuration.log().output().outputs().containsKey("file"));
+        assertTrue(configuration.log().output().outputs().get("file").asFile().path().isAbsolute());
+        assertEquals("50mb", configuration.log().output().outputs().get("file").asFile().fileSizeCap());
+        assertEquals("1gb", configuration.log().output().outputs().get("file").asFile().archivesSizeCap());
         assertNotNull(configuration.log().logger().defaultLogger());
         assertFalse(configuration.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("warn", configuration.log().logger().defaultLogger().level());
@@ -139,7 +137,7 @@ public class ConfigurationTest {
         } catch (TypeDBException e) {
             assert e.code().isPresent();
             assertEquals(CONFIG_UNEXPECTED_VALUE_TYPE.code(), e.code().get());
-            assertEquals(CONFIG_UNEXPECTED_VALUE_TYPE.message("data", "1729[Integer]", ConfigKVParser.ValueParser.Leaf.STRING.help()), e.getMessage());
+            assertEquals(CONFIG_UNEXPECTED_VALUE_TYPE.message("data", "1729[int]", ConfigKVParser.ValueParser.Leaf.PATH.help()), e.getMessage());
         }
     }
 
@@ -161,37 +159,36 @@ public class ConfigurationTest {
         Configuration configuration = (new Configuration.Parser()).getConfig(set(
                 new CommandLine.Option("data", "server/alt-data"),
                 new CommandLine.Option("port", "1730"),
-                new CommandLine.Option("log.output.dir.path", "server/alt-logs"),
+                new CommandLine.Option("log.output.file.directory", "server/alt-logs"),
                 new CommandLine.Option("log.logger.default.level", "info"),
-                new CommandLine.Option("log.logger.typedb.output", "[dir]")
+                new CommandLine.Option("log.logger.typedb.output", "[file]")
         ));
         assertTrue(configuration.dataDir().toString().endsWith("server/alt-data"));
         assertEquals(1730, configuration.port());
         assertFalse(configuration.vaticleFactory().trace());
         assertTrue(configuration.log().output().outputs().containsKey("stdout"));
-        assertTrue(configuration.log().output().outputs().containsKey("dir"));
-        assertTrue(configuration.log().output().outputs().get("dir").asDirectory().path().toString().endsWith("server/alt-logs"));
-        assertTrue(configuration.log().output().outputs().get("dir").asDirectory().maxFileMB() > 0);
-        assertTrue(configuration.log().output().outputs().get("dir").asDirectory().maxFilesCount() > 0);
-        assertTrue(configuration.log().output().outputs().get("dir").asDirectory().maxFilesGB() > 0);
+        assertTrue(configuration.log().output().outputs().containsKey("file"));
+        assertTrue(configuration.log().output().outputs().get("file").asFile().path().toString().endsWith("server/alt-logs"));
+        assertEquals("50mb", configuration.log().output().outputs().get("file").asFile().fileSizeCap());
+        assertEquals("1gb", configuration.log().output().outputs().get("file").asFile().archivesSizeCap());
         assertNotNull(configuration.log().logger().defaultLogger());
         assertFalse(configuration.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("info", configuration.log().logger().defaultLogger().level());
-        assertEquals(list("dir"), configuration.log().logger().filteredLoggers().get("typedb").outputs());
+        assertEquals(list("file"), configuration.log().logger().filteredLoggers().get("typedb").outputs());
         assertFalse(configuration.log().debugger().reasoner().isEnabled());
     }
 
     @Test
     public void overrides_list_can_be_yaml_or_repeated() {
         Configuration configuration = (new Configuration.Parser()).getConfig(set(
-                new CommandLine.Option("log.logger.typedb.output", "[dir]")
+                new CommandLine.Option("log.logger.typedb.output", "[file]")
         ));
-        assertEquals(set("dir"), set(configuration.log().logger().filteredLoggers().get("typedb").outputs()));
+        assertEquals(set("file"), set(configuration.log().logger().filteredLoggers().get("typedb").outputs()));
 
         Configuration configurationWithRepeatedArgs = (new Configuration.Parser()).getConfig(set(
-                new CommandLine.Option("log.logger.typedb.output", "dir"),
+                new CommandLine.Option("log.logger.typedb.output", "file"),
                 new CommandLine.Option("log.logger.typedb.output", "stdout")
         ));
-        assertEquals(set("stdout", "dir"), set(configurationWithRepeatedArgs.log().logger().filteredLoggers().get("typedb").outputs()));
+        assertEquals(set("stdout", "file"), set(configurationWithRepeatedArgs.log().logger().filteredLoggers().get("typedb").outputs()));
     }
 }

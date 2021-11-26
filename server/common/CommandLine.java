@@ -31,7 +31,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_ARGUMENT_MISSING_PREFIX;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_OPTION_MISSING_PREFIX;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class CommandLine {
@@ -78,7 +78,7 @@ public class CommandLine {
                 else if (args[i + 1].startsWith(Option.PREFIX)) options.add(new Option(arg.substring(2)));
                 else options.add(new Option(arg.substring(2), args[++i].substring(2)));
             } else {
-                throw TypeDBException.of(CLI_ARGUMENT_MISSING_PREFIX, Option.PREFIX, arg);
+                throw TypeDBException.of(CLI_OPTION_MISSING_PREFIX, Option.PREFIX, arg);
             }
         }
         return options;

@@ -79,7 +79,7 @@ public class Configuration {
         private static final EntryParser<Integer> portParser = AnyValue.create("port", "Port to which GRPC clients will connect to.", INTEGER);
         private static final EntryParser<Log> logParser = AnyValue.create(Log.name, Log.description, new Log.Parser());
         private static final EntryParser<VaticleFactory> vaticleFactoryParser = AnyValue.create(VaticleFactory.name, VaticleFactory.description, new VaticleFactory.Parser());
-        private static final Set<EntryParser<?>> kvParsers = set(dataParser, portParser, logParser, vaticleFactoryParser);
+        private static final Set<EntryParser<?>> entryParsers = set(dataParser, portParser, logParser, vaticleFactoryParser);
 
         public Configuration getConfig() {
             return getConfig(new HashSet<>());
@@ -93,7 +93,7 @@ public class Configuration {
             Yaml.Map yaml = readConfig(configFile);
             Map<String, Yaml> yamlOverrides = toYamlOverrides(overrides);
             yamlOverrides.forEach((key, value) -> setValue(yaml, key.split("\\."), value));
-            validatedRecognisedParsers(kvParsers, yaml.keys(), "");
+            validatedRecognisedParsers(entryParsers, yaml.keys(), "");
             return new Configuration(getConfigPath(dataParser.parse(yaml, "")), portParser.parse(yaml, ""),
                     logParser.parse(yaml, ""), vaticleFactoryParser.parse(yaml, "")
             );
@@ -160,12 +160,12 @@ public class Configuration {
             private static final EntryParser<Output> outputParser = AnyValue.create(Output.name, Output.description, new Output.Parser());
             private static final EntryParser<Logger> loggerParser = AnyValue.create(Logger.name, Logger.description, new Logger.Parser());
             private static final EntryParser<Debugger> debuggerParser = AnyValue.create(Debugger.name, Debugger.description, new Debugger.Parser());
-            private static final Set<EntryParser<?>> kvParsers = set(outputParser, loggerParser, debuggerParser);
+            private static final Set<EntryParser<?>> entryParsers = set(outputParser, loggerParser, debuggerParser);
 
             @Override
             Log parse(Yaml yaml, String scope) {
                 if (yaml.isMap()) {
-                    validatedRecognisedParsers(kvParsers, yaml.asMap().keys(), scope);
+                    validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                     Output output = outputParser.parse(yaml.asMap(), scope);
                     Logger logger = loggerParser.parse(yaml.asMap(), scope);
                     logger.validateOutputs(output.outputs());
@@ -236,19 +236,19 @@ public class Configuration {
                     throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Stdout.class));
                 }
 
-                public boolean isDirectory() {
+                public boolean isFile() {
                     return false;
                 }
 
-                public Directory asDirectory() {
-                    throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Directory.class));
+                public File asFile() {
+                    throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(File.class));
                 }
 
                 static class Parser extends ValueParser.Nested<Type> {
 
-                    private static final EntryParser<String> typeParser = EnumValue.create("type", "Type of output to define.", STRING, list(Type.Stdout.type, Type.Directory.type));
+                    private static final EntryParser<String> typeParser = EnumValue.create("type", "Type of output to define.", STRING, list(Type.Stdout.type, File.type));
                     private static final ValueParser.Nested<Stdout> stdoutParser = new Stdout.Parser();
-                    private static final ValueParser.Nested<Directory> directoryParser = new Directory.Parser();
+                    private static final ValueParser.Nested<File> fileParser = new File.Parser();
 
                     @Override
                     Type parse(Yaml yaml, String scope) {
@@ -257,8 +257,8 @@ public class Configuration {
                             switch (type) {
                                 case Type.Stdout.type:
                                     return stdoutParser.parse(yaml.asMap(), scope);
-                                case Type.Directory.type:
-                                    return directoryParser.parse(yaml.asMap(), scope);
+                                case File.type:
+                                    return fileParser.parse(yaml.asMap(), scope);
                                 default:
                                     throw TypeDBException.of(ILLEGAL_STATE);
                             }
@@ -268,7 +268,7 @@ public class Configuration {
                     @Override
                     List<Help> help(String scope) {
                         return list(new Help.Section(scope, Stdout.description, stdoutParser.help(scope)),
-                                new Help.Section(scope, Directory.description, directoryParser.help(scope)));
+                                new Help.Section(scope, File.description, fileParser.help(scope)));
                     }
                 }
 
@@ -294,12 +294,12 @@ public class Configuration {
                     static class Parser extends ValueParser.Nested<Stdout> {
 
                         private static final EntryParser<String> typeParser = EnumValue.create("type", "An output that writes to stdout.", STRING, list(Stdout.type));
-                        private static final Set<EntryParser<?>> kvParsers = set(typeParser);
+                        private static final Set<EntryParser<?>> entryParsers = set(typeParser);
 
                         @Override
                         Stdout parse(Yaml yaml, String scope) {
                             if (yaml.isMap()) {
-                                validatedRecognisedParsers(kvParsers, yaml.asMap().keys(), scope);
+                                validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                                 String type = typeParser.parse(yaml.asMap(), scope);
                                 return new Stdout(type);
                             } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
@@ -312,51 +312,47 @@ public class Configuration {
                     }
                 }
 
-                public static class Directory extends Type {
+                public static class File extends Type {
 
-                    private static final String type = "directory";
-                    private static final String description = "Options to configure a log output to a directory.";
+                    private static final String type = "file";
+                    private static final String description = "Options to configure a log output to files in a directory.";
 
                     private final Path path;
-                    private final int maxFileMB;
-                    private final int maxFilesCount;
-                    private final int maxFilesGB;
+                    private final String fileSizeCap;
+                    private final String archivesSizeCap;
 
-                    private Directory(String type, Path path, int maxFileMB, int maxFilesCount, int maxFilesGB) {
-                        assert type.equals(Directory.type);
+                    private File(String type, Path path, String fileSizeCap, String archivesSizeCap) {
+                        assert type.equals(File.type);
                         this.path = path;
-                        this.maxFileMB = maxFileMB;
-                        this.maxFilesCount = maxFilesCount;
-                        this.maxFilesGB = maxFilesGB;
+                        this.fileSizeCap = fileSizeCap;
+                        this.archivesSizeCap = archivesSizeCap;
                     }
 
-                    static class Parser extends ValueParser.Nested<Directory> {
+                    static class Parser extends ValueParser.Nested<File> {
 
-                        private static final EntryParser<String> typeParser = EnumValue.create("type", "An output that writes to a directory.", STRING, list(Directory.type));
-                        private static final EntryParser<Path> pathParser = AnyValue.create("path", "Directory to write to. Relative paths are relative to distribution path.", PATH);
-                        private static final EntryParser<Integer> maxFileMBParser = AnyValue.create("maxFileMB", "Maximum output file size (MB).", INTEGER);
-                        private static final EntryParser<Integer> maxFilesCountParser = AnyValue.create("maxFilesCount", "Maximum number of files to retain.", INTEGER);
-                        private static final EntryParser<Integer> maxFilesGBPaser = AnyValue.create("maxFilesGB", "Total size cap of all files in output directory.", INTEGER); // TODO reasoner needs to respect this
-                        private static final Set<EntryParser<?>> kvParsers = set(typeParser, pathParser, maxFileMBParser, maxFilesCountParser, maxFilesGBPaser);
+                        private static final EntryParser<String> typeParser = EnumValue.create("type", "An output that writes to a directory.", STRING, list(File.type));
+                        private static final EntryParser<Path> pathParser = AnyValue.create("directory", "Directory to write to. Relative paths are relative to distribution path.", PATH);
+                        private static final EntryParser<String> fileSizeCapParser = AnyValue.create("file-size-cap", "Log file size cap before creating new file (eg. 50mb).", STRING);
+                        private static final EntryParser<String> archivesSizeCapParser = AnyValue.create("archives-size-cap", "Total size cap of all archived log files in directory (eg. 1gb).", STRING); // TODO reasoner needs to respect this
+                        private static final Set<EntryParser<?>> entryParsers = set(typeParser, pathParser, fileSizeCapParser, archivesSizeCapParser);
 
                         @Override
-                        Directory parse(Yaml yaml, String scope) {
+                        File parse(Yaml yaml, String scope) {
                             if (yaml.isMap()) {
-                                validatedRecognisedParsers(kvParsers, yaml.asMap().keys(), scope);
-                                return new Directory(
+                                validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
+                                return new File(
                                         typeParser.parse(yaml.asMap(), scope),
                                         getConfigPath(pathParser.parse(yaml.asMap(), scope)),
-                                        maxFileMBParser.parse(yaml.asMap(), scope),
-                                        maxFilesCountParser.parse(yaml.asMap(), scope),
-                                        maxFilesGBPaser.parse(yaml.asMap(), scope)
+                                        fileSizeCapParser.parse(yaml.asMap(), scope),
+                                        archivesSizeCapParser.parse(yaml.asMap(), scope)
                                 );
                             } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
                         }
 
                         @Override
                         List<Help> help(String scope) {
-                            return list(typeParser.help(scope), pathParser.help(scope), maxFileMBParser.help(scope),
-                                    maxFilesCountParser.help(scope), maxFilesGBPaser.help(scope));
+                            return list(typeParser.help(scope), pathParser.help(scope), fileSizeCapParser.help(scope),
+                                    archivesSizeCapParser.help(scope));
                         }
                     }
 
@@ -364,25 +360,21 @@ public class Configuration {
                         return path;
                     }
 
-                    public int maxFileMB() {
-                        return maxFileMB;
+                    public String fileSizeCap() {
+                        return fileSizeCap;
                     }
 
-                    public int maxFilesCount() {
-                        return maxFilesCount;
-                    }
-
-                    public int maxFilesGB() {
-                        return maxFilesGB;
+                    public String archivesSizeCap() {
+                        return archivesSizeCap;
                     }
 
                     @Override
-                    public boolean isDirectory() {
+                    public boolean isFile() {
                         return true;
                     }
 
                     @Override
-                    public Directory asDirectory() {
+                    public File asFile() {
                         return this;
                     }
                 }
@@ -449,12 +441,12 @@ public class Configuration {
 
                     private static final EntryParser<String> levelParser = EnumValue.create("level", "Output level.", STRING, LEVELS);
                     private static final EntryParser<List<String>> outputsParser = AnyValue.create("output", "Outputs to log to by default.", LIST_STRING);
-                    private static final Set<EntryParser<?>> kvParsers = set(levelParser, outputsParser);
+                    private static final Set<EntryParser<?>> entryParsers = set(levelParser, outputsParser);
 
                     @Override
                     Unfiltered parse(Yaml yaml, String scope) {
                         if (yaml.isMap()) {
-                            validatedRecognisedParsers(kvParsers, yaml.asMap().keys(), scope);
+                            validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                             return new Unfiltered(levelParser.parse(yaml.asMap(), scope),
                                     outputsParser.parse(yaml.asMap(), scope));
                         } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
@@ -501,12 +493,12 @@ public class Configuration {
                     private static final EntryParser<String> filterParser = AnyValue.create("filter", "Class filter (eg. com.vaticle.type).", STRING);
                     private static final EntryParser<String> levelParser = EnumValue.create("level", "Output level.", STRING, LEVELS);
                     private static final EntryParser<List<String>> outputsParser = AnyValue.create("output", "Outputs to log to by default.", LIST_STRING);
-                    private static final Set<EntryParser<?>> kvParsers = set(filterParser, levelParser, outputsParser);
+                    private static final Set<EntryParser<?>> entryParsers = set(filterParser, levelParser, outputsParser);
 
                     @Override
                     Filtered parse(Yaml yaml, String scope) {
                         if (yaml.isMap()) {
-                            validatedRecognisedParsers(kvParsers, yaml.asMap().keys(), scope);
+                            validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                             return new Filtered(levelParser.parse(yaml.asMap(), scope),
                                     outputsParser.parse(yaml.asMap(), scope), filterParser.parse(yaml.asMap(), scope));
                         } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
@@ -534,12 +526,12 @@ public class Configuration {
             public static class Parser extends ValueParser.Nested<Debugger> {
 
                 private static final EntryParser<Reasoner> reasonerParser = AnyValue.create("reasoner", "Configure reasoner debugger.", new Reasoner.Parser());
-                private static final Set<EntryParser<?>> kvParsers = set(reasonerParser);
+                private static final Set<EntryParser<?>> entryParsers = set(reasonerParser);
 
                 @Override
                 Debugger parse(Yaml yaml, String scope) {
                     if (yaml.isMap()) {
-                        validatedRecognisedParsers(kvParsers, yaml.asMap().keys(), scope);
+                        validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                         return new Debugger(reasonerParser.parse(yaml.asMap(), scope));
                     } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
                 }
@@ -564,7 +556,7 @@ public class Configuration {
 
                 private final String outputName;
                 private final boolean enable;
-                private Output.Type.Directory output;
+                private Output.Type.File output;
 
                 private Reasoner(String type, String outputName, boolean enable) {
                     assert type.equals(Reasoner.type);
@@ -576,17 +568,17 @@ public class Configuration {
                     assert output == null;
                     if (!outputs.containsKey(outputName))
                         throw TypeDBException.of(CONFIG_OUTPUT_UNRECOGNISED, outputName);
-                    else if (!outputs.get(outputName).isDirectory()) {
+                    else if (!outputs.get(outputName).isFile()) {
                         throw TypeDBException.of(CONFIG_REASONER_REQUIRES_DIR_OUTPUT);
                     }
-                    output = outputs.get(outputName).asDirectory();
+                    output = outputs.get(outputName).asFile();
                 }
 
                 public boolean isEnabled() {
                     return enable;
                 }
 
-                public Output.Type.Directory output() {
+                public Output.Type.File output() {
                     assert output != null;
                     return output;
                 }
@@ -596,12 +588,12 @@ public class Configuration {
                     private static final EntryParser<String> typeParser = EnumValue.create("type", "Type of this debugger.", STRING, list(Reasoner.type));
                     private static final EntryParser<String> outputParser = AnyValue.create("output", "Name of output reasoner debugger should write to (must be directory).", STRING);
                     private static final EntryParser<Boolean> enableParser = AnyValue.create("enable", "Enable to allow reasoner debugging to be enabled at runtime.", BOOLEAN);
-                    private static final Set<EntryParser<?>> kvParsers = set(typeParser, outputParser, enableParser);
+                    private static final Set<EntryParser<?>> entryParsers = set(typeParser, outputParser, enableParser);
 
                     @Override
                     Reasoner parse(Yaml yaml, String scope) {
                         if (yaml.isMap()) {
-                            validatedRecognisedParsers(kvParsers, yaml.asMap().keys(), scope);
+                            validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                             return new Reasoner(typeParser.parse(yaml.asMap(), scope), outputParser.parse(yaml.asMap(), scope),
                                     enableParser.parse(yaml.asMap(), scope));
                         } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
@@ -639,13 +631,13 @@ public class Configuration {
             private static final EntryParser<String> uriParser = AnyValue.create("uri", "URI of Vaticle Factory server.", STRING);
             private static final EntryParser<String> usernameParser = AnyValue.create("username", "Username for Vaticle Factory server.", STRING);
             private static final EntryParser<String> tokenParser = AnyValue.create("token", "Authentication token for Vaticle Factory server.", STRING);
-            private static final Set<EntryParser<?>> kvParsers = set(traceParser, uriParser, usernameParser, tokenParser);
+            private static final Set<EntryParser<?>> entryParsers = set(traceParser, uriParser, usernameParser, tokenParser);
 
             @Override
             VaticleFactory parse(Yaml yaml, String scope) {
                 if (yaml.isMap()) {
                     boolean trace = traceParser.parse(yaml.asMap(), scope);
-                    validatedRecognisedParsers(kvParsers, yaml.asMap().keys(), scope);
+                    validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                     if (trace) {
                         return new VaticleFactory(true, uriParser.parse(yaml.asMap(), scope),
                                 usernameParser.parse(yaml.asMap(), scope), tokenParser.parse(yaml.asMap(), scope));

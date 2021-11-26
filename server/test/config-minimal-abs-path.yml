@@ -21,12 +21,11 @@ log:
   output:
     stdout:
       type: stdout
-    dir:
-      type: directory
-      path: /absolute/path/to/logs/dir
-      maxFileMB: 50
-      maxFilesCount: 60
-      maxFilesGB: 1
+    file:
+      type: file
+      directory: /absolute/path/to/logs/dir
+      file-size-cap: 50mb
+      archives-size-cap: 1gb
   logger:
     default:
       level: warn
@@ -35,7 +34,7 @@ log:
     reasoner:
       enable: false
       type: reasoner
-      output: dir
+      output: file
 
 vaticle-factory:
   trace: false

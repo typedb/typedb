@@ -21,21 +21,20 @@ log:
   output:
     stdout:
       type: stdout
-    dir:
-      type: directory
-      path: server/logs
-      maxFileMB: 50
-      maxFilesCount: 60
-      maxFilesGB: 1
+    file:
+      type: file
+      directory: server/logs
+      file-size-cap: 50mb
+      archives-size-cap: 1gb
   logger:
     default:
       level: warn
-      output: [ stdout, nonexistant-directory ]
+      output: [ stdout, nonexistant-file ]
   debugger:
     reasoner:
       enable: false
       type: reasoner
-      output: nonexistant-directory
+      output: nonexistant-file
 
 vaticle-factory:
   trace: false

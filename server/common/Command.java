@@ -33,9 +33,9 @@ import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_FLAG_OPTION_HAS_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_OPTION_REQUIRED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_OPTION_REQUIRES_VALUE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_OPTION_REQUIRES_TYPED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_OPTION_UNRECOGNISED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLICATE_CLI_ARGUMENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLICATE_CLI_OPTION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.Util.getConfigPath;
 import static com.vaticle.typedb.core.server.common.Util.scopeKey;
@@ -367,7 +367,7 @@ public abstract class Command {
             }
 
             boolean parse(Set<CommandLine.Option> options) {
-                if (matchingOptions(options).count() > 1) throw TypeDBException.of(DUPLICATE_CLI_ARGUMENT, name());
+                if (matchingOptions(options).count() > 1) throw TypeDBException.of(DUPLICATE_CLI_OPTION, name());
                 Optional<CommandLine.Option> option = matchingOptions(options).first();
                 if (option.isEmpty()) return false;
                 else if (option.get().hasValue()) throw TypeDBException.of(CLI_FLAG_OPTION_HAS_VALUE, option.get());
@@ -384,11 +384,11 @@ public abstract class Command {
             }
 
             Optional<java.lang.String> parse(Set<CommandLine.Option> options) {
-                if (matchingOptions(options).count() > 1) throw TypeDBException.of(DUPLICATE_CLI_ARGUMENT, name());
+                if (matchingOptions(options).count() > 1) throw TypeDBException.of(DUPLICATE_CLI_OPTION, name());
                 Optional<CommandLine.Option> option = matchingOptions(options).first();
                 if (option.isEmpty()) return Optional.empty();
                 else if (!option.get().hasValue()) {
-                    throw TypeDBException.of(CLI_OPTION_REQUIRES_VALUE_TYPE, option.get(), typeDescription);
+                    throw TypeDBException.of(CLI_OPTION_REQUIRES_TYPED_VALUE, option.get(), typeDescription);
                 } else {
                     return option.get().stringValue();
                 }
@@ -404,11 +404,11 @@ public abstract class Command {
             }
 
             Optional<java.nio.file.Path> parse(Set<CommandLine.Option> options) {
-                if (matchingOptions(options).count() > 1) throw TypeDBException.of(DUPLICATE_CLI_ARGUMENT, name());
+                if (matchingOptions(options).count() > 1) throw TypeDBException.of(DUPLICATE_CLI_OPTION, name());
                 Optional<CommandLine.Option> option = matchingOptions(options).first();
                 if (option.isEmpty()) return Optional.empty();
                 else if (!option.get().hasValue()) {
-                    throw TypeDBException.of(CLI_OPTION_REQUIRES_VALUE_TYPE, option.get(), typeDescription);
+                    throw TypeDBException.of(CLI_OPTION_REQUIRES_TYPED_VALUE, option.get(), typeDescription);
                 } else {
                     return option.get().stringValue().map(Paths::get);
                 }
@@ -424,16 +424,16 @@ public abstract class Command {
             }
 
             Optional<Integer> parse(Set<CommandLine.Option> options) {
-                if (matchingOptions(options).count() > 1) throw TypeDBException.of(DUPLICATE_CLI_ARGUMENT, name());
+                if (matchingOptions(options).count() > 1) throw TypeDBException.of(DUPLICATE_CLI_OPTION, name());
                 Optional<CommandLine.Option> option = matchingOptions(options).first();
                 if (option.isEmpty()) return Optional.empty();
                 else if (!option.get().hasValue())
-                    throw TypeDBException.of(CLI_OPTION_REQUIRES_VALUE_TYPE, option.get());
+                    throw TypeDBException.of(CLI_OPTION_REQUIRES_TYPED_VALUE, option.get());
                 else {
                     try {
                         return Optional.of(Integer.parseInt(option.get().stringValue().get()));
                     } catch (NumberFormatException e) {
-                        throw TypeDBException.of(CLI_OPTION_REQUIRES_VALUE_TYPE, option.get(), typeDescription);
+                        throw TypeDBException.of(CLI_OPTION_REQUIRES_TYPED_VALUE, option.get(), typeDescription);
                     }
                 }
             }

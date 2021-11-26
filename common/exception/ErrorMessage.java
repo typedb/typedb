@@ -47,13 +47,13 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Server(5, "Could not find/read the configuration file '%s'.");
         public static final Server UNRECOGNISED_CLI_COMMAND =
                 new Server(6, "The command '%s' was not recognised.");
-        public static final Server CLI_ARGUMENT_MISSING_PREFIX =
+        public static final Server CLI_OPTION_MISSING_PREFIX =
                 new Server(7, "All arguments should be prefixed with '%s', which '%s' is missing.");
-        public static final Server DUPLICATE_CLI_ARGUMENT =
+        public static final Server DUPLICATE_CLI_OPTION =
                 new Server(8, "Unexpected duplicate command line arguments '%s'.");
         public static final Server CLI_FLAG_OPTION_HAS_VALUE =
                 new Server(9, "Command line option '%s' does not take a value.");
-        public static final Server CLI_OPTION_REQUIRES_VALUE_TYPE =
+        public static final Server CLI_OPTION_REQUIRES_TYPED_VALUE =
                 new Server(10, "Command line option '%s' requires a '%s' value.");
         public static final Server CLI_OPTION_REQUIRES_VALUE =
                 new Server(11, "Command line option '%s' requires a value.");
@@ -62,7 +62,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Server CLI_OPTION_UNRECOGNISED =
                 new Server(13, "Unrecognized command line option: '%s'.");
         public static final Server CONFIG_YAML_MUST_BE_MAP =
-                new Server(14, "The configuration file must be key-value map in YAML format.");
+                new Server(14, "The configuration file must be a YAML map.");
         public static final Server CONFIG_SECTION_MUST_BE_MAP =
                 new Server(15, "The configuration section with key '%s' must be a key-value map.");
         public static final Server MISSING_CONFIG_OPTION =

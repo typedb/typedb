@@ -32,7 +32,6 @@ import ch.qos.logback.core.util.FileSize;
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -139,8 +138,8 @@ public class Util {
         configuration.log().output().outputs().forEach((name, outputType) -> {
             if (outputType.isStdout()) {
                 appenders.put(name, consoleAppender(name, context, encoder, layout));
-            } else if (outputType.isDirectory()) {
-                appenders.put(name, directoryAppender(name, context, encoder, layout, outputType.asDirectory()));
+            } else if (outputType.isFile()) {
+                appenders.put(name, fileAppender(name, context, encoder, layout, outputType.asFile()));
             } else throw TypeDBException.of(ILLEGAL_STATE);
         });
 
@@ -171,23 +170,24 @@ public class Util {
         });
     }
 
-    private static RollingFileAppender<ILoggingEvent> directoryAppender(String name, LoggerContext context,
-                                                                        LayoutWrappingEncoder<ILoggingEvent> encoder,
-                                                                        TTLLLayout layout, Type.Directory outputType) {
+    private static RollingFileAppender<ILoggingEvent> fileAppender(String name, LoggerContext context,
+                                                                   LayoutWrappingEncoder<ILoggingEvent> encoder,
+                                                                   TTLLLayout layout, Type.File outputType) {
         RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
         appender.setContext(context);
         appender.setName(name);
         appender.setAppend(true);
-        String logPath = outputType.asDirectory().path().resolve(TYPEDB_LOG_FILE).toAbsolutePath().toString();
+        String logPath = outputType.asFile().path().resolve(TYPEDB_LOG_FILE).toAbsolutePath().toString();
         appender.setFile(logPath);
         appender.setLayout(layout);
         appender.setEncoder(encoder);
         SizeAndTimeBasedRollingPolicy<?> policy = new SizeAndTimeBasedRollingPolicy<>();
         policy.setContext(context);
         policy.setFileNamePattern(logPath + TYPEDB_LOG_FILE_ARCHIVE_SUFFIX);
-        policy.setMaxFileSize(new FileSize(outputType.asDirectory().maxFileMB() * MB_COEFFICIENT));
-        policy.setTotalSizeCap(new FileSize(outputType.asDirectory().maxFilesGB() * GB_COEFFICIENT));
-        policy.setMaxHistory(outputType.asDirectory().maxFilesCount());
+        FileSize fileSize = FileSize.valueOf(outputType.fileSizeCap());
+        long directorySize = fileSize.getSize() + FileSize.valueOf(outputType.archivesSizeCap()).getSize();
+        policy.setMaxFileSize(fileSize);
+        policy.setTotalSizeCap(new FileSize(directorySize));
         policy.setParent(appender);
         policy.start();
         appender.setRollingPolicy(policy);

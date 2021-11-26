@@ -21,20 +21,19 @@ log:
   output:
     stdout:
       type: stdout
-    dir:
-      type: directory
-      path: server/logs
-      maxFileMB: 50
-      maxFilesCount: 60
-      maxFilesGB: 1
+    file:
+      type: file
+      directory: server/logs
+      file-size-cap: 50mb
+      archives-size-cap: 1gb
   logger:
     default:
       level: warn
-      output: [ stdout, dir ]
+      output: [ stdout, file ]
     typedb:
       filter: com.vaticle.typedb.core
       level: info
-      output: [ stdout, dir ]
+      output: [ stdout, file ]
 
 vaticle-factory:
   trace: false
