@@ -20,8 +20,8 @@ package com.vaticle.typedb.core.server.test;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.common.CommandLine;
-import com.vaticle.typedb.core.server.common.Configuration;
 import com.vaticle.typedb.core.server.common.ConfigKVParser;
+import com.vaticle.typedb.core.server.common.Configuration;
 import com.vaticle.typedb.core.server.common.Util;
 import org.junit.Test;
 
@@ -63,8 +63,8 @@ public class ConfigurationTest {
 
     @Test
     public void minimal_config_with_absolute_paths_is_read() {
-        Path config_minimal_abs_paths = Util.getTypedbDir().resolve("server/test/config-minimal-abs-path.yml");
-        Configuration configuration = (new Configuration.Parser()).getConfig(config_minimal_abs_paths, new HashSet<>());
+        Path configMinimalAbsPaths = Util.getTypedbDir().resolve("server/test/config-minimal-abs-path.yml");
+        Configuration configuration = (new Configuration.Parser()).getConfig(configMinimalAbsPaths, new HashSet<>());
         assertTrue(configuration.dataDir().isAbsolute());
         assertEquals(1730, configuration.port());
         assertFalse(configuration.vaticleFactory().trace());
@@ -82,9 +82,9 @@ public class ConfigurationTest {
 
     @Test
     public void config_invalid_path_throws() {
-        Path config_missing = Util.getTypedbDir().resolve("server/test/missing.yml");
+        Path configMissing = Util.getTypedbDir().resolve("server/test/missing.yml");
         try {
-            (new Configuration.Parser()).getConfig(config_missing, new HashSet<>());
+            (new Configuration.Parser()).getConfig(configMissing, new HashSet<>());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -94,9 +94,9 @@ public class ConfigurationTest {
 
     @Test
     public void config_file_missing_port_throws() {
-        Path config_missing_log = Util.getTypedbDir().resolve("server/test/config-missing-port.yml");
+        Path configMissingLog = Util.getTypedbDir().resolve("server/test/config-missing-port.yml");
         try {
-            (new Configuration.Parser()).getConfig(config_missing_log, new HashSet<>());
+            (new Configuration.Parser()).getConfig(configMissingLog, new HashSet<>());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -107,9 +107,9 @@ public class ConfigurationTest {
 
     @Test
     public void config_file_missing_debugger_throws() {
-        Path config_missing_log_debugger = Util.getTypedbDir().resolve("server/test/config-missing-debugger.yml");
+        Path configMissingLogDebugger = Util.getTypedbDir().resolve("server/test/config-missing-debugger.yml");
         try {
-            (new Configuration.Parser()).getConfig(config_missing_log_debugger, new HashSet<>());
+            (new Configuration.Parser()).getConfig(configMissingLogDebugger, new HashSet<>());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -120,9 +120,9 @@ public class ConfigurationTest {
 
     @Test
     public void config_file_invalid_output_reference_throws() {
-        Path config_invalid_output = Util.getTypedbDir().resolve("server/test/config-invalid-logger-output.yml");
+        Path configInvalidOutput = Util.getTypedbDir().resolve("server/test/config-invalid-logger-output.yml");
         try {
-            (new Configuration.Parser()).getConfig(config_invalid_output, new HashSet<>());
+            (new Configuration.Parser()).getConfig(configInvalidOutput, new HashSet<>());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -132,9 +132,9 @@ public class ConfigurationTest {
 
     @Test
     public void config_file_wrong_path_type_throws() {
-        Path config_invalid_path_Type = Util.getTypedbDir().resolve("server/test/config-wrong-path-type.yml");
+        Path configInvalidPathType = Util.getTypedbDir().resolve("server/test/config-wrong-path-type.yml");
         try {
-            (new Configuration.Parser()).getConfig(config_invalid_path_Type, new HashSet<>());
+            (new Configuration.Parser()).getConfig(configInvalidPathType, new HashSet<>());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -145,9 +145,9 @@ public class ConfigurationTest {
 
     @Test
     public void config_file_unrecognised_option() {
-        Path config_unrecognised_option = Util.getTypedbDir().resolve("server/test/config-unrecognised-option.yml");
+        Path configUnrecognisedOption = Util.getTypedbDir().resolve("server/test/config-unrecognised-option.yml");
         try {
-            (new Configuration.Parser()).getConfig(config_unrecognised_option, new HashSet<>());
+            (new Configuration.Parser()).getConfig(configUnrecognisedOption, new HashSet<>());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
