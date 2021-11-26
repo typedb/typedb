@@ -177,8 +177,21 @@ public class ConfigurationTest {
         assertNotNull(configuration.log().logger().defaultLogger());
         assertFalse(configuration.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("info", configuration.log().logger().defaultLogger().level());
+        assertEquals(list("dir"), configuration.log().logger().filteredLoggers().get("typedb").outputs());
         assertFalse(configuration.log().debugger().reasoner().isEnabled());
     }
+
+    @Test
+    public void overrides_list_can_be_yaml_or_repeated() {
+        Configuration configuration = (new Configuration.Parser()).getDefault(set(
+                new CommandLine.Option("log.logger.typedb.output", "[dir]")
+        ));
+        assertEquals(set("dir"), set(configuration.log().logger().filteredLoggers().get("typedb").outputs()));
+
+        Configuration configurationWithRepeatedArgs = (new Configuration.Parser()).getDefault(set(
+                new CommandLine.Option("log.logger.typedb.output", "dir"),
+                new CommandLine.Option("log.logger.typedb.output", "stdout")
+        ));
+        assertEquals(set("stdout", "dir"), set(configurationWithRepeatedArgs.log().logger().filteredLoggers().get("typedb").outputs()));
+    }
 }
-
-

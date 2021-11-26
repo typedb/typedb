@@ -230,7 +230,7 @@ public abstract class ConfigKVParser implements Option.CliHelp {
             );
             static final Leaf<List<String>> LIST_STRING = new Leaf<>(
                     (yaml) -> yaml.isList() && iterate(yaml.asList().iterator()).allMatch(Yaml::isString),
-                    (yaml) -> iterate(yaml.asList()).map(elem -> elem.asString().value()).toList(),
+                    (yaml) -> iterate(yaml.asList().iterator()).map(elem -> elem.asString().value()).toList(),
                     "<[string, ...]>");
 
             private final Function<Yaml, Boolean> validator;
