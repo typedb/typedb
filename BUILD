@@ -53,13 +53,13 @@ native_java_libraries(
 )
 
 assemble_files = {
-    "//server/conf:typedb-defaults": "server/conf/defaults.yml",
+    "//server/conf:typedb": "server/conf/typedb.yml",
     "//server/resources:logo": "server/resources/typedb-ascii.txt",
     "//:LICENSE": "LICENSE",
 }
 
 permissions = {
-    "server/conf/defaults.yml" : "0444",
+    "server/conf/typedb.yml" : "0755",
 }
 
 artifact_repackage(

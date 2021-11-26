@@ -20,8 +20,8 @@ package(default_visibility = ["//server:__subpackages__", "//:__pkg__"])
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 filegroup(
-    name = "typedb-defaults",
-    srcs = ["defaults.yml"],
+    name = "typedb",
+    srcs = ["typedb.yml"],
 )
 
 checkstyle_test(

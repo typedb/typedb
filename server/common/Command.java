@@ -154,8 +154,8 @@ public abstract class Command {
                 Set<CommandLine.Option> configurationOptions = excludeOptions(cliOptions, auxiliaryCliOptions);
 
                 Configuration configuration = configFile.parse(auxiliaryCliOptions)
-                        .map(file -> configurationParser.parse(getConfigPath(file), configurationOptions))
-                        .orElseGet(() -> configurationParser.getDefault(configurationOptions));
+                        .map(file -> configurationParser.getConfig(getConfigPath(file), configurationOptions))
+                        .orElseGet(() -> configurationParser.getConfig(configurationOptions));
 
                 return new Server(debug.parse(auxiliaryCliOptions), help.parse(auxiliaryCliOptions),
                         version.parse(auxiliaryCliOptions), configuration);

@@ -53,7 +53,7 @@ import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.L
 import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.LIST_STRING;
 import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.PATH;
 import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.STRING;
-import static com.vaticle.typedb.core.server.common.Constants.DEFAULT_CONFIG_PATH;
+import static com.vaticle.typedb.core.server.common.Constants.CONFIG_PATH;
 import static com.vaticle.typedb.core.server.common.Util.getConfigPath;
 import static com.vaticle.typedb.core.server.common.Util.readConfig;
 import static com.vaticle.typedb.core.server.common.Util.scopeKey;
@@ -81,17 +81,17 @@ public class Configuration {
         private static final EntryParser<VaticleFactory> vaticleFactoryParser = AnyValue.create(VaticleFactory.name, VaticleFactory.description, new VaticleFactory.Parser());
         private static final Set<EntryParser<?>> kvParsers = set(dataParser, portParser, logParser, vaticleFactoryParser);
 
-        public Configuration getDefault() {
-            return getDefault(new HashSet<>());
+        public Configuration getConfig() {
+            return getConfig(new HashSet<>());
         }
 
-        public Configuration getDefault(Set<CommandLine.Option> overrides) {
-            return parse(DEFAULT_CONFIG_PATH, overrides);
+        public Configuration getConfig(Set<CommandLine.Option> overrides) {
+            return getConfig(CONFIG_PATH, overrides);
         }
 
-        public Configuration parse(Path configFile, Set<CommandLine.Option> overrides) {
-            Map<String, Yaml> yamlOverrides = toYamlOverrides(overrides);
+        public Configuration getConfig(Path configFile, Set<CommandLine.Option> overrides) {
             Yaml.Map yaml = readConfig(configFile);
+            Map<String, Yaml> yamlOverrides = toYamlOverrides(overrides);
             yamlOverrides.forEach((key, value) -> setValue(yaml, key.split("\\."), value));
             validatedRecognisedParsers(kvParsers, yaml.keys(), "");
             return new Configuration(getConfigPath(dataParser.parse(yaml, "")), portParser.parse(yaml, ""),

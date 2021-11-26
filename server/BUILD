@@ -93,7 +93,7 @@ java_binary(
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-mac"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    data = ["//server/conf:typedb-defaults"],
+    data = ["//server/conf:typedb"],
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-mac can depend directly on :server-mac (lib)
@@ -108,7 +108,7 @@ java_binary(
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-linux"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    data = ["//server/conf:typedb-defaults"],
+    data = ["//server/conf:typedb"],
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-linux can depend directly on :server-linux (lib)
@@ -123,7 +123,7 @@ java_binary(
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-windows"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    data = ["//server/conf:typedb-defaults"],
+    data = ["//server/conf:typedb"],
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-windows can depend directly on :server-windows (lib)
@@ -179,13 +179,13 @@ assemble_deps_common = [
 ]
 
 assemble_files = {
-    "//server/conf:typedb-defaults": "server/conf/defaults.yml",
+    "//server/conf:typedb": "server/conf/typedb.yml",
     "//server/resources:logo": "server/resources/typedb-ascii.txt",
     "//:LICENSE": "LICENSE",
 }
 
 permissions = {
-    "server/conf/defaults.yml" : "0444",
+    "server/conf/typedb.yml" : "0755",
 }
 
 assemble_targz(

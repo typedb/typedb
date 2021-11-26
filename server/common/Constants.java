@@ -26,7 +26,7 @@ import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 public class Constants {
 
     static final File ASCII_LOGO_FILE = getTypedbDir().resolve("server/resources/typedb-ascii.txt").toFile();
-    static final Path DEFAULT_CONFIG_PATH = getTypedbDir().resolve("server/conf/defaults.yml");
+    static final Path CONFIG_PATH = getTypedbDir().resolve("server/conf/typedb.yml");
     static final String TYPEDB_LOG_FILE = "typedb.log";
     static final String TYPEDB_LOG_FILE_ARCHIVE_SUFFIX = "-%d{yyyy-MM}.%i.log.gz";
 }

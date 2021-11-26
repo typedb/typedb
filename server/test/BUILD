@@ -27,7 +27,7 @@ load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
 package(default_visibility = ["//visibility:private",])
 
 host_compatible_java_test(
-    name = "test-config",
+    name = "test-configuration",
     srcs = [
         "ConfigurationTest.java",
     ],
@@ -43,7 +43,7 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
     ],
     data = [
-        "//server/conf:typedb-defaults",
+        "//server/conf:typedb",
         ":configuration-minimal-abs-paths",
         ":configuration-invalid-logger-output",
         ":configuration-missing-debugger",
@@ -55,32 +55,32 @@ host_compatible_java_test(
 
 filegroup(
     name = "configuration-minimal-abs-paths",
-    srcs = ["config_minimal_abs_path.yml"],
+    srcs = ["config-minimal-abs-path.yml"],
 )
 
 filegroup(
     name = "configuration-invalid-logger-output",
-    srcs = ["config_invalid_logger_output.yml"],
+    srcs = ["config-invalid-logger-output.yml"],
 )
 
 filegroup(
     name = "configuration-missing-debugger",
-    srcs = ["config_missing_debugger.yml"],
+    srcs = ["config-missing-debugger.yml"],
 )
 
 filegroup(
     name = "configuration-missing-port",
-    srcs = ["config_missing_port.yml"],
+    srcs = ["config-missing-port.yml"],
 )
 
 filegroup(
     name = "configuration-wrong-path-type",
-    srcs = ["config_wrong_path_type.yml"],
+    srcs = ["config-wrong-path-type.yml"],
 )
 
 filegroup(
     name = "configuration-unrecognised-option",
-    srcs = ["config_unrecognised_option.yml"],
+    srcs = ["config-unrecognised-option.yml"],
 )
 
 checkstyle_test(

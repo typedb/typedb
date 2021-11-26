@@ -119,7 +119,7 @@ public class TypeDBServer implements AutoCloseable {
 
     private void configureAndVerifyDataDir() {
         if (!Files.isDirectory(configuration.dataDir())) {
-            if (configuration.dataDir().equals((new Configuration.Parser()).getDefault().dataDir())) {
+            if (configuration.dataDir().equals((new Configuration.Parser()).getConfig().dataDir())) {
                 try {
                     Files.createDirectory(configuration.dataDir());
                 } catch (IOException e) {
