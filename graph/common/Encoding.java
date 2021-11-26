@@ -144,7 +144,7 @@ public class Encoding {
      * The values in this class will be used as 'prefixes' within an IID for every database object,
      * and must not overlap with each other.
      *
-     * A prefix is 1 unsigned byte, up to the value of 199. Values 200-255 are reserved for TypeDB Cluster.
+     * A prefix is 1 unsigned byte, up to the value of 179. Values 180-255 are reserved for TypeDB Cluster.
      */
     public enum Prefix {
         SYSTEM(0, PrefixType.SYSTEM),
