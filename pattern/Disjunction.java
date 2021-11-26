@@ -87,6 +87,8 @@ public class Disjunction implements Pattern, Cloneable {
         if (o == null || getClass() != o.getClass()) return false;
 
         Disjunction that = (Disjunction) o;
+        // TODO: should use a set-comparison
+        // TODO: corrected with https://github.com/vaticle/typedb/issues/6115
         return this.conjunctions.equals(that.conjunctions);
     }
 

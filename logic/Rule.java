@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -206,7 +207,7 @@ public class Rule {
     }
 
     private Conjunction thenPattern(com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
-        Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
+        Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), list());
         logicMgr.typeInference().infer(conj, true);
         return conj;
     }
@@ -269,7 +270,7 @@ public class Rule {
             return negatedConcludablesTriggeringRules;
         }
 
-        private FunctionalIterator<Concludable> concludables(Set<Negation> negations) {
+        private FunctionalIterator<Concludable> concludables(List<Negation> negations) {
             return iterate(negations)
                     .flatMap(neg -> {
                         assert neg.disjunction().conjunctions().size() == 1;
