@@ -49,7 +49,8 @@ public abstract class Controller<CID, PID, OUTPUT, PROCESSOR extends Processor<O
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc();
 
-    protected abstract class UpstreamHandler<UPS_CID, UPS_PID, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, ?, ?, UPS_CONTROLLER>> {
+    // TODO: Rename: UpstreamCommunicator/UpstreamRequester
+    protected abstract class UpstreamHandler<UPS_CID, UPS_PID, UPS_OUTPUT, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, UPS_OUTPUT, UPS_PROCESSOR, UPS_CONTROLLER>, UPS_PROCESSOR extends Processor<UPS_OUTPUT, UPS_PROCESSOR>> {
 
         private final Map<Pair<UPS_CID, UPS_PID>, Driver<PROCESSOR>> processorRequesters;
 
@@ -58,39 +59,44 @@ public abstract class Controller<CID, PID, OUTPUT, PROCESSOR extends Processor<O
         }
 
         protected abstract Driver<UPS_CONTROLLER> getControllerForId(UPS_CID id);  // Looks up the downstream controller by (pattern, bounds), either via registry or has already stored them.
+
+        public void receiveUpstreamProcessorRequest(UPS_CID controllerId, UPS_PID processorId, Driver<PROCESSOR> requester) {
+            Driver<UPS_CONTROLLER> controller = getControllerForId(controllerId);
+            processorRequesters.put(new Pair<>(controllerId, processorId), requester);
+            sendProcessorRequest(processorId, controller);
+        }
+
+        void sendProcessorRequest(UPS_PID processorId, Driver<UPS_CONTROLLER> controller) {
+            controller.execute(actor -> actor.receiveProcessorRequest(processorId, driver()));
+        }
+
+        public void receiveRequestedProcessor(UPS_CID controllerId, UPS_PID processorId, Driver<UPS_PROCESSOR> processor) {
+            Driver<PROCESSOR> requester = processorRequesters.remove(new Pair<>(controllerId, processorId));
+            assert requester != null;
+
+            // TODO: Rename to sendRequestedProcessor. This shouldn't add the inlet but should just reply with the requested processor and controller and processor ids
+            requester.execute(actor -> {
+                Processor<?, PROCESSOR>.InletManager<UPS_PID, UPS_OUTPUT, UPS_PROCESSOR> inletManager = actor.getInletManager(controllerId);
+                inletManager.newInlet(processorId, processor);
+            });
+        }
     }
 
     // Child classes implement a retrieval mechanism based on the type of upstream id to find a handler for it.
     // the casting required here can't be done without the framework having knowledge of the identifier types, this needs solving
-    protected abstract <UPS_CID, UPS_PID, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, ?, ?, UPS_CONTROLLER>> UpstreamHandler<UPS_CID, UPS_PID, UPS_CONTROLLER> getHandler(UPS_CID id);
+    protected abstract <UPS_CID, UPS_PID, UPS_OUTPUT, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, UPS_OUTPUT, UPS_PROCESSOR, UPS_CONTROLLER>, UPS_PROCESSOR extends Processor<UPS_OUTPUT, UPS_PROCESSOR>> UpstreamHandler<UPS_CID, UPS_PID, UPS_OUTPUT, UPS_CONTROLLER, UPS_PROCESSOR> getUpstreamHandler(UPS_CID id);
 
-    public <UPS_CID, UPS_PID, UPS_OUTPUT, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, UPS_OUTPUT, ?, UPS_CONTROLLER>> void receiveUpstreamProcessorRequest(UPS_CID controllerId, UPS_PID processorId, Driver<PROCESSOR> requester) {
-        UpstreamHandler<UPS_CID, UPS_PID, UPS_CONTROLLER> handler = getHandler(controllerId);
-        Driver<UPS_CONTROLLER> controller = handler.getControllerForId(controllerId);
-        handler.processorRequesters.put(new Pair<>(controllerId, processorId), requester);
-        sendProcessorRequest(processorId, controller);
-    }
 
-    private <UPS_CID, UPS_PID, UPS_OUTPUT, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, UPS_OUTPUT, ?, UPS_CONTROLLER>> void sendProcessorRequest(UPS_PID processorId, Driver<UPS_CONTROLLER> controller) {
-        controller.execute(actor -> actor.receiveProcessorRequest(processorId, driver()));
-    }
+//    private UpstreamHandler<CID, PID, OUTPUT, CONTROLLER, PROCESSOR> getUpstreamHandlerFromDownstream(CID id) {
+//
+//    }
 
-    public <REQ_CID, REQ_PID, UPS_OUTPUT, REQ_CONTROLLER extends Controller<REQ_CID, REQ_PID, UPS_OUTPUT, ?, REQ_CONTROLLER>> void receiveProcessorRequest(PID processorId, Driver<REQ_CONTROLLER> requester) {
-        sendRequestedProcessor(processorId, requester, processors.computeIfAbsent(processorId, this::buildProcessor));
-    }
-
-    private <REQ_CID, REQ_PID, UPS_OUTPUT, REQ_CONTROLLER extends Controller<REQ_CID, REQ_PID, UPS_OUTPUT, ?, REQ_CONTROLLER>> void sendRequestedProcessor(PID processorId, Driver<REQ_CONTROLLER> requester, Driver<PROCESSOR> processor) {
-        requester.execute(actor -> actor.receiveRequestedProcessor(id, processorId, processor));
-    }
-
-    public <UPS_CID, UPS_PID, INLET_INPUT, UPS_PROCESSOR extends Processor<INLET_INPUT, UPS_PROCESSOR>> void receiveRequestedProcessor(UPS_CID controllerId, UPS_PID processorId, Driver<UPS_PROCESSOR> processor) {
-        UpstreamHandler<UPS_CID, UPS_PID, ?> handler = getHandler(controllerId);
-        Driver<PROCESSOR> requester = handler.processorRequesters.remove(new Pair<>(controllerId, processorId));
-        assert requester != null;
+    public <REQ_CID, REQ_PID, REQ_OUTPUT, REQ_CONTROLLER extends Controller<REQ_CID, REQ_PID, REQ_OUTPUT, REQ_PROCESSOR, REQ_CONTROLLER>, REQ_PROCESSOR extends Processor<REQ_OUTPUT, REQ_PROCESSOR>> void receiveProcessorRequest(PID processorId, Driver<REQ_CONTROLLER> requester) {
+        Driver<PROCESSOR> processor = processors.computeIfAbsent(processorId, this::buildProcessor);
         requester.execute(actor -> {
-            Processor<?, PROCESSOR>.InletManager<UPS_PID, INLET_INPUT, UPS_PROCESSOR> inletManager = actor.getInletManager(controllerId);
-            inletManager.newInlet(processorId, processor);
-        });
+//            UpstreamHandler<CID, PID, OUTPUT, CONTROLLER, PROCESSOR> h = actor.getUpstreamHandler(id);  // TODO: Why doesn't this work?
+            actor.getUpstreamHandler(id).receiveRequestedProcessor(id, processorId, processor);
+        });  // TODO: name sendRequestedProcessor
     }
 
     @Override
