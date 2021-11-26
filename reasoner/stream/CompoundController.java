@@ -23,8 +23,7 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.ConcludableResolver;
-import com.vaticle.typedb.core.reasoner.stream.Processor.Inlet;
+import com.vaticle.typedb.core.reasoner.stream.Processor.InletManager;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Operation;
 
 import java.util.HashMap;

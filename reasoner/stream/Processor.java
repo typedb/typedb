@@ -59,7 +59,7 @@ public abstract class Processor<CONTROLLER_ID, PROCESSOR_ID, OUTPUT, PROCESSOR e
     }
 
     // TODO: InletManagers are identified by upstream controller ids. These types are unknown so should be handled by child class, which will require casting
-    public abstract <INLET_ID, UPSTREAM_PROCESSOR extends Processor<CONTROLLER_ID, INLET_ID, INPUT, UPSTREAM_PROCESSOR>, INPUT, UPSTREAM_CONTROLLER_ID> InletManager<INLET_ID,INPUT,UPSTREAM_PROCESSOR> getInletManager(UPSTREAM_CONTROLLER_ID controllerId);
+    public abstract <INLET_ID, INPUT, UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR extends Processor<UPSTREAM_CONTROLLER_ID, INLET_ID, INPUT, UPSTREAM_PROCESSOR>> InletManager<INLET_ID, INPUT, UPSTREAM_PROCESSOR> getInletManager(UPSTREAM_CONTROLLER_ID controllerId);
 
     interface Pullable<T> {
         Optional<T> pull();  // TODO: Never returns anything for async implementations. Is it a smell that this could be sync or async or actually a good abstraction?
@@ -72,11 +72,11 @@ public abstract class Processor<CONTROLLER_ID, PROCESSOR_ID, OUTPUT, PROCESSOR e
 
     // TODO: Note that the identifier for an upstream controller (e.g. resolvable) is different to for an upstream processor (resolvable plus bounds). So inletmanagers are managed based on the former.
 
-    public abstract class InletManager<INLET_ID, INPUT, UPSTREAM_PROCESSOR extends Processor<CONTROLLER_ID, INLET_ID, INPUT, UPSTREAM_PROCESSOR>> implements Pullable<INPUT> {
+    public abstract class InletManager<INLET_MANAGER_ID, INLET_ID, INPUT, UPSTREAM_PROCESSOR extends Processor<?, ?, INPUT, UPSTREAM_PROCESSOR>> implements Pullable<INPUT> {
 
         public abstract void newInlet(INLET_ID id, Driver<UPSTREAM_PROCESSOR> newInlet);  // TODO: Should be called by a handler in the controller
 
-        public class Single extends InletManager<INLET_ID, INPUT, UPSTREAM_PROCESSOR> {
+        public class Single extends InletManager<INLET_MANAGER_ID, INLET_ID, INPUT, UPSTREAM_PROCESSOR> {
 
             @Override
             public Optional<INPUT> pull() {
@@ -90,7 +90,7 @@ public abstract class Processor<CONTROLLER_ID, PROCESSOR_ID, OUTPUT, PROCESSOR e
 
         }
 
-        public class DynamicMulti extends InletManager<INLET_ID, INPUT, UPSTREAM_PROCESSOR> {
+        public class DynamicMulti extends InletManager<INLET_MANAGER_ID, INLET_ID, INPUT, UPSTREAM_PROCESSOR> {
 
             LinkedHashMap<INLET_ID, Inlet> inlets;  // TODO: Does this need to be a map?
 
