@@ -37,7 +37,7 @@ public class CompoundController extends Controller<ConceptMap, ConceptMap, Conce
 
     protected CompoundController(Driver<Controller<ConceptMap, ConceptMap, ConceptMap>> driver, String name,
                                  ActorExecutorGroup executorService, ResolverRegistry registry) {
-        super(driver, name, executorService);
+        super(driver, name, , executorService);
         this.registry = registry;
         this.conclusionControllers = new HashMap<>();
     }

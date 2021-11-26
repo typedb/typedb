@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 public class ConclusionController extends Controller<CONTROLLER_ID, ConceptMap, OUTPUT, PROCESSOR, ConclusionController> {
 
     protected ConclusionController(Driver<ConclusionController> driver, String name, ActorExecutorGroup executorService) {
-        super(driver, name, executorService);
+        super(driver, name, , executorService);
     }
 
     @Override

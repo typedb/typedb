@@ -19,13 +19,15 @@
 package com.vaticle.typedb.core.reasoner.stream;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.stream.Controller.Source;
 
 import java.util.LinkedHashMap;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
@@ -204,6 +206,16 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
         }
 
+    }
+
+    static class Source<INPUT> {
+        public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<ConceptMap>> traversal) {
+            return null;  // TODO
+        }
+
+        public Operation<INPUT, INPUT> asOperation() {
+            return null; // TODO
+        }
     }
 
     public static abstract class Operation<INPUT, OUTPUT> {

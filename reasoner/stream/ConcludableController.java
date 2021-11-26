@@ -52,7 +52,7 @@ public class ConcludableController extends Controller<CONTROLLER_ID, ConceptMap,
     protected ConcludableController(Driver<ConcludableController> driver,
                                     Concludable concludable, String name, ActorExecutorGroup executorService,
                                     ResolverRegistry registry) {
-        super(driver, name, executorService);
+        super(driver, name, , executorService);
         this.concludable = concludable;
         this.registry = registry;
         this.unboundVars = unboundVars();
@@ -112,7 +112,7 @@ public class ConcludableController extends Controller<CONTROLLER_ID, ConceptMap,
     private static Operation<Partial.Conclusion<?, ?>, ConceptMap> defineOperation(ConceptMap bounds, Set<Identifier.Variable.Retrievable> unboundVars, Supplier<FunctionalIterator<ConceptMap>> traversalSupplier) {
         Operation<?, Partial.Conclusion<?, ?>> input = Operation.input();
         Operation<Partial.Conclusion<?, ?>, ConceptMap> downstreamOp = input.flatMap(a -> a.unifier().unUnify(a.conceptMap().concepts(), a.instanceRequirements()));   // TODO: if flatmapping produces an empty iterator for non-empty input then the pull() should be retried
-        Source<ConceptMap> traversalSource = Source.fromIteratorSupplier(traversalSupplier);  // TODO: Delay opening the traversal until needed. Use a non-eager traversal wrapper.
+        Processor.Source<ConceptMap> traversalSource = Processor.Source.fromIteratorSupplier(traversalSupplier);  // TODO: Delay opening the traversal until needed. Use a non-eager traversal wrapper.
         Operation<Partial.Conclusion<?, ?>, ConceptMap> op = Operation.sourceJoin(traversalSource, downstreamOp);  // TODO: Could be a fluent .join(). Perhaps instead this should be attached as one of the inlets? But the inlets and outlets are currently the actor boundaries, so maybe not.
         boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);  // Determines whether to use findFirst() or find all results
         if (singleAnswerRequired) {
