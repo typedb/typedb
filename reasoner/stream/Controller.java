@@ -31,7 +31,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 
-public abstract class Controller<CONTROLLER_ID, PROCESSOR_ID, PROCESSOR extends Processor<CONTROLLER_ID, PROCESSOR_ID, OUTPUT, PROCESSOR>, OUTPUT, CONTROLLER extends Controller<CONTROLLER_ID, PROCESSOR_ID, PROCESSOR, OUTPUT, CONTROLLER>> extends Actor<CONTROLLER> {
+public abstract class Controller<CONTROLLER_ID, PROCESSOR_ID, OUTPUT, PROCESSOR extends Processor<OUTPUT, PROCESSOR>, CONTROLLER extends Controller<CONTROLLER_ID, PROCESSOR_ID, OUTPUT, PROCESSOR, CONTROLLER>> extends Actor<CONTROLLER> {
 
     private final ActorExecutorGroup executorService;
     private final Map<PROCESSOR_ID, Actor.Driver<PROCESSOR>> processors;
@@ -68,13 +68,13 @@ public abstract class Controller<CONTROLLER_ID, PROCESSOR_ID, PROCESSOR extends 
 
     // TODO: Child classes implement a retrieval mechanism based on the type of upstream id to find a handler for it.
     // TODO: the casting required here can't be done without the framework having knowledge of the identifier types, this needs solving
-    protected abstract <UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, UPSTREAM_CONTROLLER> UpstreamHandler<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, UPSTREAM_CONTROLLER> getHandler(UPSTREAM_CONTROLLER_ID id);
+    protected abstract <UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, UPSTREAM_CONTROLLER extends Controller<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, ?, ?, UPSTREAM_CONTROLLER>> UpstreamHandler<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, UPSTREAM_CONTROLLER> getHandler(UPSTREAM_CONTROLLER_ID id);
 
-    public <UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, UPSTREAM_CONTROLLER extends Controller<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, ?, ?, UPSTREAM_CONTROLLER>> void receiveUpstreamProcessorRequest(UPSTREAM_CONTROLLER_ID controllerId, UPSTREAM_PROCESSOR_ID processorId, Driver<PROCESSOR> requester) {
+    public <UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, UPSTREAM_OUTPUT, UPSTREAM_CONTROLLER extends Controller<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, UPSTREAM_OUTPUT, ?, UPSTREAM_CONTROLLER>> void receiveUpstreamProcessorRequest(UPSTREAM_CONTROLLER_ID controllerId, UPSTREAM_PROCESSOR_ID processorId, Driver<PROCESSOR> requester) {
         // TODO: How do I initialise this controller to be aware of multiple other types of controller? The processor
         //  also needs to be aware in this way. e.g. it needs to be given 4 resolvable controllers of different types
         //  if its a conjunction, and a condition and a lease controller if its a conclusion
-        UpstreamHandler<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID> handler = getHandler(controllerId);
+        UpstreamHandler<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, UPSTREAM_CONTROLLER> handler = getHandler(controllerId);
 
         // Message downstream controller responsible for creating processors as per the id.
         Driver<UPSTREAM_CONTROLLER> controller = handler.getControllerForId(controllerId);
@@ -82,24 +82,24 @@ public abstract class Controller<CONTROLLER_ID, PROCESSOR_ID, PROCESSOR extends 
         sendProcessorRequest(processorId, controller);
     }
 
-    private <UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, UPSTREAM_CONTROLLER extends Controller<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, ?, ?, UPSTREAM_CONTROLLER>> void sendProcessorRequest(UPSTREAM_PROCESSOR_ID processorId, Driver<UPSTREAM_CONTROLLER> controller) {
+    private <UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, UPSTREAM_OUTPUT, UPSTREAM_CONTROLLER extends Controller<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, UPSTREAM_OUTPUT, ?, UPSTREAM_CONTROLLER>> void sendProcessorRequest(UPSTREAM_PROCESSOR_ID processorId, Driver<UPSTREAM_CONTROLLER> controller) {
         controller.execute(actor -> actor.receiveProcessorRequest(processorId, driver()));
     }
 
-    public <REQ_CONTROLLER_ID, REQ_PROCESSOR_ID, REQUESTER extends Controller<REQ_CONTROLLER_ID, REQ_PROCESSOR_ID, ?, ?, REQUESTER>> void receiveProcessorRequest(PROCESSOR_ID processorId, Driver<REQUESTER> requester) {
+    public <REQ_CONTROLLER_ID, REQ_PROCESSOR_ID, UPSTREAM_OUTPUT, REQUESTER extends Controller<REQ_CONTROLLER_ID, REQ_PROCESSOR_ID, UPSTREAM_OUTPUT, ?, REQUESTER>> void receiveProcessorRequest(PROCESSOR_ID processorId, Driver<REQUESTER> requester) {
         sendRequestedProcessor(processorId, requester, processors.computeIfAbsent(processorId, this::buildProcessor));
     }
 
-    private <REQ_CONTROLLER_ID, REQ_PROCESSOR_ID, REQUESTER extends Controller<REQ_CONTROLLER_ID, REQ_PROCESSOR_ID, ?, ?, REQUESTER>> void sendRequestedProcessor(PROCESSOR_ID processorId, Driver<REQUESTER> requester, Driver<PROCESSOR> processor) {
+    private <REQ_CONTROLLER_ID, REQ_PROCESSOR_ID, UPSTREAM_OUTPUT, REQUESTER extends Controller<REQ_CONTROLLER_ID, REQ_PROCESSOR_ID, UPSTREAM_OUTPUT, ?, REQUESTER>> void sendRequestedProcessor(PROCESSOR_ID processorId, Driver<REQUESTER> requester, Driver<PROCESSOR> processor) {
         requester.execute(actor -> actor.receiveRequestedProcessor(id(), processorId, processor));
     }
 
-    public <UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, INLET_INPUT, UPSTREAM_PROCESSOR extends Processor<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, INLET_INPUT, UPSTREAM_PROCESSOR>> void receiveRequestedProcessor(UPSTREAM_CONTROLLER_ID controllerId, UPSTREAM_PROCESSOR_ID processorId, Driver<UPSTREAM_PROCESSOR> processor) {
+    public <UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, INLET_INPUT, UPSTREAM_PROCESSOR extends Processor<INLET_INPUT, UPSTREAM_PROCESSOR>> void receiveRequestedProcessor(UPSTREAM_CONTROLLER_ID controllerId, UPSTREAM_PROCESSOR_ID processorId, Driver<UPSTREAM_PROCESSOR> processor) {
         UpstreamHandler<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, ?> handler = getHandler(controllerId);
         Driver<PROCESSOR> requester = handler.processorRequesters.remove(new Pair<>(controllerId, processorId));
         assert requester != null;
         requester.execute(actor -> {
-            Processor<CONTROLLER_ID, PROCESSOR_ID, OUTPUT, PROCESSOR>.InletManager<UPSTREAM_CONTROLLER_ID, UPSTREAM_PROCESSOR_ID, INLET_INPUT, UPSTREAM_PROCESSOR> inletManager = actor.getInletManager(controllerId);
+            Processor<?, PROCESSOR>.InletManager<UPSTREAM_PROCESSOR_ID, INLET_INPUT, UPSTREAM_PROCESSOR> inletManager = actor.getInletManager(controllerId);
             inletManager.newInlet(processorId, processor);
         });
     }
