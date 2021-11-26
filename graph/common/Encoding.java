@@ -50,7 +50,7 @@ public class Encoding {
 
     public static final String ROCKS_DATA = "data";
     public static final String ROCKS_SCHEMA = "schema";
-    public static final int ENCODING_VERSION = 2;
+    public static final int ENCODING_VERSION = 1;
 
     public enum Key {
         PERSISTED(0, true),

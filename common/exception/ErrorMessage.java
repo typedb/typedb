@@ -166,7 +166,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Database(7, "Database name must not start with an underscore.");
 
         private static final String codePrefix = "DBS";
-        private static final String messagePrefix = "Invalid Database Operations";
+        private static final String messagePrefix = "Invalid Database Operation";
 
         Database(int number, String message) {
             super(codePrefix, number, messagePrefix, message);
