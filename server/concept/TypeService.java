@@ -246,17 +246,17 @@ public class TypeService {
 
     private void getSupertypes(Type type, UUID reqID) {
         transactionSvc.stream(type.getSupertypes(), reqID,
-                              types -> getSupertypesResPart(reqID, types));
+                types -> getSupertypesResPart(reqID, types));
     }
 
     private void getSubtypes(Type type, UUID reqID) {
         transactionSvc.stream(type.getSubtypes(), reqID,
-                              types -> getSubtypesResPart(reqID, types));
+                types -> getSubtypesResPart(reqID, types));
     }
 
     private void getInstances(ThingType thingType, UUID reqID) {
         transactionSvc.stream(thingType.getInstances(), reqID,
-                              things -> getInstancesResPart(reqID, things));
+                things -> getInstancesResPart(reqID, things));
     }
 
     private void getOwns(ThingType thingType, ConceptProto.Type.Req typeReq, UUID reqID) {
@@ -270,18 +270,18 @@ public class TypeService {
 
     private void getOwns(ThingType thingType, boolean keysOnly, UUID reqID) {
         transactionSvc.stream(thingType.getOwns(keysOnly), reqID,
-                              attributeTypes -> getOwnsResPart(reqID, attributeTypes));
+                attributeTypes -> getOwnsResPart(reqID, attributeTypes));
     }
 
     private void getOwns(ThingType thingType, AttributeType.ValueType valueType,
                          boolean keysOnly, UUID reqID) {
         transactionSvc.stream(thingType.getOwns(valueType, keysOnly), reqID,
-                              attributeTypes -> getOwnsResPart(reqID, attributeTypes));
+                attributeTypes -> getOwnsResPart(reqID, attributeTypes));
     }
 
     private void getPlays(ThingType thingType, UUID reqID) {
         transactionSvc.stream(thingType.getPlays(), reqID,
-                              roleTypes -> getPlaysResPart(reqID, roleTypes));
+                roleTypes -> getPlaysResPart(reqID, roleTypes));
     }
 
     private void setOwns(ThingType thingType, ConceptProto.ThingType.SetOwns.Req setOwnsRequest,
@@ -322,7 +322,7 @@ public class TypeService {
 
     private void getOwners(AttributeType attributeType, boolean onlyKey, UUID reqID) {
         transactionSvc.stream(attributeType.getOwners(onlyKey), reqID,
-                              owners -> getOwnersResPart(reqID, owners));
+                owners -> getOwnersResPart(reqID, owners));
     }
 
     private void put(AttributeType attributeType, ConceptProto.Attribute.Value protoValue, UUID reqID) {
@@ -393,7 +393,7 @@ public class TypeService {
 
     private void getRelates(RelationType relationType, UUID reqID) {
         transactionSvc.stream(relationType.getRelates(), reqID,
-                              roleTypes -> getRelatesResPart(reqID, roleTypes));
+                roleTypes -> getRelatesResPart(reqID, roleTypes));
     }
 
     private void getRelatesForRoleLabel(RelationType relationType, String roleLabel, UUID reqID) {
@@ -418,12 +418,12 @@ public class TypeService {
 
     private void getRelationTypes(RoleType roleType, UUID reqID) {
         transactionSvc.stream(roleType.getRelationTypes(), reqID,
-                              relationTypes -> getRelationTypesResPart(reqID, relationTypes));
+                relationTypes -> getRelationTypesResPart(reqID, relationTypes));
     }
 
     private void getPlayers(RoleType roleType, UUID reqID) {
         transactionSvc.stream(roleType.getPlayers(), reqID,
-                              players -> getPlayersResPart(reqID, players));
+                players -> getPlayersResPart(reqID, players));
     }
 
     private void create(EntityType entityType, UUID reqID) {

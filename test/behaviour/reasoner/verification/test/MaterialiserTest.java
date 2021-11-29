@@ -56,7 +56,7 @@ public class MaterialiserTest {
     private static final String database = "MaterialiserTest";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
     private RocksTypeDB typeDB;
 
     @Before

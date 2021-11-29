@@ -56,7 +56,7 @@ public class ReasonerSteps {
     public static RocksTypeDB typedb;
     public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("typedb");
     public static Path logsDir = dataDir.resolve("logs");
-    public static Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logsDir);
+    public static Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logsDir);
     public static RocksSession session;
     public static RocksTransaction reasoningTx;
     public static String DATABASE = "typedb-reasoner-test";

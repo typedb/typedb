@@ -53,7 +53,7 @@ public class ConnectionSteps {
     public static RocksTypeDB typedb;
     public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("typedb");
     public static Path logsDir = dataDir.resolve("logs");
-    public static Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logsDir);
+    public static Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logsDir);
     public static List<TypeDB.Session> sessions = new ArrayList<>();
     public static List<CompletableFuture<TypeDB.Session>> sessionsParallel = new ArrayList<>();
     public static Map<TypeDB.Session, List<TypeDB.Transaction>> sessionsToTransactions = new HashMap<>();

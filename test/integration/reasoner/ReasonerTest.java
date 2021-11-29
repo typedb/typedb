@@ -52,7 +52,7 @@ public class ReasonerTest {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("query-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
+    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
     private static final String database = "reasoner-test";
     private static RocksTypeDB typedb;
 

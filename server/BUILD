@@ -73,12 +73,13 @@ native_java_libraries(
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_protobuf_protobuf_java",
-        "@maven//:info_picocli_picocli",
         "@maven//:io_grpc_grpc_api",
         "@maven//:io_grpc_grpc_netty",
         "@maven//:io_grpc_grpc_stub",
         "@maven//:io_netty_netty_all",
         "@maven//:org_slf4j_slf4j_api",
+        "@maven//:ch_qos_logback_logback_classic",
+        "@maven//:ch_qos_logback_logback_core",
     ],
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
@@ -92,11 +93,7 @@ java_binary(
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-mac"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    classpath_resources = [
-        "//server/conf:logback.xml",
-        "//server/conf:typedb-properties"
-    ],
-    data = [ "//server/conf:typedb-properties" ], # Separately needed for com.vaticle.typedb.core.server.common.Util
+    data = ["//server/conf:typedb"],
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-mac can depend directly on :server-mac (lib)
@@ -111,11 +108,7 @@ java_binary(
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-linux"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    classpath_resources = [
-        "//server/conf:logback.xml",
-        "//server/conf:typedb-properties"
-    ],
-    data = [ "//server/conf:typedb-properties" ], # Separately needed for com.vaticle.typedb.core.server.common.Util
+    data = ["//server/conf:typedb"],
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-linux can depend directly on :server-linux (lib)
@@ -130,11 +123,7 @@ java_binary(
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-windows"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    classpath_resources = [
-        "//server/conf:logback.xml",
-        "//server/conf:typedb-properties"
-    ],
-    data = [ "//server/conf:typedb-properties" ], # Separately needed for com.vaticle.typedb.core.server.common.Util
+    data = ["//server/conf:typedb"],
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-windows can depend directly on :server-windows (lib)
@@ -190,17 +179,13 @@ assemble_deps_common = [
 ]
 
 assemble_files = {
-    "//server/conf:logback": "server/conf/logback.xml",
-    "//server/conf:logback-debug": "server/conf/logback-debug.xml",
-    "//server/conf:typedb-properties": "server/conf/typedb.properties",
+    "//server/conf:typedb": "server/conf/typedb.yml",
     "//server/resources:logo": "server/resources/typedb-ascii.txt",
     "//:LICENSE": "LICENSE",
 }
 
 permissions = {
-    "server/conf/typedb.properties": "0755",
-    "server/conf/logback.xml": "0755",
-    "server/conf/logback-debug.xml": "0755",
+    "server/conf/typedb.yml" : "0755",
 }
 
 assemble_targz(

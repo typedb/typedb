@@ -62,7 +62,7 @@ public class BasicTest {
     private static final String database = "basic-test";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
 
     private static void assert_transaction_read(TypeDB.Transaction transaction) {
         assertTrue(transaction.isOpen());

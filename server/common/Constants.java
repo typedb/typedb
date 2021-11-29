@@ -20,22 +20,13 @@ package com.vaticle.typedb.core.server.common;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
-public class ServerDefaults {
+import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 
-    public static final Path TYPEDB_DIR = getTypedbDir();
-    public static final Path DATA_DIR = TYPEDB_DIR.resolve("server/data");
-    public static final Path LOGS_DIR = TYPEDB_DIR.resolve("server/logs");
-    public static final File PROPERTIES_FILE = TYPEDB_DIR.resolve("server/conf/typedb.properties").toFile();
-    public static final File ASCII_LOGO_FILE = TYPEDB_DIR.resolve("server/resources/typedb-ascii.txt").toFile();
-    public static final int DEFAULT_DATABASE_PORT = 1729;
+public class Constants {
 
-    private static Path getTypedbDir() {
-        String homeDir;
-        if ((homeDir = System.getProperty("typedb.dir")) == null) {
-            homeDir = System.getProperty("user.dir");
-        }
-        return Paths.get(homeDir);
-    }
+    static final File ASCII_LOGO_FILE = getTypedbDir().resolve("server/resources/typedb-ascii.txt").toFile();
+    static final Path CONFIG_PATH = getTypedbDir().resolve("server/conf/typedb.yml");
+    static final String TYPEDB_LOG_FILE = "typedb.log";
+    static final String TYPEDB_LOG_FILE_ARCHIVE_SUFFIX = "-%d{yyyy-MM}.%i.log.gz";
 }

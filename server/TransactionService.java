@@ -117,10 +117,14 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     @Override
-    public void onCompleted() { close(); }
+    public void onCompleted() {
+        close();
+    }
 
     @Override
-    public void onError(Throwable error) { close(error); }
+    public void onError(Throwable error) {
+        close(error);
+    }
 
     private synchronized void execute(TransactionProto.Transaction.Req request) {
         FactoryTracingThreadStatic.ThreadTrace trace = null;

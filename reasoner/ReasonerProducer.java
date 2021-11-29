@@ -82,7 +82,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
         this.sentReiterationRequests = false;
         this.requiresReiteration = false;
-        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
+        if (options.traceInference()) ResolutionTracer.initialise(options.reasonerDebuggerDir());
     }
 
     public ReasonerProducer(Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
@@ -103,7 +103,7 @@ public class ReasonerProducer implements Producer<ConceptMap> {
         this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
         this.sentReiterationRequests = false;
         this.requiresReiteration = false;
-        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
+        if (options.traceInference()) ResolutionTracer.initialise(options.reasonerDebuggerDir());
     }
 
     @Override
