@@ -49,7 +49,7 @@ public class StringAttributeTest {
     private static final String database = "string-attribute-test";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
 
     // unicode defines an integer for each representable symbol in the range 0 to 0x10FFFF
     private static final int UNICODE_CODE_POINT_START = 0x0;
