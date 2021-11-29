@@ -51,13 +51,18 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     @Override
     protected void exception(Throwable e) {}
 
-    protected <INLET_ID, UPSTREAM_ID> void requestInletStream(INLET_ID inletId, UPSTREAM_ID processorId) {
+    protected <UPS_CID, UPS_PID> void requestUpstreamProcessor(UPS_CID controllerId, UPS_PID processorId) {  // TODO: naming leaks domain
         // TODO: Can be called when:
         //  1. initialising a fixed set of upstream processors (would we like to do this a non async way instead?)
         //  2. an answer is found in a conjunction and is passed to the sibling
         //  3. an answer from a condition is passed up and needs to be materialised only when granted a lease from a lease processor
         // Starts a series of messages that will add a new inlet stream to the processor from a processor of the given id
-        controller.execute(actor -> actor.getUpstreamHandler(inletId, null).receiveUpstreamProcessorRequest(inletId, processorId, driver()));
+        controller.execute(actor -> actor.getUpstreamTransceiver(controllerId, null).receiveUpstreamProcessorRequest(controllerId, processorId, driver()));
+    }
+
+    protected <UPS_CID, UPS_PID, UPS_OUTPUT, UPS_PROCESSOR extends Processor<UPS_OUTPUT, UPS_PROCESSOR>> void receiveUpstreamProcessor(UPS_CID controllerId, UPS_PID processorId, Driver<UPS_PROCESSOR> processor) {
+        Processor<?, PROCESSOR>.InletManager<UPS_PID, UPS_OUTPUT, UPS_PROCESSOR> inletManager = getInletManager(controllerId);
+        inletManager.newInlet(processorId, processor);
     }
 
     // TODO: InletManagers are identified by upstream controller ids. These types are unknown so should be handled by child class, which will require casting

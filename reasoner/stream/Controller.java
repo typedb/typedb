@@ -28,7 +28,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 
-public abstract class Controller<CID, PID, OUTPUT, PROCESSOR extends Processor<OUTPUT, PROCESSOR>, CONTROLLER extends Controller<CID, PID, OUTPUT, PROCESSOR, CONTROLLER>> extends Actor<CONTROLLER> {
+public abstract class Controller<CID, PID, OUTPUT,
+        PROCESSOR extends Processor<OUTPUT, PROCESSOR>,
+        CONTROLLER extends Controller<CID, PID, OUTPUT, PROCESSOR, CONTROLLER>> extends Actor<CONTROLLER> {
 
     private final CID id;
     private final ActorExecutorGroup executorService;
@@ -50,8 +52,14 @@ public abstract class Controller<CID, PID, OUTPUT, PROCESSOR extends Processor<O
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc();
 
-    // TODO: Rename: UpstreamCommunicator/UpstreamRequester
-    protected abstract class UpstreamHandler<
+    protected abstract <
+            UPS_CID, UPS_PID,
+            UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, ?, UPS_PROCESSOR, UPS_CONTROLLER>,
+            UPS_PROCESSOR extends Processor<?, UPS_PROCESSOR>
+            > UpstreamTransceiver<UPS_CID, UPS_PID, ?, UPS_CONTROLLER, UPS_PROCESSOR> getUpstreamTransceiver(
+            UPS_CID id, @Nullable Driver<UPS_CONTROLLER> controller);  // TODO: We only need to include the controller here to propagate the generic types correctly
+
+    protected abstract class UpstreamTransceiver<
             UPS_CID, UPS_PID, UPS_OUTPUT,
             UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, UPS_OUTPUT, UPS_PROCESSOR, UPS_CONTROLLER>,
             UPS_PROCESSOR extends Processor<UPS_OUTPUT, UPS_PROCESSOR>
@@ -59,7 +67,7 @@ public abstract class Controller<CID, PID, OUTPUT, PROCESSOR extends Processor<O
 
         private final Map<Pair<UPS_CID, UPS_PID>, Driver<PROCESSOR>> processorRequesters;
 
-        UpstreamHandler() {
+        UpstreamTransceiver() {
             this.processorRequesters = new HashMap<>();
         }
 
@@ -78,25 +86,24 @@ public abstract class Controller<CID, PID, OUTPUT, PROCESSOR extends Processor<O
         public void receiveRequestedProcessor(UPS_CID controllerId, UPS_PID processorId, Driver<UPS_PROCESSOR> processor) {
             Driver<PROCESSOR> requester = processorRequesters.remove(new Pair<>(controllerId, processorId));
             assert requester != null;
+            sendRequestedProcessor(controllerId, processorId, processor, requester);
+        }
 
-            // TODO: Rename to sendRequestedProcessor. This shouldn't add the inlet but should just reply with the requested processor and controller and processor ids
-            requester.execute(actor -> {
-                Processor<?, PROCESSOR>.InletManager<UPS_PID, UPS_OUTPUT, UPS_PROCESSOR> inletManager = actor.getInletManager(controllerId);
-                inletManager.newInlet(processorId, processor);
-            });
+        private void sendRequestedProcessor(UPS_CID controllerId, UPS_PID processorId,
+                                            Driver<UPS_PROCESSOR> processor, Driver<PROCESSOR> requester) {
+            requester.execute(actor -> actor.receiveUpstreamProcessor(controllerId, processorId, processor));
         }
     }
 
-    protected abstract <
-            UPS_CID, UPS_PID,
-            UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, ?, UPS_PROCESSOR, UPS_CONTROLLER>,
-            UPS_PROCESSOR extends Processor<?, UPS_PROCESSOR>
-            > UpstreamHandler<UPS_CID, UPS_PID, ?, UPS_CONTROLLER, UPS_PROCESSOR> getUpstreamHandler(
-                    UPS_CID id, @Nullable Driver<UPS_CONTROLLER> controller);  // TODO: We only need to include the controller here to propagate the generic types correctly
-
-    public <REQ_CONTROLLER extends Controller<?, ?, ?, ?, REQ_CONTROLLER>> void receiveProcessorRequest(PID processorId, Driver<REQ_CONTROLLER> requester) {
+    public <REQ_CONTROLLER extends Controller<?, ?, ?, ?, REQ_CONTROLLER>> void receiveProcessorRequest(
+            PID processorId, Driver<REQ_CONTROLLER> requester) {
         Driver<PROCESSOR> processor = processors.computeIfAbsent(processorId, this::buildProcessor);
-        requester.execute(actor -> actor.getUpstreamHandler(id, driver()).receiveRequestedProcessor(id, processorId, processor));  // TODO: name sendRequestedProcessor
+        sendRequestedProcessor(processorId, requester, processor);
+    }
+
+    private <REQ_CONTROLLER extends Controller<?, ?, ?, ?, REQ_CONTROLLER>> void sendRequestedProcessor(
+            PID processorId, Driver<REQ_CONTROLLER> requester, Driver<PROCESSOR> processor) {
+        requester.execute(actor -> actor.getUpstreamTransceiver(id, driver()).receiveRequestedProcessor(id, processorId, processor));
     }
 
     @Override

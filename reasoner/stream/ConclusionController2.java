@@ -35,7 +35,7 @@ public class ConclusionController2 extends Controller<Rule.Conclusion, ConceptMa
     }
 
     @Override
-    protected <UPS_CID, UPS_PID, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, ?, ?, UPS_CONTROLLER>> UpstreamHandler<UPS_CID, UPS_PID, ?, UPS_CONTROLLER> getUpstreamHandler(UPS_CID id) {
+    protected <UPS_CID, UPS_PID, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, ?, ?, UPS_CONTROLLER>> UpstreamTransceiver<UPS_CID, UPS_PID, ?, UPS_CONTROLLER> getUpstreamHandler(UPS_CID id) {
         return null;
     }
 

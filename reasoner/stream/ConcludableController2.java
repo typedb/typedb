@@ -31,7 +31,7 @@ import java.util.function.Function;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class ConcludableController2 extends Controller<Concludable, ConceptMap, ConcludableController2.ConcludableAns, ConcludableController2.ConcludableProcessor, ConcludableController2> {
-    private final UpstreamHandler<Rule.Conclusion, ConceptMap, ConclusionController2.ConclusionAns, ConclusionController2, ConclusionProcessor> conclusionHandler;
+    private final UpstreamTransceiver<Rule.Conclusion, ConceptMap, ConclusionController2.ConclusionAns, ConclusionController2, ConclusionProcessor> conclusionHandler;
 
     protected ConcludableController2(Driver<ConcludableController2> driver, String name, Concludable id, ActorExecutorGroup executorService) {
         super(driver, name, id, executorService);
@@ -45,16 +45,16 @@ public class ConcludableController2 extends Controller<Concludable, ConceptMap, 
 
     @Override
     protected <UPS_CID, UPS_PID, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, ?, UPS_PROCESSOR,
-            UPS_CONTROLLER>, UPS_PROCESSOR extends Processor<?, UPS_PROCESSOR>> UpstreamHandler<UPS_CID, UPS_PID, ?,
-            UPS_CONTROLLER, UPS_PROCESSOR> getUpstreamHandler(UPS_CID id, @Nullable Driver<UPS_CONTROLLER> controller) {
+            UPS_CONTROLLER>, UPS_PROCESSOR extends Processor<?, UPS_PROCESSOR>> UpstreamTransceiver<UPS_CID, UPS_PID, ?,
+                                    UPS_CONTROLLER, UPS_PROCESSOR> getUpstreamTransceiver(UPS_CID id, @Nullable Driver<UPS_CONTROLLER> controller) {
         if (id instanceof Rule.Conclusion) {
-            return (UpstreamHandler<UPS_CID, UPS_PID, ?, UPS_CONTROLLER, UPS_PROCESSOR>) conclusionHandler;  // TODO: Using instanceof requires that we do a casting. Ideally we would avoid this.
+            return (UpstreamTransceiver<UPS_CID, UPS_PID, ?, UPS_CONTROLLER, UPS_PROCESSOR>) conclusionHandler;  // TODO: Using instanceof requires that we do a casting. Ideally we would avoid this.
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
-    class ConclusionHandler extends ConcludableController2.UpstreamHandler<Rule.Conclusion, ConceptMap, ConclusionController2.ConclusionAns, ConclusionController2, ConclusionProcessor> {
+    class ConclusionHandler extends UpstreamTransceiver<Rule.Conclusion, ConceptMap, ConclusionController2.ConclusionAns, ConclusionController2, ConclusionProcessor> {
 
         @Override
         protected Driver<ConclusionController2> getControllerForId(Rule.Conclusion id) {
