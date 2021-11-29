@@ -60,9 +60,11 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         controller.execute(actor -> actor.getUpstreamTransceiver(controllerId, null).receiveUpstreamProcessorRequest(controllerId, processorId, driver()));
     }
 
-    protected <UPS_CID, UPS_PID, UPS_OUTPUT, UPS_PROCESSOR extends Processor<UPS_OUTPUT, UPS_PROCESSOR>> void receiveUpstreamProcessor(UPS_CID controllerId, UPS_PID processorId, Driver<UPS_PROCESSOR> processor) {
-        Processor<?, PROCESSOR>.InletManager<UPS_PID, UPS_OUTPUT, UPS_PROCESSOR> inletManager = getInletManager(controllerId);
-        inletManager.newInlet(processorId, processor);
+    protected <UPS_CID, UPS_PID, UPS_OUTPUT,
+            UPS_PROCESSOR extends Processor<UPS_OUTPUT, UPS_PROCESSOR>> void receiveUpstreamProcessor(
+                    UPS_CID controllerId, UPS_PID processorId, Driver<UPS_PROCESSOR> processor) {
+        InletManager<UPS_PID, UPS_OUTPUT, UPS_PROCESSOR> inletManager = getInletManager(controllerId);
+        inletManager.newInlet(processorId, new Connection<>(processor, driver()));
     }
 
     // TODO: InletManagers are identified by upstream controller ids. These types are unknown so should be handled by child class, which will require casting
@@ -79,11 +81,11 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
     // TODO: Note that the identifier for an upstream controller (e.g. resolvable) is different to for an upstream processor (resolvable plus bounds). So inletmanagers are managed based on the former.
 
-    public abstract class InletManager<INLET_ID, INPUT, UPSTREAM_PROCESSOR extends Processor<INPUT, UPSTREAM_PROCESSOR>> implements Pullable<INPUT> {
+    public static abstract class InletManager<INLET_ID, INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>> implements Pullable<INPUT> {
 
-        public abstract void newInlet(INLET_ID id, Driver<UPSTREAM_PROCESSOR> newInlet);  // TODO: Should be called by a handler in the controller
+        public abstract void newInlet(INLET_ID id, Connection<?, UPS_PROCESSOR> connection);  // TODO: Should be called by a handler in the controller
 
-        public class Single extends InletManager<INLET_ID, INPUT, UPSTREAM_PROCESSOR> {
+        public static class Single<INLET_ID, INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>> extends InletManager<INLET_ID, INPUT, UPS_PROCESSOR> {
 
             @Override
             public Optional<INPUT> pull() {
@@ -91,13 +93,14 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
 
             @Override
-            public void newInlet(INLET_ID id, Driver<UPSTREAM_PROCESSOR> newInlet) {
+            public void newInlet(INLET_ID id, Connection<?, UPS_PROCESSOR> connection) {
+                // TODO: Allow one inlet to be established either via this method or via constructor, and after that throw an exception
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
 
         }
 
-        public class DynamicMulti extends InletManager<INLET_ID, INPUT, UPSTREAM_PROCESSOR> {
+        public static class DynamicMulti<INLET_ID, INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>> extends InletManager<INLET_ID, INPUT, UPS_PROCESSOR> {
 
             LinkedHashMap<INLET_ID, Inlet> inlets;  // TODO: Does this need to be a map?
 
@@ -106,9 +109,8 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
 
             @Override
-            public void newInlet(INLET_ID id, Driver<UPSTREAM_PROCESSOR> upstreamProcessor) {
-                Connection connection = new Connection(upstreamProcessor, driver());
-                upstreamProcessor.execute(actor -> actor.outletManager().makeConnection(connection));  // TODO: Fix warning
+            public void newInlet(INLET_ID id, Connection<?, UPS_PROCESSOR> connection) {
+                connection.upstreamProcessor().execute(actor -> actor.outletManager().makeConnection(connection));
                 inlets.put(id, new Inlet(connection));
             }
 
@@ -129,10 +131,10 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
         public class Inlet implements AsyncPullable {
 
-            private final Connection connection;
+            private final Processor.Connection<?, UPS_PROCESSOR> connection;
             private boolean isPulling;
 
-            protected Inlet(Connection connection) {
+            protected Inlet(Processor.Connection<?, UPS_PROCESSOR> connection) {
                 this.connection = connection;
                 this.isPulling = false;
             }
@@ -155,31 +157,11 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
         }
 
-        public class Connection {
-
-            private final Driver<PROCESSOR> downstreamProcessor;
-            private final Driver<UPSTREAM_PROCESSOR> upstreamProcessor;
-
-            protected Connection(Driver<UPSTREAM_PROCESSOR> upstreamProcessor, Driver<PROCESSOR> downstreamProcessor) {
-                this.downstreamProcessor = downstreamProcessor;
-                this.upstreamProcessor = upstreamProcessor;
-            }
-
-            private Driver<UPSTREAM_PROCESSOR> upstreamProcessor() {
-                return upstreamProcessor;
-            }
-
-            Driver<PROCESSOR> downstreamProcessor() {
-                return downstreamProcessor;
-            }
-
-        }
-
     }
 
     public abstract class OutletManager<OUTLET_ID, INPUT> implements AsyncPullable {
 
-        public abstract void makeConnection(InletManager.Connection newOutlet);  // TODO: Fix override error
+        public abstract void makeConnection(Connection newOutlet);  // TODO: Fix override error
 
         public void connect(Operation<?, OUTPUT> operation) {
             // TODO: set the operation to pull from when answers required
@@ -188,7 +170,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         public class Single extends OutletManager {
 
             @Override
-            public void makeConnection(InletManager.Connection newOutlet) {
+            public void makeConnection(Connection newOutlet) {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
 
@@ -201,7 +183,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         public class DynamicMulti extends OutletManager {
 
             @Override
-            public void makeConnection(InletManager.Connection newOutlet) {
+            public void makeConnection(Connection newOutlet) {
                 // TODO: Store the new outlet
             }
 
@@ -247,4 +229,24 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     }
 
     public static class Buffer<T> {}
+
+    public static class Connection<PROCESSOR extends Processor<?, PROCESSOR>, UPS_PROCESSOR extends Processor<?, UPS_PROCESSOR>> {
+
+        private final Driver<PROCESSOR> downstreamProcessor;
+        private final Driver<UPS_PROCESSOR> upstreamProcessor;
+
+        protected Connection(Driver<UPS_PROCESSOR> upstreamProcessor, Driver<PROCESSOR> downstreamProcessor) {
+            this.downstreamProcessor = downstreamProcessor;
+            this.upstreamProcessor = upstreamProcessor;
+        }
+
+        private Driver<UPS_PROCESSOR> upstreamProcessor() {
+            return upstreamProcessor;
+        }
+
+        Driver<PROCESSOR> downstreamProcessor() {
+            return downstreamProcessor;
+        }
+
+    }
 }
