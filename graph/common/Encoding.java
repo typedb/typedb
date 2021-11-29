@@ -50,6 +50,7 @@ public class Encoding {
 
     public static final String ROCKS_DATA = "data";
     public static final String ROCKS_SCHEMA = "schema";
+    public static final int ENCODING_VERSION = 1;
 
     public enum Key {
         PERSISTED(0, true),
@@ -78,7 +79,7 @@ public class Encoding {
         PERSISTED(2),
         IMMUTABLE(3);
 
-        private int status;
+        private final int status;
 
         Status(int status) {
             this.status = status;
@@ -143,28 +144,28 @@ public class Encoding {
      * The values in this class will be used as 'prefixes' within an IID for every database object,
      * and must not overlap with each other.
      *
-     * A prefix is 1 unsigned byte, up to the value of 199. Values 200-255 are reserved for TypeDB Cluster.
+     * A prefix is 1 unsigned byte, up to the value of 179. Values 180-255 are reserved for TypeDB Cluster.
      */
     public enum Prefix {
+        SYSTEM(0, PrefixType.SYSTEM),
         // leave large open range for future indices
-        INDEX_TYPE(0, PrefixType.INDEX),
-        INDEX_RULE(10, PrefixType.INDEX),
-        INDEX_ATTRIBUTE(20, PrefixType.INDEX),
-        STATISTICS_THINGS(50, PrefixType.STATISTICS),
-        STATISTICS_COUNT_JOB(51, PrefixType.STATISTICS),
-        STATISTICS_COUNTED(52, PrefixType.STATISTICS),
-        STATISTICS_SNAPSHOT(53, PrefixType.STATISTICS),
-        SYSTEM(70, PrefixType.SYSTEM), // TODO reorganise SYSTEM to come first when releasing an incompatible storage
+        INDEX_TYPE(20, PrefixType.INDEX),
+        INDEX_RULE(21, PrefixType.INDEX),
+        INDEX_ATTRIBUTE(30, PrefixType.INDEX),
+        STATISTICS_THINGS(60, PrefixType.STATISTICS),
+        STATISTICS_COUNT_JOB(61, PrefixType.STATISTICS),
+        STATISTICS_COUNTED(62, PrefixType.STATISTICS),
+        STATISTICS_SNAPSHOT(63, PrefixType.STATISTICS),
         VERTEX_THING_TYPE(100, PrefixType.TYPE),
         VERTEX_ENTITY_TYPE(110, PrefixType.TYPE),
-        VERTEX_ATTRIBUTE_TYPE(120, PrefixType.TYPE),
-        VERTEX_RELATION_TYPE(130, PrefixType.TYPE),
-        VERTEX_ROLE_TYPE(140, PrefixType.TYPE),
-        VERTEX_ENTITY(150, PrefixType.THING),
-        VERTEX_ATTRIBUTE(160, PrefixType.THING),
-        VERTEX_RELATION(170, PrefixType.THING),
-        VERTEX_ROLE(180, PrefixType.THING),
-        STRUCTURE_RULE(190, PrefixType.RULE);
+        VERTEX_ATTRIBUTE_TYPE(111, PrefixType.TYPE),
+        VERTEX_RELATION_TYPE(112, PrefixType.TYPE),
+        VERTEX_ROLE_TYPE(113, PrefixType.TYPE),
+        VERTEX_ENTITY(130, PrefixType.THING),
+        VERTEX_ATTRIBUTE(131, PrefixType.THING),
+        VERTEX_RELATION(132, PrefixType.THING),
+        VERTEX_ROLE(133, PrefixType.THING),
+        STRUCTURE_RULE(160, PrefixType.RULE);
 
         private static final ByteMap<Prefix> prefixByKey = ByteMap.create(
                 pair(SYSTEM.key, SYSTEM),
@@ -1006,7 +1007,9 @@ public class Encoding {
 
     public enum System {
 
-        TRANSACTION_DUMMY_WRITE(0);
+        // WARNING: do not change encoding version key, or compatibility checks may break
+        ENCODING_VERSION_KEY(0),
+        TRANSACTION_DUMMY_WRITE(1);
 
         private final ByteArray bytes;
 

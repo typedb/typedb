@@ -54,6 +54,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
+import static com.vaticle.typedb.core.graph.common.Encoding.ENCODING_VERSION;
+import static com.vaticle.typedb.core.graph.common.Encoding.System.ENCODING_VERSION_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.System.TRANSACTION_DUMMY_WRITE;
 
 public abstract class RocksStorage implements Storage {
@@ -300,6 +302,15 @@ public abstract class RocksStorage implements Storage {
         public Schema(RocksDatabase database, RocksTransaction transaction) {
             super(database.rocksSchema, transaction);
             this.schemaKeyGenerator = database.schemaKeyGenerator();
+        }
+
+        public void initialiseEncoding() {
+            putUntracked(ENCODING_VERSION_KEY.bytes(), ByteArray.encodeInt(ENCODING_VERSION));
+        }
+
+        public int getEncoding() {
+            ByteArray encoding = get(ENCODING_VERSION_KEY.bytes());
+            return encoding == null || encoding.isEmpty() ? 0 : encoding.decodeInt();
         }
 
         @Override

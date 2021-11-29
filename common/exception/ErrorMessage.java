@@ -149,21 +149,24 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
     }
 
     public static class Database extends ErrorMessage {
+        public static final Database INCOMPATIBLE_ENCODING =
+                new Database(1, "Database '%s' has incompatible data version '%s' - this server supports " +
+                        "version '%s'. (Did you copy a database across incompatible server versions?)");
         public static final Database DATABASE_MANAGER_CLOSED =
-                new Database(1, "Attempted to use database manager when it has been closed.");
+                new Database(2, "Attempted to use database manager when it has been closed.");
         public static final Database DATABASE_EXISTS =
-                new Database(2, "The database with the name '%s' already exists.");
+                new Database(3, "The database with the name '%s' already exists.");
         public static final Database DATABASE_NOT_FOUND =
-                new Database(3, "The database with the name '%s' does not exist.");
+                new Database(4, "The database with the name '%s' does not exist.");
         public static final Database DATABASE_DELETED =
-                new Database(4, "Database with the name '%s' has been deleted.");
+                new Database(5, "Database with the name '%s' has been deleted.");
         public static final Database DATABASE_CLOSED =
-                new Database(5, "Attempted to open a new session from the database '%s' that has been closed.");
+                new Database(6, "Attempted to open a new session from the database '%s' that has been closed.");
         public static final Database DATABASE_NAME_RESERVED =
-                new Database(6, "Database name must not start with an underscore.");
+                new Database(7, "Database name must not start with an underscore.");
 
         private static final String codePrefix = "DBS";
-        private static final String messagePrefix = "Invalid Database Operations";
+        private static final String messagePrefix = "Invalid Database Operation";
 
         Database(int number, String message) {
             super(codePrefix, number, messagePrefix, message);
@@ -386,7 +389,9 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         private static final String codePrefix = "SCG";
         private static final String messagePrefix = "Invalid Schema Graph Operation";
 
-        TypeGraph(int number, String message) { super(codePrefix, number, messagePrefix, message); }
+        TypeGraph(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
+        }
     }
 
     public static class TypeRead extends ErrorMessage {
@@ -580,7 +585,9 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         private static final String codePrefix = "RSN";
         private static final String messagePrefix = "Reasoner Error";
 
-        Reasoner(int number, String message) { super(codePrefix, number, messagePrefix, message); }
+        Reasoner(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
+        }
     }
 
     public static class Migrator extends ErrorMessage {
