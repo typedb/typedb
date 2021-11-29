@@ -51,7 +51,11 @@ public abstract class Controller<CID, PID, OUTPUT, PROCESSOR extends Processor<O
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc();
 
     // TODO: Rename: UpstreamCommunicator/UpstreamRequester
-    protected abstract class UpstreamHandler<UPS_CID, UPS_PID, UPS_OUTPUT, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, UPS_OUTPUT, UPS_PROCESSOR, UPS_CONTROLLER>, UPS_PROCESSOR extends Processor<UPS_OUTPUT, UPS_PROCESSOR>> {
+    protected abstract class UpstreamHandler<
+            UPS_CID, UPS_PID, UPS_OUTPUT,
+            UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, UPS_OUTPUT, UPS_PROCESSOR, UPS_CONTROLLER>,
+            UPS_PROCESSOR extends Processor<UPS_OUTPUT, UPS_PROCESSOR>
+            > {
 
         private final Map<Pair<UPS_CID, UPS_PID>, Driver<PROCESSOR>> processorRequesters;
 

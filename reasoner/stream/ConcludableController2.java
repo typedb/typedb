@@ -23,18 +23,19 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.reasoner.stream.ConclusionController2.ConclusionProcessor;
 
+import javax.annotation.Nullable;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class ConcludableController2 extends Controller<Concludable, ConceptMap, ConcludableController2.ConcludableAns, ConcludableController2.ConcludableProcessor, ConcludableController2> {
-    private UpstreamHandler<Rule.Conclusion, ?, ?, ?, ?> conclusionHandler;
-//    private final UpstreamHandler<Rule.Conclusion, ConceptMap, ?, ConclusionController2> conclusionHandler;
+    private final UpstreamHandler<Rule.Conclusion, ConceptMap, ConclusionController2.ConclusionAns, ConclusionController2, ConclusionProcessor> conclusionHandler;
 
     protected ConcludableController2(Driver<ConcludableController2> driver, String name, Concludable id, ActorExecutorGroup executorService) {
         super(driver, name, id, executorService);
-//        this.conclusionHandler = new Controller.UpstreamHandler<Rule.Conclusion, ConceptMap, ?, ConclusionController2>();
+        this.conclusionHandler = new ConclusionHandler();
     }
 
     @Override
@@ -43,40 +44,17 @@ public class ConcludableController2 extends Controller<Concludable, ConceptMap, 
     }
 
     @Override
-    protected <UPS_CID, UPS_PID, UPS_OUTPUT, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, UPS_OUTPUT,
-            UPS_PROCESSOR, UPS_CONTROLLER>, UPS_PROCESSOR extends Processor<UPS_OUTPUT, UPS_PROCESSOR>> UpstreamHandler<UPS_CID, UPS_PID, UPS_OUTPUT, UPS_CONTROLLER, UPS_PROCESSOR> getUpstreamHandler(UPS_CID id) {
+    protected <UPS_CID, UPS_PID, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, ?, UPS_PROCESSOR,
+            UPS_CONTROLLER>, UPS_PROCESSOR extends Processor<?, UPS_PROCESSOR>> UpstreamHandler<UPS_CID, UPS_PID, ?,
+            UPS_CONTROLLER, UPS_PROCESSOR> getUpstreamHandler(UPS_CID id, @Nullable Driver<UPS_CONTROLLER> controller) {
         if (id instanceof Rule.Conclusion) {
-            return new ConclusionHandler();
+            return (UpstreamHandler<UPS_CID, UPS_PID, ?, UPS_CONTROLLER, UPS_PROCESSOR>) conclusionHandler;  // TODO: Using instanceof requires that we do a casting. Ideally we would avoid this.
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
-//    @Override
-//    protected <UPS_CID> UpstreamHandler<UPS_CID, ?, ?, ?, ?> getUpstreamHandler(UPS_CID id) {
-//        if (id instanceof Rule.Conclusion) {
-//            return new ConclusionHandler();
-//        } else {
-//            throw TypeDBException.of(ILLEGAL_STATE);
-//        }
-//
-//    }
-
-//    @Override
-//    protected Function<Driver<ConcludableProcessor>, ConcludableProcessor> createProcessorFunc() {
-//        Processor<ConcludableAns, ConcludableProcessor>.OutletManager outletManager = null;
-//        return d -> new ConcludableProcessor(d, driver(), "", outletManager);
-//    }
-//
-//    @Override
-//    protected <UPS_CID, UPS_PID, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, ?, ?, UPS_CONTROLLER>> UpstreamHandler<UPS_CID, UPS_PID, ?, UPS_CONTROLLER> getUpstreamHandler(UPS_CID id) {
-//        if (id instanceof Rule.Conclusion) {
-//            return conclusionHandler;
-//        }
-//
-//    }
-
-    class ConclusionHandler extends Controller.UpstreamHandler<Rule.Conclusion, ConceptMap, ?, ConclusionController2> {
+    class ConclusionHandler extends ConcludableController2.UpstreamHandler<Rule.Conclusion, ConceptMap, ConclusionController2.ConclusionAns, ConclusionController2, ConclusionProcessor> {
 
         @Override
         protected Driver<ConclusionController2> getControllerForId(Rule.Conclusion id) {
