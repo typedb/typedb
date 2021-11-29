@@ -44,13 +44,17 @@ public abstract class Controller<CID, PID, OUTPUT,
         this.processors = new HashMap<>();
     }
 
+    protected CID id() {
+        return id;
+    }
+
     private Actor.Driver<PROCESSOR> buildProcessor(PID id) {
-        Actor.Driver<PROCESSOR> processor = Actor.driver(createProcessorFunc(), executorService);
+        Actor.Driver<PROCESSOR> processor = Actor.driver(createProcessorFunc(id), executorService);
         processors.put(id, processor);
         return processor;
     }
 
-    protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc();
+    protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PID id);
 
     protected abstract <
             UPS_CID, UPS_PID,

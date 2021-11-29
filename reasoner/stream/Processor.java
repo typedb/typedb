@@ -159,15 +159,11 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
     }
 
-    public abstract class OutletManager<OUTLET_ID, INPUT> implements AsyncPullable {
+    public static abstract class OutletManager<INPUT> implements AsyncPullable {
 
         public abstract void makeConnection(Connection newOutlet);  // TODO: Fix override error
 
-        public void connect(Operation<?, OUTPUT> operation) {
-            // TODO: set the operation to pull from when answers required
-        }
-
-        public class Single extends OutletManager {
+        public static class Single extends OutletManager {
 
             @Override
             public void makeConnection(Connection newOutlet) {
@@ -180,7 +176,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
         }
 
-        public class DynamicMulti extends OutletManager {
+        public static class DynamicMulti extends OutletManager {
 
             @Override
             public void makeConnection(Connection newOutlet) {
