@@ -73,10 +73,10 @@ public class CommandLine {
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
             if (arg.startsWith(Option.PREFIX)) {
-                int eqIndex = arg.indexOf("=");
-                if (eqIndex != -1) options.add(new Option(arg.substring(2, eqIndex), arg.substring(eqIndex)));
+                int index = arg.indexOf("=");
+                if (index != -1) options.add(new Option(arg.substring(2, index), arg.substring(index + 1)));
                 else if (args[i + 1].startsWith(Option.PREFIX)) options.add(new Option(arg.substring(2)));
-                else options.add(new Option(arg.substring(2), args[++i].substring(2)));
+                else options.add(new Option(arg.substring(2), args[++i]));
             } else {
                 throw TypeDBException.of(CLI_OPTION_MISSING_PREFIX, Option.PREFIX, arg);
             }
