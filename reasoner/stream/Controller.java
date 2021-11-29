@@ -22,6 +22,7 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -82,21 +83,16 @@ public abstract class Controller<CID, PID, OUTPUT, PROCESSOR extends Processor<O
         }
     }
 
-    // Child classes implement a retrieval mechanism based on the type of upstream id to find a handler for it.
-    // the casting required here can't be done without the framework having knowledge of the identifier types, this needs solving
-    protected abstract <UPS_CID, UPS_PID, UPS_OUTPUT, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, UPS_OUTPUT, UPS_PROCESSOR, UPS_CONTROLLER>, UPS_PROCESSOR extends Processor<UPS_OUTPUT, UPS_PROCESSOR>> UpstreamHandler<UPS_CID, UPS_PID, UPS_OUTPUT, UPS_CONTROLLER, UPS_PROCESSOR> getUpstreamHandler(UPS_CID id);
+    protected abstract <
+            UPS_CID, UPS_PID,
+            UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, ?, UPS_PROCESSOR, UPS_CONTROLLER>,
+            UPS_PROCESSOR extends Processor<?, UPS_PROCESSOR>
+            > UpstreamHandler<UPS_CID, UPS_PID, ?, UPS_CONTROLLER, UPS_PROCESSOR> getUpstreamHandler(
+                    UPS_CID id, @Nullable Driver<UPS_CONTROLLER> controller);  // TODO: We only need to include the controller here to propagate the generic types correctly
 
-
-//    private UpstreamHandler<CID, PID, OUTPUT, CONTROLLER, PROCESSOR> getUpstreamHandlerFromDownstream(CID id) {
-//
-//    }
-
-    public <REQ_CID, REQ_PID, REQ_OUTPUT, REQ_CONTROLLER extends Controller<REQ_CID, REQ_PID, REQ_OUTPUT, REQ_PROCESSOR, REQ_CONTROLLER>, REQ_PROCESSOR extends Processor<REQ_OUTPUT, REQ_PROCESSOR>> void receiveProcessorRequest(PID processorId, Driver<REQ_CONTROLLER> requester) {
+    public <REQ_CONTROLLER extends Controller<?, ?, ?, ?, REQ_CONTROLLER>> void receiveProcessorRequest(PID processorId, Driver<REQ_CONTROLLER> requester) {
         Driver<PROCESSOR> processor = processors.computeIfAbsent(processorId, this::buildProcessor);
-        requester.execute(actor -> {
-//            UpstreamHandler<CID, PID, OUTPUT, CONTROLLER, PROCESSOR> h = actor.getUpstreamHandler(id);  // TODO: Why doesn't this work?
-            actor.getUpstreamHandler(id).receiveRequestedProcessor(id, processorId, processor);
-        });  // TODO: name sendRequestedProcessor
+        requester.execute(actor -> actor.getUpstreamHandler(id, driver()).receiveRequestedProcessor(id, processorId, processor));  // TODO: name sendRequestedProcessor
     }
 
     @Override

@@ -57,7 +57,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         //  2. an answer is found in a conjunction and is passed to the sibling
         //  3. an answer from a condition is passed up and needs to be materialised only when granted a lease from a lease processor
         // Starts a series of messages that will add a new inlet stream to the processor from a processor of the given id
-        controller.execute(actor -> actor.getUpstreamHandler(inletId).receiveUpstreamProcessorRequest(inletId, processorId, driver()));
+        controller.execute(actor -> actor.getUpstreamHandler(inletId, null).receiveUpstreamProcessorRequest(inletId, processorId, driver()));
     }
 
     // TODO: InletManagers are identified by upstream controller ids. These types are unknown so should be handled by child class, which will require casting
