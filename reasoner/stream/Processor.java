@@ -40,9 +40,9 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     private final Driver<? extends Controller<?, ?, OUTPUT, PROCESSOR, ?>> controller;
     private final OutletManager<OUTPUT> outletManager;
 
-    public Processor(Driver<PROCESSOR> driver,
-                     Driver<? extends Controller<?, ?, OUTPUT, PROCESSOR, ?>> controller,
-                     String name, OutletManager<OUTPUT> outletManager) {
+    protected Processor(Driver<PROCESSOR> driver,
+                        Driver<? extends Controller<?, ?, OUTPUT, PROCESSOR, ?>> controller,
+                        String name, OutletManager<OUTPUT> outletManager) {
         super(driver, name);
         this.controller = controller;
         this.outletManager = outletManager;
@@ -55,37 +55,24 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     @Override
     protected void exception(Throwable e) {}
 
-    protected <UPS_CID, UPS_PID> void requestUpstreamProcessor(UPS_CID controllerId, UPS_PID processorId) {  // TODO: naming leaks domain
-        // TODO: Can be called when:
-        //  1. initialising a fixed set of upstream processors (would we like to do this a non async way instead?)
-        //  2. an answer is found in a conjunction and is passed to the sibling
-        //  3. an answer from a condition is passed up and needs to be materialised only when granted a lease from a lease processor
-        // Starts a series of messages that will add a new inlet stream to the processor from a processor of the given id
-        controller.execute(actor -> actor.getUpstreamTransceiver(controllerId, null).receiveUpstreamProcessorRequest(controllerId, processorId, driver()));
+    protected <PACKET, UPS_CID, UPS_PID, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>>
+    void requestConnection(Connection.Builder<PACKET, PROCESSOR, UPS_CID, UPS_PID, UPS_PROCESSOR> connectionBuilder) {
+        controller.execute(actor -> actor.findUpstreamConnection(connectionBuilder));
     }
 
-    protected <UPS_CID, UPS_PID, UPS_OUTPUT, UPS_PROCESSOR extends Processor<UPS_OUTPUT, UPS_PROCESSOR>> void receiveUpstreamProcessor(
-            UPS_CID controllerId, Driver<UPS_PROCESSOR> processor
-    ) {
-        Connection.Builder<UPS_OUTPUT, PROCESSOR, UPS_PROCESSOR> connectionBuilder = new Connection.Builder<>(driver(), processor);
-        InletManager<UPS_PID, UPS_OUTPUT, UPS_PROCESSOR> inletManager = getInletManager(controllerId);
-        connectionBuilder.addInlet(inletManager.newInlet());
-        processor.execute(actor -> buildConnection(connectionBuilder));
-    }
-
-    protected void buildConnection(Connection.Builder<OUTPUT, ?, PROCESSOR> connectionBuilder) {
+    protected <DNS_PROCESSOR extends Processor<?, DNS_PROCESSOR>>
+    void buildConnection(Connection.Builder<OUTPUT, DNS_PROCESSOR, ?, ?, PROCESSOR> connectionBuilder) {
         OutletManager<OUTPUT>.Outlet newOutlet = outletManager().newOutlet();
-        Connection<?, PROCESSOR> connection = connectionBuilder.addOutlet(newOutlet).build();
+        Connection<DNS_PROCESSOR, PROCESSOR> connection =
+                connectionBuilder.addOutlet(newOutlet).addUpstreamProcessor(driver()).build();
         newOutlet.attach(connection);
-        connection.downstreamProcessor().execute(actor -> actor.finaliseConnection(connection));
+        connection.downstreamProcessor().execute(actor -> actor.setReady(connection));
     }
 
-    protected void finaliseConnection(Connection<PROCESSOR, UPS_PROCESSOR> connection) {
+    protected <UPS_PROCESSOR extends Processor<?, UPS_PROCESSOR>> void setReady(Connection<PROCESSOR, UPS_PROCESSOR> connection) {
         connection.inlet().attach(connection);
+        // TODO: If inlet wants to pull, trigger pulling
     }
-
-    // TODO: InletManagers are identified by upstream controller ids. These types are unknown so should be handled by child class, which will require casting
-    public abstract <INLET_MANAGER_ID, INLET_ID, INPUT, UPSTREAM_PROCESSOR extends Processor<INPUT, UPSTREAM_PROCESSOR>> InletManager<INLET_ID, INPUT, UPSTREAM_PROCESSOR> getInletManager(INLET_MANAGER_ID controllerId);
 
     interface Pullable<T> {
         Poller<T> pull();  // Should return a Poller since if there is no answer now there may be in the future
@@ -101,11 +88,11 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
     // TODO: Note that the identifier for an upstream controller (e.g. resolvable) is different to for an upstream processor (resolvable plus bounds). So inletmanagers are managed based on the former.
 
-    static abstract class InletManager<INLET_ID, INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>> implements Pullable<INPUT> {
+    static abstract class InletManager<INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>> implements Pullable<INPUT> {
 
         public abstract Inlet newInlet();  // TODO: Should be called by a handler in the controller
 
-        public static class Single<INLET_ID, INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>> extends InletManager<INLET_ID, INPUT, UPS_PROCESSOR> {
+        public static class Single<INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>> extends InletManager<INPUT, UPS_PROCESSOR> {
 
             @Override
             public Poller<INPUT> pull() {
@@ -113,14 +100,14 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
 
             @Override
-            public InletManager<INLET_ID, INPUT, UPS_PROCESSOR>.Inlet newInlet() {
+            public InletManager<INPUT, UPS_PROCESSOR>.Inlet newInlet() {
                 // TODO: Allow one inlet to be established either via this method or via constructor, and after that throw an exception
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
 
         }
 
-        static class DynamicMulti<INLET_ID, INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>> extends InletManager<INLET_ID, INPUT, UPS_PROCESSOR> {
+        static class DynamicMulti<INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>> extends InletManager<INPUT, UPS_PROCESSOR> {
 
             Set<Inlet> inlets;  // TODO: Does this need to be a map?
 
@@ -129,8 +116,8 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
 
             @Override
-            public InletManager<INLET_ID, INPUT, UPS_PROCESSOR>.Inlet newInlet() {
-                InletManager<INLET_ID, INPUT, UPS_PROCESSOR>.Inlet newInlet = new Inlet();
+            public InletManager<INPUT, UPS_PROCESSOR>.Inlet newInlet() {
+                InletManager<INPUT, UPS_PROCESSOR>.Inlet newInlet = new Inlet();
                 inlets.add(newInlet);
                 return newInlet;
             }
@@ -308,10 +295,10 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
         private final Driver<PROCESSOR> downstreamProcessor;
         private final Driver<UPS_PROCESSOR> upstreamProcessor;
-        private final InletManager<?, ?, UPS_PROCESSOR>.Inlet inlet;
+        private final InletManager<?, UPS_PROCESSOR>.Inlet inlet;
         private final OutletManager<?>.Outlet outlet;
 
-        public Connection(Driver<PROCESSOR> downstreamProcessor, Driver<UPS_PROCESSOR> upstreamProcessor, InletManager<?, ?, UPS_PROCESSOR>.Inlet inlet, OutletManager<?>.Outlet outlet) {
+        public Connection(Driver<PROCESSOR> downstreamProcessor, Driver<UPS_PROCESSOR> upstreamProcessor, InletManager<?, UPS_PROCESSOR>.Inlet inlet, OutletManager<?>.Outlet outlet) {
             this.downstreamProcessor = downstreamProcessor;
             this.upstreamProcessor = upstreamProcessor;
             this.inlet = inlet;
@@ -330,34 +317,52 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             return outlet;
         }
 
-        InletManager<?, ?, UPS_PROCESSOR>.Inlet inlet() {
+        InletManager<?, UPS_PROCESSOR>.Inlet inlet() {
             return inlet;
         }
 
-        public static class Builder<PACKET, PROCESSOR extends Processor<?, PROCESSOR>, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> {
+        public static class Builder<PACKET, PROCESSOR extends Processor<?, PROCESSOR>, UPS_CID, UPS_PID, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> {
 
             private final Driver<PROCESSOR> downstreamProcessor;
-            private final Driver<UPS_PROCESSOR> upstreamProcessor;
-            private InletManager<?, ?, UPS_PROCESSOR>.Inlet inlet;
+            private final UPS_CID upstreamControllerId;
+            private Driver<UPS_PROCESSOR> upstreamProcessor;
+            private final UPS_PID upstreamProcessorId;
+            private final InletManager<?, UPS_PROCESSOR>.Inlet inlet;
             private OutletManager<PACKET>.Outlet outlet;
 
-            protected Builder(Driver<PROCESSOR> downstreamProcessor, Driver<UPS_PROCESSOR> upstreamProcessor) {
+            protected Builder(Driver<PROCESSOR> downstreamProcessor, UPS_CID upstreamControllerId,
+                              UPS_PID upstreamProcessorId, InletManager<PACKET, UPS_PROCESSOR>.Inlet inlet) {
                 this.downstreamProcessor = downstreamProcessor;
-                this.upstreamProcessor = upstreamProcessor;
-            }
-
-            protected Builder<PACKET, PROCESSOR, UPS_PROCESSOR> addInlet(InletManager<?, PACKET, UPS_PROCESSOR>.Inlet inlet) {
+                this.upstreamControllerId = upstreamControllerId;
+                this.upstreamProcessorId = upstreamProcessorId;
                 this.inlet = inlet;
-                return this;
             }
 
-            protected Builder<PACKET, PROCESSOR, UPS_PROCESSOR> addOutlet(OutletManager<PACKET>.Outlet outlet) {
+            UPS_CID upstreamControllerId() {
+                return upstreamControllerId;
+            }
+
+
+            protected Builder<PACKET, PROCESSOR, UPS_CID, UPS_PID, UPS_PROCESSOR> addOutlet(OutletManager<PACKET>.Outlet outlet) {
                 this.outlet = outlet;
                 return this;
             }
 
+            protected Builder<PACKET, PROCESSOR, UPS_CID, UPS_PID, UPS_PROCESSOR> addUpstreamProcessor(Driver<UPS_PROCESSOR> upstreamProcessor) {
+                this.upstreamProcessor = upstreamProcessor;
+                return this;
+            }
+
             Connection<PROCESSOR, UPS_PROCESSOR> build() {
+                assert downstreamProcessor != null;
+                assert upstreamProcessor != null;
+                assert inlet != null;
+                assert outlet != null;
                 return new Connection<>(downstreamProcessor, upstreamProcessor, inlet, outlet);
+            }
+
+            public UPS_PID upstreamProcessorId() {
+                return upstreamProcessorId;
             }
         }
     }

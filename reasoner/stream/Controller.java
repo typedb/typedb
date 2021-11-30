@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Connection;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -35,7 +34,6 @@ public abstract class Controller<CID, PID, OUTPUT,
     private final CID id;
     private final ActorExecutorGroup executorService;
     private final Map<PID, Actor.Driver<PROCESSOR>> processors;
-
 
     protected Controller(Driver<CONTROLLER> driver, String name, CID id, ActorExecutorGroup executorService) {
         super(driver, name);
@@ -56,17 +54,15 @@ public abstract class Controller<CID, PID, OUTPUT,
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PID id);
 
-
-    // =================================================================================================================
-
-    <PACKET, UPS_CID, UPS_PID, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, PACKET, UPS_PROCESSOR, UPS_CONTROLLER>> void findUpstreamConnection(Connection.Builder<PACKET, PROCESSOR, UPS_CID, UPS_PROCESSOR> connectionBuilder) {
+    <PACKET, UPS_CID, UPS_PID, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>,
+            UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, PACKET, UPS_PROCESSOR, UPS_CONTROLLER>>
+    void findUpstreamConnection(Connection.Builder<PACKET, PROCESSOR, UPS_CID, UPS_PID, UPS_PROCESSOR> connectionBuilder) {
         Driver<UPS_CONTROLLER> controller = getControllerForId(connectionBuilder.upstreamControllerId());
         controller.execute(actor -> actor.findConnection(connectionBuilder));
     }
 
-    void findConnection(Connection.Builder<OUTPUT, ?, CID, PROCESSOR> connectionBuilder) {
-        PID processorId = connectionBuilder.upstreamProcessorId();
-        Driver<PROCESSOR> processor = processors.computeIfAbsent(processorId, this::buildProcessor);
+    void findConnection(Connection.Builder<OUTPUT, ?, CID, PID, PROCESSOR> connectionBuilder) {
+        Driver<PROCESSOR> processor = processors.computeIfAbsent(connectionBuilder.upstreamProcessorId(), this::buildProcessor);
         processor.execute(actor -> actor.buildConnection(connectionBuilder));
     }
 
@@ -76,29 +72,6 @@ public abstract class Controller<CID, PID, OUTPUT,
             UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>
             > Driver<UPS_CONTROLLER> getControllerForId(UPS_CID cid);
 
-
-    // =================================================================================================================
-
-    protected abstract <
-            UPS_CID, UPS_PID,
-            UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, ?, UPS_PROCESSOR, UPS_CONTROLLER>,
-            UPS_PROCESSOR extends Processor<?, UPS_PROCESSOR>
-            > UpstreamTransceiver<UPS_CID, UPS_PID, ?, UPS_CONTROLLER, UPS_PROCESSOR> getUpstreamTransceiver(
-            UPS_CID id, @Nullable Driver<UPS_CONTROLLER> controller);  // TODO: The only reason we include the controller here to propagate the generic types correctly
-
-    protected abstract class UpstreamTransceiver<
-            UPS_CID, UPS_PID, UPS_OUTPUT,
-            UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, UPS_OUTPUT, UPS_PROCESSOR, UPS_CONTROLLER>,
-            UPS_PROCESSOR extends Processor<UPS_OUTPUT, UPS_PROCESSOR>
-            > {
-
-        UpstreamTransceiver() {
-
-        }
-
-        protected abstract Driver<UPS_CONTROLLER> getControllerForId(UPS_CID id);  // Looks up the downstream controller by (pattern, bounds), either via registry or has already stored them.
-
-    }
 
     @Override
     protected void exception(Throwable e) {

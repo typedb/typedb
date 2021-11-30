@@ -35,14 +35,12 @@ public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap
 
     @Override
     protected Function<Driver<ConclusionProcessor>, ConclusionProcessor> createProcessorFunc(ConceptMap id) {
-        return null;
+        return null;  // TODO
     }
 
     @Override
-    protected <UPS_CID, UPS_PID, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, ?, UPS_PROCESSOR, UPS_CONTROLLER>,
-            UPS_PROCESSOR extends Processor<?, UPS_PROCESSOR>> UpstreamTransceiver<UPS_CID, UPS_PID,
-            ?, UPS_CONTROLLER, UPS_PROCESSOR> getUpstreamTransceiver(UPS_CID id,
-                                                                     @Nullable Driver<UPS_CONTROLLER> controller) {
+    <UPS_CID, UPS_PID, PACKET, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, PACKET, UPS_PROCESSOR,
+            UPS_CONTROLLER>, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> Driver<UPS_CONTROLLER> getControllerForId(UPS_CID ups_cid) {
         return null;  // TODO
     }
 
@@ -59,9 +57,5 @@ public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap
             super(driver, controller, name, outletManager);
         }
 
-        @Override
-        public <INLET_MANAGER_ID, INPUT, UPSTREAM_PROCESSOR extends Processor<INPUT, UPSTREAM_PROCESSOR>> InletManager<INPUT, UPSTREAM_PROCESSOR> getInletManager(INLET_MANAGER_ID controllerId) {
-            return null;
-        }
     }
 }

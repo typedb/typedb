@@ -31,7 +31,6 @@ import com.vaticle.typedb.core.reasoner.stream.ConclusionController.ConclusionPr
 import com.vaticle.typedb.core.reasoner.stream.Processor.InletManager.Single;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -44,14 +43,12 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class ConcludableController extends Controller<Concludable, ConceptMap, ConcludableController.ConcludableAns, ConcludableController.ConcludableProcessor, ConcludableController> {
 
-    private final UpstreamTransceiver<Rule.Conclusion, ConceptMap, ConclusionAns, ConclusionController, ConclusionProcessor> conclusionHandler;
     private final LinkedHashMap<Rule.Conclusion, Set<Unifier>> upstreamConclusions;
     private final Set<Identifier.Variable.Retrievable> unboundVars;
 
     protected ConcludableController(Driver<ConcludableController> driver, String name, Concludable id, ActorExecutorGroup executorService) {
         super(driver, name, id, executorService);
         this.upstreamConclusions = initialiseUpstreamConclusions();
-        this.conclusionHandler = new ConclusionHandler();
         this.unboundVars = unboundVars();
     }
 
@@ -70,28 +67,18 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
         return d -> new ConcludableProcessor(d, driver(), "", upstreamConclusions, traversalSupplier, singleAnswerRequired);
     }
 
-    private FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
-        return null;  // TODO
-    }
-
     @Override
-    protected <UPS_CID, UPS_PID, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, ?, UPS_PROCESSOR, UPS_CONTROLLER>,
-            UPS_PROCESSOR extends Processor<?, UPS_PROCESSOR>
-            > UpstreamTransceiver<UPS_CID, UPS_PID, ?, UPS_CONTROLLER, UPS_PROCESSOR> getUpstreamTransceiver(
-                    UPS_CID id, @Nullable Driver<UPS_CONTROLLER> controller) {
+    <UPS_CID, UPS_PID, PACKET, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, PACKET, UPS_PROCESSOR, UPS_CONTROLLER>, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> Driver<UPS_CONTROLLER> getControllerForId(UPS_CID id) {
         if (id instanceof Rule.Conclusion) {
-            return (UpstreamTransceiver<UPS_CID, UPS_PID, ?, UPS_CONTROLLER, UPS_PROCESSOR>) conclusionHandler;  // TODO: Using instanceof requires that we do a casting. Ideally we would avoid this.
+            Driver<ConclusionController> conclusionController = null; // TODO: Fetch from registry using rule conclusion
+            return (Driver<UPS_CONTROLLER>) conclusionController;  // TODO: Using instanceof requires that we do a casting.
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
-    class ConclusionHandler extends UpstreamTransceiver<Rule.Conclusion, ConceptMap, ConclusionAns, ConclusionController, ConclusionProcessor> {
-
-        @Override
-        protected Driver<ConclusionController> getControllerForId(Rule.Conclusion id) {
-            return null;  // TODO: Go to the registry and get it
-        }
+    private FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
+        return null;  // TODO
     }
 
     public static class ConcludableAns {
@@ -132,7 +119,7 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
                         // Create a new inlet, storing the unifier against it
                         InletManager<ConclusionAns, ConclusionProcessor>.Inlet newInlet = ruleInletManager.newInlet();
                         this.unifiers.put(newInlet, unifier);
-                        requestConnection(new Connection.Builder<>(driver(), conclusion, newInlet, upstreamBounds));
+                        requestConnection(new Connection.Builder<>(driver(), conclusion, upstreamBounds, newInlet));
                     });
                 });
             });
@@ -140,16 +127,6 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
 
         private static Supplier<ConcludableAns> onPull() {
             return null;  // TODO
-        }
-
-        @Override
-        public <INLET_MANAGER_ID, INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>
-                > InletManager<INPUT, UPS_PROCESSOR> getInletManager(INLET_MANAGER_ID inletManagerId) {
-            if (inletManagerId instanceof Rule.Conclusion) {
-                return (Single<INPUT, UPS_PROCESSOR>) inletManagers.get(inletManagerId);
-            } else {
-                throw TypeDBException.of(ILLEGAL_STATE);
-            }
         }
 
         protected void operation() {
