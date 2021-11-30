@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.reasoner.stream.Processor.InletManager.Single;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -66,7 +67,7 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
     protected Function<Driver<ConcludableProcessor>, ConcludableProcessor> createProcessorFunc(ConceptMap bounds) {
         Supplier<FunctionalIterator<ConceptMap>> traversalSupplier = () -> traversalIterator(id().pattern(), bounds);
         boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
-        return d -> new ConcludableProcessor(d, driver(), "", traversalSupplier, singleAnswerRequired);
+        return d -> new ConcludableProcessor(d, driver(), "", upstreamConclusions, traversalSupplier, singleAnswerRequired);
     }
 
     private FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
@@ -100,22 +101,41 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
     }  // TODO: Some wrapper of answers from concludable resolution
 
     public static class ConcludableProcessor extends Processor<ConcludableAns, ConcludableProcessor> {
-        private final Map<Rule.Conclusion, Single<Rule.Conclusion, ConclusionAns, ConclusionProcessor>> inletManagers;
-        private final Map<Single<Rule.Conclusion, ConclusionAns, ConclusionProcessor>, Set<Unifier>> unifiers;
-        private final Map<Single<Rule.Conclusion, ConclusionAns, ConclusionProcessor>, Unifier.Requirements.Instance> instanceRequirements;
+        private final Map<Rule.Conclusion, InletManager.DynamicMulti<ConclusionAns, ConclusionProcessor>> inletManagers;
+        private final Map<InletManager<ConclusionAns, ConclusionProcessor>.Inlet, Unifier> unifiers;
+        private final Map<Single<ConclusionAns, ConclusionProcessor>, Unifier.Requirements.Instance> instanceRequirements;
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
         private final boolean singleAnswerRequired;
+        private final ConceptMap bounds;
 
         public ConcludableProcessor(Driver<ConcludableProcessor> driver,
                                     Driver<ConcludableController> controller, String name,
+                                    LinkedHashMap<Rule.Conclusion, Set<Unifier>> upstreamConclusions,
                                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
                                     boolean singleAnswerRequired) {
             super(driver, controller, name, new OutletManager.DynamicMulti<>(onPull()));
+            this.bounds = null;
+            this.instanceRequirements = null;  // TODO
             this.traversalSuppplier = traversalSuppplier;
             this.singleAnswerRequired = singleAnswerRequired;
-            this.inletManagers = null;  // TODO: For each conclusion create an InletManager
+            this.inletManagers = new HashMap<>();
+            createInletManagers(upstreamConclusions);  // TODO: For each conclusion create an InletManager
             this.unifiers = null;  // TODO
-            this.instanceRequirements = null;  // TODO
+        }
+
+        private void createInletManagers(LinkedHashMap<Rule.Conclusion, Set<Unifier>> upstreamConclusions) {
+            upstreamConclusions.forEach((conclusion, unifiers) -> {
+                InletManager.DynamicMulti<ConclusionAns, ConclusionProcessor> ruleInletManager = new InletManager.DynamicMulti<>();
+                inletManagers.put(conclusion, ruleInletManager);
+                unifiers.forEach(unifier -> {
+                    unifier.unify(bounds).ifPresent(upstreamBounds -> {
+                        // Create a new inlet, storing the unifier against it
+                        InletManager<ConclusionAns, ConclusionProcessor>.Inlet newInlet = ruleInletManager.newInlet();
+                        this.unifiers.put(newInlet, unifier);
+                        requestConnection(new Connection.Builder<>(driver(), conclusion, newInlet, upstreamBounds));
+                    });
+                });
+            });
         }
 
         private static Supplier<ConcludableAns> onPull() {
@@ -123,10 +143,10 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
         }
 
         @Override
-        public <INLET_MANAGER_ID, INLET_ID, INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>
-                > InletManager<INLET_ID, INPUT, UPS_PROCESSOR> getInletManager(INLET_MANAGER_ID inletManagerId) {
+        public <INLET_MANAGER_ID, INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>
+                > InletManager<INPUT, UPS_PROCESSOR> getInletManager(INLET_MANAGER_ID inletManagerId) {
             if (inletManagerId instanceof Rule.Conclusion) {
-                return (Single<INLET_ID, INPUT, UPS_PROCESSOR>) inletManagers.get(inletManagerId);
+                return (Single<INPUT, UPS_PROCESSOR>) inletManagers.get(inletManagerId);
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
@@ -140,6 +160,8 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
                 //  each having only one inlet. This is because we can compute all of them ahead of time, and we can keep
                 //  hold of unifiers in a map with inletManagers, but we have no knowledge of the inlets inside the
                 //  managers, so we can't hold a unifier per inlet.
+
+                // TODO: The unifiers need to be held against each inlet actually so that we apply the right un-unification to each received answer
                 Operation<ConclusionAns, ConceptMap> downstreamOp = input.flatMap(a -> iterate(unifiers.get(im)).flatMap(u -> u.unUnify(a.concepts(), instanceRequirements.get(im))));   // TODO: if flatmapping produces an empty iterator for non-empty input then the pull() should be retried
 //                Operation<ConclusionAns, ConceptMap> downstreamOp = input.flatMap(a -> Operation.input(unifiers.get(im)).flatMap(u -> u.unUnify(a.concepts(), instanceRequirements.get(im))));   // TODO: if flatmapping produces an empty iterator for non-empty input then the pull() should be retried
                 Source<ConceptMap> traversalSource = Source.fromIteratorSupplier(traversalSuppplier);  // TODO: Delay opening the traversal until needed. Use a non-eager traversal wrapper.

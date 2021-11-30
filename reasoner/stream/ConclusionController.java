@@ -60,7 +60,7 @@ public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap
         }
 
         @Override
-        public <INLET_MANAGER_ID, INLET_ID, INPUT, UPSTREAM_PROCESSOR extends Processor<INPUT, UPSTREAM_PROCESSOR>> InletManager<INLET_ID, INPUT, UPSTREAM_PROCESSOR> getInletManager(INLET_MANAGER_ID controllerId) {
+        public <INLET_MANAGER_ID, INPUT, UPSTREAM_PROCESSOR extends Processor<INPUT, UPSTREAM_PROCESSOR>> InletManager<INPUT, UPSTREAM_PROCESSOR> getInletManager(INLET_MANAGER_ID controllerId) {
             return null;
         }
     }
