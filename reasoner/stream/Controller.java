@@ -61,7 +61,7 @@ public abstract class Controller<CID, PID, OUTPUT,
             UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, ?, UPS_PROCESSOR, UPS_CONTROLLER>,
             UPS_PROCESSOR extends Processor<?, UPS_PROCESSOR>
             > UpstreamTransceiver<UPS_CID, UPS_PID, ?, UPS_CONTROLLER, UPS_PROCESSOR> getUpstreamTransceiver(
-            UPS_CID id, @Nullable Driver<UPS_CONTROLLER> controller);  // TODO: We only need to include the controller here to propagate the generic types correctly
+            UPS_CID id, @Nullable Driver<UPS_CONTROLLER> controller);  // TODO: The only reason we include the controller here to propagate the generic types correctly
 
     protected abstract class UpstreamTransceiver<
             UPS_CID, UPS_PID, UPS_OUTPUT,
@@ -90,12 +90,12 @@ public abstract class Controller<CID, PID, OUTPUT,
         public void receiveRequestedProcessor(UPS_CID controllerId, UPS_PID processorId, Driver<UPS_PROCESSOR> processor) {
             Driver<PROCESSOR> requester = processorRequesters.remove(new Pair<>(controllerId, processorId));
             assert requester != null;
-            sendRequestedProcessor(controllerId, processorId, processor, requester);
+            sendRequestedProcessor(controllerId, processor, requester);
         }
 
-        private void sendRequestedProcessor(UPS_CID controllerId, UPS_PID processorId,
+        private void sendRequestedProcessor(UPS_CID controllerId,
                                             Driver<UPS_PROCESSOR> processor, Driver<PROCESSOR> requester) {
-            requester.execute(actor -> actor.receiveUpstreamProcessor(controllerId, processorId, processor));
+            requester.execute(actor -> actor.receiveUpstreamProcessor(controllerId, processor));
         }
     }
 

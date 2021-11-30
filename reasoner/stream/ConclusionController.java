@@ -18,11 +18,14 @@
 
 package com.vaticle.typedb.core.reasoner.stream;
 
+import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.function.Function;
 
 public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap, ConclusionController.ConclusionAns, ConclusionController.ConclusionProcessor, ConclusionController> {
@@ -43,7 +46,12 @@ public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap
         return null;  // TODO
     }
 
-    public static class ConclusionAns {}
+    public static class ConclusionAns {
+
+        public Map<Identifier.Variable, Concept> concepts() {
+            return null;  // TODO
+        }
+    }
 
     public class ConclusionProcessor extends Processor<ConclusionAns, ConclusionProcessor> {
         public ConclusionProcessor(Driver<ConclusionProcessor> driver, Driver<? extends Controller<?, ?,
