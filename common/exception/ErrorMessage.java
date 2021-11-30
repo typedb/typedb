@@ -125,20 +125,22 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Internal(6, "Attempted to utilise a closed resource.");
         public static final Internal UNRECOGNISED_VALUE =
                 new Internal(7, "Unrecognised encoding value!");
+        public static final Internal STORAGE_PROPERTY_EXCEPTION =
+                new Internal(8, "Failed to get storage property.");
         public static final Internal DIRTY_INITIALISATION =
-                new Internal(8, "Invalid Database Initialisation.");
+                new Internal(9, "Invalid Database Initialisation.");
         public static final Internal TYPEDB_CLOSED =
-                new Internal(9, "Attempted to open a session on a closed TypeDB.");
+                new Internal(10, "Attempted to open a session on a closed TypeDB.");
         public static final Internal OUT_OF_BOUNDS =
-                new Internal(10, "Resource out of bounds.");
+                new Internal(11, "Resource out of bounds.");
         public static final Internal UNEXPECTED_INTERRUPTION =
-                new Internal(11, "Unexpected thread interruption!");
+                new Internal(12, "Unexpected thread interruption!");
         public static final Internal UNEXPECTED_PLANNING_ERROR =
-                new Internal(12, "Unexpected error during traversal plan optimisation.");
+                new Internal(13, "Unexpected error during traversal plan optimisation.");
         public static final Internal UNEXPECTED_OPTIMISER_VALUE =
-                new Internal(13, "Unexpected optimiser value.");
+                new Internal(14, "Unexpected optimiser value.");
         public static final Internal UNIMPLEMENTED =
-                new Internal(14, "This functionality is not yet implemented.");
+                new Internal(15, "This functionality is not yet implemented.");
 
         private static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";
@@ -164,6 +166,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Database(6, "Attempted to open a new session from the database '%s' that has been closed.");
         public static final Database DATABASE_NAME_RESERVED =
                 new Database(7, "Database name must not start with an underscore.");
+        public static final Database ROCKS_LOGGER_SHUTDOWN_FAILED =
+                new Database(8, "Could not shut down RocksDB properties logger thread.");
 
         private static final String codePrefix = "DBS";
         private static final String messagePrefix = "Invalid Database Operation";

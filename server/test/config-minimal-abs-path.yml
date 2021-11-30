@@ -15,8 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-data: /absolute/path/to/data/dir
-port: 1730
+server:
+  address: 0.0.0.0:1730
+
+storage:
+  data: /absolute/path/to/data/dir
+  db-cache:
+    data: 200mb
+    index: 700mb
+
 log:
   output:
     stdout:
@@ -37,7 +44,7 @@ log:
       output: file
 
 vaticle-factory:
-  trace: false
+  enable: false
 #  uri: "https://tracing.factory.vaticle.com:7979"
 #  username: $FACTORY_USERNAME
 #  token: $FACTORY_TOKEN

@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.server.test;
 
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.common.CommandLine;
 import com.vaticle.typedb.core.server.common.ConfigKVParser;
@@ -25,6 +26,7 @@ import com.vaticle.typedb.core.server.common.Configuration;
 import com.vaticle.typedb.core.server.common.Util;
 import org.junit.Test;
 
+import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.HashSet;
 
@@ -46,14 +48,16 @@ public class ConfigurationTest {
     @Test
     public void config_file_is_read() {
         Configuration configuration = (new Configuration.Parser()).getConfig();
-        assertTrue(configuration.dataDir().toString().endsWith("server/data"));
-        assertEquals(1729, configuration.port());
-        assertFalse(configuration.vaticleFactory().trace());
+        assertTrue(configuration.storage().dataDir().toString().endsWith("server/data"));
+        assertEquals(new InetSocketAddress("0.0.0.0", 1729), configuration.server().address());
+        assertEquals(500 * Bytes.MB, configuration.storage().dbCache().dataSize());
+        assertEquals(500 * Bytes.MB, configuration.storage().dbCache().indexSize());
+        assertFalse(configuration.vaticleFactory().enable());
         assertTrue(configuration.log().output().outputs().containsKey("stdout"));
         assertTrue(configuration.log().output().outputs().containsKey("file"));
         assertTrue(configuration.log().output().outputs().get("file").asFile().path().toString().endsWith("server/logs"));
-        assertEquals("50mb", configuration.log().output().outputs().get("file").asFile().fileSizeCap());
-        assertEquals("1gb", configuration.log().output().outputs().get("file").asFile().archivesSizeCap());
+        assertEquals(50 * Bytes.MB, configuration.log().output().outputs().get("file").asFile().fileSizeCap());
+        assertEquals(1 * Bytes.GB, configuration.log().output().outputs().get("file").asFile().archivesSizeCap());
         assertNotNull(configuration.log().logger().defaultLogger());
         assertFalse(configuration.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("warn", configuration.log().logger().defaultLogger().level());
@@ -64,14 +68,16 @@ public class ConfigurationTest {
     public void minimal_config_with_absolute_paths_is_read() {
         Path configMinimalAbsPaths = Util.getTypedbDir().resolve("server/test/config-minimal-abs-path.yml");
         Configuration configuration = (new Configuration.Parser()).getConfig(configMinimalAbsPaths, new HashSet<>());
-        assertTrue(configuration.dataDir().isAbsolute());
-        assertEquals(1730, configuration.port());
-        assertFalse(configuration.vaticleFactory().trace());
+        assertTrue(configuration.storage().dataDir().isAbsolute());
+        assertEquals(new InetSocketAddress("0.0.0.0", 1730), configuration.server().address());
+        assertEquals(200 * Bytes.MB, configuration.storage().dbCache().dataSize());
+        assertEquals(700 * Bytes.MB, configuration.storage().dbCache().indexSize());
+        assertFalse(configuration.vaticleFactory().enable());
         assertTrue(configuration.log().output().outputs().containsKey("stdout"));
         assertTrue(configuration.log().output().outputs().containsKey("file"));
         assertTrue(configuration.log().output().outputs().get("file").asFile().path().isAbsolute());
-        assertEquals("50mb", configuration.log().output().outputs().get("file").asFile().fileSizeCap());
-        assertEquals("1gb", configuration.log().output().outputs().get("file").asFile().archivesSizeCap());
+        assertEquals(50 * Bytes.MB, configuration.log().output().outputs().get("file").asFile().fileSizeCap());
+        assertEquals(1 * Bytes.GB, configuration.log().output().outputs().get("file").asFile().archivesSizeCap());
         assertNotNull(configuration.log().logger().defaultLogger());
         assertFalse(configuration.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("warn", configuration.log().logger().defaultLogger().level());
@@ -91,15 +97,15 @@ public class ConfigurationTest {
     }
 
     @Test
-    public void config_file_missing_port_throws() {
-        Path configMissingLog = Util.getTypedbDir().resolve("server/test/config-missing-port.yml");
+    public void config_file_missing_data_throws() {
+        Path configMissingLog = Util.getTypedbDir().resolve("server/test/config-missing-data.yml");
         try {
             (new Configuration.Parser()).getConfig(configMissingLog, new HashSet<>());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
             assertEquals(MISSING_CONFIG_OPTION.code(), e.code().get());
-            assertEquals(MISSING_CONFIG_OPTION.message("port"), e.getMessage());
+            assertEquals(MISSING_CONFIG_OPTION.message("storage.data"), e.getMessage());
         }
     }
 
@@ -137,7 +143,7 @@ public class ConfigurationTest {
         } catch (TypeDBException e) {
             assert e.code().isPresent();
             assertEquals(CONFIG_UNEXPECTED_VALUE_TYPE.code(), e.code().get());
-            assertEquals(CONFIG_UNEXPECTED_VALUE_TYPE.message("data", "1729[int]", ConfigKVParser.ValueParser.Leaf.PATH.help()), e.getMessage());
+            assertEquals(CONFIG_UNEXPECTED_VALUE_TYPE.message("storage.data", "123456[int]", ConfigKVParser.ValueParser.Leaf.PATH.help()), e.getMessage());
         }
     }
 
@@ -157,20 +163,20 @@ public class ConfigurationTest {
     @Test
     public void config_file_accepts_overrides() {
         Configuration configuration = (new Configuration.Parser()).getConfig(set(
-                new CommandLine.Option("data", "server/alt-data"),
-                new CommandLine.Option("port", "1730"),
+                new CommandLine.Option("storage.data", "server/alt-data"),
+                new CommandLine.Option("server.address", "0.0.0.0:1730"),
                 new CommandLine.Option("log.output.file.directory", "server/alt-logs"),
                 new CommandLine.Option("log.logger.default.level", "info"),
                 new CommandLine.Option("log.logger.typedb.output", "[file]")
         ));
-        assertTrue(configuration.dataDir().toString().endsWith("server/alt-data"));
-        assertEquals(1730, configuration.port());
-        assertFalse(configuration.vaticleFactory().trace());
+        assertTrue(configuration.storage().dataDir().toString().endsWith("server/alt-data"));
+        assertEquals(new InetSocketAddress("0.0.0.0", 1730), configuration.server().address());
+        assertFalse(configuration.vaticleFactory().enable());
         assertTrue(configuration.log().output().outputs().containsKey("stdout"));
         assertTrue(configuration.log().output().outputs().containsKey("file"));
         assertTrue(configuration.log().output().outputs().get("file").asFile().path().toString().endsWith("server/alt-logs"));
-        assertEquals("50mb", configuration.log().output().outputs().get("file").asFile().fileSizeCap());
-        assertEquals("1gb", configuration.log().output().outputs().get("file").asFile().archivesSizeCap());
+        assertEquals(50 * Bytes.MB, configuration.log().output().outputs().get("file").asFile().fileSizeCap());
+        assertEquals(1 * Bytes.GB, configuration.log().output().outputs().get("file").asFile().archivesSizeCap());
         assertNotNull(configuration.log().logger().defaultLogger());
         assertFalse(configuration.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("info", configuration.log().logger().defaultLogger().level());

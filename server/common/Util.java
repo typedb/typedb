@@ -41,8 +41,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ch.qos.logback.core.util.FileSize.GB_COEFFICIENT;
-import static ch.qos.logback.core.util.FileSize.MB_COEFFICIENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_FILE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_YAML_MUST_BE_MAP;
@@ -184,9 +182,8 @@ public class Util {
         SizeAndTimeBasedRollingPolicy<?> policy = new SizeAndTimeBasedRollingPolicy<>();
         policy.setContext(context);
         policy.setFileNamePattern(logPath + TYPEDB_LOG_FILE_ARCHIVE_SUFFIX);
-        FileSize fileSize = FileSize.valueOf(outputType.fileSizeCap());
-        long directorySize = fileSize.getSize() + FileSize.valueOf(outputType.archivesSizeCap()).getSize();
-        policy.setMaxFileSize(fileSize);
+        long directorySize = outputType.fileSizeCap() + outputType.archivesSizeCap();
+        policy.setMaxFileSize(new FileSize(outputType.fileSizeCap()));
         policy.setTotalSizeCap(new FileSize(directorySize));
         policy.setParent(appender);
         policy.start();

@@ -377,7 +377,7 @@ public abstract class Command {
 
         static class String extends OptionParser {
 
-            private static final java.lang.String typeDescription = "string";
+            private static final java.lang.String typeDescription = "<string>";
 
             String(java.lang.String name, java.lang.String description) {
                 super(name, description, typeDescription);
@@ -397,7 +397,7 @@ public abstract class Command {
 
         static class Path extends OptionParser {
 
-            private static final java.lang.String typeDescription = "path";
+            private static final java.lang.String typeDescription = "<path>";
 
             Path(java.lang.String name, java.lang.String description) {
                 super(name, description, typeDescription);
@@ -417,7 +417,7 @@ public abstract class Command {
 
         static class Int extends OptionParser {
 
-            private static final java.lang.String typeDescription = "int";
+            private static final java.lang.String typeDescription = "<int>";
 
             Int(java.lang.String name, java.lang.String description) {
                 super(name, description, typeDescription);

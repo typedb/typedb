@@ -44,6 +44,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedConjunction;
 import static junit.framework.TestCase.assertEquals;
 
@@ -51,7 +52,8 @@ public class PlannerTest {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("resolver-manager-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
+    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "resolver-manager-test";
     private static RocksTypeDB typedb;
     private static RocksSession session;

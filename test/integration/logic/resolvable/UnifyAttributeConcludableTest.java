@@ -53,6 +53,7 @@ import java.util.Set;
 import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.logic.resolvable.Util.createRule;
 import static com.vaticle.typedb.core.logic.resolvable.Util.getStringMapping;
 import static com.vaticle.typedb.core.logic.resolvable.Util.resolvedConjunction;
@@ -64,7 +65,8 @@ public class UnifyAttributeConcludableTest {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("unify-attribute-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
+    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "unify-attribute-test";
     private static RocksTypeDB typedb;
     private static RocksSession session;

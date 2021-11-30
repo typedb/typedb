@@ -54,6 +54,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedConjunction;
 import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedDisjunction;
@@ -65,7 +66,8 @@ public class ResolutionTest {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
+    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "resolution-test";
     private static RocksTypeDB typedb;
 

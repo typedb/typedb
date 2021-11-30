@@ -28,10 +28,20 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
+import com.vaticle.typedb.core.graph.iid.InfixIID;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.traversal.TraversalCache;
+import org.rocksdb.BlockBasedTableConfig;
+import org.rocksdb.BloomFilter;
+import org.rocksdb.IndexType;
+import org.rocksdb.LRUCache;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.Statistics;
+import org.rocksdb.UInt64AddOperator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,6 +57,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,8 +66,12 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.collection.Collections.hasIntersection;
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.common.collection.Bytes.KB;
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INCOMPATIBLE_ENCODING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.ROCKS_LOGGER_SHUTDOWN_FAILED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
@@ -71,11 +87,19 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Ty
 import static com.vaticle.typedb.core.graph.common.Encoding.ENCODING_VERSION;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.rocksdb.CompressionType.LZ4_COMPRESSION;
+import static org.rocksdb.CompressionType.NO_COMPRESSION;
 
 public class RocksDatabase implements TypeDB.Database {
 
+    private static final Logger LOG = LoggerFactory.getLogger(RocksDatabase.class);
+    private static final int ROCKS_LOG_PERIOD = 300;
+
     protected final OptimisticTransactionDB rocksSchema;
     protected final OptimisticTransactionDB rocksData;
+    protected final org.rocksdb.Options rocksSchemaOptions;
+    protected final org.rocksdb.Options rocksDataOptions;
     protected final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
     protected final String name;
     protected StatisticsBackgroundCounter statisticsBackgroundCounter;
@@ -86,6 +110,7 @@ public class RocksDatabase implements TypeDB.Database {
     private final RocksTypeDB typedb;
     private final ConsistencyManager consistencyMgr;
     private final AtomicInteger schemaLockWriteRequests;
+    private final ScheduledExecutorService rocksPropertiesLogger;
     private Cache cache;
 
     private final Factory.Session sessionFactory;
@@ -105,8 +130,18 @@ public class RocksDatabase implements TypeDB.Database {
         try {
             String schemaDirPath = directory().resolve(Encoding.ROCKS_SCHEMA).toString();
             String dataDirPath = directory().resolve(Encoding.ROCKS_DATA).toString();
-            rocksSchema = OptimisticTransactionDB.open(this.typedb.rocksDBOptions(), schemaDirPath);
-            rocksData = OptimisticTransactionDB.open(this.typedb.rocksDBOptions(), dataDirPath);
+            rocksSchemaOptions = rocksSchemaOptions();
+            rocksSchema = OptimisticTransactionDB.open(rocksSchemaOptions, schemaDirPath);
+            rocksDataOptions = rocksDataOptions();
+            if (LOG.isDebugEnabled()) {
+                rocksDataOptions.setStatistics(new Statistics()).setStatsDumpPeriodSec(ROCKS_LOG_PERIOD);
+                rocksPropertiesLogger = Executors.newScheduledThreadPool(1);
+                rocksData = OptimisticTransactionDB.open(rocksDataOptions, dataDirPath);
+                rocksPropertiesLogger.scheduleAtFixedRate(new RocksProperties.Logger(rocksData, name), 0, ROCKS_LOG_PERIOD, SECONDS);
+            } else {
+                rocksData = OptimisticTransactionDB.open(rocksDataOptions, dataDirPath);
+                rocksPropertiesLogger = null;
+            }
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
@@ -313,7 +348,18 @@ public class RocksDatabase implements TypeDB.Database {
 
     protected void close() {
         if (isOpen.compareAndSet(true, false)) {
+            if (rocksPropertiesLogger != null) shutdownRocksPropertiesLogger();
             closeResources();
+        }
+    }
+
+    private void shutdownRocksPropertiesLogger() {
+        try {
+            rocksPropertiesLogger.shutdown();
+            boolean terminated = rocksPropertiesLogger.awaitTermination(5, SECONDS);
+            if (!terminated) throw TypeDBException.of(ROCKS_LOGGER_SHUTDOWN_FAILED);
+        } catch (InterruptedException e) {
+            throw TypeDBException.of(e);
         }
     }
 
@@ -326,7 +372,9 @@ public class RocksDatabase implements TypeDB.Database {
         statisticsBgCounterStop();
         cacheClose();
         rocksData.close();
+        rocksDataOptions.close();
         rocksSchema.close();
+        rocksSchemaOptions.close();
     }
 
     @Override
@@ -338,6 +386,90 @@ public class RocksDatabase implements TypeDB.Database {
         } catch (IOException e) {
             throw TypeDBException.of(e);
         }
+    }
+
+    /**
+     * WARNING: we can break backward compatibility or corrupt user data by changing these options and using them
+     * with existing databases
+     */
+    private org.rocksdb.Options rocksSchemaOptions() {
+        return new org.rocksdb.Options()
+                .setCreateIfMissing(true)
+                .setCompressionType(NO_COMPRESSION)
+                .setTableFormatConfig(rocksSchemaTableOptions());
+    }
+
+    private BlockBasedTableConfig rocksSchemaTableOptions() {
+        BlockBasedTableConfig rocksDBTableOptions = new BlockBasedTableConfig();
+        LRUCache uncompressedCache = new LRUCache(64 * MB);
+        rocksDBTableOptions.setBlockSize(16 * KB);
+        rocksDBTableOptions.setFormatVersion(5);
+        rocksDBTableOptions.setIndexBlockRestartInterval(16);
+        rocksDBTableOptions.setEnableIndexCompression(false);
+        rocksDBTableOptions.setBlockCache(uncompressedCache);
+        return rocksDBTableOptions;
+    }
+
+    /**
+     * WARNING: we can break backward compatibility or corrupt user data by changing these options and using them
+     * with existing databases
+     */
+    private org.rocksdb.Options rocksDataOptions() {
+        long writeBufferSize = 128 * MB;
+        int writeBuffersMaxCount = 4;
+        return new org.rocksdb.Options()
+                .setCreateIfMissing(true)
+                .setWriteBufferSize(writeBufferSize)
+                .setMaxWriteBufferNumber(writeBuffersMaxCount)
+                // don't maintain any old write buffers since we handle key conflict detection ourselves
+                .setMaxWriteBufferNumberToMaintain(0)
+                // L1 should match L0 size for best performance, since L0 -> L1 compaction is single threaded
+                .setMaxBytesForLevelBase(writeBufferSize * writeBuffersMaxCount)
+                // explicitly set SST file size to avoid relying on RocksDB defaults that could change
+                .setTargetFileSizeBase(64 * MB)
+                .setEnableWriteThreadAdaptiveYield(true)
+                .setAllowConcurrentMemtableWrite(true)
+                .setMaxSubcompactions(RocksTypeDB.MAX_THREADS)
+                .setMaxBackgroundJobs(RocksTypeDB.MAX_THREADS)
+                // best performance-space tradeoff: apply lightweight LZ4 compression to levels that change less
+                .setCompressionPerLevel(list(NO_COMPRESSION, NO_COMPRESSION, LZ4_COMPRESSION, LZ4_COMPRESSION,
+                        LZ4_COMPRESSION, LZ4_COMPRESSION, LZ4_COMPRESSION))
+                .setTableFormatConfig(rocksDataTableOptions())
+                // common prefix-seek is a vertex + infix + vertex prefix with type (eg. edge scan), significant performance boost
+                .useCappedPrefixExtractor(VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH)
+                .setMergeOperator(new UInt64AddOperator());
+    }
+
+    private BlockBasedTableConfig rocksDataTableOptions() {
+        BlockBasedTableConfig rocksDBTableOptions = new BlockBasedTableConfig();
+
+        long blockCacheSize = typedb.options().storageDataCacheSize() + typedb.options().storageIndexCacheSize();
+        float indexAndFilterRatio = ((float) typedb.options().storageIndexCacheSize()) / (blockCacheSize);
+        // block cache will contain data, plus space reserved for index and bloom filters to make memory usage predictable
+        LRUCache uncompressedCache = new LRUCache(blockCacheSize, -1, false, indexAndFilterRatio);
+        rocksDBTableOptions.setBlockCache(uncompressedCache);
+        // hardcode block size and format version to avoid relying on RocksDB defaults that could change
+        rocksDBTableOptions.setBlockSize(16 * KB);
+        rocksDBTableOptions.setFormatVersion(5);
+        rocksDBTableOptions.setIndexBlockRestartInterval(16);
+        // best performance when entire index is uncompressed, as it is accessed often
+        rocksDBTableOptions.setEnableIndexCompression(false);
+        // bloom filter is important for good random-read performance
+        rocksDBTableOptions.setFilterPolicy(new BloomFilter(10, false));
+        // partition bloom filters to avoid needing to have all bloom filters reside in memory - only index over blooms must
+        rocksDBTableOptions.setPartitionFilters(true);
+        // WARNING: this must be set to make partitioned filters take effect
+        rocksDBTableOptions.setIndexType(IndexType.kTwoLevelIndexSearch);
+        rocksDBTableOptions.setOptimizeFiltersForMemory(true);
+        // L0 index/filter should always be in memory, and is small
+        rocksDBTableOptions.setPinL0FilterAndIndexBlocksInCache(true);
+        // to cap memory usage, we must pin filter blocks and indexes in memory
+        rocksDBTableOptions.setCacheIndexAndFilterBlocks(true);
+        // ensure that the bloom filter partitioning index, plus the data index live in the cache always
+        rocksDBTableOptions.setPinTopLevelIndexAndFilter(true);
+        // use reserved section of block cache for blooms/index - cause massive thrashing if not using the high priority cache section
+        rocksDBTableOptions.setCacheIndexAndFilterBlocksWithHighPriority(true);
+        return rocksDBTableOptions;
     }
 
     /*

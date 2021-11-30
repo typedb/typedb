@@ -70,7 +70,7 @@ filegroup(
 
 filegroup(
     name = "configuration-missing-port",
-    srcs = ["config-missing-port.yml"],
+    srcs = ["config-missing-data.yml"],
 )
 
 filegroup(

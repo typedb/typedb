@@ -48,6 +48,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
@@ -57,7 +58,8 @@ import static org.junit.Assert.assertTrue;
 public class TypeInferenceTest {
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("type-resolver-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
+    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "type-resolver-test";
     private static RocksTypeDB typedb;
     private static RocksSession session;

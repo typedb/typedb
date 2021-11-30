@@ -43,6 +43,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
@@ -52,7 +53,8 @@ public class ReasonerTest {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("query-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
+    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "reasoner-test";
     private static RocksTypeDB typedb;
 

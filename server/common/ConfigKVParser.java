@@ -19,9 +19,12 @@
 package com.vaticle.typedb.core.server.common;
 
 import com.vaticle.typedb.common.yaml.Yaml;
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.common.CommandLine.Option;
 
+import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -102,14 +105,14 @@ public abstract class ConfigKVParser implements Option.CliHelp {
 
         abstract TYPE parse(Yaml.Map yaml, String scope);
 
-        static class AnyValue<TYPE> extends EntryParser<TYPE> {
+        static class Value<TYPE> extends EntryParser<TYPE> {
 
-            private AnyValue(String key, String description, ValueParser<TYPE> valueParser) {
+            private Value(String key, String description, ValueParser<TYPE> valueParser) {
                 super(key, description, valueParser);
             }
 
-            static <TYPE> AnyValue<TYPE> create(String key, String description, ValueParser<TYPE> valueType) {
-                return new AnyValue<>(key, description, valueType);
+            static <TYPE> Value<TYPE> create(String key, String description, ValueParser<TYPE> valueType) {
+                return new Value<>(key, description, valueType);
             }
 
             @Override
@@ -226,7 +229,25 @@ public abstract class ConfigKVParser implements Option.CliHelp {
             public static final Leaf<Path> PATH = new Leaf<>(
                     (yaml) -> yaml.isString(),
                     (yaml) -> Paths.get(yaml.asString().value()),
-                    "<path>"
+                    "<relative or absolute path>"
+            );
+            public static final Leaf<Long> BYTES_SIZE = new Leaf<>(
+                    (yaml) -> yaml.isString() && Bytes.Parser.isValidSizeString(yaml.asString().value()),
+                    (yaml) -> Bytes.Parser.parse(yaml.asString().value()),
+                    "<size>"
+            );
+            public static final Leaf<InetSocketAddress> INET_SOCKET_ADDRESS = new Leaf<>(
+                    (yaml) -> {
+                        if (!yaml.isString()) return false;
+                        // use URI to parse IPV4, IVP4 and host names - however, we must add a dummy scheme to use it
+                        URI uri = URI.create("scheme://" + yaml.asString().value());
+                        return uri.getHost() != null && uri.getPort() != -1;
+                    },
+                    (yaml) -> {
+                        URI uri = URI.create("scheme://" + yaml.asString().value());
+                        return new InetSocketAddress(uri.getHost(), uri.getPort());
+                    },
+                    "<address:port>"
             );
             static final Leaf<List<String>> LIST_STRING = new Leaf<>(
                     (yaml) -> yaml.isList() && iterate(yaml.asList().iterator()).allMatch(Yaml::isString),
