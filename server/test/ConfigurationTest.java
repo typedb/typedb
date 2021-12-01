@@ -66,7 +66,7 @@ public class ConfigurationTest {
 
     @Test
     public void minimal_config_with_absolute_paths_is_read() {
-        Path configMinimalAbsPaths = Util.getTypedbDir().resolve("server/test/config-minimal-abs-path.yml");
+        Path configMinimalAbsPaths = Util.getTypedbDir().resolve("server/test/config/config-minimal-abs-path.yml");
         Configuration configuration = (new Configuration.Parser()).getConfig(configMinimalAbsPaths, new HashSet<>());
         assertTrue(configuration.storage().dataDir().isAbsolute());
         assertEquals(new InetSocketAddress("0.0.0.0", 1730), configuration.server().address());
@@ -98,7 +98,7 @@ public class ConfigurationTest {
 
     @Test
     public void config_file_missing_data_throws() {
-        Path configMissingLog = Util.getTypedbDir().resolve("server/test/config-missing-data.yml");
+        Path configMissingLog = Util.getTypedbDir().resolve("server/test/config/config-missing-data.yml");
         try {
             (new Configuration.Parser()).getConfig(configMissingLog, new HashSet<>());
             fail();
@@ -111,7 +111,7 @@ public class ConfigurationTest {
 
     @Test
     public void config_file_missing_debugger_throws() {
-        Path configMissingLogDebugger = Util.getTypedbDir().resolve("server/test/config-missing-debugger.yml");
+        Path configMissingLogDebugger = Util.getTypedbDir().resolve("server/test/config/config-missing-debugger.yml");
         try {
             (new Configuration.Parser()).getConfig(configMissingLogDebugger, new HashSet<>());
             fail();
@@ -124,7 +124,7 @@ public class ConfigurationTest {
 
     @Test
     public void config_file_invalid_output_reference_throws() {
-        Path configInvalidOutput = Util.getTypedbDir().resolve("server/test/config-invalid-logger-output.yml");
+        Path configInvalidOutput = Util.getTypedbDir().resolve("server/test/config/config-invalid-logger-output.yml");
         try {
             (new Configuration.Parser()).getConfig(configInvalidOutput, new HashSet<>());
             fail();
@@ -136,7 +136,7 @@ public class ConfigurationTest {
 
     @Test
     public void config_file_wrong_path_type_throws() {
-        Path configInvalidPathType = Util.getTypedbDir().resolve("server/test/config-wrong-path-type.yml");
+        Path configInvalidPathType = Util.getTypedbDir().resolve("server/test/config/config-wrong-path-type.yml");
         try {
             (new Configuration.Parser()).getConfig(configInvalidPathType, new HashSet<>());
             fail();
@@ -149,7 +149,7 @@ public class ConfigurationTest {
 
     @Test
     public void config_file_unrecognised_option() {
-        Path configUnrecognisedOption = Util.getTypedbDir().resolve("server/test/config-unrecognised-option.yml");
+        Path configUnrecognisedOption = Util.getTypedbDir().resolve("server/test/config/config-unrecognised-option.yml");
         try {
             (new Configuration.Parser()).getConfig(configUnrecognisedOption, new HashSet<>());
             fail();
