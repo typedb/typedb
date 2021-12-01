@@ -38,9 +38,6 @@ java_test(
     data = [
         "@vaticle_typedb_behaviour//typeql/reasoner:variable-roles.feature",
     ],
-    resources = [
-        "//common/test:logback-test"
-    ],
     resource_strip_prefix = "common/test",
 )
 

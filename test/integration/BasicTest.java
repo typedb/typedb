@@ -45,6 +45,7 @@ import java.time.LocalDateTime;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.concept.type.AttributeType.ValueType.BOOLEAN;
 import static com.vaticle.typedb.core.concept.type.AttributeType.ValueType.DATETIME;
 import static com.vaticle.typedb.core.concept.type.AttributeType.ValueType.DOUBLE;
@@ -62,7 +63,8 @@ public class BasicTest {
     private static final String database = "basic-test";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageIndexCacheSize(MB).storageDataCacheSize(MB);
 
     private static void assert_transaction_read(TypeDB.Transaction transaction) {
         assertTrue(transaction.isOpen());

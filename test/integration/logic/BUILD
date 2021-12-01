@@ -34,9 +34,7 @@ host_compatible_java_test(
         "//traversal:traversal",
     ],
     resource_strip_prefix = "common/test",
-    resources = [
-        "//common/test:logback-test",
-    ],
+
     test_class = "com.vaticle.typedb.core.logic.RuleTest",
     deps = [
         "//test/integration/util",
@@ -71,9 +69,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
     ],
     data = [":basic-schema.tql", ":test-type-inference.tql"],
-    resources = [
-        "//common/test:logback-test"
-    ],
     resource_strip_prefix = "common/test",
 )
 
@@ -144,9 +139,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
-    resources = [
-        "//common/test:logback-test"
-    ],
     resource_strip_prefix = "common/test",
 )
 
@@ -170,9 +162,6 @@ host_compatible_java_test(
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
-    ],
-    resources = [
-        "//common/test:logback-test"
     ],
     resource_strip_prefix = "common/test",
 )

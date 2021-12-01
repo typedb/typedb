@@ -25,7 +25,6 @@ host_compatible_java_test(
     srcs = [
         "MaterialiserTest.java",
     ],
-    classpath_resources = ["//common/test:logback-test"],
     test_class = "com.vaticle.typedb.core.test.behaviour.reasoner.verification.test.MaterialiserTest",
     native_libraries_deps = [
         "//:typedb",
@@ -51,7 +50,6 @@ host_compatible_java_test(
     srcs = [
         "CorrectnessVerifierTest.java",
     ],
-    classpath_resources = ["//common/test:logback-test"],
     test_class = "com.vaticle.typedb.core.test.behaviour.reasoner.verification.test.CorrectnessVerifierTest",
     native_libraries_deps = [
         "//:typedb",

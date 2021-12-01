@@ -40,6 +40,7 @@ import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 
@@ -48,7 +49,8 @@ public class ConsistencyTest {
     private static final String database = "isolation-test";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageIndexCacheSize(MB).storageDataCacheSize(MB);
 
     private RocksTypeDB typeDB;
 
