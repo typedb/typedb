@@ -40,6 +40,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -53,7 +54,8 @@ public class ConnectionSteps {
     public static RocksTypeDB typedb;
     public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("typedb");
     public static Path logsDir = dataDir.resolve("logs");
-    public static Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logsDir);
+    public static Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logsDir)
+            .storageIndexCacheSize(MB).storageDataCacheSize(MB);
     public static List<TypeDB.Session> sessions = new ArrayList<>();
     public static List<CompletableFuture<TypeDB.Session>> sessionsParallel = new ArrayList<>();
     public static Map<TypeDB.Session, List<TypeDB.Transaction>> sessionsToTransactions = new HashMap<>();
@@ -64,17 +66,6 @@ public class ConnectionSteps {
         assertFalse("There is no open session", sessions.isEmpty());
         assertFalse("There is no open transaction", sessionsToTransactions.get(sessions.get(0)).isEmpty());
         return sessionsToTransactions.get(sessions.get(0)).get(0);
-    }
-
-    @Given("connection has been opened")
-    public void connection_has_been_opened() {
-        assertNotNull(typedb);
-        assertTrue(typedb.isOpen());
-    }
-
-    @Given("connection does not have any database")
-    public void connection_does_not_have_any_database() {
-        assertTrue(typedb.databases().all().isEmpty());
     }
 
     @Before
@@ -106,6 +97,17 @@ public class ConnectionSteps {
         typedb.close();
         assertFalse(typedb.isOpen());
         typedb = null;
+    }
+
+    @Given("connection has been opened")
+    public void connection_has_been_opened() {
+        assertNotNull(typedb);
+        assertTrue(typedb.isOpen());
+    }
+
+    @Given("connection does not have any database")
+    public void connection_does_not_have_any_database() {
+        assertTrue(typedb.databases().all().isEmpty());
     }
 
     private static void resetDirectory() throws IOException {
