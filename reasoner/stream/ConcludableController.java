@@ -135,13 +135,13 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
         protected void operation() {
             inletManagers.values().forEach(im -> {
                 im.inlets().forEach(inlet -> {
-                    Operation<?, ConclusionAns> input = Operation.input(im);
-//                    Operation<ConclusionAns, ConceptMap> downstreamOp = input.flatMap(a -> Operation.fromIterator(inletUnifiers.get(im).unUnify(a.concepts(), instanceRequirements.get(im))));
-                    Operation<ConclusionAns, ConceptMap> downstreamOp = null;
+                    ReactiveTransform<?, ConclusionAns> input = ReactiveTransform.input(im);
+//                    ReactiveTransform<ConclusionAns, ConceptMap> downstreamOp = input.flatMap(a -> ReactiveTransform.fromIterator(inletUnifiers.get(im).unUnify(a.concepts(), instanceRequirements.get(im))));
+                    ReactiveTransform<ConclusionAns, ConceptMap> downstreamOp = null;
                     Source<ConceptMap> traversalSource = Source.fromIteratorSupplier(traversalSuppplier);
-                    Operation<ConclusionAns, ConceptMap> op = Operation.sourceJoin(traversalSource, downstreamOp);
+                    ReactiveTransform<ConclusionAns, ConceptMap> op = ReactiveTransform.sourceJoin(traversalSource, downstreamOp);
                     if (singleAnswerRequired) op = op.findFirst();
-                    Operation<ConclusionAns, ConcludableAns> finalOp = op.map(ConcludableAns::new);
+                    ReactiveTransform<ConclusionAns, ConcludableAns> finalOp = op.map(ConcludableAns::new);
                     // TODO: toUpstreamLookup? Requires concludable to determine whether answer is inferred
                     outletManager().feed(finalOp);
                 });

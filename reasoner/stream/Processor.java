@@ -20,9 +20,9 @@ package com.vaticle.typedb.core.reasoner.stream;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.poller.Poller;
 import com.vaticle.typedb.core.common.poller.Pollers;
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 
 import java.util.Collection;
@@ -83,12 +83,12 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         Optional<T> pull();  // Getting back an empty indicates that there will never be an answer
     }
 
-    interface AsyncPullable {
-        void pull();
+    interface AsyncPullable<T> {
+        void pull(Receiver<T> receiver);
     }
 
-    interface Receives<T> {
-        void receive(T packet);
+    interface Receiver<T> {
+        void receiveOrRetry(AsyncPullable<T> upstream, T packet);
     }
 
     // TODO: Note that the identifier for an upstream controller (e.g. resolvable) is different to for an upstream processor (resolvable plus bounds). So inletmanagers are managed based on the former.
@@ -155,7 +155,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
         }
 
-        class Inlet implements AsyncPullable, Receives<INPUT> {
+        class Inlet implements AsyncPullable<INPUT>, Receiver<INPUT> {
 
             private Processor.Connection<INPUT, ?, UPS_PROCESSOR> connection;
             private boolean isPulling;
@@ -173,10 +173,9 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
 
             @Override
-            public void pull() {
+            public void pull(Receiver<INPUT> receiver) {
                 if (!isPulling) {
-//                    connection.upstreamProcessor().execute(actor -> actor.pullPacket(connection));
-                    connection.upstreamProcessor().execute(actor -> connection.outlet().pull());
+                    connection.upstreamProcessor().execute(actor -> actor.pullPacket(connection));
                     isPulling = true;
                 }
             }
@@ -185,7 +184,8 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
                 this.connection = connection;
             }
 
-            public void receive(INPUT packet) {
+            @Override
+            public void receiveOrRetry(AsyncPullable<INPUT> upstream, INPUT packet) {
 
             }
         }
@@ -197,10 +197,10 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     }
 
     public <PACKET> void receivePacket(Connection<PACKET, ?, ?> connection, PACKET packet) {
-        connection.inlet().receive(packet);  // TODO: It's weird that this doesn't require any state to work beacuse the connection already has the knowledge
+        connection.inlet().receiveOrRetry(connection.outlet(), packet);  // TODO: It's weird that this doesn't require any state to work beacuse the connection already has the knowledge
     }
 
-    public static abstract class OutletManager<OUTPUT> implements AsyncPullable, Receives<OUTPUT> {
+    public static abstract class OutletManager<OUTPUT> implements AsyncPullable<OUTPUT>, Receiver<OUTPUT> {
 
         private final Supplier<OUTPUT> onPull;
 
@@ -212,13 +212,14 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             onPull.get();
         }
 
-        public void receive(OUTPUT packet) {
-            outlets().forEach(outlet -> outlet.receive(packet));
+        @Override
+        public void receiveOrRetry(AsyncPullable<OUTPUT> upstream, OUTPUT packet) {
+            outlets().forEach(outlet -> outlet.receiveOrRetry(upstream, packet));
         }
 
         abstract Set<Outlet> outlets();
 
-        public abstract void feed(Operation<?, OUTPUT> op);
+        public abstract void feed(ReactiveTransform<?, OUTPUT> op);
 
         public abstract Outlet newOutlet();
 
@@ -237,7 +238,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
 
             @Override
-            public void feed(Operation<?, OUTPUT> op) {
+            public void feed(ReactiveTransform<?, OUTPUT> op) {
                 // TODO
             }
 
@@ -247,7 +248,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
 
             @Override
-            public void pull() {
+            public void pull(Receiver<OUTPUT> receiver) {
                 // TODO
             }
         }
@@ -267,7 +268,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
 
             @Override
-            public void feed(Operation<?, OUTPUT> op) {
+            public void feed(ReactiveTransform<?, OUTPUT> op) {
                 // TODO
             }
 
@@ -279,12 +280,12 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
 
             @Override
-            public void pull() {
+            public void pull(Receiver<OUTPUT> receiver) {
                 // TODO
             }
         }
 
-        class Outlet implements Pullable<OUTPUT>, Receives<OUTPUT> {
+        class Outlet implements AsyncPullable<OUTPUT>, Receiver<OUTPUT> {
 
             private Connection<OUTPUT, ?, ?> connection;
 
@@ -293,59 +294,138 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
 
             @Override
-            public void receive(OUTPUT packet) {
+            public void receiveOrRetry(AsyncPullable<OUTPUT> upstream, OUTPUT packet) {
                 // TODO: If pulling then send packet on, otherwise buffer it?
                 connection.downstreamProcessor().execute(actor -> actor.receivePacket(connection, packet));
             }
 
             @Override
-            public Poller<OUTPUT> pull() {
-                return null;  // TODO;
+            public void pull(Receiver<OUTPUT> receiver) {
+                // TODO
             }
         }
 
     }
 
-    static class Source<INPUT> {
-        public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<ConceptMap>> traversal) {
-            return null;  // TODO
+    static class Source<INPUT> implements AsyncPullable<INPUT> {
+
+        private final Supplier<FunctionalIterator<INPUT>> iteratorSupplier;
+        private FunctionalIterator<INPUT> iterator;
+
+        public Source(Supplier<FunctionalIterator<INPUT>> iteratorSupplier) {
+            this.iteratorSupplier = iteratorSupplier;
+            this.iterator = null;
         }
 
-        public Operation<INPUT, INPUT> asOperation() {
-            return null; // TODO
+        public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier) {
+            return new Source<>(iteratorSupplier);
+        }
+
+        @Override
+        public void pull(Receiver<INPUT> receiver) {
+            if (iterator == null) iterator = iteratorSupplier.get();
+            if (iterator.hasNext()) {
+                receiver.receiveOrRetry(this, iterator.next());
+            }
         }
     }
 
-    public static abstract class Operation<INPUT, OUTPUT> implements Pullable<OUTPUT>, Receives<INPUT> {
-        public static <I> Operation<I, I> input(Pullable<I> input) {
+    public static abstract class Reactive<INPUT, OUTPUT> implements AsyncPullable<INPUT>, Receiver<INPUT> {
+
+        protected final Set<Receiver<OUTPUT>> downstreams;
+        protected final Set<AsyncPullable<INPUT>> upstreams;
+        private boolean isPulling;
+
+        Reactive(Set<Receiver<OUTPUT>> downstreams, Set<AsyncPullable<INPUT>> upstreams) {
+            this.downstreams = downstreams;
+            this.upstreams = upstreams;
+            this.isPulling = false;
+        }
+
+        @Override
+        public void pull(Receiver<INPUT> receiver) {
+            if (!isPulling) {
+                upstreams.forEach(this::upstreamPull);
+                isPulling = true;
+            }
+        }
+
+        @Override
+        public void receiveOrRetry(AsyncPullable<INPUT> upstream, INPUT packet) {
+            FunctionalIterator<OUTPUT> transformed = transform(packet);
+            if (transformed.hasNext()) {
+                transformed.forEachRemaining(t -> downstreams.forEach(downstream -> downstreamReceive(downstream, t)));
+                isPulling = false;
+            } else if (isPulling) {
+                upstreamPull(upstream);  // Automatic retry
+            }
+        }
+
+        private void downstreamReceive(Receiver<OUTPUT> downstream, OUTPUT p) {
+            // TODO: Override for cross-actor receiving
+            downstream.receiveOrRetry((AsyncPullable<OUTPUT>) this, p);  // TODO: Remove casting
+        }
+
+        protected void upstreamPull(AsyncPullable<INPUT> upstream) {
+            // TODO: Override for cross-actor pulling
+            upstream.pull(this);
+        }
+
+        protected abstract FunctionalIterator<OUTPUT> transform(INPUT packet);
+
+    }
+
+    public static class TransientReactive<T> extends Reactive<T, T> {
+
+        TransientReactive(Set<Receiver<T>> downstreams, Set<AsyncPullable<T>> upstreams) {
+            super(downstreams, upstreams);
+        }
+
+        @Override
+        public void receiveOrRetry(AsyncPullable<T> upstream, T packet) {
+            downstreams.forEach(downstream -> downstream.receiveOrRetry(upstream, packet));
+        }
+
+        @Override
+        protected FunctionalIterator<T> transform(T packet) {
+            return Iterators.single(packet);
+        }
+    }
+
+    public static abstract class ReactiveTransform<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
+        ReactiveTransform(Set<Receiver<OUTPUT>> downstreams, Set<AsyncPullable<INPUT>> upstreams) {
+            super(downstreams, upstreams);
+        }
+
+        public static <I> ReactiveTransform<I, I> input(Pullable<I> input) {
             return null;  // TODO
         }
 
-        public static <I> Operation<I, I> inputs(Collection<Pullable<I>> inputs) {
+        public static <I> ReactiveTransform<I, I> inputs(Collection<Pullable<I>> inputs) {
             return null;  // TODO
         }
 
-        public static <I> Operation<I, I> fromIterator(FunctionalIterator<I> input) {
+        public static <I> ReactiveTransform<I, I> fromIterator(FunctionalIterator<I> input) {
             return null;
         }
 
-        public static <R, T> Operation<R, T> sourceJoin(Source<T> source, Operation<R, T> operation) {
+        public static <R, T> ReactiveTransform<R, T> sourceJoin(Source<T> source, ReactiveTransform<R, T> operation) {
             return null;  // TODO
         }
 
-        public static Operation<?, ConclusionController.ConclusionAns> input(FunctionalIterator<ConceptMap> flatMap) {
+        public static <R> ReactiveTransform<?, R> input(FunctionalIterator<R> flatMap) {
             return null;  // TODO
         }
 
-        abstract <NEW_OUTPUT> Operation<INPUT, NEW_OUTPUT> flatMap(Function<OUTPUT, Operation<OUTPUT, NEW_OUTPUT>> function);
+        abstract <NEW_OUTPUT> ReactiveTransform<INPUT, NEW_OUTPUT> flatMap(Function<OUTPUT, ReactiveTransform<OUTPUT, NEW_OUTPUT>> function);
 
-        abstract <NEW_OUTPUT> Operation<INPUT, NEW_OUTPUT> map(Function<OUTPUT, NEW_OUTPUT> function);
+        abstract <NEW_OUTPUT> ReactiveTransform<INPUT, NEW_OUTPUT> map(Function<OUTPUT, NEW_OUTPUT> function);
 
         abstract void forEach(Consumer<INPUT> function);
 
-        abstract Operation<INPUT, OUTPUT> filter(Function<OUTPUT, Boolean> function);
+        abstract ReactiveTransform<INPUT, OUTPUT> filter(Function<OUTPUT, Boolean> function);
 
-        abstract Operation<INPUT, OUTPUT> findFirst();
+        abstract ReactiveTransform<INPUT, OUTPUT> findFirst();
 
     }
 
