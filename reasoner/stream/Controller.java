@@ -54,6 +54,12 @@ public abstract class Controller<CID, PID, OUTPUT,
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PID id);
 
+    abstract <
+            UPS_CID, UPS_PID, PACKET,
+            UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, PACKET, UPS_PROCESSOR, UPS_CONTROLLER>,
+            UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>
+            > Driver<UPS_CONTROLLER> getControllerForId(UPS_CID cid);
+
     <PACKET, UPS_CID, UPS_PID, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>,
             UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, PACKET, UPS_PROCESSOR, UPS_CONTROLLER>>
     void findUpstreamConnection(Connection.Builder<PACKET, PROCESSOR, UPS_CID, UPS_PID, UPS_PROCESSOR> connectionBuilder) {
@@ -65,12 +71,6 @@ public abstract class Controller<CID, PID, OUTPUT,
         Driver<PROCESSOR> processor = processors.computeIfAbsent(connectionBuilder.upstreamProcessorId(), this::buildProcessor);
         processor.execute(actor -> actor.buildConnection(connectionBuilder));
     }
-
-    abstract <
-            UPS_CID, UPS_PID, PACKET,
-            UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, PACKET, UPS_PROCESSOR, UPS_CONTROLLER>,
-            UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>
-            > Driver<UPS_CONTROLLER> getControllerForId(UPS_CID cid);
 
 
     @Override

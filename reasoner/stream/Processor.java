@@ -92,6 +92,8 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
         public abstract Inlet newInlet();  // TODO: Should be called by a handler in the controller
 
+        public abstract Set<Inlet> inlets();
+
         public static class Single<INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>> extends InletManager<INPUT, UPS_PROCESSOR> {
 
             @Override
@@ -103,6 +105,11 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             public InletManager<INPUT, UPS_PROCESSOR>.Inlet newInlet() {
                 // TODO: Allow one inlet to be established either via this method or via constructor, and after that throw an exception
                 throw TypeDBException.of(ILLEGAL_STATE);
+            }
+
+            @Override
+            public Set<Inlet> inlets() {
+                return null;  // TODO
             }
 
         }
@@ -120,6 +127,11 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
                 InletManager<INPUT, UPS_PROCESSOR>.Inlet newInlet = new Inlet();
                 inlets.add(newInlet);
                 return newInlet;
+            }
+
+            @Override
+            public Set<Inlet> inlets() {
+                return inlets;
             }
 
             @Override
@@ -269,6 +281,10 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
         public static <I> Operation<I, I> inputs(Collection<Pullable<I>> inputs) {
             return null;  // TODO
+        }
+
+        public static <I> Operation<I, I> fromIterator(FunctionalIterator<I> input) {
+            return null;
         }
 
         public static <R, T> Operation<R, T> sourceJoin(Source<T> source, Operation<R, T> operation) {
