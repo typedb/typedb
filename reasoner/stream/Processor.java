@@ -21,13 +21,9 @@ package com.vaticle.typedb.core.reasoner.stream;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
-import com.vaticle.typedb.core.common.poller.Poller;
-import com.vaticle.typedb.core.common.poller.Pollers;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -76,34 +72,31 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     }
 
     interface Pullable<T> {
-        Poller<T> pull();  // Should return a Poller since if there is no answer now there may be in the future
-    }
-
-    interface SyncPullable<T> {
-        Optional<T> pull();  // Getting back an empty indicates that there will never be an answer
-    }
-
-    interface AsyncPullable<T> {
         void pull(Receiver<T> receiver);
     }
 
     interface Receiver<T> {
-        void receiveOrRetry(AsyncPullable<T> upstream, T packet);
+        void receiveOrRetry(Pullable<T> upstream, T packet);
     }
 
     // TODO: Note that the identifier for an upstream controller (e.g. resolvable) is different to for an upstream processor (resolvable plus bounds). So inletmanagers are managed based on the former.
 
-    static abstract class InletManager<INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>> implements Pullable<INPUT> {
+    static abstract class InletManager<INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>> extends TransientReactive<INPUT> {
+
+        InletManager(Receiver<INPUT> downstream, Set<Pullable<INPUT>> upstreams) {
+            super(downstream, upstreams);
+        }
 
         public abstract Inlet newInlet();  // TODO: Should be called by a handler in the controller
 
-        public abstract Set<Inlet> inlets();
+        public Set<Pullable<INPUT>> inlets() {  // TODO: Can we avoid needing this?
+            return upstreams();
+        }
 
         public static class Single<INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>> extends InletManager<INPUT, UPS_PROCESSOR> {
 
-            @Override
-            public Poller<INPUT> pull() {
-                return Pollers.empty(); // TODO
+            Single(Receiver<INPUT> downstream, Pullable<INPUT> upstream) {
+                super(downstream, set(upstream));
             }
 
             @Override
@@ -112,134 +105,67 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
 
-            @Override
-            public Set<Inlet> inlets() {
-                return null;  // TODO
-            }
-
         }
 
         static class DynamicMulti<INPUT, UPS_PROCESSOR extends Processor<INPUT, UPS_PROCESSOR>> extends InletManager<INPUT, UPS_PROCESSOR> {
 
-            Set<Inlet> inlets;  // TODO: Does this need to be a map?
-
-            DynamicMulti() {
-                this.inlets = new HashSet<>();
+            DynamicMulti(Receiver<INPUT> downstream, Set<Pullable<INPUT>> upstreams) {
+                super(downstream, upstreams);
             }
 
             @Override
-            public InletManager<INPUT, UPS_PROCESSOR>.Inlet newInlet() {
-                InletManager<INPUT, UPS_PROCESSOR>.Inlet newInlet = new Inlet();
-                inlets.add(newInlet);
+            public InletManager<INPUT, UPS_PROCESSOR>.Inlet newInlet() {  // TODO: Dynamically adding upstreams should be handled by the reactive component
+                InletManager<INPUT, UPS_PROCESSOR>.Inlet newInlet = new Inlet(null, this);
+                addUpstream(newInlet);
                 return newInlet;
             }
 
-            @Override
-            public Set<Inlet> inlets() {
-                return inlets;
-            }
-
-            @Override
-            public Poller<INPUT> pull() {
-                // TODO: Get the next inlet and pull from it
-                // TODO: How will this work without blocking to see if an answer is returned? Likely we will always end
-                //  up requesting a pull from more than one downstream even if the first would have sufficed. This is
-                //  because we can't guarantee that any inlet will ever fail (it could be a cycle)
-
-                // TODO: Implement polling behaviour
-                // for (Inlet inlet : inlets.values()) {
-                //     if (inlet.hasPacketReady()) return Optional.of(inlet.nextPacket());
-                // }
-                // for (Inlet inlet : inlets.values()) inlet.pull();
-                return Pollers.empty();
-            }
         }
 
-        class Inlet implements AsyncPullable<INPUT>, Receiver<INPUT> {
+        class Inlet extends TransientReactive<INPUT> {  // TODO: Alter this to also do an arbitrary transformation at the inlet (could be kept simple as a transform from of <T, T> to only support mapping not unifiers), passed in in the constructor
 
             private Processor.Connection<INPUT, ?, UPS_PROCESSOR> connection;
-            private boolean isPulling;
 
-            protected Inlet() {
-                this.isPulling = false;
-            }
-
-            protected boolean hasPacketReady() {
-                return true;  // TODO
-            }
-
-            protected INPUT nextPacket() {
-                return null;  // TODO: return any buffered packets
+            Inlet(Receiver<INPUT> downstream, Pullable<INPUT> upstream) {
+                super(downstream, upstream);
             }
 
             @Override
-            public void pull(Receiver<INPUT> receiver) {
-                if (!isPulling) {
-                    connection.upstreamProcessor().execute(actor -> actor.pullPacket(connection));
-                    isPulling = true;
-                }
+            protected void upstreamPull(Pullable<INPUT> upstream) {
+                // TODO: choose one of these:
+                connection.upstreamProcessor().execute(actor -> upstream.pull(this));
+                connection.upstreamProcessor().execute(actor -> connection.outlet().pull(connection.inlet()));
+                connection.upstreamProcessor().execute(actor -> actor.pullPacket(connection));
             }
 
             public void attach(Connection<INPUT, ?, UPS_PROCESSOR> connection) {  // TODO: Connection type PROCESSOR should be PROCESSOR
                 this.connection = connection;
             }
 
-            @Override
-            public void receiveOrRetry(AsyncPullable<INPUT> upstream, INPUT packet) {
-
-            }
         }
 
     }
 
     public void pullPacket(Connection<OUTPUT, ?, ?> connection) {
-        outletManager().pull(connection);
+        connection.outlet().pull(connection.inlet());
     }
 
     public <PACKET> void receivePacket(Connection<PACKET, ?, ?> connection, PACKET packet) {
-        connection.inlet().receiveOrRetry(connection.outlet(), packet);  // TODO: It's weird that this doesn't require any state to work beacuse the connection already has the knowledge
+        connection.inlet().receiveOrRetry(connection.outlet(), packet);  // TODO: It's weird that this doesn't require any state to work because the connection already has the knowledge
     }
 
-    public static abstract class OutletManager<OUTPUT> implements AsyncPullable<OUTPUT>, Receiver<OUTPUT> {
+    public static abstract class OutletManager<OUTPUT> extends TransientReactive<OUTPUT> {
 
-        private final Supplier<OUTPUT> onPull;
-
-        OutletManager(Supplier<OUTPUT> onPull) {
-            this.onPull = onPull;
+        OutletManager(Set<Receiver<OUTPUT>> downstreams, Pullable<OUTPUT> upstream) {
+            super(downstreams, upstream);
         }
-
-        public void pull(Connection<OUTPUT, ?, ?> connection) {
-            onPull.get();
-        }
-
-        @Override
-        public void receiveOrRetry(AsyncPullable<OUTPUT> upstream, OUTPUT packet) {
-            outlets().forEach(outlet -> outlet.receiveOrRetry(upstream, packet));
-        }
-
-        abstract Set<Outlet> outlets();
-
-        public abstract void feed(ReactiveTransform<?, OUTPUT> op);
 
         public abstract Outlet newOutlet();
 
         public static class Single<OUTPUT> extends OutletManager<OUTPUT> {
 
-            private final OutletManager<OUTPUT>.Outlet outlet;
-
-            Single(OutletManager<OUTPUT>.Outlet outlet, Supplier<OUTPUT> onPull) {
-                super(onPull);
-                this.outlet = outlet;
-            }
-
-            @Override
-            Set<Outlet> outlets() {
-                return set(outlet);
-            }
-
-            @Override
-            public void feed(ReactiveTransform<?, OUTPUT> op) {
-                // TODO
+            Single(Receiver<OUTPUT> downstream, Pullable<OUTPUT> upstream) {
+                super(set(downstream), upstream);
             }
 
             @Override
@@ -247,67 +173,48 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
 
-            @Override
-            public void pull(Receiver<OUTPUT> receiver) {
-                // TODO
-            }
         }
 
         public static class DynamicMulti<OUTPUT> extends OutletManager<OUTPUT> {
 
-            private final Set<OutletManager<OUTPUT>.Outlet> outlets;
-
-            DynamicMulti(Supplier<OUTPUT> onPull) {
-                super(onPull);
-                this.outlets = new HashSet<>();
-            }
-
-            @Override
-            Set<Outlet> outlets() {
-                return outlets;
-            }
-
-            @Override
-            public void feed(ReactiveTransform<?, OUTPUT> op) {
-                // TODO
+            DynamicMulti(Set<Receiver<OUTPUT>> downstreams, Pullable<OUTPUT> upstream) {
+                super(downstreams, upstream);
             }
 
             @Override
             public Outlet newOutlet() {
-                OutletManager<OUTPUT>.Outlet newOutlet = new Outlet();
-                outlets.add(newOutlet);
+                // TODO: Handle dynamically adding outlets in the reactive components
+                OutletManager<OUTPUT>.Outlet newOutlet = new Outlet(connection, this);
+                addDownstream(newOutlet);
                 return newOutlet;
             }
 
-            @Override
-            public void pull(Receiver<OUTPUT> receiver) {
-                // TODO
-            }
         }
 
-        class Outlet implements AsyncPullable<OUTPUT>, Receiver<OUTPUT> {
+        class Outlet extends TransientReactive<OUTPUT> {
 
             private Connection<OUTPUT, ?, ?> connection;
 
+            Outlet(Receiver<OUTPUT> downstream, Pullable<OUTPUT> upstream) {
+                super(downstream, upstream);
+            }
+
             public void attach(Connection<OUTPUT, ?, ?> connection) {  // TODO: The connection UPS_PROCESSOR type should be PROCESSOR
+                assert set(connection.inlet()).equals(upstreams());
                 this.connection = connection;
             }
 
             @Override
-            public void receiveOrRetry(AsyncPullable<OUTPUT> upstream, OUTPUT packet) {
-                // TODO: If pulling then send packet on, otherwise buffer it?
+            protected void downstreamReceive(Receiver<OUTPUT> downstream, OUTPUT packet) {
+                // TODO: Choose one of these to use
                 connection.downstreamProcessor().execute(actor -> actor.receivePacket(connection, packet));
-            }
-
-            @Override
-            public void pull(Receiver<OUTPUT> receiver) {
-                // TODO
+                connection.downstreamProcessor().execute(actor -> downstream.receiveOrRetry(this, packet));
             }
         }
 
     }
 
-    static class Source<INPUT> implements AsyncPullable<INPUT> {
+    static class Source<INPUT> implements Pullable<INPUT> {
 
         private final Supplier<FunctionalIterator<INPUT>> iteratorSupplier;
         private FunctionalIterator<INPUT> iterator;
@@ -330,13 +237,13 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         }
     }
 
-    public static abstract class Reactive<INPUT, OUTPUT> implements AsyncPullable<INPUT>, Receiver<INPUT> {
+    public static abstract class Reactive<INPUT, OUTPUT> implements Pullable<INPUT>, Receiver<INPUT> {
 
-        protected final Set<Receiver<OUTPUT>> downstreams;
-        protected final Set<AsyncPullable<INPUT>> upstreams;
+        private final Set<Receiver<OUTPUT>> downstreams;
+        private final Set<Pullable<INPUT>> upstreams;
         private boolean isPulling;
 
-        Reactive(Set<Receiver<OUTPUT>> downstreams, Set<AsyncPullable<INPUT>> upstreams) {
+        Reactive(Set<Receiver<OUTPUT>> downstreams, Set<Pullable<INPUT>> upstreams) {
             this.downstreams = downstreams;
             this.upstreams = upstreams;
             this.isPulling = false;
@@ -350,8 +257,26 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
         }
 
+        Set<Receiver<OUTPUT>> downstreams() {
+            return downstreams;
+        }
+
+        Set<Pullable<INPUT>> upstreams() {
+            return upstreams;
+        }
+
+        protected void addDownstream(Receiver<OUTPUT> downstream) {
+            downstreams.add(downstream);
+            // TODO: To dynamically add downstreams we need to have buffered all prior packets and send them here
+        }
+
+        protected void addUpstream(Pullable<INPUT> upstream) {
+            upstreams.add(upstream);
+            if (isPulling) upstream.pull(this);
+        }
+
         @Override
-        public void receiveOrRetry(AsyncPullable<INPUT> upstream, INPUT packet) {
+        public void receiveOrRetry(Pullable<INPUT> upstream, INPUT packet) {
             FunctionalIterator<OUTPUT> transformed = transform(packet);
             if (transformed.hasNext()) {
                 transformed.forEachRemaining(t -> downstreams.forEach(downstream -> downstreamReceive(downstream, t)));
@@ -361,12 +286,12 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
         }
 
-        private void downstreamReceive(Receiver<OUTPUT> downstream, OUTPUT p) {
+        protected void downstreamReceive(Receiver<OUTPUT> downstream, OUTPUT p) {
             // TODO: Override for cross-actor receiving
-            downstream.receiveOrRetry((AsyncPullable<OUTPUT>) this, p);  // TODO: Remove casting
+            downstream.receiveOrRetry((Pullable<OUTPUT>) this, p);  // TODO: Remove casting
         }
 
-        protected void upstreamPull(AsyncPullable<INPUT> upstream) {
+        protected void upstreamPull(Pullable<INPUT> upstream) {
             // TODO: Override for cross-actor pulling
             upstream.pull(this);
         }
@@ -377,13 +302,20 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
     public static class TransientReactive<T> extends Reactive<T, T> {
 
-        TransientReactive(Set<Receiver<T>> downstreams, Set<AsyncPullable<T>> upstreams) {
+        TransientReactive(Set<Receiver<T>> downstreams, Set<Pullable<T>> upstreams) {
             super(downstreams, upstreams);
         }
 
-        @Override
-        public void receiveOrRetry(AsyncPullable<T> upstream, T packet) {
-            downstreams.forEach(downstream -> downstream.receiveOrRetry(upstream, packet));
+        TransientReactive(Receiver<T> downstream, Set<Pullable<T>> upstreams) {
+            super(set(downstream), upstreams);
+        }
+
+        TransientReactive(Set<Receiver<T>> downstreams, Pullable<T> upstream) {
+            super(downstreams, set(upstream));
+        }
+
+        TransientReactive(Receiver<T> downstream, Pullable<T> upstream) {
+            super(set(downstream), set(upstream));
         }
 
         @Override
@@ -393,7 +325,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     }
 
     public static abstract class ReactiveTransform<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
-        ReactiveTransform(Set<Receiver<OUTPUT>> downstreams, Set<AsyncPullable<INPUT>> upstreams) {
+        ReactiveTransform(Set<Receiver<OUTPUT>> downstreams, Set<Pullable<INPUT>> upstreams) {
             super(downstreams, upstreams);
         }
 
@@ -451,7 +383,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             return downstreamProcessor;
         }
 
-        OutletManager<?>.Outlet outlet() {
+        OutletManager<PACKET>.Outlet outlet() {
             return outlet;
         }
 

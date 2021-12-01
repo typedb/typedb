@@ -103,7 +103,7 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
                                     ConceptMap bounds, Set<Identifier.Variable.Retrievable> unboundVars,
                                     LinkedHashMap<Rule.Conclusion, Set<Unifier>> upstreamConclusions,
                                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier) {
-            super(driver, controller, name, new OutletManager.DynamicMulti<>(onPull()));
+            super(driver, controller, name, new OutletManager.DynamicMulti<>());
             this.bounds = bounds;
             this.instanceRequirements = null;  // TODO
             this.traversalSuppplier = traversalSuppplier;
@@ -128,10 +128,6 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
             });
         }
 
-        private static Supplier<ConcludableAns> onPull() {
-            return null;  // TODO
-        }
-
         protected void operation() {
             inletManagers.values().forEach(im -> {
                 im.inlets().forEach(inlet -> {
@@ -143,7 +139,6 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
                     if (singleAnswerRequired) op = op.findFirst();
                     ReactiveTransform<ConclusionAns, ConcludableAns> finalOp = op.map(ConcludableAns::new);
                     // TODO: toUpstreamLookup? Requires concludable to determine whether answer is inferred
-                    outletManager().feed(finalOp);
                 });
             });
         }
