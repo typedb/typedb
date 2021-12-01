@@ -24,8 +24,8 @@ import java.util.regex.Pattern;
 public class Bytes {
 
     public static final long KB = 1024;
-    public static final long MB = 1024 * KB;
-    public static final long GB = 1024 * MB;
+    public static final long MB = KB * KB;
+    public static final long GB = KB * MB;
 
     public static final int SHORT_SIZE = 2;
     public static final int SHORT_UNSIGNED_MAX_VALUE = 65_535; // (2 ^ SHORT_SIZE x 8) - 1
@@ -52,38 +52,4 @@ public class Bytes {
         return (byte) (value & 0xff);
     }
 
-    /**
-     * Derived from logback FileSize implementation
-     */
-    public static class Parser {
-
-        private final static String LENGTH_PART = "([0-9]+)";
-        private final static int LENGTH_GROUP = 1;
-        private final static String UNIT_PART = "(|kb|mb|gb)?";
-        private final static int UNIT_GROUP = 2;
-        private static final Pattern FILE_SIZE_PATTERN = Pattern.compile(LENGTH_PART + "\\s*" + UNIT_PART, Pattern.CASE_INSENSITIVE);
-
-        public static long parse(String size) {
-            Matcher matcher = FILE_SIZE_PATTERN.matcher(size);
-            long coefficient;
-            if (matcher.matches()) {
-                String lenStr = matcher.group(LENGTH_GROUP);
-                String unitStr = matcher.group(UNIT_GROUP);
-                long lenValue = Long.parseLong(lenStr);
-                if (unitStr.equalsIgnoreCase("")) coefficient = 1;
-                else if (unitStr.equalsIgnoreCase("kb")) coefficient = KB;
-                else if (unitStr.equalsIgnoreCase("mb")) coefficient = MB;
-                else if (unitStr.equalsIgnoreCase("gb")) coefficient = GB;
-                else throw new IllegalStateException("Unexpected size unit: " + unitStr);
-                return lenValue * coefficient;
-            } else {
-                throw new IllegalArgumentException("Size [" + size + "] is not in a recognised format.");
-            }
-        }
-
-        public static boolean isValidSizeString(String size) {
-            Matcher matcher = FILE_SIZE_PATTERN.matcher(size);
-            return matcher.matches();
-        }
-    }
 }

@@ -50,8 +50,8 @@ public class ConfigurationTest {
         Configuration configuration = (new Configuration.Parser()).getConfig();
         assertTrue(configuration.storage().dataDir().toString().endsWith("server/data"));
         assertEquals(new InetSocketAddress("0.0.0.0", 1729), configuration.server().address());
-        assertEquals(500 * Bytes.MB, configuration.storage().dbCache().dataSize());
-        assertEquals(500 * Bytes.MB, configuration.storage().dbCache().indexSize());
+        assertEquals(500 * Bytes.MB, configuration.storage().databaseCache().dataSize());
+        assertEquals(500 * Bytes.MB, configuration.storage().databaseCache().indexSize());
         assertFalse(configuration.vaticleFactory().enable());
         assertTrue(configuration.log().output().outputs().containsKey("stdout"));
         assertTrue(configuration.log().output().outputs().containsKey("file"));
@@ -70,8 +70,8 @@ public class ConfigurationTest {
         Configuration configuration = (new Configuration.Parser()).getConfig(configMinimalAbsPaths, new HashSet<>());
         assertTrue(configuration.storage().dataDir().isAbsolute());
         assertEquals(new InetSocketAddress("0.0.0.0", 1730), configuration.server().address());
-        assertEquals(200 * Bytes.MB, configuration.storage().dbCache().dataSize());
-        assertEquals(700 * Bytes.MB, configuration.storage().dbCache().indexSize());
+        assertEquals(200 * Bytes.MB, configuration.storage().databaseCache().dataSize());
+        assertEquals(700 * Bytes.MB, configuration.storage().databaseCache().indexSize());
         assertFalse(configuration.vaticleFactory().enable());
         assertTrue(configuration.log().output().outputs().containsKey("stdout"));
         assertTrue(configuration.log().output().outputs().containsKey("file"));

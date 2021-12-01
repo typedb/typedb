@@ -183,31 +183,31 @@ public class Configuration {
         private static final String description = "Storage configuration.";
 
         private final Path dataDir;
-        private final DBCache dbCache;
+        private final DatabaseCache databaseCache;
 
-        private Storage(Path dataDir, DBCache dbCache) {
+        private Storage(Path dataDir, DatabaseCache databaseCache) {
             this.dataDir = dataDir;
-            this.dbCache = dbCache;
+            this.databaseCache = databaseCache;
         }
 
         static class Parser extends ValueParser.Nested<Storage> {
 
             private static final EntryParser<Path> dataParser = Value.create("data", "Directory in which user databases will be stored.", PATH);
-            private static final EntryParser<DBCache> dbCacheParser = Value.create(DBCache.name, DBCache.description, new DBCache.Parser());
-            private static final Set<EntryParser<?>> entryParsers = set(dataParser, dbCacheParser);
+            private static final EntryParser<DatabaseCache> databaseCacheParser = Value.create(DatabaseCache.name, DatabaseCache.description, new DatabaseCache.Parser());
+            private static final Set<EntryParser<?>> entryParsers = set(dataParser, databaseCacheParser);
 
             @Override
             Storage parse(Yaml yaml, String scope) {
                 if (yaml.isMap()) {
                     validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                     return new Storage(getConfigPath(dataParser.parse(yaml.asMap(), scope)),
-                            dbCacheParser.parse(yaml.asMap(), scope));
+                            databaseCacheParser.parse(yaml.asMap(), scope));
                 } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, scope);
             }
 
             @Override
             List<Help> help(String scope) {
-                return list(dataParser.help(scope), dbCacheParser.help(scope));
+                return list(dataParser.help(scope), databaseCacheParser.help(scope));
             }
         }
 
@@ -215,34 +215,34 @@ public class Configuration {
             return dataDir;
         }
 
-        public DBCache dbCache() {
-            return dbCache;
+        public DatabaseCache databaseCache() {
+            return databaseCache;
         }
 
-        public static class DBCache {
+        public static class DatabaseCache {
 
-            private static final String name = "db-cache";
+            private static final String name = "database-cache";
             private static final String description = "Per-database storage-layer cache configuration.";
 
             private final long dataSize;
             private final long indexSize;
 
-            private DBCache(long dataSize, long indexSize) {
+            private DatabaseCache(long dataSize, long indexSize) {
                 this.dataSize = dataSize;
                 this.indexSize = indexSize;
             }
 
-            static class Parser extends ValueParser.Nested<DBCache> {
+            static class Parser extends ValueParser.Nested<DatabaseCache> {
 
                 private static final EntryParser<Long> dataParser = Value.create("data", "Size of storage-layer cache for data.", BYTES_SIZE);
                 private static final EntryParser<Long> indexParser = Value.create("index", "Size of storage-layer cache for index.", BYTES_SIZE);
                 private static final Set<EntryParser<?>> entryParsers = set(dataParser, indexParser);
 
                 @Override
-                DBCache parse(Yaml yaml, String scope) {
+                DatabaseCache parse(Yaml yaml, String scope) {
                     if (yaml.isMap()) {
                         validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
-                        return new DBCache(dataParser.parse(yaml.asMap(), scope), indexParser.parse(yaml.asMap(), scope));
+                        return new DatabaseCache(dataParser.parse(yaml.asMap(), scope), indexParser.parse(yaml.asMap(), scope));
                     } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, scope);
                 }
 

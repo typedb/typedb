@@ -20,7 +20,7 @@ server:
 
 storage:
   data: /absolute/path/to/data/dir
-  db-cache:
+  database-cache:
     data: 200mb
     index: 700mb
 

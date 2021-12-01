@@ -21,8 +21,8 @@ server:
 
 storage:
   data: server/data
-  db-cache:
-    # configure data and index per database in the storage layer
+  database-cache:
+    # configure storage-layer data and index cache per database
     # for large datasets, it is more important to have a large index cache than a large data cache
     data: 500mb
     index: 500mb

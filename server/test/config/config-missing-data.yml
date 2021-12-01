@@ -20,7 +20,7 @@ server:
   address: 0.0.0.0:1729
 
 storage:
-  db-cache:
+  database-cache:
     data: 500mb
     index: 500mb
 

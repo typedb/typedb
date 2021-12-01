@@ -21,7 +21,7 @@ server:
 
 storage:
   data: server/data
-  db-cache:
+  database-cache:
     data: 500mb
     index: 500mb
 

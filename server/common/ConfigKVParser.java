@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
@@ -232,8 +234,8 @@ public abstract class ConfigKVParser implements Option.CliHelp {
                     "<relative or absolute path>"
             );
             public static final Leaf<Long> BYTES_SIZE = new Leaf<>(
-                    (yaml) -> yaml.isString() && Bytes.Parser.isValidSizeString(yaml.asString().value()),
-                    (yaml) -> Bytes.Parser.parse(yaml.asString().value()),
+                    (yaml) -> yaml.isString() && BytesParser.isValidSizeString(yaml.asString().value()),
+                    (yaml) -> BytesParser.parse(yaml.asString().value()),
                     "<size>"
             );
             public static final Leaf<InetSocketAddress> INET_SOCKET_ADDRESS = new Leaf<>(
@@ -285,6 +287,42 @@ public abstract class ConfigKVParser implements Option.CliHelp {
 
             public String help() {
                 return help;
+            }
+        }
+
+
+        /**
+         * Derived from logback FileSize implementation
+         */
+        private static class BytesParser {
+
+            private final static String LENGTH_PART = "([0-9]+)";
+            private final static int LENGTH_GROUP = 1;
+            private final static String UNIT_PART = "(|kb|mb|gb)?";
+            private final static int UNIT_GROUP = 2;
+            private static final Pattern FILE_SIZE_PATTERN = Pattern.compile(LENGTH_PART + "\\s*" + UNIT_PART, Pattern.CASE_INSENSITIVE);
+
+            private static long parse(String size) {
+                Matcher matcher = FILE_SIZE_PATTERN.matcher(size);
+                long coefficient;
+                if (matcher.matches()) {
+                    String lenStr = matcher.group(LENGTH_GROUP);
+                    String unitStr = matcher.group(UNIT_GROUP);
+                    long lenValue = Long.parseLong(lenStr);
+                    if (unitStr.equalsIgnoreCase("")) coefficient = 1;
+                    else if (unitStr.equalsIgnoreCase("kb")) coefficient = Bytes.KB;
+                    else if (unitStr.equalsIgnoreCase("mb")) coefficient = Bytes.MB;
+                    else if (unitStr.equalsIgnoreCase("gb")) coefficient = Bytes.GB;
+                    else throw new IllegalStateException("Unexpected size unit: " + unitStr);
+                    return lenValue * coefficient;
+                } else {
+                    throw new IllegalArgumentException("Size [" + size + "] is not in a recognised format.");
+                }
+            }
+
+            private static boolean isValidSizeString(String size) {
+                Matcher matcher = FILE_SIZE_PATTERN.matcher(size);
+                return matcher.matches();
             }
         }
     }

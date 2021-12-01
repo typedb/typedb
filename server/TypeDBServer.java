@@ -91,8 +91,8 @@ public class TypeDBServer implements AutoCloseable {
         Options.Database options = new Options.Database()
                 .typeDBDir(getTypedbDir())
                 .dataDir(configuration.storage().dataDir())
-                .storageDataCacheSize(configuration.storage().dbCache().dataSize())
-                .storageIndexCacheSize(configuration.storage().dbCache().indexSize())
+                .storageDataCacheSize(configuration.storage().databaseCache().dataSize())
+                .storageIndexCacheSize(configuration.storage().databaseCache().indexSize())
                 .reasonerDebuggerDir(configuration.log().debugger().reasoner().output().path());
 
         this.factory = factory;
