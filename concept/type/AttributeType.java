@@ -24,9 +24,7 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 

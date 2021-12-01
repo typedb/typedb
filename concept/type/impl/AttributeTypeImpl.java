@@ -33,7 +33,6 @@ import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

@@ -18,9 +18,6 @@
 
 package com.vaticle.typedb.core.common.collection;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 public class Bytes {
 
     public static final long KB = 1024;

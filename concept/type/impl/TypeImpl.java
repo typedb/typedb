@@ -47,7 +47,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.INV
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_BEEN_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES;
-import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 
 public abstract class TypeImpl extends ConceptImpl implements Type {
