@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROCESSOR>> extends Actor<PROCESSOR> {
@@ -63,13 +64,13 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     protected <DNS_PROCESSOR extends Processor<?, DNS_PROCESSOR>>
     void buildConnection(Connection.Builder<OUTPUT, DNS_PROCESSOR, ?, ?, PROCESSOR> connectionBuilder) {
         OutletManager<OUTPUT>.Outlet newOutlet = outletManager().newOutlet();
-        Connection<DNS_PROCESSOR, PROCESSOR> connection =
+        Connection<OUTPUT, DNS_PROCESSOR, PROCESSOR> connection =
                 connectionBuilder.addOutlet(newOutlet).addUpstreamProcessor(driver()).build();
         newOutlet.attach(connection);
         connection.downstreamProcessor().execute(actor -> actor.setReady(connection));
     }
 
-    protected <UPS_PROCESSOR extends Processor<?, UPS_PROCESSOR>> void setReady(Connection<PROCESSOR, UPS_PROCESSOR> connection) {
+    protected <PACKET, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> void setReady(Connection<PACKET, PROCESSOR, UPS_PROCESSOR> connection) {
         connection.inlet().attach(connection);
         // TODO: If inlet wants to pull, trigger pulling
     }
@@ -84,6 +85,10 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
     interface AsyncPullable {
         void pull();
+    }
+
+    interface Receives<T> {
+        void receive(T packet);
     }
 
     // TODO: Note that the identifier for an upstream controller (e.g. resolvable) is different to for an upstream processor (resolvable plus bounds). So inletmanagers are managed based on the former.
@@ -150,9 +155,9 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
         }
 
-        class Inlet implements AsyncPullable {
+        class Inlet implements AsyncPullable, Receives<INPUT> {
 
-            private Processor.Connection<?, UPS_PROCESSOR> connection;
+            private Processor.Connection<INPUT, ?, UPS_PROCESSOR> connection;
             private boolean isPulling;
 
             protected Inlet() {
@@ -170,27 +175,32 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             @Override
             public void pull() {
                 if (!isPulling) {
-                    connection.upstreamProcessor().execute(actor -> actor.pullPacket(connection));
+//                    connection.upstreamProcessor().execute(actor -> actor.pullPacket(connection));
+                    connection.upstreamProcessor().execute(actor -> connection.outlet().pull());
                     isPulling = true;
                 }
             }
 
-            public void attach(Connection<?, UPS_PROCESSOR> connection) {  // TODO: Connection type PROCESSOR should be PROCESSOR
+            public void attach(Connection<INPUT, ?, UPS_PROCESSOR> connection) {  // TODO: Connection type PROCESSOR should be PROCESSOR
                 this.connection = connection;
+            }
+
+            public void receive(INPUT packet) {
+
             }
         }
 
     }
 
-    public void pullPacket(Connection<?, ?> connection) {
+    public void pullPacket(Connection<OUTPUT, ?, ?> connection) {
         outletManager().pull(connection);
     }
 
-    public <PACKET> void receivePacket(Connection<?, ?> connection, PACKET packet) {
-        // TODO
+    public <PACKET> void receivePacket(Connection<PACKET, ?, ?> connection, PACKET packet) {
+        connection.inlet().receive(packet);  // TODO: It's weird that this doesn't require any state to work beacuse the connection already has the knowledge
     }
 
-    public static abstract class OutletManager<OUTPUT> implements AsyncPullable {
+    public static abstract class OutletManager<OUTPUT> implements AsyncPullable, Receives<OUTPUT> {
 
         private final Supplier<OUTPUT> onPull;
 
@@ -198,14 +208,15 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             this.onPull = onPull;
         }
 
-        public void pull(Connection<?, ?> connection) {
+        public void pull(Connection<OUTPUT, ?, ?> connection) {
             onPull.get();
         }
 
-        public void receivePacket(OUTPUT packet) {
-            Connection<?, ?> connection = null;
-            connection.downstreamProcessor().execute(actor -> actor.receivePacket(connection, packet));
+        public void receive(OUTPUT packet) {
+            outlets().forEach(outlet -> outlet.receive(packet));
         }
+
+        abstract Set<Outlet> outlets();
 
         public abstract void feed(Operation<?, OUTPUT> op);
 
@@ -213,8 +224,16 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
         public static class Single<OUTPUT> extends OutletManager<OUTPUT> {
 
-            Single(Supplier<OUTPUT> onPull) {
+            private final OutletManager<OUTPUT>.Outlet outlet;
+
+            Single(OutletManager<OUTPUT>.Outlet outlet, Supplier<OUTPUT> onPull) {
                 super(onPull);
+                this.outlet = outlet;
+            }
+
+            @Override
+            Set<Outlet> outlets() {
+                return set(outlet);
             }
 
             @Override
@@ -224,7 +243,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
             @Override
             public Outlet newOutlet() {
-                return new Outlet();
+                throw TypeDBException.of(ILLEGAL_STATE);
             }
 
             @Override
@@ -235,8 +254,16 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
         public static class DynamicMulti<OUTPUT> extends OutletManager<OUTPUT> {
 
+            private final Set<OutletManager<OUTPUT>.Outlet> outlets;
+
             DynamicMulti(Supplier<OUTPUT> onPull) {
                 super(onPull);
+                this.outlets = new HashSet<>();
+            }
+
+            @Override
+            Set<Outlet> outlets() {
+                return outlets;
             }
 
             @Override
@@ -246,7 +273,9 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
             @Override
             public Outlet newOutlet() {
-                return new Outlet();
+                OutletManager<OUTPUT>.Outlet newOutlet = new Outlet();
+                outlets.add(newOutlet);
+                return newOutlet;
             }
 
             @Override
@@ -255,10 +284,23 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             }
         }
 
-        class Outlet {
+        class Outlet implements Pullable<OUTPUT>, Receives<OUTPUT> {
 
-            public void attach(Connection<?, ?> connection) {  // TODO: The connection UPS_PROCESSOR type should be PROCESSOR
-                // TODO
+            private Connection<OUTPUT, ?, ?> connection;
+
+            public void attach(Connection<OUTPUT, ?, ?> connection) {  // TODO: The connection UPS_PROCESSOR type should be PROCESSOR
+                this.connection = connection;
+            }
+
+            @Override
+            public void receive(OUTPUT packet) {
+                // TODO: If pulling then send packet on, otherwise buffer it?
+                connection.downstreamProcessor().execute(actor -> actor.receivePacket(connection, packet));
+            }
+
+            @Override
+            public Poller<OUTPUT> pull() {
+                return null;  // TODO;
             }
         }
 
@@ -274,7 +316,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         }
     }
 
-    public static abstract class Operation<INPUT, OUTPUT> {
+    public static abstract class Operation<INPUT, OUTPUT> implements Pullable<OUTPUT>, Receives<INPUT> {
         public static <I> Operation<I, I> input(Pullable<I> input) {
             return null;  // TODO
         }
@@ -307,14 +349,14 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
     }
 
-    public static class Connection<PROCESSOR extends Processor<?, PROCESSOR>, UPS_PROCESSOR extends Processor<?, UPS_PROCESSOR>> {
+    public static class Connection<PACKET, PROCESSOR extends Processor<?, PROCESSOR>, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> {
 
         private final Driver<PROCESSOR> downstreamProcessor;
         private final Driver<UPS_PROCESSOR> upstreamProcessor;
-        private final InletManager<?, UPS_PROCESSOR>.Inlet inlet;
-        private final OutletManager<?>.Outlet outlet;
+        private final InletManager<PACKET, UPS_PROCESSOR>.Inlet inlet;
+        private final OutletManager<PACKET>.Outlet outlet;
 
-        public Connection(Driver<PROCESSOR> downstreamProcessor, Driver<UPS_PROCESSOR> upstreamProcessor, InletManager<?, UPS_PROCESSOR>.Inlet inlet, OutletManager<?>.Outlet outlet) {
+        public Connection(Driver<PROCESSOR> downstreamProcessor, Driver<UPS_PROCESSOR> upstreamProcessor, InletManager<PACKET, UPS_PROCESSOR>.Inlet inlet, OutletManager<PACKET>.Outlet outlet) {
             this.downstreamProcessor = downstreamProcessor;
             this.upstreamProcessor = upstreamProcessor;
             this.inlet = inlet;
@@ -333,7 +375,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             return outlet;
         }
 
-        InletManager<?, UPS_PROCESSOR>.Inlet inlet() {
+        InletManager<PACKET, UPS_PROCESSOR>.Inlet inlet() {
             return inlet;
         }
 
@@ -343,7 +385,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             private final UPS_CID upstreamControllerId;
             private Driver<UPS_PROCESSOR> upstreamProcessor;
             private final UPS_PID upstreamProcessorId;
-            private final InletManager<?, UPS_PROCESSOR>.Inlet inlet;
+            private final InletManager<PACKET, UPS_PROCESSOR>.Inlet inlet;
             private OutletManager<PACKET>.Outlet outlet;
 
             protected Builder(Driver<PROCESSOR> downstreamProcessor, UPS_CID upstreamControllerId,
@@ -369,7 +411,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
                 return this;
             }
 
-            Connection<PROCESSOR, UPS_PROCESSOR> build() {
+            Connection<PACKET, PROCESSOR, UPS_PROCESSOR> build() {
                 assert downstreamProcessor != null;
                 assert upstreamProcessor != null;
                 assert inlet != null;

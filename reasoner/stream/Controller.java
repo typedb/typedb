@@ -72,7 +72,6 @@ public abstract class Controller<CID, PID, OUTPUT,
         processor.execute(actor -> actor.buildConnection(connectionBuilder));
     }
 
-
     @Override
     protected void exception(Throwable e) {
         // TODO
