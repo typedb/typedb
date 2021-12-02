@@ -82,16 +82,16 @@ public class VertexProcedure implements PermutationProcedure {
     @Override
     public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
-        LOG.debug(params.toString());
-        LOG.debug(this.toString());
+        LOG.trace(params.toString());
+        LOG.trace(this.toString());
         return async(iterator(graphMgr, params, filter));
     }
 
     @Override
     public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter) {
-        LOG.debug(params.toString());
-        LOG.debug(this.toString());
+        LOG.trace(params.toString());
+        LOG.trace(this.toString());
         assert vertex.id().isRetrievable() && filter.contains(vertex.id().asVariable().asRetrievable());
         FunctionalIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params);
         for (ProcedureEdge<?, ?> e : vertex.outs()) {

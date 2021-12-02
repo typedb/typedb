@@ -66,8 +66,8 @@ public class CombinationFinder {
     }
 
     public Optional<Map<Retrievable, Set<TypeVertex>>> combination() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug(procedures.toString());
+        if (LOG.isTraceEnabled()) {
+            LOG.trace(procedures.toString());
         }
 
         for (CombinationProcedure procedure : procedures) {

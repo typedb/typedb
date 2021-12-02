@@ -343,6 +343,7 @@ public class RocksDatabase implements TypeDB.Database {
     }
 
     private void shutdownRocksPropertiesLogger() {
+        assert rocksPropertiesLogger != null;
         try {
             rocksPropertiesLogger.shutdown();
             boolean terminated = rocksPropertiesLogger.awaitTermination(5, SECONDS);

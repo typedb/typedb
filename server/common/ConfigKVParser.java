@@ -290,7 +290,6 @@ public abstract class ConfigKVParser implements Option.CliHelp {
             }
         }
 
-
         /**
          * Derived from logback FileSize implementation
          */

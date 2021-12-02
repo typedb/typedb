@@ -171,9 +171,9 @@ public class GraphProcedure implements PermutationProcedure {
     @Override
     public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug(params.toString());
-            LOG.debug(this.toString());
+        if (LOG.isTraceEnabled()) {
+            LOG.trace(params.toString());
+            LOG.trace(this.toString());
         }
         assertWithinFilterBounds(filter);
         return async(startVertex().iterator(graphMgr, params).map(
@@ -185,9 +185,9 @@ public class GraphProcedure implements PermutationProcedure {
     @Override
     public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug(params.toString());
-            LOG.debug(this.toString());
+        if (LOG.isTraceEnabled()) {
+            LOG.trace(params.toString());
+            LOG.trace(this.toString());
         }
         assertWithinFilterBounds(filter);
         return startVertex().iterator(graphMgr, params).flatMap(

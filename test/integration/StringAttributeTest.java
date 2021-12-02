@@ -116,7 +116,7 @@ public class StringAttributeTest {
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     AttributeType.String attrType = txn.concepts().getAttributeType("string-value").asString();
                     Set<String> strings = attrType.getInstances().map(a -> a.asString().getValue()).toSet();
-                    assertEquals(strings.size(), generatedStrings.size());
+                    assertEquals(generatedStrings.size(), strings.size());
                     assertTrue(strings.containsAll(generatedStrings));
                 }
             }

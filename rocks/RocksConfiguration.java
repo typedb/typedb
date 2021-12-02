@@ -184,7 +184,9 @@ public class RocksConfiguration {
 
     private void configurePrefixExtractorAndMergeOperator(Options options) {
         // common prefix-seek is a vertex + infix + vertex prefix with type (eg. edge scan), significant performance boost
-        options.useCappedPrefixExtractor(VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH)
+        // note: using CappedLengthPrefixExtractor leads to a bug in RocksDB where the iterator fails when the number of keys is huge
+        // note: and inserted within one transaction (irrelevant?)
+        options.useFixedLengthPrefixExtractor(VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH)
                 .setMergeOperator(new UInt64AddOperator());
     }
 
