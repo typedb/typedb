@@ -18,8 +18,10 @@
 
 package com.vaticle.typedb.core.reasoner.stream;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
@@ -27,17 +29,14 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.stream.ConclusionController.ConclusionAns;
-import com.vaticle.typedb.core.reasoner.stream.ConclusionController.ConclusionProcessor;
-import com.vaticle.typedb.core.reasoner.stream.Processor.InletManager.Single;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class ConcludableController extends Controller<Concludable, ConceptMap, ConcludableController.ConcludableAns,
@@ -91,10 +90,6 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
 
     public static class ConcludableProcessor extends Processor<ConcludableAns, ConcludableProcessor> {
 
-        private final ConceptMap bounds;
-        private final Map<Rule.Conclusion, InletManager.DynamicMulti<ConclusionAns, ConclusionProcessor>> inletManagers;
-        private final Map<InletManager<ConclusionAns, ConclusionProcessor>.Inlet, Unifier> inletUnifiers;
-        private final Map<Single<ConclusionAns, ConclusionProcessor>, Unifier.Requirements.Instance> instanceRequirements;
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
         private final boolean singleAnswerRequired;
 
@@ -104,42 +99,36 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
                                     LinkedHashMap<Rule.Conclusion, Set<Unifier>> upstreamConclusions,
                                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier) {
             super(driver, controller, name, new OutletManager.DynamicMulti<>());
-            this.bounds = bounds;
-            this.instanceRequirements = null;  // TODO
             this.traversalSuppplier = traversalSuppplier;
-            this.singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);;
-            this.inletManagers = new HashMap<>();
-            this.inletUnifiers = new HashMap<>();
-            createInletManagersAndInletUnifiers(upstreamConclusions);  // TODO: For each conclusion create an InletManager
-        }
+            this.singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
 
-        private void createInletManagersAndInletUnifiers(LinkedHashMap<Rule.Conclusion, Set<Unifier>> upstreamConclusions) {
+            Source<ConceptMap> traversalSource = Source.fromIteratorSupplier(traversalSuppplier);  // TODO: We think we'd like a way to prioritise this upstream over others
+//            Function<ConceptMap, FunctionalIterator<ConcludableAns>> fn = c -> Iterators.single(new ConcludableAns(c));
+//            outletManager()
+//                    .findFirst()
+//                    .flatMap(fn)
+//                    .join(traversalSource);
+
+            Reactive<ConceptMap, ?> op = new FlatMapReactive<>(
+                    set(outletManager()), set(traversalSource),
+                    conceptMap -> Iterators.single(new ConcludableAns(conceptMap))
+            );
+
+            if (singleAnswerRequired) op = op.findFirst();  // TODO: How do we achieve this? Needs to prevent any further pulls upon first result found
+
+            Reactive<ConceptMap, ?> finalOp = op;
             upstreamConclusions.forEach((conclusion, unifiers) -> {
-                InletManager.DynamicMulti<ConclusionAns, ConclusionProcessor> ruleInletManager = new InletManager.DynamicMulti<>();
-                inletManagers.put(conclusion, ruleInletManager);
-                unifiers.forEach(unifier -> {
-                    unifier.unify(bounds).ifPresent(upstreamBounds -> {
-                        // Create a new inlet, storing the unifier against it
-                        InletManager<ConclusionAns, ConclusionProcessor>.Inlet newInlet = ruleInletManager.newInlet();
-                        this.inletUnifiers.put(newInlet, unifier);
-                        requestConnection(new Connection.Builder<>(driver(), conclusion, upstreamBounds, newInlet));
-                    });
-                });
-            });
-        }
-
-        protected void operation() {
-            inletManagers.values().forEach(im -> {
-                im.inlets().forEach(inlet -> {
-                    ReactiveTransform<?, ConclusionAns> input = ReactiveTransform.input(im);
-//                    ReactiveTransform<ConclusionAns, ConceptMap> downstreamOp = input.flatMap(a -> ReactiveTransform.fromIterator(inletUnifiers.get(im).unUnify(a.concepts(), instanceRequirements.get(im))));
-                    ReactiveTransform<ConclusionAns, ConceptMap> downstreamOp = null;
-                    Source<ConceptMap> traversalSource = Source.fromIteratorSupplier(traversalSuppplier);
-                    ReactiveTransform<ConclusionAns, ConceptMap> op = ReactiveTransform.sourceJoin(traversalSource, downstreamOp);
-                    if (singleAnswerRequired) op = op.findFirst();
-                    ReactiveTransform<ConclusionAns, ConcludableAns> finalOp = op.map(ConcludableAns::new);
-                    // TODO: toUpstreamLookup? Requires concludable to determine whether answer is inferred
-                });
+                Inlet.DynamicMultiPort<ConclusionAns, ConceptMap> ruleInlet = new Inlet.DynamicMultiPort<>(finalOp, set());
+                finalOp.addUpstream(ruleInlet);  // TODO: We have to manually add this which isn't nice
+                unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
+                    // Create a new port, storing the unifier against it
+                    FlatMapReactive<ConclusionAns, ConceptMap> newInlet = ruleInlet.newPort(conclusionAns -> unifier.unUnify(conclusionAns.concepts(), boundsAndRequirements.second()));
+                    Connection.Builder<
+                            ConclusionAns, ConcludableProcessor, Rule.Conclusion,ConceptMap,
+                            ConclusionController.ConclusionProcessor
+                            > builder = new Connection.Builder<>(driver(), conclusion, boundsAndRequirements.first(), newInlet);
+                    requestConnection(builder);
+                }));
             });
         }
 
