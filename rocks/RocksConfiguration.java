@@ -182,10 +182,19 @@ public class RocksConfiguration {
                         LZ4_COMPRESSION, LZ4_COMPRESSION, LZ4_COMPRESSION));
     }
 
+    /**
+     * We require the merge operator for statistics counts
+     *
+     * Configuring prefix extractor is interesting. The capped length prefix extractor leads to a bug in rocksdb
+     * where an iterator fails to find anything when the number of keys is huge -- was not able to reproduce this.
+     * Fixed length doesn't appear to have the issue.
+     *
+     * We can change the prefix extractor on reboot, and old prefix filters will be ignored by RocksDB automatically
+     */
     private void configurePrefixExtractorAndMergeOperator(Options options) {
         // common prefix-seek is a vertex + infix + vertex prefix with type (eg. edge scan), significant performance boost
         // note: using CappedLengthPrefixExtractor leads to a bug in RocksDB where the iterator fails when the number of keys is huge
-        // note: and inserted within one transaction (irrelevant?)
+        // which we can't reproduce outside of TypeDB
         options.useFixedLengthPrefixExtractor(VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH)
                 .setMergeOperator(new UInt64AddOperator());
     }
