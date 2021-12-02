@@ -40,9 +40,6 @@ java_test(
     ],
     size = "small",
     visibility = ["//visibility:public"],
-    resources = [
-        "//common/test:logback-test"
-    ],
     resource_strip_prefix = "common/test",
 )
 

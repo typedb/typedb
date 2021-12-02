@@ -19,9 +19,12 @@
 package com.vaticle.typedb.core.server.common;
 
 import com.vaticle.typedb.common.yaml.Yaml;
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.common.CommandLine.Option;
 
+import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -29,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
@@ -102,14 +107,14 @@ public abstract class ConfigKVParser implements Option.CliHelp {
 
         abstract TYPE parse(Yaml.Map yaml, String scope);
 
-        static class AnyValue<TYPE> extends EntryParser<TYPE> {
+        static class Value<TYPE> extends EntryParser<TYPE> {
 
-            private AnyValue(String key, String description, ValueParser<TYPE> valueParser) {
+            private Value(String key, String description, ValueParser<TYPE> valueParser) {
                 super(key, description, valueParser);
             }
 
-            static <TYPE> AnyValue<TYPE> create(String key, String description, ValueParser<TYPE> valueType) {
-                return new AnyValue<>(key, description, valueType);
+            static <TYPE> Value<TYPE> create(String key, String description, ValueParser<TYPE> valueType) {
+                return new Value<>(key, description, valueType);
             }
 
             @Override
@@ -226,7 +231,25 @@ public abstract class ConfigKVParser implements Option.CliHelp {
             public static final Leaf<Path> PATH = new Leaf<>(
                     (yaml) -> yaml.isString(),
                     (yaml) -> Paths.get(yaml.asString().value()),
-                    "<path>"
+                    "<relative or absolute path>"
+            );
+            public static final Leaf<Long> BYTES_SIZE = new Leaf<>(
+                    (yaml) -> yaml.isString() && BytesParser.isValidSizeString(yaml.asString().value()),
+                    (yaml) -> BytesParser.parse(yaml.asString().value()),
+                    "<size>"
+            );
+            public static final Leaf<InetSocketAddress> INET_SOCKET_ADDRESS = new Leaf<>(
+                    (yaml) -> {
+                        if (!yaml.isString()) return false;
+                        // use URI to parse IPV4, IVP4 and host names - however, we must add a dummy scheme to use it
+                        URI uri = URI.create("scheme://" + yaml.asString().value());
+                        return uri.getHost() != null && uri.getPort() != -1;
+                    },
+                    (yaml) -> {
+                        URI uri = URI.create("scheme://" + yaml.asString().value());
+                        return new InetSocketAddress(uri.getHost(), uri.getPort());
+                    },
+                    "<address:port>"
             );
             static final Leaf<List<String>> LIST_STRING = new Leaf<>(
                     (yaml) -> yaml.isList() && iterate(yaml.asList().iterator()).allMatch(Yaml::isString),
@@ -264,6 +287,41 @@ public abstract class ConfigKVParser implements Option.CliHelp {
 
             public String help() {
                 return help;
+            }
+        }
+
+        /**
+         * Derived from logback FileSize implementation
+         */
+        private static class BytesParser {
+
+            private final static String LENGTH_PART = "([0-9]+)";
+            private final static int LENGTH_GROUP = 1;
+            private final static String UNIT_PART = "(|kb|mb|gb)?";
+            private final static int UNIT_GROUP = 2;
+            private static final Pattern FILE_SIZE_PATTERN = Pattern.compile(LENGTH_PART + "\\s*" + UNIT_PART, Pattern.CASE_INSENSITIVE);
+
+            private static long parse(String size) {
+                Matcher matcher = FILE_SIZE_PATTERN.matcher(size);
+                long coefficient;
+                if (matcher.matches()) {
+                    String lenStr = matcher.group(LENGTH_GROUP);
+                    String unitStr = matcher.group(UNIT_GROUP);
+                    long lenValue = Long.parseLong(lenStr);
+                    if (unitStr.equalsIgnoreCase("")) coefficient = 1;
+                    else if (unitStr.equalsIgnoreCase("kb")) coefficient = Bytes.KB;
+                    else if (unitStr.equalsIgnoreCase("mb")) coefficient = Bytes.MB;
+                    else if (unitStr.equalsIgnoreCase("gb")) coefficient = Bytes.GB;
+                    else throw new IllegalStateException("Unexpected size unit: " + unitStr);
+                    return lenValue * coefficient;
+                } else {
+                    throw new IllegalArgumentException("Size [" + size + "] is not in a recognised format.");
+                }
+            }
+
+            private static boolean isValidSizeString(String size) {
+                Matcher matcher = FILE_SIZE_PATTERN.matcher(size);
+                return matcher.matches();
             }
         }
     }

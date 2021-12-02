@@ -26,7 +26,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised
 
 public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID {
 
-    static final int LENGTH = 1;
+    public static final int LENGTH = 1;
 
     private InfixIID(ByteArray bytes) {
         super(bytes);
@@ -65,7 +65,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         static Type extract(ByteArray bytes, int from) {
-            return new Type(bytes.view(from, from+1));
+            return new Type(bytes.view(from, from + 1));
         }
 
         @Override
@@ -85,7 +85,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
             if ((encoding.equals(ROLEPLAYER))) {
                 return RolePlayer.extract(bytes, from);
             } else {
-                return new InfixIID.Thing(bytes.view(from, from+1));
+                return new InfixIID.Thing(bytes.view(from, from + 1));
             }
         }
 

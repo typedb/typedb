@@ -32,6 +32,8 @@ import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.traversal.TraversalCache;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,6 +49,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -56,6 +60,7 @@ import java.util.stream.Stream;
 import static com.vaticle.typedb.common.collection.Collections.hasIntersection;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INCOMPATIBLE_ENCODING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.ROCKS_LOGGER_SHUTDOWN_FAILED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
@@ -71,11 +76,17 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Ty
 import static com.vaticle.typedb.core.graph.common.Encoding.ENCODING_VERSION;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RocksDatabase implements TypeDB.Database {
 
+    private static final Logger LOG = LoggerFactory.getLogger(RocksDatabase.class);
+    private static final int ROCKS_LOG_PERIOD = 300;
+
     protected final OptimisticTransactionDB rocksSchema;
     protected final OptimisticTransactionDB rocksData;
+    protected final org.rocksdb.Options rocksSchemaOptions;
+    protected final org.rocksdb.Options rocksDataOptions;
     protected final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
     protected final String name;
     protected StatisticsBackgroundCounter statisticsBackgroundCounter;
@@ -86,6 +97,7 @@ public class RocksDatabase implements TypeDB.Database {
     private final RocksTypeDB typedb;
     private final ConsistencyManager consistencyMgr;
     private final AtomicInteger schemaLockWriteRequests;
+    private final ScheduledExecutorService rocksPropertiesLogger;
     private Cache cache;
 
     private final Factory.Session sessionFactory;
@@ -102,11 +114,23 @@ public class RocksDatabase implements TypeDB.Database {
         schemaLockWriteRequests = new AtomicInteger(0);
         consistencyMgr = new ConsistencyManager();
 
+        boolean enableLogging = LOG.isDebugEnabled();
+        RocksConfiguration rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
+                options().storageIndexCacheSize(), enableLogging, ROCKS_LOG_PERIOD);
         try {
             String schemaDirPath = directory().resolve(Encoding.ROCKS_SCHEMA).toString();
             String dataDirPath = directory().resolve(Encoding.ROCKS_DATA).toString();
-            rocksSchema = OptimisticTransactionDB.open(this.typedb.rocksDBOptions(), schemaDirPath);
-            rocksData = OptimisticTransactionDB.open(this.typedb.rocksDBOptions(), dataDirPath);
+            rocksSchemaOptions = rocksConfiguration.schemaOptions();
+            rocksSchema = OptimisticTransactionDB.open(rocksSchemaOptions, schemaDirPath);
+            rocksDataOptions = rocksConfiguration.dataOptions();
+            rocksData = OptimisticTransactionDB.open(rocksDataOptions, dataDirPath);
+            if (enableLogging) {
+                rocksPropertiesLogger = Executors.newScheduledThreadPool(1);
+                rocksPropertiesLogger.scheduleAtFixedRate(new RocksProperties.Logger(rocksData, name), 0,
+                        ROCKS_LOG_PERIOD, SECONDS);
+            } else {
+                rocksPropertiesLogger = null;
+            }
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
@@ -313,7 +337,19 @@ public class RocksDatabase implements TypeDB.Database {
 
     protected void close() {
         if (isOpen.compareAndSet(true, false)) {
+            if (rocksPropertiesLogger != null) shutdownRocksPropertiesLogger();
             closeResources();
+        }
+    }
+
+    private void shutdownRocksPropertiesLogger() {
+        assert rocksPropertiesLogger != null;
+        try {
+            rocksPropertiesLogger.shutdown();
+            boolean terminated = rocksPropertiesLogger.awaitTermination(5, SECONDS);
+            if (!terminated) throw TypeDBException.of(ROCKS_LOGGER_SHUTDOWN_FAILED);
+        } catch (InterruptedException e) {
+            throw TypeDBException.of(e);
         }
     }
 
@@ -326,7 +362,9 @@ public class RocksDatabase implements TypeDB.Database {
         statisticsBgCounterStop();
         cacheClose();
         rocksData.close();
+        rocksDataOptions.close();
         rocksSchema.close();
+        rocksSchemaOptions.close();
     }
 
     @Override

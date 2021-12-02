@@ -22,12 +22,13 @@ import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.common.CommandLine.Option.CliHelp.Help;
 import com.vaticle.typedb.core.server.common.ConfigKVParser.EntryParser;
-import com.vaticle.typedb.core.server.common.ConfigKVParser.EntryParser.AnyValue;
 import com.vaticle.typedb.core.server.common.ConfigKVParser.EntryParser.EnumValue;
+import com.vaticle.typedb.core.server.common.ConfigKVParser.EntryParser.Value;
 import com.vaticle.typedb.core.server.common.ConfigKVParser.MapParser;
 import com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser;
 
 import javax.annotation.Nullable;
+import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,7 +50,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CONFIGURATION_OPTIONS;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.BOOLEAN;
-import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.INTEGER;
+import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.BYTES_SIZE;
+import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.INET_SOCKET_ADDRESS;
 import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.LIST_STRING;
 import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.PATH;
 import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.STRING;
@@ -61,25 +63,25 @@ import static com.vaticle.typedb.core.server.common.Util.setValue;
 
 public class Configuration {
 
-    private final Path dataDir;
-    private final int port;
+    private final Server server;
+    private final Storage storage;
     private final Log log;
     private final VaticleFactory vaticleFactory;
 
-    private Configuration(Path dataDir, int port, Log log, @Nullable VaticleFactory vaticleFactory) {
-        this.dataDir = dataDir;
-        this.port = port;
+    private Configuration(Server server, Storage storage, Log log, @Nullable VaticleFactory vaticleFactory) {
+        this.server = server;
+        this.storage = storage;
         this.log = log;
         this.vaticleFactory = vaticleFactory;
     }
 
     public static class Parser {
 
-        private static final EntryParser<Path> dataParser = AnyValue.create("data", "Directory in which user databases will be stored.", PATH);
-        private static final EntryParser<Integer> portParser = AnyValue.create("port", "Port to which GRPC clients will connect to.", INTEGER);
-        private static final EntryParser<Log> logParser = AnyValue.create(Log.name, Log.description, new Log.Parser());
-        private static final EntryParser<VaticleFactory> vaticleFactoryParser = AnyValue.create(VaticleFactory.name, VaticleFactory.description, new VaticleFactory.Parser());
-        private static final Set<EntryParser<?>> entryParsers = set(dataParser, portParser, logParser, vaticleFactoryParser);
+        private static final EntryParser<Server> serverParser = Value.create(Server.name, Server.description, new Server.Parser());
+        private static final EntryParser<Storage> storageParser = Value.create(Storage.name, Storage.description, new Storage.Parser());
+        private static final EntryParser<Log> logParser = Value.create(Log.name, Log.description, new Log.Parser());
+        private static final EntryParser<VaticleFactory> vaticleFactoryParser = Value.create(VaticleFactory.name, VaticleFactory.description, new VaticleFactory.Parser());
+        private static final Set<EntryParser<?>> entryParsers = set(serverParser, storageParser, logParser, vaticleFactoryParser);
 
         public Configuration getConfig() {
             return getConfig(new HashSet<>());
@@ -94,7 +96,7 @@ public class Configuration {
             Map<String, Yaml> yamlOverrides = toYamlOverrides(overrides);
             yamlOverrides.forEach((key, value) -> setValue(yaml, key.split("\\."), value));
             validatedRecognisedParsers(entryParsers, yaml.keys(), "");
-            return new Configuration(getConfigPath(dataParser.parse(yaml, "")), portParser.parse(yaml, ""),
+            return new Configuration(serverParser.parse(yaml, ""), storageParser.parse(yaml, ""),
                     logParser.parse(yaml, ""), vaticleFactoryParser.parse(yaml, "")
             );
         }
@@ -120,16 +122,16 @@ public class Configuration {
         }
 
         public List<Help> help() {
-            return list(dataParser.help(), portParser.help(), logParser.help(), vaticleFactoryParser.help());
+            return list(serverParser.help(), storageParser.help(), logParser.help(), vaticleFactoryParser.help());
         }
     }
 
-    public Path dataDir() {
-        return dataDir;
+    public Server server() {
+        return server;
     }
 
-    public int port() {
-        return port;
+    public Storage storage() {
+        return storage;
     }
 
     public Log log() {
@@ -138,6 +140,126 @@ public class Configuration {
 
     public VaticleFactory vaticleFactory() {
         return vaticleFactory;
+    }
+
+    public static class Server {
+
+        private static final String name = "server";
+        private static final String description = "Server and networking configuration.";
+
+        private final InetSocketAddress address;
+
+        private Server(InetSocketAddress address) {
+            this.address = address;
+        }
+
+        static class Parser extends ValueParser.Nested<Server> {
+
+            private static final EntryParser<InetSocketAddress> addressParser = Value.create("address", "Address to listen for GRPC clients on.", INET_SOCKET_ADDRESS);
+            private static final Set<EntryParser<?>> entryParsers = set(addressParser);
+
+            @Override
+            Server parse(Yaml yaml, String scope) {
+                if (yaml.isMap()) {
+                    validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
+                    return new Server(addressParser.parse(yaml.asMap(), scope));
+                } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, scope);
+            }
+
+            @Override
+            List<Help> help(String scope) {
+                return list(addressParser.help(scope));
+            }
+        }
+
+        public InetSocketAddress address() {
+            return address;
+        }
+    }
+
+    public static class Storage {
+
+        private static final String name = "storage";
+        private static final String description = "Storage configuration.";
+
+        private final Path dataDir;
+        private final DatabaseCache databaseCache;
+
+        private Storage(Path dataDir, DatabaseCache databaseCache) {
+            this.dataDir = dataDir;
+            this.databaseCache = databaseCache;
+        }
+
+        static class Parser extends ValueParser.Nested<Storage> {
+
+            private static final EntryParser<Path> dataParser = Value.create("data", "Directory in which user databases will be stored.", PATH);
+            private static final EntryParser<DatabaseCache> databaseCacheParser = Value.create(DatabaseCache.name, DatabaseCache.description, new DatabaseCache.Parser());
+            private static final Set<EntryParser<?>> entryParsers = set(dataParser, databaseCacheParser);
+
+            @Override
+            Storage parse(Yaml yaml, String scope) {
+                if (yaml.isMap()) {
+                    validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
+                    return new Storage(getConfigPath(dataParser.parse(yaml.asMap(), scope)),
+                            databaseCacheParser.parse(yaml.asMap(), scope));
+                } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, scope);
+            }
+
+            @Override
+            List<Help> help(String scope) {
+                return list(dataParser.help(scope), databaseCacheParser.help(scope));
+            }
+        }
+
+        public Path dataDir() {
+            return dataDir;
+        }
+
+        public DatabaseCache databaseCache() {
+            return databaseCache;
+        }
+
+        public static class DatabaseCache {
+
+            private static final String name = "database-cache";
+            private static final String description = "Per-database storage-layer cache configuration.";
+
+            private final long dataSize;
+            private final long indexSize;
+
+            private DatabaseCache(long dataSize, long indexSize) {
+                this.dataSize = dataSize;
+                this.indexSize = indexSize;
+            }
+
+            static class Parser extends ValueParser.Nested<DatabaseCache> {
+
+                private static final EntryParser<Long> dataParser = Value.create("data", "Size of storage-layer cache for data.", BYTES_SIZE);
+                private static final EntryParser<Long> indexParser = Value.create("index", "Size of storage-layer cache for index.", BYTES_SIZE);
+                private static final Set<EntryParser<?>> entryParsers = set(dataParser, indexParser);
+
+                @Override
+                DatabaseCache parse(Yaml yaml, String scope) {
+                    if (yaml.isMap()) {
+                        validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
+                        return new DatabaseCache(dataParser.parse(yaml.asMap(), scope), indexParser.parse(yaml.asMap(), scope));
+                    } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, scope);
+                }
+
+                @Override
+                List<Help> help(String scope) {
+                    return list(dataParser.help(scope), indexParser.help(scope));
+                }
+            }
+
+            public long dataSize() {
+                return dataSize;
+            }
+
+            public long indexSize() {
+                return indexSize;
+            }
+        }
     }
 
     public static class Log {
@@ -157,9 +279,9 @@ public class Configuration {
 
         static class Parser extends ValueParser.Nested<Log> {
 
-            private static final EntryParser<Output> outputParser = AnyValue.create(Output.name, Output.description, new Output.Parser());
-            private static final EntryParser<Logger> loggerParser = AnyValue.create(Logger.name, Logger.description, new Logger.Parser());
-            private static final EntryParser<Debugger> debuggerParser = AnyValue.create(Debugger.name, Debugger.description, new Debugger.Parser());
+            private static final EntryParser<Output> outputParser = Value.create(Output.name, Output.description, new Output.Parser());
+            private static final EntryParser<Logger> loggerParser = Value.create(Logger.name, Logger.description, new Logger.Parser());
+            private static final EntryParser<Debugger> debuggerParser = Value.create(Debugger.name, Debugger.description, new Debugger.Parser());
             private static final Set<EntryParser<?>> entryParsers = set(outputParser, loggerParser, debuggerParser);
 
             @Override
@@ -318,10 +440,10 @@ public class Configuration {
                     private static final String description = "Options to configure a log output to files in a directory.";
 
                     private final Path path;
-                    private final String fileSizeCap;
-                    private final String archivesSizeCap;
+                    private final long fileSizeCap;
+                    private final long archivesSizeCap;
 
-                    private File(String type, Path path, String fileSizeCap, String archivesSizeCap) {
+                    private File(String type, Path path, long fileSizeCap, long archivesSizeCap) {
                         assert type.equals(File.type);
                         this.path = path;
                         this.fileSizeCap = fileSizeCap;
@@ -331,9 +453,9 @@ public class Configuration {
                     static class Parser extends ValueParser.Nested<File> {
 
                         private static final EntryParser<String> typeParser = EnumValue.create("type", "An output that writes to a directory.", STRING, list(File.type));
-                        private static final EntryParser<Path> pathParser = AnyValue.create("directory", "Directory to write to. Relative paths are relative to distribution path.", PATH);
-                        private static final EntryParser<String> fileSizeCapParser = AnyValue.create("file-size-cap", "Log file size cap before creating new file (eg. 50mb).", STRING);
-                        private static final EntryParser<String> archivesSizeCapParser = AnyValue.create("archives-size-cap", "Total size cap of all archived log files in directory (eg. 1gb).", STRING); // TODO reasoner needs to respect this
+                        private static final EntryParser<Path> pathParser = Value.create("directory", "Directory to write to. Relative paths are relative to distribution path.", PATH);
+                        private static final EntryParser<Long> fileSizeCapParser = Value.create("file-size-cap", "Log file size cap before creating new file (eg. 50mb).", BYTES_SIZE);
+                        private static final EntryParser<Long> archivesSizeCapParser = Value.create("archives-size-cap", "Total size cap of all archived log files in directory (eg. 1gb).", BYTES_SIZE); // TODO reasoner needs to respect this
                         private static final Set<EntryParser<?>> entryParsers = set(typeParser, pathParser, fileSizeCapParser, archivesSizeCapParser);
 
                         @Override
@@ -360,11 +482,11 @@ public class Configuration {
                         return path;
                     }
 
-                    public String fileSizeCap() {
+                    public long fileSizeCap() {
                         return fileSizeCap;
                     }
 
-                    public String archivesSizeCap() {
+                    public long archivesSizeCap() {
                         return archivesSizeCap;
                     }
 
@@ -410,7 +532,7 @@ public class Configuration {
 
             static class Parser extends ValueParser.Nested<Logger> {
 
-                private static final EntryParser<Unfiltered> defaultParser = AnyValue.create("default", "The default logger.", new Unfiltered.Parser());
+                private static final EntryParser<Unfiltered> defaultParser = Value.create("default", "The default logger.", new Unfiltered.Parser());
                 private static final MapParser<Filtered> filteredParsers = MapParser.create("Custom filtered loggers.", new Filtered.Parser());
 
                 @Override
@@ -440,7 +562,7 @@ public class Configuration {
                 static class Parser extends ValueParser.Nested<Unfiltered> {
 
                     private static final EntryParser<String> levelParser = EnumValue.create("level", "Output level.", STRING, LEVELS);
-                    private static final EntryParser<List<String>> outputsParser = AnyValue.create("output", "Outputs to log to by default.", LIST_STRING);
+                    private static final EntryParser<List<String>> outputsParser = Value.create("output", "Outputs to log to by default.", LIST_STRING);
                     private static final Set<EntryParser<?>> entryParsers = set(levelParser, outputsParser);
 
                     @Override
@@ -490,9 +612,9 @@ public class Configuration {
 
                 static class Parser extends ValueParser.Nested<Filtered> {
 
-                    private static final EntryParser<String> filterParser = AnyValue.create("filter", "Class filter (eg. com.vaticle.type).", STRING);
+                    private static final EntryParser<String> filterParser = Value.create("filter", "Class filter (eg. com.vaticle.type).", STRING);
                     private static final EntryParser<String> levelParser = EnumValue.create("level", "Output level.", STRING, LEVELS);
-                    private static final EntryParser<List<String>> outputsParser = AnyValue.create("output", "Outputs to log to by default.", LIST_STRING);
+                    private static final EntryParser<List<String>> outputsParser = Value.create("output", "Outputs to log to by default.", LIST_STRING);
                     private static final Set<EntryParser<?>> entryParsers = set(filterParser, levelParser, outputsParser);
 
                     @Override
@@ -525,7 +647,7 @@ public class Configuration {
 
             public static class Parser extends ValueParser.Nested<Debugger> {
 
-                private static final EntryParser<Reasoner> reasonerParser = AnyValue.create("reasoner", "Configure reasoner debugger.", new Reasoner.Parser());
+                private static final EntryParser<Reasoner> reasonerParser = Value.create("reasoner", "Configure reasoner debugger.", new Reasoner.Parser());
                 private static final Set<EntryParser<?>> entryParsers = set(reasonerParser);
 
                 @Override
@@ -586,8 +708,8 @@ public class Configuration {
                 static class Parser extends ValueParser.Nested<Reasoner> {
 
                     private static final EntryParser<String> typeParser = EnumValue.create("type", "Type of this debugger.", STRING, list(Reasoner.type));
-                    private static final EntryParser<String> outputParser = AnyValue.create("output", "Name of output reasoner debugger should write to (must be directory).", STRING);
-                    private static final EntryParser<Boolean> enableParser = AnyValue.create("enable", "Enable to allow reasoner debugging to be enabled at runtime.", BOOLEAN);
+                    private static final EntryParser<String> outputParser = Value.create("output", "Name of output reasoner debugger should write to (must be directory).", STRING);
+                    private static final EntryParser<Boolean> enableParser = Value.create("enable", "Enable to allow reasoner debugging to be enabled at runtime.", BOOLEAN);
                     private static final Set<EntryParser<?>> entryParsers = set(typeParser, outputParser, enableParser);
 
                     @Override
@@ -608,18 +730,21 @@ public class Configuration {
         }
     }
 
+    /**
+     * Until the scope expands, we take this to only mean configuration of vaticle-factory tracing
+     */
     public static class VaticleFactory {
 
         private static final String name = "vaticle-factory";
         private static final String description = "Configure Vaticle Factory connection.";
 
-        private final boolean trace;
+        private final boolean enable;
         private final String uri;
         private final String username;
         private final String token;
 
-        private VaticleFactory(boolean trace, @Nullable String uri, @Nullable String username, @Nullable String token) {
-            this.trace = trace;
+        private VaticleFactory(boolean enable, @Nullable String uri, @Nullable String username, @Nullable String token) {
+            this.enable = enable;
             this.uri = uri;
             this.username = username;
             this.token = token;
@@ -627,16 +752,16 @@ public class Configuration {
 
         static class Parser extends ValueParser.Nested<VaticleFactory> {
 
-            private static final EntryParser<Boolean> traceParser = AnyValue.create("trace", "Enable Vaticle Factory tracing.", BOOLEAN);
-            private static final EntryParser<String> uriParser = AnyValue.create("uri", "URI of Vaticle Factory server.", STRING);
-            private static final EntryParser<String> usernameParser = AnyValue.create("username", "Username for Vaticle Factory server.", STRING);
-            private static final EntryParser<String> tokenParser = AnyValue.create("token", "Authentication token for Vaticle Factory server.", STRING);
-            private static final Set<EntryParser<?>> entryParsers = set(traceParser, uriParser, usernameParser, tokenParser);
+            private static final EntryParser<Boolean> enableParser = Value.create("enable", "Enable Vaticle Factory tracing.", BOOLEAN);
+            private static final EntryParser<String> uriParser = Value.create("uri", "URI of Vaticle Factory server.", STRING);
+            private static final EntryParser<String> usernameParser = Value.create("username", "Username for Vaticle Factory server.", STRING);
+            private static final EntryParser<String> tokenParser = Value.create("token", "Authentication token for Vaticle Factory server.", STRING);
+            private static final Set<EntryParser<?>> entryParsers = set(enableParser, uriParser, usernameParser, tokenParser);
 
             @Override
             VaticleFactory parse(Yaml yaml, String scope) {
                 if (yaml.isMap()) {
-                    boolean trace = traceParser.parse(yaml.asMap(), scope);
+                    boolean trace = enableParser.parse(yaml.asMap(), scope);
                     validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                     if (trace) {
                         return new VaticleFactory(true, uriParser.parse(yaml.asMap(), scope),
@@ -649,12 +774,12 @@ public class Configuration {
 
             @Override
             List<Help> help(String scope) {
-                return list(traceParser.help(scope), uriParser.help(scope), usernameParser.help(scope), tokenParser.help(scope));
+                return list(enableParser.help(scope), uriParser.help(scope), usernameParser.help(scope), tokenParser.help(scope));
             }
         }
 
-        public boolean trace() {
-            return trace;
+        public boolean enable() {
+            return enable;
         }
 
         public Optional<String> uri() {

@@ -37,9 +37,6 @@ java_test(
     data = [
         "@vaticle_typedb_behaviour//typeql/reasoner:concept-inequality.feature",
     ],
-    resources = [
-        "//common/test:logback-test"
-    ],
     resource_strip_prefix = "common/test",
 )
 

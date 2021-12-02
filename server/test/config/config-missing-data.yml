@@ -15,8 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-data: server/data
-port: 1729
+
+server:
+  address: 0.0.0.0:1729
+
+storage:
+  database-cache:
+    data: 500mb
+    index: 500mb
+
 log:
   output:
     stdout:
@@ -29,15 +36,19 @@ log:
   logger:
     default:
       level: warn
-      output: [ stdout, nonexistant-file ]
+      output: [ stdout, file ]
+    typedb:
+      filter: com.vaticle.typedb.core
+      level: info
+      output: [ stdout, file ]
   debugger:
     reasoner:
       enable: false
       type: reasoner
-      output: nonexistant-file
+      output: file
 
 vaticle-factory:
-  trace: false
+  enable: false
 #  uri: "https://tracing.factory.vaticle.com:7979"
 #  username: $FACTORY_USERNAME
 #  token: $FACTORY_TOKEN

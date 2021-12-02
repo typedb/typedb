@@ -44,47 +44,17 @@ host_compatible_java_test(
     ],
     data = [
         "//server/conf:typedb",
-        ":configuration-minimal-abs-paths",
-        ":configuration-invalid-logger-output",
-        ":configuration-missing-debugger",
-        ":configuration-missing-port",
-        ":configuration-wrong-path-type",
-        ":configuration-unrecognised-option"
+        ":configurations"
     ],
 )
 
 filegroup(
-    name = "configuration-minimal-abs-paths",
-    srcs = ["config-minimal-abs-path.yml"],
-)
-
-filegroup(
-    name = "configuration-invalid-logger-output",
-    srcs = ["config-invalid-logger-output.yml"],
-)
-
-filegroup(
-    name = "configuration-missing-debugger",
-    srcs = ["config-missing-debugger.yml"],
-)
-
-filegroup(
-    name = "configuration-missing-port",
-    srcs = ["config-missing-port.yml"],
-)
-
-filegroup(
-    name = "configuration-wrong-path-type",
-    srcs = ["config-wrong-path-type.yml"],
-)
-
-filegroup(
-    name = "configuration-unrecognised-option",
-    srcs = ["config-unrecognised-option.yml"],
+    name = "configurations",
+    srcs = glob(["config/*.yml"])
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob(["*", "config/*"]),
     license_type = "agpl",
 )

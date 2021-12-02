@@ -74,9 +74,13 @@ public class CommandLine {
             String arg = args[i];
             if (arg.startsWith(Option.PREFIX)) {
                 int index = arg.indexOf("=");
-                if (index != -1) options.add(new Option(arg.substring(2, index), arg.substring(index + 1)));
-                else if (args[i + 1].startsWith(Option.PREFIX)) options.add(new Option(arg.substring(2)));
-                else options.add(new Option(arg.substring(2), args[++i]));
+                if (index != -1) {
+                    options.add(new Option(arg.substring(2, index), arg.substring(index + 1)));
+                } else if (i + 1 == args.length || args[i + 1].startsWith(Option.PREFIX)) {
+                    options.add(new Option(arg.substring(2)));
+                } else {
+                    options.add(new Option(arg.substring(2), args[++i]));
+                }
             } else {
                 throw TypeDBException.of(CLI_OPTION_MISSING_PREFIX, Option.PREFIX, arg);
             }
@@ -147,7 +151,7 @@ public class CommandLine {
                         StringBuilder builder = new StringBuilder();
                         if (anyLeafContents()) {
                             // only print section headers that have a leaf option in them
-                            builder.append(String.format("\n\t### %-40s %s\n", (PREFIX + scopedName + "."), description));
+                            builder.append(String.format("\n\t### %-50s %s\n", (PREFIX + scopedName + "."), description));
                         }
                         for (Help content : contents) {
                             builder.append(content.toString());
@@ -176,9 +180,9 @@ public class CommandLine {
                     @Override
                     public String toString() {
                         if (valueHelp == null) {
-                            return String.format("\t%-50s \t%s\n", (PREFIX + scopedName), description);
+                            return String.format("\t%-60s \t%s\n", (PREFIX + scopedName), description);
                         } else {
-                            return String.format("\t%-50s \t%s\n", (PREFIX + scopedName + VALUE_SEPARATOR + valueHelp), description);
+                            return String.format("\t%-60s \t%s\n", (PREFIX + scopedName + VALUE_SEPARATOR + valueHelp), description);
                         }
                     }
                 }

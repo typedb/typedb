@@ -16,8 +16,17 @@
 #
 
 
-data: server/data
-port: 1729
+server:
+  address: 0.0.0.0:1729
+
+storage:
+  data: server/data
+  database-cache:
+    # configure storage-layer data and index cache per database
+    # for large datasets, it is more important to have a large index cache than a large data cache
+    data: 500mb
+    index: 500mb
+
 log:
   output:
     stdout:
@@ -35,6 +44,10 @@ log:
       filter: com.vaticle.typedb.core
       level: info
       output: [ stdout, file ]
+    storage:
+      filter: com.vaticle.typedb.core.rocks
+      level: warn # on 'debug' the server will periodically log storage properties
+      output: [ stdout, file ]
   debugger:
     reasoner:
       enable: false
@@ -42,7 +55,7 @@ log:
       output: file
 
 vaticle-factory:
-  trace: false
-#  uri: "https://tracing.factory.vaticle.com:7979"
-#  username: $FACTORY_USERNAME
-#  token: $FACTORY_TOKEN
+  enable: false
+  #  uri: "https://tracing.factory.vaticle.com:7979"
+  #  username: $FACTORY_USERNAME
+  #  token: $FACTORY_TOKEN

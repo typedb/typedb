@@ -37,8 +37,8 @@ import static com.vaticle.typedb.core.common.collection.Bytes.INTEGER_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_UNSIGNED_MAX_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.UNENCODABLE_STRING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.UNENCODABLE_STRING;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 public abstract class ByteArray implements Comparable<ByteArray> {

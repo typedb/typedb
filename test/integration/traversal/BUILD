@@ -41,9 +41,6 @@ host_compatible_java_test(
         "@vaticle_typeql_lang_java//common",
         "@vaticle_typedb_common//:common"
     ],
-    resources = [
-        "//common/test:logback-test"
-    ],
     resource_strip_prefix = "common/test",
 )
 

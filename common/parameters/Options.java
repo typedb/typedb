@@ -53,6 +53,8 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     protected Path typeDBDir = null;
     protected Path dataDir = null;
     protected Path reasonerDebuggerDir = null;
+    protected Long storageDataCacheSize = null;
+    protected Long storageIndexCacheSize = null;
 
     abstract SELF getThis();
 
@@ -167,6 +169,18 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
+    public long storageDataCacheSize() {
+        if (storageDataCacheSize != null) return storageDataCacheSize;
+        else if (parent != null) return parent.storageDataCacheSize();
+        else throw TypeDBException.of(ILLEGAL_STATE);
+    }
+
+    public long storageIndexCacheSize() {
+        if (storageIndexCacheSize != null) return storageIndexCacheSize;
+        else if (parent != null) return parent.storageIndexCacheSize();
+        else throw TypeDBException.of(ILLEGAL_STATE);
+    }
+
     public static class Database extends Options<Options<?, ?>, Database> {
 
         @Override
@@ -190,6 +204,16 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
         public Database reasonerDebuggerDir(Path debuggerDir) {
             this.reasonerDebuggerDir = debuggerDir;
+            return this;
+        }
+
+        public Database storageDataCacheSize(long size) {
+            this.storageDataCacheSize = size;
+            return this;
+        }
+
+        public Database storageIndexCacheSize(long size) {
+            this.storageIndexCacheSize = size;
             return this;
         }
     }

@@ -15,29 +15,36 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-data: /absolute/path/to/data/dir
-port: 1730
+server:
+  address: 0.0.0.0:1729
+
+storage:
+  data: server/data
+  database-cache:
+    data: 500mb
+    index: 500mb
+
 log:
   output:
     stdout:
       type: stdout
     file:
       type: file
-      directory: /absolute/path/to/logs/dir
+      directory: server/logs
       file-size-cap: 50mb
       archives-size-cap: 1gb
   logger:
     default:
       level: warn
-      output: [ stdout ]
+      output: [ stdout, nonexistant-file ]
   debugger:
     reasoner:
       enable: false
       type: reasoner
-      output: file
+      output: nonexistant-file
 
 vaticle-factory:
-  trace: false
+  enable: false
 #  uri: "https://tracing.factory.vaticle.com:7979"
 #  username: $FACTORY_USERNAME
 #  token: $FACTORY_TOKEN

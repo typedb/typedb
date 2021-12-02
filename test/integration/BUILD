@@ -36,9 +36,6 @@ host_compatible_java_test(
         "@vaticle_typeql_lang_java//pattern:pattern",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
-    resources = [
-        "//common/test:logback-test"
-    ],
     resource_strip_prefix = "common/test",
     size = "large",
 )
@@ -62,9 +59,6 @@ host_compatible_java_test(
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
     data = [":schema.tql"],
-    resources = [
-        "//common/test:logback-test"
-    ],
     resource_strip_prefix = "common/test",
 )
 
@@ -85,9 +79,6 @@ host_compatible_java_test(
 
         # External dependencies from Vaticle
         "@vaticle_typeql_lang_java//:typeql-lang",
-    ],
-    resources = [
-        "//common/test:logback-test"
     ],
     resource_strip_prefix = "common/test",
     size = "large",
@@ -111,9 +102,6 @@ host_compatible_java_test(
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
-    ],
-    resources = [
-        "//common/test:logback-test"
     ],
     resource_strip_prefix = "common/test",
     size = "large",

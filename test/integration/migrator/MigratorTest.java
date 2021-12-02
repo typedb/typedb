@@ -39,6 +39,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -47,7 +48,8 @@ public class MigratorTest {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("migrator-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
+    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "typedb";
     private static final Path schemaPath = Paths.get("test/integration/migrator/schema.tql");
     private final Path dataPath = Paths.get("test/integration/migrator/data.typedb");

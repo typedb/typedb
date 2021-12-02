@@ -25,23 +25,17 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
-import org.rocksdb.BlockBasedTableConfig;
-import org.rocksdb.BloomFilter;
-import org.rocksdb.ClockCache;
 import org.rocksdb.RocksDB;
-import org.rocksdb.UInt64AddOperator;
-import org.rocksdb.util.SizeUnit;
 
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.TYPEDB_CLOSED;
-import static java.lang.Math.max;
 
 public class RocksTypeDB implements TypeDB {
 
-    private static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
+    static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
 
     static {
         RocksDB.loadLibrary();
@@ -50,42 +44,15 @@ public class RocksTypeDB implements TypeDB {
     }
 
     private final Options.Database typeDBOptions;
-    private final org.rocksdb.Options rocksDBOptions;
     private final RocksDatabaseManager databaseMgr;
     private final AtomicBoolean isOpen;
 
     protected RocksTypeDB(Options.Database options, Factory.DatabaseManager databaseMgrFactory) {
         if (!Executors.isInitialised()) Executors.initialise(MAX_THREADS);
         this.typeDBOptions = options;
-        this.rocksDBOptions = initRocksDBOptions();
         this.databaseMgr = databaseMgrFactory.databaseManager(this);
         this.databaseMgr.loadAll();
         this.isOpen = new AtomicBoolean(true);
-    }
-
-    private org.rocksdb.Options initRocksDBOptions() {
-        return new org.rocksdb.Options()
-                .setCreateIfMissing(true)
-                .setWriteBufferSize(128 * SizeUnit.MB)
-                .setMaxWriteBufferNumber(max(MAX_THREADS / 2, 1))
-                .setMaxWriteBufferNumberToMaintain(max(MAX_THREADS / 8, 1))
-                .setMinWriteBufferNumberToMerge(max(MAX_THREADS / 16, 1))
-                .setLevel0FileNumCompactionTrigger(MAX_THREADS * 4)
-                .setMaxSubcompactions(MAX_THREADS)
-                .setMaxBackgroundJobs(MAX_THREADS)
-                .setUnorderedWrite(true)
-                .setTableFormatConfig(initRocksDBTableOptions())
-                .setMergeOperator(new UInt64AddOperator());
-    }
-
-    private BlockBasedTableConfig initRocksDBTableOptions() {
-        BlockBasedTableConfig rocksDBTableOptions = new BlockBasedTableConfig();
-        long blockSize = Math.round(Runtime.getRuntime().maxMemory() * 0.4); // TODO: generalise through typedb.properties
-        ClockCache uncompressedCache = new ClockCache(blockSize);
-        ClockCache compressedCache = new ClockCache(blockSize);
-        rocksDBTableOptions.setBlockCache(uncompressedCache).setBlockCacheCompressed(compressedCache);
-        rocksDBTableOptions.setFilterPolicy(new BloomFilter(16, false));
-        return rocksDBTableOptions;
     }
 
     public static RocksTypeDB open(Path directory, Factory typeDBFactory) {
@@ -102,10 +69,6 @@ public class RocksTypeDB implements TypeDB {
 
     public Path directory() {
         return typeDBOptions.dataDir();
-    }
-
-    org.rocksdb.Options rocksDBOptions() {
-        return rocksDBOptions;
     }
 
     public Options.Database options() {
@@ -147,6 +110,5 @@ public class RocksTypeDB implements TypeDB {
      */
     protected void closeResources() {
         databaseMgr.close();
-        rocksDBOptions.close();
     }
 }

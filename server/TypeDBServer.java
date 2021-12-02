@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.BindException;
+import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -89,7 +90,9 @@ public class TypeDBServer implements AutoCloseable {
 
         Options.Database options = new Options.Database()
                 .typeDBDir(getTypedbDir())
-                .dataDir(configuration.dataDir())
+                .dataDir(configuration.storage().dataDir())
+                .storageDataCacheSize(configuration.storage().databaseCache().dataSize())
+                .storageIndexCacheSize(configuration.storage().databaseCache().indexSize())
                 .reasonerDebuggerDir(configuration.log().debugger().reasoner().output().path());
 
         this.factory = factory;
@@ -118,25 +121,25 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     private void configureAndVerifyDataDir() {
-        if (!Files.isDirectory(configuration.dataDir())) {
-            if (configuration.dataDir().equals((new Configuration.Parser()).getConfig().dataDir())) {
+        if (!Files.isDirectory(configuration.storage().dataDir())) {
+            if (configuration.storage().dataDir().equals((new Configuration.Parser()).getConfig().storage().dataDir())) {
                 try {
-                    Files.createDirectory(configuration.dataDir());
+                    Files.createDirectory(configuration.storage().dataDir());
                 } catch (IOException e) {
                     throw TypeDBException.of(e);
                 }
             } else {
-                throw TypeDBException.of(DATA_DIRECTORY_NOT_FOUND, configuration.dataDir());
+                throw TypeDBException.of(DATA_DIRECTORY_NOT_FOUND, configuration.storage().dataDir());
             }
         }
 
-        if (!Files.isWritable(configuration.dataDir())) {
-            throw TypeDBException.of(DATA_DIRECTORY_NOT_WRITABLE, configuration.dataDir());
+        if (!Files.isWritable(configuration.storage().dataDir())) {
+            throw TypeDBException.of(DATA_DIRECTORY_NOT_WRITABLE, configuration.storage().dataDir());
         }
     }
 
     private void configureTracing() {
-        if (configuration.vaticleFactory().trace()) {
+        if (configuration.vaticleFactory().enable()) {
             assert configuration.vaticleFactory().uri().isPresent() && configuration.vaticleFactory().username().isPresent() &&
                     configuration.vaticleFactory().token().isPresent();
             FactoryTracing factoryTracingClient;
@@ -156,7 +159,7 @@ public class TypeDBServer implements AutoCloseable {
         typeDBService = new TypeDBService(typedb);
         MigratorService migratorService = new MigratorService(typedb, Version.VERSION);
 
-        return NettyServerBuilder.forPort(configuration.port())
+        return NettyServerBuilder.forAddress(configuration.server().address())
                 .executor(Executors.service())
                 .workerEventLoopGroup(Executors.network())
                 .bossEventLoopGroup(Executors.network())
@@ -171,12 +174,12 @@ public class TypeDBServer implements AutoCloseable {
         return "TypeDB Server";
     }
 
-    private int port() {
-        return configuration.port();
+    private InetSocketAddress address() {
+        return configuration.server().address();
     }
 
     protected Path dataDir() {
-        return configuration.dataDir();
+        return configuration.storage().dataDir();
     }
 
     protected Logger logger() {
@@ -191,7 +194,7 @@ public class TypeDBServer implements AutoCloseable {
             logger().info("");
         } catch (IOException e) {
             if (e.getCause() != null && e.getCause() instanceof BindException) {
-                throw TypeDBException.of(ALREADY_RUNNING, port());
+                throw TypeDBException.of(ALREADY_RUNNING, address());
             } else {
                 throw new RuntimeException(e);
             }
@@ -264,7 +267,7 @@ public class TypeDBServer implements AutoCloseable {
         server.start();
         Instant end = Instant.now();
         server.logger().info("- version: {}", Version.VERSION);
-        server.logger().info("- listening to port: {}", server.port());
+        server.logger().info("- listening to address: {}:{}", server.address().getHostString(), server.address().getPort());
         server.logger().info("- data directory configured to: {}", server.dataDir());
         server.logger().info("- bootup completed in: {} ms", Duration.between(start, end).toMillis());
         server.logger().info("...");

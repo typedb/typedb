@@ -66,9 +66,6 @@ java_test(
         "@vaticle_typedb_behaviour//concept/thing:entity.feature",
     ],
     size = "small",
-    resources = [
-        "//common/test:logback-test"
-    ],
     resource_strip_prefix = "common/test",
 )
 

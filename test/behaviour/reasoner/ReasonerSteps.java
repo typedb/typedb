@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier.initialise;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
@@ -56,7 +57,8 @@ public class ReasonerSteps {
     public static RocksTypeDB typedb;
     public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("typedb");
     public static Path logsDir = dataDir.resolve("logs");
-    public static Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logsDir);
+    public static Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logsDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     public static RocksSession session;
     public static RocksTransaction reasoningTx;
     public static String DATABASE = "typedb-reasoner-test";

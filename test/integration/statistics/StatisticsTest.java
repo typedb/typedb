@@ -37,13 +37,15 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static junit.framework.TestCase.assertEquals;
 
 public class StatisticsTest {
 
     private static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("statistics-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
+    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static String database = "statistics-test";
 
     @Test

@@ -49,6 +49,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Options.Database;
 import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedConjunction;
@@ -61,7 +62,8 @@ public class ReiterationTest {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
+    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "resolution-test";
     private static RocksTypeDB typedb;
 
