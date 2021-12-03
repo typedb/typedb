@@ -53,19 +53,18 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     @Override
     protected void exception(Throwable e) {}
 
-    protected <PACKET, UPS_CID, UPS_PID, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>>
-    void requestConnection(Connection.Builder<PACKET, PROCESSOR, UPS_CID, UPS_PID, UPS_PROCESSOR> connectionBuilder) {
+    protected <PACKET, PUB_CID, PUB_PID, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>>
+    void requestConnection(Connection.Builder<PACKET, PROCESSOR, PUB_CID, PUB_PID, PUB_PROCESSOR> connectionBuilder) {
         controller.execute(actor -> actor.findUpstreamConnection(connectionBuilder));
     }
 
-    protected <DNS_PROCESSOR extends Processor<?, DNS_PROCESSOR>>
-    void buildConnection(Connection.Builder<OUTPUT, DNS_PROCESSOR, ?, ?, PROCESSOR> connectionBuilder) {
-        Connection<OUTPUT, DNS_PROCESSOR, PROCESSOR> connection = connectionBuilder.addUpstreamProcessor(driver()).build();  // TODO: The connection could already have been built by the controller
-        outlet().addSubscriber(connection);
-        connection.downstreamProcessor().execute(actor -> actor.setReady(connection));
+    protected <SUB_PROCESSOR extends Processor<?, SUB_PROCESSOR>>
+    void acceptConnection(Connection<OUTPUT, SUB_PROCESSOR, PROCESSOR> connection) {
+        connection.downstreamProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
 
-    protected <PACKET, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> void setReady(Connection<PACKET, PROCESSOR, UPS_PROCESSOR> connection) {
+    protected <PACKET, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>>
+    void finaliseConnection(Connection<PACKET, PROCESSOR, PUB_PROCESSOR> connection) {
         connection.subscriber().addPublisher(connection);
     }
 
@@ -96,20 +95,22 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
     }
 
-    public static class Connection<PACKET, PROCESSOR extends Processor<?, PROCESSOR>, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> extends IdentityReactive<PACKET> {
+    public static class Connection<PACKET, PROCESSOR extends Processor<?, PROCESSOR>,
+            PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> extends IdentityReactive<PACKET> {
 
         private final Driver<PROCESSOR> downstreamProcessor;
-        private final Driver<UPS_PROCESSOR> upstreamProcessor;
+        private final Driver<PUB_PROCESSOR> upstreamProcessor;
         private final Subscriber<PACKET> inletPort;
 
-        public Connection(Driver<PROCESSOR> downstreamProcessor, Driver<UPS_PROCESSOR> upstreamProcessor, Subscriber<PACKET> subscriber) {
+        public Connection(Driver<PROCESSOR> downstreamProcessor, Driver<PUB_PROCESSOR> upstreamProcessor,
+                          Subscriber<PACKET> subscriber) {
             super(set(subscriber), set());
             this.downstreamProcessor = downstreamProcessor;
             this.upstreamProcessor = upstreamProcessor;
             this.inletPort = subscriber;
         }
 
-        private Driver<UPS_PROCESSOR> upstreamProcessor() {
+        private Driver<PUB_PROCESSOR> upstreamProcessor() {
             return upstreamProcessor;
         }
 
@@ -131,40 +132,41 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             downstreamProcessor().execute(actor -> subscriber.receive(this, packet));
         }
 
-        public static class Builder<PACKET, PROCESSOR extends Processor<?, PROCESSOR>, UPS_CID, UPS_PID, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> {
+        public static class Builder<PACKET, PROCESSOR extends Processor<?, PROCESSOR>, PUB_CID, PUB_PID,
+                PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> {
 
             private final Driver<PROCESSOR> downstreamProcessor;
-            private final UPS_CID upstreamControllerId;
-            private Driver<UPS_PROCESSOR> upstreamProcessor;
-            private final UPS_PID upstreamProcessorId;
+            private final PUB_CID upstreamControllerId;
+            private Driver<PUB_PROCESSOR> upstreamProcessor;
+            private final PUB_PID upstreamProcessorId;
             private final Reactive<PACKET, ?> inletPort;
 
-            protected Builder(Driver<PROCESSOR> downstreamProcessor, UPS_CID upstreamControllerId,
-                              UPS_PID upstreamProcessorId, Reactive<PACKET, ?> inletPort) {
+            protected Builder(Driver<PROCESSOR> downstreamProcessor, PUB_CID upstreamControllerId,
+                              PUB_PID upstreamProcessorId, Reactive<PACKET, ?> inletPort) {
                 this.downstreamProcessor = downstreamProcessor;
                 this.upstreamControllerId = upstreamControllerId;
                 this.upstreamProcessorId = upstreamProcessorId;
                 this.inletPort = inletPort;
             }
 
-            UPS_CID upstreamControllerId() {
+            PUB_CID upstreamControllerId() {
                 return upstreamControllerId;
             }
 
-            protected Builder<PACKET, PROCESSOR, UPS_CID, UPS_PID, UPS_PROCESSOR> addUpstreamProcessor(Driver<UPS_PROCESSOR> upstreamProcessor) {
+            protected Builder<PACKET, PROCESSOR, PUB_CID, PUB_PID, PUB_PROCESSOR> addUpstreamProcessor(Driver<PUB_PROCESSOR> upstreamProcessor) {
                 assert this.upstreamProcessor == null;
                 this.upstreamProcessor = upstreamProcessor;
                 return this;
             }
 
-            Connection<PACKET, PROCESSOR, UPS_PROCESSOR> build() {
+            Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build() {
                 assert downstreamProcessor != null;
                 assert upstreamProcessor != null;
                 assert inletPort != null;
                 return new Connection<>(downstreamProcessor, upstreamProcessor, inletPort);
             }
 
-            public UPS_PID upstreamProcessorId() {
+            public PUB_PID upstreamProcessorId() {
                 return upstreamProcessorId;
             }
         }

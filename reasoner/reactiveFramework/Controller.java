@@ -55,21 +55,21 @@ public abstract class Controller<CID, PID, OUTPUT,
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PID id);
 
     abstract <
-            UPS_CID, UPS_PID, PACKET,
-            UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, PACKET, UPS_PROCESSOR, UPS_CONTROLLER>,
-            UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>
-            > Driver<UPS_CONTROLLER> getControllerForId(UPS_CID cid);
+            PUB_CID, PUB_PID, PACKET,
+            PUB_CONTROLLER extends Controller<PUB_CID, PUB_PID, PACKET, PUB_PROCESSOR, PUB_CONTROLLER>,
+            PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>
+            > Driver<PUB_CONTROLLER> getControllerForId(PUB_CID cid);
 
-    <PACKET, UPS_CID, UPS_PID, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>,
-            UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, PACKET, UPS_PROCESSOR, UPS_CONTROLLER>>
-    void findUpstreamConnection(Connection.Builder<PACKET, PROCESSOR, UPS_CID, UPS_PID, UPS_PROCESSOR> connectionBuilder) {
-        Driver<UPS_CONTROLLER> controller = getControllerForId(connectionBuilder.upstreamControllerId());
+    <PACKET, PUB_CID, PUB_PID, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>,
+            PUB_CONTROLLER extends Controller<PUB_CID, PUB_PID, PACKET, PUB_PROCESSOR, PUB_CONTROLLER>>
+    void findUpstreamConnection(Connection.Builder<PACKET, PROCESSOR, PUB_CID, PUB_PID, PUB_PROCESSOR> connectionBuilder) {
+        Driver<PUB_CONTROLLER> controller = getControllerForId(connectionBuilder.upstreamControllerId());
         controller.execute(actor -> actor.findConnection(connectionBuilder));
     }
 
     void findConnection(Connection.Builder<OUTPUT, ?, CID, PID, PROCESSOR> connectionBuilder) {
         Driver<PROCESSOR> processor = processors.computeIfAbsent(connectionBuilder.upstreamProcessorId(), this::buildProcessor);
-        processor.execute(actor -> actor.buildConnection(connectionBuilder));
+        processor.execute(actor -> actor.acceptConnection(connectionBuilder.addUpstreamProcessor(processor).build()));
     }
 
     @Override
