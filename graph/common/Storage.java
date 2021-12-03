@@ -49,7 +49,9 @@ public interface Storage {
 
     void close();
 
-    default boolean isSchema() { return false; }
+    default boolean isSchema() {
+        return false;
+    }
 
     default Schema asSchema() {
         throw exception(TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Schema.class)));
@@ -59,9 +61,13 @@ public interface Storage {
 
         KeyGenerator.Schema schemaKeyGenerator();
 
-        default boolean isSchema() { return true; }
+        default boolean isSchema() {
+            return true;
+        }
 
-        default Schema asSchema() { return this; }
+        default Schema asSchema() {
+            return this;
+        }
     }
 
     interface Data extends Storage {

@@ -461,7 +461,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * {@code overriddenIID}, and that is immediately written to storage when changed.
          */
         @Override
-        public void commit() {}
+        public void commit() {
+        }
 
         /**
          * Determine the equality of a {@code Edge} against another.

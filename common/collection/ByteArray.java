@@ -125,15 +125,9 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         return Base64.getEncoder().encodeToString(getBytes());
     }
 
-    public static ByteArray.Base encodeString(String string) {
-        return of(string.getBytes());
-    }
-
     public static ByteArray.Base encodeString(String string, Charset encoding) {
         return of(string.getBytes(encoding));
     }
-
-    public abstract String decodeString();
 
     public abstract String decodeString(Charset encoding);
 
@@ -368,11 +362,6 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         }
 
         @Override
-        public String decodeString() {
-            return new String(array);
-        }
-
-        @Override
         public String decodeString(Charset encoding) {
             return new String(array, encoding);
         }
@@ -483,11 +472,6 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         void copyTo(byte[] destination, int pos) {
             assert pos + length <= destination.length;
             System.arraycopy(array, start, destination, pos, length);
-        }
-
-        @Override
-        public String decodeString() {
-            return new String(array, start, length);
         }
 
         @Override
