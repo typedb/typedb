@@ -32,18 +32,18 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROCESSOR>> extends Actor<PROCESSOR> {
 
     private final Driver<? extends Controller<?, ?, OUTPUT, PROCESSOR, ?>> controller;
-    private final OutletManager<OUTPUT> outletManager;
+    private final Outlet<OUTPUT> outlet;
 
     protected Processor(Driver<PROCESSOR> driver,
                         Driver<? extends Controller<?, ?, OUTPUT, PROCESSOR, ?>> controller,
-                        String name, OutletManager<OUTPUT> outletManager) {
+                        String name, Outlet<OUTPUT> outlet) {
         super(driver, name);
         this.controller = controller;
-        this.outletManager = outletManager;
+        this.outlet = outlet;
     }
 
-    public OutletManager<OUTPUT> outletManager() {
-        return outletManager;
+    public Outlet<OUTPUT> outlet() {
+        return outlet;
     }
 
     @Override
@@ -56,15 +56,13 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
     protected <DNS_PROCESSOR extends Processor<?, DNS_PROCESSOR>>
     void buildConnection(Connection.Builder<OUTPUT, DNS_PROCESSOR, ?, ?, PROCESSOR> connectionBuilder) {
-        OutletManager<OUTPUT>.Outlet newOutlet = outletManager().newOutlet();
-        Connection<OUTPUT, DNS_PROCESSOR, PROCESSOR> connection =
-                connectionBuilder.addOutlet(newOutlet).addUpstreamProcessor(driver()).build();
-        newOutlet.addDownstream(connection);
+        Connection<OUTPUT, DNS_PROCESSOR, PROCESSOR> connection = connectionBuilder.addUpstreamProcessor(driver()).build();
+        outlet().forkTo(connection);
         connection.downstreamProcessor().execute(actor -> actor.setReady(connection));
     }
 
     protected <PACKET, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> void setReady(Connection<PACKET, PROCESSOR, UPS_PROCESSOR> connection) {
-        connection.inletPort().addUpstream(connection);
+        connection.inletPort().join(connection);
     }
 
     interface Pullable<T> {
@@ -77,53 +75,29 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
     // TODO: Note that the identifier for an upstream controller (e.g. resolvable) is different to for an upstream processor (resolvable plus bounds). So inletmanagers are managed based on the former.
 
-    public static abstract class OutletManager<OUTPUT> extends IdentityReactive<OUTPUT> {
+    public static abstract class Outlet<OUTPUT> extends IdentityReactive<OUTPUT> {
 
-        OutletManager() {
+        Outlet() {
             super(set(), set());
         }
 
-        public abstract Outlet newOutlet();
-
-        public static class Single<OUTPUT> extends OutletManager<OUTPUT> {
-
-            Single() {
-                super();
-            }
+        public static class Single<OUTPUT> extends Outlet<OUTPUT> {
 
             @Override
-            public Outlet newOutlet() {
+            protected void addDownstream(Receiver<OUTPUT> downstream) {
                 if (downstreams().size() > 0) throw TypeDBException.of(ILLEGAL_STATE);
-                else {
-                    OutletManager<OUTPUT>.Outlet newOutlet = new Outlet(connection, this);
-                    addDownstream(newOutlet);
-                    return newOutlet;
-                }
+                else downstreams.add(downstream);
             }
 
         }
 
-        public static class DynamicMulti<OUTPUT> extends OutletManager<OUTPUT> {
-
-            DynamicMulti() {
-                super();
-            }
+        public static class DynamicMulti<OUTPUT> extends Outlet<OUTPUT> {
 
             @Override
-            public Outlet newOutlet() {
-                // TODO: Handle dynamically adding outlets in the reactive components
-                OutletManager<OUTPUT>.Outlet newOutlet = new Outlet(connection, this);
-                addDownstream(newOutlet);
-                return newOutlet;
+            protected void addDownstream(Receiver<OUTPUT> downstream) {
+                super.addDownstream(downstream);  // TODO: This needs to record the downstreams read position in the buffer and maintain it.
             }
 
-        }
-
-        class Outlet extends IdentityReactive<OUTPUT> {
-
-            Outlet(Receiver<OUTPUT> downstream, Pullable<OUTPUT> upstream) {
-                super(set(downstream), set(upstream));
-            }
         }
 
     }
@@ -153,7 +127,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
     public static abstract class Reactive<INPUT, OUTPUT> implements Pullable<OUTPUT>, Receiver<INPUT> {
 
-        private final Set<Receiver<OUTPUT>> downstreams;
+        protected final Set<Receiver<OUTPUT>> downstreams;
         private final Set<Pullable<INPUT>> upstreams;
         protected boolean isPulling;
 
@@ -165,7 +139,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
         @Override
         public void pull(Receiver<OUTPUT> receiver) {
-            downstreams.add(receiver);  // TODO: This way we dynamically add the downstreams
+            addDownstream(receiver);  // TODO: This way we dynamically add the downstreams
             if (!isPulling) {
                 upstreams.forEach(this::upstreamPull);
                 isPulling = true;
@@ -191,6 +165,16 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             upstreams.add(upstream);
             if (isPulling) upstream.pull(this);
             return upstream;
+        }
+
+        public Reactive<INPUT, OUTPUT> join(Pullable<INPUT> pullable) {
+            // TODO: join looks strange because all other fluent methods are also doing a join implicitly. Fix this.
+            addUpstream(pullable);
+            return this;
+        }
+
+        public void forkTo(Receiver<OUTPUT> receiver) {
+            addDownstream(receiver);
         }
 
         protected void downstreamReceive(Receiver<OUTPUT> downstream, OUTPUT p) {
@@ -227,15 +211,6 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             return newReactive;
         }
 
-        public Reactive<INPUT, OUTPUT> join(Pullable<INPUT> pullable) {
-            addUpstream(pullable);
-            return this;
-        }
-
-        public Reactive<INPUT, OUTPUT> join(Set<Pullable<INPUT>> pullables) {
-            pullables.forEach(this::addUpstream);
-            return this;
-        }
     }
 
     public static class IdentityReactive<T> extends Reactive<T, T> {
@@ -316,14 +291,14 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         private final Driver<PROCESSOR> downstreamProcessor;
         private final Driver<UPS_PROCESSOR> upstreamProcessor;
         private final Reactive<PACKET, ?> inletPort;
-        private final OutletManager<PACKET>.Outlet outlet;
+        private final Reactive<?, PACKET> outletPort;
 
-        public Connection(Driver<PROCESSOR> downstreamProcessor, Driver<UPS_PROCESSOR> upstreamProcessor, Reactive<PACKET, ?> inletPort, OutletManager<PACKET>.Outlet outlet) {
-            super(set(inletPort), set(outlet));
+        public Connection(Driver<PROCESSOR> downstreamProcessor, Driver<UPS_PROCESSOR> upstreamProcessor, Reactive<PACKET, ?> inletPort, Reactive<?, PACKET> outletPort) {
+            super(set(inletPort), set(outletPort));
             this.downstreamProcessor = downstreamProcessor;
             this.upstreamProcessor = upstreamProcessor;
             this.inletPort = inletPort;
-            this.outlet = outlet;
+            this.outletPort = outletPort;
         }
 
         private Driver<UPS_PROCESSOR> upstreamProcessor() {
@@ -334,8 +309,8 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             return downstreamProcessor;
         }
 
-        OutletManager<PACKET>.Outlet outlet() {
-            return outlet;  // TODO: Duplicates upstreams()
+        Reactive<?, PACKET> outletPort() {
+            return outletPort;  // TODO: Duplicates upstreams()
         }
 
         Reactive<PACKET, ?> inletPort() {
@@ -359,7 +334,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             private Driver<UPS_PROCESSOR> upstreamProcessor;
             private final UPS_PID upstreamProcessorId;
             private final Reactive<PACKET, ?> inletPort;
-            private OutletManager<PACKET>.Outlet outlet;
+            private Reactive<?, PACKET> outletPort;
 
             protected Builder(Driver<PROCESSOR> downstreamProcessor, UPS_CID upstreamControllerId,
                               UPS_PID upstreamProcessorId, Reactive<PACKET, ?> inletPort) {
@@ -373,13 +348,14 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
                 return upstreamControllerId;
             }
 
-
-            protected Builder<PACKET, PROCESSOR, UPS_CID, UPS_PID, UPS_PROCESSOR> addOutlet(OutletManager<PACKET>.Outlet outlet) {
-                this.outlet = outlet;
+            protected Builder<PACKET, PROCESSOR, UPS_CID, UPS_PID, UPS_PROCESSOR> addOutletPort(Reactive<?, PACKET> outletPort) {
+                assert this.outletPort == null;
+                this.outletPort = outletPort;
                 return this;
             }
 
             protected Builder<PACKET, PROCESSOR, UPS_CID, UPS_PID, UPS_PROCESSOR> addUpstreamProcessor(Driver<UPS_PROCESSOR> upstreamProcessor) {
+                assert this.upstreamProcessor == null;
                 this.upstreamProcessor = upstreamProcessor;
                 return this;
             }
@@ -388,8 +364,8 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
                 assert downstreamProcessor != null;
                 assert upstreamProcessor != null;
                 assert inletPort != null;
-                assert outlet != null;
-                return new Connection<>(downstreamProcessor, upstreamProcessor, inletPort, outlet);
+                assert outletPort != null;
+                return new Connection<>(downstreamProcessor, upstreamProcessor, inletPort, outletPort);
             }
 
             public UPS_PID upstreamProcessorId() {

@@ -53,8 +53,8 @@ public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap
 
     public static class ConclusionProcessor extends Processor<ConclusionAns, ConclusionProcessor> {
         public ConclusionProcessor(Driver<ConclusionProcessor> driver, Driver<? extends Controller<?, ?,
-                ConclusionAns, ConclusionProcessor, ?>> controller, String name, OutletManager outletManager) {
-            super(driver, controller, name, outletManager);
+                ConclusionAns, ConclusionProcessor, ?>> controller, String name, Outlet outlet) {
+            super(driver, controller, name, outlet);
         }
 
     }

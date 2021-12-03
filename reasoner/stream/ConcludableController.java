@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.stream;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
@@ -95,14 +94,14 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
                                     ConceptMap bounds, Set<Identifier.Variable.Retrievable> unboundVars,
                                     LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions,
                                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier) {
-            super(driver, controller, name, new OutletManager.DynamicMulti<>());
+            super(driver, controller, name, new Outlet.DynamicMulti<>());
 
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
 
-            Reactive<ConceptMap, ConceptMap> op = outletManager()
+            Reactive<ConceptMap, ConceptMap> op = outlet()
                     .map(ConcludableAns::new)
                     .findFirstIf(singleAnswerRequired)
-                    .join(Source.fromIteratorSupplier(traversalSuppplier));  // TODO: Opposite is fork. This can replace addUpstream and addDownstream?
+                    .join(Source.fromIteratorSupplier(traversalSuppplier));
 
             upstreamConclusions.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
