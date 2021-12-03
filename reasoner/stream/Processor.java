@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.stream;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 
 import java.util.Set;
@@ -73,49 +72,10 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     }
 
     interface Receiver<T> {
-        void receiveOrRetry(Pullable<T> upstream, T packet);
+        void receive(Pullable<T> upstream, T packet);
     }
 
     // TODO: Note that the identifier for an upstream controller (e.g. resolvable) is different to for an upstream processor (resolvable plus bounds). So inletmanagers are managed based on the former.
-
-    static abstract class Inlet<INPUT, OUTPUT> extends FlatMapReactive<OUTPUT, OUTPUT> {
-
-        Inlet(Receiver<OUTPUT> downstream, Set<Pullable<OUTPUT>> upstreams) {
-            super(set(downstream), upstreams, identityTransform());  // TODO: Ready to add any mapping e.g. for subsumption here
-        }
-
-        public abstract FlatMapReactive<INPUT, OUTPUT> newPort(Function<INPUT, FunctionalIterator<OUTPUT>> transform);  // TODO: Should be called by a handler in the controller
-
-        public static class SinglePort<INPUT> extends Inlet<INPUT, INPUT> {
-
-            SinglePort(Receiver<INPUT> downstream, Pullable<INPUT> upstream) {
-                super(downstream, set(upstream));
-            }
-
-            @Override
-            public FlatMapReactive<INPUT, INPUT> newPort(Function<INPUT, FunctionalIterator<INPUT>> transform) {
-                // TODO: Allow one port to be established either via this method or via constructor, and after that throw an exception
-                throw TypeDBException.of(ILLEGAL_STATE);
-            }
-
-        }
-
-        static class DynamicMultiPort<INPUT, OUTPUT> extends Inlet<INPUT, OUTPUT> {
-
-            DynamicMultiPort(Receiver<OUTPUT> downstream, Set<Pullable<OUTPUT>> upstreams) {
-                super(downstream, upstreams);
-            }
-
-            @Override
-            public FlatMapReactive<INPUT, OUTPUT> newPort(Function<INPUT, FunctionalIterator<OUTPUT>> transform) {  // TODO: Dynamically adding upstreams should be handled by the reactive component
-                FlatMapReactive<INPUT, OUTPUT> port = new FlatMapReactive<>(set(this), set(), transform);
-                addUpstream(port);
-                return port;
-            }
-
-        }
-
-    }
 
     public static abstract class OutletManager<OUTPUT> extends IdentityReactive<OUTPUT> {
 
@@ -186,7 +146,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         public void pull(Receiver<INPUT> receiver) {
             if (iterator == null) iterator = iteratorSupplier.get();
             if (iterator.hasNext()) {
-                receiver.receiveOrRetry(this, iterator.next());
+                receiver.receive(this, iterator.next());
             }
         }
     }
@@ -223,6 +183,8 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         protected void addDownstream(Receiver<OUTPUT> downstream) {
             downstreams.add(downstream);
             // TODO: To dynamically add downstreams we need to have buffered all prior packets and send them here
+            //  we can adopt a policy that if you weren't a downstream in time for the packet then you miss it, and
+            //  break this only for outlets which will do the buffering and ensure all downstreams receive all answers.
         }
 
         protected Pullable<INPUT> addUpstream(Pullable<INPUT> upstream) {
@@ -233,7 +195,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
         protected void downstreamReceive(Receiver<OUTPUT> downstream, OUTPUT p) {
             // TODO: Override for cross-actor receiving
-            downstream.receiveOrRetry(this, p);  // TODO: Remove casting
+            downstream.receive(this, p);  // TODO: Remove casting
         }
 
         protected void upstreamPull(Pullable<INPUT> upstream) {
@@ -241,30 +203,39 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             upstream.pull(this);
         }
 
-        public FlatMapReactive<INPUT, INPUT> findFirst() {
-            FlatMapReactive<INPUT, INPUT> newReactive = new FindFirstReactive<>(set(this), set());
+        public IdentityReactive<INPUT> findFirstIf(boolean condition) {
+            if (condition) {
+                FindFirstReactive<INPUT> newReactive = new FindFirstReactive<>(set(this), set());
+                addUpstream(newReactive);
+                return newReactive;
+            } else {
+                IdentityReactive<INPUT> newReactive = new IdentityReactive<>(set(this), set());
+                addUpstream(newReactive);
+                return newReactive;
+            }
+        }
+
+        public <UPS_INPUT> MapReactive<UPS_INPUT, INPUT> map(Function<UPS_INPUT, INPUT> function) {
+            MapReactive<UPS_INPUT, INPUT> newReactive = new MapReactive<>(set(this), set(), function);
             addUpstream(newReactive);
             return newReactive;
         }
 
-        public <UPS_INPUT> FlatMapReactive<UPS_INPUT, INPUT> flatMap(Function<UPS_INPUT, FunctionalIterator<INPUT>> function) {
-            FlatMapReactive<UPS_INPUT, INPUT> newReactive = new FlatMapReactive<>(set(this), set(), function);
+        public <UPS_INPUT> FlatMapOrRetryReactive<UPS_INPUT, INPUT> flatMapOrRetry(Function<UPS_INPUT, FunctionalIterator<INPUT>> function) {
+            FlatMapOrRetryReactive<UPS_INPUT, INPUT> newReactive = new FlatMapOrRetryReactive<>(set(this), set(), function);
             addUpstream(newReactive);
             return newReactive;
         }
 
-        public IdentityReactive<INPUT> join(Pullable<INPUT> pullable) {
-            IdentityReactive<INPUT> newReactive = new IdentityReactive<>(set(this), set());
-            addUpstream(newReactive);
+        public Reactive<INPUT, OUTPUT> join(Pullable<INPUT> pullable) {
             addUpstream(pullable);
-            return newReactive;
+            return this;
         }
 
-//        public <DNS_OUTPUT> FlatMapReactive<OUTPUT, DNS_OUTPUT> map(Function<OUTPUT, FunctionalIterator<DNS_OUTPUT>> function) {
-//            FlatMapReactive<OUTPUT, DNS_OUTPUT> newReactive = new FlatMapReactive<>(set(), set(this), function);
-//            addDownstream(newReactive);
-//            return newReactive;
-//        }
+        public Reactive<INPUT, OUTPUT> join(Set<Pullable<INPUT>> pullables) {
+            pullables.forEach(this::addUpstream);
+            return this;
+        }
     }
 
     public static class IdentityReactive<T> extends Reactive<T, T> {
@@ -274,27 +245,40 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         }
 
         @Override
-        public void receiveOrRetry(Pullable<T> upstream, T packet) {  // TODO: Doesn't do a retry
+        public void receive(Pullable<T> upstream, T packet) {  // TODO: Doesn't do a retry
             downstreams().forEach(downstream -> downstreamReceive(downstream, packet));
         }
     }
 
-    public static class FlatMapReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
+    public static class MapReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
+
+        private final Function<INPUT, OUTPUT> mappingFunc;
+
+        MapReactive(Set<Receiver<OUTPUT>> downstreams, Set<Pullable<INPUT>> upstreams,
+                               Function<INPUT, OUTPUT> mappingFunc) {
+            super(downstreams, upstreams);
+            this.mappingFunc = mappingFunc;
+        }
+
+        @Override
+        public void receive(Pullable<INPUT> upstream, INPUT packet) {
+            downstreams().forEach(downstream -> downstreamReceive(downstream, mappingFunc.apply(packet)));
+        }
+
+    }
+
+    public static class FlatMapOrRetryReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
 
         private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
 
-        FlatMapReactive(Set<Receiver<OUTPUT>> downstreams, Set<Pullable<INPUT>> upstreams,
-                        Function<INPUT, FunctionalIterator<OUTPUT>> transform) {
+        FlatMapOrRetryReactive(Set<Receiver<OUTPUT>> downstreams, Set<Pullable<INPUT>> upstreams,
+                               Function<INPUT, FunctionalIterator<OUTPUT>> transform) {
             super(downstreams, upstreams);
             this.transform = transform;
         }
 
-        public static <T> Function<T, FunctionalIterator<T>> identityTransform() {
-            return Iterators::single;
-        }
-
         @Override
-        public void receiveOrRetry(Pullable<INPUT> upstream, INPUT packet) {
+        public void receive(Pullable<INPUT> upstream, INPUT packet) {
             FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
             if (transformed.hasNext()) {
                 transformed.forEachRemaining(t -> downstreams().forEach(downstream -> downstreamReceive(downstream, t)));
@@ -316,9 +300,9 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         }
 
         @Override
-        public void receiveOrRetry(Pullable<T> upstream, T packet) {  // TODO: Doesn't do a retry
+        public void receive(Pullable<T> upstream, T packet) {  // TODO: Doesn't do a retry
             packetFound = true;
-            downstreams().forEach(downstream -> downstreamReceive(downstream, packet));
+            super.receive(upstream, packet);
         }
 
         @Override
@@ -327,15 +311,15 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         }
     }
 
-    public static class Connection<PACKET, PROCESSOR extends Processor<?, PROCESSOR>, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> extends FlatMapReactive<PACKET, PACKET> {
+    public static class Connection<PACKET, PROCESSOR extends Processor<?, PROCESSOR>, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> extends IdentityReactive<PACKET> {
 
         private final Driver<PROCESSOR> downstreamProcessor;
         private final Driver<UPS_PROCESSOR> upstreamProcessor;
-        private final FlatMapReactive<PACKET, ?> inletPort;
+        private final Reactive<PACKET, ?> inletPort;
         private final OutletManager<PACKET>.Outlet outlet;
 
-        public Connection(Driver<PROCESSOR> downstreamProcessor, Driver<UPS_PROCESSOR> upstreamProcessor, FlatMapReactive<PACKET, ?> inletPort, OutletManager<PACKET>.Outlet outlet) {
-            super(set(inletPort), set(outlet), identityTransform());
+        public Connection(Driver<PROCESSOR> downstreamProcessor, Driver<UPS_PROCESSOR> upstreamProcessor, Reactive<PACKET, ?> inletPort, OutletManager<PACKET>.Outlet outlet) {
+            super(set(inletPort), set(outlet));
             this.downstreamProcessor = downstreamProcessor;
             this.upstreamProcessor = upstreamProcessor;
             this.inletPort = inletPort;
@@ -354,7 +338,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             return outlet;  // TODO: Duplicates upstreams()
         }
 
-        FlatMapReactive<PACKET, ?> inletPort() {
+        Reactive<PACKET, ?> inletPort() {
             return inletPort;  // TODO: Duplicates downstreams()
         }
 
@@ -365,7 +349,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
         @Override
         protected void downstreamReceive(Receiver<PACKET> downstream, PACKET packet) {
-            downstreamProcessor().execute(actor -> downstream.receiveOrRetry(this, packet));
+            downstreamProcessor().execute(actor -> downstream.receive(this, packet));
         }
 
         public static class Builder<PACKET, PROCESSOR extends Processor<?, PROCESSOR>, UPS_CID, UPS_PID, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> {
@@ -374,11 +358,11 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             private final UPS_CID upstreamControllerId;
             private Driver<UPS_PROCESSOR> upstreamProcessor;
             private final UPS_PID upstreamProcessorId;
-            private final FlatMapReactive<PACKET, ?> inletPort;
+            private final Reactive<PACKET, ?> inletPort;
             private OutletManager<PACKET>.Outlet outlet;
 
             protected Builder(Driver<PROCESSOR> downstreamProcessor, UPS_CID upstreamControllerId,
-                              UPS_PID upstreamProcessorId, FlatMapReactive<PACKET, ?> inletPort) {
+                              UPS_PID upstreamProcessorId, Reactive<PACKET, ?> inletPort) {
                 this.downstreamProcessor = downstreamProcessor;
                 this.upstreamControllerId = upstreamControllerId;
                 this.upstreamProcessorId = upstreamProcessorId;
