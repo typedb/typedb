@@ -29,6 +29,8 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.stream.ConclusionController.ConclusionAns;
 import com.vaticle.typedb.core.reasoner.stream.ConclusionController.ConclusionProcessor;
 import com.vaticle.typedb.core.reasoner.stream.Processor.Connection.Builder;
+import com.vaticle.typedb.core.reasoner.stream.reactive.Pullable.Source;
+import com.vaticle.typedb.core.reasoner.stream.reactive.Reactive;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.LinkedHashMap;
