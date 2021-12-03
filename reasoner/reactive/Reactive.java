@@ -23,9 +23,6 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import java.util.function.Function;
 
 public interface Reactive<INPUT, OUTPUT> extends Publisher<OUTPUT>, Subscriber<INPUT> {
-    void addSubscriber(Subscriber<OUTPUT> subscriber);
-
-    Publisher<INPUT> addPublisher(Publisher<INPUT> publisher);
 
     Reactive<INPUT, INPUT> findFirstIf(boolean condition);
 

@@ -26,6 +26,8 @@ import com.vaticle.typedb.core.reasoner.reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Subscriber;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -64,7 +66,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     }
 
     protected <PACKET, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> void setReady(Connection<PACKET, PROCESSOR, UPS_PROCESSOR> connection) {
-        connection.inletPort().addPublisher(connection);
+        connection.subscriber().addPublisher(connection);
     }
 
     public static abstract class Outlet<OUTPUT> extends IdentityReactive<OUTPUT> {
@@ -98,13 +100,13 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
         private final Driver<PROCESSOR> downstreamProcessor;
         private final Driver<UPS_PROCESSOR> upstreamProcessor;
-        private final Reactive<PACKET, ?> inletPort;
+        private final Subscriber<PACKET> inletPort;
 
-        public Connection(Driver<PROCESSOR> downstreamProcessor, Driver<UPS_PROCESSOR> upstreamProcessor, Reactive<PACKET, ?> inletPort) {
-            super(set(inletPort), set());
+        public Connection(Driver<PROCESSOR> downstreamProcessor, Driver<UPS_PROCESSOR> upstreamProcessor, Subscriber<PACKET> subscriber) {
+            super(set(subscriber), set());
             this.downstreamProcessor = downstreamProcessor;
             this.upstreamProcessor = upstreamProcessor;
-            this.inletPort = inletPort;
+            this.inletPort = subscriber;
         }
 
         private Driver<UPS_PROCESSOR> upstreamProcessor() {
@@ -115,7 +117,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             return downstreamProcessor;
         }
 
-        Reactive<PACKET, ?> inletPort() {
+        Subscriber<PACKET> subscriber() {
             return inletPort;  // TODO: Duplicates downstreams()
         }
 
@@ -171,11 +173,11 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     public static class Source<INPUT> implements Publisher<INPUT> {
 
         private final Supplier<FunctionalIterator<INPUT>> iteratorSupplier;
-        private FunctionalIterator<INPUT> iterator;
+        private final Map<Subscriber<INPUT>, FunctionalIterator<INPUT>> iterators;
 
         public Source(Supplier<FunctionalIterator<INPUT>> iteratorSupplier) {
             this.iteratorSupplier = iteratorSupplier;
-            this.iterator = null;
+            this.iterators = new HashMap<>();
         }
 
         public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier) {
@@ -183,11 +185,14 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         }
 
         @Override
+        public void addSubscriber(Subscriber<INPUT> subscriber) {
+            // subscribers only need to be dynamically recorded on pull()
+        }
+
+        @Override
         public void pull(Subscriber<INPUT> subscriber) {
-            if (iterator == null) iterator = iteratorSupplier.get();
-            if (iterator.hasNext()) {
-                subscriber.receive(this, iterator.next());
-            }
+            FunctionalIterator<INPUT> iterator = iterators.computeIfAbsent(subscriber, s -> iteratorSupplier.get());
+            if (iterator.hasNext()) subscriber.receive(this, iterator.next());
         }
     }
 }

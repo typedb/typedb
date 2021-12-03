@@ -19,5 +19,8 @@
 package com.vaticle.typedb.core.reasoner.reactive;
 
 public interface Subscriber<T> {
+
+    Publisher<T> addPublisher(Publisher<T> publisher);
+
     void receive(Publisher<T> publisher, T packet);
 }
