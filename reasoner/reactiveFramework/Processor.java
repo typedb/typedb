@@ -16,14 +16,17 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.stream;
+package com.vaticle.typedb.core.reasoner.reactiveFramework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.stream.reactive.IdentityReactive;
-import com.vaticle.typedb.core.reasoner.stream.reactive.Pullable;
-import com.vaticle.typedb.core.reasoner.stream.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.stream.reactive.Receiver;
+import com.vaticle.typedb.core.reasoner.reactive.IdentityReactive;
+import com.vaticle.typedb.core.reasoner.reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.reactive.Subscriber;
+
+import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -56,12 +59,12 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     protected <DNS_PROCESSOR extends Processor<?, DNS_PROCESSOR>>
     void buildConnection(Connection.Builder<OUTPUT, DNS_PROCESSOR, ?, ?, PROCESSOR> connectionBuilder) {
         Connection<OUTPUT, DNS_PROCESSOR, PROCESSOR> connection = connectionBuilder.addUpstreamProcessor(driver()).build();  // TODO: The connection could already have been built by the controller
-        outlet().forkTo(connection);
+        outlet().addSubscriber(connection);
         connection.downstreamProcessor().execute(actor -> actor.setReady(connection));
     }
 
     protected <PACKET, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> void setReady(Connection<PACKET, PROCESSOR, UPS_PROCESSOR> connection) {
-        connection.inletPort().join(connection);
+        connection.inletPort().addPublisher(connection);
     }
 
     public static abstract class Outlet<OUTPUT> extends IdentityReactive<OUTPUT> {
@@ -73,9 +76,9 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         public static class Single<OUTPUT> extends Outlet<OUTPUT> {
 
             @Override
-            protected void addDownstream(Receiver<OUTPUT> downstream) {
-                if (downstreams().size() > 0) throw TypeDBException.of(ILLEGAL_STATE);
-                else downstreams.add(downstream);
+            public void addSubscriber(Subscriber<OUTPUT> subscriber) {
+                if (subscribers().size() > 0) throw TypeDBException.of(ILLEGAL_STATE);
+                else subscribers.add(subscriber);
             }
 
         }
@@ -83,8 +86,8 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         public static class DynamicMulti<OUTPUT> extends Outlet<OUTPUT> {
 
             @Override
-            protected void addDownstream(Receiver<OUTPUT> downstream) {
-                super.addDownstream(downstream);  // TODO: This needs to record the downstreams read position in the buffer and maintain it.
+            public void addSubscriber(Subscriber<OUTPUT> subscriber) {
+                super.addSubscriber(subscriber);  // TODO: This needs to record the downstreams read position in the buffer and maintain it.
             }
 
         }
@@ -117,13 +120,13 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         }
 
         @Override
-        protected void upstreamPull(Pullable<PACKET> upstream) {
-            upstreamProcessor().execute(actor -> upstream.pull(this));
+        protected void publisherPull(Publisher<PACKET> publisher) {
+            upstreamProcessor().execute(actor -> publisher.pull(this));
         }
 
         @Override
-        protected void downstreamReceive(Receiver<PACKET> downstream, PACKET packet) {
-            downstreamProcessor().execute(actor -> downstream.receive(this, packet));
+        protected void subscriberReceive(Subscriber<PACKET> subscriber, PACKET packet) {
+            downstreamProcessor().execute(actor -> subscriber.receive(this, packet));
         }
 
         public static class Builder<PACKET, PROCESSOR extends Processor<?, PROCESSOR>, UPS_CID, UPS_PID, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> {
@@ -161,6 +164,29 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
             public UPS_PID upstreamProcessorId() {
                 return upstreamProcessorId;
+            }
+        }
+    }
+
+    public static class Source<INPUT> implements Publisher<INPUT> {
+
+        private final Supplier<FunctionalIterator<INPUT>> iteratorSupplier;
+        private FunctionalIterator<INPUT> iterator;
+
+        public Source(Supplier<FunctionalIterator<INPUT>> iteratorSupplier) {
+            this.iteratorSupplier = iteratorSupplier;
+            this.iterator = null;
+        }
+
+        public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier) {
+            return new Source<>(iteratorSupplier);
+        }
+
+        @Override
+        public void pull(Subscriber<INPUT> subscriber) {
+            if (iterator == null) iterator = iteratorSupplier.get();
+            if (iterator.hasNext()) {
+                subscriber.receive(this, iterator.next());
             }
         }
     }

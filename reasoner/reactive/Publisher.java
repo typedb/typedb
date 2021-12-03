@@ -16,27 +16,9 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.stream.reactive;
+package com.vaticle.typedb.core.reasoner.reactive;
 
-import java.util.Set;
+public interface Publisher<T> {
+    void pull(Subscriber<T> subscriber);
 
-public class FindFirstReactive<T> extends IdentityReactive<T> {
-
-    private boolean packetFound;
-
-    FindFirstReactive(Set<Receiver<T>> downstreams, Set<Pullable<T>> upstreams) {
-        super(downstreams, upstreams);
-        this.packetFound = false;
-    }
-
-    @Override
-    public void receive(Pullable<T> upstream, T packet) {  // TODO: Doesn't do a retry
-        packetFound = true;
-        super.receive(upstream, packet);
-    }
-
-    @Override
-    public void pull(Receiver<T> receiver) {
-        if (!packetFound) super.pull(receiver);
-    }
 }

@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.stream;
+package com.vaticle.typedb.core.reasoner.reactiveFramework;
 
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.function.Function;
 

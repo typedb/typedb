@@ -16,18 +16,20 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.stream.reactive;
+package com.vaticle.typedb.core.reasoner.reactive;
 
-import java.util.Set;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
-public class IdentityReactive<T> extends Reactive<T, T> {
+import java.util.function.Function;
 
-    protected IdentityReactive(Set<Receiver<T>> downstreams, Set<Pullable<T>> upstreams) {
-        super(downstreams, upstreams);
-    }
+public interface Reactive<INPUT, OUTPUT> extends Publisher<OUTPUT>, Subscriber<INPUT> {
+    void addSubscriber(Subscriber<OUTPUT> subscriber);
 
-    @Override
-    public void receive(Pullable<T> upstream, T packet) {  // TODO: Doesn't do a retry
-        downstreams().forEach(downstream -> downstreamReceive(downstream, packet));
-    }
+    Publisher<INPUT> addPublisher(Publisher<INPUT> publisher);
+
+    Reactive<INPUT, INPUT> findFirstIf(boolean condition);
+
+    <UPS_INPUT> Reactive<UPS_INPUT, INPUT> map(Function<UPS_INPUT, INPUT> function);
+
+    <UPS_INPUT> Reactive<UPS_INPUT, INPUT> flatMapOrRetry(Function<UPS_INPUT, FunctionalIterator<INPUT>> function);
 }

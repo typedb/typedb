@@ -16,11 +16,11 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.stream;
+package com.vaticle.typedb.core.reasoner.reactiveFramework;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
-import com.vaticle.typedb.core.reasoner.stream.Processor.Connection;
+import com.vaticle.typedb.core.reasoner.reactiveFramework.Processor.Connection;
 
 import java.util.HashMap;
 import java.util.Map;

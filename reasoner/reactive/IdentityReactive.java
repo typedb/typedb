@@ -16,24 +16,18 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.stream.reactive;
+package com.vaticle.typedb.core.reasoner.reactive;
 
 import java.util.Set;
-import java.util.function.Function;
 
-public class MapReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
+public class IdentityReactive<T> extends ReactiveImpl<T, T> {
 
-    private final Function<INPUT, OUTPUT> mappingFunc;
-
-    MapReactive(Set<Receiver<OUTPUT>> downstreams, Set<Pullable<INPUT>> upstreams,
-                Function<INPUT, OUTPUT> mappingFunc) {
-        super(downstreams, upstreams);
-        this.mappingFunc = mappingFunc;
+    protected IdentityReactive(Set<Subscriber<T>> subscribers, Set<Publisher<T>> publishers) {
+        super(subscribers, publishers);
     }
 
     @Override
-    public void receive(Pullable<INPUT> upstream, INPUT packet) {
-        downstreams().forEach(downstream -> downstreamReceive(downstream, mappingFunc.apply(packet)));
+    public void receive(Publisher<T> publisher, T packet) {  // TODO: Doesn't do a retry
+        subscribers().forEach(subscriber -> subscriberReceive(subscriber, packet));
     }
-
 }

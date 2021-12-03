@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.stream;
+package com.vaticle.typedb.core.reasoner.reactiveFramework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -26,11 +26,10 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.reasoner.stream.ConclusionController.ConclusionAns;
-import com.vaticle.typedb.core.reasoner.stream.ConclusionController.ConclusionProcessor;
-import com.vaticle.typedb.core.reasoner.stream.Processor.Connection.Builder;
-import com.vaticle.typedb.core.reasoner.stream.reactive.Pullable.Source;
-import com.vaticle.typedb.core.reasoner.stream.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.reactiveFramework.ConclusionController.ConclusionAns;
+import com.vaticle.typedb.core.reasoner.reactiveFramework.ConclusionController.ConclusionProcessor;
+import com.vaticle.typedb.core.reasoner.reactiveFramework.Processor.Connection.Builder;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.LinkedHashMap;
@@ -102,8 +101,8 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
 
             Reactive<ConceptMap, ConceptMap> op = outlet()
                     .map(ConcludableAns::new)
-                    .findFirstIf(singleAnswerRequired)
-                    .join(Source.fromIteratorSupplier(traversalSuppplier));
+                    .findFirstIf(singleAnswerRequired);
+            op.addPublisher(Source.fromIteratorSupplier(traversalSuppplier));
 
             upstreamConclusions.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {

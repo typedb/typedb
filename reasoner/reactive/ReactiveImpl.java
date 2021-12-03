@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.stream.reactive;
+package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
@@ -25,89 +25,84 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public abstract class Reactive<INPUT, OUTPUT> implements Pullable<OUTPUT>, Receiver<INPUT> {  // TODO: Pull out an interface for Reactive
+public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUTPUT> {  // TODO: Pull out an interface for Reactive
 
-    protected final Set<Receiver<OUTPUT>> downstreams;
-    private final Set<Pullable<INPUT>> upstreams;
+    protected final Set<Subscriber<OUTPUT>> subscribers;
+    private final Set<Publisher<INPUT>> publishers;
     protected boolean isPulling;
 
-    Reactive(Set<Receiver<OUTPUT>> downstreams, Set<Pullable<INPUT>> upstreams) {
-        this.downstreams = downstreams;
-        this.upstreams = upstreams;
+    ReactiveImpl(Set<Subscriber<OUTPUT>> subscribers, Set<Publisher<INPUT>> publishers) {
+        this.subscribers = subscribers;
+        this.publishers = publishers;
         this.isPulling = false;
     }
 
     @Override
-    public void pull(Receiver<OUTPUT> receiver) {
-        addDownstream(receiver);  // TODO: This way we dynamically add the downstreams
+    public void pull(Subscriber<OUTPUT> subscriber) {
+        addSubscriber(subscriber);  // TODO: This way we dynamically add the subscribers
         if (!isPulling) {
-            upstreams.forEach(this::upstreamPull);
+            publishers.forEach(this::publisherPull);
             isPulling = true;
         }
     }
 
-    protected Set<Receiver<OUTPUT>> downstreams() {
-        return downstreams;
+    protected Set<Subscriber<OUTPUT>> subscribers() {
+        return subscribers;
     }
 
-    protected Set<Pullable<INPUT>> upstreams() {
-        return upstreams;
+    protected Set<Publisher<INPUT>> publishers() {
+        return publishers;
     }
 
-    protected void addDownstream(Receiver<OUTPUT> downstream) {
-        downstreams.add(downstream);
-        // TODO: To dynamically add downstreams we need to have buffered all prior packets and send them here
-        //  we can adopt a policy that if you weren't a downstream in time for the packet then you miss it, and
-        //  break this only for outlets which will do the buffering and ensure all downstreams receive all answers.
+    @Override
+    public void addSubscriber(Subscriber<OUTPUT> subscriber) {
+        subscribers.add(subscriber);
+        // TODO: To dynamically add subscribers we need to have buffered all prior packets and send them here
+        //  we can adopt a policy that if you weren't a subscriber in time for the packet then you miss it, and
+        //  break this only for outlets which will do the buffering and ensure all subscribers receive all answers.
     }
 
-    public void forkTo(Receiver<OUTPUT> receiver) {
-        addDownstream(receiver);
+    @Override
+    public Publisher<INPUT> addPublisher(Publisher<INPUT> publisher) {
+        publishers.add(publisher);
+        if (isPulling) publisher.pull(this);
+        return publisher;
     }
 
-    private Pullable<INPUT> addUpstream(Pullable<INPUT> upstream) {
-        upstreams.add(upstream);
-        if (isPulling) upstream.pull(this);
-        return upstream;
-    }
-
-    public Reactive<INPUT, OUTPUT> join(Pullable<INPUT> pullable) {
-        // TODO: join looks strange because all other fluent methods are also doing a join implicitly. Fix this.
-        addUpstream(pullable);
-        return this;
-    }
-
-    protected void downstreamReceive(Receiver<OUTPUT> downstream, OUTPUT p) {
+    protected void subscriberReceive(Subscriber<OUTPUT> subscriber, OUTPUT p) {
         // TODO: Override for cross-actor receiving
-        downstream.receive(this, p);  // TODO: Remove casting
+        subscriber.receive(this, p);  // TODO: Remove casting
     }
 
-    protected void upstreamPull(Pullable<INPUT> upstream) {
+    protected void publisherPull(Publisher<INPUT> publisher) {
         // TODO: Override for cross-actor pulling
-        upstream.pull(this);
+        publisher.pull(this);
     }
 
+    @Override
     public IdentityReactive<INPUT> findFirstIf(boolean condition) {
         if (condition) {
             FindFirstReactive<INPUT> newReactive = new FindFirstReactive<>(set(this), set());
-            addUpstream(newReactive);
+            addPublisher(newReactive);
             return newReactive;
         } else {
             IdentityReactive<INPUT> newReactive = new IdentityReactive<>(set(this), set());
-            addUpstream(newReactive);
+            addPublisher(newReactive);
             return newReactive;
         }
     }
 
+    @Override
     public <UPS_INPUT> MapReactive<UPS_INPUT, INPUT> map(Function<UPS_INPUT, INPUT> function) {
         MapReactive<UPS_INPUT, INPUT> newReactive = new MapReactive<>(set(this), set(), function);
-        addUpstream(newReactive);
+        addPublisher(newReactive);
         return newReactive;
     }
 
+    @Override
     public <UPS_INPUT> FlatMapOrRetryReactive<UPS_INPUT, INPUT> flatMapOrRetry(Function<UPS_INPUT, FunctionalIterator<INPUT>> function) {
         FlatMapOrRetryReactive<UPS_INPUT, INPUT> newReactive = new FlatMapOrRetryReactive<>(set(this), set(), function);
-        addUpstream(newReactive);
+        addPublisher(newReactive);
         return newReactive;
     }
 

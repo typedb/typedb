@@ -16,8 +16,8 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.stream.reactive;
+package com.vaticle.typedb.core.reasoner.reactive;
 
-public interface Receiver<T> {
-    void receive(Pullable<T> upstream, T packet);
+public interface Subscriber<T> {
+    void receive(Publisher<T> publisher, T packet);
 }
