@@ -69,6 +69,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.NO_
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.PLAYER_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.ROLE_TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.TYPE_NOT_FOUND;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 import static com.vaticle.typedb.core.migrator.data.DataProto.Item.ItemCase.HEADER;
 import static java.util.Comparator.reverseOrder;
 
@@ -474,7 +475,7 @@ public class DataImporter {
         }
 
         public void put(String originalID, ByteArray newID) {
-            ByteArray original = ByteArray.encodeString(originalID);
+            ByteArray original = ByteArray.encodeString(originalID, STRING_ENCODING);
             try {
                 storage.put(original.getBytes(), newID.getBytes());
             } catch (RocksDBException e) {
@@ -484,7 +485,7 @@ public class DataImporter {
 
         public ByteArray get(String originalID) {
             try {
-                byte[] value = storage.get(ByteArray.encodeString(originalID).getBytes());
+                byte[] value = storage.get(ByteArray.encodeString(originalID, STRING_ENCODING).getBytes());
                 assert value == null || value.length > 0;
                 if (value == null) return null;
                 else return ByteArray.of(value);

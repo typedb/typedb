@@ -139,7 +139,7 @@ public abstract class VertexIID extends IID {
          */
         public static VertexIID.Thing generate(KeyGenerator.Data keyGenerator, Type typeIID, Label typeLabel) {
             return new Thing(join(typeIID.encoding().instance().prefix().bytes(),
-                                  typeIID.bytes(), keyGenerator.forThing(typeIID, typeLabel)));
+                    typeIID.bytes(), keyGenerator.forThing(typeIID, typeLabel)));
         }
 
         public static VertexIID.Thing of(ByteArray bytes) {

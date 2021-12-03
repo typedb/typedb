@@ -53,6 +53,7 @@ native_java_libraries(
         "//:typedb",
         "//common:common",
         "//concurrent:concurrent",
+        "//graph:graph",
         "//concept:concept",
         "//logic:logic",
     ],

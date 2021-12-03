@@ -49,6 +49,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.LABEL;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.THEN;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.WHEN;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 
 public abstract class RuleStructureImpl implements RuleStructure {
 
@@ -198,10 +199,14 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         @Override
-        public Conjunction<? extends Pattern> when() { return when; }
+        public Conjunction<? extends Pattern> when() {
+            return when;
+        }
 
         @Override
-        public ThingVariable<?> then() { return then; }
+        public ThingVariable<?> then() {
+            return then;
+        }
 
         @Override
         public void delete() {
@@ -231,15 +236,15 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         private void commitPropertyLabel() {
-            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), encodeString(label));
+            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), encodeString(label, STRING_ENCODING));
         }
 
         private void commitWhen() {
-            graph.storage().putUntracked(join(iid.bytes(), WHEN.infix().bytes()), encodeString(when().toString()));
+            graph.storage().putUntracked(join(iid.bytes(), WHEN.infix().bytes()), encodeString(when().toString(), STRING_ENCODING));
         }
 
         private void commitThen() {
-            graph.storage().putUntracked(join(iid.bytes(), THEN.infix().bytes()), encodeString(then().toString()));
+            graph.storage().putUntracked(join(iid.bytes(), THEN.infix().bytes()), encodeString(then().toString(), STRING_ENCODING));
         }
 
         private void indexReferences() {
@@ -252,9 +257,9 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
         public Persisted(TypeGraph graph, StructureIID.Rule iid) {
             super(graph, iid,
-                  graph.storage().get(join(iid.bytes(), LABEL.infix().bytes())).decodeString(),
-                  TypeQL.parsePattern(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())).decodeString()).asConjunction(),
-                  TypeQL.parseVariable(graph.storage().get(join(iid.bytes(), THEN.infix().bytes())).decodeString()).asThing()
+                    graph.storage().get(join(iid.bytes(), LABEL.infix().bytes())).decodeString(STRING_ENCODING),
+                    TypeQL.parsePattern(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())).decodeString(STRING_ENCODING)).asConjunction(),
+                    TypeQL.parseVariable(graph.storage().get(join(iid.bytes(), THEN.infix().bytes())).decodeString(STRING_ENCODING)).asThing()
             );
         }
 
@@ -276,7 +281,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void label(String label) {
             graph.rules().update(this, this.label, label);
-            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), encodeString(label));
+            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), encodeString(label, STRING_ENCODING));
             graph.storage().deleteUntracked(IndexIID.Rule.of(this.label).bytes());
             graph.storage().putUntracked(IndexIID.Rule.of(label).bytes(), iid.bytes());
             this.label = label;
@@ -298,7 +303,8 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         @Override
-        public void commit() {}
+        public void commit() {
+        }
     }
 
 }

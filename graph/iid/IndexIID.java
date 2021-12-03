@@ -65,7 +65,7 @@ public abstract class IndexIID extends IID {
              */
             public static Label of(String label, @Nullable String scope) {
                 return new Label(join(Encoding.Index.Prefix.TYPE.prefix().bytes(),
-                                      encodeString(Encoding.Vertex.Type.scopedLabel(label, scope), STRING_ENCODING)));
+                        encodeString(Encoding.Vertex.Type.scopedLabel(label, scope), STRING_ENCODING)));
             }
 
             @Override
@@ -86,7 +86,9 @@ public abstract class IndexIID extends IID {
                 super(bytes);
             }
 
-            public int length() { return bytes.length(); }
+            public int length() {
+                return bytes.length();
+            }
 
             public static class Key extends Type.Rule {
 
@@ -99,7 +101,7 @@ public abstract class IndexIID extends IID {
                  */
                 public static Key concludedVertex(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
                     return new Key(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                        Encoding.Index.Infix.CONCLUDED_VERTEX.bytes(), ruleIID.bytes()));
+                            Encoding.Index.Infix.CONCLUDED_VERTEX.bytes(), ruleIID.bytes()));
                 }
 
                 /**
@@ -107,7 +109,7 @@ public abstract class IndexIID extends IID {
                  */
                 public static Key concludedEdgeTo(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
                     return new Key(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                        Encoding.Index.Infix.CONCLUDED_EDGE_TO.bytes(), ruleIID.bytes()));
+                            Encoding.Index.Infix.CONCLUDED_EDGE_TO.bytes(), ruleIID.bytes()));
                 }
 
 
@@ -116,7 +118,7 @@ public abstract class IndexIID extends IID {
                  */
                 public static Key contained(VertexIID.Type typeIID, StructureIID.Rule ruleIID) {
                     return new Key(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                        Encoding.Index.Infix.CONTAINED_TYPE.bytes(), ruleIID.bytes()));
+                            Encoding.Index.Infix.CONTAINED_TYPE.bytes(), ruleIID.bytes()));
                 }
 
                 @Override
@@ -144,7 +146,7 @@ public abstract class IndexIID extends IID {
                  */
                 public static Prefix concludedVertex(VertexIID.Type typeIID) {
                     return new Prefix(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                           Encoding.Index.Infix.CONCLUDED_VERTEX.bytes()));
+                            Encoding.Index.Infix.CONCLUDED_VERTEX.bytes()));
                 }
 
                 /**
@@ -152,7 +154,7 @@ public abstract class IndexIID extends IID {
                  */
                 public static Prefix concludedEdgeTo(VertexIID.Type typeIID) {
                     return new Prefix(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                           Encoding.Index.Infix.CONCLUDED_EDGE_TO.bytes()));
+                            Encoding.Index.Infix.CONCLUDED_EDGE_TO.bytes()));
                 }
 
                 /**
@@ -160,7 +162,7 @@ public abstract class IndexIID extends IID {
                  */
                 public static Prefix contained(VertexIID.Type typeIID) {
                     return new Prefix(join(Encoding.Index.Prefix.TYPE.bytes(), typeIID.bytes(),
-                                           Encoding.Index.Infix.CONTAINED_TYPE.bytes()));
+                            Encoding.Index.Infix.CONTAINED_TYPE.bytes()));
                 }
 
                 @Override
@@ -173,7 +175,7 @@ public abstract class IndexIID extends IID {
                                 bytes.view(PrefixIID.LENGTH + VertexIID.Type.LENGTH, Encoding.Index.Infix.LENGTH)) + "]";
                         String ruleIID = "[" + (StructureIID.Rule.LENGTH) + ": " +
                                 bytes.view(PrefixIID.LENGTH + VertexIID.Type.LENGTH + Encoding.Index.Infix.LENGTH,
-                                                StructureIID.Rule.LENGTH).decodeString(STRING_ENCODING) + "]";
+                                        StructureIID.Rule.LENGTH).decodeString(STRING_ENCODING) + "]";
                         readableString = prefix + typeIID + infix + ruleIID;
                     }
                     return readableString;
@@ -185,7 +187,9 @@ public abstract class IndexIID extends IID {
 
     public static class Rule extends IndexIID {
 
-        Rule(ByteArray bytes) { super(bytes); }
+        Rule(ByteArray bytes) {
+            super(bytes);
+        }
 
         /**
          * Returns the index address of given {@code RuleStructure}
