@@ -80,16 +80,10 @@ public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUT
     }
 
     @Override
-    public IdentityReactive<INPUT> findFirstIf(boolean condition) {
-        if (condition) {
-            FindFirstReactive<INPUT> newReactive = new FindFirstReactive<>(set(this), set());
-            addPublisher(newReactive);
-            return newReactive;
-        } else {
-            IdentityReactive<INPUT> newReactive = new IdentityReactive<>(set(this), set());
-            addPublisher(newReactive);
-            return newReactive;
-        }
+    public FindFirstReactive<INPUT> findFirst() {
+        FindFirstReactive<INPUT> newReactive = new FindFirstReactive<>(set(this), set());
+        addPublisher(newReactive);
+        return newReactive;
     }
 
     @Override

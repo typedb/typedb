@@ -99,19 +99,19 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
 
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
 
-            Reactive<ConceptMap, ConceptMap> op = outlet()
-                    .map(ConcludableAns::new)
-                    .findFirstIf(singleAnswerRequired);
+            Reactive<ConceptMap, ?> op = outlet().map(ConcludableAns::new);
+            if (singleAnswerRequired) op = op.findFirst();
             op.addPublisher(Source.fromIteratorSupplier(traversalSuppplier));
 
+            Reactive<ConceptMap, ?> finalOp = op;
             upstreamConclusions.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
-                    Reactive<ConclusionAns, ConceptMap> newPort = op.flatMapOrRetry(
+                    Reactive<ConclusionAns, ConceptMap> input = finalOp.flatMapOrRetry(
                             conclusionAns -> unifier.unUnify(conclusionAns.concepts(), boundsAndRequirements.second()));
                     // Now we've got the operation that interfaces with upstream, get a connection for it to cross
                     // the actor boundary
                     Builder<ConclusionAns, ConcludableProcessor, Conclusion, ConceptMap, ConclusionProcessor> builder =
-                            new Builder<>(driver(), conclusion, boundsAndRequirements.first(), newPort);
+                            new Builder<>(driver(), conclusion, boundsAndRequirements.first(), input);
                     requestConnection(builder);
                 }));
             });

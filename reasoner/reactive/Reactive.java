@@ -24,7 +24,7 @@ import java.util.function.Function;
 
 public interface Reactive<INPUT, OUTPUT> extends Publisher<OUTPUT>, Subscriber<INPUT> {
 
-    Reactive<INPUT, INPUT> findFirstIf(boolean condition);
+    Reactive<INPUT, INPUT> findFirst();
 
     <UPS_INPUT> Reactive<UPS_INPUT, INPUT> map(Function<UPS_INPUT, INPUT> function);
 
