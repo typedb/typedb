@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.reactive.IdentityReactive;
 import com.vaticle.typedb.core.reasoner.reactive.Publisher;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Subscriber;
 
 import java.util.HashMap;
@@ -139,14 +138,14 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             private final PUB_CID upstreamControllerId;
             private Driver<PUB_PROCESSOR> upstreamProcessor;
             private final PUB_PID upstreamProcessorId;
-            private final Reactive<PACKET, ?> inletPort;
+            private final Subscriber<PACKET> subscriber;
 
             protected Builder(Driver<PROCESSOR> downstreamProcessor, PUB_CID upstreamControllerId,
-                              PUB_PID upstreamProcessorId, Reactive<PACKET, ?> inletPort) {
+                              PUB_PID upstreamProcessorId, Subscriber<PACKET> subscriber) {
                 this.downstreamProcessor = downstreamProcessor;
                 this.upstreamControllerId = upstreamControllerId;
                 this.upstreamProcessorId = upstreamProcessorId;
-                this.inletPort = inletPort;
+                this.subscriber = subscriber;
             }
 
             PUB_CID upstreamControllerId() {
@@ -162,8 +161,8 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build() {
                 assert downstreamProcessor != null;
                 assert upstreamProcessor != null;
-                assert inletPort != null;
-                return new Connection<>(downstreamProcessor, upstreamProcessor, inletPort);
+                assert subscriber != null;
+                return new Connection<>(downstreamProcessor, upstreamProcessor, subscriber);
             }
 
             public PUB_PID upstreamProcessorId() {
