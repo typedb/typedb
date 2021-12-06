@@ -19,7 +19,11 @@
 package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 
+import java.util.List;
+import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public interface Reactive<INPUT, OUTPUT> extends Publisher<OUTPUT>, Subscriber<INPUT> {
@@ -29,4 +33,5 @@ public interface Reactive<INPUT, OUTPUT> extends Publisher<OUTPUT>, Subscriber<I
     <UPS_INPUT> Reactive<UPS_INPUT, INPUT> mapSubscribe(Function<UPS_INPUT, INPUT> function);
 
     <UPS_INPUT> Reactive<UPS_INPUT, INPUT> flatMapOrRetrySubscribe(Function<UPS_INPUT, FunctionalIterator<INPUT>> function);
+
 }
