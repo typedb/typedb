@@ -54,17 +54,17 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
     protected <PACKET, PUB_CID, PUB_PID, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>>
     void requestConnection(Connection.Builder<PACKET, PROCESSOR, PUB_CID, PUB_PID, PUB_PROCESSOR> connectionBuilder) {
-        controller.execute(actor -> actor.findUpstreamConnection(connectionBuilder));
+        controller.execute(actor -> actor.findPublishingConnection(connectionBuilder));
     }
 
     protected <SUB_PROCESSOR extends Processor<?, SUB_PROCESSOR>>
     void acceptConnection(Connection<OUTPUT, SUB_PROCESSOR, PROCESSOR> connection) {
-        connection.downstreamProcessor().execute(actor -> actor.finaliseConnection(connection));
+        connection.subscriberProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
 
     protected <PACKET, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>>
     void finaliseConnection(Connection<PACKET, PROCESSOR, PUB_PROCESSOR> connection) {
-        connection.subscriber().addPublisher(connection);
+        connection.subscriber().subscribe(connection);
     }
 
     public static abstract class Outlet<OUTPUT> extends IdentityReactive<OUTPUT> {
@@ -76,7 +76,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         public static class Single<OUTPUT> extends Outlet<OUTPUT> {
 
             @Override
-            public void addSubscriber(Subscriber<OUTPUT> subscriber) {
+            public void publish(Subscriber<OUTPUT> subscriber) {
                 if (subscribers().size() > 0) throw TypeDBException.of(ILLEGAL_STATE);
                 else subscribers.add(subscriber);
             }
@@ -86,8 +86,8 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         public static class DynamicMulti<OUTPUT> extends Outlet<OUTPUT> {
 
             @Override
-            public void addSubscriber(Subscriber<OUTPUT> subscriber) {
-                super.addSubscriber(subscriber);  // TODO: This needs to record the downstreams read position in the buffer and maintain it.
+            public void publish(Subscriber<OUTPUT> subscriber) {
+                super.publish(subscriber);  // TODO: This needs to record the subscribers read position in the buffer and maintain it.
             }
 
         }
@@ -97,76 +97,76 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     public static class Connection<PACKET, PROCESSOR extends Processor<?, PROCESSOR>,
             PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> extends IdentityReactive<PACKET> {
 
-        private final Driver<PROCESSOR> downstreamProcessor;
-        private final Driver<PUB_PROCESSOR> upstreamProcessor;
+        private final Driver<PROCESSOR> subscriberProcessor;
+        private final Driver<PUB_PROCESSOR> publisherProcessor;
         private final Subscriber<PACKET> inletPort;
 
-        public Connection(Driver<PROCESSOR> downstreamProcessor, Driver<PUB_PROCESSOR> upstreamProcessor,
+        public Connection(Driver<PROCESSOR> subscriberProcessor, Driver<PUB_PROCESSOR> publisherProcessor,
                           Subscriber<PACKET> subscriber) {
             super(set(subscriber), set());
-            this.downstreamProcessor = downstreamProcessor;
-            this.upstreamProcessor = upstreamProcessor;
+            this.subscriberProcessor = subscriberProcessor;
+            this.publisherProcessor = publisherProcessor;
             this.inletPort = subscriber;
         }
 
-        private Driver<PUB_PROCESSOR> upstreamProcessor() {
-            return upstreamProcessor;
+        private Driver<PUB_PROCESSOR> publisherProcessor() {
+            return publisherProcessor;
         }
 
-        Driver<PROCESSOR> downstreamProcessor() {
-            return downstreamProcessor;
+        Driver<PROCESSOR> subscriberProcessor() {
+            return subscriberProcessor;
         }
 
         Subscriber<PACKET> subscriber() {
-            return inletPort;  // TODO: Duplicates downstreams()
+            return inletPort;  // TODO: Duplicates subscribers()
         }
 
         @Override
         protected void publisherPull(Publisher<PACKET> publisher) {
-            upstreamProcessor().execute(actor -> publisher.pull(this));
+            publisherProcessor().execute(actor -> publisher.pull(this));
         }
 
         @Override
         protected void subscriberReceive(Subscriber<PACKET> subscriber, PACKET packet) {
-            downstreamProcessor().execute(actor -> subscriber.receive(this, packet));
+            subscriberProcessor().execute(actor -> subscriber.receive(this, packet));
         }
 
         public static class Builder<PACKET, PROCESSOR extends Processor<?, PROCESSOR>, PUB_CID, PUB_PID,
                 PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> {
 
-            private final Driver<PROCESSOR> downstreamProcessor;
-            private final PUB_CID upstreamControllerId;
-            private Driver<PUB_PROCESSOR> upstreamProcessor;
-            private final PUB_PID upstreamProcessorId;
+            private final Driver<PROCESSOR> subscriberProcessor;
+            private final PUB_CID publisherControllerId;
+            private Driver<PUB_PROCESSOR> publisherProcessor;
+            private final PUB_PID publisherProcessorId;
             private final Subscriber<PACKET> subscriber;
 
-            protected Builder(Driver<PROCESSOR> downstreamProcessor, PUB_CID upstreamControllerId,
-                              PUB_PID upstreamProcessorId, Subscriber<PACKET> subscriber) {
-                this.downstreamProcessor = downstreamProcessor;
-                this.upstreamControllerId = upstreamControllerId;
-                this.upstreamProcessorId = upstreamProcessorId;
+            protected Builder(Driver<PROCESSOR> subscriberProcessor, PUB_CID publisherControllerId,
+                              PUB_PID publisherProcessorId, Subscriber<PACKET> subscriber) {
+                this.subscriberProcessor = subscriberProcessor;
+                this.publisherControllerId = publisherControllerId;
+                this.publisherProcessorId = publisherProcessorId;
                 this.subscriber = subscriber;
             }
 
-            PUB_CID upstreamControllerId() {
-                return upstreamControllerId;
+            PUB_CID publisherControllerId() {
+                return publisherControllerId;
             }
 
-            protected Builder<PACKET, PROCESSOR, PUB_CID, PUB_PID, PUB_PROCESSOR> addUpstreamProcessor(Driver<PUB_PROCESSOR> upstreamProcessor) {
-                assert this.upstreamProcessor == null;
-                this.upstreamProcessor = upstreamProcessor;
+            protected Builder<PACKET, PROCESSOR, PUB_CID, PUB_PID, PUB_PROCESSOR> publisherProcessor(Driver<PUB_PROCESSOR> publisherProcessor) {
+                assert this.publisherProcessor == null;
+                this.publisherProcessor = publisherProcessor;
                 return this;
             }
 
             Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build() {
-                assert downstreamProcessor != null;
-                assert upstreamProcessor != null;
+                assert subscriberProcessor != null;
+                assert publisherProcessor != null;
                 assert subscriber != null;
-                return new Connection<>(downstreamProcessor, upstreamProcessor, subscriber);
+                return new Connection<>(subscriberProcessor, publisherProcessor, subscriber);
             }
 
-            public PUB_PID upstreamProcessorId() {
-                return upstreamProcessorId;
+            public PUB_PID publisherProcessorId() {
+                return publisherProcessorId;
             }
         }
     }
@@ -186,7 +186,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         }
 
         @Override
-        public void addSubscriber(Subscriber<INPUT> subscriber) {
+        public void publish(Subscriber<INPUT> subscriber) {
             // subscribers only need to be dynamically recorded on pull()
         }
 

@@ -62,8 +62,8 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
 
     @Override
     protected Function<Driver<ConcludableProcessor>, ConcludableProcessor> createProcessorFunc(ConceptMap bounds) {
-        return d -> new ConcludableProcessor(d, driver(), "", bounds, unboundVars, upstreamConclusions,
-                                             () -> traversalIterator(id().pattern(), bounds));
+        return driver -> new ConcludableProcessor(driver, driver(), "", bounds, unboundVars, upstreamConclusions,
+                                                  () -> traversalIterator(id().pattern(), bounds));
     }
 
     private FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
@@ -86,6 +86,10 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
         public ConcludableAns(ConceptMap conceptMap) {
             // TODO
         }
+
+        public ConceptMap conceptMap() {
+            return null;  // TODO
+        }
     }
 
     public static class ConcludableProcessor extends Processor<ConcludableAns, ConcludableProcessor> {
@@ -99,17 +103,17 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
 
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
 
-            Reactive<ConceptMap, ?> op = outlet().map(ConcludableAns::new);
-            if (singleAnswerRequired) op = op.findFirst();
-            op.addPublisher(Source.fromIteratorSupplier(traversalSuppplier));
+            Reactive<ConceptMap, ?> op = outlet().mapSubscribe(ConcludableAns::new);
+            if (singleAnswerRequired) op = op.findFirstSubscribe();
+            op.subscribe(Source.fromIteratorSupplier(traversalSuppplier));
 
             Reactive<ConceptMap, ?> finalOp = op;
             upstreamConclusions.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
-                    Reactive<ConclusionAns, ConceptMap> input = finalOp.flatMapOrRetry(
+                    Reactive<ConclusionAns, ConceptMap> input = finalOp.flatMapOrRetrySubscribe(
                             conclusionAns -> unifier.unUnify(conclusionAns.concepts(), boundsAndRequirements.second()));
-                    // Now we've got the operation that interfaces with upstream, get a connection for it to cross
-                    // the actor boundary
+                    // Now we've got the reactive element that interfaces with upstream, get a connection for it to
+                    // cross the actor boundary
                     Builder<ConclusionAns, ConcludableProcessor, Conclusion, ConceptMap, ConclusionProcessor> builder =
                             new Builder<>(driver(), conclusion, boundsAndRequirements.first(), input);
                     requestConnection(builder);

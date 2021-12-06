@@ -62,14 +62,14 @@ public abstract class Controller<CID, PID, OUTPUT,
 
     <PACKET, PUB_CID, PUB_PID, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>,
             PUB_CONTROLLER extends Controller<PUB_CID, PUB_PID, PACKET, PUB_PROCESSOR, PUB_CONTROLLER>>
-    void findUpstreamConnection(Connection.Builder<PACKET, PROCESSOR, PUB_CID, PUB_PID, PUB_PROCESSOR> connectionBuilder) {
-        Driver<PUB_CONTROLLER> controller = getControllerForId(connectionBuilder.upstreamControllerId());
+    void findPublishingConnection(Connection.Builder<PACKET, PROCESSOR, PUB_CID, PUB_PID, PUB_PROCESSOR> connectionBuilder) {
+        Driver<PUB_CONTROLLER> controller = getControllerForId(connectionBuilder.publisherControllerId());
         controller.execute(actor -> actor.findConnection(connectionBuilder));
     }
 
     void findConnection(Connection.Builder<OUTPUT, ?, CID, PID, PROCESSOR> connectionBuilder) {
-        Driver<PROCESSOR> processor = processors.computeIfAbsent(connectionBuilder.upstreamProcessorId(), this::buildProcessor);
-        processor.execute(actor -> actor.acceptConnection(connectionBuilder.addUpstreamProcessor(processor).build()));
+        Driver<PROCESSOR> processor = processors.computeIfAbsent(connectionBuilder.publisherProcessorId(), this::buildProcessor);
+        processor.execute(actor -> actor.acceptConnection(connectionBuilder.publisherProcessor(processor).build()));
     }
 
     @Override

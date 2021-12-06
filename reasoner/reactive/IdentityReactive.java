@@ -20,14 +20,14 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 import java.util.Set;
 
-public class IdentityReactive<T> extends ReactiveImpl<T, T> {
+public class IdentityReactive<PACKET> extends ReactiveImpl<PACKET, PACKET> {
 
-    protected IdentityReactive(Set<Subscriber<T>> subscribers, Set<Publisher<T>> publishers) {
+    protected IdentityReactive(Set<Subscriber<PACKET>> subscribers, Set<Publisher<PACKET>> publishers) {
         super(subscribers, publishers);
     }
 
     @Override
-    public void receive(Publisher<T> publisher, T packet) {  // TODO: Doesn't do a retry
+    public void receive(Publisher<PACKET> publisher, PACKET packet) {  // TODO: Doesn't do a retry
         subscribers().forEach(subscriber -> subscriberReceive(subscriber, packet));
     }
 }

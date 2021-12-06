@@ -39,7 +39,7 @@ public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUT
 
     @Override
     public void pull(Subscriber<OUTPUT> subscriber) {
-        addSubscriber(subscriber);  // TODO: This way we dynamically add the subscribers
+        publish(subscriber);
         if (!isPulling) {
             publishers.forEach(this::publisherPull);
             isPulling = true;
@@ -55,7 +55,7 @@ public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUT
     }
 
     @Override
-    public void addSubscriber(Subscriber<OUTPUT> subscriber) {
+    public void publish(Subscriber<OUTPUT> subscriber) {
         subscribers.add(subscriber);
         // TODO: To dynamically add subscribers we need to have buffered all prior packets and send them here
         //  we can adopt a policy that if you weren't a subscriber in time for the packet then you miss it, and
@@ -63,40 +63,38 @@ public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUT
     }
 
     @Override
-    public Publisher<INPUT> addPublisher(Publisher<INPUT> publisher) {
+    public Publisher<INPUT> subscribe(Publisher<INPUT> publisher) {
         publishers.add(publisher);
         if (isPulling) publisher.pull(this);
         return publisher;
     }
 
     protected void subscriberReceive(Subscriber<OUTPUT> subscriber, OUTPUT p) {
-        // TODO: Override for cross-actor receiving
-        subscriber.receive(this, p);  // TODO: Remove casting
+        subscriber.receive(this, p);
     }
 
     protected void publisherPull(Publisher<INPUT> publisher) {
-        // TODO: Override for cross-actor pulling
         publisher.pull(this);
     }
 
     @Override
-    public FindFirstReactive<INPUT> findFirst() {
+    public FindFirstReactive<INPUT> findFirstSubscribe() {
         FindFirstReactive<INPUT> newReactive = new FindFirstReactive<>(set(this), set());
-        addPublisher(newReactive);
+        subscribe(newReactive);
         return newReactive;
     }
 
     @Override
-    public <UPS_INPUT> MapReactive<UPS_INPUT, INPUT> map(Function<UPS_INPUT, INPUT> function) {
+    public <UPS_INPUT> MapReactive<UPS_INPUT, INPUT> mapSubscribe(Function<UPS_INPUT, INPUT> function) {
         MapReactive<UPS_INPUT, INPUT> newReactive = new MapReactive<>(set(this), set(), function);
-        addPublisher(newReactive);
+        subscribe(newReactive);
         return newReactive;
     }
 
     @Override
-    public <UPS_INPUT> FlatMapOrRetryReactive<UPS_INPUT, INPUT> flatMapOrRetry(Function<UPS_INPUT, FunctionalIterator<INPUT>> function) {
+    public <UPS_INPUT> FlatMapOrRetryReactive<UPS_INPUT, INPUT> flatMapOrRetrySubscribe(Function<UPS_INPUT, FunctionalIterator<INPUT>> function) {
         FlatMapOrRetryReactive<UPS_INPUT, INPUT> newReactive = new FlatMapOrRetryReactive<>(set(this), set(), function);
-        addPublisher(newReactive);
+        subscribe(newReactive);
         return newReactive;
     }
 
