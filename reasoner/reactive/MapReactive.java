@@ -25,8 +25,8 @@ public class MapReactive<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OUTPUT> {
 
     private final Function<INPUT, OUTPUT> mappingFunc;
 
-    public MapReactive(Set<Subscriber<OUTPUT>> subscribers, Set<Publisher<INPUT>> publishers,
-                       Function<INPUT, OUTPUT> mappingFunc) {  // TODO: Shouldn't be public
+    MapReactive(Set<Subscriber<OUTPUT>> subscribers, Set<Publisher<INPUT>> publishers,
+                Function<INPUT, OUTPUT> mappingFunc) {
         super(subscribers, publishers);
         this.mappingFunc = mappingFunc;
     }

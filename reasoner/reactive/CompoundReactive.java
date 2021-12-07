@@ -50,7 +50,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
     }
 
     public static <P, T> CompoundReactive<P, T> compound(Set<Subscriber<T>> subscribers, List<P> plan,
-                                                         BiFunction<P, T, Publisher<T>> spawnLeaderFunc, T initialPacket,
+                                                         T initialPacket, BiFunction<P, T, Publisher<T>> spawnLeaderFunc,
                                                          BiFunction<T, T, T> compoundPacketsFunc) {
         List<P> remainingPlan = new ArrayList<>(plan);
         P firstPlanElement = remainingPlan.remove(0);

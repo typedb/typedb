@@ -29,12 +29,9 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Negation;
 import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.compute.Processor;
-import com.vaticle.typedb.core.reasoner.reactive.MapReactive;
+import com.vaticle.typedb.core.reasoner.controllers.ConcludableController.ConcludableAns;
 import com.vaticle.typedb.core.reasoner.reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.controllers.ConcludableController.ConcludableAns;
-import com.vaticle.typedb.core.reasoner.controllers.ConcludableController.ConcludableProcessor;
-import com.vaticle.typedb.core.reasoner.compute.Processor.Connection.Builder;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashMap;
@@ -46,6 +43,7 @@ import java.util.function.Function;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.reasoner.reactive.CompoundReactive.compound;
+import static com.vaticle.typedb.core.reasoner.reactive.MapReactive.map;
 
 public class ConjunctionController extends Controller<Conjunction, ConceptMap, ConjunctionController.ConjunctionAns, ConjunctionController.ConjunctionProcessor, ConjunctionController> {
 
@@ -100,12 +98,10 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
 
             BiFunction<Resolvable<?>, ConceptMap, Publisher<ConceptMap>> spawnLeaderFunc = (planElement, carriedBounds) -> {
                 ConceptMap filteredBounds = carriedBounds.filter(planElement.retrieves());
-                Reactive<ConcludableAns, ConceptMap> op = new MapReactive<>(set(), set(), ConcludableAns::conceptMap);  // TODO: Now this doesn't know the type because the mapping is declared in the wrong direction for that :\
+                Reactive<ConcludableAns, ConceptMap> op = map(set(), set(), ConcludableAns::conceptMap);  // TODO: Now this doesn't know the type because the mapping is declared in the wrong direction for that :\
                 if (planElement.isConcludable()) {
                     // TODO: It's kind of lucky we need a mapping to be done here otherwise we'd need a meaningless reactive here to give to the connection builder because the connection isn't established straight away.
-                    Builder<ConcludableAns, ConjunctionProcessor, Concludable, ConceptMap, ConcludableProcessor>
-                            connectionBuilder = new Builder<>(driver(), planElement.asConcludable(), filteredBounds, op);
-                    requestConnection(connectionBuilder);
+                    requestConnection(new Connection.Builder<>(driver(), planElement.asConcludable(), filteredBounds, op));
                 } else if (planElement.isRetrievable()) {
                     // TODO
                 } else if (planElement.isNegated()) {
@@ -121,7 +117,7 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
             };
 
             Reactive<ConceptMap, ConjunctionAns> op = outlet().mapSubscribe(ConjunctionAns::new);
-            op.subscribe(compound(set(op), plan, spawnLeaderFunc, bounds, compoundPacketsFunc));
+            op.subscribe(compound(set(op), plan, bounds, spawnLeaderFunc, compoundPacketsFunc));
         }
     }
 

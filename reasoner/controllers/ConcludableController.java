@@ -29,8 +29,6 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.reasoner.controllers.ConclusionController.ConclusionAns;
-import com.vaticle.typedb.core.reasoner.controllers.ConclusionController.ConclusionProcessor;
-import com.vaticle.typedb.core.reasoner.compute.Processor.Connection.Builder;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
@@ -116,9 +114,7 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
                             conclusionAns -> unifier.unUnify(conclusionAns.concepts(), boundsAndRequirements.second()));
                     // Now we've got the reactive element that interfaces with upstream, get a connection for it to
                     // cross the actor boundary
-                    Builder<ConclusionAns, ConcludableProcessor, Conclusion, ConceptMap, ConclusionProcessor> builder =
-                            new Builder<>(driver(), conclusion, boundsAndRequirements.first(), input);
-                    requestConnection(builder);
+                    requestConnection(new Connection.Builder<>(driver(), conclusion, boundsAndRequirements.first(), input));
                 }));
             });
 

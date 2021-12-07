@@ -53,7 +53,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     protected void exception(Throwable e) {}
 
     protected <PACKET, PUB_CID, PUB_PID, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>>
-    void requestConnection(Connection.Builder<PACKET, PROCESSOR, PUB_CID, PUB_PID, PUB_PROCESSOR> connectionBuilder) {
+    void requestConnection(Connection.Builder<PACKET, PROCESSOR, PUB_CID, PUB_PID> connectionBuilder) {
         controller.execute(actor -> actor.findPublishingConnection(connectionBuilder));
     }
 
@@ -131,12 +131,10 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             subscriberProcessor().execute(actor -> subscriber.receive(this, packet));
         }
 
-        public static class Builder<PACKET, PROCESSOR extends Processor<?, PROCESSOR>, PUB_CID, PUB_PID,
-                PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> {
+        public static class Builder<PACKET, PROCESSOR extends Processor<?, PROCESSOR>, PUB_CID, PUB_PID> {
 
             private final Driver<PROCESSOR> subscriberProcessor;
             private final PUB_CID publisherControllerId;
-            private Driver<PUB_PROCESSOR> publisherProcessor;
             private final PUB_PID publisherProcessorId;
             private final Subscriber<PACKET> subscriber;
 
@@ -152,21 +150,14 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
                 return publisherControllerId;
             }
 
-            protected Builder<PACKET, PROCESSOR, PUB_CID, PUB_PID, PUB_PROCESSOR> publisherProcessor(Driver<PUB_PROCESSOR> publisherProcessor) {
-                assert this.publisherProcessor == null;
-                this.publisherProcessor = publisherProcessor;
-                return this;
-            }
-
-            Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build() {
-                assert subscriberProcessor != null;
-                assert publisherProcessor != null;
-                assert subscriber != null;
-                return new Connection<>(subscriberProcessor, publisherProcessor, subscriber);
-            }
-
             public PUB_PID publisherProcessorId() {
                 return publisherProcessorId;
+            }
+
+            <PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build(Driver<PUB_PROCESSOR> publisherProcessor) {
+                assert subscriberProcessor != null;
+                assert subscriber != null;
+                return new Connection<>(subscriberProcessor, publisherProcessor, subscriber);
             }
         }
     }
