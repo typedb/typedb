@@ -16,12 +16,14 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactiveFramework;
+package com.vaticle.typedb.core.reasoner.controllers;
 
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.reasoner.compute.Controller;
+import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Map;
@@ -38,7 +40,7 @@ public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap
     }
 
     @Override
-    <UPS_CID, UPS_PID, PACKET, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, PACKET, UPS_PROCESSOR,
+    protected <UPS_CID, UPS_PID, PACKET, UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, PACKET, UPS_PROCESSOR,
             UPS_CONTROLLER>, UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> Driver<UPS_CONTROLLER> getControllerForId(UPS_CID ups_cid) {
         return null;  // TODO
     }

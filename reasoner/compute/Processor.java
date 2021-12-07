@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactiveFramework;
+package com.vaticle.typedb.core.reasoner.compute;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -140,8 +140,8 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             private final PUB_PID publisherProcessorId;
             private final Subscriber<PACKET> subscriber;
 
-            protected Builder(Driver<PROCESSOR> subscriberProcessor, PUB_CID publisherControllerId,
-                              PUB_PID publisherProcessorId, Subscriber<PACKET> subscriber) {
+            public Builder(Driver<PROCESSOR> subscriberProcessor, PUB_CID publisherControllerId,
+                           PUB_PID publisherProcessorId, Subscriber<PACKET> subscriber) {
                 this.subscriberProcessor = subscriberProcessor;
                 this.publisherControllerId = publisherControllerId;
                 this.publisherProcessorId = publisherProcessorId;

@@ -16,9 +16,8 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactiveFramework;
+package com.vaticle.typedb.core.reasoner.controllers;
 
-import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -28,17 +27,14 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Negation;
-import com.vaticle.typedb.core.reasoner.reactive.CompoundReactive;
-import com.vaticle.typedb.core.reasoner.reactive.IdentityReactive;
+import com.vaticle.typedb.core.reasoner.compute.Controller;
+import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.reasoner.reactive.MapReactive;
 import com.vaticle.typedb.core.reasoner.reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.reactive.Subscriber;
-import com.vaticle.typedb.core.reasoner.reactiveFramework.ConcludableController.ConcludableAns;
-import com.vaticle.typedb.core.reasoner.reactiveFramework.ConcludableController.ConcludableProcessor;
-import com.vaticle.typedb.core.reasoner.reactiveFramework.Processor.Connection.Builder;
-import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
-import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.reasoner.controllers.ConcludableController.ConcludableAns;
+import com.vaticle.typedb.core.reasoner.controllers.ConcludableController.ConcludableProcessor;
+import com.vaticle.typedb.core.reasoner.compute.Processor.Connection.Builder;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashMap;
@@ -68,7 +64,7 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
     }
 
     @Override
-    <PUB_CID, PUB_PID, PACKET, PUB_CONTROLLER extends Controller<PUB_CID, PUB_PID, PACKET, PUB_PROCESSOR,
+    protected <PUB_CID, PUB_PID, PACKET, PUB_CONTROLLER extends Controller<PUB_CID, PUB_PID, PACKET, PUB_PROCESSOR,
             PUB_CONTROLLER>, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>>
     Driver<PUB_CONTROLLER> getControllerForId(PUB_CID pub_cid) {
         if (pub_cid instanceof Retrievable) {

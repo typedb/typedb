@@ -16,11 +16,11 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactiveFramework;
+package com.vaticle.typedb.core.reasoner.compute;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
-import com.vaticle.typedb.core.reasoner.reactiveFramework.Processor.Connection;
+import com.vaticle.typedb.core.reasoner.compute.Processor.Connection;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,7 +54,7 @@ public abstract class Controller<CID, PID, OUTPUT,
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PID id);
 
-    abstract <
+    protected abstract <
             PUB_CID, PUB_PID, PACKET,
             PUB_CONTROLLER extends Controller<PUB_CID, PUB_PID, PACKET, PUB_PROCESSOR, PUB_CONTROLLER>,
             PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>

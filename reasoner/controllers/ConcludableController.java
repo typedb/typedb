@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactiveFramework;
+package com.vaticle.typedb.core.reasoner.controllers;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -26,9 +26,11 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.reasoner.reactiveFramework.ConclusionController.ConclusionAns;
-import com.vaticle.typedb.core.reasoner.reactiveFramework.ConclusionController.ConclusionProcessor;
-import com.vaticle.typedb.core.reasoner.reactiveFramework.Processor.Connection.Builder;
+import com.vaticle.typedb.core.reasoner.compute.Controller;
+import com.vaticle.typedb.core.reasoner.compute.Processor;
+import com.vaticle.typedb.core.reasoner.controllers.ConclusionController.ConclusionAns;
+import com.vaticle.typedb.core.reasoner.controllers.ConclusionController.ConclusionProcessor;
+import com.vaticle.typedb.core.reasoner.compute.Processor.Connection.Builder;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
@@ -71,7 +73,7 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
     }
 
     @Override
-    <UPS_CID, UPS_PID, PACKET,
+    protected <UPS_CID, UPS_PID, PACKET,
             UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, PACKET, UPS_PROCESSOR, UPS_CONTROLLER>,
             UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> Driver<UPS_CONTROLLER> getControllerForId(UPS_CID id) {
         if (id instanceof Conclusion) {
