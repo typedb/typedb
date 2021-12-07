@@ -52,18 +52,18 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     @Override
     protected void exception(Throwable e) {}
 
-    protected <PACKET, PUB_CID, PUB_PID, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>>
-    void requestConnection(Connection.Builder<PACKET, PROCESSOR, PUB_CID, PUB_PID> connectionBuilder) {
+    protected <PACKET, PUB_CID, PUB_PID> void requestConnection(
+            Connection.Builder<PACKET, PROCESSOR, PUB_CID, PUB_PID> connectionBuilder) {
         controller.execute(actor -> actor.findPublishingConnection(connectionBuilder));
     }
 
-    protected <SUB_PROCESSOR extends Processor<?, SUB_PROCESSOR>>
-    void acceptConnection(Connection<OUTPUT, SUB_PROCESSOR, PROCESSOR> connection) {
+    protected <SUB_PROCESSOR extends Processor<?, SUB_PROCESSOR>> void acceptConnection(
+            Connection<OUTPUT, SUB_PROCESSOR, PROCESSOR> connection) {
         connection.subscriberProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
 
-    protected <PACKET, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>>
-    void finaliseConnection(Connection<PACKET, PROCESSOR, PUB_PROCESSOR> connection) {
+    protected <PACKET, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> void finaliseConnection(
+            Connection<PACKET, PROCESSOR, PUB_PROCESSOR> connection) {
         connection.subscriber().subscribe(connection);
     }
 
@@ -150,11 +150,12 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
                 return publisherControllerId;
             }
 
-            public PUB_PID publisherProcessorId() {
+            PUB_PID publisherProcessorId() {
                 return publisherProcessorId;
             }
 
-            <PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build(Driver<PUB_PROCESSOR> publisherProcessor) {
+            <PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build(
+                    Driver<PUB_PROCESSOR> publisherProcessor) {
                 assert subscriberProcessor != null;
                 assert subscriber != null;
                 return new Connection<>(subscriberProcessor, publisherProcessor, subscriber);
