@@ -71,12 +71,12 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
     }
 
     @Override
-    protected <UPS_CID, UPS_PID, PACKET,
-            UPS_CONTROLLER extends Controller<UPS_CID, UPS_PID, PACKET, UPS_PROCESSOR, UPS_CONTROLLER>,
-            UPS_PROCESSOR extends Processor<PACKET, UPS_PROCESSOR>> Driver<UPS_CONTROLLER> getControllerForId(UPS_CID id) {
+    protected <PUB_CID, PUB_PID, PACKET,
+            PUB_CONTROLLER extends Controller<PUB_CID, PUB_PID, PACKET, PUB_PROCESSOR, PUB_CONTROLLER>,
+            PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> Driver<PUB_CONTROLLER> getControllerForId(PUB_CID id) {
         if (id instanceof Conclusion) {
             Driver<ConclusionController> conclusionController = null; // TODO: Fetch from registry using rule conclusion
-            return (Driver<UPS_CONTROLLER>) conclusionController;  // TODO: Using instanceof requires that we do a casting.
+            return (Driver<PUB_CONTROLLER>) conclusionController;  // TODO: Using instanceof requires that we do a casting.
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }

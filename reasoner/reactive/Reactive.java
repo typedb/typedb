@@ -30,8 +30,8 @@ public interface Reactive<INPUT, OUTPUT> extends Publisher<OUTPUT>, Subscriber<I
 
     Reactive<INPUT, INPUT> findFirstSubscribe();
 
-    <UPS_INPUT> Reactive<UPS_INPUT, INPUT> mapSubscribe(Function<UPS_INPUT, INPUT> function);
+    <PUB_INPUT> Reactive<PUB_INPUT, INPUT> mapSubscribe(Function<PUB_INPUT, INPUT> function);
 
-    <UPS_INPUT> Reactive<UPS_INPUT, INPUT> flatMapOrRetrySubscribe(Function<UPS_INPUT, FunctionalIterator<INPUT>> function);
+    <PUB_INPUT> Reactive<PUB_INPUT, INPUT> flatMapOrRetrySubscribe(Function<PUB_INPUT, FunctionalIterator<INPUT>> function);
 
 }

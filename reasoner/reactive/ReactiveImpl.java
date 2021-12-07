@@ -85,15 +85,15 @@ public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUT
     }
 
     @Override
-    public <UPS_INPUT> MapReactive<UPS_INPUT, INPUT> mapSubscribe(Function<UPS_INPUT, INPUT> function) {
-        MapReactive<UPS_INPUT, INPUT> newReactive = new MapReactive<>(set(this), set(), function);
+    public <PUB_INPUT> MapReactive<PUB_INPUT, INPUT> mapSubscribe(Function<PUB_INPUT, INPUT> function) {
+        MapReactive<PUB_INPUT, INPUT> newReactive = new MapReactive<>(set(this), set(), function);
         subscribe(newReactive);
         return newReactive;
     }
 
     @Override
-    public <UPS_INPUT> FlatMapOrRetryReactive<UPS_INPUT, INPUT> flatMapOrRetrySubscribe(Function<UPS_INPUT, FunctionalIterator<INPUT>> function) {
-        FlatMapOrRetryReactive<UPS_INPUT, INPUT> newReactive = new FlatMapOrRetryReactive<>(set(this), set(), function);
+    public <PUB_INPUT> FlatMapOrRetryReactive<PUB_INPUT, INPUT> flatMapOrRetrySubscribe(Function<PUB_INPUT, FunctionalIterator<INPUT>> function) {
+        FlatMapOrRetryReactive<PUB_INPUT, INPUT> newReactive = new FlatMapOrRetryReactive<>(set(this), set(), function);
         subscribe(newReactive);
         return newReactive;
     }
