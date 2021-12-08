@@ -26,8 +26,12 @@ public class IdentityReactive<PACKET> extends ReactiveImpl<PACKET, PACKET> {
         super(subscribers, publishers);
     }
 
+    public static <T>  IdentityReactive<T> identity(Set<Subscriber<T>> subscribers, Set<Publisher<T>> publishers) {
+        return new IdentityReactive<>(subscribers, publishers);
+    }
+
     @Override
-    public void receive(Publisher<PACKET> publisher, PACKET packet) {  // TODO: Doesn't do a retry
+    public void receive(Publisher<PACKET> publisher, PACKET packet) {
         subscribers().forEach(subscriber -> subscriberReceive(subscriber, packet));
     }
 }

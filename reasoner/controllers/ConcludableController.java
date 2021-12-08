@@ -28,6 +28,8 @@ import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.compute.Processor;
+import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest1;
+import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest2;
 import com.vaticle.typedb.core.reasoner.controllers.ConclusionController.ConclusionAns;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -71,15 +73,23 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
     }
 
     @Override
-    protected <PUB_CID, PUB_PID, PACKET,
-            PUB_CONTROLLER extends Controller<PUB_CID, PUB_PID, PACKET, PUB_PROCESSOR, PUB_CONTROLLER>,
-            PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> Driver<PUB_CONTROLLER> getControllerForId(PUB_CID id) {
-        if (id instanceof Conclusion) {
+    protected <PUB_CID, PUB_PID, PACKET, PUB_CONTROLLER extends Controller<PUB_CID, PUB_PID, PACKET, PUB_PROCESSOR,
+            PUB_CONTROLLER>, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>>
+    ConnectionRequest2<PUB_PID, PACKET, ConcludableProcessor, PUB_CONTROLLER> addConnectionPubController(
+            ConnectionRequest1<PUB_CID, PUB_PID, PACKET, ConcludableProcessor> connectionBuilder) {
+        if (connectionBuilder.publisherControllerId() instanceof Conclusion) {
             Driver<ConclusionController> conclusionController = null; // TODO: Fetch from registry using rule conclusion
-            return (Driver<PUB_CONTROLLER>) conclusionController;  // TODO: Using instanceof requires that we do a casting.
+            ConnectionRequest2<PUB_PID, PACKET, ConcludableProcessor, PUB_CONTROLLER> c = connectionBuilder.withPublisherController(conclusionController);  // TODO: Using instanceof requires that we do a casting.
+            return c;
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
+    }
+
+    @Override
+    protected Driver<ConcludableProcessor> addConnectionPubProcessor(ConnectionRequest2<ConceptMap,
+            ConcludableAns, ?, ?> connectionBuilder) {
+        return null;
     }
 
     public static class ConcludableAns {
@@ -94,9 +104,8 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
 
     public static class ConcludableProcessor extends Processor<ConcludableAns, ConcludableProcessor> {
 
-        public ConcludableProcessor(Driver<ConcludableProcessor> driver,
-                                    Driver<ConcludableController> controller, String name,
-                                    ConceptMap bounds, Set<Identifier.Variable.Retrievable> unboundVars,
+        public ConcludableProcessor(Driver<ConcludableProcessor> driver, Driver<ConcludableController> controller,
+                                    String name, ConceptMap bounds, Set<Identifier.Variable.Retrievable> unboundVars,
                                     LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions,
                                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier) {
             super(driver, controller, name, new Outlet.DynamicMulti<>());
@@ -114,7 +123,7 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
                             conclusionAns -> unifier.unUnify(conclusionAns.concepts(), boundsAndRequirements.second()));
                     // Now we've got the reactive element that interfaces with upstream, get a connection for it to
                     // cross the actor boundary
-                    requestConnection(new Connection.Builder<>(driver(), conclusion, boundsAndRequirements.first(), input));
+                    requestConnection(driver(), input, conclusion, boundsAndRequirements.first());
                 }));
             });
 

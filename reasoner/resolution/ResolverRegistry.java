@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.resolution;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -33,6 +34,7 @@ import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
+import com.vaticle.typedb.core.reasoner.controllers.ConcludableController;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Materialiser;
@@ -209,6 +211,18 @@ public class ResolverRegistry {
             return registerConcludable(resolvable.asConcludable());
         } else throw TypeDBException.of(ILLEGAL_STATE);
     }
+
+    public Pair<Actor.Driver<ConcludableController>, Map<Variable.Retrievable, Variable.Retrievable>> registerConcludableController(Concludable concludable) {
+        return null;
+    }
+
+//    public Pair<Actor.Driver<NegationController>, Set<Variable.Retrievable>> registerNegationController(Negation negation) {
+//        return null;
+//    }
+//
+//    public Pair<Actor.Driver<RetrievableController>, Set<Variable.Retrievable>> registerNegationController(Retrievable retrievable) {
+//        return null;
+//    }
 
     private ResolverView.FilteredRetrievable registerRetrievable(com.vaticle.typedb.core.logic.resolvable.Retrievable retrievable) {
         LOG.debug("Register RetrievableResolver: '{}'", retrievable.pattern());

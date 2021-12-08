@@ -28,10 +28,4 @@ import java.util.function.Function;
 
 public interface Reactive<INPUT, OUTPUT> extends Publisher<OUTPUT>, Subscriber<INPUT> {
 
-    Reactive<INPUT, INPUT> findFirstSubscribe();
-
-    <PUB_INPUT> Reactive<PUB_INPUT, INPUT> mapSubscribe(Function<PUB_INPUT, INPUT> function);
-
-    <PUB_INPUT> Reactive<PUB_INPUT, INPUT> flatMapOrRetrySubscribe(Function<PUB_INPUT, FunctionalIterator<INPUT>> function);
-
 }

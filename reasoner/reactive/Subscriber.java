@@ -18,9 +18,19 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+
+import java.util.function.Function;
+
 public interface Subscriber<T> {
 
     Publisher<T> subscribe(Publisher<T> publisher);
 
     void receive(Publisher<T> publisher, T packet);
+
+    Reactive<T, T> findFirstSubscribe();
+
+    <R> Reactive<R, T> mapSubscribe(Function<R, T> function);
+
+    <R> Reactive<R, T> flatMapOrRetrySubscribe(Function<R, FunctionalIterator<T>> function);
 }

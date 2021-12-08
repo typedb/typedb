@@ -52,19 +52,25 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     @Override
     protected void exception(Throwable e) {}
 
-    protected <PACKET, PUB_CID, PUB_PID> void requestConnection(
-            Connection.Builder<PACKET, PROCESSOR, PUB_CID, PUB_PID> connectionBuilder) {
-        controller.execute(actor -> actor.findPublishingConnection(connectionBuilder));
+    protected <PACKET, PUB_CID, PUB_PID> void requestConnection(Driver<PROCESSOR> subscriberProcessor,
+                                                                Subscriber<PACKET> subscriber,
+                                                                PUB_CID publisherControllerId,
+                                                                PUB_PID publisherProcessorId) {
+        controller.execute(actor -> actor.findPublisherForConnection(new ConnectionRequest1<>(subscriberProcessor,
+                                                                                              subscriber,
+                                                                                              publisherControllerId,
+                                                                                              publisherProcessorId)));
     }
 
     protected <SUB_PROCESSOR extends Processor<?, SUB_PROCESSOR>> void acceptConnection(
             Connection<OUTPUT, SUB_PROCESSOR, PROCESSOR> connection) {
+        connection.subscribe(outlet());
         connection.subscriberProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
 
     protected <PACKET, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> void finaliseConnection(
             Connection<PACKET, PROCESSOR, PUB_PROCESSOR> connection) {
-        connection.subscriber().subscribe(connection);
+        connection.subscriber().subscribe(connection);  // TODO: I think this isn't needed, the connection will already be pulling if it needs to be
     }
 
     public static abstract class Outlet<OUTPUT> extends IdentityReactive<OUTPUT> {
@@ -99,14 +105,14 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
         private final Driver<PROCESSOR> subscriberProcessor;
         private final Driver<PUB_PROCESSOR> publisherProcessor;
-        private final Subscriber<PACKET> inletPort;
+        private final Subscriber<PACKET> subscriber;
 
-        public Connection(Driver<PROCESSOR> subscriberProcessor, Driver<PUB_PROCESSOR> publisherProcessor,
-                          Subscriber<PACKET> subscriber) {
+        private Connection(Driver<PROCESSOR> subscriberProcessor, Driver<PUB_PROCESSOR> publisherProcessor,
+                           Subscriber<PACKET> subscriber) {
             super(set(subscriber), set());
             this.subscriberProcessor = subscriberProcessor;
             this.publisherProcessor = publisherProcessor;
-            this.inletPort = subscriber;
+            this.subscriber = subscriber;
         }
 
         private Driver<PUB_PROCESSOR> publisherProcessor() {
@@ -118,7 +124,7 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
         }
 
         Subscriber<PACKET> subscriber() {
-            return inletPort;  // TODO: Duplicates subscribers()
+            return subscriber;  // TODO: Duplicates subscribers()
         }
 
         @Override
@@ -131,35 +137,64 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             subscriberProcessor().execute(actor -> subscriber.receive(this, packet));
         }
 
-        public static class Builder<PACKET, PROCESSOR extends Processor<?, PROCESSOR>, PUB_CID, PUB_PID> {
+    }
 
-            private final Driver<PROCESSOR> subscriberProcessor;
-            private final PUB_CID publisherControllerId;
-            private final PUB_PID publisherProcessorId;
-            private final Subscriber<PACKET> subscriber;
+    public static class ConnectionRequest1<PUB_CID, PUB_PID, PACKET, PROCESSOR extends Processor<?, PROCESSOR>> {
 
-            public Builder(Driver<PROCESSOR> subscriberProcessor, PUB_CID publisherControllerId,
-                           PUB_PID publisherProcessorId, Subscriber<PACKET> subscriber) {
-                this.subscriberProcessor = subscriberProcessor;
-                this.publisherControllerId = publisherControllerId;
-                this.publisherProcessorId = publisherProcessorId;
-                this.subscriber = subscriber;
-            }
+        private final Driver<PROCESSOR> subscriberProcessor;
+        private final Subscriber<PACKET> subscriber;
+        private final PUB_CID publisherControllerId;
+        private final PUB_PID publisherProcessorId;
 
-            PUB_CID publisherControllerId() {
-                return publisherControllerId;
-            }
+        protected ConnectionRequest1(Driver<PROCESSOR> subscriberProcessor, Subscriber<PACKET> subscriber,
+                                     PUB_CID publisherControllerId, PUB_PID publisherProcessorId) {
 
-            PUB_PID publisherProcessorId() {
-                return publisherProcessorId;
-            }
+            this.subscriberProcessor = subscriberProcessor;
+            this.subscriber = subscriber;
+            this.publisherControllerId = publisherControllerId;
+            this.publisherProcessorId = publisherProcessorId;
+        }
 
-            <PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build(
-                    Driver<PUB_PROCESSOR> publisherProcessor) {
-                assert subscriberProcessor != null;
-                assert subscriber != null;
-                return new Connection<>(subscriberProcessor, publisherProcessor, subscriber);
-            }
+        public <PUB_CONTROLLER extends Controller<?, PUB_PID, PACKET, ?, PUB_CONTROLLER>> ConnectionRequest2<PUB_PID, PACKET,
+                PROCESSOR, PUB_CONTROLLER> withPublisherController(Driver<PUB_CONTROLLER> publisherController, PUB_PID newPID, Subscriber<PACKET> newSubscriber) {
+            return new ConnectionRequest2<>(subscriberProcessor, newPID, newSubscriber, publisherController);
+        }
+
+        public PUB_CID publisherControllerId() {
+            return publisherControllerId;
+        }
+
+        public Subscriber<PACKET> subscriber() {
+            return subscriber;
+        }
+
+        public PUB_PID publisherProcessorId() {
+            return publisherProcessorId;
+        }
+    }
+
+    public static class ConnectionRequest2<PUB_PID, PACKET, PROCESSOR extends Processor<?, PROCESSOR>, PUB_CONTROLLER extends Controller<?, PUB_PID, PACKET, ?, PUB_CONTROLLER>> {
+
+        private final Driver<PROCESSOR> subscriberProcessor;
+        private final PUB_PID publisherProcessorId;
+        private final Subscriber<PACKET> subscriber;
+        private final Driver<PUB_CONTROLLER> publisherController;
+
+        protected ConnectionRequest2(Driver<PROCESSOR> subscriberProcessor, PUB_PID publisherProcessorId,
+                                     Subscriber<PACKET> subscriber, Driver<PUB_CONTROLLER> publisherController) {
+
+            this.subscriberProcessor = subscriberProcessor;
+            this.publisherProcessorId = publisherProcessorId;
+            this.subscriber = subscriber;
+            this.publisherController = publisherController;
+        }
+
+        public Driver<PUB_CONTROLLER> publisherController() {
+            return publisherController;
+        }
+
+        public <PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> Connection<PACKET, PROCESSOR, PUB_PROCESSOR> addPublisherProcessor(Driver<PUB_PROCESSOR> publisherProcessor) {
+            return new Connection<>(subscriberProcessor, publisherProcessor, subscriber);
         }
     }
 

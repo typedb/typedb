@@ -31,7 +31,7 @@ public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUT
     private final Set<Publisher<INPUT>> publishers;
     protected boolean isPulling;
 
-    ReactiveImpl(Set<Subscriber<OUTPUT>> subscribers, Set<Publisher<INPUT>> publishers) {
+    ReactiveImpl(Set<Subscriber<OUTPUT>> subscribers, Set<Publisher<INPUT>> publishers) {  // TODO: Do we need to initialise with subscribers (and publishers) or can we always add dynamically?
         this.subscribers = subscribers;
         this.publishers = publishers;
         this.isPulling = false;
