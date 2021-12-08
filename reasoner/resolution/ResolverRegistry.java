@@ -35,6 +35,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.controllers.ConcludableController;
+import com.vaticle.typedb.core.reasoner.controllers.ConclusionController;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Materialiser;
@@ -52,7 +53,6 @@ import com.vaticle.typedb.core.reasoner.resolution.resolver.DisjunctionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.NegationResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RetrievableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
-import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import org.slf4j.Logger;
@@ -213,7 +213,7 @@ public class ResolverRegistry {
     }
 
     public Pair<Actor.Driver<ConcludableController>, Map<Variable.Retrievable, Variable.Retrievable>> registerConcludableController(Concludable concludable) {
-        return null;
+        return null;  // TODO
     }
 
 //    public Pair<Actor.Driver<NegationController>, Set<Variable.Retrievable>> registerNegationController(Negation negation) {
@@ -223,6 +223,10 @@ public class ResolverRegistry {
 //    public Pair<Actor.Driver<RetrievableController>, Set<Variable.Retrievable>> registerNegationController(Retrievable retrievable) {
 //        return null;
 //    }
+
+    public Actor.Driver<ConclusionController> registerConclusionController(Rule.Conclusion conclusion) {
+        return null;  // TODO
+    }
 
     private ResolverView.FilteredRetrievable registerRetrievable(com.vaticle.typedb.core.logic.resolvable.Retrievable retrievable) {
         LOG.debug("Register RetrievableResolver: '{}'", retrievable.pattern());

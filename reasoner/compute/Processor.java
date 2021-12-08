@@ -32,13 +32,13 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROCESSOR>> extends Actor<PROCESSOR> {
+public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR extends Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR>> extends Actor<PROCESSOR> {
 
-    private final Driver<? extends Controller<?, ?, OUTPUT, PROCESSOR, ?>> controller;
+    private final Driver<? extends Controller<?, ?, PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR, ?>> controller;
     private final Outlet<OUTPUT> outlet;
 
     protected Processor(Driver<PROCESSOR> driver,
-                        Driver<? extends Controller<?, ?, OUTPUT, PROCESSOR, ?>> controller,
+                        Driver<? extends Controller<?, ?, PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR, ?>> controller,
                         String name, Outlet<OUTPUT> outlet) {
         super(driver, name);
         this.controller = controller;
@@ -52,23 +52,19 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
     @Override
     protected void exception(Throwable e) {}
 
-    protected <PACKET, PUB_CID, PUB_PID> void requestConnection(Driver<PROCESSOR> subscriberProcessor,
-                                                                Subscriber<PACKET> subscriber,
-                                                                PUB_CID publisherControllerId,
-                                                                PUB_PID publisherProcessorId) {
-        controller.execute(actor -> actor.findPublisherForConnection(new ConnectionRequest1<>(subscriberProcessor,
-                                                                                              subscriber,
-                                                                                              publisherControllerId,
-                                                                                              publisherProcessorId)));
+    protected void requestConnection(Driver<PROCESSOR> subscriberProcessor, Subscriber<INPUT> subscriber,
+                                     PUB_CID publisherControllerId, PUB_PID publisherProcessorId) {
+        controller.execute(actor -> actor.findPublisherForConnection(
+                new ConnectionRequest1<>(subscriberProcessor, subscriber, publisherControllerId, publisherProcessorId)));
     }
 
-    protected <SUB_PROCESSOR extends Processor<?, SUB_PROCESSOR>> void acceptConnection(
+    protected <SUB_PROCESSOR extends Processor<?, ?, ?, ?, SUB_PROCESSOR>> void acceptConnection(
             Connection<OUTPUT, SUB_PROCESSOR, PROCESSOR> connection) {
         connection.subscribe(outlet());
         connection.subscriberProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
 
-    protected <PACKET, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> void finaliseConnection(
+    protected <PACKET, PUB_PROCESSOR extends Processor<?, ?, ?, PACKET, PUB_PROCESSOR>> void finaliseConnection(
             Connection<PACKET, PROCESSOR, PUB_PROCESSOR> connection) {
         connection.subscriber().subscribe(connection);  // TODO: I think this isn't needed, the connection will already be pulling if it needs to be
     }
@@ -100,8 +96,8 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
     }
 
-    public static class Connection<PACKET, PROCESSOR extends Processor<?, PROCESSOR>,
-            PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> extends IdentityReactive<PACKET> {
+    public static class Connection<PACKET, PROCESSOR extends Processor<?, ?, ?, ?, PROCESSOR>,
+            PUB_PROCESSOR extends Processor<?, ?, ?, PACKET, PUB_PROCESSOR>> extends IdentityReactive<PACKET> {
 
         private final Driver<PROCESSOR> subscriberProcessor;
         private final Driver<PUB_PROCESSOR> publisherProcessor;
@@ -139,14 +135,14 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
 
     }
 
-    public static class ConnectionRequest1<PUB_CID, PUB_PID, PACKET, PROCESSOR extends Processor<?, PROCESSOR>> {
+    public static class ConnectionRequest1<PUB_CID, PUB_PID, PUB_OUTPUT, PROCESSOR extends Processor<?, ?, PUB_OUTPUT, ?, PROCESSOR>> {
 
         private final Driver<PROCESSOR> subscriberProcessor;
-        private final Subscriber<PACKET> subscriber;
+        private final Subscriber<PUB_OUTPUT> subscriber;
         private final PUB_CID publisherControllerId;
         private final PUB_PID publisherProcessorId;
 
-        protected ConnectionRequest1(Driver<PROCESSOR> subscriberProcessor, Subscriber<PACKET> subscriber,
+        protected ConnectionRequest1(Driver<PROCESSOR> subscriberProcessor, Subscriber<PUB_OUTPUT> subscriber,
                                      PUB_CID publisherControllerId, PUB_PID publisherProcessorId) {
 
             this.subscriberProcessor = subscriberProcessor;
@@ -155,33 +151,38 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             this.publisherProcessorId = publisherProcessorId;
         }
 
-        public <PUB_CONTROLLER extends Controller<?, PUB_PID, PACKET, ?, PUB_CONTROLLER>> ConnectionRequest2<PUB_PID, PACKET,
-                PROCESSOR, PUB_CONTROLLER> withPublisherController(Driver<PUB_CONTROLLER> publisherController, PUB_PID newPID, Subscriber<PACKET> newSubscriber) {
+        public <PUB_CONTROLLER extends Controller<?, PUB_PID, ?, ?, ?, PUB_OUTPUT, ?, PUB_CONTROLLER>> ConnectionRequest2<PUB_PID, PUB_OUTPUT,
+                PROCESSOR, PUB_CONTROLLER> toRequest2(Driver<PUB_CONTROLLER> publisherController, PUB_PID newPID, Subscriber<PUB_OUTPUT> newSubscriber) {
             return new ConnectionRequest2<>(subscriberProcessor, newPID, newSubscriber, publisherController);
+        }
+
+        public <PUB_CONTROLLER extends Controller<?, PUB_PID, ?, ?, ?, PUB_OUTPUT, ?, PUB_CONTROLLER>> ConnectionRequest2<PUB_PID, PUB_OUTPUT,
+                PROCESSOR, PUB_CONTROLLER> toRequest2(Driver<PUB_CONTROLLER> publisherController) {
+            return new ConnectionRequest2<>(subscriberProcessor, publisherProcessorId, subscriber, publisherController);
         }
 
         public PUB_CID publisherControllerId() {
             return publisherControllerId;
         }
 
-        public Subscriber<PACKET> subscriber() {
+        public Subscriber<PUB_OUTPUT> subscriber() {
             return subscriber;
         }
 
         public PUB_PID publisherProcessorId() {
             return publisherProcessorId;
         }
+
     }
 
-    public static class ConnectionRequest2<PUB_PID, PACKET, PROCESSOR extends Processor<?, PROCESSOR>, PUB_CONTROLLER extends Controller<?, PUB_PID, PACKET, ?, PUB_CONTROLLER>> {
-
+    public static class ConnectionRequest2<PUB_PID, PUB_OUTPUT, PROCESSOR extends Processor<?, ?, PUB_OUTPUT, ?, PROCESSOR>, PUB_CONTROLLER extends Controller<?, PUB_PID, ?, ?, ?, PUB_OUTPUT, ?, PUB_CONTROLLER>> {
         private final Driver<PROCESSOR> subscriberProcessor;
         private final PUB_PID publisherProcessorId;
-        private final Subscriber<PACKET> subscriber;
+        private final Subscriber<PUB_OUTPUT> subscriber;
         private final Driver<PUB_CONTROLLER> publisherController;
 
         protected ConnectionRequest2(Driver<PROCESSOR> subscriberProcessor, PUB_PID publisherProcessorId,
-                                     Subscriber<PACKET> subscriber, Driver<PUB_CONTROLLER> publisherController) {
+                                     Subscriber<PUB_OUTPUT> subscriber, Driver<PUB_CONTROLLER> publisherController) {
 
             this.subscriberProcessor = subscriberProcessor;
             this.publisherProcessorId = publisherProcessorId;
@@ -193,8 +194,12 @@ public abstract class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROC
             return publisherController;
         }
 
-        public <PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> Connection<PACKET, PROCESSOR, PUB_PROCESSOR> addPublisherProcessor(Driver<PUB_PROCESSOR> publisherProcessor) {
+        public <PUB_PROCESSOR extends Processor<?, ?, ?, PUB_OUTPUT, PUB_PROCESSOR>> Connection<PUB_OUTPUT, PROCESSOR, PUB_PROCESSOR> connect(Driver<PUB_PROCESSOR> publisherProcessor) {
             return new Connection<>(subscriberProcessor, publisherProcessor, subscriber);
+        }
+
+        public PUB_PID publisherProcessorId() {
+            return publisherProcessorId;
         }
     }
 

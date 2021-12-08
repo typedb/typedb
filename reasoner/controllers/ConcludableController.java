@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.controllers;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
@@ -32,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest1;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest2;
 import com.vaticle.typedb.core.reasoner.controllers.ConclusionController.ConclusionAns;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.LinkedHashMap;
@@ -39,17 +39,17 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-
-public class ConcludableController extends Controller<Concludable, ConceptMap, ConcludableController.ConcludableAns,
-        ConcludableController.ConcludableProcessor, ConcludableController> {
+public class ConcludableController extends Controller<Concludable, ConceptMap, ConceptMap, Conclusion, ConclusionAns,
+        ConceptMap, ConcludableController.ConcludableProcessor, ConcludableController> {
 
     private final LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions;
     private final Set<Identifier.Variable.Retrievable> unboundVars;
+    private final ResolverRegistry registry;
 
     protected ConcludableController(Driver<ConcludableController> driver, String name, Concludable id,
-                                    ActorExecutorGroup executorService) {
+                                    ActorExecutorGroup executorService, ResolverRegistry registry) {
         super(driver, name, id, executorService);
+        this.registry = registry;
         this.upstreamConclusions = initialiseUpstreamConclusions();
         this.unboundVars = unboundVars();
     }
@@ -73,36 +73,18 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
     }
 
     @Override
-    protected <PUB_CID, PUB_PID, PACKET, PUB_CONTROLLER extends Controller<PUB_CID, PUB_PID, PACKET, PUB_PROCESSOR,
-            PUB_CONTROLLER>, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>>
-    ConnectionRequest2<PUB_PID, PACKET, ConcludableProcessor, PUB_CONTROLLER> addConnectionPubController(
-            ConnectionRequest1<PUB_CID, PUB_PID, PACKET, ConcludableProcessor> connectionBuilder) {
-        if (connectionBuilder.publisherControllerId() instanceof Conclusion) {
-            Driver<ConclusionController> conclusionController = null; // TODO: Fetch from registry using rule conclusion
-            ConnectionRequest2<PUB_PID, PACKET, ConcludableProcessor, PUB_CONTROLLER> c = connectionBuilder.withPublisherController(conclusionController);  // TODO: Using instanceof requires that we do a casting.
-            return c;
-        } else {
-            throw TypeDBException.of(ILLEGAL_STATE);
-        }
+    protected ConnectionRequest2<ConceptMap, ConclusionAns, ConcludableProcessor, ?> makeConnectionRequest2(
+            ConnectionRequest1<Conclusion, ConceptMap, ConclusionAns, ConcludableProcessor> connectionBuilder) {
+        return connectionBuilder.toRequest2(registry.registerConclusionController(connectionBuilder.publisherControllerId()));
     }
 
     @Override
-    protected Driver<ConcludableProcessor> addConnectionPubProcessor(ConnectionRequest2<ConceptMap,
-            ConcludableAns, ?, ?> connectionBuilder) {
-        return null;
+    protected Driver<ConcludableProcessor> addConnectionPubProcessor(ConnectionRequest2<ConceptMap, ConceptMap, ?, ?> connectionBuilder) {
+        // TODO: We can do subsumption here
+        return processors.computeIfAbsent(connectionBuilder.publisherProcessorId(), this::buildProcessor);
     }
 
-    public static class ConcludableAns {
-        public ConcludableAns(ConceptMap conceptMap) {
-            // TODO
-        }
-
-        public ConceptMap conceptMap() {
-            return null;  // TODO
-        }
-    }
-
-    public static class ConcludableProcessor extends Processor<ConcludableAns, ConcludableProcessor> {
+    public static class ConcludableProcessor extends Processor<ConceptMap, Conclusion, ConclusionAns, ConceptMap, ConcludableProcessor> {
 
         public ConcludableProcessor(Driver<ConcludableProcessor> driver, Driver<ConcludableController> controller,
                                     String name, ConceptMap bounds, Set<Identifier.Variable.Retrievable> unboundVars,
@@ -112,7 +94,7 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
 
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
 
-            Reactive<ConceptMap, ?> op = outlet().mapSubscribe(ConcludableAns::new);
+            Reactive<ConceptMap, ?> op = outlet();
             if (singleAnswerRequired) op = op.findFirstSubscribe();
             op.subscribe(Source.fromIteratorSupplier(traversalSuppplier));
 

@@ -26,7 +26,7 @@ public class IdentityReactive<PACKET> extends ReactiveImpl<PACKET, PACKET> {
         super(subscribers, publishers);
     }
 
-    public static <T>  IdentityReactive<T> identity(Set<Subscriber<T>> subscribers, Set<Publisher<T>> publishers) {
+    public static <T>  IdentityReactive<T> noOp(Set<Subscriber<T>> subscribers, Set<Publisher<T>> publishers) {
         return new IdentityReactive<>(subscribers, publishers);
     }
 

@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -29,7 +30,7 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import java.util.Map;
 import java.util.function.Function;
 
-public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap, ConclusionController.ConclusionAns, ConclusionController.ConclusionProcessor, ConclusionController> {
+public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap, ConceptMap, Conjunction, ConceptMap, ConclusionController.ConclusionAns, ConclusionController.ConclusionProcessor, ConclusionController> {
     protected ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion id, ActorExecutorGroup executorService) {
         super(driver, name, id, executorService);
     }
@@ -40,9 +41,14 @@ public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap
     }
 
     @Override
-    protected <PUB_CID, PUB_PID, PACKET, PUB_CONTROLLER extends Controller<PUB_CID, PUB_PID, PACKET, PUB_PROCESSOR,
-            PUB_CONTROLLER>, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>> Driver<PUB_CONTROLLER> getControllerForId(PUB_CID ups_cid) {
-        return null;  // TODO
+    protected Processor.ConnectionRequest2<ConceptMap, ConceptMap, ConclusionProcessor, ?> makeConnectionRequest2(Processor.ConnectionRequest1<Conjunction, ConceptMap, ConceptMap, ConclusionProcessor> connectionBuilder) {
+        return null;
+    }
+
+    @Override
+    protected Driver<ConclusionProcessor> addConnectionPubProcessor(Processor.ConnectionRequest2<ConceptMap,
+            ConclusionAns, ?, ?> connectionBuilder) {
+        return null;
     }
 
     public static class ConclusionAns {
@@ -52,9 +58,10 @@ public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap
         }
     }
 
-    public static class ConclusionProcessor extends Processor<ConclusionAns, ConclusionProcessor> {
-        public ConclusionProcessor(Driver<ConclusionProcessor> driver, Driver<? extends Controller<?, ?,
-                ConclusionAns, ConclusionProcessor, ?>> controller, String name, Outlet outlet) {
+    public static class ConclusionProcessor extends Processor<ConceptMap, Conjunction, ConceptMap, ConclusionAns, ConclusionProcessor> {
+        protected ConclusionProcessor(Driver<ConclusionProcessor> driver, Driver<? extends Controller<?, ?,
+                ConceptMap, Conjunction, ConceptMap, ConclusionAns, ConclusionProcessor, ?>> controller, String name,
+                                      Outlet<ConclusionAns> outlet) {
             super(driver, controller, name, outlet);
         }
 

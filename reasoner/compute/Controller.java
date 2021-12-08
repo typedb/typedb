@@ -21,14 +21,15 @@ package com.vaticle.typedb.core.reasoner.compute;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest1;
+import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest2;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
 
-public abstract class Controller<CID, PID, OUTPUT, PROCESSOR extends Processor<OUTPUT, PROCESSOR>,
-        CONTROLLER extends Controller<CID, PID, OUTPUT, PROCESSOR, CONTROLLER>> extends Actor<CONTROLLER> {
+public abstract class Controller<CID, PID, PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR extends Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR>,
+        CONTROLLER extends Controller<CID, PID, PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR, CONTROLLER>> extends Actor<CONTROLLER> {
 
     private final CID id;
     private final ActorExecutorGroup executorService;
@@ -53,25 +54,20 @@ public abstract class Controller<CID, PID, OUTPUT, PROCESSOR extends Processor<O
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PID id);
 
-    <PACKET, PUB_CID, PUB_PID, PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>,
-            PUB_CONTROLLER extends Controller<PUB_CID, PUB_PID, PACKET, PUB_PROCESSOR, PUB_CONTROLLER>>
-    void findPublisherForConnection(ConnectionRequest1<PUB_CID, PUB_PID, PACKET, PROCESSOR> connectionBuilder) {
-        Processor.ConnectionRequest2<PUB_PID, PACKET, ?, ?> req = addConnectionPubController(connectionBuilder);
-        req.publisherController().execute(actor -> actor.findConnection(req));
+    void findPublisherForConnection(ConnectionRequest1<PUB_CID, PUB_PID, INPUT, PROCESSOR> connectionBuilder) {
+        ConnectionRequest2<PUB_PID, INPUT, ?, ?> req = makeConnectionRequest2(connectionBuilder);
+        req.publisherController().execute(actor -> actor.makeConnection(req));
     }
 
-    protected abstract <
-            PUB_CID, PUB_PID, PACKET,
-            PUB_CONTROLLER extends Controller<PUB_CID, PUB_PID, PACKET, PUB_PROCESSOR, PUB_CONTROLLER>,
-            PUB_PROCESSOR extends Processor<PACKET, PUB_PROCESSOR>
-            > Processor.ConnectionRequest2<PUB_PID, PACKET, PROCESSOR, PUB_CONTROLLER> addConnectionPubController(ConnectionRequest1<PUB_CID, PUB_PID, PACKET, PROCESSOR> connectionBuilder);
+    protected abstract ConnectionRequest2<PUB_PID, INPUT, PROCESSOR, ?> makeConnectionRequest2(ConnectionRequest1<PUB_CID, PUB_PID, INPUT, PROCESSOR> connectionBuilder);
 
-    void findConnection(Processor.ConnectionRequest2<PID, OUTPUT, ?, ?> connectionBuilder) {
+    void makeConnection(ConnectionRequest2<PID, OUTPUT, ?, ?> connectionBuilder) {
         Driver<PROCESSOR> processor = addConnectionPubProcessor(connectionBuilder);
-        processor.execute(actor -> actor.acceptConnection(connectionBuilder.addPublisherProcessor(processor)));
+        Processor.Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.connect(processor);
+        processor.execute(actor -> actor.acceptConnection(connection));
     }
 
-    protected abstract Driver<PROCESSOR> addConnectionPubProcessor(Processor.ConnectionRequest2<PID, OUTPUT, ?, ?> connectionBuilder);  // TODO: This is where we can do subsumption
+    protected abstract Driver<PROCESSOR> addConnectionPubProcessor(ConnectionRequest2<PID, OUTPUT, ?, ?> connectionBuilder);  // TODO: This is where we can do subsumption in any processor
 
     @Override
     protected void exception(Throwable e) {
