@@ -18,21 +18,10 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-
-import javax.annotation.Nullable;
-import java.util.function.Function;
-
 public interface Subscriber<T> {
 
     Publisher<T> subscribe(Publisher<T> publisher);
 
     void receive(Publisher<T> publisher, T packet);  // TODO: The publisher argument is only needed by compound - can we do without it?
 
-    // TODO: I think these methods should sit on publisher
-    Reactive<T, T> findFirstSubscribe();
-
-    <R> Reactive<R, T> mapSubscribe(Function<R, T> function);
-
-    <R> Reactive<R, T> flatMapOrRetrySubscribe(Function<R, FunctionalIterator<T>> function);
 }

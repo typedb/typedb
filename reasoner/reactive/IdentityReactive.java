@@ -18,21 +18,26 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 
-public class IdentityReactive<PACKET> extends ReactiveImpl<PACKET, PACKET> {
+import static com.vaticle.typedb.common.collection.Collections.set;
+
+public class IdentityReactive<PACKET> extends Reactive<PACKET, PACKET> {
 
     protected IdentityReactive(Set<Subscriber<PACKET>> subscribers, Set<Publisher<PACKET>> publishers) {
         super(subscribers, publishers);
     }
 
-    public static <T>  IdentityReactive<T> noOp(Set<Subscriber<T>> subscribers, Set<Publisher<T>> publishers) {
+    public static <T> IdentityReactive<T> noOp(Set<Subscriber<T>> subscribers, Set<Publisher<T>> publishers) {
         return new IdentityReactive<>(subscribers, publishers);
+    }
+
+    public static <T> IdentityReactive<T> noOp() {
+        return new IdentityReactive<>(set(), set());
     }
 
     @Override
     public void receive(Publisher<PACKET> publisher, PACKET packet) {
-        subscribers().forEach(subscriber -> subscriberReceive(subscriber, packet));
+        subscribers().forEach(subscriber -> subscriber.receive(this, packet));
     }
 }

@@ -39,6 +39,9 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.reasoner.reactive.IdentityReactive.noOp;
+
 public class ConcludableController extends Controller<Concludable, ConceptMap, ConceptMap, Conclusion, ConclusionAns,
         ConceptMap, ConcludableController.ConcludableProcessor, ConcludableController> {
 
@@ -93,16 +96,17 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
 
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
 
-            Reactive<ConceptMap, ?> op = outlet();
-            if (singleAnswerRequired) op = op.findFirstSubscribe();
-            op.subscribe(Source.fromIteratorSupplier(traversalSuppplier));
+            Reactive<ConceptMap, ConceptMap> op = noOp(set(), set());
+            if (singleAnswerRequired) op.findFirst().publishTo(outlet());
+            else op.publishTo(outlet());
 
-            Reactive<ConceptMap, ?> finalOp = op;
+            Source.fromIteratorSupplier(traversalSuppplier).publishTo(op);
+
             upstreamConclusions.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
-                    Function<ConclusionAns, FunctionalIterator<ConceptMap>> fn = conclusionAns -> unifier.unUnify(conclusionAns.concepts(), boundsAndRequirements.second());
-                    SubscribingEndpoint<ConclusionAns> endpoint = requestConnection(driver(), conclusion, boundsAndRequirements.first());  // TODO: This call can be made automatically when requesting an endpoint
-                    finalOp.flatMapOrRetrySubscribe(fn).subscribe(endpoint);
+                    requestConnection(driver(), conclusion, boundsAndRequirements.first())
+                            .flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns.concepts(), boundsAndRequirements.second()))
+                            .publishTo(op);
                 }));
             });
 

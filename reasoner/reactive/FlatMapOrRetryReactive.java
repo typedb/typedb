@@ -20,11 +20,10 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.function.Function;
 
-public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OUTPUT> {
+public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
 
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
 
@@ -38,7 +37,7 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveImpl<INPUT, O
     public void receive(Publisher<INPUT> publisher, INPUT packet) {
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {
-            transformed.forEachRemaining(t -> subscribers().forEach(subscriber -> subscriberReceive(subscriber, t)));
+            transformed.forEachRemaining(t -> subscribers().forEach(subscriber -> subscriber.receive(this, t)));
             isPulling = false;
         } else if (isPulling) {
             publisher.pull(this);  // Automatic retry

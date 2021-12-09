@@ -18,27 +18,26 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
-import java.util.Set;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+
 import java.util.function.Function;
 
-public class MapReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
+import static com.vaticle.typedb.common.collection.Collections.set;
 
-    private final Function<INPUT, OUTPUT> mappingFunc;
+public abstract class PublisherImpl<OUTPUT> implements Publisher<OUTPUT> {
 
-    protected MapReactive(Set<Subscriber<OUTPUT>> subscribers, Set<Publisher<INPUT>> publishers,
-                Function<INPUT, OUTPUT> mappingFunc) {
-        super(subscribers, publishers);
-        this.mappingFunc = mappingFunc;
-    }
-
-    public static <I, O> MapReactive<I, O> map(Set<Subscriber<O>> subscribers, Set<Publisher<I>> publishers,
-                                               Function<I, O> mappingFunc) {
-        return new MapReactive<>(subscribers, publishers, mappingFunc);
+    @Override
+    public Reactive<OUTPUT, OUTPUT> findFirst() {
+        return new FindFirstReactive<>(set(), set(this));
     }
 
     @Override
-    public void receive(Publisher<INPUT> publisher, INPUT packet) {
-        subscribers().forEach(subscriber -> subscriber.receive(this, mappingFunc.apply(packet)));
+    public <R> Reactive<OUTPUT, R> map(Function<OUTPUT, R> function) {
+        return new MapReactive<>(set(), set(this), function);
     }
 
+    @Override
+    public <R> Reactive<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
+        return new FlatMapOrRetryReactive<>(set(), set(this), function);
+    }
 }

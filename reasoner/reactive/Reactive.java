@@ -19,13 +19,59 @@
 package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 
-import java.util.List;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public interface Reactive<INPUT, OUTPUT> extends Publisher<OUTPUT>, Subscriber<INPUT> {
+import static com.vaticle.typedb.common.collection.Collections.set;
+
+public abstract class Reactive<INPUT, OUTPUT> extends PublisherImpl<OUTPUT> implements Subscriber<INPUT>{
+
+    protected final Set<Subscriber<OUTPUT>> subscribers;
+    private final Set<Publisher<INPUT>> publishers;
+    protected boolean isPulling;
+
+    protected Reactive(Set<Subscriber<OUTPUT>> subscribers, Set<Publisher<INPUT>> publishers) {  // TODO: Do we need to initialise with subscribers (and publishers) or can we always add dynamically?
+        this.subscribers = subscribers;
+        this.publishers = publishers;
+        this.isPulling = false;
+    }
+
+    @Override
+    public void publishTo(Subscriber<OUTPUT> subscriber) {
+        subscribers.add(subscriber);
+        subscriber.subscribe(this);
+        // TODO: To dynamically add subscribers we need to have buffered all prior packets and send them here
+        //  we can adopt a policy that if you weren't a subscriber in time for the packet then you miss it, and
+        //  break this only for outlets which will do the buffering and ensure all subscribers receive all answers.
+    }
+
+    @Override
+    public void pull(Subscriber<OUTPUT> subscriber) {
+        subscribers.add(subscriber);
+        if (!isPulling) {
+            publishersPull();
+            isPulling = true;
+        }
+    }
+
+    protected void publishersPull() {
+        publishers.forEach(p -> p.pull(this));
+    }
+
+    protected Set<Subscriber<OUTPUT>> subscribers() {
+        return subscribers;
+    }
+
+    protected Set<Publisher<INPUT>> publishers() {
+        return publishers;
+    }
+
+    @Override
+    public Publisher<INPUT> subscribe(Publisher<INPUT> publisher) {
+        publishers.add(publisher);
+        if (isPulling) publisher.pull(this);
+        return publisher;
+    }
 
 }

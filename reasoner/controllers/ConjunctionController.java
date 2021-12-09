@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -42,6 +41,7 @@ import java.util.function.Function;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.reasoner.reactive.CompoundReactive.compound;
+import static com.vaticle.typedb.core.reasoner.reactive.IdentityReactive.noOp;
 
 public class ConjunctionController extends Controller<Conjunction, ConceptMap, ConceptMap, Resolvable<?>, ConceptMap, ConjunctionController.ConjunctionAns, ConjunctionController.ConjunctionProcessor, ConjunctionController> {
 
@@ -73,7 +73,7 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
             Driver<ConcludableController> controller = pair.first();
             Mapping mapping = Mapping.of(pair.second());
             ConceptMap newPID = mapping.transform(connectionRequest.pubProcessorId());
-            return connectionRequest.createConnectionBuilder(controller).mapSubscribe(newPID, mapping::unTransform);
+            return connectionRequest.createConnectionBuilder(controller).withMap(newPID, mapping::unTransform);
         } else if (pub_cid.isNegated()) {
             return null;  // TODO: Get the retrievable controller from the registry. Apply the filter in the same way as the mapping for concludable.
         }
@@ -104,8 +104,9 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
                                        String name, ConceptMap bounds, List<Resolvable<?>> plan) {
             super(driver, controller, name, new Outlet.Single<>());
 
-            Reactive<ConceptMap, ConjunctionAns> op = outlet().mapSubscribe(ConjunctionAns::new);
-            op.subscribe(compound(set(op), plan, bounds, this::nextCompoundLeader, ConjunctionProcessor::merge));
+            compound(set(noOp(set(), set())), plan, bounds, this::nextCompoundLeader, ConjunctionProcessor::merge)
+                    .map(ConjunctionAns::new)
+                    .publishTo(outlet());
         }
 
         private SubscribingEndpoint<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {

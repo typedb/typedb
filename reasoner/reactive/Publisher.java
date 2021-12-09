@@ -18,10 +18,20 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+
+import java.util.function.Function;
+
 public interface Publisher<T> {
 
-    void publish(Subscriber<T> subscriber);
+    void publishTo(Subscriber<T> subscriber);  // TODO: Can we do without?
 
     void pull(Subscriber<T> subscriber);
+
+    Reactive<T, T> findFirst();
+
+    <R> Reactive<T, R> map(Function<T, R> function);
+
+    <R> Reactive<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
 
 }

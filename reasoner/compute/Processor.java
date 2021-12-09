@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.reactive.IdentityReactive;
 import com.vaticle.typedb.core.reasoner.reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.reactive.PublisherImpl;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Subscriber;
 
@@ -36,6 +37,7 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.reasoner.reactive.IdentityReactive.noOp;
 
 public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR extends Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR>> extends Actor<PROCESSOR> {
 
@@ -261,8 +263,12 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
             return pubProcessorId;
         }
 
-        public ConnectionBuilder<PUB_CID, PUB_PID, PUB_OUTPUT, PROCESSOR, PUB_CONTROLLER> mapSubscribe(PUB_PID newPID, Function<PUB_OUTPUT, PUB_OUTPUT> function) {
-            connectionTransforms.add(r -> r.mapSubscribe(function));
+        public ConnectionBuilder<PUB_CID, PUB_PID, PUB_OUTPUT, PROCESSOR, PUB_CONTROLLER> withMap(PUB_PID newPID, Function<PUB_OUTPUT, PUB_OUTPUT> function) {
+            connectionTransforms.add(r -> {
+                Reactive<PUB_OUTPUT, PUB_OUTPUT> op = noOp();
+                op.map(function).publishTo(r);
+                return op;
+            });
             pubProcessorId = newPID;
             return this;
         }
@@ -281,30 +287,27 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         public static class Single<OUTPUT> extends Outlet<OUTPUT> {
 
             @Override
-            public void publish(Subscriber<OUTPUT> subscriber) {
+            public void publishTo(Subscriber<OUTPUT> subscriber) {
                 if (subscribers().size() > 0) throw TypeDBException.of(ILLEGAL_STATE);
                 else subscribers.add(subscriber);
             }
-
         }
 
         public static class DynamicMulti<OUTPUT> extends Outlet<OUTPUT> {
 
             @Override
-            public void publish(Subscriber<OUTPUT> subscriber) {
-                super.publish(subscriber);  // TODO: This needs to record the subscribers read position in the buffer and maintain it.
+            public void publishTo(Subscriber<OUTPUT> subscriber) {
+                super.publishTo(subscriber);  // TODO: This needs to record the subscribers read position in the buffer and maintain it.
             }
-
         }
-
     }
 
-    public static class Source<INPUT> implements Publisher<INPUT> {
+    public static class Source<PACKET> extends PublisherImpl<PACKET> {
 
-        private final Supplier<FunctionalIterator<INPUT>> iteratorSupplier;
-        private final Map<Subscriber<INPUT>, FunctionalIterator<INPUT>> iterators;
+        private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
+        private final Map<Subscriber<PACKET>, FunctionalIterator<PACKET>> iterators;
 
-        public Source(Supplier<FunctionalIterator<INPUT>> iteratorSupplier) {
+        public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier) {
             this.iteratorSupplier = iteratorSupplier;
             this.iterators = new HashMap<>();
         }
@@ -314,14 +317,18 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         }
 
         @Override
-        public void publish(Subscriber<INPUT> subscriber) {
-            // subscribers only need to be dynamically recorded on pull()
+        public void pull(Subscriber<PACKET> subscriber) {
+            FunctionalIterator<PACKET> iterator = iterators.computeIfAbsent(subscriber, s -> iteratorSupplier.get());
+            assert iterators.size() <= 1;  // Opens a new iterator for each subscriber. Presently we only intend to
+            // have one subscriber, so look into this if more are required
+            if (iterator.hasNext()) subscriber.receive(this, iterator.next());
         }
 
         @Override
-        public void pull(Subscriber<INPUT> subscriber) {
-            FunctionalIterator<INPUT> iterator = iterators.computeIfAbsent(subscriber, s -> iteratorSupplier.get());
-            if (iterator.hasNext()) subscriber.receive(this, iterator.next());
+        public void publishTo(Subscriber<PACKET> subscriber) {
+            // subscribers only need to be dynamically recorded on pull()
+            subscriber.subscribe(this);
         }
+
     }
 }
