@@ -167,8 +167,8 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         private final long pubEndpointId;
         private final List<Function<Reactive<PACKET, PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms;
 
-        private Connection(Driver<PROCESSOR> subProcessor, Driver<PUB_PROCESSOR> pubProcessor,
-                           long subEndpointId, long PubEndpointId, List<Function<Reactive<PACKET, PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms) {
+        private Connection(Driver<PROCESSOR> subProcessor, Driver<PUB_PROCESSOR> pubProcessor, long subEndpointId, long PubEndpointId,
+                           List<Function<Reactive<PACKET, PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms) {
             this.subProcessor = subProcessor;
             this.pubProcessor = pubProcessor;
             this.subEndpointId = subEndpointId;

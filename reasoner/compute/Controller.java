@@ -54,11 +54,11 @@ public abstract class Controller<CID, PID, PUB_PID, PUB_CID, INPUT, OUTPUT, PROC
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PID id);
 
     void findPublisherForConnection(ConnectionBuilder<PUB_CID, PUB_PID, INPUT, PROCESSOR, ?> connectionBuilder) {
-        ConnectionBuilder<?, PUB_PID, INPUT, ?, ?> builder = getPublisherController(connectionBuilder);
+        ConnectionBuilder<PUB_CID, PUB_PID, INPUT, ?, ?> builder = getPublisherController(connectionBuilder);
         builder.publisherController().execute(actor -> actor.makeConnection(builder));
     }
 
-    protected abstract ConnectionBuilder<?, PUB_PID, INPUT, ?, ?> getPublisherController(ConnectionBuilder<?, PUB_PID, INPUT, ?, ?> connectionBuilder);
+    protected abstract <PUB_CONTROLLER extends Controller<?, PUB_PID, ?, ?, ?, INPUT, ?, PUB_CONTROLLER>> ConnectionBuilder<PUB_CID, PUB_PID, INPUT, ?, ?> getPublisherController(ConnectionBuilder<PUB_CID, PUB_PID, INPUT, ?, PUB_CONTROLLER> connectionBuilder);
 
     void makeConnection(ConnectionBuilder<?, PID, OUTPUT, ?, ?> connectionBuilder) {
         Driver<PROCESSOR> processor = addConnectionPubProcessor(connectionBuilder);

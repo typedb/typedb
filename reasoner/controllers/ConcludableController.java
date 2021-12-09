@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.controllers;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -72,13 +73,13 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
     }
 
     @Override
-    protected ConnectionBuilder<ConceptMap, ConclusionAns, ?> getPublisherController(
-            ConnectionBuilder connectionBuilder) {
-        return connectionBuilder.addPublisherController(registry.registerConclusionController(connectionBuilder.publisherControllerId()));
+    protected <PUB_CONTROLLER extends Controller<?, ConceptMap, ?, ?, ?, ConclusionAns, ?, PUB_CONTROLLER>> ConnectionBuilder<Conclusion, ConceptMap, ConclusionAns, ?, ?> getPublisherController(ConnectionBuilder<Conclusion, ConceptMap, ConclusionAns, ?, PUB_CONTROLLER> connectionBuilder) {
+        Driver<PUB_CONTROLLER> c = (Driver<PUB_CONTROLLER>) registry.registerConclusionController(connectionBuilder.publisherControllerId());
+        return connectionBuilder.addPublisherController(c);
     }
 
     @Override
-    protected Driver<ConcludableProcessor> addConnectionPubProcessor(ConnectionBuilder<ConceptMap, ConceptMap, ?> connectionBuilder) {
+    protected Driver<ConcludableProcessor> addConnectionPubProcessor(ConnectionBuilder<?, ConceptMap, ConceptMap, ?, ?> connectionBuilder) {
         // TODO: We can do subsumption here
         return processors.computeIfAbsent(connectionBuilder.publisherProcessorId(), this::buildProcessor);
     }
