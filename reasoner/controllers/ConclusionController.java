@@ -25,6 +25,8 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.compute.Processor;
+import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
+import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Map;
@@ -41,14 +43,13 @@ public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap
     }
 
     @Override
-    protected Processor.ConnectionBuilder<ConceptMap, ConceptMap, ?> makeConnectionRequest2(Processor.ConnectionBuilder<Conjunction, ConceptMap, ConceptMap, ConclusionProcessor> connectionBuilder) {
-        return null;
+    protected ConnectionBuilder<Conjunction, ConceptMap, ConceptMap, ?, ?> getPublisherController(ConnectionRequest<Conjunction, ConceptMap, ConceptMap, ?> connectionRequest) {
+        return null;  // TODO
     }
 
     @Override
-    protected Driver<ConclusionProcessor> addConnectionPubProcessor(Processor.ConnectionBuilder<ConceptMap,
-                ConclusionAns, ?> connectionBuilder) {
-        return null;
+    protected Driver<ConclusionProcessor> computeProcessorIfAbsent(ConnectionBuilder<?, ConceptMap, ConclusionAns, ?, ?> connectionBuilder) {
+        return null;  // TODO
     }
 
     public static class ConclusionAns {

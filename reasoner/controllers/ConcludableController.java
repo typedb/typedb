@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.controllers;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -28,6 +27,7 @@ import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.compute.Processor;
+import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.controllers.ConclusionController.ConclusionAns;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
@@ -73,13 +73,12 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
     }
 
     @Override
-    protected <PUB_CONTROLLER extends Controller<?, ConceptMap, ?, ?, ?, ConclusionAns, ?, PUB_CONTROLLER>> ConnectionBuilder<Conclusion, ConceptMap, ConclusionAns, ?, ?> getPublisherController(ConnectionBuilder<Conclusion, ConceptMap, ConclusionAns, ?, PUB_CONTROLLER> connectionBuilder) {
-        Driver<PUB_CONTROLLER> c = (Driver<PUB_CONTROLLER>) registry.registerConclusionController(connectionBuilder.publisherControllerId());
-        return connectionBuilder.addPublisherController(c);
+    protected ConnectionBuilder<Conclusion, ConceptMap, ConclusionAns, ?, ?> getPublisherController(ConnectionRequest<Conclusion, ConceptMap, ConclusionAns, ?> connectionRequest) {
+        return connectionRequest.createConnectionBuilder(registry.registerConclusionController(connectionRequest.pubControllerId()));
     }
 
     @Override
-    protected Driver<ConcludableProcessor> addConnectionPubProcessor(ConnectionBuilder<?, ConceptMap, ConceptMap, ?, ?> connectionBuilder) {
+    protected Driver<ConcludableProcessor> computeProcessorIfAbsent(ConnectionBuilder<?, ConceptMap, ConceptMap, ?, ?> connectionBuilder) {
         // TODO: We can do subsumption here
         return processors.computeIfAbsent(connectionBuilder.publisherProcessorId(), this::buildProcessor);
     }
@@ -101,14 +100,9 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
             Reactive<ConceptMap, ?> finalOp = op;
             upstreamConclusions.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
+                    Function<ConclusionAns, FunctionalIterator<ConceptMap>> fn = conclusionAns -> unifier.unUnify(conclusionAns.concepts(), boundsAndRequirements.second());
                     SubscribingEndpoint<ConclusionAns> endpoint = requestConnection(driver(), conclusion, boundsAndRequirements.first());  // TODO: This call can be made automatically when requesting an endpoint
-                    finalOp
-                            .flatMapOrRetrySubscribe(conclusionAns -> unifier.unUnify(conclusionAns.concepts(),
-                                                                                      boundsAndRequirements.second()))
-                            .subscribe(endpoint);
-                    // Now we've got the reactive element that interfaces with upstream, get a connection for it to
-                    // cross the actor boundary
-
+                    finalOp.flatMapOrRetrySubscribe(fn).subscribe(endpoint);
                 }));
             });
 

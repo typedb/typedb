@@ -23,14 +23,12 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
-import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
-import com.vaticle.typedb.core.reasoner.reactive.IdentityReactive;
-import com.vaticle.typedb.core.reasoner.reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
@@ -39,7 +37,6 @@ import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -66,18 +63,17 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
     }
 
     @Override
-    protected ConnectionBuilder<ConceptMap, ConceptMap, ?> getPublisherController(ConnectionBuilder connectionBuilder) {
-        Resolvable<?> pub_cid = connectionBuilder.publisherControllerId();
+    protected ConnectionBuilder<Resolvable<?>, ConceptMap, ConceptMap, ?, ?> getPublisherController(ConnectionRequest<Resolvable<?>,
+                ConceptMap, ConceptMap, ?> connectionRequest) {
+        Resolvable<?> pub_cid = connectionRequest.pubControllerId();
         if (pub_cid.isRetrievable()) {
             return null;  // TODO: Get the retrievable controller from the registry. Apply the filter in the same way as the mapping for concludable.
         } else if (pub_cid.isConcludable()) {
-            Pair<Driver<ConcludableController>, Map<Variable.Retrievable, Variable.Retrievable>> pair = registry.registerConcludableController((Concludable) pub_cid);
+            Pair<Driver<ConcludableController>, Map<Variable.Retrievable, Variable.Retrievable>> pair = registry.registerConcludableController(pub_cid.asConcludable());
             Driver<ConcludableController> controller = pair.first();
             Mapping mapping = Mapping.of(pair.second());
-            ConceptMap newPID = mapping.transform(connectionBuilder.publisherProcessorId());
-//            Reactive<ConceptMap, ConceptMap> newOp = connectionBuilder.subscriber().mapSubscribe(mapping::unTransform);
-            Function<ConceptMap, ConceptMap> fn = mapping::unTransform;
-            return connectionBuilder.addPublisherController(controller).mapSubscribe(newPID, fn);
+            ConceptMap newPID = mapping.transform(connectionRequest.pubProcessorId());
+            return connectionRequest.createConnectionBuilder(controller).mapSubscribe(newPID, mapping::unTransform);
         } else if (pub_cid.isNegated()) {
             return null;  // TODO: Get the retrievable controller from the registry. Apply the filter in the same way as the mapping for concludable.
         }
@@ -85,7 +81,7 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
     }
 
     @Override
-    protected Driver<ConjunctionProcessor> addConnectionPubProcessor(ConnectionBuilder<ConceptMap, ConjunctionAns, ?> connectionBuilder) {
+    protected Driver<ConjunctionProcessor> computeProcessorIfAbsent(ConnectionBuilder<?, ConceptMap, ConjunctionAns, ?, ?> connectionBuilder) {
         // TODO: This is where we can do subsumption
         return processors.computeIfAbsent(connectionBuilder.publisherProcessorId(), this::buildProcessor);
     }
@@ -108,21 +104,18 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
                                        String name, ConceptMap bounds, List<Resolvable<?>> plan) {
             super(driver, controller, name, new Outlet.Single<>());
 
-            BiFunction<Resolvable<?>, ConceptMap, Publisher<ConceptMap>> spawnLeaderFunc = (planElement, carriedBounds) -> {
-                ConceptMap filteredBounds = carriedBounds.filter(planElement.retrieves());
-                IdentityReactive<ConceptMap> op = IdentityReactive.noOp(set(), set());  // No-op so that the connection has an op to connect to
-                endpoint = requestConnection(driver(), planElement, filteredBounds);
-                return op;
-            };
-
-            BiFunction<ConceptMap, ConceptMap, ConceptMap> compoundPacketsFunc = (c1, c2) -> {
-                Map<Variable.Retrievable, Concept> compounded = new HashMap<>(c1.concepts());
-                compounded.putAll(c2.concepts());
-                return new ConceptMap(compounded);
-            };
-
             Reactive<ConceptMap, ConjunctionAns> op = outlet().mapSubscribe(ConjunctionAns::new);
-            op.subscribe(compound(set(op), plan, bounds, spawnLeaderFunc, compoundPacketsFunc));
+            op.subscribe(compound(set(op), plan, bounds, this::nextCompoundLeader, ConjunctionProcessor::merge));
+        }
+
+        private SubscribingEndpoint<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
+            return requestConnection(driver(), planElement, carriedBounds.filter(planElement.retrieves()));
+        }
+
+        private static ConceptMap merge(ConceptMap c1, ConceptMap c2) {
+            Map<Variable.Retrievable, Concept> compounded = new HashMap<>(c1.concepts());
+            compounded.putAll(c2.concepts());
+            return new ConceptMap(compounded);
         }
     }
 

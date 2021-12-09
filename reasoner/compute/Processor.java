@@ -66,7 +66,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
     protected SubscribingEndpoint<INPUT> requestConnection(Driver<PROCESSOR> subscriberProcessor, PUB_CID publisherControllerId, PUB_PID publisherProcessorId) {
         SubscribingEndpoint<INPUT> endpoint = createSubscribingEndpoint();
         controller.execute(actor -> actor.findPublisherForConnection(
-                new ConnectionBuilder<>(subscriberProcessor, endpoint.id(), publisherControllerId, publisherProcessorId)));
+                new ConnectionRequest<>(subscriberProcessor, endpoint.id(), publisherControllerId, publisherProcessorId)));
         return endpoint;
     }
 
@@ -198,22 +198,67 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         }
     }
 
-    public static class ConnectionBuilder<PUB_CID, PUB_PID, PUB_OUTPUT, PROCESSOR extends Processor<?, ?, PUB_OUTPUT,
-            ?, PROCESSOR>, PUB_CONTROLLER extends Controller<?, PUB_PID, ?, ?, ?, PUB_OUTPUT, ?, PUB_CONTROLLER>> {
+    public static class ConnectionRequest<PUB_CID, PUB_PID, PUB_OUTPUT, PROCESSOR extends Processor<?, ?, PUB_OUTPUT,
+            ?, PROCESSOR>> {
 
         private final PUB_CID pubControllerId;
         private final Driver<PROCESSOR> subProcessor;
         private final long subEndpointId;
         private final List<Function<Reactive<PUB_OUTPUT, PUB_OUTPUT>, Reactive<PUB_OUTPUT, PUB_OUTPUT>>> connectionTransforms;
-        private PUB_PID pubProcessorId;
-        private Driver<PUB_CONTROLLER> publisherController;
+        private final PUB_PID pubProcessorId;
 
-        protected ConnectionBuilder(Driver<PROCESSOR> subProcessor, long subEndpointId, PUB_CID pubControllerId, PUB_PID pubProcessorId) {
+        protected ConnectionRequest(Driver<PROCESSOR> subProcessor, long subEndpointId, PUB_CID pubControllerId, PUB_PID pubProcessorId) {
             this.subProcessor = subProcessor;
             this.subEndpointId = subEndpointId;
             this.pubControllerId = pubControllerId;
             this.pubProcessorId = pubProcessorId;
             this.connectionTransforms = new ArrayList<>();
+        }
+
+        public <PUB_C extends Controller<?, PUB_PID, ?, ?, ?, PUB_OUTPUT, ?, PUB_C>> ConnectionBuilder<PUB_CID,
+                        PUB_PID, PUB_OUTPUT, PROCESSOR, PUB_C> createConnectionBuilder(Driver<PUB_C> pubController) {
+            return new ConnectionBuilder<>(subProcessor, subEndpointId, pubController, pubProcessorId, connectionTransforms);
+        }
+
+        public PUB_CID pubControllerId() {
+            return pubControllerId;
+        }
+
+        public PUB_PID pubProcessorId() {
+            return pubProcessorId;
+        }
+    }
+
+    public static class ConnectionBuilder<PUB_CID, PUB_PID, PUB_OUTPUT, PROCESSOR extends Processor<?, ?, PUB_OUTPUT,
+            ?, PROCESSOR>, PUB_CONTROLLER extends Controller<?, PUB_PID, ?, ?, ?, PUB_OUTPUT, ?, PUB_CONTROLLER>> {
+
+        private final Driver<PROCESSOR> subProcessor;
+        private final long subEndpointId;
+        private final List<Function<Reactive<PUB_OUTPUT, PUB_OUTPUT>, Reactive<PUB_OUTPUT, PUB_OUTPUT>>> connectionTransforms;
+        private final Driver<PUB_CONTROLLER> pubController;
+        private PUB_PID pubProcessorId;
+
+        protected ConnectionBuilder(Driver<PROCESSOR> subProcessor, long subEndpointId,
+                                    Driver<PUB_CONTROLLER> pubController,
+                                    PUB_PID pubProcessorId, List<Function<Reactive<PUB_OUTPUT, PUB_OUTPUT>,
+                Reactive<PUB_OUTPUT, PUB_OUTPUT>>> connectionTransforms) {
+            this.subProcessor = subProcessor;
+            this.subEndpointId = subEndpointId;
+            this.pubController = pubController;
+            this.pubProcessorId = pubProcessorId;
+            this.connectionTransforms = connectionTransforms;
+        }
+
+        public Driver<PUB_CONTROLLER> publisherController() {
+            return pubController;
+        }
+
+        public Driver<PROCESSOR> subscriberProcessor() {
+            return subProcessor;
+        }
+
+        public PUB_PID publisherProcessorId() {
+            return pubProcessorId;
         }
 
         public ConnectionBuilder<PUB_CID, PUB_PID, PUB_OUTPUT, PROCESSOR, PUB_CONTROLLER> mapSubscribe(PUB_PID newPID, Function<PUB_OUTPUT, PUB_OUTPUT> function) {
@@ -222,31 +267,9 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
             return this;
         }
 
-        public ConnectionBuilder<PUB_CID, PUB_PID, PUB_OUTPUT, PROCESSOR, PUB_CONTROLLER> addPublisherController(Driver<PUB_CONTROLLER> publisherController) {
-            this.publisherController = publisherController;
-            return this;
-        }
-
-        public PUB_CID publisherControllerId() {
-            return pubControllerId;
-        }
-
-        public PUB_PID publisherProcessorId() {
-            return pubProcessorId;
-        }
-
-        public Driver<PUB_CONTROLLER> publisherController() {
-            return publisherController;
-        }
-
         public <PUB_PROCESSOR extends Processor<?, ?, ?, PUB_OUTPUT, PUB_PROCESSOR>> Connection<PUB_OUTPUT, PROCESSOR, PUB_PROCESSOR> build(Driver<PUB_PROCESSOR> pubProcessor, long pubEndpointId) {
             return new Connection<>(subProcessor, pubProcessor, subEndpointId, pubEndpointId, connectionTransforms);
         }
-
-        public Driver<PROCESSOR> subscriberProcessor() {
-            return subProcessor;
-        }
-
     }
 
     public static abstract class Outlet<OUTPUT> extends IdentityReactive<OUTPUT> {
