@@ -41,13 +41,13 @@ public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap
     }
 
     @Override
-    protected Processor.ConnectionRequest2<ConceptMap, ConceptMap, ConclusionProcessor, ?> makeConnectionRequest2(Processor.ConnectionRequest1<Conjunction, ConceptMap, ConceptMap, ConclusionProcessor> connectionBuilder) {
+    protected Processor.ConnectionBuilder<ConceptMap, ConceptMap, ?> makeConnectionRequest2(Processor.ConnectionBuilder<Conjunction, ConceptMap, ConceptMap, ConclusionProcessor> connectionBuilder) {
         return null;
     }
 
     @Override
-    protected Driver<ConclusionProcessor> addConnectionPubProcessor(Processor.ConnectionRequest2<ConceptMap,
-            ConclusionAns, ?, ?> connectionBuilder) {
+    protected Driver<ConclusionProcessor> addConnectionPubProcessor(Processor.ConnectionBuilder<ConceptMap,
+                ConclusionAns, ?> connectionBuilder) {
         return null;
     }
 

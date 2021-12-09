@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.reactive;
 
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

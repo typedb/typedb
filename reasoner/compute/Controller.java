@@ -20,8 +20,7 @@ package com.vaticle.typedb.core.reasoner.compute;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
-import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest1;
-import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest2;
+import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,20 +53,19 @@ public abstract class Controller<CID, PID, PUB_PID, PUB_CID, INPUT, OUTPUT, PROC
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PID id);
 
-    void findPublisherForConnection(ConnectionRequest1<PUB_CID, PUB_PID, INPUT, PROCESSOR> connectionBuilder) {
-        ConnectionRequest2<PUB_PID, INPUT, ?, ?> req = makeConnectionRequest2(connectionBuilder);
-        req.publisherController().execute(actor -> actor.makeConnection(req));
+    void findPublisherForConnection(ConnectionBuilder<PUB_CID, PUB_PID, INPUT, PROCESSOR, ?> connectionBuilder) {
+        ConnectionBuilder<?, PUB_PID, INPUT, ?, ?> builder = getPublisherController(connectionBuilder);
+        builder.publisherController().execute(actor -> actor.makeConnection(builder));
     }
 
-    protected abstract ConnectionRequest2<PUB_PID, INPUT, PROCESSOR, ?> makeConnectionRequest2(ConnectionRequest1<PUB_CID, PUB_PID, INPUT, PROCESSOR> connectionBuilder);
+    protected abstract ConnectionBuilder<?, PUB_PID, INPUT, ?, ?> getPublisherController(ConnectionBuilder<?, PUB_PID, INPUT, ?, ?> connectionBuilder);
 
-    void makeConnection(ConnectionRequest2<PID, OUTPUT, ?, ?> connectionBuilder) {
+    void makeConnection(ConnectionBuilder<?, PID, OUTPUT, ?, ?> connectionBuilder) {
         Driver<PROCESSOR> processor = addConnectionPubProcessor(connectionBuilder);
-        Processor.Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.connect(processor);
-        processor.execute(actor -> actor.acceptConnection(connection));
+        processor.execute(actor -> actor.acceptConnection(connectionBuilder));
     }
 
-    protected abstract Driver<PROCESSOR> addConnectionPubProcessor(ConnectionRequest2<PID, OUTPUT, ?, ?> connectionBuilder);  // TODO: This is where we can do subsumption in any processor
+    protected abstract Driver<PROCESSOR> addConnectionPubProcessor(ConnectionBuilder<?, PID, OUTPUT, ?, ?> connectionBuilder);  // TODO: This is where we can do subsumption in any processor
 
     @Override
     protected void exception(Throwable e) {

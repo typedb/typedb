@@ -31,7 +31,7 @@ public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUT
     private final Set<Publisher<INPUT>> publishers;
     protected boolean isPulling;
 
-    ReactiveImpl(Set<Subscriber<OUTPUT>> subscribers, Set<Publisher<INPUT>> publishers) {  // TODO: Do we need to initialise with subscribers (and publishers) or can we always add dynamically?
+    protected ReactiveImpl(Set<Subscriber<OUTPUT>> subscribers, Set<Publisher<INPUT>> publishers) {  // TODO: Do we need to initialise with subscribers (and publishers) or can we always add dynamically?
         this.subscribers = subscribers;
         this.publishers = publishers;
         this.isPulling = false;
@@ -41,9 +41,13 @@ public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUT
     public void pull(Subscriber<OUTPUT> subscriber) {
         publish(subscriber);
         if (!isPulling) {
-            publishers.forEach(this::publisherPull);
+            publishersPull();
             isPulling = true;
         }
+    }
+
+    protected void publishersPull() {
+        publishers.forEach(p -> p.pull(this));
     }
 
     protected Set<Subscriber<OUTPUT>> subscribers() {
@@ -71,10 +75,6 @@ public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUT
 
     protected void subscriberReceive(Subscriber<OUTPUT> subscriber, OUTPUT p) {
         subscriber.receive(this, p);
-    }
-
-    protected void publisherPull(Publisher<INPUT> publisher) {
-        publisher.pull(this);
     }
 
     @Override

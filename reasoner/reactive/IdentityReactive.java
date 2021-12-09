@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 public class IdentityReactive<PACKET> extends ReactiveImpl<PACKET, PACKET> {

@@ -27,8 +27,7 @@ import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.compute.Processor;
-import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest1;
-import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest2;
+import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.controllers.ConclusionController.ConclusionAns;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
@@ -73,13 +72,13 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
     }
 
     @Override
-    protected ConnectionRequest2<ConceptMap, ConclusionAns, ConcludableProcessor, ?> makeConnectionRequest2(
-            ConnectionRequest1<Conclusion, ConceptMap, ConclusionAns, ConcludableProcessor> connectionBuilder) {
-        return connectionBuilder.toRequest2(registry.registerConclusionController(connectionBuilder.publisherControllerId()));
+    protected ConnectionBuilder<ConceptMap, ConclusionAns, ?> getPublisherController(
+            ConnectionBuilder connectionBuilder) {
+        return connectionBuilder.addPublisherController(registry.registerConclusionController(connectionBuilder.publisherControllerId()));
     }
 
     @Override
-    protected Driver<ConcludableProcessor> addConnectionPubProcessor(ConnectionRequest2<ConceptMap, ConceptMap, ?, ?> connectionBuilder) {
+    protected Driver<ConcludableProcessor> addConnectionPubProcessor(ConnectionBuilder<ConceptMap, ConceptMap, ?> connectionBuilder) {
         // TODO: We can do subsumption here
         return processors.computeIfAbsent(connectionBuilder.publisherProcessorId(), this::buildProcessor);
     }
@@ -101,11 +100,14 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
             Reactive<ConceptMap, ?> finalOp = op;
             upstreamConclusions.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
-                    Reactive<ConclusionAns, ConceptMap> input = finalOp.flatMapOrRetrySubscribe(
-                            conclusionAns -> unifier.unUnify(conclusionAns.concepts(), boundsAndRequirements.second()));
+                    SubscribingEndpoint<ConclusionAns> endpoint = requestConnection(driver(), conclusion, boundsAndRequirements.first());  // TODO: This call can be made automatically when requesting an endpoint
+                    finalOp
+                            .flatMapOrRetrySubscribe(conclusionAns -> unifier.unUnify(conclusionAns.concepts(),
+                                                                                      boundsAndRequirements.second()))
+                            .subscribe(endpoint);
                     // Now we've got the reactive element that interfaces with upstream, get a connection for it to
                     // cross the actor boundary
-                    requestConnection(driver(), input, conclusion, boundsAndRequirements.first());
+
                 }));
             });
 

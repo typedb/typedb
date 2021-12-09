@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 public class FindFirstReactive<T> extends IdentityReactive<T> {

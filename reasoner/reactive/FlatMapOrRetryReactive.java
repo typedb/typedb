@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -40,7 +41,7 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveImpl<INPUT, O
             transformed.forEachRemaining(t -> subscribers().forEach(subscriber -> subscriberReceive(subscriber, t)));
             isPulling = false;
         } else if (isPulling) {
-            publisherPull(publisher);  // Automatic retry
+            publisher.pull(this);  // Automatic retry
         }
     }
 

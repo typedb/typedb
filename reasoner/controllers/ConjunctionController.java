@@ -28,8 +28,7 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.compute.Processor;
-import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest1;
-import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest2;
+import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.reactive.IdentityReactive;
 import com.vaticle.typedb.core.reasoner.reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
@@ -67,7 +66,7 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
     }
 
     @Override
-    protected ConnectionRequest2<ConceptMap, ConceptMap, ConjunctionProcessor, ?> makeConnectionRequest2(ConnectionRequest1<Resolvable<?>, ConceptMap, ConceptMap, ConjunctionProcessor> connectionBuilder) {
+    protected ConnectionBuilder<ConceptMap, ConceptMap, ?> getPublisherController(ConnectionBuilder connectionBuilder) {
         Resolvable<?> pub_cid = connectionBuilder.publisherControllerId();
         if (pub_cid.isRetrievable()) {
             return null;  // TODO: Get the retrievable controller from the registry. Apply the filter in the same way as the mapping for concludable.
@@ -76,8 +75,9 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
             Driver<ConcludableController> controller = pair.first();
             Mapping mapping = Mapping.of(pair.second());
             ConceptMap newPID = mapping.transform(connectionBuilder.publisherProcessorId());
-            Reactive<ConceptMap, ConceptMap> newOp = connectionBuilder.subscriber().mapSubscribe(mapping::unTransform);
-            return connectionBuilder.toRequest2(controller, newPID, newOp);
+//            Reactive<ConceptMap, ConceptMap> newOp = connectionBuilder.subscriber().mapSubscribe(mapping::unTransform);
+            Function<ConceptMap, ConceptMap> fn = mapping::unTransform;
+            return connectionBuilder.addPublisherController(controller).mapSubscribe(newPID, fn);
         } else if (pub_cid.isNegated()) {
             return null;  // TODO: Get the retrievable controller from the registry. Apply the filter in the same way as the mapping for concludable.
         }
@@ -85,7 +85,7 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
     }
 
     @Override
-    protected Driver<ConjunctionProcessor> addConnectionPubProcessor(ConnectionRequest2<ConceptMap, ConjunctionAns, ?, ?> connectionBuilder) {
+    protected Driver<ConjunctionProcessor> addConnectionPubProcessor(ConnectionBuilder<ConceptMap, ConjunctionAns, ?> connectionBuilder) {
         // TODO: This is where we can do subsumption
         return processors.computeIfAbsent(connectionBuilder.publisherProcessorId(), this::buildProcessor);
     }
@@ -111,7 +111,7 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
             BiFunction<Resolvable<?>, ConceptMap, Publisher<ConceptMap>> spawnLeaderFunc = (planElement, carriedBounds) -> {
                 ConceptMap filteredBounds = carriedBounds.filter(planElement.retrieves());
                 IdentityReactive<ConceptMap> op = IdentityReactive.noOp(set(), set());  // No-op so that the connection has an op to connect to
-                requestConnection(driver(), op, planElement, filteredBounds);
+                endpoint = requestConnection(driver(), planElement, filteredBounds);
                 return op;
             };
 
