@@ -50,6 +50,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -59,6 +61,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.EMPTY_TRANSACTION_REQUEST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ITERATION_WITH_UNKNOWN_ID;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.TRANSACTION_EXCEEDED_MAX_SECONDS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.BAD_TRANSACTION_TYPE;
@@ -66,6 +69,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_NOT_OPENED;
+import static com.vaticle.typedb.core.common.parameters.Options.SECOND_MILLIS;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.scheduled;
 import static com.vaticle.typedb.core.server.common.RequestReader.applyDefaultOptions;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Transaction.serverMsg;
@@ -88,6 +93,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private volatile TypeDB.Transaction transaction;
     private volatile Services services;
     private volatile int networkLatencyMillis;
+    private volatile ScheduledFuture<?> scheduledTimeout;
 
     private class Services {
         private final ConceptService concept = new ConceptService(TransactionService.this, transaction.concepts());
@@ -189,10 +195,15 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         networkLatencyMillis = Math.min(openReq.getNetworkLatencyMillis(), MAX_NETWORK_LATENCY_MILLIS);
         sessionSvc = sessionService(typeDBSvc, openReq);
         sessionSvc.register(this);
-        transaction = transaction(sessionSvc, openReq);
+        Options.Transaction options = new Options.Transaction().parent(sessionSvc.options());
+        applyDefaultOptions(options, openReq.getOptions());
+        transaction = transaction(sessionSvc, openReq, options);
         services = new Services();
         respond(ResponseBuilder.Transaction.open(byteStringAsUUID(request.getReqId())));
         isTransactionOpen.set(true);
+        scheduledTimeout = scheduled().schedule(() -> close(TypeDBException.of(TRANSACTION_EXCEEDED_MAX_SECONDS,
+                options.transactionTimeoutMillis() / SECOND_MILLIS)), options.transactionTimeoutMillis(),
+                TimeUnit.MILLISECONDS);
     }
 
     private static SessionService sessionService(TypeDBService typeDBSvc, TransactionProto.Transaction.Open.Req req) {
@@ -202,11 +213,10 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         return sessionSvc;
     }
 
-    private static TypeDB.Transaction transaction(SessionService sessionSvc, TransactionProto.Transaction.Open.Req req) {
+    private static TypeDB.Transaction transaction(SessionService sessionSvc, TransactionProto.Transaction.Open.Req req,
+                                                  Options.Transaction options) {
         Arguments.Transaction.Type type = Arguments.Transaction.Type.of(req.getType().getNumber());
         if (type == null) throw TypeDBException.of(BAD_TRANSACTION_TYPE, req.getType());
-        Options.Transaction options = new Options.Transaction().parent(sessionSvc.options());
-        applyDefaultOptions(options, req.getOptions());
         return sessionSvc.session().transaction(type, options);
     }
 
@@ -278,6 +288,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 transaction.close();
                 sessionSvc.remove(this);
             }
+            scheduledTimeout.cancel(false);
             responder.onCompleted();
         }
     }
@@ -288,6 +299,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 transaction.close();
                 sessionSvc.remove(this);
             }
+            scheduledTimeout.cancel(false);
             responder.onError(ResponseBuilder.exception(error));
             // TODO: We should restrict the type of errors that we log.
             //       Expected error handling from the server side does not need to be logged - they create noise.

@@ -89,18 +89,20 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Server(26, "Concept does not exist.");
         public static final Server BAD_VALUE_TYPE =
                 new Server(27, "The value type '%s' was not recognised.");
+        public static final Server TRANSACTION_EXCEEDED_MAX_SECONDS =
+                new Server(28, "Transaction exceeded maximum configured duration of '%s' seconds.");
         public static final Server EMPTY_TRANSACTION_REQUEST =
-                new Server(28, "Empty transaction request.");
+                new Server(29, "Empty transaction request.");
         public static final Server UNKNOWN_REQUEST_TYPE =
-                new Server(29, "The request message was not recognised.");
+                new Server(30, "The request message was not recognised.");
         public static final Server ITERATION_WITH_UNKNOWN_ID =
-                new Server(30, "Iteration was requested for ID '%s', but this ID does not correspond to an existing query iterator.");
+                new Server(31, "Iteration was requested for ID '%s', but this ID does not correspond to an existing query iterator.");
         public static final Server DUPLICATE_REQUEST =
-                new Server(31, "The request with ID '%s' is a duplicate.");
+                new Server(32, "The request with ID '%s' is a duplicate.");
         public static final Server ALREADY_RUNNING =
-                new Server(32, "Another instance of TypeDB server is already running at this port: '%s'.");
+                new Server(33, "Another instance of TypeDB server is already running at this port: '%s'.");
         public static final Server INCOMPATIBLE_JAVA_RUNTIME =
-                new Server(33, "Incompatible Java runtime version: '%s'. Please use Java 11 or above.");
+                new Server(34, "Incompatible Java runtime version: '%s'. Please use Java 11 or above.");
 
         private static final String codePrefix = "SRV";
         private static final String messagePrefix = "Invalid Server Operation";

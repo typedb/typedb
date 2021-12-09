@@ -29,8 +29,12 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REA
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
 
+    public static final int SECOND_MILLIS = 1000;
+    public static final int MINUTE_SECONDS = 60;
+
     public static final int DEFAULT_PREFETCH_SIZE = 50;
     public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 30_000;
+    public static final int DEFAULT_TRANSACTION_TIMEOUT_MILLIS = 5 * MINUTE_SECONDS * SECOND_MILLIS;
     public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
     public static final boolean DEFAULT_INFER = false;
     public static final boolean DEFAULT_TRACE_INFERENCE = false;
@@ -47,6 +51,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Boolean parallel = null;
     private Integer prefetchSize = null;
     private Integer sessionIdlTimeoutMillis = null;
+    private Long transactionTimeoutMillis = null;
     private Integer schemaLockAcquireTimeoutMillis = null;
     private Boolean readAnyReplica = null;
     protected Boolean prefetch = null;
@@ -127,6 +132,17 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public SELF sessionIdleTimeoutMillis(int idleTimeoutMillis) {
         this.sessionIdlTimeoutMillis = idleTimeoutMillis;
         return getThis();
+    }
+
+    public SELF transactionTimeoutMillis(long timeoutMillis) {
+        this.transactionTimeoutMillis = timeoutMillis;
+        return getThis();
+    }
+
+    public long transactionTimeoutMillis() {
+        if (transactionTimeoutMillis != null) return transactionTimeoutMillis;
+        else if (parent != null) return parent.transactionTimeoutMillis();
+        else return DEFAULT_TRANSACTION_TIMEOUT_MILLIS;
     }
 
     public int schemaLockTimeoutMillis() {
