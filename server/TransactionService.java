@@ -94,6 +94,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private volatile Services services;
     private volatile int networkLatencyMillis;
     private volatile ScheduledFuture<?> scheduledTimeout;
+    private volatile Options.Transaction options;
 
     private class Services {
         private final ConceptService concept = new ConceptService(TransactionService.this, transaction.concepts());
@@ -195,15 +196,13 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         networkLatencyMillis = Math.min(openReq.getNetworkLatencyMillis(), MAX_NETWORK_LATENCY_MILLIS);
         sessionSvc = sessionService(typeDBSvc, openReq);
         sessionSvc.register(this);
-        Options.Transaction options = new Options.Transaction().parent(sessionSvc.options());
+        options = new Options.Transaction().parent(sessionSvc.options());
         applyDefaultOptions(options, openReq.getOptions());
         transaction = transaction(sessionSvc, openReq, options);
         services = new Services();
         respond(ResponseBuilder.Transaction.open(byteStringAsUUID(request.getReqId())));
         isTransactionOpen.set(true);
-        scheduledTimeout = scheduled().schedule(() -> close(TypeDBException.of(TRANSACTION_EXCEEDED_MAX_SECONDS,
-                options.transactionTimeoutMillis() / SECOND_MILLIS)), options.transactionTimeoutMillis(),
-                TimeUnit.MILLISECONDS);
+        scheduledTimeout = scheduled().schedule(this::timeout, options.transactionTimeoutMillis(), TimeUnit.MILLISECONDS);
     }
 
     private static SessionService sessionService(TypeDBService typeDBSvc, TransactionProto.Transaction.Open.Req req) {
@@ -281,6 +280,11 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         if (trace != null) trace.close();
     }
 
+    private void timeout() {
+        close(TypeDBException.of(TRANSACTION_EXCEEDED_MAX_SECONDS, options.transactionTimeoutMillis() / SECOND_MILLIS));
+        LOG.warn(TRANSACTION_EXCEEDED_MAX_SECONDS.message(options.transactionTimeoutMillis() / SECOND_MILLIS));
+    }
+
     @Override
     public synchronized void close() {
         if (isRPCAlive.compareAndSet(true, false)) {
@@ -288,7 +292,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 transaction.close();
                 sessionSvc.remove(this);
             }
-            scheduledTimeout.cancel(false);
+            if (scheduledTimeout != null) scheduledTimeout.cancel(false);
             responder.onCompleted();
         }
     }
@@ -299,7 +303,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 transaction.close();
                 sessionSvc.remove(this);
             }
-            scheduledTimeout.cancel(false);
+            if (scheduledTimeout != null) scheduledTimeout.cancel(false);
             responder.onError(ResponseBuilder.exception(error));
             // TODO: We should restrict the type of errors that we log.
             //       Expected error handling from the server side does not need to be logged - they create noise.
