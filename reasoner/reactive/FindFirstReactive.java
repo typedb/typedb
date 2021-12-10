@@ -24,19 +24,19 @@ public class FindFirstReactive<T> extends IdentityReactive<T> {
 
     private boolean packetFound;
 
-    FindFirstReactive(Set<Publisher<T>> publishers) {
+    FindFirstReactive(Set<Chainable<T>> publishers) {
         super(publishers);
         this.packetFound = false;
     }
 
     @Override
-    public void receive(Publisher<T> publisher, T packet) {
+    public void receive(Chainable<T> publisher, T packet) {
         packetFound = true;
         super.receive(publisher, packet);
     }
 
     @Override
-    public void pull(Subscriber<T> subscriber) {
+    public void pull(Subscribing<T> subscriber) {
         if (!packetFound) super.pull(subscriber);
     }
 }

@@ -22,16 +22,19 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
 import java.util.function.Function;
 
-public interface Publisher<T> {
+public interface Publisher<R> {
 
-    void publishTo(Subscriber<T> subscriber);  // TODO: Can we do without?
+    void pull(Subscriber.Subscribing<R> subscriber);
 
-    void pull(Subscriber<T> subscriber);
+    interface Chainable<T> extends Publisher<T> {
 
-    Reactive<T, T> findFirst();
+        void publishTo(Subscriber.Subscribing<T> subscriber);
 
-    <R> Reactive<T, R> map(Function<T, R> function);
+        Reactive<T, T> findFirst();
 
-    <R> Reactive<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
+        <R> Reactive<T, R> map(Function<T, R> function);
 
+        <R> Reactive<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
+
+    }
 }

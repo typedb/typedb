@@ -38,10 +38,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.reasoner.reactive.CompoundReactive.compound;
-import static com.vaticle.typedb.core.reasoner.reactive.IdentityReactive.noOp;
 
 public class ConjunctionController extends Controller<Conjunction, ConceptMap, ConceptMap, Resolvable<?>, ConceptMap, ConjunctionController.ConjunctionAns, ConjunctionController.ConjunctionProcessor, ConjunctionController> {
 
@@ -109,7 +107,7 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
                     .publishTo(outlet());
         }
 
-        private SubscribingEndpoint<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
+        private InletEndpoint<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
             return requestConnection(driver(), planElement, carriedBounds.filter(planElement.retrieves()));
         }
 

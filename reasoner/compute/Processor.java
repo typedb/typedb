@@ -22,16 +22,18 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.reactive.IdentityReactive;
+import com.vaticle.typedb.core.reasoner.reactive.ChainablePublisher;
 import com.vaticle.typedb.core.reasoner.reactive.Publisher;
-import com.vaticle.typedb.core.reasoner.reactive.PublisherImpl;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Subscriber;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -44,8 +46,8 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
     private final Driver<? extends Controller<?, ?, PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR, ?>> controller;
     private final Outlet<OUTPUT> outlet;
     private long endpointId;
-    private final Map<Long, SubscribingEndpoint<INPUT>> subscribingEndpoints;
-    private final Map<Long, PublishingEndpoint<OUTPUT>> publishingEndpoints;
+    private final Map<Long, InletEndpoint<INPUT>> subscribingEndpoints;
+    private final Map<Long, OutletEndpoint<OUTPUT>> publishingEndpoints;
 
     protected Processor(Driver<PROCESSOR> driver,
                         Driver<? extends Controller<?, ?, PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR, ?>> controller,
@@ -65,8 +67,8 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
     @Override
     protected void exception(Throwable e) {}
 
-    protected SubscribingEndpoint<INPUT> requestConnection(Driver<PROCESSOR> subscriberProcessor, PUB_CID publisherControllerId, PUB_PID publisherProcessorId) {
-        SubscribingEndpoint<INPUT> endpoint = createSubscribingEndpoint();
+    protected InletEndpoint<INPUT> requestConnection(Driver<PROCESSOR> subscriberProcessor, PUB_CID publisherControllerId, PUB_PID publisherProcessorId) {
+        InletEndpoint<INPUT> endpoint = createSubscribingEndpoint();
         controller.execute(actor -> actor.findPublisherForConnection(
                 new ConnectionRequest<>(subscriberProcessor, endpoint.id(), publisherControllerId, publisherProcessorId)));
         return endpoint;
@@ -79,7 +81,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
     }
 
     protected <PUB_PROCESSOR extends Processor<?, ?, ?, INPUT, PUB_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PUB_PROCESSOR> connection) {
-        SubscribingEndpoint<INPUT> endpoint = subscribingEndpoints.get(connection.subEndpointId());
+        InletEndpoint<INPUT> endpoint = subscribingEndpoints.get(connection.subEndpointId());
         endpoint.setReady(connection);
     }
 
@@ -88,14 +90,14 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         return endpointId;
     }
 
-    protected PublishingEndpoint<OUTPUT> createPublishingEndpoint(Connection<OUTPUT, ?, PROCESSOR> connection) {
-        PublishingEndpoint<OUTPUT> endpoint = new PublishingEndpoint<>(connection);
+    protected OutletEndpoint<OUTPUT> createPublishingEndpoint(Connection<OUTPUT, ?, PROCESSOR> connection) {
+        OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection);
         publishingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
 
-    protected SubscribingEndpoint<INPUT> createSubscribingEndpoint() {
-        SubscribingEndpoint<INPUT> endpoint = new SubscribingEndpoint<>(nextEndpointId());
+    protected InletEndpoint<INPUT> createSubscribingEndpoint() {
+        InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId());
         subscribingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
@@ -108,20 +110,19 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         subscribingEndpoints.get(subEndpointId).receive(null, packet);
     }
 
-    public static class SubscribingEndpoint<PACKET> extends IdentityReactive<PACKET> {
+    /**
+     * Governs an input to a processor
+     */
+    public static class InletEndpoint<PACKET> extends ChainablePublisher<PACKET> implements Subscriber<PACKET> {
 
         private final long id;
         private boolean ready;
         private Connection<PACKET, ?, ?> connection;
 
-        public SubscribingEndpoint(long id) {
-            super(set());
-            // TODO: Block any other subscribers from being added as there should only be one
+        public InletEndpoint(long id) {
             this.id = id;
             this.ready = false;
         }
-
-        // TODO: Ideally many of the normal reactive methods should not be available here.
 
         public long id() {
             return id;
@@ -133,20 +134,29 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         }
 
         @Override
-        protected void publishersPull() {
-            assert publishers().isEmpty();
+        public void pull(Subscribing<PACKET> subscriber) {
             assert ready;
+            subscribers.add(subscriber);
             connection.pull();
         }
-    }
 
-    public static class PublishingEndpoint<PACKET> extends IdentityReactive<PACKET> {
+        @Override
+        public void receive(@Nullable Chainable<PACKET> publisher, PACKET packet) {
+            assert publisher == null;
+            subscribers().forEach(subscriber -> subscriber.receive(this, packet));
+        }
+    }
+    /**
+     * Governs an output from a processor
+     */
+    public static class OutletEndpoint<PACKET> implements Subscriber.Subscribing<PACKET>, Publisher<PACKET> {
 
         private final Connection<PACKET, ?, ?> connection;
+        private final Set<Chainable<PACKET>> publishers;
+        protected boolean isPulling;
 
-        public PublishingEndpoint(Connection<PACKET, ?, ?> connection) {
-            super(set());
-            // TODO: Block any other publishers from being added as there should only be one
+        public OutletEndpoint(Connection<PACKET, ?, ?> connection) {
+            this.publishers = new HashSet<>();
             this.connection = connection;
         }
 
@@ -155,10 +165,24 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         }
 
         @Override
-        public void receive(@Nullable Publisher<PACKET> publisher, PACKET packet) {
+        public void subscribeTo(Chainable<PACKET> publisher) {
+            publishers.add(publisher);
+            if (isPulling) publisher.pull(this);
+        }
+
+        @Override
+        public void receive(@Nullable Chainable<PACKET> publisher, PACKET packet) {
             connection.receive(packet);
         }
 
+        @Override
+        public void pull(@Nullable Subscribing<PACKET> subscriber) {
+            assert subscriber == null;
+            if (!isPulling) {
+                publishers.forEach(p -> p.pull(this));
+                isPulling = true;
+            }
+        }
     }
 
     private static class Connection<PACKET, PROCESSOR extends Processor<?, ?, PACKET, ?, PROCESSOR>, PUB_PROCESSOR extends Processor<?, ?, ?, PACKET, PUB_PROCESSOR>> {
@@ -167,14 +191,17 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         private final Driver<PUB_PROCESSOR> pubProcessor;
         private final long subEndpointId;
         private final long pubEndpointId;
-        private final List<Function<Reactive<PACKET, PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms;
+        private final List<Function<Subscriber.Subscribing<PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms;
 
-        private Connection(Driver<PROCESSOR> subProcessor, Driver<PUB_PROCESSOR> pubProcessor, long subEndpointId, long PubEndpointId,
-                           List<Function<Reactive<PACKET, PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms) {
+        /**
+         * Connects a processor outlet (upstream, publishing) to another processor's inlet (downstream, subscribing)
+         */
+        private Connection(Driver<PROCESSOR> subProcessor, Driver<PUB_PROCESSOR> pubProcessor, long subEndpointId, long pubEndpointId,
+                           List<Function<Subscriber.Subscribing<PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms) {
             this.subProcessor = subProcessor;
             this.pubProcessor = pubProcessor;
             this.subEndpointId = subEndpointId;
-            this.pubEndpointId = PubEndpointId;
+            this.pubEndpointId = pubEndpointId;
             this.connectionTransforms = connectionTransforms;
         }
 
@@ -190,10 +217,10 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
             return subEndpointId;
         }
 
-        public Reactive<PACKET, PACKET> applyConnectionTransforms(PublishingEndpoint<PACKET> pubEndpoint) {
-            assert pubEndpoint.id() == pubEndpointId;
-            Reactive<PACKET, PACKET> op = pubEndpoint;
-            for (Function<Reactive<PACKET, PACKET>, Reactive<PACKET, PACKET>> t : connectionTransforms) {
+        public Subscriber.Subscribing<PACKET> applyConnectionTransforms(OutletEndpoint<PACKET> upstreamEndpoint) {
+            assert upstreamEndpoint.id() == pubEndpointId;
+            Subscriber.Subscribing<PACKET> op = upstreamEndpoint;
+            for (Function<Subscriber.Subscribing<PACKET>, Reactive<PACKET, PACKET>> t : connectionTransforms) {
                 op = t.apply(op);
             }
             return op;
@@ -206,7 +233,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         private final PUB_CID pubControllerId;
         private final Driver<PROCESSOR> subProcessor;
         private final long subEndpointId;
-        private final List<Function<Reactive<PUB_OUTPUT, PUB_OUTPUT>, Reactive<PUB_OUTPUT, PUB_OUTPUT>>> connectionTransforms;
+        private final List<Function<Subscriber.Subscribing<PUB_OUTPUT>, Reactive<PUB_OUTPUT, PUB_OUTPUT>>> connectionTransforms;
         private final PUB_PID pubProcessorId;
 
         protected ConnectionRequest(Driver<PROCESSOR> subProcessor, long subEndpointId, PUB_CID pubControllerId, PUB_PID pubProcessorId) {
@@ -236,14 +263,13 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
 
         private final Driver<PROCESSOR> subProcessor;
         private final long subEndpointId;
-        private final List<Function<Reactive<PUB_OUTPUT, PUB_OUTPUT>, Reactive<PUB_OUTPUT, PUB_OUTPUT>>> connectionTransforms;
+        private final List<Function<Subscriber.Subscribing<PUB_OUTPUT>, Reactive<PUB_OUTPUT, PUB_OUTPUT>>> connectionTransforms;
         private final Driver<PUB_CONTROLLER> pubController;
         private PUB_PID pubProcessorId;
 
         protected ConnectionBuilder(Driver<PROCESSOR> subProcessor, long subEndpointId,
                                     Driver<PUB_CONTROLLER> pubController,
-                                    PUB_PID pubProcessorId, List<Function<Reactive<PUB_OUTPUT, PUB_OUTPUT>,
-                Reactive<PUB_OUTPUT, PUB_OUTPUT>>> connectionTransforms) {
+                                    PUB_PID pubProcessorId, List<Function<Subscriber.Subscribing<PUB_OUTPUT>, Reactive<PUB_OUTPUT, PUB_OUTPUT>>> connectionTransforms) {
             this.subProcessor = subProcessor;
             this.subEndpointId = subEndpointId;
             this.pubController = pubController;
@@ -287,7 +313,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         public static class Single<OUTPUT> extends Outlet<OUTPUT> {
 
             @Override
-            public void publishTo(Subscriber<OUTPUT> subscriber) {
+            public void publishTo(Subscribing<OUTPUT> subscriber) {
                 if (subscribers().size() > 0) throw TypeDBException.of(ILLEGAL_STATE);
                 else subscribers.add(subscriber);
             }
@@ -296,16 +322,16 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         public static class DynamicMulti<OUTPUT> extends Outlet<OUTPUT> {
 
             @Override
-            public void publishTo(Subscriber<OUTPUT> subscriber) {
+            public void publishTo(Subscribing<OUTPUT> subscriber) {
                 super.publishTo(subscriber);  // TODO: This needs to record the subscribers read position in the buffer and maintain it.
             }
         }
     }
 
-    public static class Source<PACKET> extends PublisherImpl<PACKET> {
+    public static class Source<PACKET> extends ChainablePublisher<PACKET> {
 
         private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
-        private final Map<Subscriber<PACKET>, FunctionalIterator<PACKET>> iterators;
+        private final Map<Subscriber.Subscribing<PACKET>, FunctionalIterator<PACKET>> iterators;
 
         public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier) {
             this.iteratorSupplier = iteratorSupplier;
@@ -317,17 +343,11 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         }
 
         @Override
-        public void pull(Subscriber<PACKET> subscriber) {
+        public void pull(Subscriber.Subscribing<PACKET> subscriber) {
             FunctionalIterator<PACKET> iterator = iterators.computeIfAbsent(subscriber, s -> iteratorSupplier.get());
             assert iterators.size() <= 1;  // Opens a new iterator for each subscriber. Presently we only intend to
             // have one subscriber, so look into this if more are required
             if (iterator.hasNext()) subscriber.receive(this, iterator.next());
-        }
-
-        @Override
-        public void publishTo(Subscriber<PACKET> subscriber) {
-            // subscribers only need to be dynamically recorded on pull()
-            subscriber.subscribeTo(this);
         }
 
     }

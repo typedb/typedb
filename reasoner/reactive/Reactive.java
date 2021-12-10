@@ -18,53 +18,29 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
-import java.util.HashSet;
 import java.util.Set;
 
-public abstract class Reactive<INPUT, OUTPUT> extends PublisherImpl<OUTPUT> implements Subscriber<INPUT>{
+public abstract class Reactive<INPUT, OUTPUT> extends ChainablePublisher<OUTPUT> implements Subscriber.Subscribing<INPUT> {
 
-    protected final Set<Subscriber<OUTPUT>> subscribers;
-    private final Set<Publisher<INPUT>> publishers;
+    private final Set<Chainable<INPUT>> publishers;
     protected boolean isPulling;
 
-    protected Reactive(Set<Publisher<INPUT>> publishers) {  // TODO: Do we need to initialise with subscribers (and publishers) or can we always add dynamically?
-        this.subscribers = new HashSet<>();
+    protected Reactive(Set<Chainable<INPUT>> publishers) {  // TODO: Do we need to initialise with subscribers (and publishers) or can we always add dynamically?
         this.publishers = publishers;
         this.isPulling = false;
     }
 
     @Override
-    public void publishTo(Subscriber<OUTPUT> subscriber) {
-        subscribers.add(subscriber);
-        subscriber.subscribeTo(this);
-        // TODO: To dynamically add subscribers we need to have buffered all prior packets and send them here
-        //  we can adopt a policy that if you weren't a subscriber in time for the packet then you miss it, and
-        //  break this only for outlets which will do the buffering and ensure all subscribers receive all answers.
-    }
-
-    @Override
-    public void pull(Subscriber<OUTPUT> subscriber) {
+    public void pull(Subscribing<OUTPUT> subscriber) {
         subscribers.add(subscriber);
         if (!isPulling) {
-            publishersPull();
+            publishers.forEach(p -> p.pull(this));
             isPulling = true;
         }
     }
 
-    protected void publishersPull() {
-        publishers.forEach(p -> p.pull(this));
-    }
-
-    protected Set<Subscriber<OUTPUT>> subscribers() {
-        return subscribers;
-    }
-
-    protected Set<Publisher<INPUT>> publishers() {
-        return publishers;
-    }
-
     @Override
-    public void subscribeTo(Publisher<INPUT> publisher) {
+    public void subscribeTo(Chainable<INPUT> publisher) {
         publishers.add(publisher);  // Will fail if publishers is an immutable set TODO: How should we best constrain whether more than one publisher is permitted?
         if (isPulling) publisher.pull(this);
     }
