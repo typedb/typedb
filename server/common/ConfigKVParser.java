@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_ENUM_UNEXPECTED_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_UNEXPECTED_VALUE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_UNEXPECTED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONFIG_OPTION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.Util.scopeKey;
@@ -269,7 +269,7 @@ public abstract class ConfigKVParser implements Option.CliHelp {
             @Override
             T parse(Yaml yaml, String scope) {
                 if (!validator.apply(yaml)) {
-                    throw TypeDBException.of(CONFIG_UNEXPECTED_VALUE_TYPE, scope, yaml, help);
+                    throw TypeDBException.of(CONFIG_UNEXPECTED_VALUE, scope, yaml, help);
                 } else {
                     return converter.apply(yaml);
                 }

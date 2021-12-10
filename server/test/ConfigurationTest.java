@@ -34,7 +34,7 @@ import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_FILE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_OUTPUT_UNRECOGNISED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_UNEXPECTED_VALUE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_UNEXPECTED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONFIG_OPTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CONFIGURATION_OPTIONS;
 import static org.junit.Assert.assertEquals;
@@ -142,8 +142,8 @@ public class ConfigurationTest {
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
-            assertEquals(CONFIG_UNEXPECTED_VALUE_TYPE.code(), e.code().get());
-            assertEquals(CONFIG_UNEXPECTED_VALUE_TYPE.message("storage.data", "123456[int]", ConfigKVParser.ValueParser.Leaf.PATH.help()), e.getMessage());
+            assertEquals(CONFIG_UNEXPECTED_VALUE.code(), e.code().get());
+            assertEquals(CONFIG_UNEXPECTED_VALUE.message("storage.data", "123456[int]", ConfigKVParser.ValueParser.Leaf.PATH.help()), e.getMessage());
         }
     }
 

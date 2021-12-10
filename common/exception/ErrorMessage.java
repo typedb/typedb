@@ -69,8 +69,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Server(16, "Required configuration '%s' is missing.");
         public static final Server UNRECOGNISED_CONFIGURATION_OPTIONS =
                 new Server(17, "The provided configuration(s) '%s' are unrecognised.");
-        public static final Server CONFIG_UNEXPECTED_VALUE_TYPE =
-                new Server(18, "Configuration '%s' received a value '%s' with unexpected type. It must be a '%s'.");
+        public static final Server CONFIG_UNEXPECTED_VALUE =
+                new Server(18, "Configuration '%s' received an unexpeted value '%s'. It must be '%s'.");
         public static final Server CONFIG_ENUM_UNEXPECTED_VALUE =
                 new Server(19, "Configuration '%s' received an unexpected value '%s'. It must be one of '%s'.");
         public static final Server CONFIG_OUTPUT_UNRECOGNISED =
