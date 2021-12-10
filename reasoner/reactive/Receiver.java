@@ -18,24 +18,13 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
-import java.util.Map;
-import java.util.Set;
+public interface Receiver<R> {
 
-public class BufferReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
+    void receive(Provider<R> provider, R packet);  // TODO: The provider argument is only needed by compound - can we do without it?
 
-    Map<Subscriber<OUTPUT>, Integer> bufferPositions;
+    interface Subscriber<T> extends Receiver<T> {
 
-    protected BufferReactive(Set<Publisher<INPUT>> publishers) {
-        super(publishers);
-    }
+        void subscribeTo(Provider<T> publisher);
 
-    @Override
-    public void receive(Publisher<INPUT> publisher, INPUT packet) {
-
-    }
-
-    @Override
-    public void publishTo(Subscribing<OUTPUT> subscriber) {
-        super.publishTo(subscriber);
     }
 }

@@ -18,31 +18,37 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
+import com.vaticle.typedb.core.reasoner.reactive.Receiver.Subscriber;
+
 import java.util.Set;
 
-public abstract class Reactive<INPUT, OUTPUT> extends ChainablePublisher<OUTPUT> implements Subscriber.Subscribing<INPUT> {
+public abstract class Reactive<INPUT, OUTPUT> extends PublisherImpl<OUTPUT> implements Subscriber<INPUT> {
 
-    private final Set<Publisher<INPUT>> publishers;
-    protected boolean isPulling;
+    protected final Set<Provider<INPUT>> publishers;
 
-    protected Reactive(Set<Publisher<INPUT>> publishers) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
+    protected Reactive(Set<Provider<INPUT>> publishers) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
         this.publishers = publishers;
-        this.isPulling = false;
     }
 
     @Override
-    public void pull(Subscriber<OUTPUT> subscriber) {
-        subscribers.add(subscriber);
-        if (!isPulling) {
+    public void pull(Receiver<OUTPUT> receiver) {
+        subscribers.add(receiver);
+        if (!isPulling()) {
             publishers.forEach(p -> p.pull(this));
-            isPulling = true;
+            setPulling(receiver);
         }
     }
 
     @Override
-    public void subscribeTo(Publisher<INPUT> publisher) {
+    public void subscribeTo(Provider<INPUT> publisher) {
         publishers.add(publisher);  // Will fail if publishers is an immutable set TODO: How should we best constrain whether more than one publisher is permitted?
-        if (isPulling) publisher.pull(this);
+        if (isPulling()) publisher.pull(this);
     }
+
+    abstract void finishPulling();
+
+    abstract void setPulling(Receiver<OUTPUT> receiver);
+
+    abstract boolean isPulling();
 
 }

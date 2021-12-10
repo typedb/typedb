@@ -25,14 +25,15 @@ public class MapReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
 
     private final Function<INPUT, OUTPUT> mappingFunc;
 
-    protected MapReactive(Set<Publisher<INPUT>> publishers, Function<INPUT, OUTPUT> mappingFunc) {
+    protected MapReactive(Set<Provider<INPUT>> publishers, Function<INPUT, OUTPUT> mappingFunc) {
         super(publishers);
         this.mappingFunc = mappingFunc;
     }
 
     @Override
-    public void receive(Publisher<INPUT> publisher, INPUT packet) {
+    public void receive(Provider<INPUT> provider, INPUT packet) {
         subscribers().forEach(subscriber -> subscriber.receive(this, mappingFunc.apply(packet)));
+        isPulling = false;
     }
 
 }

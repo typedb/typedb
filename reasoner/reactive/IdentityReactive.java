@@ -24,7 +24,7 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 
 public class IdentityReactive<PACKET> extends Reactive<PACKET, PACKET> {
 
-    protected IdentityReactive(Set<Publisher<PACKET>> publishers) {
+    protected IdentityReactive(Set<Provider<PACKET>> publishers) {
         super(publishers);
     }
 
@@ -33,7 +33,7 @@ public class IdentityReactive<PACKET> extends Reactive<PACKET, PACKET> {
     }
 
     @Override
-    public void receive(Publisher<PACKET> publisher, PACKET packet) {
+    public void receive(Provider<PACKET> provider, PACKET packet) {
         subscribers().forEach(subscriber -> subscriber.receive(this, packet));
     }
 }

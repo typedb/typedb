@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.reasoner.reactive.Receiver.Subscriber;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -26,16 +27,16 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public abstract class ChainablePublisher<OUTPUT> implements Publisher.Chainable<OUTPUT> {
+public abstract class PublisherImpl<OUTPUT> implements Provider.Publisher<OUTPUT> {
 
-    protected final Set<Subscriber<OUTPUT>> subscribers;
+    protected final Set<Receiver<OUTPUT>> subscribers;
 
-    protected ChainablePublisher() {
+    protected PublisherImpl() {
         this.subscribers = new HashSet<>();
     }
 
     @Override
-    public void publishTo(Subscriber.Subscribing<OUTPUT> subscriber) {
+    public void publishTo(Subscriber<OUTPUT> subscriber) {
         subscribers.add(subscriber);
         subscriber.subscribeTo(this);
         // TODO: To dynamically add subscribers we need to have buffered all prior packets and send them here
@@ -43,7 +44,7 @@ public abstract class ChainablePublisher<OUTPUT> implements Publisher.Chainable<
         //  break this only for outlets which will do the buffering and ensure all subscribers receive all answers.
     }
 
-    protected Set<Subscriber<OUTPUT>> subscribers() {
+    protected Set<Receiver<OUTPUT>> subscribers() {
         return subscribers;
     }
 

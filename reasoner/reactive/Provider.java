@@ -18,13 +18,24 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
-public interface Subscriber<R> {
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.reasoner.reactive.Receiver.Subscriber;
 
-    void receive(Publisher<R> publisher, R packet);  // TODO: The publisher argument is only needed by compound - can we do without it?
+import java.util.function.Function;
 
-    interface Subscribing<T> extends Subscriber<T> {
+public interface Provider<R> {
 
-        void subscribeTo(Publisher<T> publisher);
+    void pull(Receiver<R> receiver);
+
+    interface Publisher<T> extends Provider<T> {
+
+        void publishTo(Subscriber<T> subscriber);
+
+        Reactive<T, T> findFirst();
+
+        <R> Reactive<T, R> map(Function<T, R> function);
+
+        <R> Reactive<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
 
     }
 }

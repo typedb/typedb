@@ -27,19 +27,19 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPU
 
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
 
-    FlatMapOrRetryReactive(Set<Publisher<INPUT>> publishers, Function<INPUT, FunctionalIterator<OUTPUT>> transform) {
+    FlatMapOrRetryReactive(Set<Provider<INPUT>> publishers, Function<INPUT, FunctionalIterator<OUTPUT>> transform) {
         super(publishers);
         this.transform = transform;
     }
 
     @Override
-    public void receive(Publisher<INPUT> publisher, INPUT packet) {
+    public void receive(Provider<INPUT> provider, INPUT packet) {
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {
             transformed.forEachRemaining(t -> subscribers().forEach(subscriber -> subscriber.receive(this, t)));
             isPulling = false;
         } else if (isPulling) {
-            publisher.pull(this);  // Automatic retry
+            provider.pull(this);  // Automatic retry
         }
     }
 
