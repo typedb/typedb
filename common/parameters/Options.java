@@ -22,10 +22,13 @@ import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import java.nio.file.Path;
 
+import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONING_CANNOT_BE_TOGGLED_PER_QUERY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_IDLE_TIMEOUT_NOT_CONFIGURABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_TIMEOUT_NOT_CONFIGURABLE;
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
 
@@ -248,6 +251,11 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         Transaction getThis() {
             return this;
         }
+
+        @Override
+        public Transaction sessionIdleTimeoutMillis(int idleTimeoutMillis) {
+            throw TypeDBException.of(SESSION_IDLE_TIMEOUT_NOT_CONFIGURABLE, className(getClass()));
+        }
     }
 
     public static class Query extends Options<Transaction, Query> {
@@ -284,10 +292,14 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
             throw TypeDBException.of(REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY);
         }
 
+        @Override
+        public Query transactionTimeoutMillis(long timeoutMillis) {
+            throw TypeDBException.of(TRANSACTION_TIMEOUT_NOT_CONFIGURABLE, className(getClass()));
+        }
+
         public Query prefetch(boolean prefetch) {
             this.prefetch = prefetch;
             return this;
         }
-
     }
 }

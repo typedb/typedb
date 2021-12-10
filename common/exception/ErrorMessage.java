@@ -186,6 +186,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Session(2, "Attempted to open a transaction from closed session.");
         public static final Session SCHEMA_ACQUIRE_LOCK_TIMEOUT =
                 new Session(3, "Could not acquire lock for schema session. Another schema session may have been left open.");
+        public static final Session SESSION_IDLE_TIMEOUT_NOT_CONFIGURABLE =
+                new Session(4, "The session idle timeout is not configurable at the '%s' level.");
 
         private static final String codePrefix = "SSN";
         private static final String messagePrefix = "Invalid Session Operation";
@@ -230,6 +232,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Transaction(16, "Could not acquire lock for data transaction. A schema session may have been left open.");
         public static final Transaction RPC_PREFETCH_SIZE_TOO_SMALL =
                 new Transaction(17, "RPC answer streaming prefetch size must be at least 1, is set to: %d.");
+        public static final Transaction TRANSACTION_TIMEOUT_NOT_CONFIGURABLE =
+                new Transaction(18, "Transaction timeout cannot be configured at the '%s' level.");
 
         private static final String codePrefix = "TXN";
         private static final String messagePrefix = "Invalid Transaction Operation";
