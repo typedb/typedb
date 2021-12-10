@@ -104,7 +104,7 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
                                        String name, ConceptMap bounds, List<Resolvable<?>> plan) {
             super(driver, controller, name, new Outlet.Single<>());
 
-            compound(set(noOp(set(), set())), plan, bounds, this::nextCompoundLeader, ConjunctionProcessor::merge)
+            compound(plan, bounds, this::nextCompoundLeader, ConjunctionProcessor::merge)
                     .map(ConjunctionAns::new)
                     .publishTo(outlet());
         }

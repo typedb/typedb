@@ -28,16 +28,16 @@ public abstract class PublisherImpl<OUTPUT> implements Publisher<OUTPUT> {
 
     @Override
     public Reactive<OUTPUT, OUTPUT> findFirst() {
-        return new FindFirstReactive<>(set(), set(this));
+        return new FindFirstReactive<>(set(this));
     }
 
     @Override
     public <R> Reactive<OUTPUT, R> map(Function<OUTPUT, R> function) {
-        return new MapReactive<>(set(), set(this), function);
+        return new MapReactive<>(set(this), function);
     }
 
     @Override
     public <R> Reactive<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
-        return new FlatMapOrRetryReactive<>(set(), set(this), function);
+        return new FlatMapOrRetryReactive<>(set(this), function);
     }
 }

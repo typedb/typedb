@@ -18,20 +18,19 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 
 public class FindFirstReactive<T> extends IdentityReactive<T> {
 
     private boolean packetFound;
 
-    FindFirstReactive(Set<Subscriber<T>> subscribers, Set<Publisher<T>> publishers) {
-        super(subscribers, publishers);
+    FindFirstReactive(Set<Publisher<T>> publishers) {
+        super(publishers);
         this.packetFound = false;
     }
 
     @Override
-    public void receive(Publisher<T> publisher, T packet) {  // TODO: Doesn't do a retry
+    public void receive(Publisher<T> publisher, T packet) {
         packetFound = true;
         super.receive(publisher, packet);
     }

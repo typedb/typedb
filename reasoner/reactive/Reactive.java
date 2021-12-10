@@ -18,12 +18,8 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-
+import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Function;
-
-import static com.vaticle.typedb.common.collection.Collections.set;
 
 public abstract class Reactive<INPUT, OUTPUT> extends PublisherImpl<OUTPUT> implements Subscriber<INPUT>{
 
@@ -31,8 +27,8 @@ public abstract class Reactive<INPUT, OUTPUT> extends PublisherImpl<OUTPUT> impl
     private final Set<Publisher<INPUT>> publishers;
     protected boolean isPulling;
 
-    protected Reactive(Set<Subscriber<OUTPUT>> subscribers, Set<Publisher<INPUT>> publishers) {  // TODO: Do we need to initialise with subscribers (and publishers) or can we always add dynamically?
-        this.subscribers = subscribers;
+    protected Reactive(Set<Publisher<INPUT>> publishers) {  // TODO: Do we need to initialise with subscribers (and publishers) or can we always add dynamically?
+        this.subscribers = new HashSet<>();
         this.publishers = publishers;
         this.isPulling = false;
     }

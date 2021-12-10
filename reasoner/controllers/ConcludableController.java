@@ -96,7 +96,7 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
 
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
 
-            Reactive<ConceptMap, ConceptMap> op = noOp(set(), set());
+            Reactive<ConceptMap, ConceptMap> op = noOp();
             if (singleAnswerRequired) op.findFirst().publishTo(outlet());
             else op.publishTo(outlet());
 

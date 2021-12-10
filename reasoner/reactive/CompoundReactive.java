@@ -19,12 +19,10 @@
 package com.vaticle.typedb.core.reasoner.reactive;
 
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiFunction;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -38,10 +36,10 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
     private final BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc;
     private final Map<Publisher<PACKET>, PACKET> publisherPackets;
 
-    public CompoundReactive(Set<Subscriber<PACKET>> subscribers, Publisher<PACKET> leadingPublisher,
+    public CompoundReactive(Publisher<PACKET> leadingPublisher,
                             List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
                             BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc) {
-        super(subscribers, set(leadingPublisher));
+        super(set(leadingPublisher));
         this.leadingPublisher = leadingPublisher;
         this.remainingPlan = new ArrayList<>(plan);
         this.compoundPacketsFunc = compoundPacketsFunc;
@@ -50,13 +48,13 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
         this.publisherPackets = new HashMap<>();
     }
 
-    public static <P, T> CompoundReactive<P, T> compound(Set<Subscriber<T>> subscribers, List<P> plan,
-                                                         T initialPacket, BiFunction<P, T, Publisher<T>> spawnLeaderFunc,
+    public static <P, T> CompoundReactive<P, T> compound(List<P> plan, T initialPacket,
+                                                         BiFunction<P, T, Publisher<T>> spawnLeaderFunc,
                                                          BiFunction<T, T, T> compoundPacketsFunc) {
         List<P> remainingPlan = new ArrayList<>(plan);
         P firstPlanElement = remainingPlan.remove(0);
         Publisher<T> lead = spawnLeaderFunc.apply(firstPlanElement, initialPacket);
-        return new CompoundReactive<>(subscribers, lead, remainingPlan, spawnLeaderFunc, compoundPacketsFunc);
+        return new CompoundReactive<>(lead, remainingPlan, spawnLeaderFunc, compoundPacketsFunc);
     }
 
     @Override
@@ -66,7 +64,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
             Publisher<PACKET> nextLeader = spawnLeaderFunc.apply(nextPlanElement, packet);
             Publisher<PACKET> nextPublisher;
             if (remainingPlan.size() == 0) nextPublisher = nextLeader;
-            else nextPublisher = new CompoundReactive<>(set(), nextLeader, remainingPlan, spawnLeaderFunc, compoundPacketsFunc);
+            else nextPublisher = new CompoundReactive<>(nextLeader, remainingPlan, spawnLeaderFunc, compoundPacketsFunc);
             publisherPackets.put(nextPublisher, packet);
             subscribe(nextPublisher);
         } else {

@@ -115,7 +115,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         private Connection<PACKET, ?, ?> connection;
 
         public SubscribingEndpoint(long id) {
-            super(set(), set());
+            super(set());
             // TODO: Block any other subscribers from being added as there should only be one
             this.id = id;
             this.ready = false;
@@ -145,7 +145,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         private final Connection<PACKET, ?, ?> connection;
 
         public PublishingEndpoint(Connection<PACKET, ?, ?> connection) {
-            super(set(), set());
+            super(set());
             // TODO: Block any other publishers from being added as there should only be one
             this.connection = connection;
         }
@@ -281,7 +281,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
     public static abstract class Outlet<OUTPUT> extends IdentityReactive<OUTPUT> {
 
         Outlet() {
-            super(set(), set());
+            super(set());
         }
 
         public static class Single<OUTPUT> extends Outlet<OUTPUT> {

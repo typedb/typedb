@@ -24,16 +24,12 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 
 public class IdentityReactive<PACKET> extends Reactive<PACKET, PACKET> {
 
-    protected IdentityReactive(Set<Subscriber<PACKET>> subscribers, Set<Publisher<PACKET>> publishers) {
-        super(subscribers, publishers);
-    }
-
-    public static <T> IdentityReactive<T> noOp(Set<Subscriber<T>> subscribers, Set<Publisher<T>> publishers) {
-        return new IdentityReactive<>(subscribers, publishers);
+    protected IdentityReactive(Set<Publisher<PACKET>> publishers) {
+        super(publishers);
     }
 
     public static <T> IdentityReactive<T> noOp() {
-        return new IdentityReactive<>(set(), set());
+        return new IdentityReactive<>(set());
     }
 
     @Override

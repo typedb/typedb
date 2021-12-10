@@ -27,9 +27,8 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPU
 
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
 
-    FlatMapOrRetryReactive(Set<Subscriber<OUTPUT>> subscribers, Set<Publisher<INPUT>> publishers,
-                           Function<INPUT, FunctionalIterator<OUTPUT>> transform) {
-        super(subscribers, publishers);
+    FlatMapOrRetryReactive(Set<Publisher<INPUT>> publishers, Function<INPUT, FunctionalIterator<OUTPUT>> transform) {
+        super(publishers);
         this.transform = transform;
     }
 
