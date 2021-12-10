@@ -22,16 +22,16 @@ import java.util.Set;
 
 public abstract class Reactive<INPUT, OUTPUT> extends ChainablePublisher<OUTPUT> implements Subscriber.Subscribing<INPUT> {
 
-    private final Set<Chainable<INPUT>> publishers;
+    private final Set<Publisher<INPUT>> publishers;
     protected boolean isPulling;
 
-    protected Reactive(Set<Chainable<INPUT>> publishers) {  // TODO: Do we need to initialise with subscribers (and publishers) or can we always add dynamically?
+    protected Reactive(Set<Publisher<INPUT>> publishers) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
         this.publishers = publishers;
         this.isPulling = false;
     }
 
     @Override
-    public void pull(Subscribing<OUTPUT> subscriber) {
+    public void pull(Subscriber<OUTPUT> subscriber) {
         subscribers.add(subscriber);
         if (!isPulling) {
             publishers.forEach(p -> p.pull(this));
@@ -40,7 +40,7 @@ public abstract class Reactive<INPUT, OUTPUT> extends ChainablePublisher<OUTPUT>
     }
 
     @Override
-    public void subscribeTo(Chainable<INPUT> publisher) {
+    public void subscribeTo(Publisher<INPUT> publisher) {
         publishers.add(publisher);  // Will fail if publishers is an immutable set TODO: How should we best constrain whether more than one publisher is permitted?
         if (isPulling) publisher.pull(this);
     }

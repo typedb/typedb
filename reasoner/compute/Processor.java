@@ -134,14 +134,14 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         }
 
         @Override
-        public void pull(Subscribing<PACKET> subscriber) {
+        public void pull(Subscriber<PACKET> subscriber) {
             assert ready;
             subscribers.add(subscriber);
             connection.pull();
         }
 
         @Override
-        public void receive(@Nullable Chainable<PACKET> publisher, PACKET packet) {
+        public void receive(@Nullable Publisher<PACKET> publisher, PACKET packet) {
             assert publisher == null;
             subscribers().forEach(subscriber -> subscriber.receive(this, packet));
         }
@@ -152,7 +152,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
     public static class OutletEndpoint<PACKET> implements Subscriber.Subscribing<PACKET>, Publisher<PACKET> {
 
         private final Connection<PACKET, ?, ?> connection;
-        private final Set<Chainable<PACKET>> publishers;
+        private final Set<Publisher<PACKET>> publishers;
         protected boolean isPulling;
 
         public OutletEndpoint(Connection<PACKET, ?, ?> connection) {
@@ -165,18 +165,18 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         }
 
         @Override
-        public void subscribeTo(Chainable<PACKET> publisher) {
+        public void subscribeTo(Publisher<PACKET> publisher) {
             publishers.add(publisher);
             if (isPulling) publisher.pull(this);
         }
 
         @Override
-        public void receive(@Nullable Chainable<PACKET> publisher, PACKET packet) {
+        public void receive(@Nullable Publisher<PACKET> publisher, PACKET packet) {
             connection.receive(packet);
         }
 
         @Override
-        public void pull(@Nullable Subscribing<PACKET> subscriber) {
+        public void pull(@Nullable Subscriber<PACKET> subscriber) {
             assert subscriber == null;
             if (!isPulling) {
                 publishers.forEach(p -> p.pull(this));
@@ -331,7 +331,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
     public static class Source<PACKET> extends ChainablePublisher<PACKET> {
 
         private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
-        private final Map<Subscriber.Subscribing<PACKET>, FunctionalIterator<PACKET>> iterators;
+        private final Map<Subscriber<PACKET>, FunctionalIterator<PACKET>> iterators;
 
         public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier) {
             this.iteratorSupplier = iteratorSupplier;
@@ -343,7 +343,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         }
 
         @Override
-        public void pull(Subscriber.Subscribing<PACKET> subscriber) {
+        public void pull(Subscriber<PACKET> subscriber) {
             FunctionalIterator<PACKET> iterator = iterators.computeIfAbsent(subscriber, s -> iteratorSupplier.get());
             assert iterators.size() <= 1;  // Opens a new iterator for each subscriber. Presently we only intend to
             // have one subscriber, so look into this if more are required

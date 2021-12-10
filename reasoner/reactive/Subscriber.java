@@ -20,11 +20,11 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 public interface Subscriber<R> {
 
-    void receive(Publisher.Chainable<R> publisher, R packet);  // TODO: The publisher argument is only needed by compound - can we do without it?
+    void receive(Publisher<R> publisher, R packet);  // TODO: The publisher argument is only needed by compound - can we do without it?
 
     interface Subscribing<T> extends Subscriber<T> {
 
-        void subscribeTo(Publisher.Chainable<T> publisher);
+        void subscribeTo(Publisher<T> publisher);
 
     }
 }

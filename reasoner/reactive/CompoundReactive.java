@@ -29,15 +29,15 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 
 public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> {
 
-    private final Chainable<PACKET> leadingPublisher;
+    private final Publisher<PACKET> leadingPublisher;
     private final PLAN_ID nextPlanElement;
     private final List<PLAN_ID> remainingPlan;
     private final BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc;
-    private final BiFunction<PLAN_ID, PACKET, Chainable<PACKET>> spawnLeaderFunc;
-    private final Map<Chainable<PACKET>, PACKET> publisherPackets;
+    private final BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc;
+    private final Map<Publisher<PACKET>, PACKET> publisherPackets;
 
-    public CompoundReactive(Chainable<PACKET> leadingPublisher,
-                            List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Chainable<PACKET>> spawnLeaderFunc,
+    public CompoundReactive(Publisher<PACKET> leadingPublisher,
+                            List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
                             BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc) {
         super(set(leadingPublisher));
         this.leadingPublisher = leadingPublisher;
@@ -49,20 +49,20 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
     }
 
     public static <P, T> CompoundReactive<P, T> compound(List<P> plan, T initialPacket,
-                                                         BiFunction<P, T, Chainable<T>> spawnLeaderFunc,
+                                                         BiFunction<P, T, Publisher<T>> spawnLeaderFunc,
                                                          BiFunction<T, T, T> compoundPacketsFunc) {
         List<P> remainingPlan = new ArrayList<>(plan);
         P firstPlanElement = remainingPlan.remove(0);
-        Chainable<T> lead = spawnLeaderFunc.apply(firstPlanElement, initialPacket);
+        Publisher<T> lead = spawnLeaderFunc.apply(firstPlanElement, initialPacket);
         return new CompoundReactive<>(lead, remainingPlan, spawnLeaderFunc, compoundPacketsFunc);
     }
 
     @Override
-    public void receive(Chainable<PACKET> publisher, PACKET packet) {
+    public void receive(Publisher<PACKET> publisher, PACKET packet) {
         // TODO: Need to implement equals and hashCode? Seems we actually want exact object matches only for reactives
         if (leadingPublisher.equals(publisher)) {
-            Chainable<PACKET> nextLeader = spawnLeaderFunc.apply(nextPlanElement, packet);
-            Chainable<PACKET> nextPublisher;
+            Publisher<PACKET> nextLeader = spawnLeaderFunc.apply(nextPlanElement, packet);
+            Publisher<PACKET> nextPublisher;
             if (remainingPlan.size() == 0) nextPublisher = nextLeader;
             else nextPublisher = new CompoundReactive<>(nextLeader, remainingPlan, spawnLeaderFunc, compoundPacketsFunc);
             publisherPackets.put(nextPublisher, packet);

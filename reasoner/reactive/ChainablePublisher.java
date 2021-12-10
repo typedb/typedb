@@ -28,7 +28,7 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 
 public abstract class ChainablePublisher<OUTPUT> implements Publisher.Chainable<OUTPUT> {
 
-    protected final Set<Subscriber.Subscribing<OUTPUT>> subscribers;
+    protected final Set<Subscriber<OUTPUT>> subscribers;
 
     protected ChainablePublisher() {
         this.subscribers = new HashSet<>();
@@ -43,7 +43,7 @@ public abstract class ChainablePublisher<OUTPUT> implements Publisher.Chainable<
         //  break this only for outlets which will do the buffering and ensure all subscribers receive all answers.
     }
 
-    protected Set<Subscriber.Subscribing<OUTPUT>> subscribers() {
+    protected Set<Subscriber<OUTPUT>> subscribers() {
         return subscribers;
     }
 

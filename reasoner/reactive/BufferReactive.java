@@ -18,21 +18,24 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
+import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
-public class MapReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
+public class BufferReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
 
-    private final Function<INPUT, OUTPUT> mappingFunc;
+    Map<Subscriber<OUTPUT>, Integer> bufferPositions;
 
-    protected MapReactive(Set<Publisher<INPUT>> publishers, Function<INPUT, OUTPUT> mappingFunc) {
+    protected BufferReactive(Set<Publisher<INPUT>> publishers) {
         super(publishers);
-        this.mappingFunc = mappingFunc;
     }
 
     @Override
     public void receive(Publisher<INPUT> publisher, INPUT packet) {
-        subscribers().forEach(subscriber -> subscriber.receive(this, mappingFunc.apply(packet)));
+
     }
 
+    @Override
+    public void publishTo(Subscribing<OUTPUT> subscriber) {
+        super.publishTo(subscriber);
+    }
 }

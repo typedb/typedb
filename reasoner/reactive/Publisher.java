@@ -24,7 +24,7 @@ import java.util.function.Function;
 
 public interface Publisher<R> {
 
-    void pull(Subscriber.Subscribing<R> subscriber);
+    void pull(Subscriber<R> subscriber);
 
     interface Chainable<T> extends Publisher<T> {
 
