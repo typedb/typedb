@@ -36,7 +36,7 @@ public abstract class Reactive<INPUT, OUTPUT> extends PublisherImpl<OUTPUT> impl
     @Override
     public void publishTo(Subscriber<OUTPUT> subscriber) {
         subscribers.add(subscriber);
-        subscriber.subscribe(this);
+        subscriber.subscribeTo(this);
         // TODO: To dynamically add subscribers we need to have buffered all prior packets and send them here
         //  we can adopt a policy that if you weren't a subscriber in time for the packet then you miss it, and
         //  break this only for outlets which will do the buffering and ensure all subscribers receive all answers.
@@ -64,10 +64,9 @@ public abstract class Reactive<INPUT, OUTPUT> extends PublisherImpl<OUTPUT> impl
     }
 
     @Override
-    public Publisher<INPUT> subscribe(Publisher<INPUT> publisher) {
-        publishers.add(publisher);
+    public void subscribeTo(Publisher<INPUT> publisher) {
+        publishers.add(publisher);  // Will fail if publishers is an immutable set TODO: How should we best constrain whether more than one publisher is permitted?
         if (isPulling) publisher.pull(this);
-        return publisher;
     }
 
 }

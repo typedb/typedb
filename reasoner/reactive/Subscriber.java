@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 public interface Subscriber<T> {
 
-    Publisher<T> subscribe(Publisher<T> publisher);
+    void subscribeTo(Publisher<T> publisher);
 
     void receive(Publisher<T> publisher, T packet);  // TODO: The publisher argument is only needed by compound - can we do without it?
 

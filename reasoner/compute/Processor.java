@@ -74,7 +74,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
 
     protected void acceptConnection(ConnectionBuilder<?, ?, OUTPUT, ?, ?> connectionBuilder) {
         Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
-        connection.chainFromEndpoint(createPublishingEndpoint(connection)).subscribe(outlet());
+        outlet().publishTo(connection.applyConnectionTransforms(createPublishingEndpoint(connection)));
         connectionBuilder.subscriberProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
 
@@ -190,7 +190,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
             return subEndpointId;
         }
 
-        public Reactive<PACKET, PACKET> chainFromEndpoint(PublishingEndpoint<PACKET> pubEndpoint) {
+        public Reactive<PACKET, PACKET> applyConnectionTransforms(PublishingEndpoint<PACKET> pubEndpoint) {
             assert pubEndpoint.id() == pubEndpointId;
             Reactive<PACKET, PACKET> op = pubEndpoint;
             for (Function<Reactive<PACKET, PACKET>, Reactive<PACKET, PACKET>> t : connectionTransforms) {
@@ -327,7 +327,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         @Override
         public void publishTo(Subscriber<PACKET> subscriber) {
             // subscribers only need to be dynamically recorded on pull()
-            subscriber.subscribe(this);
+            subscriber.subscribeTo(this);
         }
 
     }
