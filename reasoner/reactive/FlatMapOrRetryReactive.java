@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import java.util.Set;
 import java.util.function.Function;
 
-public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
+public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, OUTPUT> {
 
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
 
@@ -36,9 +36,9 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPU
     public void receive(Provider<INPUT> provider, INPUT packet) {
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {
-            transformed.forEachRemaining(t -> subscribers().forEach(subscriber -> subscriber.receive(this, t)));
-            isPulling = false;
-        } else if (isPulling) {
+            transformed.forEachRemaining(t -> subscriber().receive(this, t));
+            finishPulling();
+        } else if (isPulling()) {
             provider.pull(this);  // Automatic retry
         }
     }

@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Map;
@@ -62,7 +63,7 @@ public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap
     public static class ConclusionProcessor extends Processor<ConceptMap, Conjunction, ConceptMap, ConclusionAns, ConclusionProcessor> {
         protected ConclusionProcessor(Driver<ConclusionProcessor> driver, Driver<? extends Controller<?, ?,
                 ConceptMap, Conjunction, ConceptMap, ConclusionAns, ConclusionProcessor, ?>> controller, String name,
-                                      Outlet<ConclusionAns> outlet) {
+                                      Reactive<ConclusionAns, ConclusionAns> outlet) {
             super(driver, controller, name, outlet);
         }
 

@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.reasoner.reactive;
 import java.util.Set;
 import java.util.function.Function;
 
-public class MapReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
+public class MapReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, OUTPUT> {
 
     private final Function<INPUT, OUTPUT> mappingFunc;
 
@@ -32,8 +32,8 @@ public class MapReactive<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
 
     @Override
     public void receive(Provider<INPUT> provider, INPUT packet) {
-        subscribers().forEach(subscriber -> subscriber.receive(this, mappingFunc.apply(packet)));
-        isPulling = false;
+        subscriber().receive(this, mappingFunc.apply(packet));
+        finishPulling();
     }
 
 }

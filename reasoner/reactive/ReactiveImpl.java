@@ -18,22 +18,26 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
-import java.util.Set;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+
+import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public class IdentityReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
+public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUTPUT> {
 
-    protected IdentityReactive(Set<Provider<PACKET>> publishers) {
-        super(publishers);
-    }
-
-    public static <T> IdentityReactive<T> noOp() {
-        return new IdentityReactive<>(set());
+    @Override
+    public ReactiveBase<OUTPUT, OUTPUT> findFirst() {
+        return new FindFirstReactive<>(set(this));
     }
 
     @Override
-    public void receive(Provider<PACKET> provider, PACKET packet) {
-        subscriber().receive(this, packet);
+    public <R> ReactiveBase<OUTPUT, R> map(Function<OUTPUT, R> function) {
+        return new MapReactive<>(set(this), function);
+    }
+
+    @Override
+    public <R> ReactiveBase<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
+        return new FlatMapOrRetryReactive<>(set(this), function);
     }
 }

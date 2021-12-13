@@ -26,19 +26,20 @@ import java.util.Map;
 import java.util.Set;
 
 
-// TODO: Should split reactives into broadcasting ones (only this one) and ones which can have a single subscriber
-// TODO: Single subscriber: can be dynamically set, but only set once. Calling receive before the subscriber is set should throw an error
-public class BufferBroadcastReactive<PACKET> extends Reactive<PACKET, PACKET> {
+public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET> {
 
     final Map<Receiver<PACKET>, Integer> bufferPositions;  // Points to the next item needed
     final List<PACKET> buffer;
     final Set<Receiver<PACKET>> pullers;
+    protected final Set<Receiver<PACKET>> subscribers;
+    protected final Set<Provider<PACKET>> publishers;
 
-    protected BufferBroadcastReactive(Set<Provider<PACKET>> publishers) {
-        super(publishers);
+    public BufferBroadcastReactive(Set<Provider<PACKET>> publishers) {
         this.buffer = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
         this.pullers = new HashSet<>();
+        this.subscribers = new HashSet<>();
+        this.publishers = publishers;
     }
 
     @Override
@@ -52,9 +53,8 @@ public class BufferBroadcastReactive<PACKET> extends Reactive<PACKET, PACKET> {
     public void pull(Receiver<PACKET> receiver) {
         createBufferPosition(receiver);
         subscribers.add(receiver);
-        // TODO: send back a packet if we have one, otherwise: record that this subscriber is pulling, and pull from upstream
         if (buffer.size() == bufferPositions.get(receiver)) {
-            // Finished the buffer TODO record that this subscriber is pulling, and pull from upstream
+            // Finished the buffer
             setPulling(receiver);
             publishers.forEach(p -> p.pull(this));
         } else {
@@ -63,18 +63,22 @@ public class BufferBroadcastReactive<PACKET> extends Reactive<PACKET, PACKET> {
     }
 
     @Override
-    void finishPulling() {
+    public void subscribeTo(Provider<PACKET> publisher) {
+        publishers.add(publisher);
+        if (isPulling()) publisher.pull(this);
+    }
+
+    // TODO: Should pulling methods be abstracted into a reactive interface? These calls are only used internally
+    protected void finishPulling() {
         pullers.clear();
     }
 
-    @Override
     void setPulling(Receiver<PACKET> receiver) {
         pullers.add(receiver);
     }
 
-    @Override
     boolean isPulling() {
-        return false;
+        return pullers.size() > 0;
     }
 
     private void send(Receiver<PACKET> receiver) {
@@ -86,7 +90,8 @@ public class BufferBroadcastReactive<PACKET> extends Reactive<PACKET, PACKET> {
     @Override
     public void publishTo(Subscriber<PACKET> subscriber) {
         createBufferPosition(subscriber);
-        super.publishTo(subscriber);
+        subscribers.add(subscriber);
+        subscriber.subscribeTo(this);
     }
 
     private void createBufferPosition(Receiver<PACKET> subscriber) {

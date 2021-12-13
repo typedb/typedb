@@ -30,7 +30,7 @@ import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.controllers.ConclusionController.ConclusionAns;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.reactive.ReactiveBase;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
@@ -91,11 +91,11 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
                                     String name, ConceptMap bounds, Set<Identifier.Variable.Retrievable> unboundVars,
                                     LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions,
                                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier) {
-            super(driver, controller, name, new Outlet.DynamicMulti<>());
+            super(driver, controller, name, noOp());
 
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
 
-            Reactive<ConceptMap, ConceptMap> op = noOp();
+            ReactiveBase<ConceptMap, ConceptMap> op = noOp();
             if (singleAnswerRequired) op.findFirst().publishTo(outlet());
             else op.publishTo(outlet());
 

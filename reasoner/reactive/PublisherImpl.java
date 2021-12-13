@@ -21,45 +21,42 @@ package com.vaticle.typedb.core.reasoner.reactive;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.reactive.Receiver.Subscriber;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
 public abstract class PublisherImpl<OUTPUT> implements Provider.Publisher<OUTPUT> {
 
-    protected final Set<Receiver<OUTPUT>> subscribers;
-
-    protected PublisherImpl() {
-        this.subscribers = new HashSet<>();
-    }
+    protected Receiver<OUTPUT> subscriber;
 
     @Override
     public void publishTo(Subscriber<OUTPUT> subscriber) {
-        subscribers.add(subscriber);
+        setSubscriber(subscriber);
         subscriber.subscribeTo(this);
-        // TODO: To dynamically add subscribers we need to have buffered all prior packets and send them here
-        //  we can adopt a policy that if you weren't a subscriber in time for the packet then you miss it, and
-        //  break this only for outlets which will do the buffering and ensure all subscribers receive all answers.
     }
 
-    protected Set<Receiver<OUTPUT>> subscribers() {
-        return subscribers;
+    protected void setSubscriber(Receiver<OUTPUT> subscriber) {
+        // TODO: This is duplicated in the Reactive class hierarchy
+        assert this.subscriber == null;
+        this.subscriber = subscriber;
+    }
+
+    protected Receiver<OUTPUT> subscriber() {
+        return subscriber;
     }
 
     @Override
-    public Reactive<OUTPUT, OUTPUT> findFirst() {
+    public ReactiveBase<OUTPUT, OUTPUT> findFirst() {
         return new FindFirstReactive<>(set(this));
     }
 
     @Override
-    public <R> Reactive<OUTPUT, R> map(Function<OUTPUT, R> function) {
+    public <R> ReactiveBase<OUTPUT, R> map(Function<OUTPUT, R> function) {
         return new MapReactive<>(set(this), function);
     }
 
     @Override
-    public <R> Reactive<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
+    public <R> ReactiveBase<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
         return new FlatMapOrRetryReactive<>(set(this), function);
     }
 }

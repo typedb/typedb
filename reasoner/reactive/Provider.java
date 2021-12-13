@@ -31,11 +31,11 @@ public interface Provider<R> {
 
         void publishTo(Subscriber<T> subscriber);
 
-        Reactive<T, T> findFirst();
+        ReactiveBase<T, T> findFirst();
 
-        <R> Reactive<T, R> map(Function<T, R> function);
+        <R> ReactiveBase<T, R> map(Function<T, R> function);
 
-        <R> Reactive<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
+        <R> ReactiveBase<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
 
     }
 }

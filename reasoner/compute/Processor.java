@@ -18,12 +18,10 @@
 
 package com.vaticle.typedb.core.reasoner.compute;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.reactive.IdentityReactive;
-import com.vaticle.typedb.core.reasoner.reactive.PublisherImpl;
 import com.vaticle.typedb.core.reasoner.reactive.Provider;
+import com.vaticle.typedb.core.reasoner.reactive.PublisherImpl;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Receiver;
 import com.vaticle.typedb.core.reasoner.reactive.Receiver.Subscriber;
@@ -38,21 +36,19 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.reasoner.reactive.IdentityReactive.noOp;
 
 public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR extends Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR>> extends Actor<PROCESSOR> {
 
     private final Driver<? extends Controller<?, ?, PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR, ?>> controller;
-    private final Outlet<OUTPUT> outlet;
-    private long endpointId;
+    private final Reactive<OUTPUT, OUTPUT> outlet;
     private final Map<Long, InletEndpoint<INPUT>> subscribingEndpoints;
     private final Map<Long, OutletEndpoint<OUTPUT>> publishingEndpoints;
+    private long endpointId;
 
     protected Processor(Driver<PROCESSOR> driver,
                         Driver<? extends Controller<?, ?, PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR, ?>> controller,
-                        String name, Outlet<OUTPUT> outlet) {
+                        String name, Reactive<OUTPUT, OUTPUT> outlet) {
         super(driver, name);
         this.controller = controller;
         this.outlet = outlet;
@@ -61,7 +57,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         this.publishingEndpoints = new HashMap<>();
     }
 
-    public Outlet<OUTPUT> outlet() {
+    public Reactive<OUTPUT, OUTPUT> outlet() {
         return outlet;
     }
 
@@ -137,16 +133,17 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         @Override
         public void pull(Receiver<PACKET> receiver) {
             assert ready;
-            subscribers.add(receiver);
+            setSubscriber(receiver);
             connection.pull();
         }
 
         @Override
         public void receive(@Nullable Provider<PACKET> provider, PACKET packet) {
             assert provider == null;
-            subscribers().forEach(subscriber -> subscriber.receive(this, packet));
+            subscriber().receive(this, packet);
         }
     }
+
     /**
      * Governs an output from a processor
      */
@@ -305,38 +302,13 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         }
     }
 
-    public static abstract class Outlet<OUTPUT> extends IdentityReactive<OUTPUT> {
-
-        Outlet() {
-            super(set());
-        }
-
-        public static class Single<OUTPUT> extends Outlet<OUTPUT> {
-
-            @Override
-            public void publishTo(Subscriber<OUTPUT> subscriber) {
-                if (subscribers().size() > 0) throw TypeDBException.of(ILLEGAL_STATE);
-                else subscribers.add(subscriber);
-            }
-        }
-
-        public static class DynamicMulti<OUTPUT> extends Outlet<OUTPUT> {
-
-            @Override
-            public void publishTo(Subscriber<OUTPUT> subscriber) {
-                super.publishTo(subscriber);  // TODO: This needs to record the subscribers read position in the buffer and maintain it.
-            }
-        }
-    }
-
     public static class Source<PACKET> extends PublisherImpl<PACKET> {
 
         private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
-        private final Map<Receiver<PACKET>, FunctionalIterator<PACKET>> iterators;
+        private FunctionalIterator<PACKET> iterator;
 
         public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier) {
             this.iteratorSupplier = iteratorSupplier;
-            this.iterators = new HashMap<>();
         }
 
         public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier) {
@@ -345,9 +317,8 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
 
         @Override
         public void pull(Receiver<PACKET> receiver) {
-            FunctionalIterator<PACKET> iterator = iterators.computeIfAbsent(receiver, s -> iteratorSupplier.get());
-            assert iterators.size() <= 1;  // Opens a new iterator for each subscriber. Presently we only intend to
-            // have one subscriber, so look into this if more are required
+            setSubscriber(receiver);
+            if (iterator == null) iterator = iteratorSupplier.get();
             if (iterator.hasNext()) receiver.receive(this, iterator.next());
         }
 

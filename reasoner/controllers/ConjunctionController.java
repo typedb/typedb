@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controllers;
 
+import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
@@ -29,6 +30,7 @@ import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
+import com.vaticle.typedb.core.reasoner.reactive.BufferBroadcastReactive;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -100,7 +102,7 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
         protected ConjunctionProcessor(Driver<ConjunctionProcessor> driver, Driver<? extends Controller<?, ?,
                 ConceptMap, Resolvable<?>, ConceptMap, ConjunctionAns, ConjunctionProcessor, ?>> controller,
                                        String name, ConceptMap bounds, List<Resolvable<?>> plan) {
-            super(driver, controller, name, new Outlet.Single<>());
+            super(driver, controller, name, new BufferBroadcastReactive<>(Collections.set()));
 
             compound(plan, bounds, this::nextCompoundLeader, ConjunctionProcessor::merge)
                     .map(ConjunctionAns::new)
