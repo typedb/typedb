@@ -33,7 +33,7 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
 
     @Override
     public void pull(Receiver<OUTPUT> receiver) {
-        setSubscriber(receiver);
+        assert receiver.equals(subscriber);
         if (!isPulling()) {
             publishers.forEach(p -> p.pull(this));
             setPulling();
@@ -70,6 +70,7 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
     }
 
     protected Receiver<OUTPUT> subscriber() {
+        assert this.subscriber != null;
         return subscriber;
     }
 

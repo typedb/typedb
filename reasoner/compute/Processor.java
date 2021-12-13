@@ -133,7 +133,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
         @Override
         public void pull(Receiver<PACKET> receiver) {
             assert ready;
-            setSubscriber(receiver);
+            assert receiver.equals(subscriber);
             connection.pull();
         }
 
@@ -317,7 +317,7 @@ public abstract class Processor<PUB_PID, PUB_CID, INPUT, OUTPUT, PROCESSOR exten
 
         @Override
         public void pull(Receiver<PACKET> receiver) {
-            setSubscriber(receiver);
+            assert receiver.equals(subscriber);
             if (iterator == null) iterator = iteratorSupplier.get();
             if (iterator.hasNext()) receiver.receive(this, iterator.next());
         }
