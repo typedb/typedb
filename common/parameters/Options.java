@@ -36,7 +36,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final int MINUTE_SECONDS = 60;
 
     public static final int DEFAULT_PREFETCH_SIZE = 50;
-    public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 30_000;
+    public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 30 * SECOND_MILLIS;
     public static final int DEFAULT_TRANSACTION_TIMEOUT_MILLIS = 5 * MINUTE_SECONDS * SECOND_MILLIS;
     public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
     public static final boolean DEFAULT_INFER = false;
