@@ -138,8 +138,8 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
     @Override
     public FunctionalIterator<AlphaEquivalence> alphaEquals(RelationConstraint that) {
-        return AlphaEquivalence.empty()
-                .alphaEqualIf(players().size() == that.players().size())
+        return owner.alphaEquals(that.owner)
+                .flatMap(a -> a.alphaEqualIf(players().size() == that.players().size()))
                 .flatMap(a -> owner.alphaEquals(that.owner).flatMap(a::extendIfCompatible))
                 .flatMap(a -> roleplayerEquivalences(that).flatMap(a::extendIfCompatible));
     }
@@ -226,7 +226,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
         @Override
         public FunctionalIterator<AlphaEquivalence> alphaEquals(RolePlayer that) {
-            return AlphaEquivalence.alphaEquals(roleType, that.roleType)
+            return roleType.alphaEquals(that.roleType)
                     .flatMap(a -> player.alphaEquals(that.player).flatMap(a::extendIfCompatible));
         }
 
