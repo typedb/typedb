@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl;
@@ -58,7 +58,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     private Queue<Explanation> queue;
 
     public ExplanationProducer(Conjunction conjunction, ConceptMap bounds, Options.Query options,
-                               ResolverRegistry registry, ExplainablesManager explainablesManager) {
+                               ControllerRegistry registry, ExplainablesManager explainablesManager) {
         this.bounds = bounds;
         this.explainablesManager = explainablesManager;
         this.options = options;

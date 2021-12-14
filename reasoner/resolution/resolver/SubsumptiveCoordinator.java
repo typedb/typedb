@@ -19,7 +19,7 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
@@ -45,7 +45,7 @@ public abstract class SubsumptiveCoordinator<RESOLVER extends SubsumptiveCoordin
     protected boolean isInitialised;
 
     protected SubsumptiveCoordinator(Driver<RESOLVER> driver, String name, Set<Mapping> symmetricMappings,
-                                     ResolverRegistry registry) {
+                                     ControllerRegistry registry) {
         super(driver, name, registry);
         this.isInitialised = false;
         this.requestFactories = new HashMap<>();

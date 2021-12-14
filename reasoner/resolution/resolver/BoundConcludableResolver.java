@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
@@ -58,7 +58,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
     protected final AnswerCache<ConceptMap> matchCache;
 
     protected BoundConcludableResolver(Driver<RESOLVER> driver, String name, BoundConcludableContext context,
-                                       ConceptMap bounds, ResolverRegistry registry) {
+                                       ConceptMap bounds, ControllerRegistry registry) {
         super(driver, name, registry);
         this.context = context;
         this.bounds = bounds;
@@ -193,7 +193,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
         private final Map<Partial.Concludable<?>, ExplorationManager> explorationManagers;
 
         public Exploring(Driver<Exploring> driver, BoundConcludableContext context,
-                         ConceptMap bounds, ResolverRegistry registry) {
+                         ConceptMap bounds, ControllerRegistry registry) {
             super(driver, BoundConcludableResolver.Exploring.class.getSimpleName() + "(pattern: " +
                     context.concludable().pattern() + ", bounds: " + bounds.concepts().toString() + ")", context,
                   bounds, registry);
@@ -324,7 +324,7 @@ public abstract class BoundConcludableResolver<RESOLVER extends BoundConcludable
         private final Map<Partial.Concludable<?>, BoundConcludableResolutionState<?>> resolutionStates;
 
         public Blocked(Driver<Blocked> driver, BoundConcludableContext context, ConceptMap bounds,
-                       ResolverRegistry registry) {
+                       ControllerRegistry registry) {
             super(driver, BoundConcludableResolver.Blocked.class.getSimpleName() + "(pattern: " +
                           context.concludable().pattern() + ", bounds: " + bounds.concepts().toString() + ")",
                   context, bounds, registry);

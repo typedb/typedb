@@ -132,7 +132,7 @@ public class ResolutionTest {
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }", transaction.logic());
-                ResolverRegistry registry = transaction.reasoner().resolverRegistry();
+                ControllerRegistry registry = transaction.reasoner().controllerRegistry();
                 LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
                 AtomicLong doneReceived = new AtomicLong(0L);
                 LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
@@ -445,14 +445,14 @@ public class ResolutionTest {
     private RocksTransaction singleThreadElgTransaction(RocksSession session) {
         RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE);
         ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("typedb-actor"));
-        transaction.reasoner().resolverRegistry().setExecutorService(service);
+        transaction.reasoner().controllerRegistry().setExecutorService(service);
         return transaction;
     }
 
     private void createRootAndAssertResponses(RocksTransaction transaction, Disjunction disjunction,
                                               Set<Identifier.Variable.Retrievable> filter, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
-        ResolverRegistry registry = transaction.reasoner().resolverRegistry();
+        ControllerRegistry registry = transaction.reasoner().controllerRegistry();
         LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         Actor.Driver<RootResolver.Disjunction> root;
@@ -467,7 +467,7 @@ public class ResolutionTest {
 
     private void createRootAndAssertResponses(RocksTransaction transaction, Conjunction conjunction, long answerCount, long explainableAnswers)
             throws InterruptedException {
-        ResolverRegistry registry = transaction.reasoner().resolverRegistry();
+        ControllerRegistry registry = transaction.reasoner().controllerRegistry();
         LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         Set<Identifier.Variable.Retrievable> filter = new HashSet<>();

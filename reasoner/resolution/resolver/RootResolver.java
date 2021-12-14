@@ -19,7 +19,7 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top;
@@ -50,7 +50,7 @@ public interface RootResolver {
 
         public Conjunction(Driver<Conjunction> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction,
                            BiConsumer<Request, Finished> onAnswer, Consumer<Request> onFail, Consumer<Throwable> onException,
-                           ResolverRegistry registry) {
+                           ControllerRegistry registry) {
             super(driver, Conjunction.class.getSimpleName() + "(pattern:" + conjunction + ")", registry);
             this.conjunction = conjunction;
             this.onAnswer = onAnswer;
@@ -112,7 +112,7 @@ public interface RootResolver {
 
         public Disjunction(Driver<Disjunction> driver, com.vaticle.typedb.core.pattern.Disjunction disjunction,
                            BiConsumer<Request, Finished> onAnswer, Consumer<Request> onFail,
-                           Consumer<Throwable> onException, ResolverRegistry registry) {
+                           Consumer<Throwable> onException, ControllerRegistry registry) {
             super(driver, Disjunction.class.getSimpleName() + "(pattern:" + disjunction + ")", disjunction, registry);
             this.onAnswer = onAnswer;
             this.onFail = onFail;
@@ -175,7 +175,7 @@ public interface RootResolver {
         public Explain(Driver<Explain> driver, com.vaticle.typedb.core.pattern.Conjunction conjunction,
                        BiConsumer<Request, Top.Explain.Finished> onAnswer,
                        Consumer<Request> onFail,
-                       Consumer<Throwable> onException, ResolverRegistry registry) {
+                       Consumer<Throwable> onException, ControllerRegistry registry) {
             super(driver, "Explain(" + conjunction + ")", registry);
             this.conjunction = conjunction;
             this.onAnswer = onAnswer;

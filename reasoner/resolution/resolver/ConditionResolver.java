@@ -19,7 +19,7 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import org.slf4j.Logger;
@@ -35,7 +35,7 @@ public class ConditionResolver extends ConjunctionResolver<ConditionResolver> {
 
     private final Rule.Condition condition;
 
-    public ConditionResolver(Driver<ConditionResolver> driver, Rule.Condition condition, ResolverRegistry registry) {
+    public ConditionResolver(Driver<ConditionResolver> driver, Rule.Condition condition, ControllerRegistry registry) {
         super(driver, ConditionResolver.class.getSimpleName() + "(" + condition + ")", registry);
         this.condition = condition;
     }

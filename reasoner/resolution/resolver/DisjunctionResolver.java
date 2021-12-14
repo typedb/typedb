@@ -19,7 +19,7 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
@@ -42,7 +42,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     final com.vaticle.typedb.core.pattern.Disjunction disjunction;
 
     protected DisjunctionResolver(Driver<RESOLVER> driver, String name,
-                                  com.vaticle.typedb.core.pattern.Disjunction disjunction, ResolverRegistry registry) {
+                                  com.vaticle.typedb.core.pattern.Disjunction disjunction, ControllerRegistry registry) {
         // TODO: This class takes a pattern disjunction whereas nested disjunctions take a core disjunction
         super(driver, name, registry);
         this.disjunction = disjunction;
@@ -102,7 +102,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
 
     public static class Nested extends DisjunctionResolver<Nested> {
 
-        public Nested(Driver<Nested> driver, Disjunction disjunction, ResolverRegistry registry) {
+        public Nested(Driver<Nested> driver, Disjunction disjunction, ControllerRegistry registry) {
             super(driver, Nested.class.getSimpleName() + "(pattern: " + disjunction + ")", disjunction, registry);
         }
 

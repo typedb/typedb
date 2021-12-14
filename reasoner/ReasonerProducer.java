@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
@@ -51,7 +51,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     private final AtomicInteger required;
     private final AtomicInteger processing;
     private final Options.Query options;
-    private final ResolverRegistry resolverRegistry;
+    private final ControllerRegistry controllerRegistry;
     private final ExplainablesManager explainablesManager;
     private final int computeSize;
     private final Request.Factory requestFactory;
@@ -63,15 +63,15 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
-                            ResolverRegistry resolverRegistry, ExplainablesManager explainablesManager) {
+                            ControllerRegistry controllerRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
-        this.resolverRegistry = resolverRegistry;
+        this.controllerRegistry = controllerRegistry;
         this.explainablesManager = explainablesManager;
         this.queue = null;
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
-        this.rootResolver = this.resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
+        this.rootResolver = this.controllerRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         this.requestIdCounter = 0;
@@ -82,15 +82,15 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     }
 
     public ReasonerProducer(Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
-                            ResolverRegistry resolverRegistry, ExplainablesManager explainablesManager) {
+                            ControllerRegistry controllerRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
-        this.resolverRegistry = resolverRegistry;
+        this.controllerRegistry = controllerRegistry;
         this.explainablesManager = explainablesManager;
         this.queue = null;
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
-        this.rootResolver = this.resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
+        this.rootResolver = this.controllerRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         this.requestIdCounter = 0;

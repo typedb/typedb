@@ -31,7 +31,7 @@ import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.reactive.BufferBroadcastReactive;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -45,9 +45,9 @@ import static com.vaticle.typedb.core.reasoner.reactive.CompoundReactive.compoun
 
 public class ConjunctionController extends Controller<Conjunction, ConceptMap, ConceptMap, Resolvable<?>, ConceptMap, ConjunctionController.ConjunctionAns, ConjunctionController.ConjunctionProcessor, ConjunctionController> {
 
-    private final ResolverRegistry registry;
+    private final ControllerRegistry registry;
 
-    protected ConjunctionController(Driver<ConjunctionController> driver, String name, Conjunction id, ActorExecutorGroup executorService, ResolverRegistry registry) {
+    protected ConjunctionController(Driver<ConjunctionController> driver, String name, Conjunction id, ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, name, id, executorService);
         this.registry = registry;
     }

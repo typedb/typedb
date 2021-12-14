@@ -31,7 +31,7 @@ import com.vaticle.typedb.core.concurrent.producer.Producers;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
@@ -63,14 +63,14 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
     private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
     private final Map<Request.Visit, Request.Visit> requestRouter;
-    protected final ResolverRegistry registry;
+    protected final ControllerRegistry registry;
 
-    protected Resolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
+    protected Resolver(Driver<RESOLVER> driver, String name, ControllerRegistry registry) {
         super(driver, name);
         this.registry = registry;
         this.requestRouter = new HashMap<>();
         // Note: initialising downstream actors in constructor will create all actors ahead of time, so it is non-lazy
-        // additionally, it can cause deadlock within ResolverRegistry as different threads initialise actors
+        // additionally, it can cause deadlock within ControllerRegistry as different threads initialise actors
     }
 
     @Override

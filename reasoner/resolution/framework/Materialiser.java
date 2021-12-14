@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.logic.Rule;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConclusionResolver;
@@ -39,9 +39,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 public class Materialiser extends ReasonerActor<Materialiser> {
     private static final Logger LOG = LoggerFactory.getLogger(Materialiser.class);
 
-    private final ResolverRegistry registry;
+    private final ControllerRegistry registry;
 
-    public Materialiser(Driver<Materialiser> driver, ResolverRegistry registry) {
+    public Materialiser(Driver<Materialiser> driver, ControllerRegistry registry) {
         super(driver, Materialiser.class.getSimpleName());
         this.registry = registry;
     }

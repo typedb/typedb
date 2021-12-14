@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.framework.AnswerCache;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
@@ -42,7 +42,7 @@ public class BoundRetrievableResolver extends Resolver<BoundRetrievableResolver>
     private final ConceptMap bounds;
 
     public BoundRetrievableResolver(Driver<BoundRetrievableResolver> driver, Retrievable retrievable, ConceptMap bounds,
-                                    ResolverRegistry registry) {
+                                    ControllerRegistry registry) {
         super(driver, BoundRetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() +
                 " bounds: " + bounds.toString() + ")", registry);
         this.bounds = bounds;

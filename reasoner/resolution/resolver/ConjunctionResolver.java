@@ -27,8 +27,8 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Negation;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.Planner;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
@@ -54,9 +54,9 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     final Set<Resolvable<?>> resolvables;
     final Set<Negated> negateds;
     final Plans plans;
-    final Map<Resolvable<?>, ResolverRegistry.ResolverView> downstreamResolvers;
+    final Map<Resolvable<?>, ControllerRegistry.ResolverView> downstreamResolvers;
 
-    protected ConjunctionResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
+    protected ConjunctionResolver(Driver<RESOLVER> driver, String name, ControllerRegistry registry) {
         super(driver, name, registry);
         this.resolvables = new HashSet<>();
         this.negateds = new HashSet<>();
@@ -114,7 +114,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
                              Plans.Plan plan) {
         int nextResolverIndex = fromDownstream.planIndex() + 1;
         Resolvable<?> nextResolvable = plan.get(nextResolverIndex);
-        ResolverRegistry.ResolverView nextPlannedDownstream = downstreamResolvers.get(nextResolvable);
+        ControllerRegistry.ResolverView nextPlannedDownstream = downstreamResolvers.get(nextResolvable);
         final Partial<?> downstreamAns = toDownstream(fromDownstream.answer().asCompound(), nextPlannedDownstream,
                                                       nextResolvable);
         Request.Factory downstream = Request.Factory.create(driver(), nextPlannedDownstream.resolver(), downstreamAns,
@@ -173,12 +173,12 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     }
 
     private void initialiseResolutionState(ResolutionState resolutionState, Partial.Compound<?, ?> fromUpstream, Plans.Plan plan) {
-        ResolverRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
+        ControllerRegistry.ResolverView childResolver = downstreamResolvers.get(plan.get(0));
         Partial<?> downstream = toDownstream(fromUpstream, childResolver, plan.get(0));
         resolutionState.explorationManager().add(Request.Factory.create(driver(), childResolver.resolver(), downstream, 0));
     }
 
-    private Partial<?> toDownstream(Partial.Compound<?, ?> partialAnswer, ResolverRegistry.ResolverView nextDownstream,
+    private Partial<?> toDownstream(Partial.Compound<?, ?> partialAnswer, ControllerRegistry.ResolverView nextDownstream,
                                     Resolvable<?> nextResolvable) {
         assert downstreamResolvers.get(nextResolvable).equals(nextDownstream);
         if (nextDownstream.isMappedConcludable()) {
@@ -266,7 +266,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
 
         private final Conjunction conjunction;
 
-        public Nested(Driver<Nested> driver, Conjunction conjunction, ResolverRegistry registry) {
+        public Nested(Driver<Nested> driver, Conjunction conjunction, ControllerRegistry registry) {
             super(driver, Nested.class.getSimpleName() + "(pattern: " + conjunction + ")", registry);
             this.conjunction = conjunction;
         }

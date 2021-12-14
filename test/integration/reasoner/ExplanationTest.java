@@ -72,7 +72,7 @@ public class ExplanationTest {
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType, Options.Transaction options) {
         RocksTransaction transaction = session.transaction(transactionType, options.infer(true));
         ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("typedb-actor"));
-        transaction.reasoner().resolverRegistry().setExecutorService(service);
+        transaction.reasoner().controllerRegistry().setExecutorService(service);
         return transaction;
     }
 

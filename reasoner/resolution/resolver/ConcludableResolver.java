@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver.BoundConcludableContext;
@@ -45,7 +45,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
     private final Map<ConceptMap, Driver<BoundConcludableResolver.Blocked>> blockedBoundResolvers;
     private final Map<ConceptMap, Driver<BoundConcludableResolver.Exploring>> exploringBoundResolvers;
 
-    public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable, ResolverRegistry registry) {
+    public ConcludableResolver(Driver<ConcludableResolver> driver, Concludable concludable, ControllerRegistry registry) {
         super(driver, ConcludableResolver.class.getSimpleName() + "(pattern: " + concludable.pattern() + ")",
               createEquivalentMappings(concludable), registry);
         this.concludable = concludable;

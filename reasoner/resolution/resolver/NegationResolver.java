@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
@@ -47,7 +47,7 @@ public class NegationResolver extends Resolver<NegationResolver> {
     private boolean isInitialised;
     private Driver<? extends Resolver<?>> downstream;
 
-    public NegationResolver(Driver<NegationResolver> driver, Negated negated, ResolverRegistry registry) {
+    public NegationResolver(Driver<NegationResolver> driver, Negated negated, ControllerRegistry registry) {
         super(driver, NegationResolver.class.getSimpleName() + "(pattern: " + negated.pattern() + ")", registry);
         this.negated = negated;
         this.boundsStates = new HashMap<>();

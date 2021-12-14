@@ -59,7 +59,7 @@ public class ReasonerTest {
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType) {
         RocksTransaction transaction = session.transaction(transactionType, new Options.Transaction().infer(true));
         ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("typedb-actor"));
-        transaction.reasoner().resolverRegistry().setExecutorService(service);
+        transaction.reasoner().controllerRegistry().setExecutorService(service);
         return transaction;
     }
 
@@ -165,7 +165,7 @@ public class ReasonerTest {
                 txn.commit();
             }
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                txn.reasoner().resolverRegistry().terminate(new RuntimeException());
+                txn.reasoner().controllerRegistry().terminate(new RuntimeException());
                 try {
                     List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x isa is-still-good;").asMatch()).toList();
                 } catch (TypeDBException e) {

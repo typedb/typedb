@@ -76,9 +76,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED;
 import static java.util.stream.Collectors.toMap;
 
-public class ResolverRegistry {
+public class ControllerRegistry {
 
-    private final static Logger LOG = LoggerFactory.getLogger(ResolverRegistry.class);
+    private final static Logger LOG = LoggerFactory.getLogger(ControllerRegistry.class);
 
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
@@ -94,8 +94,8 @@ public class ResolverRegistry {
     private final Actor.Driver<Materialiser> materialiser;
     private ActorExecutorGroup executorService;
 
-    public ResolverRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                            LogicManager logicMgr, boolean resolutionTracing) {
+    public ControllerRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                              LogicManager logicMgr, boolean resolutionTracing) {
         this.executorService = executorService;
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;

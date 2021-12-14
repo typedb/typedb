@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
@@ -40,7 +40,7 @@ public class ConclusionResolver extends SubsumptiveCoordinator<ConclusionResolve
     private final Rule.Conclusion conclusion;
     protected final Map<ConceptMap, Driver<BoundConclusionResolver>> boundResolvers;
 
-    public ConclusionResolver(Driver<ConclusionResolver> driver, Rule.Conclusion conclusion, ResolverRegistry registry) {
+    public ConclusionResolver(Driver<ConclusionResolver> driver, Rule.Conclusion conclusion, ControllerRegistry registry) {
         super(driver, ConclusionResolver.class.getSimpleName() + "(" + conclusion + ")", createEquivalentMappings(conclusion),
               registry);
         this.conclusion = conclusion;

@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Materialiser;
@@ -59,7 +59,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
     private final Map<Materialiser.Request, Request> materialiserRequestRouter;
 
     public BoundConclusionResolver(Driver<BoundConclusionResolver> driver, Rule.Conclusion conclusion,
-                                   ConceptMap bounds, ResolverRegistry registry) {
+                                   ConceptMap bounds, ControllerRegistry registry) {
         super(driver, BoundConclusionResolver.class.getSimpleName() + "(" + conclusion +
                 ", bounds: " + bounds.toString() + ")", registry);
         this.bounds = bounds;

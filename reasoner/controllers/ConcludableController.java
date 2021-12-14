@@ -31,7 +31,7 @@ import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.controllers.ConclusionController.ConclusionAns;
 import com.vaticle.typedb.core.reasoner.reactive.ReactiveBase;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.LinkedHashMap;
@@ -46,10 +46,10 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
 
     private final LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions;
     private final Set<Identifier.Variable.Retrievable> unboundVars;
-    private final ResolverRegistry registry;
+    private final ControllerRegistry registry;
 
     protected ConcludableController(Driver<ConcludableController> driver, String name, Concludable id,
-                                    ActorExecutorGroup executorService, ResolverRegistry registry) {
+                                    ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, name, id, executorService);
         this.registry = registry;
         this.upstreamConclusions = initialiseUpstreamConclusions();

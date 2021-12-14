@@ -18,7 +18,7 @@
 package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
@@ -38,7 +38,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
     final Map<Compound<?, ?>, ResolutionState> resolutionStates;
     boolean isInitialised;
 
-    protected CompoundResolver(Driver<RESOLVER> driver, String name, ResolverRegistry registry) {
+    protected CompoundResolver(Driver<RESOLVER> driver, String name, ControllerRegistry registry) {
         super(driver, name, registry);
         this.resolutionStates = new HashMap<>();
         this.isInitialised = false;

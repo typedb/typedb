@@ -19,7 +19,7 @@ package com.vaticle.typedb.core.reasoner.resolution.resolver;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import org.slf4j.Logger;
@@ -38,7 +38,7 @@ public class RetrievableResolver extends SubsumptiveCoordinator<RetrievableResol
     private final Retrievable retrievable;
     protected final Map<ConceptMap, Driver<BoundRetrievableResolver>> boundResolvers;
 
-    public RetrievableResolver(Driver<RetrievableResolver> driver, Retrievable retrievable, ResolverRegistry registry) {
+    public RetrievableResolver(Driver<RetrievableResolver> driver, Retrievable retrievable, ControllerRegistry registry) {
         super(driver, RetrievableResolver.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ")",
               createEquivalentMappings(retrievable), registry);
         this.retrievable = retrievable;
