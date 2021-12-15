@@ -33,7 +33,7 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import java.util.Map;
 import java.util.function.Function;
 
-public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap, ConceptMap, Conjunction, ConceptMap, ConclusionController.ConclusionAns, ConclusionController.ConclusionProcessor, ConclusionController> {
+public class ConclusionController extends Controller<Rule.Conclusion, Conjunction, ConceptMap, ConclusionController.ConclusionProcessor, ConclusionController> {
     protected ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion id, ActorExecutorGroup executorService) {
         super(driver, name, id, executorService);
     }
@@ -44,28 +44,19 @@ public class ConclusionController extends Controller<Rule.Conclusion, ConceptMap
     }
 
     @Override
-    protected ConnectionBuilder<Conjunction, ConceptMap, ConceptMap, ?, ?> getPublisherController(ConnectionRequest<Conjunction, ConceptMap, ConceptMap, ?> connectionRequest) {
+    protected ConnectionBuilder<Conjunction, ConceptMap, ?, ?> getPublisherController(ConnectionRequest<Conjunction, ConceptMap, ?> connectionRequest) {
         return null;  // TODO
     }
 
     @Override
-    protected Driver<ConclusionProcessor> computeProcessorIfAbsent(ConnectionBuilder<?, ConceptMap, ConclusionAns, ?, ?> connectionBuilder) {
+    protected Driver<ConclusionProcessor> computeProcessorIfAbsent(ConnectionBuilder<?, ConceptMap, ?, ?> connectionBuilder) {
         return null;  // TODO
     }
 
-    public static class ConclusionAns {
-
-        public Map<Identifier.Variable, Concept> concepts() {
-            return null;  // TODO
-        }
-    }
-
-    public static class ConclusionProcessor extends Processor<ConceptMap, Conjunction, ConceptMap, ConclusionAns, ConclusionProcessor> {
-        protected ConclusionProcessor(Driver<ConclusionProcessor> driver, Driver<? extends Controller<?, ?,
-                ConceptMap, Conjunction, ConceptMap, ConclusionAns, ConclusionProcessor, ?>> controller, String name,
-                                      Reactive<ConclusionAns, ConclusionAns> outlet) {
+    public static class ConclusionProcessor extends Processor<ConceptMap, Conjunction, ConclusionProcessor> {
+        protected ConclusionProcessor(Driver<ConclusionProcessor> driver, Driver<? extends Controller<?, Conjunction,
+                ConceptMap, ConclusionProcessor, ?>> controller, String name, Reactive<ConceptMap, ConceptMap> outlet) {
             super(driver, controller, name, outlet);
         }
-
     }
 }

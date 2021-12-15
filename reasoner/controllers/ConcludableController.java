@@ -19,30 +19,32 @@
 package com.vaticle.typedb.core.reasoner.controllers;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
-import com.vaticle.typedb.core.reasoner.controllers.ConclusionController.ConclusionAns;
 import com.vaticle.typedb.core.reasoner.reactive.ReactiveBase;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.reasoner.reactive.IdentityReactive.noOp;
 
-public class ConcludableController extends Controller<Concludable, ConceptMap, ConceptMap, Conclusion, ConclusionAns,
-        ConceptMap, ConcludableController.ConcludableProcessor, ConcludableController> {
+public class ConcludableController extends Controller<Resolvable<?>, Conclusion, ConceptMap,
+        ConcludableController.ConcludableProcessor, ConcludableController> {  // TODO: Note Resolvable not Concludable
 
     private final LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions;
     private final Set<Identifier.Variable.Retrievable> unboundVars;
@@ -67,7 +69,7 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
     @Override
     protected Function<Driver<ConcludableProcessor>, ConcludableProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new ConcludableProcessor(driver, driver(), "", bounds, unboundVars, upstreamConclusions,
-                                                  () -> traversalIterator(id().pattern(), bounds));
+                                                  () -> traversalIterator(id().asConcludable().pattern(), bounds));  // TODO: WOuld be better not to have to do this cast
     }
 
     private FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
@@ -75,17 +77,17 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
     }
 
     @Override
-    protected ConnectionBuilder<Conclusion, ConceptMap, ConclusionAns, ?, ?> getPublisherController(ConnectionRequest<Conclusion, ConceptMap, ConclusionAns, ?> connectionRequest) {
+    protected ConnectionBuilder<Conclusion, ConceptMap, ?, ?> getPublisherController(ConnectionRequest<Conclusion, ConceptMap, ?> connectionRequest) {
         return connectionRequest.createConnectionBuilder(registry.registerConclusionController(connectionRequest.pubControllerId()));
     }
 
     @Override
-    protected Driver<ConcludableProcessor> computeProcessorIfAbsent(ConnectionBuilder<?, ConceptMap, ConceptMap, ?, ?> connectionBuilder) {
+    protected Driver<ConcludableProcessor> computeProcessorIfAbsent(ConnectionBuilder<?, ConceptMap, ?, ?> connectionBuilder) {
         // TODO: We can do subsumption here
         return processors.computeIfAbsent(connectionBuilder.publisherProcessorId(), this::buildProcessor);
     }
 
-    public static class ConcludableProcessor extends Processor<ConceptMap, Conclusion, ConclusionAns, ConceptMap, ConcludableProcessor> {
+    public static class ConcludableProcessor extends Processor<ConceptMap, Conclusion, ConcludableProcessor> {
 
         public ConcludableProcessor(Driver<ConcludableProcessor> driver, Driver<ConcludableController> controller,
                                     String name, ConceptMap bounds, Set<Identifier.Variable.Retrievable> unboundVars,
@@ -104,11 +106,16 @@ public class ConcludableController extends Controller<Concludable, ConceptMap, C
             upstreamConclusions.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     requestConnection(driver(), conclusion, boundsAndRequirements.first())
-                            .flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns.concepts(), boundsAndRequirements.second()))
+                            .flatMapOrRetry(conclusionAns -> unifier.unUnify(unpack(conclusionAns), boundsAndRequirements.second()))
                             .publishTo(op);
                 }));
             });
 
+        }
+
+        private static Map<Identifier.Variable, Concept> unpack(ConceptMap conceptMap) {
+            // return conceptMap.concepts();  // TODO: Doesn't work, could be a big issue
+            return null;
         }
     }
 }

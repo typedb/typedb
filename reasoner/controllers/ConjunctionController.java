@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.reactive.BufferBroadcastReactive;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -43,7 +44,7 @@ import java.util.function.Function;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.reasoner.reactive.CompoundReactive.compound;
 
-public class ConjunctionController extends Controller<Conjunction, ConceptMap, ConceptMap, Resolvable<?>, ConceptMap, ConjunctionController.ConjunctionAns, ConjunctionController.ConjunctionProcessor, ConjunctionController> {
+public class ConjunctionController extends Controller<Conjunction, Resolvable<?>, ConceptMap, ConjunctionController.ConjunctionProcessor, ConjunctionController> {
 
     private final ControllerRegistry registry;
 
@@ -63,8 +64,7 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
     }
 
     @Override
-    protected ConnectionBuilder<Resolvable<?>, ConceptMap, ConceptMap, ?, ?> getPublisherController(ConnectionRequest<Resolvable<?>,
-                ConceptMap, ConceptMap, ?> connectionRequest) {
+    protected ConnectionBuilder<Resolvable<?>, ConceptMap, ?, ?> getPublisherController(ConnectionRequest<Resolvable<?>, ConceptMap, ?> connectionRequest) {
         Resolvable<?> pub_cid = connectionRequest.pubControllerId();
         if (pub_cid.isRetrievable()) {
             return null;  // TODO: Get the retrievable controller from the registry. Apply the filter in the same way as the mapping for concludable.
@@ -81,31 +81,16 @@ public class ConjunctionController extends Controller<Conjunction, ConceptMap, C
     }
 
     @Override
-    protected Driver<ConjunctionProcessor> computeProcessorIfAbsent(ConnectionBuilder<?, ConceptMap, ConjunctionAns, ?, ?> connectionBuilder) {
+    protected Driver<ConjunctionProcessor> computeProcessorIfAbsent(ConnectionBuilder<?, ConceptMap, ?, ?> connectionBuilder) {
         // TODO: This is where we can do subsumption
         return processors.computeIfAbsent(connectionBuilder.publisherProcessorId(), this::buildProcessor);
     }
 
-    public static class ConjunctionAns {
-
-        ConjunctionAns(ConceptMap conceptMap) {
-            // TODO
-        }
-
-        public ConceptMap conceptMap() {
-            return null;  // TODO
-        }
-    }
-
-    public static class ConjunctionProcessor extends Processor<ConceptMap, Resolvable<?>, ConceptMap, ConjunctionAns, ConjunctionProcessor> {
-
-        protected ConjunctionProcessor(Driver<ConjunctionProcessor> driver, Driver<? extends Controller<?, ?,
-                ConceptMap, Resolvable<?>, ConceptMap, ConjunctionAns, ConjunctionProcessor, ?>> controller,
-                                       String name, ConceptMap bounds, List<Resolvable<?>> plan) {
+    public static class ConjunctionProcessor extends Processor<ConceptMap, Resolvable<?>, ConjunctionProcessor> {
+        protected ConjunctionProcessor(Driver<ConjunctionProcessor> driver, Driver<? extends Controller<?,
+                Resolvable<?>, ConceptMap, ConjunctionProcessor, ?>> controller, String name, ConceptMap bounds, List<Resolvable<?>> plan) {
             super(driver, controller, name, new BufferBroadcastReactive<>(Collections.set()));
-
             compound(plan, bounds, this::nextCompoundLeader, ConjunctionProcessor::merge)
-                    .map(ConjunctionAns::new)
                     .publishTo(outlet());
         }
 
