@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry.ResolverView;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -61,16 +62,19 @@ public abstract class ConjunctionController<CONTROLLER extends Controller<Resolv
 
     @Override
     protected ConnectionBuilder<Resolvable<?>, ConceptMap, ?, ?> getPublisherController(ConnectionRequest<Resolvable<?>, ConceptMap, ?> connectionRequest) {
-        Resolvable<?> pub_cid = connectionRequest.pubControllerId();
-        if (pub_cid.isRetrievable()) {
-            return null;  // TODO: Get the retrievable controller from the registry. Apply the filter in the same way as the mapping for concludable.
-        } else if (pub_cid.isConcludable()) {
-            Pair<Driver<ConcludableController>, Map<Variable.Retrievable, Variable.Retrievable>> pair = registry.registerConcludableController(pub_cid.asConcludable());
-            Driver<ConcludableController> controller = pair.first();
-            Mapping mapping = Mapping.of(pair.second());
+        Resolvable<?> pubCID = connectionRequest.pubControllerId();
+        if (pubCID.isRetrievable()) {
+
+            ResolverView.FilteredRetrievable controller = registry.registerRetrievableController(pubCID.asRetrievable());
+
+            return connectionRequest.createConnectionBuilder(controller).withFilter();
+        } else if (pubCID.isConcludable()) {
+            ResolverView.MappedConcludable controllerView = registry.registerConcludableController(pubCID.asConcludable());
+            Driver<ConcludableController> controller = controllerView.controller();
+            Mapping mapping = Mapping.of(controllerView.mapping());
             ConceptMap newPID = mapping.transform(connectionRequest.pubProcessorId());
             return connectionRequest.createConnectionBuilder(controller).withMap(newPID, mapping::unTransform);
-        } else if (pub_cid.isNegated()) {
+        } else if (pubCID.isNegated()) {
             return null;  // TODO: Get the retrievable controller from the registry. Apply the filter in the same way as the mapping for concludable.
         }
         throw TypeDBException.of(ILLEGAL_STATE);

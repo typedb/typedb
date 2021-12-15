@@ -50,9 +50,9 @@ public class ConcludableController extends Controller<Conclusion, ConceptMap,
     private final ControllerRegistry registry;
     private final Concludable concludable;
 
-    protected ConcludableController(Driver<ConcludableController> driver, String name, Concludable concludable,
-                                    ActorExecutorGroup executorService, ControllerRegistry registry) {
-        super(driver, name, executorService);
+    public ConcludableController(Driver<ConcludableController> driver, Concludable concludable,
+                                 ActorExecutorGroup executorService, ControllerRegistry registry) {
+        super(driver, ConcludableController.class.getSimpleName() + "(pattern: " + concludable + ")", executorService);
         this.registry = registry;
         this.upstreamConclusions = initialiseUpstreamConclusions();
         this.unboundVars = unboundVars();
