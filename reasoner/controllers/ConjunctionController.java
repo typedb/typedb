@@ -31,7 +31,6 @@ import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.reactive.BufferBroadcastReactive;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -44,18 +43,20 @@ import java.util.function.Function;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.reasoner.reactive.CompoundReactive.compound;
 
-public class ConjunctionController extends Controller<Conjunction, Resolvable<?>, ConceptMap, ConjunctionController.ConjunctionProcessor, ConjunctionController> {
+public class ConjunctionController extends Controller<Resolvable<?>, ConceptMap, ConjunctionController.ConjunctionProcessor, ConjunctionController> {
 
     private final ControllerRegistry registry;
+    private final Conjunction conjunction;
 
-    protected ConjunctionController(Driver<ConjunctionController> driver, String name, Conjunction id, ActorExecutorGroup executorService, ControllerRegistry registry) {
-        super(driver, name, id, executorService);
+    protected ConjunctionController(Driver<ConjunctionController> driver, String name, Conjunction conjunction, ActorExecutorGroup executorService, ControllerRegistry registry) {
+        super(driver, name, executorService);
         this.registry = registry;
+        this.conjunction = conjunction;
     }
 
     @Override
     protected Function<Driver<ConjunctionProcessor>, ConjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
-        List<Resolvable<?>> plan = plan(id());
+        List<Resolvable<?>> plan = plan(conjunction);
         return driver -> new ConjunctionProcessor(driver, driver(), "name", bounds, plan);
     }
 
@@ -87,7 +88,7 @@ public class ConjunctionController extends Controller<Conjunction, Resolvable<?>
     }
 
     public static class ConjunctionProcessor extends Processor<ConceptMap, Resolvable<?>, ConjunctionProcessor> {
-        protected ConjunctionProcessor(Driver<ConjunctionProcessor> driver, Driver<? extends Controller<?,
+        protected ConjunctionProcessor(Driver<ConjunctionProcessor> driver, Driver<? extends Controller<
                 Resolvable<?>, ConceptMap, ConjunctionProcessor, ?>> controller, String name, ConceptMap bounds, List<Resolvable<?>> plan) {
             super(driver, controller, name, new BufferBroadcastReactive<>(Collections.set()));
             compound(plan, bounds, this::nextCompoundLeader, ConjunctionProcessor::merge)

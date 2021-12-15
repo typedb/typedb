@@ -40,14 +40,14 @@ import static com.vaticle.typedb.core.reasoner.reactive.IdentityReactive.noOp;
 
 public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PACKET, PUB_CID, PROCESSOR>> extends Actor<PROCESSOR> {
 
-    private final Driver<? extends Controller<?, PUB_CID, PACKET, PROCESSOR, ?>> controller;
+    private final Driver<? extends Controller<PUB_CID, PACKET, PROCESSOR, ?>> controller;
     private final Reactive<PACKET, PACKET> outlet;
     private final Map<Long, InletEndpoint<PACKET>> subscribingEndpoints;
     private final Map<Long, OutletEndpoint<PACKET>> publishingEndpoints;
     private long endpointId;
 
     protected Processor(Driver<PROCESSOR> driver,
-                        Driver<? extends Controller<?, PUB_CID, PACKET, PROCESSOR, ?>> controller,
+                        Driver<? extends Controller<PUB_CID, PACKET, PROCESSOR, ?>> controller,
                         String name, Reactive<PACKET, PACKET> outlet) {
         super(driver, name);
         this.controller = controller;
@@ -242,7 +242,7 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
             this.connectionTransforms = new ArrayList<>();
         }
 
-        public <PUB_C extends Controller<PUB_CID, ?, PACKET, ?, PUB_C>> ConnectionBuilder<PUB_CID, PACKET, ?, PUB_C> createConnectionBuilder(Driver<PUB_C> pubController) {
+        public <PUB_C extends Controller<?, PACKET, ?, PUB_C>> ConnectionBuilder<PUB_CID, PACKET, ?, PUB_C> createConnectionBuilder(Driver<PUB_C> pubController) {
             return new ConnectionBuilder<>(subProcessor, subEndpointId, pubController, pubProcessorId, connectionTransforms);
         }
 
@@ -256,7 +256,7 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
     }
 
     public static class ConnectionBuilder<PUB_CID, PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR>,
-            PUB_CONTROLLER extends Controller<PUB_CID, ?, PACKET, ?, PUB_CONTROLLER>> {
+            PUB_CONTROLLER extends Controller<?, PACKET, ?, PUB_CONTROLLER>> {
 
         private final Driver<PROCESSOR> subProcessor;
         private final long subEndpointId;

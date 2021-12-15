@@ -28,23 +28,17 @@ import java.util.Map;
 import java.util.function.Function;
 
 
-public abstract class Controller<CID, PUB_CID, PACKET,
+public abstract class Controller<PUB_CID, PACKET,
         PROCESSOR extends Processor<PACKET, PUB_CID, PROCESSOR>,
-        CONTROLLER extends Controller<CID, PUB_CID, PACKET, PROCESSOR, CONTROLLER>> extends Actor<CONTROLLER> {
+        CONTROLLER extends Controller<PUB_CID, PACKET, PROCESSOR, CONTROLLER>> extends Actor<CONTROLLER> {
 
-    private final CID id;
     private final ActorExecutorGroup executorService;
     protected final Map<PACKET, Actor.Driver<PROCESSOR>> processors;
 
-    protected Controller(Driver<CONTROLLER> driver, String name, CID id, ActorExecutorGroup executorService) {
+    protected Controller(Driver<CONTROLLER> driver, String name, ActorExecutorGroup executorService) {
         super(driver, name);
-        this.id = id;
         this.executorService = executorService;
         this.processors = new HashMap<>();
-    }
-
-    protected CID id() {
-        return id;
     }
 
     protected Actor.Driver<PROCESSOR> buildProcessor(PACKET id) {

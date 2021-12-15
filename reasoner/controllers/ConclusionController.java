@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.controllers;
 
-import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
@@ -28,14 +27,12 @@ import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
-import com.vaticle.typedb.core.traversal.common.Identifier;
 
-import java.util.Map;
 import java.util.function.Function;
 
-public class ConclusionController extends Controller<Rule.Conclusion, Conjunction, ConceptMap, ConclusionController.ConclusionProcessor, ConclusionController> {
+public class ConclusionController extends Controller<Conjunction, ConceptMap, ConclusionController.ConclusionProcessor, ConclusionController> {
     protected ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion id, ActorExecutorGroup executorService) {
-        super(driver, name, id, executorService);
+        super(driver, name, executorService);
     }
 
     @Override
@@ -54,7 +51,7 @@ public class ConclusionController extends Controller<Rule.Conclusion, Conjunctio
     }
 
     public static class ConclusionProcessor extends Processor<ConceptMap, Conjunction, ConclusionProcessor> {
-        protected ConclusionProcessor(Driver<ConclusionProcessor> driver, Driver<? extends Controller<?, Conjunction,
+        protected ConclusionProcessor(Driver<ConclusionProcessor> driver, Driver<? extends Controller<Conjunction,
                 ConceptMap, ConclusionProcessor, ?>> controller, String name, Reactive<ConceptMap, ConceptMap> outlet) {
             super(driver, controller, name, outlet);
         }

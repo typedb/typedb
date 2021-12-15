@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
-import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.compute.Controller;
@@ -43,19 +42,21 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.reasoner.reactive.IdentityReactive.noOp;
 
-public class ConcludableController extends Controller<Resolvable<?>, Conclusion, ConceptMap,
+public class ConcludableController extends Controller<Conclusion, ConceptMap,
         ConcludableController.ConcludableProcessor, ConcludableController> {  // TODO: Note Resolvable not Concludable
 
     private final LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions;
     private final Set<Identifier.Variable.Retrievable> unboundVars;
     private final ControllerRegistry registry;
+    private final Concludable concludable;
 
-    protected ConcludableController(Driver<ConcludableController> driver, String name, Concludable id,
+    protected ConcludableController(Driver<ConcludableController> driver, String name, Concludable concludable,
                                     ActorExecutorGroup executorService, ControllerRegistry registry) {
-        super(driver, name, id, executorService);
+        super(driver, name, executorService);
         this.registry = registry;
         this.upstreamConclusions = initialiseUpstreamConclusions();
         this.unboundVars = unboundVars();
+        this.concludable = concludable;
     }
 
     private LinkedHashMap<Conclusion, Set<Unifier>> initialiseUpstreamConclusions() {
@@ -69,7 +70,7 @@ public class ConcludableController extends Controller<Resolvable<?>, Conclusion,
     @Override
     protected Function<Driver<ConcludableProcessor>, ConcludableProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new ConcludableProcessor(driver, driver(), "", bounds, unboundVars, upstreamConclusions,
-                                                  () -> traversalIterator(id().asConcludable().pattern(), bounds));  // TODO: WOuld be better not to have to do this cast
+                                                  () -> traversalIterator(concludable.asConcludable().pattern(), bounds));  // TODO: WOuld be better not to have to do this cast
     }
 
     private FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
