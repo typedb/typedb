@@ -23,18 +23,18 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.compute.Controller;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.List;
 import java.util.function.Function;
 
 public class RootConjunctionController extends ConjunctionController<RootConjunctionController, RootConjunctionController.RootConjunctionProcessor> {
-    private final Reactive<ConceptMap, ConceptMap> reasonerEndpoint;
+    private final Subscriber<ConceptMap> reasonerEndpoint;
 
     public RootConjunctionController(Driver<RootConjunctionController> driver, Conjunction conjunction,
                                      ActorExecutorGroup executorService, ControllerRegistry registry,
-                                     Reactive<ConceptMap, ConceptMap> reasonerEndpoint) {
+                                     Subscriber<ConceptMap> reasonerEndpoint) {
         super(driver, conjunction, executorService, registry);
         this.reasonerEndpoint = reasonerEndpoint;
     }
@@ -43,7 +43,8 @@ public class RootConjunctionController extends ConjunctionController<RootConjunc
     protected Function<Driver<RootConjunctionProcessor>, RootConjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
         List<Resolvable<?>> plan = plan(conjunction);
         return driver -> new RootConjunctionProcessor(driver, driver(),
-                                                      "(pattern:" + conjunction + ", bounds: " + bounds + ")", bounds, plan, reasonerEndpoint);
+                                                      "(pattern:" + conjunction + ", bounds: " + bounds + ")",
+                                                      bounds, plan, reasonerEndpoint);
     }
 
     public static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<RootConjunctionProcessor> {
@@ -51,7 +52,7 @@ public class RootConjunctionController extends ConjunctionController<RootConjunc
         protected RootConjunctionProcessor(Driver<RootConjunctionProcessor> driver, Driver<?
                 extends Controller<Resolvable<?>, ConceptMap, RootConjunctionProcessor, ?>> controller, String name,
                                            ConceptMap bounds, List<Resolvable<?>> plan,
-                                           Reactive<ConceptMap, ConceptMap> reasonerEndpoint) {
+                                           Subscriber<ConceptMap> reasonerEndpoint) {
             super(driver, controller, name, bounds, plan);
             outlet().publishTo(reasonerEndpoint);
         }

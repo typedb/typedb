@@ -19,23 +19,20 @@ package com.vaticle.typedb.core.reasoner;
 
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.reasoner.reactive.Provider;
+import com.vaticle.typedb.core.reasoner.reactive.Sink;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Set;
 import java.util.UUID;
@@ -47,16 +44,14 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
-    private final Actor.Driver<? extends Resolver<?>> rootResolver;
     private final AtomicInteger required;
     private final AtomicInteger processing;
     private final Options.Query options;
     private final ControllerRegistry controllerRegistry;
     private final ExplainablesManager explainablesManager;
     private final int computeSize;
-    private final Request.Factory requestFactory;
-    private final Request.Visit untracedResolveRequest;
     private final UUID traceId;
+    private final EntryPoint reasonerEntryPoint;
     private boolean done;
     private Queue<ConceptMap> queue;
     private int requestIdCounter;
@@ -71,13 +66,12 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
-        this.rootResolver = this.controllerRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
+        this.reasonerEntryPoint = new EntryPoint();
+        this.controllerRegistry.createRoot(conjunction, reasonerEntryPoint);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         this.requestIdCounter = 0;
         this.traceId = UUID.randomUUID();
-        this.requestFactory = requestFactory(filter);
-        this.untracedResolveRequest = requestFactory.createVisit();
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -90,19 +84,12 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
-        this.rootResolver = this.controllerRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
+        this.reasonerEntryPoint = new EntryPoint();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         this.requestIdCounter = 0;
         this.traceId = UUID.randomUUID();
-        this.requestFactory = requestFactory(filter);
-        this.untracedResolveRequest = requestFactory.createVisit();
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
-    }
-
-    private Request.Factory requestFactory(Set<Identifier.Variable.Retrievable> filter) {
-        Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        return Request.Factory.create(rootResolver, downstream);
     }
 
     @Override
@@ -112,9 +99,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.required.addAndGet(request);
         int canRequest = computeSize - processing.get();
         int toRequest = Math.min(canRequest, request);
-        for (int i = 0; i < toRequest; i++) {
-            requestAnswer();
-        }
+        reasonerEntryPoint.pull();
         processing.addAndGet(toRequest);
     }
 
@@ -123,20 +108,29 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
     }
 
-    // note: root resolver calls this single-threaded, so is thread safe
-    private void requestAnswered(Request answeredRequest, Finished answer) {
-        if (options.traceInference()) ResolutionTracer.get().finish(answeredRequest);
-        ConceptMap conceptMap = answer.conceptMap();
-        if (options.explain() && !conceptMap.explainables().isEmpty()) {
-            explainablesManager.setAndRecordExplainables(conceptMap);
+    /**
+     * Essentially the reasoner sink
+     */
+    public class EntryPoint extends Sink<ConceptMap> {
+
+        @Override
+        public void receive(@Nullable Provider<ConceptMap> provider, ConceptMap conceptMap) {
+            // if (options.traceInference()) ResolutionTracer.get().finish(answeredRequest);  // TODO: Finish tracing on receive
+            if (options.explain() && !conceptMap.explainables().isEmpty()) {
+                explainablesManager.setAndRecordExplainables(conceptMap);
+            }
+            queue.put(conceptMap);
+            if (required.decrementAndGet() > 0) pull();
+            else processing.decrementAndGet();
         }
-        queue.put(conceptMap);
-        if (required.decrementAndGet() > 0) requestAnswer();
-        else processing.decrementAndGet();
+        // Trace trace = Trace.create(traceId, requestIdCounter);  // TODO: Trace on pull
+        // ResolutionTracer.get().start(visitRequest);
+
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
     private void requestFailed(Request failedRequest) {
+        // TODO: Add some fail signal
         LOG.trace("Failed to find answer to request {}", failedRequest);
         if (options.traceInference()) ResolutionTracer.get().finish(failedRequest);
         finish();
@@ -152,6 +146,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     }
 
     private void exception(Throwable e) {
+        // TODO: Add exception propagation through reactives?
         if (!done) {
             done = true;
             required.set(0);
@@ -159,16 +154,4 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         }
     }
 
-    private void requestAnswer() {
-        Request.Visit visitRequest;
-        if (options.traceInference()) {
-            Trace trace = Trace.create(traceId, requestIdCounter);
-            visitRequest = requestFactory.createVisit(trace);
-            ResolutionTracer.get().start(visitRequest);
-            requestIdCounter += 1;
-        } else {
-            visitRequest = untracedResolveRequest;
-        }
-        rootResolver.execute(actor -> actor.receiveVisit(visitRequest));
-    }
 }

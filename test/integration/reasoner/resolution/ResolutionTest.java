@@ -22,18 +22,13 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
+import com.vaticle.typedb.core.reasoner.reactive.Provider;
+import com.vaticle.typedb.core.reasoner.reactive.Sink;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
@@ -49,7 +44,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -133,12 +127,10 @@ public class ResolutionTest {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }", transaction.logic());
                 ControllerRegistry registry = transaction.reasoner().controllerRegistry();
-                LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
-                AtomicLong doneReceived = new AtomicLong(0L);
+                EntryPoint reasonerEntryPoint = new EntryPoint();
                 LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
-                Actor.Driver<RootResolver.Conjunction> root;
                 try {
-                    root = registry.root(conjunctionPattern, (r, f) -> responses.add(f), (r) -> doneReceived.incrementAndGet(), exceptions::add);
+                    registry.createRoot(conjunctionPattern, reasonerEntryPoint);
                 } catch (TypeDBException e) {
                     fail();
                 }
@@ -453,63 +445,73 @@ public class ResolutionTest {
                                               Set<Identifier.Variable.Retrievable> filter, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
         ControllerRegistry registry = transaction.reasoner().controllerRegistry();
+        EntryPoint entryPoint = new EntryPoint();
         LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
-        Actor.Driver<RootResolver.Disjunction> root;
         try {
-            root = registry.root(disjunction, (r, f) -> responses.add(f), (r) -> doneReceived.incrementAndGet(), (throwable) -> fail());
+            registry.createRoot(disjunction, (r, f) -> responses.add(f), (r) -> doneReceived.incrementAndGet(), (throwable) -> fail());
+            // registry.createRoot(disjunction, entryPoint);  // TODO: Use this instead
         } catch (TypeDBException e) {
             fail();
             return;
         }
-        assertResponses(root, filter, responses, doneReceived, answerCount, explainableAnswers);
+        assertResponses(entryPoint, filter, answerCount, explainableAnswers);
+    }
+    
+    private static class EntryPoint extends Sink<ConceptMap> {
+
+        private final LinkedBlockingQueue<ConceptMap> responses;
+
+        EntryPoint() {
+            this.responses = new LinkedBlockingQueue<>();
+        }
+
+        @Override
+        public void receive(Provider<ConceptMap> provider, ConceptMap conceptMap) {
+            responses.add(conceptMap);
+            pull();
+        }
+
     }
 
     private void createRootAndAssertResponses(RocksTransaction transaction, Conjunction conjunction, long answerCount, long explainableAnswers)
             throws InterruptedException {
         ControllerRegistry registry = transaction.reasoner().controllerRegistry();
-        LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
-        AtomicLong doneReceived = new AtomicLong(0L);
         Set<Identifier.Variable.Retrievable> filter = new HashSet<>();
         iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName).map(Identifier.Variable::asName)
                 .forEachRemaining(filter::add);
-        Actor.Driver<RootResolver.Conjunction> root;
+        EntryPoint entryPoint = new EntryPoint();
         try {
-            root = registry.root(conjunction, (r, f) -> responses.add(f), (r) -> doneReceived.incrementAndGet(), (throwable) -> fail());
+            registry.createRoot(conjunction, entryPoint);
         } catch (TypeDBException e) {
             fail();
             return;
         }
-        assertResponses(root, filter, responses, doneReceived, answerCount, explainableAnswers);
+        assertResponses(entryPoint, filter, answerCount, explainableAnswers);
     }
 
-    private void assertResponses(Actor.Driver<? extends Resolver<?>> root, Set<Identifier.Variable.Retrievable> filter,
-                                 LinkedBlockingQueue<Match.Finished> responses, AtomicLong doneReceived,
+    private void assertResponses(EntryPoint entryPoint, Set<Identifier.Variable.Retrievable> filter,
                                  long answerCount, long explainableAnswers) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
-        Root.Match downstream = InitialImpl.create(filter, new ConceptMap(), root, true).toDownstream();
-        Request.Factory requestFactory = Request.Factory.create(root, downstream);
-        for (int i = 0; i < n; i++) {
-            Trace trace = Trace.create(UUID.randomUUID(), i);
-            root.execute(actor -> actor.receiveVisit(requestFactory.createVisit(trace)));
-        }
+//        Trace trace = Trace.create(UUID.randomUUID(), i);
+        entryPoint.pull();
         int answersFound = 0;
         int explainableAnswersFound = 0;
         for (int i = 0; i < n - 1; i++) {
-            Match.Finished answer = responses.poll(1000, TimeUnit.MILLISECONDS);// polling prevents the test hanging
+            ConceptMap answer = entryPoint.responses.poll(1000, TimeUnit.MILLISECONDS);// polling prevents the test hanging
             if (answer != null) {
                 answersFound += 1;
-                if (answer.conceptMap().explainables().iterator().count() > 0) {
-                    explainableAnswersFound++;
-                }
+//                if (answer.explainables().iterator().count() > 0) {  // TODO: Re-enable when explanation are back
+//                    explainableAnswersFound++;
+//                }
             }
         }
         Thread.sleep(1000);
         assertEquals(answerCount, answersFound);
         assertEquals(explainableAnswers, explainableAnswersFound);
-        assertEquals(1, doneReceived.get());
-        assertTrue(responses.isEmpty());
+        // assertEquals(1, doneReceived.get());  // TODO: Bring back an assertion of doneness
+        assertTrue(entryPoint.responses.isEmpty());
         System.out.println("Time : " + (System.currentTimeMillis() - startTime));
     }
 }

@@ -37,9 +37,8 @@ import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.controllers.ConcludableController;
 import com.vaticle.typedb.core.reasoner.controllers.ConclusionController;
-import com.vaticle.typedb.core.reasoner.controllers.ConjunctionController;
 import com.vaticle.typedb.core.reasoner.controllers.RootConjunctionController;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Materialiser;
@@ -140,33 +139,21 @@ public class ControllerRegistry {
         }
     }
 
-    public Actor.Driver<RootResolver.Conjunction> root(Conjunction conjunction,
-                                                       BiConsumer<Request, Match.Finished> onAnswer,
-                                                       Consumer<Request> onFail,
-                                                       Consumer<Throwable> onException) {
-        LOG.debug("Creating Root.Conjunction for: '{}'", conjunction);
-        Actor.Driver<RootResolver.Conjunction> resolver = Actor.driver(driver -> new RootResolver.Conjunction(
-                driver, conjunction, onAnswer, onFail, onException, this), executorService);
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
-        return resolver;
-    }
-
-    public Actor.Driver<RootConjunctionController> root(Conjunction conjunction, Reactive<ConceptMap, ConceptMap> reasonerEndpoint) {
+    public Actor.Driver<RootConjunctionController> createRoot(Conjunction conjunction, Subscriber<ConceptMap> reasonerEntryPoint) {
         LOG.debug("Creating Root Conjunction for: '{}'", conjunction);
         Actor.Driver<RootConjunctionController> controller =
                 Actor.driver(driver -> new RootConjunctionController(driver, conjunction, executorService, this,
-                                                                     reasonerEndpoint), executorService);
+                                                                     reasonerEntryPoint), executorService);
         // TODO: Consider exception handling
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return controller;
     }
 
-    public Actor.Driver<RootResolver.Disjunction> root(Disjunction disjunction,
-                                                       BiConsumer<Request, Match.Finished> onAnswer,
-                                                       Consumer<Request> onExhausted,
-                                                       Consumer<Throwable> onException) {
+    public Actor.Driver<RootResolver.Disjunction> createRoot(Disjunction disjunction,
+                                                             BiConsumer<Request, Match.Finished> onAnswer,
+                                                             Consumer<Request> onExhausted,
+                                                             Consumer<Throwable> onException) {
         LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
         Actor.Driver<RootResolver.Disjunction> resolver = Actor.driver(driver -> new RootResolver.Disjunction(
                 driver, disjunction, onAnswer, onExhausted, onException, this), executorService);
