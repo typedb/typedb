@@ -64,10 +64,10 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
     @Override
     protected void exception(Throwable e) {}
 
-    protected InletEndpoint<PACKET> requestConnection(Driver<PROCESSOR> subscriberProcessor, PUB_CID publisherControllerId, PACKET publisherProcessorId) {
+    protected InletEndpoint<PACKET> requestConnection(Driver<PROCESSOR> subProcessor, PUB_CID pubControllerId, PACKET pubProcessorId) {
         InletEndpoint<PACKET> endpoint = createSubscribingEndpoint();
         controller.execute(actor -> actor.findPublisherForConnection(
-                new ConnectionRequest<PUB_CID, PACKET, PROCESSOR>(subscriberProcessor, endpoint.id(), publisherControllerId, publisherProcessorId)));
+                new ConnectionRequest<PUB_CID, PACKET, PROCESSOR>(subProcessor, endpoint.id(), pubControllerId, pubProcessorId)));
         return endpoint;
     }
 
