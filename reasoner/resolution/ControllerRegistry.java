@@ -34,8 +34,12 @@ import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
+import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.controllers.ConcludableController;
 import com.vaticle.typedb.core.reasoner.controllers.ConclusionController;
+import com.vaticle.typedb.core.reasoner.controllers.ConjunctionController;
+import com.vaticle.typedb.core.reasoner.controllers.RootConjunctionController;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Materialiser;
@@ -88,6 +92,7 @@ public class ControllerRegistry {
     private final ConcurrentMap<Rule, Actor.Driver<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final ConcurrentMap<Actor.Driver<ConclusionResolver>, Rule> conclusionRule;
     private final Set<Actor.Driver<? extends Resolver<?>>> resolvers;
+    private final Set<Actor.Driver<? extends Controller<?,?,?,?>>> controllers;
     private final TraversalEngine traversalEngine;
     private final boolean resolutionTracing;
     private final AtomicBoolean terminated;
@@ -106,6 +111,7 @@ public class ControllerRegistry {
         this.ruleConclusions = new ConcurrentHashMap<>();
         this.conclusionRule = new ConcurrentHashMap<>();
         this.resolvers = new ConcurrentSet<>();
+        this.controllers = new ConcurrentSet<>();
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
         this.materialiser = Actor.driver(driver -> new Materialiser(driver, this), executorService);
@@ -144,6 +150,17 @@ public class ControllerRegistry {
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
+    }
+
+    public Actor.Driver<RootConjunctionController> root(Conjunction conjunction, Reactive<ConceptMap, ConceptMap> reasonerEndpoint) {
+        LOG.debug("Creating Root Conjunction for: '{}'", conjunction);
+        Actor.Driver<RootConjunctionController> controller =
+                Actor.driver(driver -> new RootConjunctionController(driver, conjunction, executorService, this,
+                                                                     reasonerEndpoint), executorService);
+        // TODO: Consider exception handling
+        controllers.add(controller);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return controller;
     }
 
     public Actor.Driver<RootResolver.Disjunction> root(Disjunction disjunction,
