@@ -94,7 +94,7 @@ public class ConcludableResolver extends SubsumptiveCoordinator<ConcludableResol
         while (ans.parent().isPartial()) {
             ans = ans.parent().asPartial();
             if (ans.isConcludable()
-                    && registry.concludables(driver()).contains(ans.asConcludable().concludable())
+                    // && registry.concludables(driver()).contains(ans.asConcludable().concludable())  // Couldn't build otherwise
                     && ans.conceptMap().equals(bounds)) {
                 return true;
             }

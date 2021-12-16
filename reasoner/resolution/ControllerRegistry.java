@@ -48,7 +48,6 @@ import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableReso
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver.BoundConcludableContext;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConclusionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundRetrievableResolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.ConcludableResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConclusionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConditionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConjunctionResolver;
@@ -337,8 +336,8 @@ public class ControllerRegistry {
         return ruleConditions.get(rule);
     }
 
-    public Set<Concludable> concludables(Actor.Driver<ConcludableResolver> resolver) {
-        return controllerConcludables.get(resolver);
+    public Set<Concludable> concludables(Actor.Driver<ConcludableController> controller) {
+        return controllerConcludables.get(controller);
     }
 
     public Rule conclusionRule(Actor.Driver<ConclusionResolver> resolver) {

@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.controllers;
 
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -64,20 +63,29 @@ public abstract class ConjunctionController<CONTROLLER extends Controller<Resolv
     protected ConnectionBuilder<Resolvable<?>, ConceptMap, ?, ?> getPublisherController(ConnectionRequest<Resolvable<?>, ConceptMap, ?> connectionRequest) {
         Resolvable<?> pubCID = connectionRequest.pubControllerId();
         if (pubCID.isRetrievable()) {
-
             ResolverView.FilteredRetrievable controller = registry.registerRetrievableController(pubCID.asRetrievable());
-
-            return connectionRequest.createConnectionBuilder(controller).withFilter();
+            ConceptMap newPID = connectionRequest.pubProcessorId().filter(controller.filter());
+            return connectionRequest.createConnectionBuilder(controller.controller())
+                    .withMap(c -> merge(c, connectionRequest.pubProcessorId()))
+                    .withNewProcessorId(newPID);
         } else if (pubCID.isConcludable()) {
             ResolverView.MappedConcludable controllerView = registry.registerConcludableController(pubCID.asConcludable());
             Driver<ConcludableController> controller = controllerView.controller();
             Mapping mapping = Mapping.of(controllerView.mapping());
             ConceptMap newPID = mapping.transform(connectionRequest.pubProcessorId());
-            return connectionRequest.createConnectionBuilder(controller).withMap(newPID, mapping::unTransform);
+            return connectionRequest.createConnectionBuilder(controller)
+                    .withMap(mapping::unTransform)
+                    .withNewProcessorId(newPID);
         } else if (pubCID.isNegated()) {
             return null;  // TODO: Get the retrievable controller from the registry. Apply the filter in the same way as the mapping for concludable.
         }
         throw TypeDBException.of(ILLEGAL_STATE);
+    }
+
+    private static ConceptMap merge(ConceptMap c1, ConceptMap c2) {
+        Map<Variable.Retrievable, Concept> compounded = new HashMap<>(c1.concepts());
+        compounded.putAll(c2.concepts());
+        return new ConceptMap(compounded);
     }
 
     @Override
@@ -91,18 +99,13 @@ public abstract class ConjunctionController<CONTROLLER extends Controller<Resolv
                                        Driver<? extends Controller<Resolvable<?>, ConceptMap, PROCESSOR, ?>> controller,
                                        String name, ConceptMap bounds, List<Resolvable<?>> plan) {
             super(driver, controller, name, noOp());
-            compound(plan, bounds, this::nextCompoundLeader, ConjunctionProcessor::merge).publishTo(noOp());
+            compound(plan, bounds, this::nextCompoundLeader, ConjunctionController::merge).publishTo(noOp());
         }
 
         private InletEndpoint<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
             return requestConnection(driver(), planElement, carriedBounds.filter(planElement.retrieves()));
         }
 
-        private static ConceptMap merge(ConceptMap c1, ConceptMap c2) {
-            Map<Variable.Retrievable, Concept> compounded = new HashMap<>(c1.concepts());
-            compounded.putAll(c2.concepts());
-            return new ConceptMap(compounded);
-        }
     }
 
 }

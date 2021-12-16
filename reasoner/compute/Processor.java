@@ -287,12 +287,16 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
             return pubProcessorId;
         }
 
-        public ConnectionBuilder<PUB_CID, PACKET, PROCESSOR, PUB_CONTROLLER> withMap(PACKET newPID, Function<PACKET, PACKET> function) {
+        public ConnectionBuilder<PUB_CID, PACKET, PROCESSOR, PUB_CONTROLLER> withMap(Function<PACKET, PACKET> function) {
             connectionTransforms.add(r -> {
                 Reactive<PACKET, PACKET> op = noOp();
                 op.map(function).publishTo(r);
                 return op;
             });
+            return this;
+        }
+
+        public ConnectionBuilder<PUB_CID, PACKET, PROCESSOR, PUB_CONTROLLER> withNewProcessorId(PACKET newPID) {
             pubProcessorId = newPID;
             return this;
         }
