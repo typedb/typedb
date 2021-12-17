@@ -1,7 +1,7 @@
 @maven//:ch_qos_logback_logback_classic
-@maven//:ch_qos_logback_logback_classic_1_2_3
+@maven//:ch_qos_logback_logback_classic_1_2_7
 @maven//:ch_qos_logback_logback_core
-@maven//:ch_qos_logback_logback_core_1_2_3
+@maven//:ch_qos_logback_logback_core_1_2_7
 @maven//:com_eclipsesource_minimal_json_minimal_json
 @maven//:com_eclipsesource_minimal_json_minimal_json_0_9_5
 @maven//:com_github_ben_manes_caffeine_caffeine
@@ -127,7 +127,7 @@
 @maven//:net_java_dev_jna_jna_platform
 @maven//:net_java_dev_jna_jna_platform_5_5_0
 @maven//:org_antlr_antlr4_runtime
-@maven//:org_antlr_antlr4_runtime_4_7_1
+@maven//:org_antlr_antlr4_runtime_4_8
 @maven//:org_apache_httpcomponents_httpclient
 @maven//:org_apache_httpcomponents_httpclient_4_5_11
 @maven//:org_apache_httpcomponents_httpcore
@@ -153,7 +153,7 @@
 @maven//:org_rocksdb_rocksdbjni_dev_mac
 @maven//:org_rocksdb_rocksdbjni_dev_mac_6_26_1
 @maven//:org_slf4j_slf4j_api
-@maven//:org_slf4j_slf4j_api_1_7_28
+@maven//:org_slf4j_slf4j_api_1_7_32
 @maven//:org_yaml_snakeyaml
 @maven//:org_yaml_snakeyaml_1_25
 @maven//:org_zeroturnaround_zt_exec
