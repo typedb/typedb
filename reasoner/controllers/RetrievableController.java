@@ -69,11 +69,6 @@ public class RetrievableController extends Controller<Void, ConceptMap, Retrieva
         throw TypeDBException.of(ILLEGAL_STATE);  // TODO: Can we use typing to remove this?
     }
 
-    @Override
-    protected Driver<RetrievableProcessor> computeProcessorIfAbsent(Processor.ConnectionBuilder<?, ConceptMap, ?, ?> connectionBuilder) {
-        throw TypeDBException.of(ILLEGAL_STATE);  // TODO: Can we use typing to remove this?
-    }
-
     protected FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, com.vaticle.typedb.core.concept.answer.ConceptMap bounds) {
         return compatibleBounds(conjunction, bounds).map(c -> {
             GraphTraversal.Thing traversal = boundTraversal(conjunction.traversal(), c);
@@ -118,12 +113,18 @@ public class RetrievableController extends Controller<Void, ConceptMap, Retrieva
 
     public static class RetrievableProcessor extends Processor<ConceptMap, Void, RetrievableProcessor> {
 
+        private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
+
         protected RetrievableProcessor(Driver<RetrievableProcessor> driver,
                                        Driver<? extends Controller<Void, ConceptMap, RetrievableProcessor, ?>> controller,
                                        String name, Supplier<FunctionalIterator<ConceptMap>> traversalSupplier) {
             super(driver, controller, name, noOp());
-            new Source<>(traversalSupplier).publishTo(outlet());
+            this.traversalSupplier = traversalSupplier;
         }
 
+        @Override
+        public void setUp() {
+            new Source<>(traversalSupplier).publishTo(outlet());
+        }
     }
 }

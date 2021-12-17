@@ -142,6 +142,7 @@ public class ControllerRegistry {
         Actor.Driver<RootConjunctionController> controller =
                 Actor.driver(driver -> new RootConjunctionController(driver, conjunction, executorService, this,
                                                                      reasonerEntryPoint), executorService);
+        controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));
         // TODO: Consider exception handling
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized

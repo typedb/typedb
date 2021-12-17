@@ -18,18 +18,17 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
+import java.util.HashSet;
 import java.util.Set;
-
-import static com.vaticle.typedb.common.collection.Collections.set;
 
 public class IdentityReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
-    protected IdentityReactive(Set<Provider<PACKET>> publishers) {
+    protected IdentityReactive(Set<Publisher<PACKET>> publishers) {
         super(publishers);
     }
 
     public static <T> IdentityReactive<T> noOp() {
-        return new IdentityReactive<>(set());
+        return new IdentityReactive<>(new HashSet<>());
     }
 
     @Override

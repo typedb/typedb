@@ -57,12 +57,20 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
         this.publishingEndpoints = new HashMap<>();
     }
 
+    public abstract void setUp();
+
     public Reactive<PACKET, PACKET> outlet() {
         return outlet;
     }
 
     @Override
-    protected void exception(Throwable e) {}
+    protected void exception(Throwable e) {
+        try {
+            throw e;
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
+        }
+    }
 
     protected InletEndpoint<PACKET> requestConnection(Driver<PROCESSOR> subProcessor, PUB_CID pubControllerId, PACKET pubProcessorId) {
         InletEndpoint<PACKET> endpoint = createSubscribingEndpoint();
@@ -73,13 +81,13 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
 
     protected void acceptConnection(ConnectionBuilder<?, PACKET, ?, ?> connectionBuilder) {
         Connection<PACKET, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
-        outlet().publishTo(connection.applyConnectionTransforms(createPublishingEndpoint(connection)));
+        Subscriber<PACKET> transformOp = connection.applyConnectionTransforms(createPublishingEndpoint(connection));
+        outlet().publishTo(transformOp);
         connectionBuilder.subscriberProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
 
     protected <PUB_PROCESSOR extends Processor<?, ?, PUB_PROCESSOR>> void finaliseConnection(Connection<PACKET, ?, PUB_PROCESSOR> connection) {
-        InletEndpoint<PACKET> endpoint = subscribingEndpoints.get(connection.subEndpointId());
-        endpoint.setReady(connection);
+        subscribingEndpoints.get(connection.subEndpointId()).setReady(connection);
     }
 
     private long nextEndpointId() {
@@ -115,10 +123,12 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
         private final long id;
         private boolean ready;
         private Connection<PACKET, ?, ?> connection;
+        protected boolean isPulling;
 
         public InletEndpoint(long id) {
             this.id = id;
             this.ready = false;
+            this.isPulling = false;
         }
 
         public long id() {
@@ -128,19 +138,21 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
         void setReady(Connection<PACKET, ?, ?> connection) {
             this.connection = connection;
             this.ready = true;
+            if (isPulling) this.pull(subscriber());
         }
 
         @Override
         public void pull(Receiver<PACKET> receiver) {
-            assert ready;
             assert receiver.equals(subscriber);
-            connection.pull();
+            isPulling = true;
+            if (ready) connection.pull();
         }
 
         @Override
         public void receive(@Nullable Provider<PACKET> provider, PACKET packet) {
             assert provider == null;
             subscriber().receive(this, packet);
+            isPulling = false;
         }
     }
 

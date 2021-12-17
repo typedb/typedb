@@ -41,12 +41,6 @@ public abstract class Controller<PUB_CID, PACKET,
         this.processors = new HashMap<>();
     }
 
-    protected Actor.Driver<PROCESSOR> buildProcessor(PACKET id) {
-        Actor.Driver<PROCESSOR> processor = Actor.driver(createProcessorFunc(id), executorService);
-        processors.put(id, processor);
-        return processor;
-    }
-
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PACKET id);
 
     void findPublisherForConnection(ConnectionRequest<PUB_CID, PACKET, PROCESSOR> connectionRequest) {
@@ -57,13 +51,27 @@ public abstract class Controller<PUB_CID, PACKET,
     protected abstract ConnectionBuilder<PUB_CID, PACKET, ?, ?> getPublisherController(ConnectionRequest<PUB_CID, PACKET, ?> connectionRequest);
 
     void makeConnection(ConnectionBuilder<?, PACKET, ?, ?> connectionBuilder) {
-        computeProcessorIfAbsent(connectionBuilder).execute(actor -> actor.acceptConnection(connectionBuilder));
+        computeProcessorIfAbsent(connectionBuilder.publisherProcessorId())
+                .execute(actor -> actor.acceptConnection(connectionBuilder));
     }
 
-    protected abstract Driver<PROCESSOR> computeProcessorIfAbsent(ConnectionBuilder<?, PACKET, ?, ?> connectionBuilder);  // TODO: This is where we can do subsumption in any processor
+    public Driver<PROCESSOR> computeProcessorIfAbsent(PACKET id) {
+        // TODO: We can do subsumption in the subtypes here
+        return processors.computeIfAbsent(id, this::buildProcessor);
+    }
+
+    private Actor.Driver<PROCESSOR> buildProcessor(PACKET id) {
+        Driver<PROCESSOR> processor = Actor.driver(createProcessorFunc(id), executorService);
+        processor.execute(Processor::setUp);
+        return processor;
+    }
 
     @Override
     protected void exception(Throwable e) {
-        // TODO
+        try {
+            throw e;
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
+        }
     }
 }

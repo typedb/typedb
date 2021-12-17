@@ -34,12 +34,13 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
     protected final Set<Receiver<PACKET>> subscribers;
     protected final Set<Provider<PACKET>> publishers;
 
-    public BufferBroadcastReactive(Set<Provider<PACKET>> publishers) {
+    public BufferBroadcastReactive(Set<Publisher<PACKET>> publishers) {
         this.buffer = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
         this.pullers = new HashSet<>();
         this.subscribers = new HashSet<>();
-        this.publishers = publishers;
+        this.publishers = new HashSet<>();
+        publishers.forEach(pub -> pub.publishTo(this));
     }
 
     @Override

@@ -82,22 +82,27 @@ public class ConcludableController extends Controller<Conclusion, ConceptMap,
         return connectionRequest.createConnectionBuilder(registry.registerConclusionController(connectionRequest.pubControllerId()));
     }
 
-    @Override
-    protected Driver<ConcludableProcessor> computeProcessorIfAbsent(ConnectionBuilder<?, ConceptMap, ?, ?> connectionBuilder) {
-        // TODO: We can do subsumption here
-        return processors.computeIfAbsent(connectionBuilder.publisherProcessorId(), this::buildProcessor);
-    }
-
     public static class ConcludableProcessor extends Processor<ConceptMap, Conclusion, ConcludableProcessor> {
+
+        private final ConceptMap bounds;
+        private final Set<Identifier.Variable.Retrievable> unboundVars;
+        private final LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions;
+        private final Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
 
         public ConcludableProcessor(Driver<ConcludableProcessor> driver, Driver<ConcludableController> controller,
                                     String name, ConceptMap bounds, Set<Identifier.Variable.Retrievable> unboundVars,
                                     LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions,
                                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier) {
             super(driver, controller, name, noOp());
+            this.bounds = bounds;
+            this.unboundVars = unboundVars;
+            this.upstreamConclusions = upstreamConclusions;
+            this.traversalSuppplier = traversalSuppplier;
+        }
 
+        @Override
+        public void setUp() {
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
-
             ReactiveBase<ConceptMap, ConceptMap> op = noOp();
             if (singleAnswerRequired) op.findFirst().publishTo(outlet());
             else op.publishTo(outlet());
@@ -111,7 +116,6 @@ public class ConcludableController extends Controller<Conclusion, ConceptMap,
                             .publishTo(op);
                 }));
             });
-
         }
 
         private static Map<Identifier.Variable, Concept> unpack(ConceptMap conceptMap) {

@@ -45,15 +45,15 @@ public class ConclusionController extends Controller<Conjunction, ConceptMap, Co
         return null;  // TODO
     }
 
-    @Override
-    protected Driver<ConclusionProcessor> computeProcessorIfAbsent(ConnectionBuilder<?, ConceptMap, ?, ?> connectionBuilder) {
-        return null;  // TODO
-    }
-
     public static class ConclusionProcessor extends Processor<ConceptMap, Conjunction, ConclusionProcessor> {
         protected ConclusionProcessor(Driver<ConclusionProcessor> driver, Driver<? extends Controller<Conjunction,
                 ConceptMap, ConclusionProcessor, ?>> controller, String name, Reactive<ConceptMap, ConceptMap> outlet) {
             super(driver, controller, name, outlet);
+        }
+
+        @Override
+        public void setUp() {
+
         }
     }
 }

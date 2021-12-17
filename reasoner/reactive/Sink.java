@@ -36,12 +36,14 @@ public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provi
     public void pull(@Nullable Receiver<PACKET> receiver) {
         assert receiver == null;
         if (!isPulling) {
-            publisher.pull(this);
+            if (publisher != null) publisher.pull(this);
             isPulling = true;
         }
     }
 
     public void pull() {
+        // TODO: Block until the publisher is set with subscribeTo. rename blockingPull.
+        //  Actually we can not enforce that the publisher must be present. When subscribeTo is called then pulling will start
         pull(null);
     }
 

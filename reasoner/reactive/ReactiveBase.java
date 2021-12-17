@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
+import java.util.HashSet;
 import java.util.Set;
 
 public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OUTPUT> {
@@ -26,14 +27,15 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
     protected Receiver<OUTPUT> subscriber;
     private boolean isPulling;
 
-    protected ReactiveBase(Set<Provider<INPUT>> publishers) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
-        this.publishers = publishers;
+    protected ReactiveBase(Set<Provider.Publisher<INPUT>> publishers) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
+        this.publishers = new HashSet<>();
+        publishers.forEach(pub -> pub.publishTo(this));
         this.isPulling = false;
     }
 
     @Override
     public void pull(Receiver<OUTPUT> receiver) {
-        assert receiver.equals(subscriber);
+        assert receiver.equals(subscriber);  // TODO: Make a proper exception for this
         if (!isPulling()) {
             publishers.forEach(p -> p.pull(this));
             setPulling();

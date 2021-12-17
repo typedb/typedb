@@ -22,23 +22,29 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.compute.Controller;
 import com.vaticle.typedb.core.reasoner.compute.Processor;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
+import com.vaticle.typedb.core.reasoner.reactive.CompoundReactive;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry.ResolverView;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.reasoner.reactive.CompoundReactive.compound;
 import static com.vaticle.typedb.core.reasoner.reactive.IdentityReactive.noOp;
 
 public abstract class ConjunctionController<CONTROLLER extends Controller<Resolvable<?>, ConceptMap, PROCESSOR, CONTROLLER>,
@@ -46,17 +52,31 @@ public abstract class ConjunctionController<CONTROLLER extends Controller<Resolv
         ConceptMap, PROCESSOR, CONTROLLER> {
 
     protected final Conjunction conjunction;
-    private final ControllerRegistry registry;
+    protected final ControllerRegistry registry;
+    final Set<Resolvable<?>> resolvables;
+    final Set<Negated> negateds;
 
     public ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction,
                                  ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, ConjunctionController.class.getSimpleName() + "(pattern:" + conjunction + ")", executorService);
         this.conjunction = conjunction;
+        this.resolvables = new HashSet<>();
+        this.negateds = new HashSet<>();
         this.registry = registry;
+        initialiseProviderControllers();
     }
 
-    protected List<Resolvable<?>> plan(Conjunction conjunction) {
-        return null;  // TODO
+    protected void initialiseProviderControllers() {
+        Set<Concludable> concludables = concludablesTriggeringRules();
+        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
+        resolvables.addAll(concludables);
+        resolvables.addAll(retrievables);
+    }
+
+    abstract Set<Concludable> concludablesTriggeringRules();
+
+    protected List<Resolvable<?>> plan() {
+        return new ArrayList<>(resolvables);
     }
 
     @Override
@@ -88,24 +108,26 @@ public abstract class ConjunctionController<CONTROLLER extends Controller<Resolv
         return new ConceptMap(compounded);
     }
 
-    @Override
-    protected Driver<PROCESSOR> computeProcessorIfAbsent(ConnectionBuilder<?, ConceptMap, ?, ?> connectionBuilder) {
-        // TODO: This is where we can do subsumption
-        return processors.computeIfAbsent(connectionBuilder.publisherProcessorId(), this::buildProcessor);
-    }
-
     public static class ConjunctionProcessor<PROCESSOR extends Processor<ConceptMap, Resolvable<?>, PROCESSOR>> extends Processor<ConceptMap, Resolvable<?>, PROCESSOR> {
+        private final ConceptMap bounds;
+        private final List<Resolvable<?>> plan;
+
         protected ConjunctionProcessor(Driver<PROCESSOR> driver,
                                        Driver<? extends Controller<Resolvable<?>, ConceptMap, PROCESSOR, ?>> controller,
                                        String name, ConceptMap bounds, List<Resolvable<?>> plan) {
             super(driver, controller, name, noOp());
-            compound(plan, bounds, this::nextCompoundLeader, ConjunctionController::merge).publishTo(noOp());
+            this.bounds = bounds;
+            this.plan = plan;
+        }
+
+        @Override
+        public void setUp() {
+            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds).publishTo(outlet());
         }
 
         private InletEndpoint<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
             return requestConnection(driver(), planElement, carriedBounds.filter(planElement.retrieves()));
         }
-
     }
 
 }
