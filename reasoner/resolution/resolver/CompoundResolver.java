@@ -50,7 +50,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         } else if (resolutionState.explorationManager().hasNextRevisit()) {
             revisitDownstream(resolutionState.explorationManager().nextRevisit(fromUpstream.trace()), fromUpstream);
         } else if (resolutionState.explorationManager().hasNextBlocked()) {
-            blockToUpstream(fromUpstream, resolutionState.explorationManager().cycles());
+            blockToUpstream(fromUpstream, resolutionState.explorationManager().blockingCycles());
         } else {
             failToUpstream(fromUpstream);
         }
@@ -62,7 +62,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         if (!isInitialised) initialiseDownstreamResolvers();
         if (isTerminated()) return;
         ResolutionState resolutionState = resolutionStates.computeIfAbsent(fromUpstream.partialAnswer().asCompound(),
-                                                                           this::resolutionStateCreate);
+                                                                           this::createResolutionState);
         sendNextMessage(fromUpstream, resolutionState);
     }
 
@@ -72,7 +72,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         assert isInitialised;
         if (isTerminated()) return;
         ResolutionState resolutionState = resolutionStates.get(fromUpstream.visit().partialAnswer().asCompound());
-        resolutionState.explorationManager().unblock(fromUpstream.cycles());
+        resolutionState.explorationManager().revisit(fromUpstream.cycles());
         sendNextMessage(fromUpstream, resolutionState);
     }
 
@@ -99,7 +99,7 @@ public abstract class CompoundResolver<RESOLVER extends CompoundResolver<RESOLVE
         sendNextMessage(fromUpstream, resolutionState);
     }
 
-    abstract ResolutionState resolutionStateCreate(Compound<?, ?> fromUpstream);
+    abstract ResolutionState createResolutionState(Compound<?, ?> fromUpstream);
 
     // TODO: Align with the ResolutionState implementation used across the other resolvers
     static class ResolutionState {

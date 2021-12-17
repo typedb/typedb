@@ -82,7 +82,7 @@ public abstract class DisjunctionResolver<RESOLVER extends DisjunctionResolver<R
     }
 
     @Override
-    protected ResolutionState resolutionStateCreate(Compound<?, ?> fromUpstream) {
+    protected ResolutionState createResolutionState(Compound<?, ?> fromUpstream) {
         LOG.debug("{}: Creating a new ResolutionState for request: {}", name(), fromUpstream);
         ResolutionState resolutionState = new ResolutionState();
         for (Driver<ConjunctionResolver.Nested> conjunctionResolver : downstreamResolvers.keySet()) {

@@ -104,7 +104,8 @@ public class LabelConstraint extends TypeConstraint implements AlphaEquivalent<L
 
     @Override
     public FunctionalIterator<AlphaEquivalence> alphaEquals(LabelConstraint that) {
-        return AlphaEquivalence.empty().alphaEqualIf(label().equals(that.label()));
+        return owner.alphaEquals(that.owner)
+                .flatMap(a -> a.alphaEqualIf(label().equals(that.label())));
     }
 
     @Override

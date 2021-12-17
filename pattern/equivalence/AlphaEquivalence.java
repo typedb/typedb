@@ -23,12 +23,10 @@ import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import javax.annotation.Nullable;
-import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
@@ -48,9 +46,13 @@ public class AlphaEquivalence {
         return new AlphaEquivalence(new HashMap<>(), new HashMap<>());
     }
 
-    public FunctionalIterator<AlphaEquivalence> alphaEqualIf(boolean condition) {
-        if (condition) return Iterators.single(this);
-        else return Iterators.empty();
+    public AlphaEquivalence extend(Variable from, Variable to) {
+        assert from.id().isName() == to.id().isName();
+        Map<Variable, Variable> newMap = new HashMap<>(variableMapping());
+        newMap.put(from, to);
+        Map<Variable, Variable> reverseMap = new HashMap<>(reverseVariableMapping());
+        reverseMap.put(to, from);
+        return new AlphaEquivalence(newMap, reverseMap);
     }
 
     public FunctionalIterator<AlphaEquivalence> extendIfCompatible(AlphaEquivalence alphaMap) {
@@ -64,56 +66,47 @@ public class AlphaEquivalence {
         }
     }
 
+    public FunctionalIterator<AlphaEquivalence> alphaEqualIf(boolean condition) {
+        if (condition) return Iterators.single(this);
+        else return Iterators.empty();
+    }
+
     private static Optional<Map<Variable, Variable>> mergeVariableMapping(Map<Variable, Variable> existing,
                                                                           Map<Variable, Variable> toMerge) {
+        Map<Variable, Variable> merged = new HashMap<>(existing);
         for (Map.Entry<Variable, Variable> e : toMerge.entrySet()) {
             Variable var = toMerge.get(e.getKey());
-            if (existing.containsKey(e.getKey())) {
+            if (merged.containsKey(e.getKey())) {
                 if (!var.equals(e.getValue())) return Optional.empty();
             } else {
-                existing.put(e.getKey(), var);
+                merged.put(e.getKey(), var);
             }
         }
-        return Optional.of(existing);
+        return Optional.of(merged);
     }
 
-    public AlphaEquivalence extend(Variable from, Variable to) {
-        assert from.reference().isName() == to.reference().isName();
-        Map<Variable, Variable> newMap = variableMapping();
-        newMap.put(from, to);
-        Map<Variable, Variable> reverseMap = reverseVariableMapping();
-        reverseMap.put(to, from);
-        return new AlphaEquivalence(newMap, reverseMap);
-    }
-
-    public static  <T extends AlphaEquivalent<T>> FunctionalIterator<AlphaEquivalence> alphaEquals(@Nullable T member1,
-                                                                                                   @Nullable T member2) {
+    public static <T extends AlphaEquivalent<T>> FunctionalIterator<AlphaEquivalence> alphaEquals(@Nullable T member1,
+                                                                                                  @Nullable T member2) {
         if (member1 == null && member2 == null) return Iterators.single(empty());
         if (member1 == null || member2 == null) return Iterators.empty();
         else return member1.alphaEquals(member2);
     }
 
     public Map<Variable, Variable> variableMapping() {
-        return new HashMap<>(map);
+        return map;
     }
 
     private Map<Variable, Variable> reverseVariableMapping() {
-        return new HashMap<>(reverseMap);
+        return reverseMap;
     }
 
     public Map<Retrievable, Retrievable> retrievableMapping() {
-        return variableMapping().entrySet().stream()
-                .map(e -> new AbstractMap.SimpleEntry<>(
-                        e.getKey().id(),
-                        e.getValue().id()))
-                .filter(e -> {
-                    assert e.getKey().isRetrievable() == e.getValue().isRetrievable();
-                    return e.getKey().isRetrievable();
-                })
-                .collect(Collectors.toMap(
-                        e -> e.getKey().asRetrievable(),
-                        e -> e.getValue().asRetrievable()
-                ));
+        Map<Retrievable, Retrievable> retrievableMapping = new HashMap<>();
+        variableMapping().forEach((k, v) -> {
+            assert k.id().isRetrievable() == v.id().isRetrievable();
+            if (k.id().isRetrievable()) retrievableMapping.put(k.id().asRetrievable(), v.id().asRetrievable());
+        });
+        return retrievableMapping;
     }
 
     @Override

@@ -89,7 +89,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         if (resolutionState.materialisationsCounter > 0) {
             resolutionState.replayBuffer().addRevisit(fromUpstream);
         } else {
-            resolutionState.explorationManager().unblock(fromUpstream.cycles());
+            resolutionState.explorationManager().revisit(fromUpstream.cycles());
             sendNextMessage(resolutionState, fromUpstream);
         }
     }
@@ -174,7 +174,7 @@ public class BoundConclusionResolver extends Resolver<BoundConclusionResolver> {
         } else if (!resolutionState.isComplete() && resolutionState.explorationManager().hasNextRevisit()) {
             revisitDownstream(resolutionState.explorationManager().nextRevisit(fromUpstream.trace()), fromUpstream);
         } else if (resolutionState.explorationManager().hasNextBlocked()) {
-            blockToUpstream(fromUpstream, resolutionState.explorationManager().cycles());
+            blockToUpstream(fromUpstream, resolutionState.explorationManager().blockingCycles());
         } else {
             resolutionState.setComplete();
             failToUpstream(fromUpstream);

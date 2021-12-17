@@ -163,7 +163,7 @@ public abstract class ConjunctionResolver<RESOLVER extends ConjunctionResolver<R
     }
 
     @Override
-    protected ResolutionState resolutionStateCreate(Partial.Compound<?, ?> fromUpstream) {
+    protected ResolutionState createResolutionState(Partial.Compound<?, ?> fromUpstream) {
         LOG.debug("{}: Creating a new ResolutionState for request: {}", name(), fromUpstream);
         Plans.Plan plan = plans.create(fromUpstream, resolvables, negateds);
         assert !plan.isEmpty();

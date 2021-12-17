@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.logic.resolvable;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.pattern.Conjunction;
@@ -37,17 +36,16 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
@@ -81,7 +79,7 @@ public class AlphaEquivalenceTest {
         }
     }
 
-    private void typeInference(Conjunction conjunction) {
+    private void inferTypes(Conjunction conjunction) {
         try (TypeDB.Session session = typeDB.session(AlphaEquivalenceTest.database, Arguments.Session.Type.DATA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 tx.logic().typeInference().infer(conjunction, false);
@@ -90,24 +88,20 @@ public class AlphaEquivalenceTest {
     }
 
     private static Map<String, String> alphaMapToStringMap(AlphaEquivalence alphaEq) {
-        return alphaEq.variableMapping().entrySet().stream()
-                .map(e -> new AbstractMap.SimpleEntry<>(
-                        e.getKey().id().reference().toString(),
-                        e.getValue().id().reference().toString()
-                )).collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue
-                ));
+        Map<String, String> newMap = new HashMap<>();
+        alphaEq.variableMapping().forEach(
+                (k, v) -> newMap.put(k.id().reference().toString(), v.id().reference().toString()));
+        return newMap;
     }
 
     private Concludable concludable(String variableString) {
         BoundVariable vars = TypeQL.parseVariable(variableString).asVariable();
         VariableRegistry registry = VariableRegistry.createFromVariables(list(vars), null);
         Conjunction conjunction = new Conjunction(registry.variables(), set());
-        typeInference(conjunction);
+        inferTypes(conjunction);
         Set<Concludable> concludables = Concludable.create(conjunction);
         assert concludables.size() == 1;
-        return Iterators.iterate(concludables).next();
+        return iterate(concludables).next();
     }
 
     private Set<Concludable> concludable(String... variableStrings) {
@@ -115,24 +109,24 @@ public class AlphaEquivalenceTest {
         for (String variableString : variableStrings) variables.add(TypeQL.parseVariable(variableString).asVariable());
         VariableRegistry registry = VariableRegistry.createFromVariables(variables, null);
         Conjunction conjunction = new Conjunction(registry.variables(), set());
-        typeInference(conjunction);
+        inferTypes(conjunction);
         return Concludable.create(conjunction);
     }
 
     private static Concludable.Relation relation(Set<Concludable> concludables) {
-        return Iterators.iterate(concludables).filter(Concludable::isRelation).first().get().asRelation();
+        return iterate(concludables).filter(Concludable::isRelation).first().get().asRelation();
     }
 
     private static Concludable.Has has(Set<Concludable> concludables) {
-        return Iterators.iterate(concludables).filter(Concludable::isHas).first().get().asHas();
+        return iterate(concludables).filter(Concludable::isHas).first().get().asHas();
     }
 
     private static Concludable.Isa isa(Set<Concludable> concludables) {
-        return Iterators.iterate(concludables).filter(Concludable::isIsa).first().get().asIsa();
+        return iterate(concludables).filter(Concludable::isIsa).first().get().asIsa();
     }
 
     private static Concludable.Attribute attribute(Set<Concludable> concludables) {
-        return Iterators.iterate(concludables).filter(Concludable::isAttribute).first().get().asAttribute();
+        return iterate(concludables).filter(Concludable::isAttribute).first().get().asAttribute();
     }
 
     private static Map<String, String> singleAlphaMap(Concludable r, Concludable q) {
@@ -156,7 +150,7 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_isa_different_inequivalent_variants() {
         schema("define organisation sub entity; company sub entity;");
-        List<Concludable> variables = Iterators.iterate(
+        List<Concludable> variables = iterate(
                 concludable("$x1 isa organisation"),
                 concludable("$x2 isa company"),
                 isa(concludable("$y isa $type", "$type type organisation")),
@@ -394,7 +388,7 @@ public class AlphaEquivalenceTest {
     public void test_relation_with_different_roleplayer_variable_bindings() {
         schema("define employment sub relation, relates employer, relates employee; company sub entity, " +
                        "plays employment:employer, plays employment:employee;");
-        List<Concludable> concludables = Iterators.iterate(
+        List<Concludable> concludables = iterate(
                 concludable("$r1 (employer: $x, employee: $y)"),
                 concludable("$r2 (employer: $x, employee: $x)"),
                 concludable("$r3 (employer: $x, employee: $y, employee: $z)"),
@@ -408,7 +402,7 @@ public class AlphaEquivalenceTest {
         schema("define employment sub relation, relates employer, relates employee; organisation sub entity, plays " +
                        "employment:employer, plays employment:employee; company sub organisation; person sub entity, plays " +
                        "employment:employer, plays employment:employee;");
-        List<Concludable> concludables = Iterators.iterate(
+        List<Concludable> concludables = iterate(
                 relation(concludable("($x, $y)", "$x isa organisation")),
                 relation(concludable("($x, $y)", "$y isa organisation")),
                 relation(concludable("$r0 ($x, $y)", "$x isa organisation")),
@@ -441,7 +435,7 @@ public class AlphaEquivalenceTest {
         schema("define name sub attribute, value string, plays signature:name; signature sub relation, relates name, " +
                        "relates form; paper sub entity, plays signature:form; scribble sub attribute, value string, " +
                        "plays signature:name, plays signature:form;");
-        List<Concludable> concludables = Iterators.iterate(
+        List<Concludable> concludables = iterate(
                 concludable("$r0 ($x, $y)"),
                 relation(concludable("$r1 ($x, $y)", "$x isa name")),
                 relation(concludable("$r2 ($x, $y)", "$x 'Bob' isa name")),
@@ -462,7 +456,7 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_isa() {
         schema("define number sub attribute, value long; other-number sub attribute, value long;");
-        List<Concludable> concludables = Iterators.iterate(
+        List<Concludable> concludables = iterate(
                 concludable("$a 3 isa number"),
                 isa(concludable("$a isa number", "$a = 3")),
                 isa(concludable("$a isa number", "$a < 4", "$a > 2")),
@@ -483,7 +477,7 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_attribute() {
         schema("define number sub attribute, value long; other-number sub attribute, value long;");
-        List<Concludable> concludables = Iterators.iterate(
+        List<Concludable> concludables = iterate(
                 concludable("$a = 3"),
                 attribute(concludable("$a < 4", "$a > 2")),
                 concludable("$a < 4")
@@ -497,7 +491,7 @@ public class AlphaEquivalenceTest {
     public void test_relation_different_inequivalent_variants() {
         schema("define parentship sub relation, relates parent, relates child; " +
                        "person sub entity, plays parentship:parent, plays parentship:child;");
-        List<Concludable> concludables = Iterators.iterate(
+        List<Concludable> concludables = iterate(
                 concludable("($y)"),
                 concludable("($y) isa $type"),
                 relation(concludable("($y) isa $type", "$type type parentship")),

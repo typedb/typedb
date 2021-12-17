@@ -138,18 +138,18 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
     @Override
     public FunctionalIterator<AlphaEquivalence> alphaEquals(RelationConstraint that) {
-        return AlphaEquivalence.empty()
-                .alphaEqualIf(players().size() == that.players().size())
+        return owner.alphaEquals(that.owner)
+                .flatMap(a -> a.alphaEqualIf(players().size() == that.players().size()))
                 .flatMap(a -> roleplayerEquivalences(that).flatMap(a::extendIfCompatible));
     }
 
     private FunctionalIterator<AlphaEquivalence> roleplayerEquivalences(RelationConstraint that) {
         return Iterators.permutation(players()).flatMap(playersPermutation -> {
-            Iterator<RolePlayer> thisRolePlayersIt = playersPermutation.iterator();
-            Iterator<RolePlayer> thatRolePlayersIt = that.players().iterator();
+            Iterator<RolePlayer> thisRolePlayers = playersPermutation.iterator();
+            Iterator<RolePlayer> thatRolePlayers = that.players().iterator();
             AlphaEquivalence permutationMap = AlphaEquivalence.empty();
-            while (thisRolePlayersIt.hasNext() && thatRolePlayersIt.hasNext()) {
-                permutationMap = thisRolePlayersIt.next().alphaEquals(thatRolePlayersIt.next())
+            while (thisRolePlayers.hasNext() && thatRolePlayers.hasNext()) {
+                permutationMap = thisRolePlayers.next().alphaEquals(thatRolePlayers.next())
                         .flatMap(permutationMap::extendIfCompatible).firstOrNull();
                 if (permutationMap == null ) return Iterators.empty();
             }

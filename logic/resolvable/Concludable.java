@@ -39,6 +39,7 @@ import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
@@ -71,7 +72,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.single;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 import static java.util.stream.Collectors.toSet;
 
-public abstract class Concludable extends Resolvable<Conjunction> {
+public abstract class Concludable extends Resolvable<Conjunction> implements AlphaEquivalent<Concludable> {
 
     private Map<Rule, Set<Unifier>> applicableRules;
     Set<Retrievable> retrievableIds;
@@ -122,8 +123,6 @@ public abstract class Concludable extends Resolvable<Conjunction> {
     abstract FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 
     public abstract boolean isInferredAnswer(ConceptMap conceptMap);
-
-    public abstract FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that);
 
     public boolean isRelation() { return false; }
 
@@ -270,8 +269,14 @@ public abstract class Concludable extends Resolvable<Conjunction> {
                                                                                    Set<ValueConstraint<?>> set2) {
         if (set1.size() != set2.size()) return Iterators.empty();
         else {
+            Set<ValueConstraint<?>> remaining = new HashSet<>(set2);
             for (ValueConstraint<?> s1 : set1) {
-                if (!Iterators.iterate(set2).flatMap(s1::alphaEquals).first().isPresent()) return Iterators.empty();
+                for (ValueConstraint<?> r : remaining) {
+                    if (s1.alphaEquals(r).first().isPresent()) {
+                        remaining.remove(r);
+                        break;
+                    } else return Iterators.empty();
+                }
             }
             return Iterators.single(AlphaEquivalence.empty());
         }
@@ -327,8 +332,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             return relation;
         }
 
-        public IsaConstraint isa() {
-            return isa;
+        public Optional<IsaConstraint> isa() {
+            return Optional.ofNullable(isa);
         }
 
         @Override
@@ -465,8 +470,8 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
             return AlphaEquivalence.empty()
                     .alphaEqualIf(that.isRelation())
-                    .flatMap(a -> relation().owner().alphaEquals(that.asRelation().relation().owner()).flatMap(a::extendIfCompatible))
-                    .flatMap(a -> AlphaEquivalence.alphaEquals(isa(), that.asRelation().isa()).flatMap(a::extendIfCompatible))
+                    .flatMap(a -> AlphaEquivalence.alphaEquals(isa().orElse(null), that.asRelation().isa().orElse(null))
+                            .flatMap(a::extendIfCompatible))
                     .flatMap(a -> relation().alphaEquals(that.asRelation().relation()).flatMap(a::extendIfCompatible));
         }
     }
@@ -612,7 +617,6 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         @Override
         public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
             return AlphaEquivalence.empty().alphaEqualIf(that.isHas())
-                    .flatMap(a -> owner().alphaEquals(that.asHas().owner()).flatMap(a::extendIfCompatible))
                     .flatMap(a -> has().alphaEquals(that.asHas().has()).flatMap(a::extendIfCompatible))
                     .flatMap(a -> AlphaEquivalence.alphaEquals(isa().orElse(null), that.asHas().isa().orElse(null))
                             .flatMap(a::extendIfCompatible))
@@ -735,7 +739,6 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         @Override
         public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
             return AlphaEquivalence.empty().alphaEqualIf(that.isIsa())
-                    .flatMap(a -> isa().owner().alphaEquals(that.asIsa().isa().owner()).flatMap(a::extendIfCompatible))
                     .flatMap(a -> isa().alphaEquals(that.asIsa().isa()).flatMap(a::extendIfCompatible))
                     .flatMap(a -> alphaEqualValueConstraints(values(), that.asIsa().values()).flatMap(a::extendIfCompatible));
         }

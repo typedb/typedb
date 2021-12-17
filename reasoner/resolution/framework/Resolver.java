@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
@@ -27,6 +28,7 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.concurrent.producer.Producers;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
@@ -49,6 +51,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -215,16 +218,6 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
         public abstract Optional<? extends Partial<?>> nextAnswer();
 
-        public interface Exploration {
-
-            boolean newAnswer(Partial<?> partial);
-
-            ExplorationManager explorationManager();
-
-            boolean singleAnswerRequired();
-
-        }
-
     }
 
     public abstract static class CachingResolutionState<ANSWER> extends ResolutionState {
@@ -255,8 +248,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
 
     public static class ExplorationManager {
         protected final List<Request.Factory> visits;
-        protected Map<Request.Factory, Set<Cycle>> revisits;
-        protected Map<Request.Factory, Set<Cycle>> blocked;
+        protected final Map<Request.Factory, Set<Cycle>> revisits;
+        protected final Map<Request.Factory, Set<Cycle>> blocked;
 
         public ExplorationManager() {
             this.visits = new ArrayList<>();
@@ -277,7 +270,8 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
         public Request.Revisit nextRevisit(Trace trace) {
             Optional<Request.Factory> downstream = iterate(revisits.keySet()).first();
             assert downstream.isPresent();
-            return downstream.get().createRevisit(trace, revisits.get(downstream.get()));
+            assert !revisits.get(downstream.get()).isEmpty();
+            return downstream.get().createRevisit(trace, set(revisits.get(downstream.get())));
         }
 
         public boolean hasNextVisit() {
@@ -313,32 +307,81 @@ public abstract class Resolver<RESOLVER extends ReasonerActor<RESOLVER>> extends
             blocked.clear();
         }
 
-        public Set<Cycle> cycles() {
+        public Set<Cycle> blockingCycles() {
             return iterate(blocked.values()).flatMap(Iterators::iterate).toSet();
         }
 
-        public void block(Request.Factory toBlock, Set<Cycle> blockers) {
-            assert !blockers.isEmpty();
-            assert contains(toBlock);
+        public void block(Request.Factory toBlock, Set<Cycle> cycles) {
+            assert contains(toBlock) && !cycles.isEmpty();
             visits.remove(toBlock);
-            revisits.remove(toBlock);
-            blocked.computeIfAbsent(toBlock, b -> new HashSet<>()).addAll(blockers);
+            Set<Cycle> revisitCycles = revisits.get(toBlock);
+            if (revisitCycles != null) {
+                removeEquivalentCycles(revisitCycles, cycles);
+                if (revisitCycles.isEmpty()) revisits.remove(toBlock);
+            }
+            mergeNewerCycles(blocked.computeIfAbsent(toBlock, b -> new HashSet<>()), cycles);
         }
 
-        public void unblock(Set<Cycle> cycles) {
+        private void removeEquivalentCycles(Set<Cycle> cycles, Set<Cycle> toRemove) {
+            cycles.removeAll(iterate(cycles).filter(cycle -> findEquivalent(toRemove, cycle).isPresent()).toSet());
+        }
+
+        private void retainEquivalentCycles(Set<Cycle> cycles, Set<Cycle> toRetain) {
+            cycles.removeAll(iterate(cycles).filter(cycle -> findEquivalent(toRetain, cycle).isEmpty()).toSet());
+        }
+
+        private void mergeNewerCycles(Set<Cycle> cycles, Set<Cycle> toMerge) {
+            iterate(toMerge).forEachRemaining(m -> {
+                Optional<Cycle> equivalentCycle = findEquivalent(cycles, m);
+                if (equivalentCycle.isPresent() && m.answersSeen() > equivalentCycle.get().answersSeen()) {
+                    cycles.remove(equivalentCycle.get());
+                    cycles.add(m);
+                } else if (equivalentCycle.isEmpty()) {
+                    cycles.add(m);
+                }
+            });
+        }
+
+        private Optional<Cycle> findEquivalent(Set<Cycle> cycles, Cycle cycle) {
+            return iterate(cycles).filter(c -> c.origin().equals(cycle.origin())).first();
+        }
+
+        public Set<Cycle> cyclesToRevisit(Pair<Concludable, ConceptMap> origin, int numAnswers) {
+            return iterate(blockingCycles())
+                    .filter(cycle -> startsHere(cycle, origin) && cycle.answersSeen() < numAnswers).toSet();
+        }
+
+        public void revisit(Set<Cycle> cycles) {
             assert !cycles.isEmpty();
             Set<Request.Factory> toRemove = new HashSet<>();
             blocked.forEach((downstream, blockers) -> {
                 assert !visits.contains(downstream);
-                Set<Cycle> blockersToRevisit = new HashSet<>(cycles);
-                blockersToRevisit.retainAll(blockers);
+                Set<Cycle> blockersToRevisit = new HashSet<>(blockers);
+                retainEquivalentCycles(blockersToRevisit, cycles);
                 if (!blockersToRevisit.isEmpty()) {
-                    this.revisits.computeIfAbsent(downstream, o -> new HashSet<>()).addAll(blockersToRevisit);
+                    mergeNewerCycles(revisits.computeIfAbsent(downstream, o -> new HashSet<>()), blockersToRevisit);
                     blockers.removeAll(blockersToRevisit);
                     if (blockers.isEmpty()) toRemove.add(downstream);
                 }
             });
-            toRemove.forEach(r -> blocked.remove(r));
+            toRemove.forEach(blocked::remove);
+        }
+
+        public boolean allBlockedStartHere(Pair<Concludable, ConceptMap> origin) {
+            assert visits.isEmpty() && revisits.isEmpty();
+            for (Set<Cycle> cycles : blocked.values()) {
+                if (iterate(cycles).anyMatch(c -> !startsHere(c, origin))) return false;
+            }
+            return true;
+        }
+
+        public Set<Cycle> blockersStartingElsewhere(Pair<Concludable, ConceptMap> origin) {
+            return iterate(blocked.values()).flatMap(
+                    cycles -> iterate(cycles).filter(c -> !startsHere(c, origin))).toSet();
+        }
+
+        public static boolean startsHere(Cycle cycle, Pair<Concludable, ConceptMap> origin) {
+            return cycle.origin().equals(origin);
         }
     }
 }

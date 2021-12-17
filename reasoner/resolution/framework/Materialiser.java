@@ -82,7 +82,7 @@ public class Materialiser extends ReasonerActor<Materialiser> {
         private final Actor.Driver<Materialiser> receiver;
         private final Rule.Conclusion conclusion;
         private final AnswerState.Partial<?> partialAnswer;
-        private final @Nullable Trace trace;
+        private final Trace trace;
 
         private Request(Driver<BoundConclusionResolver> sender, Driver<Materialiser> receiver,
                         Rule.Conclusion conclusion, AnswerState.Partial<?> partialAnswer, @Nullable Trace trace) {
@@ -106,7 +106,7 @@ public class Materialiser extends ReasonerActor<Materialiser> {
             return partialAnswer;
         }
 
-        public @Nullable Trace trace() {
+        public Trace trace() {
             return trace;
         }
 
@@ -149,7 +149,7 @@ public class Materialiser extends ReasonerActor<Materialiser> {
             return sourceRequest().sender();
         }
 
-        public @Nullable Trace trace() {
+        public Trace trace() {
             return sourceRequest().trace();
         }
 

@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
+import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial;
@@ -30,20 +32,18 @@ import java.util.Set;
 public abstract class Response {
 
     private final Request.Visit sourceRequest;
-    private final @Nullable Trace trace;
-    private final int hash;
+    private final Trace trace;
 
     private Response(Request.Visit sourceRequest, @Nullable Trace trace) {
         this.sourceRequest = sourceRequest;
         this.trace = trace;
-        this.hash = Objects.hash(sourceRequest, trace);
     }
 
     public Request sourceRequest() {
         return sourceRequest;
     }
 
-    public @Nullable Trace trace() {
+    public Trace trace() {
         return trace;
     }
 
@@ -61,7 +61,12 @@ public abstract class Response {
         if (o == null || getClass() != o.getClass()) return false;
         Response response = (Response) o;
         return sourceRequest.equals(response.sourceRequest) &&
-                trace.equals(response.trace);
+                Objects.equals(trace, response.trace);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(sourceRequest, trace);
     }
 
     @Override
@@ -70,11 +75,6 @@ public abstract class Response {
                 "sourceRequest=" + sourceRequest +
                 ", trace=" + trace +
                 '}';
-    }
-
-    @Override
-    public int hashCode() {
-        return hash;
     }
 
     public static class Answer extends Response {
@@ -179,20 +179,24 @@ public abstract class Response {
 
         public static class Cycle {
 
-            private final int numAnswersSeen;
-            private final Concludable end;
+            private final Pair<Concludable, ConceptMap> origin;
+            private final int answersSeen;
 
-            public Cycle(Concludable end, int numAnswersSeen) {
-                this.end = end;
-                this.numAnswersSeen = numAnswersSeen;
+            private Cycle(Concludable concludable, ConceptMap conceptMap, int answersSeen) {
+                this.origin = new Pair<>(concludable, conceptMap);
+                this.answersSeen = answersSeen;
             }
 
-            public Concludable end() {
-                return end;
+            public static Cycle create(Concludable concludable, ConceptMap conceptMap, int answersSeen) {
+                return new Cycle(concludable, conceptMap, answersSeen);
             }
 
-            public int numAnswersSeen() {
-                return numAnswersSeen;
+            public Pair<Concludable, ConceptMap> origin() {
+                return origin;
+            }
+
+            public int answersSeen() {
+                return answersSeen;
             }
 
             @Override
@@ -200,19 +204,20 @@ public abstract class Response {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 Cycle cycle = (Cycle) o;
-                return numAnswersSeen == cycle.numAnswersSeen && end.equals(cycle.end);
+                return answersSeen == cycle.answersSeen &&
+                        origin.equals(cycle.origin);
             }
 
             @Override
             public int hashCode() {
-                return Objects.hash(numAnswersSeen, end);
+                return Objects.hash(origin, answersSeen);
             }
 
             @Override
             public String toString() {
                 return "Cycle{" +
-                        "resolver=" + end.toString() +
-                        ", numAnswersSeen=" + numAnswersSeen +
+                        "origin=" + origin +
+                        ", numAnswersSeen=" + answersSeen +
                         '}';
             }
         }
