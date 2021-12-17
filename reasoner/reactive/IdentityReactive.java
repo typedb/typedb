@@ -33,6 +33,7 @@ public class IdentityReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
+        finishPulling();
         subscriber().receive(this, packet);
     }
 }

@@ -116,6 +116,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         @Override
         public void receive(@Nullable Provider<ConceptMap> provider, ConceptMap conceptMap) {
             // if (options.traceInference()) ResolutionTracer.get().finish(answeredRequest);  // TODO: Finish tracing on receive
+            isPulling = false;
             if (options.explain() && !conceptMap.explainables().isEmpty()) {
                 explainablesManager.setAndRecordExplainables(conceptMap);
             }

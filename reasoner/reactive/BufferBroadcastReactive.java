@@ -46,9 +46,9 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         assert subscribers.size() > 0;
+        finishPulling();
         buffer.add(packet);
         pullers.forEach(this::send);
-        finishPulling();
     }
 
     @Override

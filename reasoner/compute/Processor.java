@@ -151,8 +151,8 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
         @Override
         public void receive(@Nullable Provider<PACKET> provider, PACKET packet) {
             assert provider == null;
-            subscriber().receive(this, packet);
             isPulling = false;
+            subscriber().receive(this, packet);
         }
     }
 
@@ -168,6 +168,7 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
         public OutletEndpoint(Connection<PACKET, ?, ?> connection) {
             this.publishers = new HashSet<>();
             this.connection = connection;
+            this.isPulling = false;
         }
 
         public long id() {
@@ -182,6 +183,7 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
 
         @Override
         public void receive(@Nullable Provider<PACKET> provider, PACKET packet) {
+            isPulling = false;
             connection.receive(packet);
         }
 
@@ -189,8 +191,8 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
         public void pull(@Nullable Receiver<PACKET> receiver) {
             assert receiver == null;
             if (!isPulling) {
-                publishers.forEach(p -> p.pull(this));
                 isPulling = true;
+                publishers.forEach(p -> p.pull(this));
             }
         }
     }

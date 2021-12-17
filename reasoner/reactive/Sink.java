@@ -35,10 +35,8 @@ public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provi
     @Override
     public void pull(@Nullable Receiver<PACKET> receiver) {
         assert receiver == null;
-        if (!isPulling) {
-            if (publisher != null) publisher.pull(this);
-            isPulling = true;
-        }
+        isPulling = true;
+        if (publisher != null) publisher.pull(this);
     }
 
     public void pull() {

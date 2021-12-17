@@ -32,8 +32,8 @@ public class MapReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, OUTPUT> {
 
     @Override
     public void receive(Provider<INPUT> provider, INPUT packet) {
-        subscriber().receive(this, mappingFunc.apply(packet));
         finishPulling();
+        subscriber().receive(this, mappingFunc.apply(packet));
     }
 
 }

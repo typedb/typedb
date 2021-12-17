@@ -52,6 +52,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
         if (leadingPublisher.equals(provider)) {
             // TODO: Should we pull again from the leader?
             if (remainingPlan.size() == 0) {  // For a single item plan
+                finishPulling();
                 subscriber().receive(this, packet);
             } else {
                 Publisher<PACKET> nextPublisher;

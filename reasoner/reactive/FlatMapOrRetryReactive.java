@@ -36,8 +36,8 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, O
     public void receive(Provider<INPUT> provider, INPUT packet) {
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {
-            transformed.forEachRemaining(t -> subscriber().receive(this, t));
             finishPulling();
+            transformed.forEachRemaining(t -> subscriber().receive(this, t));
         } else if (isPulling()) {
             provider.pull(this);  // Automatic retry
         }

@@ -448,7 +448,6 @@ public class ResolutionTest {
         ControllerRegistry registry = transaction.reasoner().controllerRegistry();
         LinkedBlockingQueue<ConceptMap> responses = new LinkedBlockingQueue<>();
         EntryPoint entryPoint = new EntryPoint(responses::add);
-//        LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
         AtomicLong doneReceived = new AtomicLong(0L);
         try {
             // registry.createRoot(disjunction, (r, f) -> responses.add(f), (r) -> doneReceived.incrementAndGet(), (throwable) -> fail());
@@ -498,12 +497,10 @@ public class ResolutionTest {
                                  long answerCount, long explainableAnswers) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
-//        Trace trace = Trace.create(UUID.randomUUID(), i);
         int answersFound = 0;
         int explainableAnswersFound = 0;
         for (int i = 0; i < n - 1; i++) {
-            ConceptMap answer = responses.poll(1000, TimeUnit.MILLISECONDS);// polling prevents the test hanging
-//            ConceptMap answer = responses.take();
+            ConceptMap answer = responses.take();
             if (answer != null) {
                 answersFound += 1;
 //                if (answer.explainables().iterator().count() > 0) {  // TODO: Re-enable when explanation are back

@@ -37,8 +37,8 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
     public void pull(Receiver<OUTPUT> receiver) {
         assert receiver.equals(subscriber);  // TODO: Make a proper exception for this
         if (!isPulling()) {
-            publishers.forEach(p -> p.pull(this));
             setPulling();
+            publishers.forEach(p -> p.pull(this));
         }
     }
 
