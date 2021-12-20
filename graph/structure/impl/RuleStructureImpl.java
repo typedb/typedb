@@ -295,8 +295,8 @@ public abstract class RuleStructureImpl implements RuleStructure {
             if (isDeleted.compareAndSet(false, true)) {
                 graph.rules().references().delete(this, types());
                 deleteVertexFromGraph();
-                deletePropertiesFromStorage();
                 deleteVertexFromStorage();
+                deletePropertiesFromStorage();
             }
         }
 

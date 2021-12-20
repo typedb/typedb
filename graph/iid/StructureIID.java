@@ -31,7 +31,7 @@ public abstract class StructureIID extends PartitionedIID {
 
     private static final Partition PARTITION = Partition.DEFAULT;
 
-    StructureIID(ByteArray bytes) {
+    private StructureIID(ByteArray bytes) {
         super(bytes);
         assert bytes.length() == LENGTH;
     }
@@ -43,7 +43,7 @@ public abstract class StructureIID extends PartitionedIID {
 
     public static class Rule extends StructureIID {
 
-        Rule(ByteArray bytes) {
+        private Rule(ByteArray bytes) {
             super(bytes);
         }
 

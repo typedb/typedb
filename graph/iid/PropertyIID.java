@@ -48,8 +48,12 @@ public abstract class PropertyIID extends PartitionedIID {
             return new Type(ByteArray.join(typeVertex.bytes, property.infix().bytes()));
         }
 
+        public static Type extract(ByteArray bytes, int from) {
+            return new Type(bytes.view(from, from + LENGTH));
+        }
+
         public static Key.Prefix<Type> prefix(VertexIID.Type type) {
-            return new Key.Prefix<>(type.bytes, PARTITION, Type::new);
+            return new Key.Prefix<>(type.bytes, PARTITION, (bytes) -> extract(bytes, 0));
         }
 
         @Override
@@ -76,8 +80,12 @@ public abstract class PropertyIID extends PartitionedIID {
             return new Structure(ByteArray.join(structure.bytes, property.infix().bytes()));
         }
 
+        public static Structure extract(ByteArray bytes, int from) {
+            return new Structure(bytes.view(from, from + LENGTH));
+        }
+
         public static Key.Prefix<Structure> prefix(StructureIID structure) {
-            return new Key.Prefix<>(structure.bytes, PARTITION, Structure::new);
+            return new Key.Prefix<>(structure.bytes, PARTITION, (bytes) -> extract(bytes, 0));
         }
 
         @Override

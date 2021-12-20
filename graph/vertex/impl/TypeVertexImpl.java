@@ -506,8 +506,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             if (isDeleted.compareAndSet(false, true)) {
                 deleteEdges();
                 deleteVertexFromGraph();
-                deletePropertiesFromStorage();
                 deleteVertexFromStorage();
+                deletePropertiesFromStorage();
             }
         }
 
