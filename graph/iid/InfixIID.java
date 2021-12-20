@@ -78,7 +78,6 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
         private Thing(ByteArray bytes) {
             super(bytes);
-            assert bytes.length() == DEFAULT_LENGTH || bytes.length() == RolePlayer.LENGTH;
         }
 
         static InfixIID.Thing extract(ByteArray bytes, int from) {
@@ -148,7 +147,6 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
         private RolePlayer(ByteArray bytes) {
             super(bytes);
-            assert bytes.length() == LENGTH;
         }
 
         public static RolePlayer of(Encoding.Infix infix, VertexIID.Type type) {
