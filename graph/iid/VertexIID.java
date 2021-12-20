@@ -94,7 +94,7 @@ public abstract class VertexIID extends PartitionedIID {
         }
 
         public static Key.Prefix<VertexIID.Type> prefix(Encoding.Vertex.Type encoding) {
-            return new Key.Prefix<>(encoding.prefix().bytes(), PARTITION, Type::of);
+            return new Key.Prefix<>(encoding.prefix().bytes(), PARTITION, (bytes) -> extract(bytes, 0));
         }
 
         public boolean isType() {
