@@ -51,7 +51,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -69,13 +68,13 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_NOT_OPENED;
-import static com.vaticle.typedb.core.common.parameters.Options.SECOND_MILLIS;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.scheduled;
 import static com.vaticle.typedb.core.server.common.RequestReader.applyDefaultOptions;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Transaction.serverMsg;
 import static com.vaticle.typedb.protocol.TransactionProto.Transaction.Stream.State.CONTINUE;
 import static com.vaticle.typedb.protocol.TransactionProto.Transaction.Stream.State.DONE;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class TransactionService implements StreamObserver<TransactionProto.Transaction.Client>, AutoCloseable {
 
@@ -202,7 +201,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         services = new Services();
         respond(ResponseBuilder.Transaction.open(byteStringAsUUID(request.getReqId())));
         isTransactionOpen.set(true);
-        scheduledTimeout = scheduled().schedule(this::timeout, options.transactionTimeoutMillis(), TimeUnit.MILLISECONDS);
+        scheduledTimeout = scheduled().schedule(this::timeout, options.transactionTimeoutMillis(), MILLISECONDS);
     }
 
     private static SessionService sessionService(TypeDBService typeDBSvc, TransactionProto.Transaction.Open.Req req) {
@@ -281,8 +280,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     private void timeout() {
-        close(TypeDBException.of(TRANSACTION_EXCEEDED_MAX_SECONDS, options.transactionTimeoutMillis() / SECOND_MILLIS));
-        LOG.warn(TRANSACTION_EXCEEDED_MAX_SECONDS.message(options.transactionTimeoutMillis() / SECOND_MILLIS));
+        close(TypeDBException.of(TRANSACTION_EXCEEDED_MAX_SECONDS, MILLISECONDS.toSeconds(options.transactionTimeoutMillis())));
     }
 
     @Override
