@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.graph.common.Storage.Key;
 
 import java.util.NoSuchElementException;
 import java.util.function.Function;
@@ -31,19 +32,19 @@ import java.util.function.Predicate;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
-public final class RocksIterator extends AbstractFunctionalIterator.Sorted<KeyValue<ByteArray, ByteArray>>
-        implements FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>>, AutoCloseable {
+public final class RocksIterator<T extends Key> extends AbstractFunctionalIterator.Sorted<KeyValue<T, ByteArray>>
+        implements FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>>, AutoCloseable {
 
-    private final ByteArray prefix;
+    private final Key.Prefix<T> prefix;
     private final RocksStorage storage;
-    private org.rocksdb.RocksIterator internalRocksIterator;
     private State state;
-    private KeyValue<ByteArray, ByteArray> next;
+    private KeyValue<T, ByteArray> next;
     private boolean isClosed;
+    org.rocksdb.RocksIterator internalRocksIterator;
 
-    private enum State {INIT, UNFETCHED, FORWARDED, FETCHED, COMPLETED}
+    private enum State {INIT, UNFETCHED, FORWARDED, FETCHED, COMPLETED;}
 
-    RocksIterator(RocksStorage storage, ByteArray prefix) {
+    RocksIterator(RocksStorage storage, Key.Prefix<T> prefix) {
         this.storage = storage;
         this.prefix = prefix;
         state = State.INIT;
@@ -51,7 +52,7 @@ public final class RocksIterator extends AbstractFunctionalIterator.Sorted<KeyVa
     }
 
     @Override
-    public synchronized final KeyValue<ByteArray, ByteArray> peek() {
+    public synchronized final KeyValue<T, ByteArray> peek() {
         if (!hasNext()) {
             if (isClosed) throw TypeDBException.of(RESOURCE_CLOSED);
             else throw new NoSuchElementException();
@@ -60,7 +61,7 @@ public final class RocksIterator extends AbstractFunctionalIterator.Sorted<KeyVa
     }
 
     @Override
-    public synchronized final KeyValue<ByteArray, ByteArray> next() {
+    public synchronized final KeyValue<T, ByteArray> next() {
         if (!hasNext()) {
             if (isClosed) throw TypeDBException.of(RESOURCE_CLOSED);
             else throw new NoSuchElementException();
@@ -88,10 +89,10 @@ public final class RocksIterator extends AbstractFunctionalIterator.Sorted<KeyVa
     }
 
     @Override
-    public synchronized void forward(KeyValue<ByteArray, ByteArray> target) {
+    public synchronized void forward(KeyValue<T, ByteArray> target) {
         if (state == State.COMPLETED) return;
         else if (state == State.INIT) initialise(target.key());
-        else internalRocksIterator.seek(target.key().getBytes());
+        else internalRocksIterator.seek(target.key().bytes().getBytes());
         state = State.FORWARDED;
     }
 
@@ -104,10 +105,10 @@ public final class RocksIterator extends AbstractFunctionalIterator.Sorted<KeyVa
         }
     }
 
-    private synchronized void initialise(ByteArray prefix) {
+    private synchronized void initialise(Key key) {
         assert state == State.INIT;
-        this.internalRocksIterator = storage.getInternalRocksIterator();
-        this.internalRocksIterator.seek(prefix.getBytes());
+        this.internalRocksIterator = storage.getInternalRocksIterator(key.partition(), usePrefixBloom());
+        this.internalRocksIterator.seek(key.bytes().getBytes());
         state = State.FORWARDED;
     }
 
@@ -122,11 +123,11 @@ public final class RocksIterator extends AbstractFunctionalIterator.Sorted<KeyVa
 
     private synchronized boolean hasValidNext() {
         ByteArray key;
-        if (!internalRocksIterator.isValid() || !((key = ByteArray.of(internalRocksIterator.key())).hasPrefix(prefix))) {
+        if (!internalRocksIterator.isValid() || !((key = ByteArray.of(internalRocksIterator.key())).hasPrefix(prefix.bytes()))) {
             recycle();
             return false;
         }
-        next = KeyValue.of(key, ByteArray.of(internalRocksIterator.value()));
+        next = KeyValue.of(prefix.builder().build(key), ByteArray.of(internalRocksIterator.value()));
         state = State.FETCHED;
         return true;
     }
@@ -139,39 +140,45 @@ public final class RocksIterator extends AbstractFunctionalIterator.Sorted<KeyVa
     @Override
     public synchronized void close() {
         if (state != State.COMPLETED) {
-            if (state != State.INIT) storage.recycle(internalRocksIterator);
+            if (state != State.INIT) storage.recycle(this);
             state = State.COMPLETED;
             isClosed = true;
             storage.remove(this);
         }
     }
 
+    Key.Partition partition() {
+        return prefix.partition();
+    }
+
+    boolean usePrefixBloom() {
+        return prefix.isFixedStartInPartition();
+    }
+
     @Override
-    public final FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> merge(
-            FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> iterator) {
+    public final FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>> merge(
+            FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>> iterator) {
         return Iterators.Sorted.merge(this, iterator);
     }
 
     @Override
     public <V extends Comparable<? super V>> FunctionalIterator.Sorted.Forwardable<V> mapSorted(
-            Function<KeyValue<ByteArray, ByteArray>, V> mappingFn,
-            Function<V, KeyValue<ByteArray, ByteArray>> reverseMappingFn) {
+            Function<KeyValue<T, ByteArray>, V> mappingFn, Function<V, KeyValue<T, ByteArray>> reverseMappingFn) {
         return Iterators.Sorted.mapSorted(this, mappingFn, reverseMappingFn);
     }
 
     @Override
-    public FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> distinct() {
+    public FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>> distinct() {
         return Iterators.Sorted.distinct(this);
     }
 
     @Override
-    public FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> filter(Predicate<KeyValue<ByteArray, ByteArray>> predicate) {
+    public FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>> filter(Predicate<KeyValue<T, ByteArray>> predicate) {
         return Iterators.Sorted.filter(this, predicate);
     }
 
     @Override
-    public FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> onFinalise(Runnable finalise) {
+    public FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>> onFinalise(Runnable finalise) {
         return Iterators.Sorted.onFinalise(this, finalise);
     }
-
 }

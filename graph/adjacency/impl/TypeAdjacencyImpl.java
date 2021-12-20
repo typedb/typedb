@@ -23,10 +23,12 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.graph.adjacency.TypeAdjacency;
 import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.common.Storage.Key;
 import com.vaticle.typedb.core.graph.edge.Edge;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.edge.impl.TypeEdgeImpl;
 import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.InfixIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
@@ -35,7 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
-import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
@@ -136,15 +137,13 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
             isReadOnly = owner.graph().isReadOnly();
         }
 
-        private ByteArray edgeIID(Encoding.Edge.Type encoding, TypeVertex adjacent) {
-            return join(owner.iid().bytes(),
-                    direction.isOut() ? encoding.out().bytes() : encoding.in().bytes(),
-                    adjacent.iid().bytes());
+        private EdgeIID.Type edgeIID(Encoding.Edge.Type encoding, TypeVertex adjacent) {
+            return EdgeIID.Type.of(owner.iid(), direction.isOut() ? encoding.out() : encoding.in(), adjacent.iid());
         }
 
-        private TypeEdge newPersistedEdge(ByteArray key, ByteArray value) {
-            VertexIID.Type overridden = ((value.length() == 0) ? null : VertexIID.Type.of(value));
-            return new TypeEdgeImpl.Persisted(owner.graph(), EdgeIID.Type.of(key), overridden);
+        private TypeEdge newPersistedEdge(EdgeIID.Type edge, ByteArray value) {
+            VertexIID.Type overridden = ((value.isEmpty()) ? null : VertexIID.Type.of(value));
+            return new TypeEdgeImpl.Persisted(owner.graph(), edge, overridden);
         }
 
         private FunctionalIterator<TypeEdge> edgeIterator(Encoding.Edge.Type encoding) {
@@ -153,9 +152,11 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
                 return (bufferedEdges = edges.get(encoding)) != null ? iterate(bufferedEdges) : empty();
             }
 
-            ByteArray iid = join(owner.iid().bytes(), direction.isOut() ? encoding.out().bytes() : encoding.in().bytes());
-            FunctionalIterator<TypeEdge> storageIterator = owner.graph().storage().iterate(iid)
-                    .map(kv -> cache(newPersistedEdge(kv.key(), kv.value())));
+            Key.Prefix<EdgeIID.Type> prefix = EdgeIID.Type.prefix(
+                    owner.iid(), InfixIID.Type.of(direction.isOut() ? encoding.out() : encoding.in())
+            );
+            FunctionalIterator<TypeEdge> storageIterator = owner.graph().storage().iterate(prefix)
+                    .map(kv -> cache(newPersistedEdge(EdgeIID.Type.of(kv.key().bytes()), kv.value())));
             if (isReadOnly) storageIterator = storageIterator.onConsumed(() -> fetched.add(encoding));
             if ((bufferedEdges = edges.get(encoding)) == null) return storageIterator;
             else return link(bufferedEdges.iterator(), storageIterator).distinct();
@@ -177,7 +178,7 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
                     (container = edges.get(encoding).stream().filter(predicate).findAny()).isPresent()) {
                 return container.get();
             } else {
-                ByteArray edgeIID = edgeIID(encoding, adjacent);
+                EdgeIID.Type edgeIID = edgeIID(encoding, adjacent);
                 ByteArray overriddenIID;
                 if ((overriddenIID = owner.graph().storage().get(edgeIID)) != null) {
                     return cache(newPersistedEdge(edgeIID, overriddenIID));

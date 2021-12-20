@@ -23,6 +23,12 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.graph.iid.InfixIID;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
+
+import javax.annotation.Nullable;
+import java.util.Objects;
+import java.util.Optional;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
@@ -31,17 +37,17 @@ public interface Storage {
 
     boolean isOpen();
 
-    ByteArray get(ByteArray key);
+    ByteArray get(Key key);
 
-    ByteArray getLastKey(ByteArray prefix);
+    <T extends Key> T getLastKey(Key.Prefix<T> key);
 
-    void deleteUntracked(ByteArray key);
+    void deleteUntracked(Key key);
 
-    FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> iterate(ByteArray key);
+    <T extends Key> FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>> iterate(Key.Prefix<T> key);
 
-    void putUntracked(ByteArray key);
+    void putUntracked(Key key);
 
-    void putUntracked(ByteArray key, ByteArray value);
+    void putUntracked(Key key, ByteArray value);
 
     TypeDBException exception(ErrorMessage error);
 
@@ -74,21 +80,118 @@ public interface Storage {
 
         KeyGenerator.Data dataKeyGenerator();
 
-        void putTracked(ByteArray key);
+        void putTracked(Key key);
 
-        void putTracked(ByteArray key, ByteArray value);
+        void putTracked(Key key, ByteArray value);
 
-        void putTracked(ByteArray key, ByteArray value, boolean checkConsistency);
+        void putTracked(Key key, ByteArray value, boolean checkConsistency);
 
-        void deleteTracked(ByteArray key);
+        void deleteTracked(Key key);
 
-        void trackModified(ByteArray bytes);
+        void mergeUntracked(Key key, ByteArray value);
 
-        void trackModified(ByteArray bytes, boolean checkConsistency);
+        // TODO: investigate why replacing ByteArray with Key for tracking makes navigable set intersection super slow
+        void trackModified(ByteArray key);
 
-        void trackExclusiveCreate(ByteArray key);
+        void trackModified(ByteArray key, boolean checkConsistency);
 
-        void mergeUntracked(ByteArray key, ByteArray value);
+        void trackExclusiveBytes(ByteArray bytes);
+    }
 
+    interface Key extends Comparable<Key> {
+
+        enum Partition {
+            DEFAULT(null),
+            VARIABLE_START_EDGE(null),
+            FIXED_START_EDGE(VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.DEFAULT_LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH),
+            OPTIMISATION_EDGE(VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.RolePlayer.LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH),
+            STATISTICS(null);
+
+            private final Integer fixedStartBytes;
+
+            Partition(@Nullable Integer fixedStartBytes) {
+                this.fixedStartBytes = fixedStartBytes;
+            }
+
+            public Optional<Integer> fixedStartBytes() {
+                return Optional.ofNullable(fixedStartBytes);
+            }
+        }
+
+        ByteArray bytes();
+
+        Partition partition();
+
+        @Override
+        default int compareTo(Key other) {
+            int compare = partition().compareTo(other.partition());
+            if (compare == 0) return bytes().compareTo(other.bytes());
+            else return compare;
+        }
+
+        @Override
+        boolean equals(Object o);
+
+        @Override
+        int hashCode();
+
+        @Override
+        String toString();
+
+        interface Builder<K extends Key> {
+
+            K build(ByteArray bytes);
+        }
+
+        class Prefix<K extends Key> implements Key {
+
+            private final ByteArray prefix;
+            private final Partition partition;
+            private final Builder<K> builder;
+            private int hash = 0;
+
+            public Prefix(ByteArray prefix, Partition partition, Builder<K> builder) {
+                this.prefix = prefix;
+                this.partition = partition;
+                this.builder = builder;
+            }
+
+            @Override
+            public ByteArray bytes() {
+                return prefix;
+            }
+
+            @Override
+            public Partition partition() {
+                return partition;
+            }
+
+            public boolean isFixedStartInPartition() {
+                return partition.fixedStartBytes != null && prefix.length() >= partition.fixedStartBytes;
+            }
+
+            public Builder<K> builder() {
+                return builder;
+            }
+
+            @Override
+            public boolean equals(Object object) {
+                if (this == object) return true;
+                if (object == null || getClass() != object.getClass()) return false;
+                Prefix<?> other = (Prefix<?>) object;
+                return partition.equals(other.partition) && prefix.equals(other.prefix);
+            }
+
+            @Override
+            public int hashCode() {
+                if (hash == 0) hash = Objects.hash(partition, prefix);
+                return hash;
+            }
+
+            @Override
+            public String toString() {
+                return "[" + prefix.length() + ": " + prefix.toHexString() + "][partition: " + partition + "]";
+            }
+        }
     }
 }

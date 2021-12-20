@@ -118,8 +118,8 @@ public abstract class TypeEdgeImpl implements TypeEdge {
                 from.outs().remove(this);
                 to.ins().remove(this);
                 if (from instanceof Persisted && to instanceof Persisted) {
-                    graph.storage().deleteUntracked(outIID().bytes());
-                    graph.storage().deleteUntracked(inIID().bytes());
+                    graph.storage().deleteUntracked(outIID());
+                    graph.storage().deleteUntracked(inIID());
                 }
             }
         }
@@ -136,12 +136,12 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         public void commit() {
             if (committed.compareAndSet(false, true)) {
                 if (encoding.out() != null) {
-                    if (overridden != null) graph.storage().putUntracked(outIID().bytes(), overridden.iid().bytes());
-                    else graph.storage().putUntracked(outIID().bytes());
+                    if (overridden != null) graph.storage().putUntracked(outIID(), overridden.iid().bytes());
+                    else graph.storage().putUntracked(outIID());
                 }
                 if (encoding.in() != null) {
-                    if (overridden != null) graph.storage().putUntracked(inIID().bytes(), overridden.iid().bytes());
-                    else graph.storage().putUntracked(inIID().bytes());
+                    if (overridden != null) graph.storage().putUntracked(inIID(), overridden.iid().bytes());
+                    else graph.storage().putUntracked(inIID());
                 }
             }
         }
@@ -287,8 +287,8 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         public void overridden(TypeVertex overridden) {
             this.overridden = overridden;
             overriddenIID = overridden.iid();
-            graph.storage().putUntracked(outIID.bytes(), overriddenIID.bytes());
-            graph.storage().putUntracked(inIID.bytes(), overriddenIID.bytes());
+            graph.storage().putUntracked(outIID, overriddenIID.bytes());
+            graph.storage().putUntracked(inIID, overriddenIID.bytes());
         }
 
         /**
@@ -305,8 +305,8 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             if (deleted.compareAndSet(false, true)) {
                 from().outs().remove(this);
                 to().ins().remove(this);
-                graph.storage().deleteUntracked(this.outIID.bytes());
-                graph.storage().deleteUntracked(this.inIID.bytes());
+                graph.storage().deleteUntracked(outIID);
+                graph.storage().deleteUntracked(inIID);
             }
         }
 

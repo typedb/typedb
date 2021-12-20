@@ -151,7 +151,6 @@ public class Encoding {
         // leave large open range for future indices
         INDEX_TYPE(20, PrefixType.INDEX),
         INDEX_RULE(21, PrefixType.INDEX),
-        INDEX_ATTRIBUTE(30, PrefixType.INDEX),
         STATISTICS_THINGS(60, PrefixType.STATISTICS),
         STATISTICS_COUNT_JOB(61, PrefixType.STATISTICS),
         STATISTICS_COUNTED(62, PrefixType.STATISTICS),
@@ -171,7 +170,6 @@ public class Encoding {
                 pair(SYSTEM.key, SYSTEM),
                 pair(INDEX_TYPE.key, INDEX_TYPE),
                 pair(INDEX_RULE.key, INDEX_RULE),
-                pair(INDEX_ATTRIBUTE.key, INDEX_ATTRIBUTE),
                 pair(STATISTICS_THINGS.key, STATISTICS_THINGS),
                 pair(STATISTICS_COUNT_JOB.key, STATISTICS_COUNT_JOB),
                 pair(STATISTICS_COUNTED.key, STATISTICS_COUNTED),
@@ -310,6 +308,8 @@ public class Encoding {
                 pair(EDGE_ROLEPLAYER_IN.key, EDGE_ROLEPLAYER_IN)
         );
 
+        public static final int LENGTH = 1;
+
         private final byte key;
         private final boolean isOptimisation;
         private final ByteArray bytes;
@@ -364,7 +364,6 @@ public class Encoding {
         public Infix infix() {
             return infix;
         }
-
     }
 
     /**
@@ -862,8 +861,7 @@ public class Encoding {
 
         enum Prefix {
             TYPE(Encoding.Prefix.INDEX_TYPE),
-            RULE(Encoding.Prefix.INDEX_RULE),
-            ATTRIBUTE(Encoding.Prefix.INDEX_ATTRIBUTE);
+            RULE(Encoding.Prefix.INDEX_RULE);
 
             private final Encoding.Prefix prefix;
 
@@ -1033,7 +1031,7 @@ public class Encoding {
         }
 
         @SafeVarargs
-        public static <T> ByteMap<T> create(Pair<Byte, T>... byteIndices) {
+        static <T> ByteMap<T> create(Pair<Byte, T>... byteIndices) {
             ArrayList<T> indexList = new ArrayList<>(Collections.nCopies(255, (T) null));
             for (Pair<Byte, T> index : byteIndices) indexList.set(index.first() + 128, index.second());
             return new ByteMap<>(indexList);

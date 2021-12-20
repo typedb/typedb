@@ -30,6 +30,8 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.traversal.TraversalCache;
+import org.rocksdb.ColumnFamilyDescriptor;
+import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
@@ -39,8 +41,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -83,25 +87,25 @@ public class RocksDatabase implements TypeDB.Database {
     private static final Logger LOG = LoggerFactory.getLogger(RocksDatabase.class);
     private static final int ROCKS_LOG_PERIOD = 300;
 
-    protected final OptimisticTransactionDB rocksSchema;
-    protected final OptimisticTransactionDB rocksData;
-    protected final org.rocksdb.Options rocksSchemaOptions;
-    protected final org.rocksdb.Options rocksDataOptions;
-    protected final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
-    protected final String name;
-    protected StatisticsBackgroundCounter statisticsBackgroundCounter;
-    protected RocksSession.Data statisticsBackgroundCounterSession;
+    protected final RocksConfiguration rocksConfiguration;
     protected final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     protected final KeyGenerator.Data.Persisted dataKeyGenerator;
+    protected final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
+    protected final String name;
+    protected final AtomicBoolean isOpen;
     private final StampedLock schemaLock;
     private final RocksTypeDB typedb;
     private final ConsistencyManager consistencyMgr;
     private final AtomicInteger schemaLockWriteRequests;
-    private final ScheduledExecutorService rocksPropertiesLogger;
-    private Cache cache;
-
     private final Factory.Session sessionFactory;
-    protected final AtomicBoolean isOpen;
+    protected OptimisticTransactionDB rocksSchema;
+    protected OptimisticTransactionDB rocksData;
+    protected RocksPartitionManager.Schema rocksSchemaPartitionMgr;
+    protected RocksPartitionManager.Data rocksDataPartitionMgr;
+    protected RocksSession.Data statisticsBackgroundCounterSession;
+    protected StatisticsBackgroundCounter statisticsBackgroundCounter;
+    protected ScheduledExecutorService scheduledPropertiesLogger;
+    private Cache cache;
 
     protected RocksDatabase(RocksTypeDB typedb, String name, Factory.Session sessionFactory) {
         this.typedb = typedb;
@@ -113,28 +117,9 @@ public class RocksDatabase implements TypeDB.Database {
         schemaLock = new StampedLock();
         schemaLockWriteRequests = new AtomicInteger(0);
         consistencyMgr = new ConsistencyManager();
-
-        boolean enableLogging = LOG.isDebugEnabled();
-        RocksConfiguration rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
-                options().storageIndexCacheSize(), enableLogging, ROCKS_LOG_PERIOD);
-        try {
-            String schemaDirPath = directory().resolve(Encoding.ROCKS_SCHEMA).toString();
-            String dataDirPath = directory().resolve(Encoding.ROCKS_DATA).toString();
-            rocksSchemaOptions = rocksConfiguration.schemaOptions();
-            rocksSchema = OptimisticTransactionDB.open(rocksSchemaOptions, schemaDirPath);
-            rocksDataOptions = rocksConfiguration.dataOptions();
-            rocksData = OptimisticTransactionDB.open(rocksDataOptions, dataDirPath);
-            if (enableLogging) {
-                rocksPropertiesLogger = Executors.newScheduledThreadPool(1);
-                rocksPropertiesLogger.scheduleAtFixedRate(new RocksProperties.Logger(rocksData, name), 0,
-                        ROCKS_LOG_PERIOD, SECONDS);
-            } else {
-                rocksPropertiesLogger = null;
-            }
-        } catch (RocksDBException e) {
-            throw TypeDBException.of(e);
-        }
-        isOpen = new AtomicBoolean(true);
+        rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
+                options().storageIndexCacheSize(), LOG.isDebugEnabled(), ROCKS_LOG_PERIOD);
+        isOpen = new AtomicBoolean(false);
     }
 
     static RocksDatabase createAndOpen(RocksTypeDB typedb, String name, Factory.Session sessionFactory) {
@@ -158,6 +143,10 @@ public class RocksDatabase implements TypeDB.Database {
     }
 
     protected void initialise() {
+        initialiseSchema();
+        initialiseData();
+        mayInitRocksLogger();
+        isOpen.set(true);
         try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
             try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
                 if (txn.graph().isInitialised()) throw TypeDBException.of(DIRTY_INITIALISATION);
@@ -168,13 +157,85 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
+    private void initialiseSchema() {
+        try {
+            List<ColumnFamilyDescriptor> schemaDescriptors = RocksPartitionManager.Schema.descriptors(rocksConfiguration.schema());
+            List<ColumnFamilyHandle> schemaHandles = new ArrayList<>();
+            rocksSchema = OptimisticTransactionDB.open(
+                    rocksConfiguration.schema().dbOptions(),
+                    directory().resolve(Encoding.ROCKS_SCHEMA).toString(),
+                    schemaDescriptors,
+                    schemaHandles
+            );
+            rocksSchemaPartitionMgr = new RocksPartitionManager.Schema(schemaDescriptors, schemaHandles);
+        } catch (RocksDBException e) {
+            throw TypeDBException.of(e);
+        }
+    }
+
+    private void initialiseData() {
+        try {
+            List<ColumnFamilyDescriptor> dataDescriptors = RocksPartitionManager.Data.descriptors(rocksConfiguration.data());
+            List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
+            rocksData = OptimisticTransactionDB.open(
+                    rocksConfiguration.data().dbOptions(),
+                    directory().resolve(Encoding.ROCKS_DATA).toString(),
+                    dataDescriptors.subList(0, 1),
+                    dataHandles
+            );
+            assert dataHandles.size() == 1;
+            dataHandles.addAll(rocksData.createColumnFamilies(dataDescriptors.subList(1, dataDescriptors.size())));
+            rocksDataPartitionMgr = new RocksPartitionManager.Data(dataDescriptors, dataHandles);
+        } catch (RocksDBException e) {
+            throw TypeDBException.of(e);
+        }
+    }
+
     protected void load() {
+        loadSchema();
+        loadData();
+        mayInitRocksLogger();
+        isOpen.set(true);
         try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
             try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
                 validateEncoding(txn.schemaStorage());
                 schemaKeyGenerator.sync(txn.schemaStorage());
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
+        }
+    }
+
+    private void loadSchema() {
+        // loading a Rocks database with just the default column family is the same process are creating it
+        initialiseSchema();
+    }
+
+    private void loadData() {
+        try {
+            List<ColumnFamilyDescriptor> dataDescriptors = RocksPartitionManager.Data.descriptors(rocksConfiguration.data());
+            List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
+            rocksData = OptimisticTransactionDB.open(
+                    rocksConfiguration.data().dbOptions(),
+                    directory().resolve(Encoding.ROCKS_DATA).toString(),
+                    dataDescriptors,
+                    dataHandles
+            );
+            assert dataDescriptors.size() == dataHandles.size();
+            rocksDataPartitionMgr = new RocksPartitionManager.Data(dataDescriptors, dataHandles);
+        } catch (RocksDBException e) {
+            throw TypeDBException.of(e);
+        }
+    }
+
+    private void mayInitRocksLogger() {
+        if (rocksConfiguration.isLoggingEnabled()) {
+            scheduledPropertiesLogger = Executors.newScheduledThreadPool(1);
+            scheduledPropertiesLogger.scheduleAtFixedRate(
+                    new RocksProperties.Logger(rocksData, rocksDataPartitionMgr.handles, name),
+                    0, ROCKS_LOG_PERIOD, SECONDS
+            );
+        } else {
+            scheduledPropertiesLogger = null;
         }
     }
 
@@ -263,14 +324,6 @@ public class RocksDatabase implements TypeDB.Database {
         return typedb.options();
     }
 
-    OptimisticTransactionDB rocksData() {
-        return rocksData;
-    }
-
-    OptimisticTransactionDB rocksSchema() {
-        return rocksSchema;
-    }
-
     KeyGenerator.Schema schemaKeyGenerator() {
         return schemaKeyGenerator;
     }
@@ -337,16 +390,16 @@ public class RocksDatabase implements TypeDB.Database {
 
     protected void close() {
         if (isOpen.compareAndSet(true, false)) {
-            if (rocksPropertiesLogger != null) shutdownRocksPropertiesLogger();
+            if (scheduledPropertiesLogger != null) shutdownRocksPropertiesLogger();
             closeResources();
         }
     }
 
     private void shutdownRocksPropertiesLogger() {
-        assert rocksPropertiesLogger != null;
+        assert scheduledPropertiesLogger != null;
         try {
-            rocksPropertiesLogger.shutdown();
-            boolean terminated = rocksPropertiesLogger.awaitTermination(5, SECONDS);
+            scheduledPropertiesLogger.shutdown();
+            boolean terminated = scheduledPropertiesLogger.awaitTermination(5, SECONDS);
             if (!terminated) throw TypeDBException.of(ROCKS_LOGGER_SHUTDOWN_FAILED);
         } catch (InterruptedException e) {
             throw TypeDBException.of(e);
@@ -361,10 +414,10 @@ public class RocksDatabase implements TypeDB.Database {
         sessions.values().forEach(p -> p.first().close());
         statisticsBgCounterStop();
         cacheClose();
+        rocksDataPartitionMgr.close();
         rocksData.close();
-        rocksDataOptions.close();
+        rocksSchemaPartitionMgr.close();
         rocksSchema.close();
-        rocksSchemaOptions.close();
     }
 
     @Override
@@ -413,7 +466,7 @@ public class RocksDatabase implements TypeDB.Database {
                     validateModifiedKeys(storage, committed);
                     if (hasIntersection(storage.deletedKeys(), committed.modifiedKeys())) {
                         throw TypeDBException.of(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);
-                    } else if (hasIntersection(storage.exclusiveInsertKeys(), committed.exclusiveInsertKeys())) {
+                    } else if (hasIntersection(storage.exclusiveBytes(), committed.exclusiveBytes())) {
                         throw TypeDBException.of(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION);
                     }
                 }
@@ -457,7 +510,7 @@ public class RocksDatabase implements TypeDB.Database {
 
             enum CommitState {UNCOMMITTED, COMMITTING}
 
-            public StorageTimeline() {
+            private StorageTimeline() {
                 this.events = new ConcurrentSkipListMap<>();
                 this.commitState = new ConcurrentHashMap<>();
                 this.cleanupRunning = new AtomicBoolean(false);
@@ -568,11 +621,11 @@ public class RocksDatabase implements TypeDB.Database {
 
             private int committedEventCount() {
                 Set<RocksStorage.Data> recorded = new HashSet<>();
-                this.events.forEach((snapshot, events) -> {
-                    events.forEach((storage, type) -> {
-                        if (type == Event.COMMITTED) recorded.add(storage);
-                    });
-                });
+                this.events.forEach((snapshot, events) ->
+                        events.forEach((storage, type) -> {
+                            if (type == Event.COMMITTED) recorded.add(storage);
+                        })
+                );
                 return recorded.size();
             }
         }
@@ -588,7 +641,7 @@ public class RocksDatabase implements TypeDB.Database {
         private boolean invalidated;
 
         private Cache(RocksDatabase database) {
-            schemaStorage = new RocksStorage.Cache(database.rocksSchema());
+            schemaStorage = new RocksStorage.Cache(database.rocksSchema, database.rocksSchemaPartitionMgr);
             typeGraph = new TypeGraph(schemaStorage, true);
             traversalCache = new TraversalCache();
             logicCache = new LogicCache();

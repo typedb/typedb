@@ -227,8 +227,8 @@ public final class ConceptManager {
 
         static void writeAttributeType(StringBuilder builder, AttributeType attributeType) {
             builder.append(String.format("%s sub %s",
-                                         attributeType.getLabel().name(),
-                                         attributeType.getSupertype().getLabel().name()))
+                    attributeType.getLabel().name(),
+                    attributeType.getSupertype().getLabel().name()))
                     .append(StringBuilders.COMMA_NEWLINE_INDENT)
                     .append(String.format("value %s", getValueTypeString(attributeType.getValueType())));
             if (attributeType.isString()) {
@@ -249,8 +249,8 @@ public final class ConceptManager {
 
         static void writeRelationType(StringBuilder builder, RelationType relationType) {
             builder.append(String.format("%s sub %s",
-                                         relationType.getLabel().name(),
-                                         relationType.getSupertype().getLabel().name()));
+                    relationType.getLabel().name(),
+                    relationType.getSupertype().getLabel().name()));
             writeAbstract(builder, relationType);
             writeOwns(builder, relationType);
             writeRelates(builder, relationType);
@@ -263,8 +263,8 @@ public final class ConceptManager {
 
         static void writeEntityType(StringBuilder builder, EntityType entityType) {
             builder.append(String.format("%s sub %s",
-                                         entityType.getLabel().name(),
-                                         entityType.getSupertype().getLabel().name()));
+                    entityType.getLabel().name(),
+                    entityType.getSupertype().getLabel().name()));
             writeAbstract(builder, entityType);
             writeOwns(builder, entityType);
             writePlays(builder, entityType);

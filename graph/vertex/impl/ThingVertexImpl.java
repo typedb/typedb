@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingAdjacencyImpl;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.iid.EdgeIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
@@ -206,8 +205,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         void deleteVertexFromStorage() {
-            graph.storage().deleteTracked(iid.bytes());
-            graph.storage().deleteUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+            graph.storage().deleteTracked(iid);
         }
 
         void deleteEdges() {
@@ -221,8 +219,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         void commitVertex() {
-            graph.storage().putTracked(iid.bytes());
-            graph.storage().putUntracked(EdgeIID.InwardsISA.of(type().iid(), iid).bytes());
+            graph.storage().putTracked(iid);
         }
 
         @Override
@@ -330,7 +327,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             public void setModified() {
                 if (!isModified) {
                     isModified = true;
-                    graph.setModified(iid());
+                    graph.setModified(iid);
                 }
             }
         }

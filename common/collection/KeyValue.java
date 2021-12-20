@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.common.collection;
 
 import java.util.Objects;
 
-public class KeyValue<T extends Comparable<T>, U> implements Comparable<KeyValue<T, U>> {
+public class KeyValue<T extends Comparable<? super T>, U> implements Comparable<KeyValue<T, U>> {
 
     T key;
     U value;
@@ -30,7 +30,7 @@ public class KeyValue<T extends Comparable<T>, U> implements Comparable<KeyValue
         this.value = value;
     }
 
-    public static <T extends Comparable<T>, U> KeyValue<T, U> of(T first, U second) {
+    public static <T extends Comparable<? super T>, U> KeyValue<T, U> of(T first, U second) {
         return new KeyValue<>(first, second);
     }
 
