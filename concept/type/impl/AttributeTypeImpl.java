@@ -835,7 +835,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public void setRegex(Pattern regex) {
             if (regex != null) {
-                // TODO can we do this in parallel as it was before?
+                // TODO: can we do this in parallel as it was before?
                 getInstances().forEachRemaining(attribute -> {
                     Matcher matcher = regex.matcher(attribute.getValue());
                     if (!matcher.matches()) {

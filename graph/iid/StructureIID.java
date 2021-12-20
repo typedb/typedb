@@ -13,6 +13,7 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package com.vaticle.typedb.core.graph.iid;
@@ -20,33 +21,42 @@ package com.vaticle.typedb.core.graph.iid;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
+import com.vaticle.typedb.core.graph.common.Storage.Key;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 
-public abstract class StructureIID extends IID {
+public abstract class StructureIID extends PartitionedIID {
 
-    StructureIID(ByteArray bytes) {
+    public static final int LENGTH = PrefixIID.LENGTH + 2;
+
+    private static final Partition PARTITION = Partition.DEFAULT;
+
+    private StructureIID(ByteArray bytes) {
         super(bytes);
+        assert bytes.length() == LENGTH;
     }
 
-    abstract Encoding.Structure encoding();
-
     @Override
-    public String toString() {
-        return null;
+    public Partition partition() {
+        return PARTITION;
     }
 
     public static class Rule extends StructureIID {
 
-        public static final int LENGTH = PrefixIID.LENGTH + 2;
-
-        Rule(ByteArray bytes) {
+        private Rule(ByteArray bytes) {
             super(bytes);
-            assert bytes.length() == LENGTH;
         }
 
         public static Rule of(ByteArray bytes) {
             return new Rule(bytes);
+        }
+
+        public static Rule extract(ByteArray bytes, int from) {
+            return new Rule(bytes.view(from, from + LENGTH));
+        }
+
+        public static Key.Prefix<Rule> prefix() {
+            return new Key.Prefix<>(Encoding.Structure.RULE.prefix().bytes(), PARTITION, Rule::of);
         }
 
         /**
@@ -59,7 +69,6 @@ public abstract class StructureIID extends IID {
             return of(join(Encoding.Structure.RULE.prefix().bytes(), keyGenerator.forRule()));
         }
 
-        @Override
         public Encoding.Structure.Rule encoding() {
             return Encoding.Structure.RULE;
         }
@@ -69,7 +78,8 @@ public abstract class StructureIID extends IID {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + encoding().toString() + "][" +
                         (LENGTH - PrefixIID.LENGTH) + ": " +
-                        bytes.view(PrefixIID.LENGTH, LENGTH).decodeSortedAsShort() + "]";
+                        bytes.view(PrefixIID.LENGTH, LENGTH).decodeSortedAsShort() + "]" +
+                        "[partition: " + partition() + "]";
             }
             return readableString;
         }

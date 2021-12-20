@@ -55,7 +55,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     }
 
     public static ByteArray empty() {
-        return new ByteArray.Base(new byte[]{});
+        return Base.EMPTY;
     }
 
     public abstract byte[] getBytes();
@@ -313,6 +313,8 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     }
 
     public static class Base extends ByteArray {
+
+        private static final ByteArray EMPTY = new Base(new byte[]{});
 
         public Base(byte[] array) {
             super(array);

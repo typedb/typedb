@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
+import com.vaticle.typedb.core.graph.common.Storage.Key;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeDateTimeAsSorted;
@@ -45,9 +46,11 @@ import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.TIME_ZONE_
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
 
-public abstract class VertexIID extends IID {
+public abstract class VertexIID extends PartitionedIID {
 
-    VertexIID(ByteArray bytes) {
+    private static final Key.Partition PARTITION = Key.Partition.DEFAULT;
+
+    private VertexIID(ByteArray bytes) {
         super(bytes);
     }
 
@@ -68,12 +71,18 @@ public abstract class VertexIID extends IID {
         return PrefixIID.of(encoding());
     }
 
+    @Override
+    public Partition partition() {
+        return PARTITION;
+    }
+
     public static class Type extends VertexIID {
 
         public static final int LENGTH = PrefixIID.LENGTH + 2;
 
-        Type(ByteArray bytes) {
+        private Type(ByteArray bytes) {
             super(bytes);
+            assert bytes.length() == LENGTH;
         }
 
         public static VertexIID.Type of(ByteArray bytes) {
@@ -82,6 +91,10 @@ public abstract class VertexIID extends IID {
 
         public static VertexIID.Type extract(ByteArray bytes, int from) {
             return new Type(bytes.view(from, from + LENGTH));
+        }
+
+        public static Key.Prefix<VertexIID.Type> prefix(Encoding.Vertex.Type encoding) {
+            return new Key.Prefix<>(encoding.prefix().bytes(), PARTITION, (bytes) -> extract(bytes, 0));
         }
 
         public boolean isType() {
@@ -113,7 +126,8 @@ public abstract class VertexIID extends IID {
             if (readableString == null) {
                 readableString = "[" + PrefixIID.LENGTH + ": " + encoding().toString() + "][" +
                         (VertexIID.Type.LENGTH - PrefixIID.LENGTH) + ": " +
-                        bytes.view(PrefixIID.LENGTH, VertexIID.Type.LENGTH).decodeSortedAsShort() + "]";
+                        bytes.view(PrefixIID.LENGTH, VertexIID.Type.LENGTH).decodeSortedAsShort() + "]" +
+                        "[partition: " + partition() + "]";
             }
             return readableString;
         }
@@ -139,7 +153,7 @@ public abstract class VertexIID extends IID {
          */
         public static VertexIID.Thing generate(KeyGenerator.Data keyGenerator, Type typeIID, Label typeLabel) {
             return new Thing(join(typeIID.encoding().instance().prefix().bytes(),
-                    typeIID.bytes(), keyGenerator.forThing(typeIID, typeLabel)));
+                    typeIID.bytes, keyGenerator.forThing(typeIID, typeLabel)));
         }
 
         public static VertexIID.Thing of(ByteArray bytes) {
@@ -156,6 +170,11 @@ public abstract class VertexIID extends IID {
             } else {
                 return new VertexIID.Thing(bytes.view(from, from + DEFAULT_LENGTH));
             }
+        }
+
+        public static Key.Prefix<Thing> prefix(Type typeIID) {
+            return new Key.Prefix<>(join(typeIID.encoding().instance().prefix().bytes(), typeIID.bytes),
+                    PARTITION, Thing::of);
         }
 
         public Type type() {
@@ -184,7 +203,8 @@ public abstract class VertexIID extends IID {
                 readableString = "[" + PrefixIID.LENGTH + ": " + encoding().toString() + "]" +
                         "[" + VertexIID.Type.LENGTH + ": " + type().toString() + "]" +
                         "[" + (DEFAULT_LENGTH - PREFIX_W_TYPE_LENGTH) + ": " +
-                        bytes.view(PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH).decodeSortedAsLong() + "]";
+                        bytes.view(PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH).decodeSortedAsLong() + "]" +
+                        "[partition: " + partition() + "]";
             }
             return readableString;
         }
@@ -192,12 +212,12 @@ public abstract class VertexIID extends IID {
 
     public static abstract class Attribute<VALUE> extends VertexIID.Thing {
 
-        static final int VALUE_TYPE_LENGTH = 1;
+        public static final int VALUE_TYPE_LENGTH = 1;
         static final int VALUE_TYPE_INDEX = PrefixIID.LENGTH + VertexIID.Type.LENGTH;
         static final int VALUE_INDEX = VALUE_TYPE_INDEX + VALUE_TYPE_LENGTH;
         private final Encoding.ValueType valueType;
 
-        Attribute(ByteArray bytes) {
+        private Attribute(ByteArray bytes) {
             super(bytes);
             valueType = Encoding.ValueType.of(bytes.get(PREFIX_W_TYPE_LENGTH));
         }
@@ -205,7 +225,7 @@ public abstract class VertexIID extends IID {
         Attribute(Encoding.ValueType valueType, Type typeIID, ByteArray valueBytes) {
             super(join(
                     ATTRIBUTE.prefix().bytes(),
-                    typeIID.bytes(),
+                    typeIID.bytes,
                     valueType.bytes(),
                     valueBytes
             ));
@@ -289,14 +309,15 @@ public abstract class VertexIID extends IID {
                 readableString = "[" + PrefixIID.LENGTH + ": " + ATTRIBUTE.toString() + "]" +
                         "[" + VertexIID.Type.LENGTH + ": " + type().toString() + "]" +
                         "[" + VALUE_TYPE_LENGTH + ": " + valueType().toString() + "]" +
-                        "[" + (bytes.length() - VALUE_INDEX) + ": " + value().toString() + "]";
+                        "[" + (bytes.length() - VALUE_INDEX) + ": " + value().toString() + "]" +
+                        "[partition: " + partition() + "]";
             }
             return readableString;
         }
 
         public static class Boolean extends Attribute<java.lang.Boolean> {
 
-            public Boolean(ByteArray bytes) {
+            private Boolean(ByteArray bytes) {
                 super(bytes);
             }
 
@@ -321,7 +342,7 @@ public abstract class VertexIID extends IID {
 
         public static class Long extends Attribute<java.lang.Long> {
 
-            public Long(ByteArray bytes) {
+            private Long(ByteArray bytes) {
                 super(bytes);
             }
 
@@ -346,7 +367,7 @@ public abstract class VertexIID extends IID {
 
         public static class Double extends Attribute<java.lang.Double> {
 
-            public Double(ByteArray bytes) {
+            private Double(ByteArray bytes) {
                 super(bytes);
             }
 
@@ -371,7 +392,7 @@ public abstract class VertexIID extends IID {
 
         public static class String extends Attribute<java.lang.String> {
 
-            public String(ByteArray bytes) {
+            private String(ByteArray bytes) {
                 super(bytes);
             }
 
@@ -400,7 +421,7 @@ public abstract class VertexIID extends IID {
 
         public static class DateTime extends Attribute<java.time.LocalDateTime> {
 
-            public DateTime(ByteArray bytes) {
+            private DateTime(ByteArray bytes) {
                 super(bytes);
             }
 

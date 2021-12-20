@@ -38,7 +38,6 @@ import static com.vaticle.typedb.core.common.collection.ByteArray.encodeInt;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongAsSorted;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeShortAsSorted;
-import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.collection.Bytes.INTEGER_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.MAX_RULE_REACHED;
@@ -143,20 +142,18 @@ public class KeyGenerator {
 
             private void syncTypeKeys(Storage.Schema storage) {
                 for (Encoding.Vertex.Type encoding : Encoding.Vertex.Type.values()) {
-                    ByteArray prefix = encoding.prefix().bytes();
-                    ByteArray lastIID = storage.getLastKey(prefix);
+                    VertexIID.Type lastIID = storage.getLastKey(VertexIID.Type.prefix(encoding));
                     AtomicInteger nextValue = lastIID != null ?
-                            new AtomicInteger(lastIID.view(PrefixIID.LENGTH, VertexIID.Type.LENGTH).decodeSortedAsShort() + delta) :
+                            new AtomicInteger(lastIID.bytes().view(PrefixIID.LENGTH, VertexIID.Type.LENGTH).decodeSortedAsShort() + delta) :
                             new AtomicInteger(initialValue);
                     typeKeys.put(PrefixIID.of(encoding), nextValue);
                 }
             }
 
             private void syncRuleKey(Storage.Schema storage) {
-                ByteArray prefix = Encoding.Structure.RULE.prefix().bytes();
-                ByteArray lastIID = storage.getLastKey(prefix);
+                StructureIID lastIID = storage.getLastKey(StructureIID.Rule.prefix());
                 if (lastIID != null) {
-                    ruleKey.set(lastIID.view(PrefixIID.LENGTH, StructureIID.Rule.LENGTH).decodeSortedAsShort() + delta);
+                    ruleKey.set(lastIID.bytes().view(PrefixIID.LENGTH, StructureIID.Rule.LENGTH).decodeSortedAsShort() + delta);
                 } else {
                     ruleKey.set(initialValue);
                 }
@@ -234,17 +231,16 @@ public class KeyGenerator {
                 Encoding.Vertex.Thing[] thingsWithGeneratedIID = new Encoding.Vertex.Thing[]{ENTITY, RELATION, ROLE};
 
                 for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
-                    ByteArray typeEncoding = Encoding.Vertex.Type.of(thingEncoding).prefix().bytes();
-                    FunctionalIterator<ByteArray> typeIterator = schemaStorage.iterate(typeEncoding)
-                            .filter(kv -> kv.key().length() == VertexIID.Type.LENGTH).map(KeyValue::key);
+                    FunctionalIterator<VertexIID.Type> typeIterator = schemaStorage.iterate(
+                            VertexIID.Type.prefix(Encoding.Vertex.Type.of(thingEncoding))
+                    ).mapSorted(KeyValue::key).distinct();
                     while (typeIterator.hasNext()) {
-                        ByteArray typeIID = typeIterator.next();
-                        ByteArray prefix = join(thingEncoding.prefix().bytes(), typeIID);
-                        ByteArray lastIID = dataStorage.getLastKey(prefix);
+                        VertexIID.Type typeIID = typeIterator.next();
+                        VertexIID.Thing lastIID = dataStorage.getLastKey(VertexIID.Thing.prefix(typeIID));
                         AtomicLong nextValue = lastIID != null ?
-                                new AtomicLong(lastIID.view(PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH).decodeSortedAsLong() + delta) :
+                                new AtomicLong(lastIID.bytes().view(PREFIX_W_TYPE_LENGTH, DEFAULT_LENGTH).decodeSortedAsLong() + delta) :
                                 new AtomicLong(initialValue);
-                        thingKeys.put(VertexIID.Type.of(typeIID), nextValue);
+                        thingKeys.put(typeIID, nextValue);
                     }
                 }
             }

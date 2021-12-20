@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
 import com.vaticle.typedb.core.graph.common.Storage;
+import com.vaticle.typedb.core.graph.common.Storage.Key.Partition;
 import org.rocksdb.AbstractImmutableNativeReference;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.OptimisticTransactionOptions;
@@ -41,7 +42,9 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.util.Arrays;
 import java.util.NavigableSet;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -61,29 +64,37 @@ import static com.vaticle.typedb.core.graph.common.Encoding.System.TRANSACTION_D
 public abstract class RocksStorage implements Storage {
 
     private static final Logger LOG = LoggerFactory.getLogger(RocksStorage.class);
-    static final ByteArray EMPTY_ARRAY = ByteArray.of(new byte[]{});
 
-    protected final ConcurrentSet<RocksIterator> iterators;
-    protected final Transaction storageTransaction;
-    protected final ReadWriteLock deleteCloseSchemaWriteLock;
+    protected final Transaction rocksTransaction;
+    // TODO: use a single read options when 'setAutoPrefixMode(true)' is available on ReadOptions API
     protected final ReadOptions readOptions;
+    protected final ReadOptions readOptionsWithPrefixBloom;
+    protected final RocksPartitionManager partitionMgr;
+    protected final Snapshot snapshot;
+    protected final ReadWriteLock deleteCloseSchemaWriteLock;
+    protected final ConcurrentSet<RocksIterator<?>> iterators;
+    // TODO: use a single set of iterators when 'setAutoPrefixMode(true)' is available on ReadOptions API
+    protected final ConcurrentMap<Partition, ConcurrentLinkedQueue<org.rocksdb.RocksIterator>> recycled;
+    protected final ConcurrentMap<Partition, ConcurrentLinkedQueue<org.rocksdb.RocksIterator>> recycledWithPrefixBloom;
     protected final boolean isReadOnly;
-
-    private final ConcurrentLinkedQueue<org.rocksdb.RocksIterator> recycled;
     private final OptimisticTransactionOptions transactionOptions;
     private final WriteOptions writeOptions;
     private final AtomicBoolean isOpen;
-    private final Snapshot snapshot;
 
-    private RocksStorage(OptimisticTransactionDB rocksDB, boolean isReadOnly) {
+    private RocksStorage(OptimisticTransactionDB rocksDB, RocksPartitionManager partitionMgr, boolean isReadOnly) {
         this.isReadOnly = isReadOnly;
+        this.partitionMgr = partitionMgr;
         iterators = new ConcurrentSet<>();
-        recycled = new ConcurrentLinkedQueue<>();
+        recycled = new ConcurrentHashMap<>();
+        recycledWithPrefixBloom = new ConcurrentHashMap<>();
+        partitionMgr.partitions().forEach(partition -> recycled.put(partition, new ConcurrentLinkedQueue<>()));
+        partitionMgr.partitions().forEach(partition -> recycledWithPrefixBloom.put(partition, new ConcurrentLinkedQueue<>()));
         writeOptions = new WriteOptions();
         transactionOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
-        storageTransaction = rocksDB.beginTransaction(writeOptions, transactionOptions);
-        snapshot = storageTransaction.getSnapshot();
-        readOptions = new ReadOptions().setSnapshot(snapshot);
+        rocksTransaction = rocksDB.beginTransaction(writeOptions, transactionOptions);
+        snapshot = rocksTransaction.getSnapshot();
+        readOptions = new ReadOptions().setSnapshot(snapshot).setTotalOrderSeek(true);
+        readOptionsWithPrefixBloom = new ReadOptions().setSnapshot(snapshot).setTotalOrderSeek(false);
         deleteCloseSchemaWriteLock = new StampedLock().asReadWriteLock();
         isOpen = new AtomicBoolean(true);
     }
@@ -94,40 +105,50 @@ public abstract class RocksStorage implements Storage {
     }
 
     @Override
-    public ByteArray getLastKey(ByteArray prefix) {
+    public <T extends Key> T getLastKey(Key.Prefix<T> prefix) {
         throw exception(ILLEGAL_OPERATION);
     }
 
     @Override
-    public void deleteUntracked(ByteArray key) {
+    public void deleteUntracked(Key key) {
         throw exception(ILLEGAL_OPERATION);
     }
 
     @Override
-    public void putUntracked(ByteArray key) {
-        putUntracked(key, EMPTY_ARRAY);
+    public void putUntracked(Key key) {
+        putUntracked(key, ByteArray.empty());
     }
 
     @Override
-    public void putUntracked(ByteArray key, ByteArray value) {
+    public void putUntracked(Key key, ByteArray value) {
         throw exception(ILLEGAL_OPERATION);
-    }
-
-    org.rocksdb.RocksIterator getInternalRocksIterator() {
-        org.rocksdb.RocksIterator iterator = recycled.poll();
-        if (iterator != null) return iterator;
-        else return storageTransaction.getIterator(readOptions);
     }
 
     protected Logger logger() {
         return LOG;
     }
 
-    void recycle(org.rocksdb.RocksIterator rocksIterator) {
-        recycled.add(rocksIterator);
+    org.rocksdb.RocksIterator getInternalRocksIterator(Partition partition, boolean usePrefixBloom) {
+        if (usePrefixBloom) {
+            org.rocksdb.RocksIterator iterator = recycledWithPrefixBloom.get(partition).poll();
+            if (iterator != null) return iterator;
+            else return rocksTransaction.getIterator(readOptionsWithPrefixBloom, partitionMgr.get(partition));
+        } else {
+            org.rocksdb.RocksIterator iterator = recycled.get(partition).poll();
+            if (iterator != null) return iterator;
+            else return rocksTransaction.getIterator(readOptions, partitionMgr.get(partition));
+        }
     }
 
-    void remove(RocksIterator iterator) {
+    void recycle(RocksIterator<?> rocksIterator) {
+        if (rocksIterator.usePrefixBloom()) {
+            recycledWithPrefixBloom.get(rocksIterator.partition()).add(rocksIterator.internalRocksIterator);
+        } else {
+            recycled.get(rocksIterator.partition()).add(rocksIterator.internalRocksIterator);
+        }
+    }
+
+    void remove(RocksIterator<?> iterator) {
         iterators.remove(iterator);
     }
 
@@ -153,10 +174,12 @@ public abstract class RocksStorage implements Storage {
             deleteCloseSchemaWriteLock.writeLock().lock();
             if (isOpen.compareAndSet(true, false)) {
                 iterators.parallelStream().forEach(RocksIterator::close);
-                recycled.forEach(AbstractImmutableNativeReference::close);
+                recycledWithPrefixBloom.values().forEach(iters -> iters.forEach(AbstractImmutableNativeReference::close));
+                recycled.values().forEach(iters -> iters.forEach(AbstractImmutableNativeReference::close));
+                rocksTransaction.close();
                 snapshot.close();
-                storageTransaction.close();
                 transactionOptions.close();
+                readOptionsWithPrefixBloom.close();
                 readOptions.close();
                 writeOptions.close();
             }
@@ -167,16 +190,16 @@ public abstract class RocksStorage implements Storage {
 
     static class Cache extends RocksStorage {
 
-        public Cache(OptimisticTransactionDB rocksDB) {
-            super(rocksDB, true);
+        Cache(OptimisticTransactionDB rocksDB, RocksPartitionManager partitionMgr) {
+            super(rocksDB, partitionMgr, true);
         }
 
         @Override
-        public ByteArray get(ByteArray key) {
+        public ByteArray get(Key key) {
             try {
                 deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                byte[] value = storageTransaction.get(readOptions, key.getBytes());
+                byte[] value = rocksTransaction.get(partitionMgr.get(key.partition()), readOptions, key.bytes().getBytes());
                 if (value == null) return null;
                 else return ByteArray.of(value);
             } catch (RocksDBException e) {
@@ -187,8 +210,8 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> iterate(ByteArray key) {
-            RocksIterator iterator = new RocksIterator(this, key);
+        public <T extends Key> FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>> iterate(Key.Prefix<T> prefix) {
+            RocksIterator<T> iterator = new RocksIterator<>(this, prefix);
             iterators.add(iterator);
             if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED); //guard against close() race conditions
             return iterator.onFinalise(iterator::close);
@@ -199,17 +222,17 @@ public abstract class RocksStorage implements Storage {
 
         protected final RocksTransaction transaction;
 
-        TransactionBounded(OptimisticTransactionDB rocksDB, RocksTransaction transaction) {
-            super(rocksDB, transaction.type().isRead());
+        TransactionBounded(OptimisticTransactionDB rocksDB, RocksPartitionManager partitionMgr, RocksTransaction transaction) {
+            super(rocksDB, partitionMgr, transaction.type().isRead());
             this.transaction = transaction;
         }
 
         @Override
-        public ByteArray get(ByteArray key) {
+        public ByteArray get(Key key) {
             try {
                 deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                byte[] value = storageTransaction.get(readOptions, key.getBytes());
+                byte[] value = rocksTransaction.get(partitionMgr.get(key.partition()), readOptions, key.bytes().getBytes());
                 if (value == null) return null;
                 else return ByteArray.of(value);
             } catch (RocksDBException e) {
@@ -220,28 +243,36 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public ByteArray getLastKey(ByteArray prefix) {
+        public <T extends Key> T getLastKey(Key.Prefix<T> prefix) {
             assert isOpen();
-            byte[] upperBound = Arrays.copyOf(prefix.getBytes(), prefix.length());
+            byte[] upperBound = Arrays.copyOf(prefix.bytes().getBytes(), prefix.bytes().length());
             upperBound[upperBound.length - 1] = (byte) (upperBound[upperBound.length - 1] + 1);
             assert upperBound[upperBound.length - 1] != Byte.MIN_VALUE;
 
-            try (org.rocksdb.RocksIterator iterator = getInternalRocksIterator()) {
+            org.rocksdb.RocksIterator iterator;
+            if (prefix.isFixedStartInPartition()) {
+                iterator = rocksTransaction.getIterator(readOptionsWithPrefixBloom, partitionMgr.get(prefix.partition()));
+            } else {
+                iterator = rocksTransaction.getIterator(readOptions, partitionMgr.get(prefix.partition()));
+            }
+            try {
                 deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
                 iterator.seekForPrev(upperBound);
                 if (!iterator.isValid()) return null;
                 byte[] key = iterator.key();
                 ByteArray array;
-                if (key != null && (array = ByteArray.of(key)).hasPrefix(prefix)) return array;
-                else return null;
+                if (key != null && (array = ByteArray.of(key)).hasPrefix(prefix.bytes())) {
+                    return prefix.builder().build(array);
+                } else return null;
             } finally {
+                iterator.close();
                 deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
 
         @Override
-        public void deleteUntracked(ByteArray key) {
+        public void deleteUntracked(Key key) {
             if (isReadOnly) {
                 if (transaction.isSchema()) throw exception(TRANSACTION_SCHEMA_READ_VIOLATION);
                 else if (transaction.isData()) throw exception(TRANSACTION_DATA_READ_VIOLATION);
@@ -252,7 +283,7 @@ public abstract class RocksStorage implements Storage {
                 if (!isOpen() || (!transaction.isOpen() && transaction.isData())) {
                     throw TypeDBException.of(RESOURCE_CLOSED);
                 }
-                storageTransaction.deleteUntracked(key.getBytes());
+                rocksTransaction.deleteUntracked(partitionMgr.get(key.partition()), key.bytes().getBytes());
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
@@ -261,8 +292,8 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> iterate(ByteArray key) {
-            RocksIterator iterator = new RocksIterator(this, key);
+        public <T extends Key> FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>> iterate(Key.Prefix<T> prefix) {
+            RocksIterator<T> iterator = new RocksIterator<>(this, prefix);
             iterators.add(iterator);
             if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED); //guard against close() race conditions
             return iterator;
@@ -282,17 +313,17 @@ public abstract class RocksStorage implements Storage {
 
         public void commit() throws RocksDBException {
             // guarantee at least 1 write per tx
-            storageTransaction.putUntracked(TRANSACTION_DUMMY_WRITE.bytes().getBytes(), EMPTY_ARRAY.getBytes());
+            rocksTransaction.putUntracked(partitionMgr.get(Partition.DEFAULT), TRANSACTION_DUMMY_WRITE.bytes().getBytes(),
+                    ByteArray.empty().getBytes());
             // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
             // TODO: We should benchmark this
-            storageTransaction.disableIndexing();
-            storageTransaction.commit();
+            rocksTransaction.disableIndexing();
+            rocksTransaction.commit();
         }
 
         public void rollback() throws RocksDBException {
-            storageTransaction.rollback();
+            rocksTransaction.rollback();
         }
-
     }
 
     public static class Schema extends TransactionBounded implements Storage.Schema {
@@ -300,26 +331,15 @@ public abstract class RocksStorage implements Storage {
         private final KeyGenerator.Schema schemaKeyGenerator;
 
         public Schema(RocksDatabase database, RocksTransaction transaction) {
-            super(database.rocksSchema, transaction);
+            super(database.rocksSchema, database.rocksSchemaPartitionMgr, transaction);
             this.schemaKeyGenerator = database.schemaKeyGenerator();
         }
 
+        /**
+         * we duplicate the locking mechanisms from putUntracked()/get() to avoid having to create a Key wrapper class
+         * for these initialisation methods
+         */
         public void initialiseEncoding() {
-            putUntracked(ENCODING_VERSION_KEY.bytes(), ByteArray.encodeInt(ENCODING_VERSION));
-        }
-
-        public int getEncoding() {
-            ByteArray encoding = get(ENCODING_VERSION_KEY.bytes());
-            return encoding == null || encoding.isEmpty() ? 0 : encoding.decodeInt();
-        }
-
-        @Override
-        public KeyGenerator.Schema schemaKeyGenerator() {
-            return schemaKeyGenerator;
-        }
-
-        @Override
-        public void putUntracked(ByteArray key, ByteArray value) {
             assert isOpen() && !isReadOnly;
             boolean obtainedWriteLock = false;
             try {
@@ -328,7 +348,45 @@ public abstract class RocksStorage implements Storage {
                     obtainedWriteLock = true;
                 }
                 if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                storageTransaction.putUntracked(key.getBytes(), value.getBytes());
+                rocksTransaction.putUntracked(partitionMgr.get(Partition.DEFAULT),
+                        ENCODING_VERSION_KEY.bytes().getBytes(), ByteArray.encodeInt(ENCODING_VERSION).getBytes());
+            } catch (RocksDBException e) {
+                throw exception(e);
+            } finally {
+                if (obtainedWriteLock) deleteCloseSchemaWriteLock.writeLock().unlock();
+            }
+        }
+
+        public int getEncoding() {
+            try {
+                deleteCloseSchemaWriteLock.readLock().lock();
+                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
+                byte[] encoding = rocksTransaction.get(partitionMgr.get(Partition.DEFAULT), readOptions,
+                        ENCODING_VERSION_KEY.bytes().getBytes());
+                return encoding == null || encoding.length == 0 ? 0 : ByteArray.of(encoding).decodeInt();
+            } catch (RocksDBException e) {
+                throw exception(e);
+            } finally {
+                deleteCloseSchemaWriteLock.readLock().unlock();
+            }
+        }
+
+        @Override
+        public KeyGenerator.Schema schemaKeyGenerator() {
+            return schemaKeyGenerator;
+        }
+
+        @Override
+        public void putUntracked(Key key, ByteArray value) {
+            assert isOpen() && !isReadOnly;
+            boolean obtainedWriteLock = false;
+            try {
+                if (transaction.isOpen()) {
+                    deleteCloseSchemaWriteLock.writeLock().lock();
+                    obtainedWriteLock = true;
+                }
+                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
+                rocksTransaction.putUntracked(partitionMgr.get(key.partition()), key.bytes().getBytes(), value.getBytes());
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
@@ -345,18 +403,18 @@ public abstract class RocksStorage implements Storage {
 
         private final ConcurrentNavigableMap<ByteArray, Boolean> modifiedKeys;
         private final ConcurrentSkipListSet<ByteArray> deletedKeys;
-        private final ConcurrentSkipListSet<ByteArray> exclusiveInsertKeys;
+        private final ConcurrentSkipListSet<ByteArray> exclusiveBytes; // these are not real keys, just reserved bytes
         private final long snapshotStart;
         private volatile Long snapshotEnd;
 
         public Data(RocksDatabase database, RocksTransaction transaction) {
-            super(database.rocksData, transaction);
+            super(database.rocksData, database.rocksDataPartitionMgr, transaction);
             this.database = database;
             this.dataKeyGenerator = database.dataKeyGenerator();
-            this.snapshotStart = storageTransaction.getSnapshot().getSequenceNumber();
+            this.snapshotStart = snapshot.getSequenceNumber();
             this.modifiedKeys = new ConcurrentSkipListMap<>();
             this.deletedKeys = new ConcurrentSkipListSet<>();
-            this.exclusiveInsertKeys = new ConcurrentSkipListSet<>();
+            this.exclusiveBytes = new ConcurrentSkipListSet<>();
             this.snapshotEnd = null;
             if (transaction.type().isWrite()) this.database.consistencyMgr().register(this);
         }
@@ -367,33 +425,33 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public void putTracked(ByteArray key) {
-            putTracked(key, EMPTY_ARRAY);
+        public void putTracked(Key key) {
+            putTracked(key, ByteArray.empty());
         }
 
         @Override
-        public void putTracked(ByteArray key, ByteArray value) {
+        public void putTracked(Key key, ByteArray value) {
             putTracked(key, value, true);
         }
 
         @Override
-        public void putTracked(ByteArray key, ByteArray value, boolean checkConsistency) {
+        public void putTracked(Key key, ByteArray value, boolean checkConsistency) {
             putUntracked(key, value);
-            trackModified(key, checkConsistency);
+            trackModified(key.bytes(), checkConsistency);
         }
 
         @Override
-        public void putUntracked(ByteArray key) {
-            putUntracked(key, EMPTY_ARRAY);
+        public void putUntracked(Key key) {
+            putUntracked(key, ByteArray.empty());
         }
 
         @Override
-        public void putUntracked(ByteArray key, ByteArray value) {
+        public void putUntracked(Key key, ByteArray value) {
             assert isOpen() && !isReadOnly;
             try {
                 deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                storageTransaction.putUntracked(key.getBytes(), value.getBytes());
+                rocksTransaction.putUntracked(partitionMgr.get(key.partition()), key.bytes().getBytes(), value.getBytes());
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
@@ -402,11 +460,10 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public void deleteTracked(ByteArray key) {
+        public void deleteTracked(Key key) {
             deleteUntracked(key);
-            this.deletedKeys.add(key);
-            this.modifiedKeys.remove(key);
-            this.exclusiveInsertKeys.remove(key);
+            this.deletedKeys.add(key.bytes());
+            this.modifiedKeys.remove(key.bytes());
         }
 
         @Override
@@ -422,10 +479,9 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public void trackExclusiveCreate(ByteArray key) {
+        public void trackExclusiveBytes(ByteArray bytes) {
             assert isOpen();
-            this.exclusiveInsertKeys.add(key);
-            this.deletedKeys.remove(key);
+            this.exclusiveBytes.add(bytes);
         }
 
         @Override
@@ -443,12 +499,12 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public void mergeUntracked(ByteArray key, ByteArray value) {
+        public void mergeUntracked(Key key, ByteArray value) {
             assert isOpen() && !isReadOnly;
             try {
                 deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                storageTransaction.mergeUntracked(key.getBytes(), value.getBytes());
+                rocksTransaction.mergeUntracked(partitionMgr.get(key.partition()), key.bytes().getBytes(), value.getBytes());
             } catch (RocksDBException e) {
                 throw exception(e);
             } finally {
@@ -476,8 +532,8 @@ public abstract class RocksStorage implements Storage {
             return modifiedKeys.getOrDefault(key, false);
         }
 
-        public NavigableSet<ByteArray> exclusiveInsertKeys() {
-            return exclusiveInsertKeys;
+        public NavigableSet<ByteArray> exclusiveBytes() {
+            return exclusiveBytes;
         }
     }
 }

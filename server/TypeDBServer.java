@@ -49,6 +49,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ALREADY_RUNNING;
@@ -108,7 +109,7 @@ public class TypeDBServer implements AutoCloseable {
 
     private void configureLogging() {
         configureLogback((LoggerContext) LoggerFactory.getILoggerFactory(), configuration);
-        java.util.logging.Logger.getLogger("io.grpc").setLevel(java.util.logging.Level.SEVERE);
+        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
     private void configureAndVerifyJavaVersion() {

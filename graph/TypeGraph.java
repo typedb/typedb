@@ -26,8 +26,9 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
 import com.vaticle.typedb.core.graph.common.Storage;
+import com.vaticle.typedb.core.graph.common.Storage.Key;
 import com.vaticle.typedb.core.graph.iid.IndexIID;
-import com.vaticle.typedb.core.graph.iid.IndexIID.Type.Rule;
+import com.vaticle.typedb.core.graph.iid.IndexIID.Type.RuleUsage;
 import com.vaticle.typedb.core.graph.iid.StructureIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
@@ -109,7 +110,6 @@ public class TypeGraph {
         committedIIDs = new HashMap<>();
         isModified = false;
     }
-
 
     static class Cache {
 
@@ -346,7 +346,7 @@ public class TypeGraph {
             if (vertex != null) return vertex;
 
             IndexIID.Type index = IndexIID.Type.Label.of(label, scope);
-            ByteArray iid = storage.get(index.bytes());
+            ByteArray iid = storage.get(index);
             if (iid != null) {
                 vertex = typesByIID.computeIfAbsent(
                         VertexIID.Type.of(iid), i -> new TypeVertexImpl.Persisted(this, i, label, scope)
@@ -491,8 +491,7 @@ public class TypeGraph {
         }
 
         public FunctionalIterator<RuleStructure> all() {
-            Encoding.Prefix index = IndexIID.Rule.prefix();
-            FunctionalIterator<RuleStructure> persistedRules = storage.iterate(index.bytes())
+            FunctionalIterator<RuleStructure> persistedRules = storage.iterate(IndexIID.Rule.prefix())
                     .map(kv -> convert(StructureIID.Rule.of(kv.value())));
             return link(buffered(), persistedRules).distinct();
         }
@@ -523,7 +522,7 @@ public class TypeGraph {
                 if (vertex != null) return vertex;
 
                 IndexIID.Rule index = IndexIID.Rule.of(label);
-                ByteArray iid = storage.get(index.bytes());
+                ByteArray iid = storage.get(index);
                 if (iid != null) vertex = convert(StructureIID.Rule.of(iid));
                 return vertex;
             } finally {
@@ -670,26 +669,26 @@ public class TypeGraph {
                     if (rules != null && rules.contains(rule)) {
                         concludesVertex.get(type).remove(rule);
                     }
-                    storage.deleteUntracked(Rule.Key.concludedVertex(type.iid(), rule.iid()).bytes());
+                    storage.deleteUntracked(RuleUsage.concludedVertex(type.iid(), rule.iid()));
                 }
 
                 private void deleteConcludesEdgeTo(RuleStructure rule, TypeVertex type) {
                     Set<RuleStructure> rules = concludesEdgeTo.get(type);
                     if (rules != null) rules.remove(rule);
-                    storage.deleteUntracked(Rule.Key.concludedEdgeTo(type.iid(), rule.iid()).bytes());
+                    storage.deleteUntracked(RuleUsage.concludedEdgeTo(type.iid(), rule.iid()));
                 }
 
                 private Set<RuleStructure> loadConcludesVertex(TypeVertex type) {
-                    Rule scanPrefix = Rule.Prefix.concludedVertex(type.iid());
-                    return storage.iterate(scanPrefix.bytes())
-                            .map(kv -> StructureIID.Rule.of((kv.key().view(scanPrefix.length()))))
+                    Key.Prefix<RuleUsage> prefix = RuleUsage.prefixConcludedVertex(type.iid());
+                    return storage.iterate(prefix)
+                            .map(kv -> StructureIID.Rule.of((kv.key().bytes().view(prefix.bytes().length()))))
                             .map(Rules.this::convert).toSet();
                 }
 
                 private Set<RuleStructure> loadConcludesEdgeTo(TypeVertex attrType) {
-                    Rule scanPrefix = Rule.Prefix.concludedEdgeTo(attrType.iid());
-                    return storage.iterate(scanPrefix.bytes())
-                            .map(kv -> StructureIID.Rule.of(kv.key().view(scanPrefix.length())))
+                    Key.Prefix<RuleUsage> prefix = RuleUsage.prefixConcludedEdgeTo(attrType.iid());
+                    return storage.iterate(prefix)
+                            .map(kv -> StructureIID.Rule.of(kv.key().bytes().view(prefix.bytes().length())))
                             .map(Rules.this::convert).toSet();
                 }
 
@@ -729,15 +728,15 @@ public class TypeGraph {
                     concludesVertex.forEach((type, rules) -> {
                         VertexIID.Type typeIID = type.iid();
                         rules.forEach(rule -> {
-                            Rule concludesVertex = Rule.Key.concludedVertex(typeIID, rule.iid());
-                            storage.putUntracked(concludesVertex.bytes());
+                            RuleUsage concludesVertex = RuleUsage.concludedVertex(typeIID, rule.iid());
+                            storage.putUntracked(concludesVertex);
                         });
                     });
                     concludesEdgeTo.forEach((type, rules) -> {
                         VertexIID.Type typeIID = type.iid();
                         rules.forEach(rule -> {
-                            Rule concludesEdgeTo = Rule.Key.concludedEdgeTo(typeIID, rule.iid());
-                            storage.putUntracked(concludesEdgeTo.bytes());
+                            RuleUsage concludesEdgeTo = RuleUsage.concludedEdgeTo(typeIID, rule.iid());
+                            storage.putUntracked(concludesEdgeTo);
                         });
                     });
                 }
@@ -814,13 +813,13 @@ public class TypeGraph {
                 private void delete(RuleStructure rule, TypeVertex type) {
                     Set<RuleStructure> rules = references.get(type);
                     if (rules != null) rules.remove(rule);
-                    storage.deleteUntracked(Rule.Key.contained(type.iid(), rule.iid()).bytes());
+                    storage.deleteUntracked(RuleUsage.contained(type.iid(), rule.iid()));
                 }
 
                 private Set<RuleStructure> loadIndex(TypeVertex type) {
-                    Rule scanPrefix = Rule.Prefix.contained(type.iid());
-                    return storage.iterate(scanPrefix.bytes())
-                            .map(kv -> StructureIID.Rule.of(kv.key().view(scanPrefix.length())))
+                    Key.Prefix<RuleUsage> prefix = RuleUsage.prefixContained(type.iid());
+                    return storage.iterate(prefix)
+                            .map(kv -> StructureIID.Rule.of(kv.key().bytes().view(prefix.bytes().length())))
                             .map(Rules.this::convert).toSet();
                 }
 
@@ -855,8 +854,8 @@ public class TypeGraph {
 
                 private void commit() {
                     references.forEach((type, rules) -> rules.forEach(rule -> {
-                        Rule typeInRule = Rule.Key.contained(type.iid(), rule.iid());
-                        storage.putUntracked(typeInRule.bytes());
+                        RuleUsage typeInRule = RuleUsage.contained(type.iid(), rule.iid());
+                        storage.putUntracked(typeInRule);
                     }));
                 }
 

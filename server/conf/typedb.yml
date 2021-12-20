@@ -46,7 +46,7 @@ log:
       output: [ stdout, file ]
     storage:
       filter: com.vaticle.typedb.core.rocks
-      level: warn # on 'debug' the server will periodically log storage properties
+      level: info # on 'debug' the server will periodically log storage properties
       output: [ stdout, file ]
   debugger:
     reasoner:

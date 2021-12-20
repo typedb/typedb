@@ -26,15 +26,15 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised
 
 public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID {
 
-    public static final int LENGTH = 1;
+    public static final int DEFAULT_LENGTH = 1;
 
     private InfixIID(ByteArray bytes) {
         super(bytes);
     }
 
-    abstract EDGE_ENCODING encoding();
+    public abstract EDGE_ENCODING encoding();
 
-    boolean isOutwards() {
+    public boolean isOutwards() {
         return Encoding.Edge.isOut(bytes.get(0));
     }
 
@@ -57,19 +57,19 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
         private Type(ByteArray bytes) {
             super(bytes);
-            assert bytes.length() == LENGTH;
+            assert bytes.length() == DEFAULT_LENGTH;
         }
 
-        static Type of(Encoding.Infix infix) {
+        public static Type of(Encoding.Infix infix) {
             return new Type(infix.bytes());
         }
 
-        static Type extract(ByteArray bytes, int from) {
+        public static Type extract(ByteArray bytes, int from) {
             return new Type(bytes.view(from, from + 1));
         }
 
         @Override
-        Encoding.Edge.Type encoding() {
+        public Encoding.Edge.Type encoding() {
             return Encoding.Edge.Type.of(bytes.get(0));
         }
     }
@@ -112,7 +112,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         @Override
-        Encoding.Edge.Thing encoding() {
+        public Encoding.Edge.Thing encoding() {
             return Encoding.Edge.Thing.of(bytes.get(0));
         }
 
@@ -135,9 +135,15 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
             else assert false;
             return null;
         }
+
+        public boolean isRolePlayer() {
+            return false;
+        }
     }
 
     public static class RolePlayer extends InfixIID.Thing {
+
+        public static final int LENGTH = DEFAULT_LENGTH + VertexIID.Type.LENGTH;
 
         private RolePlayer(ByteArray bytes) {
             super(bytes);
@@ -149,11 +155,16 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         static RolePlayer extract(ByteArray bytes, int from) {
-            return new RolePlayer(join(bytes.view(from, from + 1), VertexIID.Type.extract(bytes, from + LENGTH).bytes()));
+            return new RolePlayer(join(bytes.view(from, from + DEFAULT_LENGTH), VertexIID.Type.extract(bytes, from + DEFAULT_LENGTH).bytes));
         }
 
         public VertexIID.Type tail() {
-            return VertexIID.Type.extract(bytes, LENGTH);
+            return VertexIID.Type.extract(bytes, DEFAULT_LENGTH);
+        }
+
+        @Override
+        public boolean isRolePlayer() {
+            return true;
         }
     }
 }
