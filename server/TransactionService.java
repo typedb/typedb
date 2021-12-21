@@ -92,8 +92,8 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private volatile TypeDB.Transaction transaction;
     private volatile Options.Transaction options;
     private volatile Services services;
-    private volatile int networkLatencyMillis;
     private volatile ScheduledFuture<?> scheduledTimeout;
+    private volatile int networkLatencyMillis;
 
     private class Services {
         private final ConceptService concept = new ConceptService(TransactionService.this, transaction.concepts());
