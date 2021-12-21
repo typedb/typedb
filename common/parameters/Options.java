@@ -52,7 +52,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Boolean explain = null;
     private Boolean parallel = null;
     private Integer prefetchSize = null;
-    private Long sessionIdlTimeoutMillis = null;
+    private Long sessionIdleTimeoutMillis = null;
     private Long transactionTimeoutMillis = null;
     private Long schemaLockAcquireTimeoutMillis = null;
     private Boolean readAnyReplica = null;
@@ -126,18 +126,13 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     }
 
     public long sessionIdleTimeoutMillis() {
-        if (sessionIdlTimeoutMillis != null) return sessionIdlTimeoutMillis;
+        if (sessionIdleTimeoutMillis != null) return sessionIdleTimeoutMillis;
         else if (parent != null) return parent.sessionIdleTimeoutMillis();
         else return DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS;
     }
 
     public SELF sessionIdleTimeoutMillis(long idleTimeoutMillis) {
-        this.sessionIdlTimeoutMillis = idleTimeoutMillis;
-        return getThis();
-    }
-
-    public SELF transactionTimeoutMillis(long timeoutMillis) {
-        this.transactionTimeoutMillis = timeoutMillis;
+        this.sessionIdleTimeoutMillis = idleTimeoutMillis;
         return getThis();
     }
 
@@ -145,6 +140,11 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         if (transactionTimeoutMillis != null) return transactionTimeoutMillis;
         else if (parent != null) return parent.transactionTimeoutMillis();
         else return DEFAULT_TRANSACTION_TIMEOUT_MILLIS;
+    }
+
+    public SELF transactionTimeoutMillis(long timeoutMillis) {
+        this.transactionTimeoutMillis = timeoutMillis;
+        return getThis();
     }
 
     public long schemaLockTimeoutMillis() {
