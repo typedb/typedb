@@ -22,16 +22,22 @@ import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import java.nio.file.Path;
 
+import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONING_CANNOT_BE_TOGGLED_PER_QUERY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_IDLE_TIMEOUT_NOT_CONFIGURABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_TIMEOUT_NOT_CONFIGURABLE;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options<?, ?>> {
 
     public static final int DEFAULT_PREFETCH_SIZE = 50;
-    public static final int DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = 30_000;
-    public static final int DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = 10_000;
+    public static final long DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS = SECONDS.toMillis(30);
+    public static final long DEFAULT_TRANSACTION_TIMEOUT_MILLIS = MINUTES.toMillis(5);
+    public static final long DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = SECONDS.toMillis(10);
     public static final boolean DEFAULT_INFER = false;
     public static final boolean DEFAULT_TRACE_INFERENCE = false;
     public static final boolean DEFAULT_EXPLAIN = false;
@@ -46,8 +52,9 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Boolean explain = null;
     private Boolean parallel = null;
     private Integer prefetchSize = null;
-    private Integer sessionIdlTimeoutMillis = null;
-    private Integer schemaLockAcquireTimeoutMillis = null;
+    private Long sessionIdleTimeoutMillis = null;
+    private Long transactionTimeoutMillis = null;
+    private Long schemaLockAcquireTimeoutMillis = null;
     private Boolean readAnyReplica = null;
     protected Boolean prefetch = null;
     protected Path typeDBDir = null;
@@ -118,24 +125,35 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         return getThis();
     }
 
-    public int sessionIdleTimeoutMillis() {
-        if (sessionIdlTimeoutMillis != null) return sessionIdlTimeoutMillis;
+    public long sessionIdleTimeoutMillis() {
+        if (sessionIdleTimeoutMillis != null) return sessionIdleTimeoutMillis;
         else if (parent != null) return parent.sessionIdleTimeoutMillis();
         else return DEFAULT_SESSION_IDLE_TIMEOUT_MILLIS;
     }
 
-    public SELF sessionIdleTimeoutMillis(int idleTimeoutMillis) {
-        this.sessionIdlTimeoutMillis = idleTimeoutMillis;
+    public SELF sessionIdleTimeoutMillis(long idleTimeoutMillis) {
+        this.sessionIdleTimeoutMillis = idleTimeoutMillis;
         return getThis();
     }
 
-    public int schemaLockTimeoutMillis() {
+    public long transactionTimeoutMillis() {
+        if (transactionTimeoutMillis != null) return transactionTimeoutMillis;
+        else if (parent != null) return parent.transactionTimeoutMillis();
+        else return DEFAULT_TRANSACTION_TIMEOUT_MILLIS;
+    }
+
+    public SELF transactionTimeoutMillis(long timeoutMillis) {
+        this.transactionTimeoutMillis = timeoutMillis;
+        return getThis();
+    }
+
+    public long schemaLockTimeoutMillis() {
         if (schemaLockAcquireTimeoutMillis != null) return schemaLockAcquireTimeoutMillis;
         else if (parent != null) return parent.schemaLockTimeoutMillis();
         else return DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS;
     }
 
-    public SELF schemaLockTimeoutMillis(int acquireSchemaLockTimeoutMillis) {
+    public SELF schemaLockTimeoutMillis(long acquireSchemaLockTimeoutMillis) {
         this.schemaLockAcquireTimeoutMillis = acquireSchemaLockTimeoutMillis;
         return getThis();
     }
@@ -232,6 +250,11 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
         Transaction getThis() {
             return this;
         }
+
+        @Override
+        public Transaction sessionIdleTimeoutMillis(long idleTimeoutMillis) {
+            throw TypeDBException.of(SESSION_IDLE_TIMEOUT_NOT_CONFIGURABLE, className(getClass()));
+        }
     }
 
     public static class Query extends Options<Transaction, Query> {
@@ -268,10 +291,14 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
             throw TypeDBException.of(REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY);
         }
 
+        @Override
+        public Query transactionTimeoutMillis(long timeoutMillis) {
+            throw TypeDBException.of(TRANSACTION_TIMEOUT_NOT_CONFIGURABLE, className(getClass()));
+        }
+
         public Query prefetch(boolean prefetch) {
             this.prefetch = prefetch;
             return this;
         }
-
     }
 }

@@ -207,7 +207,7 @@ public abstract class RocksSession implements TypeDB.Session {
             long lock = 0;
             if (type == Arguments.Transaction.Type.WRITE) {
                 try {
-                    int timeout = options.schemaLockTimeoutMillis();
+                    long timeout = options.schemaLockTimeoutMillis();
                     lock = database().schemaLock().tryReadLock(timeout, MILLISECONDS);
                     if (lock == 0) throw TypeDBException.of(DATA_ACQUIRE_LOCK_TIMEOUT);
                 } catch (InterruptedException e) {
