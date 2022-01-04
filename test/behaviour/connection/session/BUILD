@@ -62,7 +62,6 @@ java_test(
         "@vaticle_typedb_behaviour//connection:session.feature",
     ],
     size = "medium",
-
 )
 
 checkstyle_test(

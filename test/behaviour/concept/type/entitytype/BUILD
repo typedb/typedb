@@ -52,7 +52,6 @@ java_test(
         "@vaticle_typedb_behaviour//concept/type:entitytype.feature",
     ],
     size = "medium",
-
 )
 
 checkstyle_test(

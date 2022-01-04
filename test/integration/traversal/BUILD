@@ -41,7 +41,6 @@ host_compatible_java_test(
         "@vaticle_typeql_lang_java//common",
         "@vaticle_typedb_common//:common"
     ],
-
 )
 
 checkstyle_test(

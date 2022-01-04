@@ -63,7 +63,6 @@ java_test(
         "@vaticle_typedb_behaviour//connection:transaction.feature",
     ],
     size = "small",
-
 )
 
 checkstyle_test(

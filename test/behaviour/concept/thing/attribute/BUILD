@@ -65,7 +65,6 @@ java_test(
         "@vaticle_typedb_behaviour//concept/thing:attribute.feature",
     ],
     size = "small",
-
 )
 
 checkstyle_test(

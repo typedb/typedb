@@ -39,7 +39,6 @@ java_test(
     ],
     size = "medium",
     visibility = ["//visibility:public"],
-
 )
 
 checkstyle_test(

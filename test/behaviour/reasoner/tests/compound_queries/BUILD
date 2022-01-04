@@ -37,7 +37,6 @@ java_test(
     data = [
         "@vaticle_typedb_behaviour//typeql/reasoner:compound-queries.feature",
     ],
-
 )
 
 checkstyle_test(

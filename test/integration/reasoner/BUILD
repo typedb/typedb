@@ -38,7 +38,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
-
 )
 
 host_compatible_java_test(
@@ -63,7 +62,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
-
 )
 
 host_compatible_java_test(
@@ -89,7 +87,6 @@ host_compatible_java_test(
         "@vaticle_typeql_lang_java//:typeql-lang",
         "@vaticle_typedb_common//:common",
     ],
-
 )
 
 host_compatible_java_test(

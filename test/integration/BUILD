@@ -59,7 +59,6 @@ host_compatible_java_test(
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
     data = [":schema.tql"],
-
 )
 
 host_compatible_java_test(

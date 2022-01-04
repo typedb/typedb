@@ -38,7 +38,6 @@ java_test(
     data = [
         "@vaticle_typedb_behaviour//typeql/reasoner:variable-roles.feature",
     ],
-
 )
 
 checkstyle_test(

@@ -52,7 +52,6 @@ java_test(
         ":debug.feature",
     ],
     size = "medium",
-
 )
 
 checkstyle_test(

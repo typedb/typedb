@@ -40,7 +40,6 @@ java_test(
     ],
     size = "small",
     visibility = ["//visibility:public"],
-
 )
 
 

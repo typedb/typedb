@@ -69,7 +69,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
     ],
     data = [":basic-schema.tql", ":test-type-inference.tql"],
-
 )
 
 host_compatible_java_test(
@@ -139,7 +138,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
-
 )
 
 host_compatible_java_test(
@@ -163,7 +161,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
-
 )
 
 checkstyle_test(
