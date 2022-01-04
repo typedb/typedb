@@ -31,8 +31,9 @@ host_compatible_java_test(
         "//common/test:util",
     ],
     deps = [
+        "//test/integration/util:util",
     ],
-    data = ["data"],
+    data = glob(["data/**"]),
     size = "small",
 )
 

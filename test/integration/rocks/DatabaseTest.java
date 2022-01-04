@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.rocks;
 
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.test.integration.util.Util;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -43,6 +44,7 @@ public class DatabaseTest {
                 .storageIndexCacheSize(MB).storageDataCacheSize(MB);
         RocksTypeDB typedb = rocksFactory.typedb(options);
         typedb.databases().create("test");
+        typedb.close();
     }
 
     @Test
@@ -51,7 +53,6 @@ public class DatabaseTest {
         Path logDir = dataDir.resolve("logs");
         Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
                 .storageIndexCacheSize(MB).storageDataCacheSize(MB);
-
         assertThrowsWithMessage(
                 () -> rocksFactory.typedb(options),
                 INCOMPATIBLE_ENCODING.message("test", 0, Encoding.ENCODING_VERSION)
