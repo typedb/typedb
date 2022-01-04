@@ -74,7 +74,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.DATA;
-import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static com.vaticle.typedb.core.graph.common.Encoding.ENCODING_VERSION;
@@ -143,11 +142,14 @@ public class RocksDatabase implements TypeDB.Database {
     }
 
     protected void initialise() {
+        createOrLoadSchemaRocks();
         initialiseSchema();
-        initialiseData();
-        mayInitRocksLogger();
+        createDataRocks();
         isOpen.set(true);
-        try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
+    }
+
+    private void initialiseSchema() {
+        try (RocksSession.Schema session = sessionFactory.sessionSchema(this, new Options.Session())) {
             try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
                 if (txn.graph().isInitialised()) throw TypeDBException.of(DIRTY_INITIALISATION);
                 txn.schemaStorage().initialiseEncoding();
@@ -157,7 +159,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    private void initialiseSchema() {
+    private void createOrLoadSchemaRocks() {
         try {
             List<ColumnFamilyDescriptor> schemaDescriptors = RocksPartitionManager.Schema.descriptors(rocksConfiguration.schema());
             List<ColumnFamilyHandle> schemaHandles = new ArrayList<>();
@@ -173,7 +175,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    private void initialiseData() {
+    private void createDataRocks() {
         try {
             List<ColumnFamilyDescriptor> dataDescriptors = RocksPartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
@@ -189,14 +191,18 @@ public class RocksDatabase implements TypeDB.Database {
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
+        mayInitRocksLogger();
     }
 
     protected void load() {
-        loadSchema();
-        loadData();
-        mayInitRocksLogger();
+        createOrLoadSchemaRocks();
+        validateAndSyncSchema();
+        loadDataRocks();
         isOpen.set(true);
-        try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
+    }
+
+    private void validateAndSyncSchema() {
+        try (RocksSession.Schema session = sessionFactory.sessionSchema(this, new Options.Session())) {
             try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
                 validateEncoding(txn.schemaStorage());
                 schemaKeyGenerator.sync(txn.schemaStorage());
@@ -205,12 +211,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    private void loadSchema() {
-        // loading a Rocks database with just the default column family is the same process are creating it
-        initialiseSchema();
-    }
-
-    private void loadData() {
+    private void loadDataRocks() {
         try {
             List<ColumnFamilyDescriptor> dataDescriptors = RocksPartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
@@ -225,6 +226,7 @@ public class RocksDatabase implements TypeDB.Database {
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
+        mayInitRocksLogger();
     }
 
     private void mayInitRocksLogger() {
