@@ -22,6 +22,8 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,6 +34,9 @@ public abstract class Controller<PUB_CID, PACKET,
         PROCESSOR extends Processor<PACKET, PUB_CID, PROCESSOR>,
         CONTROLLER extends Controller<PUB_CID, PACKET, PROCESSOR, CONTROLLER>> extends Actor<CONTROLLER> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
+
+    private boolean terminated;
     private final ActorExecutorGroup executorService;
     protected final Map<PACKET, Actor.Driver<PROCESSOR>> processors;
 
@@ -39,6 +44,7 @@ public abstract class Controller<PUB_CID, PACKET,
         super(driver, name);
         this.executorService = executorService;
         this.processors = new HashMap<>();
+        this.terminated = false;
     }
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PACKET id);
@@ -64,6 +70,15 @@ public abstract class Controller<PUB_CID, PACKET,
         Driver<PROCESSOR> processor = Actor.driver(createProcessorFunc(id), executorService);
         processor.execute(Processor::setUp);
         return processor;
+    }
+
+    public void terminate(Throwable cause) {
+        LOG.debug("Actor terminated. ", cause);
+        this.terminated = true;
+    }
+
+    public boolean isTerminated() {
+        return terminated;
     }
 
     @Override

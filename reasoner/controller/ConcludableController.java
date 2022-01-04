@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -25,7 +26,6 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
-import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionBuilder;
@@ -35,16 +35,18 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
 public class ConcludableController extends Controller<Conclusion, ConceptMap,
-        ConcludableController.ConcludableProcessor, ConcludableController> {  // TODO: Note Resolvable not Concludable
+        ConcludableController.ConcludableProcessor, ConcludableController> {
 
     private final LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions;
     private final Set<Identifier.Variable.Retrievable> unboundVars;
@@ -61,21 +63,40 @@ public class ConcludableController extends Controller<Conclusion, ConceptMap,
     }
 
     private LinkedHashMap<Conclusion, Set<Unifier>> initialiseUpstreamConclusions() {
-        return null;  // TODO
+        LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions = new LinkedHashMap<>();
+        concludable.getApplicableRules(registry.conceptManager(), registry.logicManager())
+                .forEachRemaining(rule -> concludable.getUnifiers(rule).forEachRemaining(unifier -> {
+                    // TODO: Do we need to terminate the actor here? We did in the previous model
+                    try {
+                        registry.registerConclusionController(rule.conclusion());
+                        upstreamConclusions.computeIfAbsent(rule.conclusion(), r -> new HashSet<>()).add(unifier);
+                    } catch (TypeDBException e) {
+                        terminate(e);
+                    }
+                }));
+        return upstreamConclusions;
     }
 
     private Set<Identifier.Variable.Retrievable> unboundVars() {
-        return null;  // TODO
+        Set<Identifier.Variable.Retrievable> missingBounds = new HashSet<>();
+        iterate(concludable.pattern().variables())
+                .filter(var -> var.id().isRetrievable())
+                .forEachRemaining(var -> {
+                    if (var.isType() && !var.asType().label().isPresent()) {
+                        missingBounds.add(var.asType().id().asRetrievable());
+                    } else if (var.isThing() && !var.asThing().iid().isPresent()) {
+                        missingBounds.add(var.asThing().id().asRetrievable());
+                    }
+                });
+        return missingBounds;
     }
 
     @Override
     protected Function<Driver<ConcludableProcessor>, ConcludableProcessor> createProcessorFunc(ConceptMap bounds) {
-        return driver -> new ConcludableProcessor(driver, driver(), "", bounds, unboundVars, upstreamConclusions,
-                                                  () -> traversalIterator(concludable.pattern(), bounds));
-    }
-
-    private FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
-        return null;  // TODO
+        return driver -> new ConcludableProcessor(
+                driver, driver(), "", bounds, unboundVars, upstreamConclusions,
+                () -> TraversalUtils.traversalIterator(registry, concludable.pattern(), bounds)
+        );
     }
 
     @Override
@@ -121,6 +142,7 @@ public class ConcludableController extends Controller<Conclusion, ConceptMap,
 
         private static Map<Identifier.Variable, Concept> unpack(ConceptMap conceptMap) {
             // return conceptMap.concepts();  // TODO: Doesn't work, could be a big issue
+            // TODO: Presents the good question: should conclusions be identifiable by ConceptMap, or more precisely by Map<Variable, Concept>?
             return null;
         }
     }
