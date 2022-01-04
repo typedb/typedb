@@ -41,7 +41,6 @@ host_compatible_java_test(
         # External dependencies from Maven
         "@maven//:com_google_protobuf_protobuf_java",
     ],
-
     data = [":schema.tql", "data.typedb"],
     size = "large",
 )

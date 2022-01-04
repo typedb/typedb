@@ -33,8 +33,6 @@ host_compatible_java_test(
         "//rocks:rocks",
         "//traversal:traversal",
     ],
-
-
     test_class = "com.vaticle.typedb.core.logic.RuleTest",
     deps = [
         "//test/integration/util",
