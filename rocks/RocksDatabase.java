@@ -148,6 +148,7 @@ public class RocksDatabase implements TypeDB.Database {
         createOrLoadSchema();
         putEncodingVersion();
         createData();
+        isOpen.set(true);
         try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
             try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
                 if (txn.graph().isInitialised()) throw TypeDBException.of(DIRTY_INITIALISATION);
@@ -155,7 +156,6 @@ public class RocksDatabase implements TypeDB.Database {
                 txn.commit();
             }
         }
-        isOpen.set(true);
     }
 
     private void createOrLoadSchema() {
@@ -197,13 +197,13 @@ public class RocksDatabase implements TypeDB.Database {
         createOrLoadSchema();
         validateEncodingVersion();
         loadData();
+        isOpen.set(true);
         try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
             try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
                 schemaKeyGenerator.sync(txn.schemaStorage());
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
         }
-        isOpen.set(true);
     }
 
     private void loadData() {
