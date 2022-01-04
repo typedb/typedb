@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
+import com.vaticle.typedb.core.graph.common.Storage;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.traversal.TraversalCache;
 import org.rocksdb.ColumnFamilyDescriptor;
@@ -74,9 +75,11 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.DATA;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static com.vaticle.typedb.core.graph.common.Encoding.ENCODING_VERSION;
+import static com.vaticle.typedb.core.graph.common.Encoding.System.ENCODING_VERSION_KEY;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -142,24 +145,20 @@ public class RocksDatabase implements TypeDB.Database {
     }
 
     protected void initialise() {
-        createOrLoadSchemaRocks();
-        initialiseSchema();
-        createDataRocks();
-        isOpen.set(true);
-    }
-
-    private void initialiseSchema() {
-        try (RocksSession.Schema session = sessionFactory.sessionSchema(this, new Options.Session())) {
+        createOrLoadSchema();
+        putEncodingVersion();
+        createData();
+        try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
             try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
                 if (txn.graph().isInitialised()) throw TypeDBException.of(DIRTY_INITIALISATION);
-                txn.schemaStorage().initialiseEncoding();
                 txn.graph().initialise();
                 txn.commit();
             }
         }
+        isOpen.set(true);
     }
 
-    private void createOrLoadSchemaRocks() {
+    private void createOrLoadSchema() {
         try {
             List<ColumnFamilyDescriptor> schemaDescriptors = RocksPartitionManager.Schema.descriptors(rocksConfiguration.schema());
             List<ColumnFamilyHandle> schemaHandles = new ArrayList<>();
@@ -175,7 +174,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    private void createDataRocks() {
+    private void createData() {
         try {
             List<ColumnFamilyDescriptor> dataDescriptors = RocksPartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
@@ -195,23 +194,19 @@ public class RocksDatabase implements TypeDB.Database {
     }
 
     protected void load() {
-        createOrLoadSchemaRocks();
-        validateAndSyncSchema();
-        loadDataRocks();
-        isOpen.set(true);
-    }
-
-    private void validateAndSyncSchema() {
-        try (RocksSession.Schema session = sessionFactory.sessionSchema(this, new Options.Session())) {
+        createOrLoadSchema();
+        validateEncodingVersion();
+        loadData();
+        try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
             try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
-                validateEncoding(txn.schemaStorage());
                 schemaKeyGenerator.sync(txn.schemaStorage());
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
         }
+        isOpen.set(true);
     }
 
-    private void loadDataRocks() {
+    private void loadData() {
         try {
             List<ColumnFamilyDescriptor> dataDescriptors = RocksPartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
@@ -241,10 +236,25 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    private void validateEncoding(RocksStorage.Schema schemaStorage) {
-        int encoding = schemaStorage.getEncoding();
-        if (encoding != ENCODING_VERSION) {
-            throw TypeDBException.of(INCOMPATIBLE_ENCODING, name(), encoding, ENCODING_VERSION);
+    private void putEncodingVersion() {
+        try {
+            rocksSchema.put(rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
+                    ENCODING_VERSION_KEY.bytes().getBytes(), ByteArray.encodeInt(ENCODING_VERSION).getBytes());
+        } catch (RocksDBException e) {
+            throw TypeDBException.of(e);
+        }
+    }
+
+    private void validateEncodingVersion() {
+        try {
+            byte[] encodingBytes = rocksSchema.get(rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
+                    ENCODING_VERSION_KEY.bytes().getBytes());
+            int encoding = encodingBytes == null || encodingBytes.length == 0 ? 0 : ByteArray.of(encodingBytes).decodeInt();
+            if (encoding != ENCODING_VERSION) {
+                throw TypeDBException.of(INCOMPATIBLE_ENCODING, name(), encoding, ENCODING_VERSION);
+            }
+        } catch (RocksDBException e) {
+            throw TypeDBException.of(e);
         }
     }
 
