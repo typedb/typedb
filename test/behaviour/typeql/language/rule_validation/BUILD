@@ -40,7 +40,7 @@ java_test(
     ],
     size = "small",
     visibility = ["//visibility:public"],
-    resource_strip_prefix = "common/test",
+
 )
 
 

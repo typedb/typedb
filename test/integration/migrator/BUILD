@@ -41,7 +41,7 @@ host_compatible_java_test(
         # External dependencies from Maven
         "@maven//:com_google_protobuf_protobuf_java",
     ],
-    resource_strip_prefix = "common/test",
+
     data = [":schema.tql", "data.typedb"],
     size = "large",
 )

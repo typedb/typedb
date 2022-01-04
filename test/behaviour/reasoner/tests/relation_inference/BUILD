@@ -37,7 +37,7 @@ java_test(
     data = [
         "@vaticle_typedb_behaviour//typeql/reasoner:relation-inference.feature",
     ],
-    resource_strip_prefix = "common/test",
+
 )
 
 checkstyle_test(

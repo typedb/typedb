@@ -40,7 +40,7 @@ java_test(
     ],
     size = "medium",
     visibility = ["//visibility:public"],
-    resource_strip_prefix = "common/test",
+
 )
 
 checkstyle_test(

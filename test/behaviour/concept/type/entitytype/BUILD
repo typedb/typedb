@@ -52,7 +52,7 @@ java_test(
         "@vaticle_typedb_behaviour//concept/type:entitytype.feature",
     ],
     size = "medium",
-    resource_strip_prefix = "common/test",
+
 )
 
 checkstyle_test(

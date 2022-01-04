@@ -57,7 +57,7 @@ java_test(
         "@vaticle_typedb_behaviour//connection:database.feature",
     ],
     size = "medium",
-    resource_strip_prefix = "common/test",
+
 )
 
 checkstyle_test(

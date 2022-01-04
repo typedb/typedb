@@ -66,7 +66,7 @@ java_test(
         "@vaticle_typedb_behaviour//concept/thing:entity.feature",
     ],
     size = "small",
-    resource_strip_prefix = "common/test",
+
 )
 
 checkstyle_test(
