@@ -38,9 +38,7 @@ host_compatible_java_test(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob([
-        "*"
-    ]),
-    exclude = ["data"],
+    include = glob(["*"]),
+    exclude=glob(["data/**"]),
     license_type = "agpl",
 )
