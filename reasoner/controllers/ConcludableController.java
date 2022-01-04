@@ -70,7 +70,7 @@ public class ConcludableController extends Controller<Conclusion, ConceptMap,
     @Override
     protected Function<Driver<ConcludableProcessor>, ConcludableProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new ConcludableProcessor(driver, driver(), "", bounds, unboundVars, upstreamConclusions,
-                                                  () -> traversalIterator(concludable.asConcludable().pattern(), bounds));  // TODO: WOuld be better not to have to do this cast
+                                                  () -> traversalIterator(concludable.pattern(), bounds));
     }
 
     private FunctionalIterator<ConceptMap> traversalIterator(Conjunction conjunction, ConceptMap bounds) {
