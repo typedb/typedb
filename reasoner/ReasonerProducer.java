@@ -148,7 +148,6 @@ public class ReasonerProducer implements Producer<ConceptMap> {
 
     private void finish() {
         if (!done) {
-            // query is completely terminated
             done = true;
             queue.done();
             required.set(0);
