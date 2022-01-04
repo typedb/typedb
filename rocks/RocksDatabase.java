@@ -145,9 +145,9 @@ public class RocksDatabase implements TypeDB.Database {
     }
 
     protected void initialise() {
-        createOrLoadSchema();
-        putEncodingVersion();
-        createData();
+        initialiseOrLoadSchema();
+        initialiseEncodingVersion();
+        initialiseData();
         isOpen.set(true);
         try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
             try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
@@ -158,7 +158,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    private void createOrLoadSchema() {
+    private void initialiseOrLoadSchema() {
         try {
             List<ColumnFamilyDescriptor> schemaDescriptors = RocksPartitionManager.Schema.descriptors(rocksConfiguration.schema());
             List<ColumnFamilyHandle> schemaHandles = new ArrayList<>();
@@ -174,7 +174,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    private void createData() {
+    private void initialiseData() {
         try {
             List<ColumnFamilyDescriptor> dataDescriptors = RocksPartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
@@ -194,7 +194,7 @@ public class RocksDatabase implements TypeDB.Database {
     }
 
     protected void load() {
-        createOrLoadSchema();
+        initialiseOrLoadSchema();
         validateEncodingVersion();
         loadData();
         isOpen.set(true);
@@ -236,7 +236,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    private void putEncodingVersion() {
+    private void initialiseEncodingVersion() {
         try {
             rocksSchema.put(rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
                     ENCODING_VERSION_KEY.bytes().getBytes(), ByteArray.encodeInt(ENCODING_VERSION).getBytes());
