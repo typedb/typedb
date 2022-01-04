@@ -80,7 +80,7 @@ public abstract class ConjunctionController<CONTROLLER extends Controller<Resolv
     }
 
     @Override
-    protected ConnectionBuilder<Resolvable<?>, ConceptMap, ?, ?> getPublisherController(ConnectionRequest<Resolvable<?>, ConceptMap, ?> connectionRequest) {
+    protected ConnectionBuilder<Resolvable<?>, ConceptMap, ?, ?> getProviderController(ConnectionRequest<Resolvable<?>, ConceptMap, ?> connectionRequest) {
         Resolvable<?> pubCID = connectionRequest.pubControllerId();
         if (pubCID.isRetrievable()) {
             ResolverView.FilteredRetrievable controller = registry.registerRetrievableController(pubCID.asRetrievable());

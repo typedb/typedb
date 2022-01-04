@@ -43,15 +43,15 @@ public abstract class Controller<PUB_CID, PACKET,
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PACKET id);
 
-    void findPublisherForConnection(ConnectionRequest<PUB_CID, PACKET, PROCESSOR> connectionRequest) {
-        getPublisherController(connectionRequest).publisherController().execute(
-                actor -> actor.makeConnection(getPublisherController(connectionRequest)));
+    void findProviderForConnection(ConnectionRequest<PUB_CID, PACKET, PROCESSOR> connectionRequest) {
+        getProviderController(connectionRequest).providerController().execute(
+                actor -> actor.makeConnection(getProviderController(connectionRequest)));
     }
 
-    protected abstract ConnectionBuilder<PUB_CID, PACKET, ?, ?> getPublisherController(ConnectionRequest<PUB_CID, PACKET, ?> connectionRequest);
+    protected abstract ConnectionBuilder<PUB_CID, PACKET, ?, ?> getProviderController(ConnectionRequest<PUB_CID, PACKET, ?> connectionRequest);
 
     void makeConnection(ConnectionBuilder<?, PACKET, ?, ?> connectionBuilder) {
-        computeProcessorIfAbsent(connectionBuilder.publisherProcessorId())
+        computeProcessorIfAbsent(connectionBuilder.receiverProcessorId())
                 .execute(actor -> actor.acceptConnection(connectionBuilder));
     }
 

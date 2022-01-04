@@ -78,7 +78,7 @@ public class ConcludableController extends Controller<Conclusion, ConceptMap,
     }
 
     @Override
-    protected ConnectionBuilder<Conclusion, ConceptMap, ?, ?> getPublisherController(ConnectionRequest<Conclusion, ConceptMap, ?> connectionRequest) {
+    protected ConnectionBuilder<Conclusion, ConceptMap, ?, ?> getProviderController(ConnectionRequest<Conclusion, ConceptMap, ?> connectionRequest) {
         return connectionRequest.createConnectionBuilder(registry.registerConclusionController(connectionRequest.pubControllerId()));
     }
 

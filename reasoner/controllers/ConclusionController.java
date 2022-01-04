@@ -41,7 +41,7 @@ public class ConclusionController extends Controller<Conjunction, ConceptMap, Co
     }
 
     @Override
-    protected ConnectionBuilder<Conjunction, ConceptMap, ?, ?> getPublisherController(ConnectionRequest<Conjunction, ConceptMap, ?> connectionRequest) {
+    protected ConnectionBuilder<Conjunction, ConceptMap, ?, ?> getProviderController(ConnectionRequest<Conjunction, ConceptMap, ?> connectionRequest) {
         return null;  // TODO
     }
 

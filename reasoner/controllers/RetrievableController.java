@@ -65,7 +65,7 @@ public class RetrievableController extends Controller<Void, ConceptMap, Retrieva
 
 
     @Override
-    protected Processor.ConnectionBuilder<Void, ConceptMap, ?, ?> getPublisherController(Processor.ConnectionRequest<Void, ConceptMap, ?> connectionRequest) {
+    protected Processor.ConnectionBuilder<Void, ConceptMap, ?, ?> getProviderController(Processor.ConnectionRequest<Void, ConceptMap, ?> connectionRequest) {
         throw TypeDBException.of(ILLEGAL_STATE);  // TODO: Can we use typing to remove this?
     }
 
