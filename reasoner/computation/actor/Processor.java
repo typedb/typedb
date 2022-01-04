@@ -16,15 +16,14 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.compute;
+package com.vaticle.typedb.core.reasoner.computation.actor;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.reactive.Provider;
-import com.vaticle.typedb.core.reasoner.reactive.PublisherImpl;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.reactive.Receiver;
-import com.vaticle.typedb.core.reasoner.reactive.Receiver.Subscriber;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
+import com.vaticle.typedb.core.reasoner.computation.reactive.PublisherImpl;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -34,9 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
-import static com.vaticle.typedb.core.reasoner.reactive.IdentityReactive.noOp;
+import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
 public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PACKET, PUB_CID, PROCESSOR>> extends Actor<PROCESSOR> {
 
@@ -320,25 +318,4 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
         }
     }
 
-    public static class Source<PACKET> extends PublisherImpl<PACKET> {
-
-        private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
-        private FunctionalIterator<PACKET> iterator;
-
-        public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier) {
-            this.iteratorSupplier = iteratorSupplier;
-        }
-
-        public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier) {
-            return new Source<>(iteratorSupplier);
-        }
-
-        @Override
-        public void pull(Receiver<PACKET> receiver) {
-            assert receiver.equals(subscriber);
-            if (iterator == null) iterator = iteratorSupplier.get();
-            if (iterator.hasNext()) receiver.receive(this, iterator.next());
-        }
-
-    }
 }

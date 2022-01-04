@@ -16,8 +16,15 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-public interface Reactive<INPUT, OUTPUT> extends Provider.Publisher<OUTPUT>, Receiver.Subscriber<INPUT>  {
+public interface Receiver<R> {
 
+    void receive(Provider<R> provider, R packet);  // TODO: The provider argument is only needed by compound - can we do without it?
+
+    interface Subscriber<T> extends Receiver<T> {
+
+        void subscribeTo(Provider<T> publisher);
+
+    }
 }

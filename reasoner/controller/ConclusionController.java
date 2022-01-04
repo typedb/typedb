@@ -16,17 +16,17 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.controllers;
+package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.reasoner.compute.Controller;
-import com.vaticle.typedb.core.reasoner.compute.Processor;
-import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionBuilder;
-import com.vaticle.typedb.core.reasoner.compute.Processor.ConnectionRequest;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionBuilder;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionRequest;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 
 import java.util.function.Function;
 

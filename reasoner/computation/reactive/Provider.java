@@ -16,24 +16,26 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import java.util.Set;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
+
 import java.util.function.Function;
 
-public class MapReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, OUTPUT> {
+public interface Provider<R> {
 
-    private final Function<INPUT, OUTPUT> mappingFunc;
+    void pull(Receiver<R> receiver);
 
-    protected MapReactive(Set<Publisher<INPUT>> publishers, Function<INPUT, OUTPUT> mappingFunc) {
-        super(publishers);
-        this.mappingFunc = mappingFunc;
+    interface Publisher<T> extends Provider<T> {
+
+        void publishTo(Subscriber<T> subscriber);
+
+        ReactiveBase<T, T> findFirst();
+
+        <R> ReactiveBase<T, R> map(Function<T, R> function);
+
+        <R> ReactiveBase<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
+
     }
-
-    @Override
-    public void receive(Provider<INPUT> provider, INPUT packet) {
-        finishPulling();
-        subscriber().receive(this, mappingFunc.apply(packet));
-    }
-
 }

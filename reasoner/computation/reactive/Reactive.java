@@ -16,24 +16,8 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import java.util.HashSet;
-import java.util.Set;
+public interface Reactive<INPUT, OUTPUT> extends Provider.Publisher<OUTPUT>, Receiver.Subscriber<INPUT>  {
 
-public class IdentityReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
-
-    protected IdentityReactive(Set<Publisher<PACKET>> publishers) {
-        super(publishers);
-    }
-
-    public static <T> IdentityReactive<T> noOp() {
-        return new IdentityReactive<>(new HashSet<>());
-    }
-
-    @Override
-    public void receive(Provider<PACKET> provider, PACKET packet) {
-        finishPulling();
-        subscriber().receive(this, packet);
-    }
 }

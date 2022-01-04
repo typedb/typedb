@@ -16,15 +16,27 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-public interface Receiver<R> {
+import java.util.Set;
 
-    void receive(Provider<R> provider, R packet);  // TODO: The provider argument is only needed by compound - can we do without it?
+public class FindFirstReactive<T> extends IdentityReactive<T> {
 
-    interface Subscriber<T> extends Receiver<T> {
+    private boolean packetFound;
 
-        void subscribeTo(Provider<T> publisher);
+    FindFirstReactive(Set<Publisher<T>> publishers) {
+        super(publishers);
+        this.packetFound = false;
+    }
 
+    @Override
+    public void receive(Provider<T> provider, T packet) {
+        packetFound = true;
+        super.receive(provider, packet);
+    }
+
+    @Override
+    public void pull(Receiver<T> receiver) {
+        if (!packetFound) super.pull(receiver);
     }
 }

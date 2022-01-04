@@ -16,27 +16,24 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import java.util.HashSet;
 import java.util.Set;
 
-public class FindFirstReactive<T> extends IdentityReactive<T> {
+public class IdentityReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
-    private boolean packetFound;
-
-    FindFirstReactive(Set<Publisher<T>> publishers) {
+    protected IdentityReactive(Set<Publisher<PACKET>> publishers) {
         super(publishers);
-        this.packetFound = false;
+    }
+
+    public static <T> IdentityReactive<T> noOp() {
+        return new IdentityReactive<>(new HashSet<>());
     }
 
     @Override
-    public void receive(Provider<T> provider, T packet) {
-        packetFound = true;
-        super.receive(provider, packet);
-    }
-
-    @Override
-    public void pull(Receiver<T> receiver) {
-        if (!packetFound) super.pull(receiver);
+    public void receive(Provider<PACKET> provider, PACKET packet) {
+        finishPulling();
+        subscriber().receive(this, packet);
     }
 }

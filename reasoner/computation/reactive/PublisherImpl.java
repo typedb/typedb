@@ -16,15 +16,34 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
 
 import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUTPUT> {
+public abstract class PublisherImpl<OUTPUT> implements Provider.Publisher<OUTPUT> {
+
+    protected Receiver<OUTPUT> subscriber;
+
+    @Override
+    public void publishTo(Subscriber<OUTPUT> subscriber) {
+        setSubscriber(subscriber);
+        subscriber.subscribeTo(this);
+    }
+
+    protected void setSubscriber(Receiver<OUTPUT> subscriber) {
+        // TODO: This is duplicated in the Reactive class hierarchy
+        assert this.subscriber == null;
+        this.subscriber = subscriber;
+    }
+
+    protected Receiver<OUTPUT> subscriber() {
+        return subscriber;
+    }
 
     @Override
     public ReactiveBase<OUTPUT, OUTPUT> findFirst() {

@@ -16,31 +16,24 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactive;
-
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import java.util.Set;
 import java.util.function.Function;
 
-public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, OUTPUT> {
+public class MapReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, OUTPUT> {
 
-    private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
+    private final Function<INPUT, OUTPUT> mappingFunc;
 
-    FlatMapOrRetryReactive(Set<Publisher<INPUT>> publishers, Function<INPUT, FunctionalIterator<OUTPUT>> transform) {
+    protected MapReactive(Set<Publisher<INPUT>> publishers, Function<INPUT, OUTPUT> mappingFunc) {
         super(publishers);
-        this.transform = transform;
+        this.mappingFunc = mappingFunc;
     }
 
     @Override
     public void receive(Provider<INPUT> provider, INPUT packet) {
-        FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
-        if (transformed.hasNext()) {
-            finishPulling();
-            transformed.forEachRemaining(t -> subscriber().receive(this, t));
-        } else if (isPulling()) {
-            provider.pull(this);  // Automatic retry
-        }
+        finishPulling();
+        subscriber().receive(this, mappingFunc.apply(packet));
     }
 
 }
