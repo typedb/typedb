@@ -19,31 +19,43 @@
 package com.vaticle.typedb.core.rocks;
 
 import com.vaticle.typedb.core.common.parameters.Options;
-import org.junit.After;
-import org.junit.Before;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import org.junit.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INCOMPATIBLE_ENCODING;
+import static com.vaticle.typedb.core.common.test.Util.assertThrowsWithMessage;
 
 public class DatabaseTest {
 
     private static final Factory rocksFactory = new RocksFactory();
-    private static final Path dataDir = Paths.get("test/integration/rocks/data");
-    private static final Path logDir = dataDir.resolve("logs");
-    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
-            .storageIndexCacheSize(MB).storageDataCacheSize(MB);
 
-    private RocksTypeDB rocksTypeDB;
-
-    @Before
-    public void setUp() {
-        rocksTypeDB = rocksFactory.typedb(options);
+    @Test
+    public void databaseCreationSucceeds() throws IOException {
+        Path dataDir = Files.createTempDirectory("test-dir");
+        Path logDir = dataDir.resolve("logs");
+        Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+                .storageIndexCacheSize(MB).storageDataCacheSize(MB);
+        RocksTypeDB typedb = rocksFactory.typedb(options);
+        typedb.databases().create("test");
     }
 
-    @After
-    public void tearDown() {
-        rocksTypeDB.close();
+    @Test
+    public void incompatibleDataEncodingThrows() {
+        Path dataDir = Paths.get("test/integration/rocks/data");
+        Path logDir = dataDir.resolve("logs");
+        Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+                .storageIndexCacheSize(MB).storageDataCacheSize(MB);
+
+        assertThrowsWithMessage(
+                () -> rocksFactory.typedb(options),
+                INCOMPATIBLE_ENCODING.message("test", 0, Encoding.ENCODING_VERSION)
+        );
     }
+
 }

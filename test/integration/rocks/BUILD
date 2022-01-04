@@ -24,21 +24,14 @@ host_compatible_java_test(
     test_class = "com.vaticle.typedb.core.rocks.DatabaseTest",
     native_libraries_deps = [
         "//:typedb",
+        "//common:common",
+        "//graph:graph",
         "//rocks:rocks",
+
+        "//common/test:util",
     ],
     deps = [
-        # Internal dependencies
-        "//test/integration/util:util",
-        "//server:version",
-
-        # External dependencies from Vaticle
-        "@vaticle_typeql_lang_java//:typeql-lang",
-        "@vaticle_typeql_lang_java//query:query",
-
-        # External dependencies from Maven
-        "@maven//:com_google_protobuf_protobuf_java",
     ],
-    resource_strip_prefix = "common/test",
     data = ["data"],
     size = "small",
 )
@@ -48,6 +41,6 @@ checkstyle_test(
     include = glob([
         "*"
     ]),
-    exclude = ["data/"],
+    exclude = ["data"],
     license_type = "agpl",
 )
