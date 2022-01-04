@@ -57,5 +57,4 @@ public class DatabaseTest {
                 INCOMPATIBLE_ENCODING.message("test", 0, Encoding.ENCODING_VERSION)
         );
     }
-
 }
