@@ -55,7 +55,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         super(graphMgr, vertex);
         if (vertex.encoding() != RELATION_TYPE) {
             throw exception(TypeDBException.of(TYPE_ROOT_MISMATCH, vertex.label(),
-                                               RELATION_TYPE.root().label(), vertex.encoding().root().label()));
+                    RELATION_TYPE.root().label(), vertex.encoding().root().label()));
         }
     }
 
@@ -81,13 +81,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void setAbstract() {
-        if (!isAbstract()) {
-            if (getInstancesExplicit().first().isPresent()) {
-                throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
-            }
-            vertex.isAbstract(true);
-            declaredRoles().forEachRemaining(RoleTypeImpl::setAbstract);
+        if (isAbstract()) return;
+        if (getInstancesExplicit().first().isPresent()) {
+            throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
         }
+        vertex.isAbstract(true);
+        declaredRoles().forEachRemaining(RoleTypeImpl::setAbstract);
     }
 
     @Override
@@ -268,10 +267,14 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public boolean isRelationType() { return true; }
+    public boolean isRelationType() {
+        return true;
+    }
 
     @Override
-    public RelationTypeImpl asRelationType() { return this; }
+    public RelationTypeImpl asRelationType() {
+        return this;
+    }
 
     public static class Root extends RelationTypeImpl {
 
@@ -281,7 +284,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
 
         @Override
-        public boolean isRoot() { return true; }
+        public boolean isRoot() {
+            return true;
+        }
 
         @Override
         public void setLabel(String label) {
