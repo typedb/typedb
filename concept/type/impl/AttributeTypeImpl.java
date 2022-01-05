@@ -100,7 +100,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public void setAbstract() {
-        if (getInstances().first().isPresent()) {
+        if (getInstancesExplicit().first().isPresent()) {
             throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
         }
         vertex.isAbstract(true);
