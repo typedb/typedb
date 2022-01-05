@@ -64,7 +64,7 @@ public class RetrievableController extends Controller<Void, ConceptMap, Retrieva
         throw TypeDBException.of(ILLEGAL_STATE);  // TODO: Can we use typing to remove this?
     }
 
-    public static class RetrievableProcessor extends Processor<ConceptMap, Void, RetrievableProcessor> {
+    protected static class RetrievableProcessor extends Processor<ConceptMap, Void, RetrievableProcessor> {
 
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
 

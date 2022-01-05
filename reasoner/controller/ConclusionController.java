@@ -55,7 +55,7 @@ public class ConclusionController extends Controller<Rule.Condition, ConceptMap,
         return connectionRequest.createConnectionBuilder(registry.registerConditionController(connectionRequest.pubControllerId()));
     }
 
-    public static class ConclusionProcessor extends Processor<ConceptMap, Rule.Condition, ConclusionProcessor> {
+    protected static class ConclusionProcessor extends Processor<ConceptMap, Rule.Condition, ConclusionProcessor> {
         protected ConclusionProcessor(Driver<ConclusionProcessor> driver, Driver<? extends Controller<Rule.Condition,
                 ConceptMap, ConclusionProcessor, ?>> controller, String name) {
             super(driver, controller, name, noOp());

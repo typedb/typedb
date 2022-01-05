@@ -56,7 +56,7 @@ public class RootConjunctionController extends ConjunctionController<RootConjunc
                 .toSet();
     }
 
-    public static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<RootConjunctionProcessor> {
+    protected static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<RootConjunctionProcessor> {
 
         private final Subscriber<ConceptMap> reasonerEndpoint;
 

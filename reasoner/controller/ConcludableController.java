@@ -108,7 +108,7 @@ public class ConcludableController extends Controller<Conclusion, ConceptMap,
         return connectionRequest.createConnectionBuilder(registry.registerConclusionController(connectionRequest.pubControllerId()));
     }
 
-    public static class ConcludableProcessor extends Processor<ConceptMap, Conclusion, ConcludableProcessor> {
+    protected static class ConcludableProcessor extends Processor<ConceptMap, Conclusion, ConcludableProcessor> {
 
         private final ConceptMap bounds;
         private final Set<Identifier.Variable.Retrievable> unboundVars;

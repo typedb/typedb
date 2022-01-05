@@ -108,7 +108,7 @@ public abstract class ConjunctionController<CONTROLLER extends Controller<Resolv
         return new ConceptMap(compounded);
     }
 
-    public static class ConjunctionProcessor<PROCESSOR extends Processor<ConceptMap, Resolvable<?>, PROCESSOR>> extends Processor<ConceptMap, Resolvable<?>, PROCESSOR> {
+    protected static class ConjunctionProcessor<PROCESSOR extends Processor<ConceptMap, Resolvable<?>, PROCESSOR>> extends Processor<ConceptMap, Resolvable<?>, PROCESSOR> {
         private final ConceptMap bounds;
         private final List<Resolvable<?>> plan;
 
