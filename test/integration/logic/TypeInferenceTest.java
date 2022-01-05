@@ -51,6 +51,7 @@ import java.util.stream.Collectors;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.DATA;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -69,33 +70,37 @@ public class TypeInferenceTest {
     private static RocksTransaction transaction;
 
     @BeforeClass
-    public static void open_session() throws IOException {
+    public static void open() throws IOException {
         Util.resetDirectory(dataDir);
         typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
-        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
     }
 
     @AfterClass
-    public static void close_session() {
-        session.close();
+    public static void close() {
         typedb.close();
     }
 
     @Before
     public void setup() {
+        assert !typedb.databases().contains(database);
+        typedb.databases().create(database);
+        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
         transaction = session.transaction(WRITE);
     }
 
     @After
     public void tearDown() {
         transaction.close();
+        session.close();
+        typedb.databases().get(database).delete();
     }
 
     private static void define_standard_schema(String fileName) throws IOException {
         TypeQLDefine query = TypeQL.parseQuery(
                 new String(Files.readAllBytes(Paths.get("test/integration/logic/" + fileName + ".tql")), UTF_8));
         transaction.query().define(query);
+        transaction.commit();
+        transaction = session.transaction(WRITE);
     }
 
     private static void define_custom_schema(String schema) {
