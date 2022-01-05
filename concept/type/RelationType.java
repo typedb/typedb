@@ -32,6 +32,9 @@ public interface RelationType extends ThingType {
     @Override
     FunctionalIterator<? extends Relation> getInstances();
 
+    @Override
+    FunctionalIterator<? extends Relation> getInstancesExplicit();
+
     void setSupertype(RelationType superType);
 
     void setRelates(String roleLabel);

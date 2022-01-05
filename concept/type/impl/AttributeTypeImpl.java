@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
@@ -48,6 +49,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.AT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
+import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
@@ -362,6 +364,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
+        public FunctionalIterator<AttributeImpl<?>> getInstancesExplicit() {
+            return empty();
+        }
+
+        @Override
         public void setOwns(AttributeType attributeType, boolean isKey) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
@@ -421,6 +428,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public FunctionalIterator<AttributeImpl.Boolean> getInstances() {
             return instances(v -> new AttributeImpl.Boolean(v.asAttribute().asBoolean()));
+        }
+
+        @Override
+        public FunctionalIterator<AttributeImpl.Boolean> getInstancesExplicit() {
+            return instancesExplicit(v -> new AttributeImpl.Boolean(v.asAttribute().asBoolean()));
         }
 
         @Override
@@ -557,6 +569,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
+        public FunctionalIterator<AttributeImpl.Long> getInstancesExplicit() {
+            return instancesExplicit(v -> new AttributeImpl.Long(v.asAttribute().asLong()));
+        }
+
+        @Override
         public ValueType getValueType() {
             return ValueType.LONG;
         }
@@ -690,6 +707,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
+        public FunctionalIterator<AttributeImpl.Double> getInstancesExplicit() {
+            return instancesExplicit(v -> new AttributeImpl.Double(v.asAttribute().asDouble()));
+        }
+
+        @Override
         public ValueType getValueType() {
             return ValueType.DOUBLE;
         }
@@ -820,6 +842,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public FunctionalIterator<AttributeImpl.String> getInstances() {
             return instances(v -> new AttributeImpl.String(v.asAttribute().asString()));
+        }
+
+        @Override
+        public FunctionalIterator<AttributeImpl.String> getInstancesExplicit() {
+            return instancesExplicit(v -> new AttributeImpl.String(v.asAttribute().asString()));
         }
 
         @Override
@@ -992,6 +1019,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public FunctionalIterator<AttributeImpl.DateTime> getInstances() {
             return instances(v -> new AttributeImpl.DateTime(v.asAttribute().asDateTime()));
+        }
+
+        @Override
+        public FunctionalIterator<AttributeImpl.DateTime> getInstancesExplicit() {
+            return instancesExplicit(v -> new AttributeImpl.DateTime(v.asAttribute().asDateTime()));
         }
 
         @Override

@@ -37,6 +37,8 @@ public interface ThingType extends Type {
 
     FunctionalIterator<? extends Thing> getInstances();
 
+    FunctionalIterator<? extends Thing> getInstancesExplicit();
+
     void setAbstract();
 
     void unsetAbstract();

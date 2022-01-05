@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
 import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
@@ -65,6 +66,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TY
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
+import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
@@ -515,6 +517,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                 }
             });
+        }
+
+        @Override
+        public FunctionalIterator<ThingImpl> getInstancesExplicit() {
+            return empty();
         }
 
         @Override

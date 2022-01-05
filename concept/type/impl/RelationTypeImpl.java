@@ -114,6 +114,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
+    public FunctionalIterator<RelationImpl> getInstancesExplicit() {
+        return instancesExplicit(RelationImpl::of);
+    }
+
+    @Override
     public void setRelates(String roleLabel) {
         validateIsNotDeleted();
         TypeVertex roleTypeVertex = graphMgr.schema().getType(roleLabel, vertex.label());
