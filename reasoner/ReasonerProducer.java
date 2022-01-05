@@ -147,10 +147,11 @@ public class ReasonerProducer implements Producer<ConceptMap> {
     }
 
     private void finish() {
-        // query is completely terminated
-        done = true;
-        queue.done();
-        required.set(0);
+        if (!done) {
+            done = true;
+            queue.done();
+            required.set(0);
+        }
     }
 
     private void sendReiterationRequests() {
