@@ -36,6 +36,7 @@ import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController;
+import com.vaticle.typedb.core.reasoner.controller.ConditionController;
 import com.vaticle.typedb.core.reasoner.controller.RetrievableController;
 import com.vaticle.typedb.core.reasoner.controller.RootConjunctionController;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
@@ -195,6 +196,10 @@ public class ControllerRegistry {
 
     public Actor.Driver<ConclusionController> registerConclusionController(Rule.Conclusion conclusion) {
         return null;  // TODO
+    }
+
+    public Actor.Driver<ConditionController> registerConditionController(Rule.Condition condition) {
+        return null; // TODO
     }
 
     public Actor.Driver<RootResolver.Disjunction> createRoot(Disjunction disjunction,

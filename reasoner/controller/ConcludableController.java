@@ -93,8 +93,12 @@ public class ConcludableController extends Controller<Conclusion, ConceptMap,
 
     @Override
     protected Function<Driver<ConcludableProcessor>, ConcludableProcessor> createProcessorFunc(ConceptMap bounds) {
+        // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular
+        //  concludable. They should be filtered before being passed to the concludableProcessor's constructor
         return driver -> new ConcludableProcessor(
-                driver, driver(), "", bounds, unboundVars, upstreamConclusions,
+                driver, driver(),
+                ConcludableProcessor.class.getSimpleName() + "(pattern: " + concludable + ", bounds: " + bounds + ")",
+                bounds, unboundVars, upstreamConclusions,
                 () -> TraversalUtils.traversalIterator(registry, concludable.pattern(), bounds)
         );
     }

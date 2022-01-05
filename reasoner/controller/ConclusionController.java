@@ -21,34 +21,44 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
-import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionRequest;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.function.Function;
 
-public class ConclusionController extends Controller<Conjunction, ConceptMap, ConclusionController.ConclusionProcessor, ConclusionController> {
-    protected ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion id, ActorExecutorGroup executorService) {
+import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
+
+public class ConclusionController extends Controller<Rule.Condition, ConceptMap, ConclusionController.ConclusionProcessor, ConclusionController> {
+    private final Rule.Conclusion conclusion;
+    private final ControllerRegistry registry;
+
+    protected ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion conclusion,
+                                   ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, name, executorService);
+        this.conclusion = conclusion;
+        this.registry = registry;
     }
 
     @Override
-    protected Function<Driver<ConclusionProcessor>, ConclusionProcessor> createProcessorFunc(ConceptMap id) {
-        return null;  // TODO
+    protected Function<Driver<ConclusionProcessor>, ConclusionProcessor> createProcessorFunc(ConceptMap bounds) {
+        return driver -> new ConclusionProcessor(
+                driver, driver(),
+                ConclusionProcessor.class.getSimpleName() + "(pattern: " + conclusion + ", bounds: " + bounds + ")"
+        );
     }
 
     @Override
-    protected ConnectionBuilder<Conjunction, ConceptMap, ?, ?> getProviderController(ConnectionRequest<Conjunction, ConceptMap, ?> connectionRequest) {
-        return null;  // TODO
+    protected ConnectionBuilder<Rule.Condition, ConceptMap, ?, ?> getProviderController(ConnectionRequest<Rule.Condition, ConceptMap, ?> connectionRequest) {
+        return connectionRequest.createConnectionBuilder(registry.registerConditionController(connectionRequest.pubControllerId()));
     }
 
-    public static class ConclusionProcessor extends Processor<ConceptMap, Conjunction, ConclusionProcessor> {
-        protected ConclusionProcessor(Driver<ConclusionProcessor> driver, Driver<? extends Controller<Conjunction,
-                ConceptMap, ConclusionProcessor, ?>> controller, String name, Reactive<ConceptMap, ConceptMap> outlet) {
-            super(driver, controller, name, outlet);
+    public static class ConclusionProcessor extends Processor<ConceptMap, Rule.Condition, ConclusionProcessor> {
+        protected ConclusionProcessor(Driver<ConclusionProcessor> driver, Driver<? extends Controller<Rule.Condition,
+                ConceptMap, ConclusionProcessor, ?>> controller, String name) {
+            super(driver, controller, name, noOp());
         }
 
         @Override
