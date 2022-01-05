@@ -81,11 +81,13 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void setAbstract() {
-        if (getInstancesExplicit().first().isPresent()) {
-            throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
+        if (!isAbstract()) {
+            if (getInstancesExplicit().first().isPresent()) {
+                throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
+            }
+            vertex.isAbstract(true);
+            declaredRoles().forEachRemaining(RoleTypeImpl::setAbstract);
         }
-        vertex.isAbstract(true);
-        declaredRoles().forEachRemaining(RoleTypeImpl::setAbstract);
     }
 
     @Override

@@ -99,14 +99,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public void setAbstract() {
-        if (getInstancesExplicit().first().isPresent()) {
-            throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
-        }
-        vertex.isAbstract(true);
-    }
-
-    @Override
     public void unsetAbstract() {
         if (getSubtypes().anyMatch(sub -> !sub.equals(this))) {
             throw exception(TypeDBException.of(ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES, getLabel()));
