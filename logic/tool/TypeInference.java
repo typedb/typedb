@@ -426,7 +426,7 @@ public class TypeInference {
         private void registerIID(TypeVariable resolver, IIDConstraint constraint) {
             TypeVertex type = graphMgr.schema().convert(VertexIID.Thing.of(constraint.iid()).type());
             if (type == null) throw TypeDBException.of(UNSATISFIABLE_PATTERN, conjunction, constraint);
-            traversal.labels(resolver.id(), type.properLabel());
+            restrict(resolver.id(), iterate(type));
         }
 
         private void registerHas(TypeVariable resolver, HasConstraint hasConstraint) {
