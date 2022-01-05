@@ -145,9 +145,9 @@ public class RocksDatabase implements TypeDB.Database {
     }
 
     protected void initialise() {
-        initialiseOrLoadSchema();
+        openSchema();
         initialiseEncodingVersion();
-        initialiseData();
+        openAndInitialiseData();
         isOpen.set(true);
         try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
             try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
@@ -158,7 +158,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    private void initialiseOrLoadSchema() {
+    private void openSchema() {
         try {
             List<ColumnFamilyDescriptor> schemaDescriptors = RocksPartitionManager.Schema.descriptors(rocksConfiguration.schema());
             List<ColumnFamilyHandle> schemaHandles = new ArrayList<>();
@@ -174,7 +174,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    private void initialiseData() {
+    private void openAndInitialiseData() {
         try {
             List<ColumnFamilyDescriptor> dataDescriptors = RocksPartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
@@ -190,13 +190,13 @@ public class RocksDatabase implements TypeDB.Database {
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
-        mayInitRocksLogger();
+        mayInitRocksDataLogger();
     }
 
     protected void load() {
-        initialiseOrLoadSchema();
+        openSchema();
         validateEncodingVersion();
-        loadData();
+        openData();
         isOpen.set(true);
         try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
             try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
@@ -206,7 +206,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    private void loadData() {
+    private void openData() {
         try {
             List<ColumnFamilyDescriptor> dataDescriptors = RocksPartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
@@ -221,10 +221,10 @@ public class RocksDatabase implements TypeDB.Database {
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
-        mayInitRocksLogger();
+        mayInitRocksDataLogger();
     }
 
-    private void mayInitRocksLogger() {
+    private void mayInitRocksDataLogger() {
         if (rocksConfiguration.isLoggingEnabled()) {
             scheduledPropertiesLogger = Executors.newScheduledThreadPool(1);
             scheduledPropertiesLogger.scheduleAtFixedRate(
