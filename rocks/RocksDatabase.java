@@ -238,8 +238,11 @@ public class RocksDatabase implements TypeDB.Database {
 
     private void initialiseEncodingVersion() {
         try {
-            rocksSchema.put(rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
-                    ENCODING_VERSION_KEY.bytes().getBytes(), ByteArray.encodeInt(ENCODING_VERSION).getBytes());
+            rocksSchema.put(
+                    rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
+                    ENCODING_VERSION_KEY.bytes().getBytes(),
+                    ByteArray.encodeInt(ENCODING_VERSION).getBytes()
+            );
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
@@ -247,8 +250,10 @@ public class RocksDatabase implements TypeDB.Database {
 
     private void validateEncodingVersion() {
         try {
-            byte[] encodingBytes = rocksSchema.get(rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
-                    ENCODING_VERSION_KEY.bytes().getBytes());
+            byte[] encodingBytes = rocksSchema.get(
+                    rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
+                    ENCODING_VERSION_KEY.bytes().getBytes()
+            );
             int encoding = encodingBytes == null || encodingBytes.length == 0 ? 0 : ByteArray.of(encodingBytes).decodeInt();
             if (encoding != ENCODING_VERSION) {
                 throw TypeDBException.of(INCOMPATIBLE_ENCODING, name(), encoding, ENCODING_VERSION);
