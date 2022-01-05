@@ -23,12 +23,14 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.Negation;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.IIDConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
@@ -387,6 +389,7 @@ public class TypeInference {
             if (insertable) var.relation().ifPresent(constraint -> registerInsertableRelation(resolver, constraint));
             else var.relation().ifPresent(constraint -> registerRelation(resolver, constraint));
             var.iid().ifPresent(constraint -> {
+                registerIID(resolver, constraint);
                 if (resolver.constraints().isEmpty()) registerSubThing(resolver);
             });
             return resolver;
@@ -414,6 +417,16 @@ public class TypeInference {
 
         private void registerIs(TypeVariable resolver, IsConstraint isConstraint) {
             traversal.equalTypes(resolver.id(), register(isConstraint.variable()).id());
+        }
+
+        /**
+         * We only extract the type of the IID, and include this information in the type inference
+         * We only look at the type prefix because the static type checker (this class) only read schema, not data
+         */
+        private void registerIID(TypeVariable resolver, IIDConstraint constraint) {
+            TypeVertex type = graphMgr.schema().convert(VertexIID.Thing.of(constraint.iid()).type());
+            if (type == null) throw TypeDBException.of(UNSATISFIABLE_PATTERN, conjunction, constraint);
+            traversal.labels(resolver.id(), type.properLabel());
         }
 
         private void registerHas(TypeVariable resolver, HasConstraint hasConstraint) {
@@ -471,7 +484,6 @@ public class TypeInference {
                 });
                 resolverValueTypes.put(resolver.id(), valueTypes);
             } else if (!resolverValueTypes.get(resolver.id()).containsAll(valueTypes)) {
-                // TODO this is a bit odd - can we set not coherent here and short circuit?
                 throw TypeDBException.of(UNSATISFIABLE_PATTERN, conjunction, constraint);
             }
             registerSubAttribute(resolver);
