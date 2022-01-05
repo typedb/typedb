@@ -33,8 +33,6 @@ host_compatible_java_test(
         "//rocks:rocks",
         "//traversal:traversal",
     ],
-    resource_strip_prefix = "common/test",
-
     test_class = "com.vaticle.typedb.core.logic.RuleTest",
     deps = [
         "//test/integration/util",
@@ -69,7 +67,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
     ],
     data = [":basic-schema.tql", ":test-type-inference.tql"],
-    resource_strip_prefix = "common/test",
 )
 
 host_compatible_java_test(
@@ -139,7 +136,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
-    resource_strip_prefix = "common/test",
 )
 
 host_compatible_java_test(
@@ -163,7 +159,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
-    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

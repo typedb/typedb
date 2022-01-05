@@ -15,32 +15,31 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//test/behaviour:__subpackages__"])
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
-java_test(
-    name = "test",
-    srcs = [
-        "RuleInteractionTest.java",
+host_compatible_java_test(
+    name = "test-database",
+    srcs = ["DatabaseTest.java"],
+    test_class = "com.vaticle.typedb.core.rocks.DatabaseTest",
+    native_libraries_deps = [
+        "//:typedb",
+        "//common:common",
+        "//graph:graph",
+        "//rocks:rocks",
+
+        "//common/test:util",
     ],
-    test_class = "com.vaticle.typedb.core.test.behaviour.reasoner.tests.rule_interaction.RuleInteractionTest",
     deps = [
-        # External dependencies from Maven
-        "@maven//:io_cucumber_cucumber_junit",
+        "//test/integration/util:util",
     ],
-    runtime_deps = [
-        "//test/behaviour/connection:steps",
-        "//test/behaviour/connection/session:steps",
-        "//test/behaviour/config:parameters",
-        "//test/behaviour/reasoner:steps",
-    ],
-    data = [
-        "@vaticle_typedb_behaviour//typeql/reasoner:rule-interaction.feature",
-    ],
+    data = glob(["data/**"]),
+    size = "small",
 )
 
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
+    exclude=glob(["data/**"]),
     license_type = "agpl",
 )

@@ -52,7 +52,6 @@ java_test(
         ":debug.feature",
     ],
     size = "medium",
-    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

@@ -335,42 +335,6 @@ public abstract class RocksStorage implements Storage {
             this.schemaKeyGenerator = database.schemaKeyGenerator();
         }
 
-        /**
-         * we duplicate the locking mechanisms from putUntracked()/get() to avoid having to create a Key wrapper class
-         * for these initialisation methods
-         */
-        public void initialiseEncoding() {
-            assert isOpen() && !isReadOnly;
-            boolean obtainedWriteLock = false;
-            try {
-                if (transaction.isOpen()) {
-                    deleteCloseSchemaWriteLock.writeLock().lock();
-                    obtainedWriteLock = true;
-                }
-                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                rocksTransaction.putUntracked(partitionMgr.get(Partition.DEFAULT),
-                        ENCODING_VERSION_KEY.bytes().getBytes(), ByteArray.encodeInt(ENCODING_VERSION).getBytes());
-            } catch (RocksDBException e) {
-                throw exception(e);
-            } finally {
-                if (obtainedWriteLock) deleteCloseSchemaWriteLock.writeLock().unlock();
-            }
-        }
-
-        public int getEncoding() {
-            try {
-                deleteCloseSchemaWriteLock.readLock().lock();
-                if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
-                byte[] encoding = rocksTransaction.get(partitionMgr.get(Partition.DEFAULT), readOptions,
-                        ENCODING_VERSION_KEY.bytes().getBytes());
-                return encoding == null || encoding.length == 0 ? 0 : ByteArray.of(encoding).decodeInt();
-            } catch (RocksDBException e) {
-                throw exception(e);
-            } finally {
-                deleteCloseSchemaWriteLock.readLock().unlock();
-            }
-        }
-
         @Override
         public KeyGenerator.Schema schemaKeyGenerator() {
             return schemaKeyGenerator;

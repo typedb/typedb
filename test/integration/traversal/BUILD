@@ -41,7 +41,6 @@ host_compatible_java_test(
         "@vaticle_typeql_lang_java//common",
         "@vaticle_typedb_common//:common"
     ],
-    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

@@ -40,7 +40,6 @@ java_test(
     ],
     size = "large", #TODO: Change back to medium when Query Planner has been optimised.
     visibility = ["//visibility:public"],
-    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(
