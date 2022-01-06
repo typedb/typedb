@@ -18,20 +18,21 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionRequest;
+import com.vaticle.typedb.core.reasoner.controller.ConclusionPacket.ConditionBounds;
+import com.vaticle.typedb.core.reasoner.controller.ConclusionPacket.MaterialisationBounds;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-public class ConclusionController extends Controller<Rule.Condition, ConceptMap, ConclusionController.ConclusionProcessor, ConclusionController> {
+public class ConclusionController extends Controller<Rule.Condition, ConclusionPacket, VarConceptMap, ConclusionController.ConclusionProcessor, ConclusionController> {
     private final Rule.Conclusion conclusion;
     private final ControllerRegistry registry;
 
@@ -43,27 +44,41 @@ public class ConclusionController extends Controller<Rule.Condition, ConceptMap,
     }
 
     @Override
-    protected Function<Driver<ConclusionProcessor>, ConclusionProcessor> createProcessorFunc(ConceptMap bounds) {
+    protected Function<Driver<ConclusionProcessor>, ConclusionProcessor> createProcessorFunc(VarConceptMap bounds) {
         return driver -> new ConclusionProcessor(
-                driver, driver(),
+                driver, driver(), this.conclusion.rule(), bounds,
                 ConclusionProcessor.class.getSimpleName() + "(pattern: " + conclusion + ", bounds: " + bounds + ")"
         );
     }
 
     @Override
-    protected ConnectionBuilder<Rule.Condition, ConceptMap, ?, ?> getProviderController(ConnectionRequest<Rule.Condition, ConceptMap, ?> connectionRequest) {
-        return connectionRequest.createConnectionBuilder(registry.registerConditionController(connectionRequest.pubControllerId()));
+    protected ConnectionBuilder<Rule.Condition, ConclusionPacket, ?, ?> getProviderController(ConnectionRequest<Rule.Condition, ConclusionPacket, ?> connectionRequest) {
+        Driver<ConditionController> r = registry.registerConditionController(connectionRequest.pubControllerId());
+        ConnectionBuilder<Rule.Condition, ConclusionPacket, ?, ?> c = connectionRequest.createConnectionBuilder(r);
+        return c;
+//        return connectionRequest.createConnectionBuilder(registry.registerConditionController(connectionRequest.pubControllerId()));
     }
 
-    protected static class ConclusionProcessor extends Processor<ConceptMap, Rule.Condition, ConclusionProcessor> {
-        protected ConclusionProcessor(Driver<ConclusionProcessor> driver, Driver<? extends Controller<Rule.Condition,
-                ConceptMap, ConclusionProcessor, ?>> controller, String name) {
+    protected static class ConclusionProcessor extends Processor<ConclusionPacket, VarConceptMap, Rule.Condition, ConclusionProcessor> {
+
+        private final Rule rule;
+        private final VarConceptMap bounds;
+
+        protected ConclusionProcessor(
+                Driver<ConclusionProcessor> driver,
+                Driver<? extends Controller<Rule.Condition,ConclusionPacket, VarConceptMap, ConclusionProcessor, ?>> controller,
+                Rule rule, VarConceptMap bounds, String name) {
             super(driver, controller, name, noOp());
+            this.rule = rule;
+            this.bounds = bounds;
         }
 
         @Override
         public void setUp() {
-
+            requestConnection(driver(), rule.condition(), new ConditionBounds(bounds)).forEach(ans -> {
+                requestConnection(driver(), null, new MaterialisationBounds(ans.asConditionAnswer().conceptMap(), rule.conclusion()))
+                        .map(m -> m.asMaterialisationAnswer().concepts()).publishTo(outlet());
+            });
         }
     }
 }

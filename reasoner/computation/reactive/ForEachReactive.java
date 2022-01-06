@@ -18,32 +18,26 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-
 import java.util.function.Consumer;
-import java.util.function.Function;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
+public class ForEachReactive<PACKET> implements Receiver.Subscriber<PACKET> {
 
-public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUTPUT> {
+    private Provider<PACKET> publisher;
+    private final Consumer<PACKET> consumer;
 
-    @Override
-    public ReactiveBase<OUTPUT, OUTPUT> findFirst() {
-        return new FindFirstReactive<>(set(this));
+    protected ForEachReactive(Consumer<PACKET> consumer) {
+        this.consumer = consumer;
     }
 
     @Override
-    public <R> ReactiveBase<OUTPUT, R> map(Function<OUTPUT, R> function) {
-        return new MapReactive<>(set(this), function);
+    public void subscribeTo(Provider<PACKET> publisher) {
+        assert this.publisher == null;
+        this.publisher = publisher;
+        publisher.pull(this);
     }
 
     @Override
-    public <R> ReactiveBase<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
-        return new FlatMapOrRetryReactive<>(set(this), function);
-    }
-
-    @Override
-    public void forEach(Consumer<OUTPUT> function) {
-        this.publishTo(new ForEachReactive<>(function));
+    public void receive(Provider<PACKET> provider, PACKET packet) {
+        consumer.accept(packet);
     }
 }

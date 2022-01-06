@@ -47,9 +47,9 @@ import java.util.Set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-public abstract class ConjunctionController<CONTROLLER extends Controller<Resolvable<?>, ConceptMap, PROCESSOR, CONTROLLER>,
-        PROCESSOR extends Processor<ConceptMap, Resolvable<?>, PROCESSOR>> extends Controller<Resolvable<?>,
-        ConceptMap, PROCESSOR, CONTROLLER> {
+public abstract class ConjunctionController<INPUT, CONTROLLER extends Controller<Resolvable<?>, INPUT, ConceptMap, PROCESSOR, CONTROLLER>,
+        PROCESSOR extends Processor<INPUT, ConceptMap, Resolvable<?>, PROCESSOR>> extends Controller<Resolvable<?>,
+        INPUT, ConceptMap, PROCESSOR, CONTROLLER> {
 
     protected final Conjunction conjunction;
     protected final ControllerRegistry registry;
@@ -80,7 +80,7 @@ public abstract class ConjunctionController<CONTROLLER extends Controller<Resolv
     }
 
     @Override
-    protected ConnectionBuilder<Resolvable<?>, ConceptMap, ?, ?> getProviderController(ConnectionRequest<Resolvable<?>, ConceptMap, ?> connectionRequest) {
+    protected ConnectionBuilder<Resolvable<?>, INPUT, ?, ?> getProviderController(ConnectionRequest<Resolvable<?>, INPUT, ?> connectionRequest) {
         Resolvable<?> pubCID = connectionRequest.pubControllerId();
         if (pubCID.isRetrievable()) {
             ResolverView.FilteredRetrievable controller = registry.registerRetrievableController(pubCID.asRetrievable());
@@ -108,12 +108,12 @@ public abstract class ConjunctionController<CONTROLLER extends Controller<Resolv
         return new ConceptMap(compounded);
     }
 
-    protected static class ConjunctionProcessor<PROCESSOR extends Processor<ConceptMap, Resolvable<?>, PROCESSOR>> extends Processor<ConceptMap, Resolvable<?>, PROCESSOR> {
+    protected static class ConjunctionProcessor<INPUT, PROCESSOR extends Processor<INPUT, ConceptMap, Resolvable<?>, PROCESSOR>> extends Processor<INPUT, ConceptMap, Resolvable<?>, PROCESSOR> {
         private final ConceptMap bounds;
         private final List<Resolvable<?>> plan;
 
         protected ConjunctionProcessor(Driver<PROCESSOR> driver,
-                                       Driver<? extends Controller<Resolvable<?>, ConceptMap, PROCESSOR, ?>> controller,
+                                       Driver<? extends Controller<Resolvable<?>, INPUT, ConceptMap, PROCESSOR, ?>> controller,
                                        String name, ConceptMap bounds, List<Resolvable<?>> plan) {
             super(driver, controller, name, noOp());
             this.bounds = bounds;

@@ -34,7 +34,7 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-public class RetrievableController extends Controller<Void, ConceptMap, RetrievableController.RetrievableProcessor, RetrievableController> {
+public class RetrievableController extends Controller<Void, INPUT, ConceptMap, RetrievableController.RetrievableProcessor, RetrievableController> {
 
     private final Retrievable retrievable;
     private final ControllerRegistry registry;
@@ -60,16 +60,16 @@ public class RetrievableController extends Controller<Void, ConceptMap, Retrieva
 
 
     @Override
-    protected Processor.ConnectionBuilder<Void, ConceptMap, ?, ?> getProviderController(Processor.ConnectionRequest<Void, ConceptMap, ?> connectionRequest) {
+    protected Processor.ConnectionBuilder<Void, INPUT, ?, ?> getProviderController(Processor.ConnectionRequest<Void, INPUT, ?> connectionRequest) {
         throw TypeDBException.of(ILLEGAL_STATE);  // TODO: Can we use typing to remove this?
     }
 
-    protected static class RetrievableProcessor extends Processor<ConceptMap, Void, RetrievableProcessor> {
+    protected static class RetrievableProcessor extends Processor<INPUT, ConceptMap, Void, RetrievableProcessor> {
 
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
 
         protected RetrievableProcessor(Driver<RetrievableProcessor> driver,
-                                       Driver<? extends Controller<Void, ConceptMap, RetrievableProcessor, ?>> controller,
+                                       Driver<? extends Controller<Void, INPUT, ConceptMap, RetrievableProcessor, ?>> controller,
                                        String name, Supplier<FunctionalIterator<ConceptMap>> traversalSupplier) {
             super(driver, controller, name, noOp());
             this.traversalSupplier = traversalSupplier;

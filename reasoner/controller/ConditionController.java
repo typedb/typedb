@@ -48,7 +48,7 @@ public class ConditionController extends ConjunctionController<ConditionControll
 
     protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<ConditionController.ConditionProcessor>{
         protected ConditionProcessor(Driver<ConditionProcessor> driver, Driver<? extends Controller<Resolvable<?>,
-                ConceptMap, ConditionProcessor, ?>> controller, String name, ConceptMap bounds, List<Resolvable<?>> plan) {
+                INPUT, ConceptMap, ConditionProcessor, ?>> controller, String name, ConceptMap bounds, List<Resolvable<?>> plan) {
             super(driver, controller, name, bounds, plan);
         }
     }

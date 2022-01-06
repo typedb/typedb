@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -58,5 +59,10 @@ public abstract class PublisherImpl<OUTPUT> implements Provider.Publisher<OUTPUT
     @Override
     public <R> ReactiveBase<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
         return new FlatMapOrRetryReactive<>(set(this), function);
+    }
+
+    @Override
+    public void forEach(Consumer<OUTPUT> function) {
+        this.publishTo(new ForEachReactive<>(function));
     }
 }

@@ -16,28 +16,12 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.controller;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
+import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.HashMap;
 
-public interface Provider<R> {
-
-    void pull(Receiver<R> receiver);
-
-    interface Publisher<T> extends Provider<T> {
-
-        void publishTo(Subscriber<T> subscriber);
-
-        ReactiveBase<T, T> findFirst();
-
-        <R> ReactiveBase<T, R> map(Function<T, R> function);
-
-        <R> ReactiveBase<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
-
-        void forEach(Consumer<T> function);
-    }
+public class VarConceptMap extends HashMap<Identifier.Variable, Concept> {
 }

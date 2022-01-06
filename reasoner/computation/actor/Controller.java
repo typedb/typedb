@@ -30,15 +30,15 @@ import java.util.Map;
 import java.util.function.Function;
 
 
-public abstract class Controller<PUB_CID, PACKET,
-        PROCESSOR extends Processor<PACKET, PUB_CID, PROCESSOR>,
-        CONTROLLER extends Controller<PUB_CID, PACKET, PROCESSOR, CONTROLLER>> extends Actor<CONTROLLER> {
+public abstract class Controller<PUB_CID, INPUT, OUTPUT,
+        PROCESSOR extends Processor<INPUT, OUTPUT, PUB_CID, PROCESSOR>,
+        CONTROLLER extends Controller<PUB_CID, INPUT, OUTPUT, PROCESSOR, CONTROLLER>> extends Actor<CONTROLLER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
 
     private boolean terminated;
     private final ActorExecutorGroup executorService;
-    protected final Map<PACKET, Actor.Driver<PROCESSOR>> processors;
+    protected final Map<OUTPUT, Actor.Driver<PROCESSOR>> processors;
 
     protected Controller(Driver<CONTROLLER> driver, String name, ActorExecutorGroup executorService) {
         super(driver, name);
@@ -47,33 +47,33 @@ public abstract class Controller<PUB_CID, PACKET,
         this.terminated = false;
     }
 
-    protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PACKET id);
+    protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(OUTPUT id);
 
-    void findProviderForConnection(ConnectionRequest<PUB_CID, PACKET, PROCESSOR> connectionRequest) {
+    public void findProviderForConnection(ConnectionRequest<PUB_CID, INPUT, PROCESSOR> connectionRequest) {
         getProviderController(connectionRequest).providerController().execute(
                 actor -> actor.makeConnection(getProviderController(connectionRequest)));
     }
 
-    protected abstract ConnectionBuilder<PUB_CID, PACKET, ?, ?> getProviderController(ConnectionRequest<PUB_CID, PACKET, ?> connectionRequest);
+    protected abstract ConnectionBuilder<PUB_CID, INPUT, ?, ?> getProviderController(ConnectionRequest<PUB_CID, INPUT, ?> connectionRequest);
 
-    void makeConnection(ConnectionBuilder<?, PACKET, ?, ?> connectionBuilder) {
+    void makeConnection(ConnectionBuilder<?, OUTPUT, ?, ?> connectionBuilder) {
         computeProcessorIfAbsent(connectionBuilder.receiverProcessorId())
                 .execute(actor -> actor.acceptConnection(connectionBuilder));
     }
 
-    public Driver<PROCESSOR> computeProcessorIfAbsent(PACKET id) {
+    public Driver<PROCESSOR> computeProcessorIfAbsent(OUTPUT id) {
         // TODO: We can do subsumption in the subtypes here
         return processors.computeIfAbsent(id, this::buildProcessor);
     }
 
-    private Actor.Driver<PROCESSOR> buildProcessor(PACKET id) {
+    private Actor.Driver<PROCESSOR> buildProcessor(OUTPUT id) {
         Driver<PROCESSOR> processor = Actor.driver(createProcessorFunc(id), executorService);
         processor.execute(Processor::setUp);
         return processor;
     }
 
     public void terminate(Throwable cause) {
-        LOG.debug("Actor terminated. ", cause);
+        LOG.debug("Actor terminated.", cause);
         this.terminated = true;
     }
 

@@ -45,7 +45,7 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-public class ConcludableController extends Controller<Conclusion, ConceptMap,
+public class ConcludableController extends Controller<Conclusion, VarConceptMap, ConceptMap,
         ConcludableController.ConcludableProcessor, ConcludableController> {
 
     private final LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions;
@@ -104,11 +104,11 @@ public class ConcludableController extends Controller<Conclusion, ConceptMap,
     }
 
     @Override
-    protected ConnectionBuilder<Conclusion, ConceptMap, ?, ?> getProviderController(ConnectionRequest<Conclusion, ConceptMap, ?> connectionRequest) {
+    protected ConnectionBuilder<Conclusion, VarConceptMap, ?, ?> getProviderController(ConnectionRequest<Conclusion, VarConceptMap, ?> connectionRequest) {
         return connectionRequest.createConnectionBuilder(registry.registerConclusionController(connectionRequest.pubControllerId()));
     }
 
-    protected static class ConcludableProcessor extends Processor<ConceptMap, Conclusion, ConcludableProcessor> {
+    protected static class ConcludableProcessor extends Processor<VarConceptMap, ConceptMap, Conclusion, ConcludableProcessor> {
 
         private final ConceptMap bounds;
         private final Set<Identifier.Variable.Retrievable> unboundVars;
@@ -138,7 +138,7 @@ public class ConcludableController extends Controller<Conclusion, ConceptMap,
             upstreamConclusions.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     requestConnection(driver(), conclusion, boundsAndRequirements.first())
-                            .flatMapOrRetry(conclusionAns -> unifier.unUnify(unpack(conclusionAns), boundsAndRequirements.second()))
+                            .flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .publishTo(op);
                 }));
             });

@@ -36,17 +36,17 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PACKET, PUB_CID, PROCESSOR>> extends Actor<PROCESSOR> {
+public abstract class Processor<INPUT, OUTPUT, PUB_CID, PROCESSOR extends Processor<INPUT, OUTPUT, PUB_CID, PROCESSOR>> extends Actor<PROCESSOR> {
 
-    private final Driver<? extends Controller<PUB_CID, PACKET, PROCESSOR, ?>> controller;
-    private final Reactive<PACKET, PACKET> outlet;
-    private final Map<Long, InletEndpoint<PACKET>> receivingEndpoints;
-    private final Map<Long, OutletEndpoint<PACKET>> providingEndpoints;
+    private final Driver<? extends Controller<PUB_CID, INPUT, OUTPUT, PROCESSOR, ?>> controller;
+    private final Reactive<OUTPUT, OUTPUT> outlet;
+    private final Map<Long, InletEndpoint<INPUT>> receivingEndpoints;
+    private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
     private long endpointId;
 
     protected Processor(Driver<PROCESSOR> driver,
-                        Driver<? extends Controller<PUB_CID, PACKET, PROCESSOR, ?>> controller,
-                        String name, Reactive<PACKET, PACKET> outlet) {
+                        Driver<? extends Controller<PUB_CID, INPUT, OUTPUT, PROCESSOR, ?>> controller,
+                        String name, Reactive<OUTPUT, OUTPUT> outlet) {
         super(driver, name);
         this.controller = controller;
         this.outlet = outlet;
@@ -57,7 +57,7 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
 
     public abstract void setUp();
 
-    public Reactive<PACKET, PACKET> outlet() {
+    public Reactive<OUTPUT, OUTPUT> outlet() {
         return outlet;
     }
 
@@ -70,21 +70,21 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
         }
     }
 
-    protected InletEndpoint<PACKET> requestConnection(Driver<PROCESSOR> subProcessor, PUB_CID pubControllerId, PACKET pubProcessorId) {
-        InletEndpoint<PACKET> endpoint = createReceivingEndpoint();
+    protected InletEndpoint<INPUT> requestConnection(Driver<PROCESSOR> subProcessor, PUB_CID pubControllerId, INPUT pubProcessorId) {
+        InletEndpoint<INPUT> endpoint = createReceivingEndpoint();
         controller.execute(actor -> actor.findProviderForConnection(
-                new ConnectionRequest<PUB_CID, PACKET, PROCESSOR>(subProcessor, endpoint.id(), pubControllerId, pubProcessorId)));
+                new ConnectionRequest<PUB_CID, INPUT, PROCESSOR>(subProcessor, endpoint.id(), pubControllerId, pubProcessorId)));
         return endpoint;
     }
 
-    protected void acceptConnection(ConnectionBuilder<?, PACKET, ?, ?> connectionBuilder) {
-        Connection<PACKET, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
-        Subscriber<PACKET> transformOp = connection.applyConnectionTransforms(createProvidingEndpoint(connection));
+    protected void acceptConnection(ConnectionBuilder<?, OUTPUT, ?, ?> connectionBuilder) {
+        Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
+        Subscriber<OUTPUT> transformOp = connection.applyConnectionTransforms(createProvidingEndpoint(connection));
         outlet().publishTo(transformOp);
         connectionBuilder.receiverProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
 
-    protected <PUB_PROCESSOR extends Processor<?, ?, PUB_PROCESSOR>> void finaliseConnection(Connection<PACKET, ?, PUB_PROCESSOR> connection) {
+    protected <PUB_PROCESSOR extends Processor<?, INPUT, ?, PUB_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PUB_PROCESSOR> connection) {
         receivingEndpoints.get(connection.subEndpointId()).setReady(connection);
     }
 
@@ -93,14 +93,14 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
         return endpointId;
     }
 
-    protected OutletEndpoint<PACKET> createProvidingEndpoint(Connection<PACKET, ?, PROCESSOR> connection) {
-        OutletEndpoint<PACKET> endpoint = new OutletEndpoint<>(connection);
+    protected OutletEndpoint<OUTPUT> createProvidingEndpoint(Connection<OUTPUT, ?, PROCESSOR> connection) {
+        OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection);
         providingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
 
-    protected InletEndpoint<PACKET> createReceivingEndpoint() {
-        InletEndpoint<PACKET> endpoint = new InletEndpoint<>(nextEndpointId());
+    protected InletEndpoint<INPUT> createReceivingEndpoint() {
+        InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId());
         receivingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
@@ -109,7 +109,7 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
         providingEndpoints.get(pubEndpointId).pull(null);
     }
 
-    protected void endpointReceive(PACKET packet, long subEndpointId) {
+    protected void endpointReceive(INPUT packet, long subEndpointId) {
         receivingEndpoints.get(subEndpointId).receive(null, packet);
     }
 
@@ -195,7 +195,7 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
         }
     }
 
-    private static class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR>, PUB_PROCESSOR extends Processor<?, ?, PUB_PROCESSOR>> {
+    private static class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>, PUB_PROCESSOR extends Processor<?, PACKET, ?, PUB_PROCESSOR>> {
 
         private final Driver<PROCESSOR> recProcessor;
         private final Driver<PUB_PROCESSOR> provProcessor;
@@ -237,7 +237,7 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
         }
     }
 
-    public static class ConnectionRequest<PUB_CID, PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR>> {
+    public static class ConnectionRequest<PUB_CID, PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>> {
 
         private final PUB_CID provControllerId;
         private final Driver<PROCESSOR> recProcessor;
@@ -245,8 +245,8 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
         private final List<Function<Subscriber<PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms;
         private final PACKET provProcessorId;
 
-        protected ConnectionRequest(Driver<PROCESSOR> recProcessor, long recEndpointId, PUB_CID provControllerId,
-                                    PACKET provProcessorId) {
+        public ConnectionRequest(Driver<PROCESSOR> recProcessor, long recEndpointId, PUB_CID provControllerId,
+                                 PACKET provProcessorId) {
             this.recProcessor = recProcessor;
             this.recEndpointId = recEndpointId;
             this.provControllerId = provControllerId;
@@ -254,7 +254,7 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
             this.connectionTransforms = new ArrayList<>();
         }
 
-        public <PUB_C extends Controller<?, PACKET, ?, PUB_C>> ConnectionBuilder<PUB_CID, PACKET, ?, PUB_C> createConnectionBuilder(Driver<PUB_C> pubController) {
+        public <PUB_C extends Controller<?, ?, PACKET, ?, PUB_C>> ConnectionBuilder<PUB_CID, PACKET, ?, PUB_C> createConnectionBuilder(Driver<PUB_C> pubController) {
             return new ConnectionBuilder<>(recProcessor, recEndpointId, pubController, provProcessorId, connectionTransforms);
         }
 
@@ -267,8 +267,8 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
         }
     }
 
-    public static class ConnectionBuilder<PUB_CID, PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR>,
-            PUB_CONTROLLER extends Controller<?, PACKET, ?, PUB_CONTROLLER>> {
+    public static class ConnectionBuilder<PUB_CID, PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>,
+            PUB_CONTROLLER extends Controller<?, ?, PACKET, ?, PUB_CONTROLLER>> {
 
         private final Driver<PROCESSOR> recProcessor;
         private final long recEndpointId;
@@ -313,7 +313,7 @@ public abstract class Processor<PACKET, PUB_CID, PROCESSOR extends Processor<PAC
             return this;
         }
 
-        public <PUB_PROCESSOR extends Processor<?, ?, PUB_PROCESSOR>> Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build(Driver<PUB_PROCESSOR> pubProcessor, long pubEndpointId) {
+        public <PUB_PROCESSOR extends Processor<?, PACKET, ?, PUB_PROCESSOR>> Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build(Driver<PUB_PROCESSOR> pubProcessor, long pubEndpointId) {
             return new Connection<>(recProcessor, pubProcessor, recEndpointId, pubEndpointId, connectionTransforms);
         }
     }
