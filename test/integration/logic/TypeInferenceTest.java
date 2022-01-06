@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.logic;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
+import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.logic.tool.TypeInference;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
@@ -49,6 +50,9 @@ import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.DATA;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.SCHEMA;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
@@ -66,33 +70,37 @@ public class TypeInferenceTest {
     private static RocksTransaction transaction;
 
     @BeforeClass
-    public static void open_session() throws IOException {
+    public static void open() throws IOException {
         Util.resetDirectory(dataDir);
         typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
-        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
     }
 
     @AfterClass
-    public static void close_session() {
-        session.close();
+    public static void close() {
         typedb.close();
     }
 
     @Before
     public void setup() {
-        transaction = session.transaction(Arguments.Transaction.Type.WRITE);
+        assert !typedb.databases().contains(database);
+        typedb.databases().create(database);
+        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
+        transaction = session.transaction(WRITE);
     }
 
     @After
     public void tearDown() {
         transaction.close();
+        session.close();
+        typedb.databases().get(database).delete();
     }
 
     private static void define_standard_schema(String fileName) throws IOException {
         TypeQLDefine query = TypeQL.parseQuery(
                 new String(Files.readAllBytes(Paths.get("test/integration/logic/" + fileName + ".tql")), UTF_8));
         transaction.query().define(query);
+        transaction.commit();
+        transaction = session.transaction(WRITE);
     }
 
     private static void define_custom_schema(String schema) {
@@ -186,6 +194,30 @@ public class TypeInferenceTest {
         }};
 
         assertEquals(expectedExhaustive, resolvedTypeMap(disjunction.conjunctions().get(0)));
+    }
+
+    @Test
+    public void iid_inference() throws IOException {
+        define_standard_schema("basic-schema");
+        transaction.commit();
+        session.close();
+        session = typedb.session(database, DATA);
+        transaction = session.transaction(WRITE);
+        Entity person = transaction.concepts().getEntityType("person").create();
+
+        TypeInference typeInference = transaction.logic().typeInference();
+
+        // using a person IID, the attribute can only be a name or email, but not a dog label
+        String queryString = "match $p iid " + person.getIID().toHexString() + "; $p has $a;";
+        Disjunction disjunction = createDisjunction(queryString);
+        typeInference.infer(disjunction);
+
+        Map<String, Set<String>> expected = new HashMap<>() {{
+            put("$p", set("person"));
+            put("$a", set("name", "email"));
+        }};
+
+        assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
 
     @Test
