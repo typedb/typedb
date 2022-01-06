@@ -83,6 +83,11 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
+    public FunctionalIterator<EntityImpl> getInstancesExplicit() {
+        return instancesExplicit(EntityImpl::of);
+    }
+
+    @Override
     public List<TypeDBException> validate() {
         return super.validate();
     }

@@ -41,6 +41,9 @@ public interface AttributeType extends ThingType {
     @Override
     FunctionalIterator<? extends Attribute> getInstances();
 
+    @Override
+    FunctionalIterator<? extends Attribute> getInstancesExplicit();
+
     void setSupertype(AttributeType superType);
 
     boolean isKeyable();
@@ -149,6 +152,9 @@ public interface AttributeType extends ThingType {
         @Override
         FunctionalIterator<? extends Attribute.Boolean> getInstances();
 
+        @Override
+        FunctionalIterator<? extends Attribute.Boolean> getInstancesExplicit();
+
         Attribute.Boolean put(boolean value);
 
         Attribute.Boolean put(boolean value, boolean isInferred);
@@ -166,6 +172,9 @@ public interface AttributeType extends ThingType {
 
         @Override
         FunctionalIterator<? extends Attribute.Long> getInstances();
+
+        @Override
+        FunctionalIterator<? extends Attribute.Long> getInstancesExplicit();
 
         Attribute.Long put(long value);
 
@@ -185,6 +194,9 @@ public interface AttributeType extends ThingType {
         @Override
         FunctionalIterator<? extends Attribute.Double> getInstances();
 
+        @Override
+        FunctionalIterator<? extends Attribute.Double> getInstancesExplicit();
+
         Attribute.Double put(double value);
 
         Attribute.Double put(double value, boolean isInferred);
@@ -202,6 +214,9 @@ public interface AttributeType extends ThingType {
 
         @Override
         FunctionalIterator<? extends Attribute.String> getInstances();
+
+        @Override
+        FunctionalIterator<? extends Attribute.String> getInstancesExplicit();
 
         void setRegex(Pattern regex);
 
@@ -226,6 +241,9 @@ public interface AttributeType extends ThingType {
 
         @Override
         FunctionalIterator<? extends Attribute.DateTime> getInstances();
+
+        @Override
+        FunctionalIterator<? extends Attribute.DateTime> getInstancesExplicit();
 
         Attribute.DateTime put(LocalDateTime value);
 

@@ -122,6 +122,10 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
                 .flatMap(t -> graphMgr.data().getReadable(t.vertex)).map(thingConstructor);
     }
 
+    <THING> FunctionalIterator<THING> instancesExplicit(Function<ThingVertex, THING> thingConstructor) {
+        return graphMgr.data().getReadable(vertex).map(thingConstructor);
+    }
+
     void setSuperTypeVertex(TypeVertex superTypeVertex) {
         vertex.outs().edge(SUB, ((TypeImpl) getSupertype()).vertex).delete();
         vertex.outs().put(SUB, superTypeVertex);

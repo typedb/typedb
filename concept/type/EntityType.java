@@ -32,6 +32,9 @@ public interface EntityType extends ThingType {
     @Override
     FunctionalIterator<? extends Entity> getInstances();
 
+    @Override
+    FunctionalIterator<? extends Entity> getInstancesExplicit();
+
     void setSupertype(EntityType superType);
 
     Entity create();

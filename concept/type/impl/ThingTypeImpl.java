@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
 import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
@@ -65,6 +66,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TY
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
+import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
@@ -99,13 +101,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void setAbstract() {
-        if (!isAbstract()) {
-            validateIsNotDeleted();
-            if (getInstances().first().isPresent()) {
-                throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
-            }
-            vertex.isAbstract(true);
+        if (isAbstract()) return;
+        validateIsNotDeleted();
+        if (getInstancesExplicit().first().isPresent()) {
+            throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
         }
+        vertex.isAbstract(true);
     }
 
     @Override
@@ -171,10 +172,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         else if ((edge = vertex.outs().edge(OWNS, attVertex)) != null) edge.delete();
         else if (this.getOwns().anyMatch(attr -> attr.equals(attributeType))) {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_OWNS,
-                                               this.getLabel().toString(), attributeType.getLabel().toString()));
+                    this.getLabel().toString(), attributeType.getLabel().toString()));
         } else {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_NONEXISTENT_OWNS,
-                                               this.getLabel().toString(), attributeType.getLabel().toString()));
+                    this.getLabel().toString(), attributeType.getLabel().toString()));
         }
     }
 
@@ -200,7 +201,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (!attributeType.isKeyable()) {
             throw exception(TypeDBException.of(OWNS_KEY_VALUE_TYPE, attributeType.getLabel(), attributeType.getValueType().name()));
         } else if (link(getSupertype().getOwns(attributeType.getValueType(), true),
-                        getSupertype().overriddenOwns(false, true)).anyMatch(a -> a.equals(attributeType))) {
+                getSupertype().overriddenOwns(false, true)).anyMatch(a -> a.equals(attributeType))) {
             throw exception(TypeDBException.of(OWNS_KEY_NOT_AVAILABLE, attributeType.getLabel()));
         }
 
@@ -208,9 +209,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             // TODO: These ownership and uniqueness checks should be parallelised to scale better
             getInstances().forEachRemaining(thing -> {
                 FunctionalIterator<? extends Attribute> attrs = thing.getHas(attributeType);
-                if (!attrs.hasNext()) throw exception(TypeDBException.of(OWS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY, vertex.label(), attVertex.label()));
+                if (!attrs.hasNext())
+                    throw exception(TypeDBException.of(OWS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY, vertex.label(), attVertex.label()));
                 Attribute attr = attrs.next();
-                if (attrs.hasNext()) throw exception(TypeDBException.of(OWS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING, vertex.label(), attVertex.label()));
+                if (attrs.hasNext())
+                    throw exception(TypeDBException.of(OWS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING, vertex.label(), attVertex.label()));
                 else if (compareSize(attr.getOwners(this), 1) != 0) {
                     throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_UNIQUENESS, attVertex.label(), vertex.label()));
                 }
@@ -226,8 +229,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private void ownsKey(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
         ownsKey(attributeType);
         override(OWNS_KEY, attributeType, overriddenType,
-                 getSupertype().getOwns(attributeType.getValueType()),
-                 declaredOwns(false));
+                getSupertype().getOwns(attributeType.getValueType()),
+                declaredOwns(false));
     }
 
     private void ownsAttribute(AttributeTypeImpl attributeType) {
@@ -245,8 +248,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private void ownsAttribute(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
         this.ownsAttribute(attributeType);
         override(OWNS, attributeType, overriddenType,
-                 getSupertype().getOwns(attributeType.getValueType()),
-                 link(getSupertype().getOwns(true), declaredOwns(false)));
+                getSupertype().getOwns(attributeType.getValueType()),
+                link(getSupertype().getOwns(true), declaredOwns(false)));
     }
 
     private FunctionalIterator<AttributeTypeImpl> declaredOwns(boolean onlyKey) {
@@ -346,7 +349,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         validateIsNotDeleted();
         setPlays(roleType);
         override(Encoding.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
-                 vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)));
+                vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)));
     }
 
     @Override
@@ -356,10 +359,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (edge == null) {
             if (this.getPlays().anyMatch(attr -> attr.equals(roleType))) {
                 throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_PLAYS,
-                                                   this.getLabel().toString(), roleType.getLabel().toString()));
+                        this.getLabel().toString(), roleType.getLabel().toString()));
             } else {
                 throw exception(TypeDBException.of(INVALID_UNDEFINE_NONEXISTENT_PLAYS,
-                                                   this.getLabel().toString(), roleType.getLabel().toString()));
+                        this.getLabel().toString(), roleType.getLabel().toString()));
             }
         }
         if (getInstances().anyMatch(thing -> thing.getRelations(roleType).first().isPresent())) {
@@ -424,10 +427,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public boolean isThingType() { return true; }
+    public boolean isThingType() {
+        return true;
+    }
 
     @Override
-    public ThingTypeImpl asThingType() { return this; }
+    public ThingTypeImpl asThingType() {
+        return this;
+    }
 
     private List<TypeDBException> exceptions_ownsAbstractAttType() {
         return getOwns().filter(TypeImpl::isAbstract)
@@ -449,16 +456,24 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
-        public boolean isRoot() { return true; }
+        public boolean isRoot() {
+            return true;
+        }
 
         @Override
-        public void setLabel(String label) { throw exception(TypeDBException.of(ROOT_TYPE_MUTATION)); }
+        public void setLabel(String label) {
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+        }
 
         @Override
-        public void unsetAbstract() { throw exception(TypeDBException.of(ROOT_TYPE_MUTATION)); }
+        public void unsetAbstract() {
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+        }
 
         @Override
-        public ThingTypeImpl getSupertype() { return null; }
+        public ThingTypeImpl getSupertype() {
+            return null;
+        }
 
         @Override
         public FunctionalIterator<ThingTypeImpl> getSupertypes() {
@@ -468,20 +483,20 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         @Override
         public FunctionalIterator<ThingTypeImpl> getSubtypes() {
             return graphMgr.schema().getSubtypes(vertex).map(v -> {
-                    switch (v.encoding()) {
-                        case THING_TYPE:
-                            assert vertex == v;
-                            return this;
-                        case ENTITY_TYPE:
-                            return EntityTypeImpl.of(graphMgr, v);
-                        case ATTRIBUTE_TYPE:
-                            return AttributeTypeImpl.of(graphMgr, v);
-                        case RELATION_TYPE:
-                            return RelationTypeImpl.of(graphMgr, v);
-                        default:
-                            throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
-                    }
-                });
+                switch (v.encoding()) {
+                    case THING_TYPE:
+                        assert vertex == v;
+                        return this;
+                    case ENTITY_TYPE:
+                        return EntityTypeImpl.of(graphMgr, v);
+                    case ATTRIBUTE_TYPE:
+                        return AttributeTypeImpl.of(graphMgr, v);
+                    case RELATION_TYPE:
+                        return RelationTypeImpl.of(graphMgr, v);
+                    default:
+                        throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
+                }
+            });
         }
 
         @Override
@@ -515,6 +530,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                 }
             });
+        }
+
+        @Override
+        public FunctionalIterator<ThingImpl> getInstancesExplicit() {
+            return empty();
         }
 
         @Override
