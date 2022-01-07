@@ -168,7 +168,7 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
         }
 
         public long id() {
-            return connection.provEndpointId;
+            return connection.providingEndpointId();
         }
 
         @Override
@@ -193,48 +193,6 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
         }
     }
 
-    private static class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR>, PUB_PROCESSOR extends Processor<?, PACKET, PUB_PROCESSOR>> {
-
-        private final Driver<PROCESSOR> recProcessor;
-        private final Driver<PUB_PROCESSOR> provProcessor;
-        private final long recEndpointId;
-        private final long provEndpointId;
-        private final List<Function<Subscriber<PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms;
-
-        /**
-         * Connects a processor outlet (upstream, publishing) to another processor's inlet (downstream, subscribing)
-         */
-        private Connection(Driver<PROCESSOR> recProcessor, Driver<PUB_PROCESSOR> provProcessor, long recEndpointId, long provEndpointId,
-                           List<Function<Subscriber<PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms) {
-            this.recProcessor = recProcessor;
-            this.provProcessor = provProcessor;
-            this.recEndpointId = recEndpointId;
-            this.provEndpointId = provEndpointId;
-            this.connectionTransforms = connectionTransforms;
-        }
-
-        private void receive(PACKET packet) {
-            recProcessor.execute(actor -> actor.endpointReceive(packet, recEndpointId));
-        }
-
-        private void pull() {
-            provProcessor.execute(actor -> actor.endpointPull(provEndpointId));
-        }
-
-        private long subEndpointId() {
-            return recEndpointId;
-        }
-
-        public Subscriber<PACKET> applyConnectionTransforms(OutletEndpoint<PACKET> upstreamEndpoint) {
-            assert upstreamEndpoint.id() == provEndpointId;
-            Subscriber<PACKET> op = upstreamEndpoint;
-            for (Function<Subscriber<PACKET>, Reactive<PACKET, PACKET>> t : connectionTransforms) {
-                op = t.apply(op);
-            }
-            return op;
-        }
-    }
-
     public static abstract class ConnectionRequest<
             PUB_CID, PUB_PROC_ID,
             PUB_C extends Controller<PUB_PROC_ID, PACKET, ?, PUB_C>,
@@ -249,7 +207,8 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
         private final List<Function<Subscriber<PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms;
         private PUB_PROC_ID provProcessorId;
 
-        public ConnectionRequest(Driver<PROCESSOR> recProcessor, long recEndpointId, PUB_CID provControllerId, PUB_PROC_ID provProcessorId) {
+        protected ConnectionRequest(Driver<PROCESSOR> recProcessor, long recEndpointId, PUB_CID provControllerId,
+                                    PUB_PROC_ID provProcessorId) {
             this.recProcessor = recProcessor;
             this.recEndpointId = recEndpointId;
             this.provControllerId = provControllerId;
