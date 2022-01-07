@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-public class ConditionController extends ConjunctionController<ConditionAnswer, ConditionController, ConditionController.ConditionProcessor> {
+public class ConditionController extends ConjunctionController<ConclusionPacket, ConditionController, ConditionController.ConditionProcessor> {
 
     public ConditionController(Driver<ConditionController> driver, Conjunction conjunction, ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, conjunction, executorService, registry);
@@ -48,7 +48,7 @@ public class ConditionController extends ConjunctionController<ConditionAnswer, 
         return null;
     }
 
-    protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<ConditionAnswer, ConditionController.ConditionProcessor>{
+    protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<ConclusionPacket, ConditionController.ConditionProcessor>{
         protected ConditionProcessor(Driver<ConditionProcessor> driver, Driver<? extends Controller<?, ?,
                 ConditionProcessor, ?>> controller, String name,
                                      ConceptMap bounds, List<Resolvable<?>> plan) {
@@ -58,7 +58,7 @@ public class ConditionController extends ConjunctionController<ConditionAnswer, 
         @Override
         public void setUp() {
             new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds)
-                    .map(ConditionAnswer::new).publishTo(outlet());
+                    .map(a -> new ConditionAnswer(a).asConclusionPacket()).publishTo(outlet());
         }
     }
 }

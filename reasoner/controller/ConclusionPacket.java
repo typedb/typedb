@@ -62,6 +62,10 @@ public abstract class ConclusionPacket {
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
+    public ConclusionPacket asConclusionPacket() {
+        return this;
+    }
+
     public static class MaterialisationBounds extends ConclusionPacket {  // TODO: Don't need this now, use ConceptMap
         private final ConceptMap conceptMap;
         private final Rule.Conclusion conclusion;

@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -27,23 +28,23 @@ import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.function.Function;
 
-public class MaterialiserController extends Controller<Void, MaterialisationAnswer, MaterialiserController.MaterialiserProcessor, MaterialiserController> {
+public class MaterialiserController extends Controller<ConceptMap, ConclusionPacket, MaterialiserController.MaterialiserProcessor, MaterialiserController> {
 
     protected MaterialiserController(Driver<MaterialiserController> driver, String name, ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, name, executorService, registry);
     }
 
     @Override
-    protected Function<Driver<MaterialiserProcessor>, MaterialiserProcessor> createProcessorFunc(Void aVoid) {
+    protected Function<Driver<MaterialiserProcessor>, MaterialiserProcessor> createProcessorFunc(ConceptMap conceptMap) {
         return null;
     }
 
-    public static class MaterialiserProcessor extends Processor<Void, MaterialisationAnswer, MaterialiserProcessor> {
+    public static class MaterialiserProcessor extends Processor<Void, ConclusionPacket, MaterialiserProcessor> {
 
         protected MaterialiserProcessor(
                 Driver<MaterialiserProcessor> driver,
                 Driver<? extends Controller<?, ?, MaterialiserProcessor, ?>> controller,
-                String name, Reactive<MaterialisationAnswer, MaterialisationAnswer> outlet) {
+                String name, Reactive<ConclusionPacket, ConclusionPacket> outlet) {
             super(driver, controller, name, outlet);
         }
 

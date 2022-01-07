@@ -103,15 +103,16 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
         );
     }
 
-    protected static class ConcludableRequest extends ConnectionRequest<Conclusion, ConceptMap, ConclusionController, VarConceptMap, ConcludableController.ConcludableProcessor, ConcludableRequest> {
+    protected static class ConclusionRequest extends ConnectionRequest<Conclusion, ConceptMap, ConclusionController,
+            VarConceptMap, ConcludableController.ConcludableProcessor, ConclusionRequest> {
 
-        public ConcludableRequest(Driver<ConcludableProcessor> recProcessor, long recEndpointId,
-                                  Conclusion provControllerId, ConceptMap provProcessorId) {
+        public ConclusionRequest(Driver<ConcludableProcessor> recProcessor, long recEndpointId,
+                                 Conclusion provControllerId, ConceptMap provProcessorId) {
             super(recProcessor, recEndpointId, provControllerId, provProcessorId);
         }
 
         @Override
-        public ConnectionBuilder<ConceptMap, VarConceptMap, ConcludableRequest, ConcludableProcessor, ?> getBuilder(ControllerRegistry registry) {
+        public ConnectionBuilder<ConceptMap, VarConceptMap, ConclusionRequest, ConcludableProcessor, ?> getBuilder(ControllerRegistry registry) {
             return createConnectionBuilder(registry.registerConclusionController(pubControllerId()));
         }
     }
@@ -146,7 +147,7 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
             upstreamConclusions.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     InletEndpoint<VarConceptMap> endpoint = this.createReceivingEndpoint();
-                    requestConnection(new ConcludableRequest(driver(), endpoint.id(), conclusion, boundsAndRequirements.first()));
+                    requestConnection(new ConclusionRequest(driver(), endpoint.id(), conclusion, boundsAndRequirements.first()));
                     endpoint.flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .publishTo(op);
                 }));

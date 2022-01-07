@@ -25,7 +25,6 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionRequest;
-import com.vaticle.typedb.core.reasoner.controller.ConclusionPacket.ConditionAnswer;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.function.Function;
@@ -35,11 +34,13 @@ import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReac
 public class ConclusionController extends Controller<ConceptMap, VarConceptMap,
         ConclusionController.ConclusionProcessor, ConclusionController> {
     private final Rule.Conclusion conclusion;
+    private final MaterialiserController materialiserController;
 
     protected ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion conclusion,
                                    ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, name, executorService, registry);
         this.conclusion = conclusion;
+        this.materialiserController = null;  // TODO
     }
 
     @Override
@@ -50,7 +51,7 @@ public class ConclusionController extends Controller<ConceptMap, VarConceptMap,
         );
     }
 
-    protected static class ConditionRequest extends ConnectionRequest<Rule.Condition, ConceptMap, ConditionController, ConditionAnswer, ConclusionController.ConclusionProcessor, ConditionRequest> {
+    protected static class ConditionRequest extends ConnectionRequest<Rule.Condition, ConceptMap, ConditionController, ConclusionPacket, ConclusionController.ConclusionProcessor, ConditionRequest> {
 
         public ConditionRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
                                 Rule.Condition provControllerId, ConceptMap provProcessorId) {
@@ -58,12 +59,26 @@ public class ConclusionController extends Controller<ConceptMap, VarConceptMap,
         }
 
         @Override
-        public ConnectionBuilder<ConceptMap, ConditionAnswer, ConditionRequest, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
+        public ConnectionBuilder<ConceptMap, ConclusionPacket, ConditionRequest, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
             return createConnectionBuilder(registry.registerConditionController(pubControllerId()));
         }
     }
 
-    protected static class ConclusionProcessor extends Processor<ConditionAnswer, VarConceptMap, ConclusionProcessor> {
+    protected static class MaterialiserRequest extends ConnectionRequest<Void, ConceptMap, MaterialiserController, ConclusionPacket, ConclusionProcessor, MaterialiserRequest> {
+
+        public MaterialiserRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
+                                   Void provControllerId, ConceptMap provProcessorId) {
+            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+        }
+
+        @Override
+        public ConnectionBuilder<ConceptMap, ConclusionPacket, MaterialiserRequest, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
+            return null;
+        }
+
+    }
+
+    protected static class ConclusionProcessor extends Processor<ConclusionPacket, VarConceptMap, ConclusionProcessor> {
 
         private final Rule rule;
         private final ConceptMap bounds;
@@ -80,10 +95,10 @@ public class ConclusionController extends Controller<ConceptMap, VarConceptMap,
 
         @Override
         public void setUp() {
-            InletEndpoint<ConditionAnswer> conditionEndpoint = createReceivingEndpoint();
+            InletEndpoint<ConclusionPacket> conditionEndpoint = createReceivingEndpoint();
             requestConnection(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
             conditionEndpoint.forEach(ans -> {
-                InletEndpoint<ConditionAnswer> materialiserEndpoint = createReceivingEndpoint();
+                InletEndpoint<ConclusionPacket> materialiserEndpoint = createReceivingEndpoint();
                 requestConnection(new ConditionRequest(driver(), materialiserEndpoint.id(), null, ans.asConditionAnswer().conceptMap()));
                     materialiserEndpoint.map(m -> m.asMaterialisationAnswer().concepts()).publishTo(outlet());
             });
