@@ -29,18 +29,19 @@ import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 public interface ThingAdjacency {
 
-    /**
-     * Returns an {@code IteratorBuilder} to retrieve vertices of a set of non-optimised edges.
-     *
-     * This method allows us to traverse the graph, by going from one vertex to
-     * another, that are connected by edges that match the provided {@code encoding}.
-     *
-     * @param encoding the {@code Encoding} to filter the type of edges
-     * @return an {@code SortedIteratorBuilder} to retrieve vertices of a set of edges.
-     */
-    SortedEdgeIterator edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead);
+    interface In extends ThingAdjacency {
 
-    SortedEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
+        SortedEdgeIterator.Ins edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead);
+
+        SortedEdgeIterator.Ins edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
+    }
+
+    interface Out extends ThingAdjacency {
+
+        SortedEdgeIterator.Outs edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead);
+
+        SortedEdgeIterator.Outs edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
+    }
 
     EdgeIterator edge(Encoding.Edge.Thing.Optimised encoding);
 
@@ -77,12 +78,22 @@ public interface ThingAdjacency {
 
     interface SortedEdgeIterator {
 
-        SortedIterator<ThingVertex, Order.Asc> from();
-
-        SortedIterator<ThingVertex, Order.Asc> to();
-
         // TODO ComparableEdge should be an implementation detail of Adjacencies
         SortedIterator.Seekable<ComparableEdge.Thing, Order.Asc> get();
+
+        interface Ins extends SortedEdgeIterator {
+
+            SortedIterator<ThingVertex, Order.Asc> from();
+
+            SortedIterator.Seekable<ThingVertex, Order.Asc> to();
+        }
+
+        interface Outs extends SortedEdgeIterator {
+
+            SortedIterator.Seekable<ThingVertex, Order.Asc> from();
+
+            SortedIterator<ThingVertex, Order.Asc> to();
+        }
     }
 
     interface Write extends ThingAdjacency {
