@@ -23,53 +23,52 @@ import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.iid.EdgeIID;
 
-public abstract class DirectedEdge {
+public abstract class ComparableEdge {
 
-    public abstract Edge<?, ?, ?> get();
+    public abstract Edge<?, ?, ?> edge();
 
-    public abstract EdgeIID<?, ?, ?, ?> directedIID();
+    public abstract EdgeIID<?, ?, ?, ?> iid();
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        final DirectedEdge that = (DirectedEdge) o;
-        return directedIID().equals(that.directedIID());
+        final ComparableEdge that = (ComparableEdge) o;
+        return iid().equals(that.iid());
     }
 
     @Override
     public int hashCode() {
-        return directedIID().hashCode();
+        return iid().hashCode();
     }
 
-    abstract static class Type extends DirectedEdge implements Comparable<Type> {
+    abstract static class Type extends ComparableEdge implements Comparable<Type> {
+
         final TypeEdge edge;
 
         Type(TypeEdge edge) {
             this.edge = edge;
         }
 
-        public TypeEdge get() {
+        public TypeEdge edge() {
             return edge;
         }
 
         @Override
-        public EdgeIID.Type directedIID() {
-            return null;
-        }
+        public abstract EdgeIID.Type iid();
 
-        public static Type in(TypeEdge edge) {
+        public static Type byInIID(TypeEdge edge) {
             return create(edge, edge.inIID());
         }
 
-        public static Type out(TypeEdge edge) {
+        public static Type byOutIID(TypeEdge edge) {
             return create(edge, edge.outIID());
         }
 
         private static Type create(TypeEdge edge, EdgeIID.Type iid) {
             return new Type(edge) {
                 @Override
-                public EdgeIID.Type directedIID() {
+                public EdgeIID.Type iid() {
                     return iid;
                 }
             };
@@ -77,38 +76,36 @@ public abstract class DirectedEdge {
 
         @Override
         public int compareTo(Type other) {
-            return directedIID().compareTo(other.directedIID());
+            return iid().compareTo(other.iid());
         }
     }
 
-    public abstract static class Thing extends DirectedEdge implements Comparable<Thing> {
+    public abstract static class Thing extends ComparableEdge implements Comparable<Thing> {
         final ThingEdge edge;
 
         Thing(ThingEdge edge) {
             this.edge = edge;
         }
 
-        public ThingEdge get() {
+        public ThingEdge edge() {
             return edge;
         }
 
         @Override
-        public EdgeIID.Thing directedIID() {
-            return null;
-        }
+        public abstract EdgeIID.Thing iid();
 
-        public static Thing in(ThingEdge edge) {
+        public static Thing byInIID(ThingEdge edge) {
             return create(edge, edge.inIID());
         }
 
-        public static Thing out(ThingEdge edge) {
+        public static Thing byOutIID(ThingEdge edge) {
             return create(edge, edge.outIID());
         }
 
         private static Thing create(ThingEdge edge, EdgeIID.Thing iid) {
             return new Thing(edge) {
                 @Override
-                public EdgeIID.Thing directedIID() {
+                public EdgeIID.Thing iid() {
                     return iid;
                 }
             };
@@ -116,7 +113,7 @@ public abstract class DirectedEdge {
 
         @Override
         public int compareTo(Thing other) {
-            return directedIID().compareTo(other.directedIID());
+            return iid().compareTo(other.iid());
         }
     }
 }

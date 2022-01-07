@@ -38,11 +38,11 @@ public interface ThingAdjacency {
      * @param encoding the {@code Encoding} to filter the type of edges
      * @return an {@code SortedIteratorBuilder} to retrieve vertices of a set of edges.
      */
-    SortedIteratorBuilder edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead);
+    SortedEdgeIterator edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead);
 
-    SortedIteratorBuilder edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
+    SortedEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
 
-    IteratorBuilder edge(Encoding.Edge.Thing.Optimised encoding);
+    EdgeIterator edge(Encoding.Edge.Thing.Optimised encoding);
 
     /**
      * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
@@ -65,7 +65,8 @@ public interface ThingAdjacency {
      */
     ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised);
 
-    interface IteratorBuilder {
+    // TODO we should end up with only seekable iterators available
+    interface EdgeIterator {
 
         FunctionalIterator<ThingVertex> from();
 
@@ -74,13 +75,14 @@ public interface ThingAdjacency {
         FunctionalIterator<ThingEdge> get();
     }
 
-    interface SortedIteratorBuilder {
+    interface SortedEdgeIterator {
 
         SortedIterator<ThingVertex, Order.Asc> from();
 
         SortedIterator<ThingVertex, Order.Asc> to();
 
-        SortedIterator.Seekable<DirectedEdge.Thing, Order.Asc> get();
+        // TODO ComparableEdge should be an implementation detail of Adjacencies
+        SortedIterator.Seekable<ComparableEdge.Thing, Order.Asc> get();
     }
 
     interface Write extends ThingAdjacency {
@@ -145,7 +147,5 @@ public interface ThingAdjacency {
         void commit();
 
     }
-
-    DirectedEdge asDirected(ThingEdge edge);
 
 }

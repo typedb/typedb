@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.graph.adjacency.DirectedEdge;
+import com.vaticle.typedb.core.graph.adjacency.ComparableEdge;
 import com.vaticle.typedb.core.graph.edge.impl.ThingEdgeImpl;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -208,11 +208,11 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
         return Iterators.Sorted.merge(ASC, iterate(edge.asNative().asRolePlayer().types()).map(roleLabel -> {
             TypeVertex roleVertex = graphMgr.schema().getType(roleLabel);
             Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> relRoles = player.ins().edge(ROLEPLAYER, roleVertex)
-                    .get().filter(directedEdge -> relationTypes.contains(directedEdge.get().from().type().properLabel()))
+                    .get().filter(directedEdge -> relationTypes.contains(directedEdge.edge().from().type().properLabel()))
                     .mapSorted(
                             ASC,
-                            dirEdge -> new KeyValue<>(dirEdge.get().from(), dirEdge.get().optimised().get()),
-                            relRole -> DirectedEdge.Thing.in(new ThingEdgeImpl.Target(ROLEPLAYER, relRole.key(), player, roleVertex))
+                            dirEdge -> new KeyValue<>(dirEdge.edge().from(), dirEdge.edge().optimised().get()),
+                            relRole -> ComparableEdge.Thing.byInIID(new ThingEdgeImpl.Target(ROLEPLAYER, relRole.key(), player, roleVertex))
                     );
             return relRoles;
         })).filter(relRole -> !scoped.contains(relRole.value())).mapSorted(

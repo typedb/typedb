@@ -40,7 +40,6 @@ import java.util.function.Predicate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 
 public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
