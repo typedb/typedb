@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,11 +54,11 @@ public abstract class Controller<
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PROC_ID id);
 
     public <PUB_PROC_ID, INPUT, REQ extends Connection.Request<?, PUB_PROC_ID, ?, INPUT, ?, ?>> void findProviderForConnection(REQ req) {
-        ConnectionBuilder<PUB_PROC_ID, INPUT, ?, ?, ?> builder = req.getBuilder(registry);
+        Connection.Builder<PUB_PROC_ID, INPUT, ?, ?, ?> builder = req.getBuilder(registry);
         builder.providerController().execute(actor -> actor.makeConnection(builder));
     }
 
-    void makeConnection(ConnectionBuilder<PROC_ID, OUTPUT, ?, ?, ?> connectionBuilder) {
+    void makeConnection(Connection.Builder<PROC_ID, OUTPUT, ?, ?, ?> connectionBuilder) {
         computeProcessorIfAbsent(connectionBuilder.request().pubProcessorId())
                 .execute(actor -> actor.acceptConnection(connectionBuilder));
     }

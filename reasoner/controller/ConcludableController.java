@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
@@ -112,7 +111,7 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
         }
 
         @Override
-        public ConnectionBuilder<ConceptMap, VarConceptMap, ConclusionRequest, ConcludableProcessor, ?> getBuilder(ControllerRegistry registry) {
+        public Connection.Builder<ConceptMap, VarConceptMap, ConclusionRequest, ConcludableProcessor, ?> getBuilder(ControllerRegistry registry) {
             return createConnectionBuilder(registry.registerConclusionController(pubControllerId()));
         }
     }

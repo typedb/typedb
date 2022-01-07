@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionBuilder;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Builder;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Request;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
@@ -60,7 +60,7 @@ public class ConclusionController extends Controller<ConceptMap, VarConceptMap,
         }
 
         @Override
-        public ConnectionBuilder<ConceptMap, ConclusionPacket, ConditionRequest, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
+        public Builder<ConceptMap, ConclusionPacket, ConditionRequest, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
             return createConnectionBuilder(registry.registerConditionController(pubControllerId()));
         }
     }
@@ -73,7 +73,7 @@ public class ConclusionController extends Controller<ConceptMap, VarConceptMap,
         }
 
         @Override
-        public ConnectionBuilder<ConceptMap, ConclusionPacket, MaterialiserRequest, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
+        public Builder<ConceptMap, ConclusionPacket, MaterialiserRequest, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
             return null;
         }
 

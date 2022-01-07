@@ -98,11 +98,11 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR
             this.connectionTransforms = new ArrayList<>();
         }
 
-        public Processor.ConnectionBuilder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, PUB_C> createConnectionBuilder(Actor.Driver<PUB_C> pubController) {
-            return new Processor.ConnectionBuilder<>(pubController, this);
+        public Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, PUB_C> createConnectionBuilder(Actor.Driver<PUB_C> pubController) {
+            return new Builder<>(pubController, this);
         }
 
-        public abstract Processor.ConnectionBuilder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, ?> getBuilder(ControllerRegistry registry);
+        public abstract Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, ?> getBuilder(ControllerRegistry registry);
 
         public void withMap(Function<PACKET, PACKET> function) {
             connectionTransforms.add(r -> {
@@ -134,6 +134,42 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR
 
         public List<Function<Receiver.Subscriber<PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms() {
             return connectionTransforms;
+        }
+    }
+
+    public static class Builder<PUB_PROC_ID, PACKET,
+            REQ extends Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ>,  // TODO: Try removing REQ
+            PROCESSOR extends Processor<PACKET, ?, PROCESSOR>,
+            PUB_CONTROLLER extends Controller<PUB_PROC_ID, PACKET, ?, PUB_CONTROLLER>> {
+
+        private final Actor.Driver<PUB_CONTROLLER> provController;
+        private final Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> connectionRequest;
+
+        public Builder(Actor.Driver<PUB_CONTROLLER> provController, Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> connectionRequest) {
+            this.provController = provController;
+            this.connectionRequest = connectionRequest;
+        }
+
+        public Actor.Driver<PUB_CONTROLLER> providerController() {
+            return provController;
+        }
+
+        public Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> request() {
+            return connectionRequest;
+        }
+
+        public Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, PUB_CONTROLLER> withMap(Function<PACKET, PACKET> function) {
+            connectionRequest.withMap(function);
+            return this;
+        }
+
+        public Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, PUB_CONTROLLER> withNewProcessorId(PUB_PROC_ID newPID) {
+            connectionRequest.withNewProcessorId(newPID);
+            return this;
+        }
+
+        public <PUB_PROCESSOR extends Processor<?, PACKET, PUB_PROCESSOR>> Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build(Actor.Driver<PUB_PROCESSOR> pubProcessor, long pubEndpointId) {
+            return new Connection<>(request().recProcessor(), pubProcessor, request().recEndpointId(), pubEndpointId, request().connectionTransforms());
         }
     }
 }

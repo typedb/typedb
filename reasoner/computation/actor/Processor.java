@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT, OUTPUT, PROCESSOR>> extends Actor<PROCESSOR> {
 
@@ -70,7 +69,7 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
         controller.execute(actor -> actor.findProviderForConnection(req));
     }
 
-    protected void acceptConnection(ConnectionBuilder<?, OUTPUT, ?, ?, ?> connectionBuilder) {
+    protected void acceptConnection(Connection.Builder<?, OUTPUT, ?, ?, ?> connectionBuilder) {
         Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
         Subscriber<OUTPUT> transformOp = connection.applyConnectionTransforms(createProvidingEndpoint(connection));
         outlet().publishTo(transformOp);
@@ -185,42 +184,6 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
                 isPulling = true;
                 publishers.forEach(p -> p.pull(this));
             }
-        }
-    }
-
-    public static class ConnectionBuilder<PUB_PROC_ID, PACKET,
-            REQ extends Connection.Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ>,  // TODO: Try removing REQ
-            PROCESSOR extends Processor<PACKET, ?, PROCESSOR>,
-            PUB_CONTROLLER extends Controller<PUB_PROC_ID, PACKET, ?, PUB_CONTROLLER>> {
-
-        private final Driver<PUB_CONTROLLER> provController;
-        private final Connection.Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> connectionRequest;
-
-        public ConnectionBuilder(Driver<PUB_CONTROLLER> provController, Connection.Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> connectionRequest) {
-            this.provController = provController;
-            this.connectionRequest = connectionRequest;
-        }
-
-        public Driver<PUB_CONTROLLER> providerController() {
-            return provController;
-        }
-
-        public Connection.Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> request() {
-            return connectionRequest;
-        }
-
-        public ConnectionBuilder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, PUB_CONTROLLER> withMap(Function<PACKET, PACKET> function) {
-            connectionRequest.withMap(function);
-            return this;
-        }
-
-        public ConnectionBuilder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, PUB_CONTROLLER> withNewProcessorId(PUB_PROC_ID newPID) {
-            connectionRequest.withNewProcessorId(newPID);
-            return this;
-        }
-
-        public <PUB_PROCESSOR extends Processor<?, PACKET, PUB_PROCESSOR>> Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build(Driver<PUB_PROCESSOR> pubProcessor, long pubEndpointId) {
-            return new Connection<>(request().recProcessor(), pubProcessor, request().recEndpointId(), pubEndpointId, request().connectionTransforms());
         }
     }
 

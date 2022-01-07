@@ -30,7 +30,6 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Request;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry.ResolverView;
@@ -86,7 +85,7 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
         }
 
         @Override
-        public ConnectionBuilder<ConceptMap, ConceptMap, RetrievableRequest<P>, P, RetrievableController> getBuilder(ControllerRegistry registry) {
+        public Connection.Builder<ConceptMap, ConceptMap, RetrievableRequest<P>, P, RetrievableController> getBuilder(ControllerRegistry registry) {
             ResolverView.FilteredRetrievable controller = registry.registerRetrievableController(pubControllerId().asRetrievable());
             ConceptMap newPID = pubProcessorId().filter(controller.filter());
             return createConnectionBuilder(controller.controller())
@@ -102,7 +101,7 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
         }
 
         @Override
-        public ConnectionBuilder<ConceptMap, ConceptMap, ConcludableRequest<P>, P, ConcludableController> getBuilder(ControllerRegistry registry) {
+        public Connection.Builder<ConceptMap, ConceptMap, ConcludableRequest<P>, P, ConcludableController> getBuilder(ControllerRegistry registry) {
             ResolverView.MappedConcludable controllerView = registry.registerConcludableController(pubControllerId().asConcludable());
             Driver<ConcludableController> controller = controllerView.controller();
             Mapping mapping = Mapping.of(controllerView.mapping());
@@ -120,7 +119,7 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
 //        }
 //
 //        @Override
-//        public ConnectionBuilder<ConceptMap, ConceptMap, NegatedRequest<P>, P, NegatedController> getBuilder(ControllerRegistry registry) {
+//        public Builder<ConceptMap, ConceptMap, NegatedRequest<P>, P, NegatedController> getBuilder(ControllerRegistry registry) {
 //            return null;  // TODO: Get the retrievable controller from the registry. Apply the filter in the same way as the mapping for concludable.
 //        }
 //    }
