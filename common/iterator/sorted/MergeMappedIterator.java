@@ -16,9 +16,12 @@
  *
  */
 
-package com.vaticle.typedb.core.common.iterator;
+package com.vaticle.typedb.core.common.iterator.sorted;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,8 +33,8 @@ import java.util.function.Predicate;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-class MergeMappedIterator<T, U extends Comparable<? super U>, ITER extends FunctionalIterator.Sorted<U>>
-        extends AbstractFunctionalIterator.Sorted<U> {
+public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER extends Order, ITER extends SortedIterator<U, ORDER>>
+        extends AbstractSortedIterator<U, ORDER> {
 
     private final Function<T, ITER> mappingFn;
     final FunctionalIterator<T> iterator;
@@ -42,7 +45,8 @@ class MergeMappedIterator<T, U extends Comparable<? super U>, ITER extends Funct
 
     enum State {INIT, NOT_READY, FETCHED, COMPLETED}
 
-    MergeMappedIterator(FunctionalIterator<T> iterator, Function<T, ITER> mappingFn) {
+    MergeMappedIterator(ORDER order, FunctionalIterator<T> iterator, Function<T, ITER> mappingFn) {
+        super(order);
         this.iterator = iterator;
         this.mappingFn = mappingFn;
         this.queue = new PriorityQueue<>();
@@ -62,9 +66,8 @@ class MergeMappedIterator<T, U extends Comparable<? super U>, ITER extends Funct
 
         @Override
         public int compareTo(ComparableSortedIterator other) {
-            return iter.peek().compareTo(other.iter.peek());
+            return order.compare(iter.peek(), other.iter.peek());
         }
-
     }
 
     @Override
@@ -101,7 +104,6 @@ class MergeMappedIterator<T, U extends Comparable<? super U>, ITER extends Funct
             ITER sortedIterator = mappingFn.apply(value);
             if (sortedIterator.hasNext()) queue.add(new ComparableSortedIterator(sortedIterator));
         });
-        iterator.recycle();
         if (queue.isEmpty()) state = State.COMPLETED;
         else state = State.FETCHED;
     }
@@ -135,21 +137,21 @@ class MergeMappedIterator<T, U extends Comparable<? super U>, ITER extends Funct
         iterator.recycle();
     }
 
-    static class Forwardable<T, U extends Comparable<? super U>>
-            extends MergeMappedIterator<T, U, FunctionalIterator.Sorted.Forwardable<U>>
-            implements FunctionalIterator.Sorted.Forwardable<U> {
+    public static class Seekable<T, U extends Comparable<? super U>, ORDER extends Order>
+            extends MergeMappedIterator<T, U, ORDER, SortedIterator.Seekable<U, ORDER>>
+            implements SortedIterator.Seekable<U, ORDER> {
 
-        Forwardable(FunctionalIterator<T> source, Function<T, FunctionalIterator.Sorted.Forwardable<U>> mappingFn) {
-            super(source, mappingFn);
+        public Seekable(ORDER order, FunctionalIterator<T> source, Function<T, SortedIterator.Seekable<U, ORDER>> mappingFn) {
+            super(order, source, mappingFn);
         }
 
         @Override
-        public void forward(U target) {
-            if (last != null && target.compareTo(last) < 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
-            notInQueue.forEach(iter -> iter.forward(target));
+        public void seek(U target) {
+            if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+            notInQueue.forEach(iter -> iter.seek(target));
             queue.forEach(queueNode -> {
-                FunctionalIterator.Sorted.Forwardable<U> iter = queueNode.iter;
-                iter.forward(target);
+                SortedIterator.Seekable<U, ORDER> iter = queueNode.iter;
+                iter.seek(target);
                 notInQueue.add(iter);
             });
             queue.clear();
@@ -157,23 +159,23 @@ class MergeMappedIterator<T, U extends Comparable<? super U>, ITER extends Funct
         }
 
         @Override
-        public final FunctionalIterator.Sorted.Forwardable<U> merge(FunctionalIterator.Sorted.Forwardable<U> iterator) {
+        public final SortedIterator.Seekable<U, ORDER> merge(SortedIterator.Seekable<U, ORDER> iterator) {
             return Iterators.Sorted.merge(this, iterator);
         }
 
         @Override
-        public <V extends Comparable<? super V>> FunctionalIterator.Sorted.Forwardable<V> mapSorted(
-                Function<U, V> mappingFn, Function<V, U> reverseMappingFn) {
-            return Iterators.Sorted.mapSorted(this, mappingFn, reverseMappingFn);
+        public <V extends Comparable<? super V>, ORD extends Order> SortedIterator.Seekable<V, ORD> mapSorted(
+                ORD order, Function<U, V> mappingFn, Function<V, U> reverseMappingFn) {
+            return Iterators.Sorted.mapSorted(order, this, mappingFn, reverseMappingFn);
         }
 
         @Override
-        public FunctionalIterator.Sorted.Forwardable<U> distinct() {
+        public SortedIterator.Seekable<U, ORDER> distinct() {
             return Iterators.Sorted.distinct(this);
         }
 
         @Override
-        public FunctionalIterator.Sorted.Forwardable<U> filter(Predicate<U> predicate) {
+        public SortedIterator.Seekable<U, ORDER> filter(Predicate<U> predicate) {
             return Iterators.Sorted.filter(this, predicate);
         }
     }

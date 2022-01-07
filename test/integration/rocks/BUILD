@@ -37,6 +37,26 @@ host_compatible_java_test(
     size = "small",
 )
 
+host_compatible_java_test(
+    name = "test-rocks-iterator",
+    srcs = ["RocksIteratorTest.java"],
+    test_class = "com.vaticle.typedb.core.rocks.RocksIteratorTest",
+    native_libraries_deps = [
+        "//:typedb",
+        "//common:common",
+        "//graph:graph",
+        "//concept:concept",
+        "//rocks:rocks",
+
+        "//common/test:util",
+    ],
+    deps = [
+        "//test/integration/util:util",
+    ],
+    data = glob(["data/**"]),
+    size = "small",
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

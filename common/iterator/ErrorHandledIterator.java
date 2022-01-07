@@ -22,12 +22,12 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import java.util.function.Function;
 
-class ErrorHandledIterator<T> extends AbstractFunctionalIterator<T> {
+public class ErrorHandledIterator<T> extends AbstractFunctionalIterator<T> {
 
     private final FunctionalIterator<T> iterator;
     private final Function<Exception, TypeDBException> exceptionFn;
 
-    ErrorHandledIterator(FunctionalIterator<T> iterator, Function<Exception, TypeDBException> exceptionFn) {
+    public ErrorHandledIterator(FunctionalIterator<T> iterator, Function<Exception, TypeDBException> exceptionFn) {
         this.iterator = iterator;
         this.exceptionFn = exceptionFn;
     }

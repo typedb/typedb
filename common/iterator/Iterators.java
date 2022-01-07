@@ -19,7 +19,15 @@
 package com.vaticle.typedb.core.common.iterator;
 
 import com.vaticle.typedb.common.collection.Either;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator.Sorted.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.BasedSortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.DistinctSortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.FilteredSortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.FinaliseSortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.MappedSortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.MergeMappedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -117,55 +125,55 @@ public class Iterators {
 
     public static class Sorted {
 
-        public static <T extends Comparable<T>> Forwardable<T> emptySorted() {
-            return iterateSorted(new ConcurrentSkipListSet<T>());
+        public static <T extends Comparable<T>> Seekable<T, Order.Asc> emptySorted() {
+            return iterateSorted(SortedIterator.ASC, new ConcurrentSkipListSet<T>());
         }
 
-        public static <T extends Comparable<? super T>> Forwardable<T> iterateSorted(NavigableSet<T> set) {
-            return new BaseIterator.Sorted<>(set);
+        public static <T extends Comparable<? super T>, ORDER extends Order> Seekable<T, ORDER> iterateSorted(ORDER order, NavigableSet<T> set) {
+            return new BasedSortedIterator<>(order, set);
         }
 
-        public static <T extends Comparable<? super T>> FunctionalIterator.Sorted<T> distinct(
-                FunctionalIterator.Sorted<T> iterator) {
-            return new DistinctIterator.Sorted<>(iterator);
+        public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator<T, ORDER> distinct(
+                SortedIterator<T, ORDER> iterator) {
+            return new DistinctSortedIterator<>(iterator);
         }
 
-        public static <T extends Comparable<? super T>> Forwardable<T> distinct(Forwardable<T> iterator) {
-            return new DistinctIterator.Sorted.Forwardable<>(iterator);
+        public static <T extends Comparable<? super T>, ORDER extends Order> Seekable<T, ORDER> distinct(Seekable<T, ORDER> iterator) {
+            return new DistinctSortedIterator.Seekable<>(iterator);
         }
 
-        public static <T extends Comparable<? super T>> FunctionalIterator.Sorted<T> filter(
-                FunctionalIterator.Sorted<T> iterator, Predicate<T> predicate) {
-            return new FilteredIterator.Sorted<>(iterator, predicate);
+        public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator<T, ORDER> filter(
+                SortedIterator<T, ORDER> iterator, Predicate<T> predicate) {
+            return new FilteredSortedIterator<>(iterator, predicate);
         }
 
-        public static <T extends Comparable<? super T>> Forwardable<T> filter(Forwardable<T> iterator,
-                                                                              Predicate<T> predicate) {
-            return new FilteredIterator.Sorted.Forwardable<>(iterator, predicate);
+        public static <T extends Comparable<? super T>, ORDER extends Order> Seekable<T, ORDER> filter(Seekable<T, ORDER> iterator,
+                                                                                                       Predicate<T> predicate) {
+            return new FilteredSortedIterator.Seekable<>(iterator, predicate);
         }
 
-        public static <T extends Comparable<? super T>, U extends Comparable<? super U>> FunctionalIterator.Sorted<U> mapSorted(
-                FunctionalIterator.Sorted<T> iterator, Function<T, U> mappingFn) {
-            return new MappedIterator.Sorted<>(iterator, mappingFn);
+        public static <T extends Comparable<? super T>, U extends Comparable<? super U>, ORDER extends Order>
+        SortedIterator<U, ORDER> mapSorted(ORDER order, SortedIterator<T, ?> iterator, Function<T, U> mappingFn) {
+            return new MappedSortedIterator<>(order, iterator, mappingFn);
         }
 
-        public static <T extends Comparable<? super T>, U extends Comparable<? super U>> Forwardable<U> mapSorted(
-                Forwardable<T> iterator, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
-            return new MappedIterator.Sorted.Forwardable<>(iterator, mappingFn, reverseMappingFn);
+        public static <T extends Comparable<? super T>, U extends Comparable<? super U>, ORDER extends Order>
+        Seekable<U, ORDER> mapSorted(ORDER order, Seekable<T, ?> iterator, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
+            return new MappedSortedIterator.Seekable<>(order, iterator, mappingFn, reverseMappingFn);
         }
 
         @SafeVarargs
-        public static <T extends Comparable<? super T>> Forwardable<T> merge(Forwardable<T>... iterators) {
-            return new MergeMappedIterator.Forwardable<>(iterate(iterators), e -> e);
+        public static <T extends Comparable<? super T>, ORDER extends Order> Seekable<T, ORDER> merge(Seekable<T, ORDER> iterator, Seekable<T, ORDER>... iterators) {
+            return new MergeMappedIterator.Seekable<>(iterator.order(), iterate(list(list(iterators), iterator)), e -> e);
         }
 
-        public static <T extends Comparable<? super T>> Forwardable<T> merge(FunctionalIterator<Forwardable<T>> iterators) {
-            return new MergeMappedIterator.Forwardable<>(iterators, e -> e);
+        public static <T extends Comparable<? super T>, ORDER extends Order> Seekable<T, ORDER> merge(ORDER order, FunctionalIterator<Seekable<T, ORDER>> iterators) {
+            return new MergeMappedIterator.Seekable<>(order, iterators, e -> e);
         }
 
-        public static <T extends Comparable<? super T>> Forwardable<T> onFinalise(Forwardable<T> iterator,
-                                                                                  Runnable finalise) {
-            return new FinaliseHandledIterator.Sorted.Forwardable<>(iterator, finalise);
+        public static <T extends Comparable<? super T>, ORDER extends Order> Seekable<T, ORDER> onFinalise(Seekable<T, ORDER> iterator,
+                                                                                                           Runnable finalise) {
+            return new FinaliseSortedIterator.Seekable<>(iterator, finalise);
         }
     }
 }
