@@ -90,7 +90,7 @@ public class ControllerRegistry {
     private final ConcurrentMap<Rule, Actor.Driver<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final ConcurrentMap<Actor.Driver<ConclusionResolver>, Rule> conclusionRule;
     private final Set<Actor.Driver<? extends Resolver<?>>> resolvers;
-    private final Set<Actor.Driver<? extends Controller<?, ?, ?,?,?>>> controllers;
+    private final Set<Actor.Driver<? extends Controller<?, ?, ?, ?, ?,?>>> controllers;
     private final TraversalEngine traversalEngine;
     private final boolean resolutionTracing;
     private final AtomicBoolean terminated;
@@ -382,7 +382,7 @@ public class ControllerRegistry {
             throw TypeDBException.of(ILLEGAL_CAST, getClass(), FilteredRetrievable.class);
         }
 
-        public abstract Actor.Driver<? extends Controller<?, ?, ?, ?, ?>> controller();
+        public abstract Actor.Driver<? extends Controller<?, ?, ?, ?, ?, ?>> controller();
 
         public static class MappedConcludable extends ResolverView {
             private final Actor.Driver<ConcludableController> resolver;
@@ -437,7 +437,7 @@ public class ControllerRegistry {
             }
 
             @Override
-            public Actor.Driver<? extends Controller<?, ?, ?, ?, ?>> controller() {
+            public Actor.Driver<? extends Controller<?, ?, ?, ?, ?, ?>> controller() {
                 return null;  // TODO
             }
         }

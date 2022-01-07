@@ -22,31 +22,27 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.function.Function;
 
-public class MaterialiserController extends Controller<Void, Void, ConclusionPacket, MaterialiserController.MaterialiserProcessor, MaterialiserController> {
+public class MaterialiserController extends Controller<Void, Void, ConclusionPacket, Processor.ConnectionRequest<Void, Void, Void, MaterialiserController.MaterialiserProcessor>, MaterialiserController.MaterialiserProcessor, MaterialiserController> {
 
-    protected MaterialiserController(Driver<MaterialiserController> driver, String name, ActorExecutorGroup executorService) {
-        super(driver, name, executorService);
+    protected MaterialiserController(Driver<MaterialiserController> driver, String name, ActorExecutorGroup executorService, ControllerRegistry registry) {
+        super(driver, name, executorService, registry);
     }
 
     @Override
-    protected Function<Driver<MaterialiserProcessor>, MaterialiserProcessor> createProcessorFunc(ConclusionPacket id) {
+    protected Function<Driver<MaterialiserProcessor>, MaterialiserProcessor> createProcessorFunc(Void aVoid) {
         return null;
     }
 
-    @Override
-    protected Processor.ConnectionBuilder<Void, Void, ?, ?> getProviderController(Processor.ConnectionRequest<Void,
-            Void, ?> connectionRequest) {
-        return null;
-    }
+    public static class MaterialiserProcessor extends Processor<Void, ConclusionPacket, Processor.ConnectionRequest<Void, Void, Void, MaterialiserController.MaterialiserProcessor>, MaterialiserProcessor> {
 
-    public static class MaterialiserProcessor extends Processor<Void, ConclusionPacket, Void, MaterialiserProcessor> {
-
-        protected MaterialiserProcessor(Driver<MaterialiserProcessor> driver, Driver<? extends Controller<Void, Void,
-                ConclusionPacket, MaterialiserProcessor, ?>> controller, String name, Reactive<ConclusionPacket,
-                ConclusionPacket> outlet) {
+        protected MaterialiserProcessor(
+                Driver<MaterialiserProcessor> driver,
+                Driver<? extends Controller<?, ?, ?, ConnectionRequest<Void, Void, Void, MaterialiserProcessor>, MaterialiserProcessor, ?>> controller,
+                String name, Reactive<ConclusionPacket, ConclusionPacket> outlet) {
             super(driver, controller, name, outlet);
         }
 

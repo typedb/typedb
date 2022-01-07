@@ -19,9 +19,14 @@
 package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.HashMap;
 
 public class VarConceptMap extends HashMap<Identifier.Variable, Concept> {
+
+    VarConceptMap(ConceptMap conceptMap){
+        super(conceptMap.concepts());
+    }
 }

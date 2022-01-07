@@ -18,56 +18,61 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionRequest;
-import com.vaticle.typedb.core.reasoner.controller.ConclusionPacket.ConditionBounds;
-import com.vaticle.typedb.core.reasoner.controller.ConclusionPacket.MaterialisationBounds;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-public class ConclusionController extends Controller<Rule.Condition, ConclusionPacket, VarConceptMap, ConclusionController.ConclusionProcessor, ConclusionController> {
+public class ConclusionController extends Controller<ConceptMap, ConclusionPacket, VarConceptMap,
+        ConclusionController.ConclusionRequest, ConclusionController.ConclusionProcessor, ConclusionController> {
     private final Rule.Conclusion conclusion;
-    private final ControllerRegistry registry;
 
     protected ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion conclusion,
                                    ActorExecutorGroup executorService, ControllerRegistry registry) {
-        super(driver, name, executorService);
+        super(driver, name, executorService, registry);
         this.conclusion = conclusion;
-        this.registry = registry;
     }
 
     @Override
-    protected Function<Driver<ConclusionProcessor>, ConclusionProcessor> createProcessorFunc(VarConceptMap bounds) {
+    protected Function<Driver<ConclusionProcessor>, ConclusionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new ConclusionProcessor(
                 driver, driver(), this.conclusion.rule(), bounds,
                 ConclusionProcessor.class.getSimpleName() + "(pattern: " + conclusion + ", bounds: " + bounds + ")"
         );
     }
 
-    @Override
-    protected ConnectionBuilder<Rule.Condition, ConclusionPacket, ?, ?> getProviderController(ConnectionRequest<Rule.Condition, ConclusionPacket, ?> connectionRequest) {
-        Driver<ConditionController> r = registry.registerConditionController(connectionRequest.pubControllerId());
-        ConnectionBuilder<Rule.Condition, ConclusionPacket, ?, ?> c = connectionRequest.createConnectionBuilder(r);
-        return c;
-//        return connectionRequest.createConnectionBuilder(registry.registerConditionController(connectionRequest.pubControllerId()));
+    protected static class ConclusionRequest extends ConnectionRequest<Rule.Condition, ConceptMap, ConclusionPacket, ConclusionController.ConclusionProcessor> {
+
+        public ConclusionRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
+                                 Rule.Condition provControllerId, ConceptMap provProcessorId) {
+            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+        }
+
+        @Override
+        public ConnectionBuilder<ConceptMap, ConclusionPacket, ConnectionRequest<Rule.Condition, ConceptMap,
+                ConclusionPacket, ConclusionProcessor>, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
+            return createConnectionBuilder(registry.registerConditionController(pubControllerId()));
+        }
     }
 
-    protected static class ConclusionProcessor extends Processor<ConclusionPacket, VarConceptMap, Rule.Condition, ConclusionProcessor> {
+    protected static class ConclusionProcessor extends Processor<ConclusionPacket, VarConceptMap, ConclusionRequest, ConclusionProcessor> {
 
         private final Rule rule;
-        private final VarConceptMap bounds;
+        private final ConceptMap bounds;
 
         protected ConclusionProcessor(
                 Driver<ConclusionProcessor> driver,
-                Driver<? extends Controller<Rule.Condition,ConclusionPacket, VarConceptMap, ConclusionProcessor, ?>> controller,
-                Rule rule, VarConceptMap bounds, String name) {
+                Driver<? extends Controller<?, ?, ?, ConclusionRequest, ConclusionProcessor, ?>> controller, Rule rule,
+                ConceptMap bounds, String name
+        ) {
             super(driver, controller, name, noOp());
             this.rule = rule;
             this.bounds = bounds;
@@ -75,9 +80,12 @@ public class ConclusionController extends Controller<Rule.Condition, ConclusionP
 
         @Override
         public void setUp() {
-            requestConnection(driver(), rule.condition(), new ConditionBounds(bounds)).forEach(ans -> {
-                requestConnection(driver(), null, new MaterialisationBounds(ans.asConditionAnswer().conceptMap(), rule.conclusion()))
-                        .map(m -> m.asMaterialisationAnswer().concepts()).publishTo(outlet());
+            InletEndpoint<ConclusionPacket> conditionEndpoint = createReceivingEndpoint();
+            requestConnection(new ConclusionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
+            conditionEndpoint.forEach(ans -> {
+                InletEndpoint<ConclusionPacket> materialiserEndpoint = createReceivingEndpoint();
+                requestConnection(new ConclusionRequest(driver(), materialiserEndpoint.id(), null, ans.asConditionAnswer().conceptMap()));
+                    materialiserEndpoint.map(m -> m.asMaterialisationAnswer().concepts()).publishTo(outlet());
             });
         }
     }

@@ -45,8 +45,8 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-public class ConcludableController extends Controller<Conclusion, VarConceptMap, ConceptMap,
-        ConcludableController.ConcludableProcessor, ConcludableController> {
+public class ConcludableController extends Controller<ConceptMap, VarConceptMap, ConceptMap,
+        ConcludableController.ConcludableRequest, ConcludableController.ConcludableProcessor, ConcludableController> {
 
     private final LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions;
     private final Set<Identifier.Variable.Retrievable> unboundVars;
@@ -55,7 +55,7 @@ public class ConcludableController extends Controller<Conclusion, VarConceptMap,
 
     public ConcludableController(Driver<ConcludableController> driver, Concludable concludable,
                                  ActorExecutorGroup executorService, ControllerRegistry registry) {
-        super(driver, ConcludableController.class.getSimpleName() + "(pattern: " + concludable + ")", executorService);
+        super(driver, ConcludableController.class.getSimpleName() + "(pattern: " + concludable + ")", executorService, registry);
         this.registry = registry;
         this.upstreamConclusions = initialiseUpstreamConclusions();
         this.unboundVars = unboundVars();
@@ -103,12 +103,21 @@ public class ConcludableController extends Controller<Conclusion, VarConceptMap,
         );
     }
 
-    @Override
-    protected ConnectionBuilder<Conclusion, VarConceptMap, ?, ?> getProviderController(ConnectionRequest<Conclusion, VarConceptMap, ?> connectionRequest) {
-        return connectionRequest.createConnectionBuilder(registry.registerConclusionController(connectionRequest.pubControllerId()));
+    protected static class ConcludableRequest extends ConnectionRequest<Conclusion, ConceptMap, VarConceptMap, ConcludableController.ConcludableProcessor> {
+
+        public ConcludableRequest(Driver<ConcludableProcessor> recProcessor, long recEndpointId,
+                                  Conclusion provControllerId, ConceptMap provProcessorId) {
+            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+        }
+
+        @Override
+        public ConnectionBuilder<ConceptMap, VarConceptMap, ConnectionRequest<Conclusion, ConceptMap, VarConceptMap,
+                ConcludableProcessor>, ConcludableProcessor, ?> getBuilder(ControllerRegistry registry) {
+            return createConnectionBuilder(registry.registerConclusionController(pubControllerId()));
+        }
     }
 
-    protected static class ConcludableProcessor extends Processor<VarConceptMap, ConceptMap, Conclusion, ConcludableProcessor> {
+    protected static class ConcludableProcessor extends Processor<VarConceptMap, ConceptMap, ConcludableRequest, ConcludableProcessor> {
 
         private final ConceptMap bounds;
         private final Set<Identifier.Variable.Retrievable> unboundVars;
@@ -137,8 +146,9 @@ public class ConcludableController extends Controller<Conclusion, VarConceptMap,
 
             upstreamConclusions.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
-                    requestConnection(driver(), conclusion, boundsAndRequirements.first())
-                            .flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
+                    InletEndpoint<VarConceptMap> endpoint = this.createReceivingEndpoint();
+                    requestConnection(new ConcludableRequest(driver(), endpoint.id(), conclusion, boundsAndRequirements.first()));
+                    endpoint.flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .publishTo(op);
                 }));
             });

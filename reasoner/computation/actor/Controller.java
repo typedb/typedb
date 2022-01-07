@@ -20,8 +20,8 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionBuilder;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,43 +30,47 @@ import java.util.Map;
 import java.util.function.Function;
 
 
-public abstract class Controller<PUB_CID, INPUT, OUTPUT,
-        PROCESSOR extends Processor<INPUT, OUTPUT, PUB_CID, PROCESSOR>,
-        CONTROLLER extends Controller<PUB_CID, INPUT, OUTPUT, PROCESSOR, CONTROLLER>> extends Actor<CONTROLLER> {
+public abstract class Controller<
+        PROC_ID, INPUT, OUTPUT,
+        REQ extends Processor.ConnectionRequest<?, ?, INPUT, PROCESSOR>,
+        PROCESSOR extends Processor<INPUT, OUTPUT, REQ, PROCESSOR>,
+        CONTROLLER extends Controller<PROC_ID, ?, ?, REQ, PROCESSOR, CONTROLLER>
+        > extends Actor<CONTROLLER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
 
     private boolean terminated;
     private final ActorExecutorGroup executorService;
-    protected final Map<OUTPUT, Actor.Driver<PROCESSOR>> processors;
+    private final ControllerRegistry registry;
+    protected final Map<PROC_ID, Actor.Driver<PROCESSOR>> processors;
 
-    protected Controller(Driver<CONTROLLER> driver, String name, ActorExecutorGroup executorService) {
+    protected Controller(Driver<CONTROLLER> driver, String name, ActorExecutorGroup executorService,
+                         ControllerRegistry registry) {
         super(driver, name);
         this.executorService = executorService;
         this.processors = new HashMap<>();
         this.terminated = false;
+        this.registry = registry;
     }
 
-    protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(OUTPUT id);
+    protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PROC_ID id);
 
-    public void findProviderForConnection(ConnectionRequest<PUB_CID, INPUT, PROCESSOR> connectionRequest) {
-        getProviderController(connectionRequest).providerController().execute(
-                actor -> actor.makeConnection(getProviderController(connectionRequest)));
+    public void findProviderForConnection(REQ connectionRequest) {
+        // TODO: The double call to get the builder is undesirable
+        connectionRequest.getBuilder(registry).providerController().execute(actor -> actor.makeConnection(connectionRequest.getBuilder(registry)));
     }
 
-    protected abstract ConnectionBuilder<PUB_CID, INPUT, ?, ?> getProviderController(ConnectionRequest<PUB_CID, INPUT, ?> connectionRequest);
-
-    void makeConnection(ConnectionBuilder<?, OUTPUT, ?, ?> connectionBuilder) {
-        computeProcessorIfAbsent(connectionBuilder.receiverProcessorId())
+    void makeConnection(ConnectionBuilder<PROC_ID, OUTPUT, ?, ?, ?> connectionBuilder) {
+        computeProcessorIfAbsent(connectionBuilder.request().pubProcessorId())
                 .execute(actor -> actor.acceptConnection(connectionBuilder));
     }
 
-    public Driver<PROCESSOR> computeProcessorIfAbsent(OUTPUT id) {
+    public Driver<PROCESSOR> computeProcessorIfAbsent(PROC_ID id) {
         // TODO: We can do subsumption in the subtypes here
         return processors.computeIfAbsent(id, this::buildProcessor);
     }
 
-    private Actor.Driver<PROCESSOR> buildProcessor(OUTPUT id) {
+    private Actor.Driver<PROCESSOR> buildProcessor(PROC_ID id) {
         Driver<PROCESSOR> processor = Actor.driver(createProcessorFunc(id), executorService);
         processor.execute(Processor::setUp);
         return processor;

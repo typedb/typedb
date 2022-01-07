@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
+import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
@@ -32,7 +33,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-public class RootConjunctionController extends ConjunctionController<RootConjunctionController, RootConjunctionController.RootConjunctionProcessor> {
+public class RootConjunctionController extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.RootConjunctionProcessor> {
     private final Subscriber<ConceptMap> reasonerEndpoint;
 
     public RootConjunctionController(Driver<RootConjunctionController> driver, Conjunction conjunction,
@@ -56,14 +57,15 @@ public class RootConjunctionController extends ConjunctionController<RootConjunc
                 .toSet();
     }
 
-    protected static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<RootConjunctionProcessor> {
+    protected static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, RootConjunctionProcessor> {
 
         private final Subscriber<ConceptMap> reasonerEndpoint;
 
-        protected RootConjunctionProcessor(Driver<RootConjunctionProcessor> driver, Driver<?
-                extends Controller<Resolvable<?>, INPUT, ConceptMap, RootConjunctionProcessor, ?>> controller, String name,
-                                           ConceptMap bounds, List<Resolvable<?>> plan,
-                                           Subscriber<ConceptMap> reasonerEndpoint) {
+        protected RootConjunctionProcessor(
+                Driver<RootConjunctionProcessor> driver,
+                Driver<? extends Controller<?, ?, ?, ConjunctionRequest<RootConjunctionProcessor>, RootConjunctionProcessor, ?>> controller,
+                String name, ConceptMap bounds, List<Resolvable<?>> plan, Subscriber<ConceptMap> reasonerEndpoint
+        ) {
             super(driver, controller, name, bounds, plan);
             this.reasonerEndpoint = reasonerEndpoint;
         }
@@ -71,7 +73,7 @@ public class RootConjunctionController extends ConjunctionController<RootConjunc
         @Override
         public void setUp() {
             outlet().publishTo(reasonerEndpoint);
-            super.setUp();
+            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds).publishTo(outlet());
         }
     }
 }

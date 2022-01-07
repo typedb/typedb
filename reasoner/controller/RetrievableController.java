@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
@@ -31,17 +30,18 @@ import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-public class RetrievableController extends Controller<Void, INPUT, ConceptMap, RetrievableController.RetrievableProcessor, RetrievableController> {
+public class RetrievableController extends Controller<ConceptMap, Void, ConceptMap,
+        Processor.ConnectionRequest<Void, Void, Void, RetrievableController.RetrievableProcessor>,
+        RetrievableController.RetrievableProcessor, RetrievableController> {
 
     private final Retrievable retrievable;
     private final ControllerRegistry registry;
 
     public RetrievableController(Driver<RetrievableController> driver, String name, Retrievable retrievable,
                                  ActorExecutorGroup executorService, ControllerRegistry registry) {
-        super(driver, name, executorService);
+        super(driver, name, executorService, registry);
         this.retrievable = retrievable;
         this.registry = registry;
     }
@@ -58,18 +58,12 @@ public class RetrievableController extends Controller<Void, INPUT, ConceptMap, R
         return RetrievableProcessor.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ", bounds: " + conceptMap.toString() + ")";
     }
 
-
-    @Override
-    protected Processor.ConnectionBuilder<Void, INPUT, ?, ?> getProviderController(Processor.ConnectionRequest<Void, INPUT, ?> connectionRequest) {
-        throw TypeDBException.of(ILLEGAL_STATE);  // TODO: Can we use typing to remove this?
-    }
-
-    protected static class RetrievableProcessor extends Processor<INPUT, ConceptMap, Void, RetrievableProcessor> {
+    protected static class RetrievableProcessor extends Processor<Void, ConceptMap, Processor.ConnectionRequest<Void, Void, Void, RetrievableController.RetrievableProcessor>, RetrievableProcessor> {
 
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
 
         protected RetrievableProcessor(Driver<RetrievableProcessor> driver,
-                                       Driver<? extends Controller<Void, INPUT, ConceptMap, RetrievableProcessor, ?>> controller,
+                                       Driver<? extends Controller<?, ?, ?, ConnectionRequest<Void, Void, Void, RetrievableProcessor>, RetrievableProcessor, ?>> controller,
                                        String name, Supplier<FunctionalIterator<ConceptMap>> traversalSupplier) {
             super(driver, controller, name, noOp());
             this.traversalSupplier = traversalSupplier;

@@ -24,13 +24,14 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
+import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-public class ConditionController extends ConjunctionController<ConditionController, ConditionController.ConditionProcessor> {
+public class ConditionController extends ConjunctionController<ConclusionPacket, ConditionController, ConditionController.ConditionProcessor> {
 
     public ConditionController(Driver<ConditionController> driver, Conjunction conjunction, ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, conjunction, executorService, registry);
@@ -46,10 +47,17 @@ public class ConditionController extends ConjunctionController<ConditionControll
         return null;
     }
 
-    protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<ConditionController.ConditionProcessor>{
-        protected ConditionProcessor(Driver<ConditionProcessor> driver, Driver<? extends Controller<Resolvable<?>,
-                INPUT, ConceptMap, ConditionProcessor, ?>> controller, String name, ConceptMap bounds, List<Resolvable<?>> plan) {
+    protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<ConclusionPacket, ConditionController.ConditionProcessor>{
+        protected ConditionProcessor(Driver<ConditionProcessor> driver, Driver<? extends Controller<?, ?, ?,
+                ConjunctionRequest<ConditionProcessor>, ConditionProcessor, ?>> controller, String name,
+                                     ConceptMap bounds, List<Resolvable<?>> plan) {
             super(driver, controller, name, bounds, plan);
+        }
+
+        @Override
+        public void setUp() {
+            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds)
+                    .map(a -> new ConclusionPacket.MaterialisationAnswer(new VarConceptMap(a))).publishTo(outlet());
         }
     }
 }
