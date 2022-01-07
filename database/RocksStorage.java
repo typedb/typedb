@@ -23,7 +23,8 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
 import com.vaticle.typedb.core.graph.common.Storage;
 import com.vaticle.typedb.core.graph.common.Storage.Key.Partition;
@@ -57,6 +58,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.System.TRANSACTION_DUMMY_WRITE;
 
 public abstract class RocksStorage implements Storage {
@@ -70,7 +72,7 @@ public abstract class RocksStorage implements Storage {
     protected final CorePartitionManager partitionMgr;
     protected final Snapshot snapshot;
     protected final ReadWriteLock deleteCloseSchemaWriteLock;
-    protected final ConcurrentSet<RocksIterator<?>> iterators;
+    protected final ConcurrentSet<RocksIterator<?, ?>> iterators;
     // TODO: use a single set of iterators when 'setAutoPrefixMode(true)' is available on ReadOptions API
     protected final ConcurrentMap<Partition, ConcurrentLinkedQueue<org.rocksdb.RocksIterator>> recycled;
     protected final ConcurrentMap<Partition, ConcurrentLinkedQueue<org.rocksdb.RocksIterator>> recycledWithPrefixBloom;
@@ -138,7 +140,7 @@ public abstract class RocksStorage implements Storage {
         }
     }
 
-    void recycle(RocksIterator<?> rocksIterator) {
+    void recycle(RocksIterator<?, ?> rocksIterator) {
         if (rocksIterator.usePrefixBloom()) {
             recycledWithPrefixBloom.get(rocksIterator.partition()).add(rocksIterator.internalRocksIterator);
         } else {
@@ -146,7 +148,7 @@ public abstract class RocksStorage implements Storage {
         }
     }
 
-    void remove(RocksIterator<?> iterator) {
+    void remove(RocksIterator<?, ?> iterator) {
         iterators.remove(iterator);
     }
 
@@ -208,8 +210,16 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public <T extends Key> FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>> iterate(Key.Prefix<T> prefix) {
-            RocksIterator<T> iterator = new RocksIterator<>(this, prefix);
+        public <T extends Key> SortedIterator.Seekable<KeyValue<T, ByteArray>, Order.Asc> iterate(Key.Prefix<T> prefix) {
+            return iterate(prefix, ASC);
+        }
+
+        @Override
+        public <T extends Key, ORDER extends Order> SortedIterator.Seekable<KeyValue<T, ByteArray>, ORDER> iterate(Key.Prefix<T> prefix, ORDER order) {
+            RocksIterator<T, ORDER> iterator;
+            // TODO how else can we convert an enumerated data tag ('order') into the type without casting
+            if (order == ASC) iterator = (RocksIterator<T, ORDER>) new RocksIterator.Ascending<>(this, prefix);
+            else iterator = (RocksIterator<T, ORDER>) new RocksIterator.Descending<>(this, prefix);
             iterators.add(iterator);
             if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED); //guard against close() race conditions
             return iterator.onFinalise(iterator::close);
@@ -290,8 +300,17 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public <T extends Key> FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>> iterate(Key.Prefix<T> prefix) {
-            RocksIterator<T> iterator = new RocksIterator<>(this, prefix);
+        public <T extends Key> SortedIterator.Seekable<KeyValue<T, ByteArray>, Order.Asc> iterate(Key.Prefix<T> prefix) {
+            return iterate(prefix, ASC);
+        }
+
+        @Override
+        public <T extends Key, ORDER extends Order>
+        SortedIterator.Seekable<KeyValue<T, ByteArray>, ORDER> iterate(Key.Prefix<T> prefix, ORDER order) {
+            RocksIterator<T, ORDER> iterator;
+            // TODO how else can we convert an enumerated data tag ('order') into the type without casting
+            if (order == ASC) iterator = (RocksIterator<T, ORDER>) new RocksIterator.Ascending<>(this, prefix);
+            else iterator = (RocksIterator<T, ORDER>) new RocksIterator.Descending<>(this, prefix);
             iterators.add(iterator);
             if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED); //guard against close() race conditions
             return iterator;

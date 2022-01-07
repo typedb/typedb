@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.common.iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-class FlatMappedIterator<T, U> extends AbstractFunctionalIterator<U> {
+public class FlatMappedIterator<T, U> extends AbstractFunctionalIterator<U> {
 
     private final FunctionalIterator<T> sourceIterator;
     private FunctionalIterator<U> currentIterator;
@@ -30,7 +30,7 @@ class FlatMappedIterator<T, U> extends AbstractFunctionalIterator<U> {
 
     private enum State {INIT, ACTIVE, COMPLETED}
 
-    FlatMappedIterator(FunctionalIterator<T> iterator, Function<T, FunctionalIterator<U>> mappingFn) {
+    public FlatMappedIterator(FunctionalIterator<T> iterator, Function<T, FunctionalIterator<U>> mappingFn) {
         this.sourceIterator = iterator;
         this.mappingFn = mappingFn;
         this.state = State.INIT;

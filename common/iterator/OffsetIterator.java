@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.common.iterator;
 
 import java.util.NoSuchElementException;
 
-class OffsetIterator<T> extends AbstractFunctionalIterator<T> {
+public class OffsetIterator<T> extends AbstractFunctionalIterator<T> {
 
     private final FunctionalIterator<T> iterator;
     private final long offset;
@@ -28,7 +28,7 @@ class OffsetIterator<T> extends AbstractFunctionalIterator<T> {
 
     private enum State {INIT, OFFSET}
 
-    OffsetIterator(FunctionalIterator<T> iterator, long offset) {
+    public OffsetIterator(FunctionalIterator<T> iterator, long offset) {
         this.iterator = iterator;
         this.offset = offset;
         state = State.INIT;

@@ -20,13 +20,13 @@ package com.vaticle.typedb.core.common.iterator;
 
 import java.util.NoSuchElementException;
 
-class ConsumeHandledIterator<T> extends AbstractFunctionalIterator<T> implements FunctionalIterator<T> {
+public class ConsumeHandledIterator<T> extends AbstractFunctionalIterator<T> implements FunctionalIterator<T> {
 
     private final FunctionalIterator<T> iterator;
     private final Runnable function;
     private boolean isConsumed;
 
-    ConsumeHandledIterator(FunctionalIterator<T> iterator, Runnable function) {
+    public ConsumeHandledIterator(FunctionalIterator<T> iterator, Runnable function) {
         this.iterator = iterator;
         this.function = function;
         this.isConsumed = false;

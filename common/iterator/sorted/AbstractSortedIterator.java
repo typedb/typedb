@@ -16,11 +16,20 @@
  *
  */
 
-package com.vaticle.typedb.core.common.iterator;
+package com.vaticle.typedb.core.common.iterator.sorted;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.sorted.MergeMappedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.ConsumeHandledIterator;
+import com.vaticle.typedb.core.common.iterator.DistinctIterator;
+import com.vaticle.typedb.core.common.iterator.ErrorHandledIterator;
+import com.vaticle.typedb.core.common.iterator.FlatMappedIterator;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.iterator.LimitedIterator;
+import com.vaticle.typedb.core.common.iterator.LinkedIterators;
+import com.vaticle.typedb.core.common.iterator.MappedIterator;
+import com.vaticle.typedb.core.common.iterator.OffsetIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
 import java.util.ArrayList;
@@ -42,16 +51,28 @@ import static java.util.Spliterator.IMMUTABLE;
 import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 
-public abstract class AbstractFunctionalIterator<T> implements FunctionalIterator<T> {
+public abstract class AbstractSortedIterator<T extends Comparable<? super T>, ORDER extends Order>
+        implements SortedIterator<T, ORDER> {
 
-    @Override
-    public FunctionalIterator<T> distinct() {
-        return new DistinctIterator<>(this);
+    final ORDER order;
+
+    protected AbstractSortedIterator(ORDER order) {
+        this.order = order;
     }
 
     @Override
-    public FunctionalIterator<T> distinct(Set<T> duplicates) {
-        return new DistinctIterator<>(this, duplicates);
+    public ORDER order() {
+        return order;
+    }
+
+    @Override
+    public final SortedIterator<T, ORDER> merge(SortedIterator<T, ORDER> iterator) {
+        return new MergeMappedIterator<>(order, iterate(this, iterator), e -> e);
+    }
+
+    @Override
+    public <U extends Comparable<U>, ORD extends Order> Seekable<U, ORD> mergeMap(ORD order, Function<T, Seekable<U, ORD>> mappingFn) {
+        return new MergeMappedIterator.Seekable<>(order, this, mappingFn);
     }
 
     @Override
@@ -60,20 +81,34 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     }
 
     @Override
+    public <U extends Comparable<? super U>, ORD extends Order> SortedIterator<U, ORD> mapSorted(ORD order,
+                                                                                                 Function<T, U> mappingFn) {
+        return new MappedSortedIterator<>(order, this, mappingFn);
+    }
+
+    @Override
     public <U> FunctionalIterator<U> flatMap(Function<T, FunctionalIterator<U>> mappingFn) {
         return new FlatMappedIterator<>(this, mappingFn);
     }
 
     @Override
-    public <U extends Comparable<U>, ORDER extends Order> Seekable<U, ORDER> mergeMap(
-            ORDER order, Function<T, Seekable<U, ORDER>> mappingFn
-    ) {
-        return new MergeMappedIterator.Seekable<>(order, this, mappingFn);
+    public SortedIterator<T, ORDER> distinct() {
+        return new DistinctSortedIterator<>(this);
     }
 
     @Override
-    public FunctionalIterator<T> filter(Predicate<T> predicate) {
-        return new FilteredIterator<>(this, predicate);
+    public FunctionalIterator<T> distinct(Set<T> duplicates) {
+        return new DistinctIterator<>(this, duplicates);
+    }
+
+    @Override
+    public SortedIterator<T, ORDER> filter(Predicate<T> predicate) {
+        return Iterators.Sorted.filter(this, predicate);
+    }
+
+    @Override
+    public SortedIterator<T, ORDER> onFinalise(Runnable function) {
+        return new FinaliseSortedIterator<>(this, function);
     }
 
     @Override
@@ -229,13 +264,4 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     public FunctionalIterator<T> onError(Function<Exception, TypeDBException> exceptionFn) {
         return new ErrorHandledIterator<>(this, exceptionFn);
     }
-
-    @Override
-    public FunctionalIterator<T> onFinalise(Runnable function) {
-        return new FinaliseIterator<>(this, function);
-    }
-
-    @Override
-    public abstract void recycle();
-
 }

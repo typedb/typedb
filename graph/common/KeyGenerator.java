@@ -43,6 +43,7 @@ import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.MAX_RULE_REACHED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.MAX_INSTANCE_REACHED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.MAX_SUBTYPE_REACHED;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Key.BUFFERED;
 import static com.vaticle.typedb.core.graph.common.Encoding.Key.PERSISTED;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ENTITY;
@@ -233,7 +234,7 @@ public class KeyGenerator {
                 for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
                     FunctionalIterator<VertexIID.Type> typeIterator = schemaStorage.iterate(
                             VertexIID.Type.prefix(Encoding.Vertex.Type.of(thingEncoding))
-                    ).mapSorted(KeyValue::key).distinct();
+                    ).mapSorted(ASC, KeyValue::key).distinct();
                     while (typeIterator.hasNext()) {
                         VertexIID.Type typeIID = typeIterator.next();
                         VertexIID.Thing lastIID = dataStorage.getLastKey(VertexIID.Thing.prefix(typeIID));
