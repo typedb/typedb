@@ -26,10 +26,10 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionBuilder;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
@@ -103,8 +103,8 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
         );
     }
 
-    protected static class ConclusionRequest extends ConnectionRequest<Conclusion, ConceptMap, ConclusionController,
-            VarConceptMap, ConcludableController.ConcludableProcessor, ConclusionRequest> {
+    protected static class ConclusionRequest extends Connection.Request<Conclusion, ConceptMap, ConclusionController,
+                VarConceptMap, ConcludableProcessor, ConclusionRequest> {
 
         public ConclusionRequest(Driver<ConcludableProcessor> recProcessor, long recEndpointId,
                                  Conclusion provControllerId, ConceptMap provProcessorId) {

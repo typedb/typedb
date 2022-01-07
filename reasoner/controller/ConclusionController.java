@@ -21,10 +21,11 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionBuilder;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.ConnectionRequest;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Request;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.function.Function;
@@ -51,7 +52,7 @@ public class ConclusionController extends Controller<ConceptMap, VarConceptMap,
         );
     }
 
-    protected static class ConditionRequest extends ConnectionRequest<Rule.Condition, ConceptMap, ConditionController, ConclusionPacket, ConclusionController.ConclusionProcessor, ConditionRequest> {
+    protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap, ConditionController, ConclusionPacket, ConclusionProcessor, ConditionRequest> {
 
         public ConditionRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
                                 Rule.Condition provControllerId, ConceptMap provProcessorId) {
@@ -64,7 +65,7 @@ public class ConclusionController extends Controller<ConceptMap, VarConceptMap,
         }
     }
 
-    protected static class MaterialiserRequest extends ConnectionRequest<Void, ConceptMap, MaterialiserController, ConclusionPacket, ConclusionProcessor, MaterialiserRequest> {
+    protected static class MaterialiserRequest extends Connection.Request<Void, ConceptMap, MaterialiserController, ConclusionPacket, ConclusionProcessor, MaterialiserRequest> {
 
         public MaterialiserRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
                                    Void provControllerId, ConceptMap provProcessorId) {
