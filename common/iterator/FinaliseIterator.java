@@ -18,14 +18,12 @@
 
 package com.vaticle.typedb.core.common.iterator;
 
-import java.util.function.Function;
-
-public class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
+class FinaliseIterator<T> extends AbstractFunctionalIterator<T> implements FunctionalIterator<T> {
 
     private final FunctionalIterator<T> iterator;
-    private final Function<T, U> function;
+    private final Runnable function;
 
-    public MappedIterator(FunctionalIterator<T> iterator, Function<T, U> function) {
+    FinaliseIterator(FunctionalIterator<T> iterator, Runnable function) {
         this.iterator = iterator;
         this.function = function;
     }
@@ -36,13 +34,18 @@ public class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
     }
 
     @Override
-    public U next() {
-        return function.apply(iterator.next());
+    public T next() {
+        return iterator.next();
     }
 
     @Override
     public void recycle() {
         iterator.recycle();
+    }
+
+    @Override
+    protected void finalize() {
+        function.run();
     }
 
 }
