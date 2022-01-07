@@ -71,7 +71,7 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
         }
     }
 
-    protected <REQ extends Processor.ConnectionRequest<?, ?, ?, ?, PROCESSOR, REQ>> void requestConnection(REQ req) {
+    protected <PUB_PROC_ID, REQ extends Processor.ConnectionRequest<?, PUB_PROC_ID, ?, INPUT, PROCESSOR, REQ>> void requestConnection(REQ req) {
         controller.execute(actor -> actor.findProviderForConnection(req));
     }
 

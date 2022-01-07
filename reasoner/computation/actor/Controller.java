@@ -54,9 +54,9 @@ public abstract class Controller<
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PROC_ID id);
 
-    public <REQ extends Processor.ConnectionRequest<?, ?, ?, ?, PROCESSOR, REQ>> void findProviderForConnection(REQ connectionRequest) {
-        // TODO: The double call to get the builder is undesirable
-        connectionRequest.getBuilder(registry).providerController().execute(actor -> actor.makeConnection(connectionRequest.getBuilder(registry)));
+    public <PUB_PROC_ID, INPUT, REQ extends Processor.ConnectionRequest<?, PUB_PROC_ID, ?, INPUT, ?, ?>> void findProviderForConnection(REQ req) {
+        ConnectionBuilder<PUB_PROC_ID, INPUT, ?, ?, ?> builder = req.getBuilder(registry);
+        builder.providerController().execute(actor -> actor.makeConnection(builder));
     }
 
     void makeConnection(ConnectionBuilder<PROC_ID, OUTPUT, ?, ?, ?> connectionBuilder) {
