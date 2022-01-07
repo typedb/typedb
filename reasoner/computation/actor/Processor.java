@@ -37,17 +37,16 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-public abstract class Processor<INPUT, OUTPUT, REQ extends Processor.ConnectionRequest<?, ?, ?, PROCESSOR>,
-        PROCESSOR extends Processor<INPUT, OUTPUT, REQ, PROCESSOR>> extends Actor<PROCESSOR> {
+public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT, OUTPUT, PROCESSOR>> extends Actor<PROCESSOR> {
 
-    private final Driver<? extends Controller<?, ?, ?, REQ, PROCESSOR, ?>> controller;
+    private final Driver<? extends Controller<?, ?, PROCESSOR, ?>> controller;
     private final Reactive<OUTPUT, OUTPUT> outlet;
     private final Map<Long, InletEndpoint<INPUT>> receivingEndpoints;
     private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
     private long endpointId;
 
     protected Processor(Driver<PROCESSOR> driver,
-                        Driver<? extends Controller<?, ?, ?, REQ, PROCESSOR, ?>> controller,
+                        Driver<? extends Controller<?, ?, PROCESSOR, ?>> controller,
                         String name, Reactive<OUTPUT, OUTPUT> outlet) {
         super(driver, name);
         this.controller = controller;
@@ -72,7 +71,7 @@ public abstract class Processor<INPUT, OUTPUT, REQ extends Processor.ConnectionR
         }
     }
 
-    protected void requestConnection(REQ req) {
+    protected <REQ extends Processor.ConnectionRequest<?, ?, ?, ?, PROCESSOR, REQ>> void requestConnection(REQ req) {
         controller.execute(actor -> actor.findProviderForConnection(req));
     }
 
@@ -83,7 +82,7 @@ public abstract class Processor<INPUT, OUTPUT, REQ extends Processor.ConnectionR
         connectionBuilder.request().recProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
 
-    protected <PUB_PROCESSOR extends Processor<?, INPUT, ?, PUB_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PUB_PROCESSOR> connection) {
+    protected <PUB_PROCESSOR extends Processor<?, INPUT, PUB_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PUB_PROCESSOR> connection) {
         receivingEndpoints.get(connection.subEndpointId()).setReady(connection);
     }
 
@@ -194,7 +193,7 @@ public abstract class Processor<INPUT, OUTPUT, REQ extends Processor.ConnectionR
         }
     }
 
-    private static class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>, PUB_PROCESSOR extends Processor<?, PACKET, ?, PUB_PROCESSOR>> {
+    private static class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR>, PUB_PROCESSOR extends Processor<?, PACKET, PUB_PROCESSOR>> {
 
         private final Driver<PROCESSOR> recProcessor;
         private final Driver<PUB_PROCESSOR> provProcessor;
@@ -236,7 +235,13 @@ public abstract class Processor<INPUT, OUTPUT, REQ extends Processor.ConnectionR
         }
     }
 
-    public static abstract class ConnectionRequest<PUB_CID, PUB_PROC_ID, PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>> {
+    public static abstract class ConnectionRequest<
+            PUB_CID, PUB_PROC_ID,
+            PUB_C extends Controller<PUB_PROC_ID, PACKET, ?, PUB_C>,
+            PACKET,
+            PROCESSOR extends Processor<PACKET, ?, PROCESSOR>,
+            REQ extends ConnectionRequest<PUB_CID, PUB_PROC_ID, PUB_C, PACKET, PROCESSOR, REQ>
+            > {
 
         private final PUB_CID provControllerId;
         private final Driver<PROCESSOR> recProcessor;
@@ -252,9 +257,11 @@ public abstract class Processor<INPUT, OUTPUT, REQ extends Processor.ConnectionR
             this.connectionTransforms = new ArrayList<>();
         }
 
-        public <PUB_C extends Controller<PUB_PROC_ID, ?, PACKET, ?, ?, PUB_C>> ConnectionBuilder<PUB_PROC_ID, PACKET, ConnectionRequest<PUB_CID, PUB_PROC_ID, PACKET, PROCESSOR>, PROCESSOR, PUB_C> createConnectionBuilder(Driver<PUB_C> pubController) {
+        public ConnectionBuilder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, PUB_C> createConnectionBuilder(Driver<PUB_C> pubController) {
             return new ConnectionBuilder<>(pubController, this);
         }
+
+        public abstract ConnectionBuilder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, ?> getBuilder(ControllerRegistry registry);
 
         public void withMap(Function<PACKET, PACKET> function) {
             connectionTransforms.add(r -> {
@@ -287,20 +294,17 @@ public abstract class Processor<INPUT, OUTPUT, REQ extends Processor.ConnectionR
         public List<Function<Subscriber<PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms() {
             return connectionTransforms;
         }
-
-        public abstract ConnectionBuilder<PUB_PROC_ID, PACKET, ConnectionRequest<PUB_CID, PUB_PROC_ID, PACKET, PROCESSOR>, PROCESSOR, ?> getBuilder(ControllerRegistry registry);
     }
 
     public static class ConnectionBuilder<PUB_PROC_ID, PACKET,
-            REQ extends ConnectionRequest<?, PUB_PROC_ID, PACKET, PROCESSOR>,
-            PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>,
-            PUB_CONTROLLER extends Controller<PUB_PROC_ID, ?, PACKET, ?, ?, PUB_CONTROLLER>> {
+            REQ extends ConnectionRequest<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ>,  // TODO: Try removing REQ
+            PROCESSOR extends Processor<PACKET, ?, PROCESSOR>,
+            PUB_CONTROLLER extends Controller<PUB_PROC_ID, PACKET, ?, PUB_CONTROLLER>> {
 
         private final Driver<PUB_CONTROLLER> provController;
-        private final REQ connectionRequest;
+        private final ConnectionRequest<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> connectionRequest;
 
-        protected ConnectionBuilder(Driver<PUB_CONTROLLER> provController,
-                                    REQ connectionRequest) {
+        public ConnectionBuilder(Driver<PUB_CONTROLLER> provController, ConnectionRequest<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> connectionRequest) {
             this.provController = provController;
             this.connectionRequest = connectionRequest;
         }
@@ -309,7 +313,7 @@ public abstract class Processor<INPUT, OUTPUT, REQ extends Processor.ConnectionR
             return provController;
         }
 
-        public REQ request() {
+        public ConnectionRequest<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> request() {
             return connectionRequest;
         }
 
@@ -323,7 +327,7 @@ public abstract class Processor<INPUT, OUTPUT, REQ extends Processor.ConnectionR
             return this;
         }
 
-        public <PUB_PROCESSOR extends Processor<?, PACKET, ?, PUB_PROCESSOR>> Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build(Driver<PUB_PROCESSOR> pubProcessor, long pubEndpointId) {
+        public <PUB_PROCESSOR extends Processor<?, PACKET, PUB_PROCESSOR>> Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build(Driver<PUB_PROCESSOR> pubProcessor, long pubEndpointId) {
             return new Connection<>(request().recProcessor(), pubProcessor, request().recEndpointId(), pubEndpointId, request().connectionTransforms());
         }
     }

@@ -32,8 +32,7 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-public class RetrievableController extends Controller<ConceptMap, Void, ConceptMap,
-        Processor.ConnectionRequest<Void, Void, Void, RetrievableController.RetrievableProcessor>,
+public class RetrievableController extends Controller<ConceptMap, ConceptMap,
         RetrievableController.RetrievableProcessor, RetrievableController> {
 
     private final Retrievable retrievable;
@@ -58,12 +57,12 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
         return RetrievableProcessor.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ", bounds: " + conceptMap.toString() + ")";
     }
 
-    protected static class RetrievableProcessor extends Processor<Void, ConceptMap, Processor.ConnectionRequest<Void, Void, Void, RetrievableController.RetrievableProcessor>, RetrievableProcessor> {
+    protected static class RetrievableProcessor extends Processor<Void, ConceptMap, RetrievableProcessor> {
 
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
 
         protected RetrievableProcessor(Driver<RetrievableProcessor> driver,
-                                       Driver<? extends Controller<?, ?, ?, ConnectionRequest<Void, Void, Void, RetrievableProcessor>, RetrievableProcessor, ?>> controller,
+                                       Driver<? extends Controller<?, ?, RetrievableProcessor, ?>> controller,
                                        String name, Supplier<FunctionalIterator<ConceptMap>> traversalSupplier) {
             super(driver, controller, name, noOp());
             this.traversalSupplier = traversalSupplier;

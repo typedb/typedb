@@ -63,7 +63,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
 
         protected RootConjunctionProcessor(
                 Driver<RootConjunctionProcessor> driver,
-                Driver<? extends Controller<?, ?, ?, ConjunctionRequest<RootConjunctionProcessor>, RootConjunctionProcessor, ?>> controller,
+                Driver<? extends Controller<?, ?, RootConjunctionProcessor, ?>> controller,
                 String name, ConceptMap bounds, List<Resolvable<?>> plan, Subscriber<ConceptMap> reasonerEndpoint
         ) {
             super(driver, controller, name, bounds, plan);

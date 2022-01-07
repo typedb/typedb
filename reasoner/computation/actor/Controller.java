@@ -31,10 +31,9 @@ import java.util.function.Function;
 
 
 public abstract class Controller<
-        PROC_ID, INPUT, OUTPUT,
-        REQ extends Processor.ConnectionRequest<?, ?, INPUT, PROCESSOR>,
-        PROCESSOR extends Processor<INPUT, OUTPUT, REQ, PROCESSOR>,
-        CONTROLLER extends Controller<PROC_ID, ?, ?, REQ, PROCESSOR, CONTROLLER>
+        PROC_ID, OUTPUT,
+        PROCESSOR extends Processor<?, OUTPUT, PROCESSOR>,
+        CONTROLLER extends Controller<PROC_ID, ?, PROCESSOR, CONTROLLER>
         > extends Actor<CONTROLLER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
@@ -55,7 +54,7 @@ public abstract class Controller<
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PROC_ID id);
 
-    public void findProviderForConnection(REQ connectionRequest) {
+    public <REQ extends Processor.ConnectionRequest<?, ?, ?, ?, PROCESSOR, REQ>> void findProviderForConnection(REQ connectionRequest) {
         // TODO: The double call to get the builder is undesirable
         connectionRequest.getBuilder(registry).providerController().execute(actor -> actor.makeConnection(connectionRequest.getBuilder(registry)));
     }
