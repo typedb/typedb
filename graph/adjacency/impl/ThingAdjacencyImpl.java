@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.graph.adjacency.DirectedEdge;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.Storage.Key;
@@ -68,8 +69,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
     }
 
     @Override
-    public DirectedEdge asDirected(ThingEdge edge) {
-        return direction.isIn() ? DirectedEdge.in(edge) : DirectedEdge.out(edge);
+    public DirectedEdge.Thing asDirected(ThingEdge edge) {
+        return direction.isIn() ? DirectedEdge.Thing.in(edge) : DirectedEdge.Thing.out(edge);
     }
 
     abstract ThingVertex owner();
@@ -103,10 +104,10 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         private final ThingAdjacencyImpl adjacency;
         private final Encoding.Edge.Thing encoding;
         private final TypeVertex optimisedType;
-        private final SortedIterator.Seekable<DirectedEdge, Order.Asc> directedEdges;
+        private final SortedIterator.Seekable<DirectedEdge.Thing, Order.Asc> directedEdges;
 
         SortedIteratorBuilderImpl(ThingAdjacencyImpl adjacency, Encoding.Edge.Thing encoding, @Nullable TypeVertex optimisedType,
-                                  SortedIterator.Seekable<DirectedEdge, Order.Asc> directedEdges) {
+                                  SortedIterator.Seekable<DirectedEdge.Thing, Order.Asc> directedEdges) {
             this.adjacency = adjacency;
             this.encoding = encoding;
             this.optimisedType = optimisedType;
@@ -138,7 +139,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
 
         @Override
-        public SortedIterator.Seekable<DirectedEdge, Order.Asc> get() {
+        public SortedIterator.Seekable<DirectedEdge.Thing, Order.Asc> get() {
             return directedEdges;
         }
     }
@@ -157,14 +158,14 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             return owner;
         }
 
-        private SortedIterator.Seekable<DirectedEdge, Order.Asc> edgeIteratorSorted(
+        private SortedIterator.Seekable<DirectedEdge.Thing, Order.Asc> edgeIteratorSorted(
                 Encoding.Edge.Thing encoding, IID... lookahead) {
             Key.Prefix<EdgeIID.Thing> prefix = EdgeIID.Thing.prefix(owner.iid(), infixIID(encoding, lookahead));
             return owner.graph().storage().iterate(prefix, ASC)
                     .mapSorted(
                             ASC,
                             kv -> asDirected(newPersistedEdge(EdgeIID.Thing.of(kv.key().bytes()))),
-                            sortable -> KeyValue.of(sortable.iid(), ByteArray.empty())
+                            sortable -> KeyValue.of(sortable.directedIID(), ByteArray.empty())
                     );
         }
 
@@ -214,7 +215,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
         final ThingVertex.Write owner;
         final ConcurrentMap<InfixIID.Thing, ConcurrentSet<InfixIID.Thing>> infixes;
-        final ConcurrentMap<InfixIID.Thing, ConcurrentNavigableMap<DirectedEdge, ThingEdge>> edges;
+        final ConcurrentMap<InfixIID.Thing, ConcurrentNavigableMap<DirectedEdge.Thing, ThingEdge>> edges;
 
         Write(ThingVertex.Write owner, Encoding.Direction.Adjacency direction) {
             super(direction);
@@ -246,8 +247,8 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             }
         }
 
-        SortedIterator.Seekable<DirectedEdge, Order.Asc> bufferedEdgeIterator(Encoding.Edge.Thing encoding, IID[] lookahead) {
-            ConcurrentNavigableMap<DirectedEdge, ThingEdge> result;
+        SortedIterator.Seekable<DirectedEdge.Thing, Order.Asc> bufferedEdgeIterator(Encoding.Edge.Thing encoding, IID[] lookahead) {
+            ConcurrentNavigableMap<DirectedEdge.Thing, ThingEdge> result;
             InfixIID.Thing infixIID = infixIID(encoding, lookahead);
             if (lookahead.length == encoding.lookAhead()) {
                 return (result = edges.get(infixIID)) != null ? iterateSorted(ASC, result.keySet()) : emptySorted();
@@ -266,7 +267,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             }
 
             return iterate(iids).mergeMap(ASC, iid -> {
-                ConcurrentNavigableMap<DirectedEdge, ThingEdge> res;
+                ConcurrentNavigableMap<DirectedEdge.Thing, ThingEdge> res;
                 return (res = edges.get(iid)) != null ? iterateSorted(ASC, res.keySet()) : emptySorted();
             });
         }
@@ -277,7 +278,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             Predicate<ThingEdge> predicate = direction.isOut()
                     ? e -> e.to().equals(adjacent) && e.outIID().suffix().equals(SuffixIID.of(optimised.iid().key()))
                     : e -> e.from().equals(adjacent) && e.inIID().suffix().equals(SuffixIID.of(optimised.iid().key()));
-            FunctionalIterator<DirectedEdge> iterator = bufferedEdgeIterator(
+            FunctionalIterator<DirectedEdge.Thing> iterator = bufferedEdgeIterator(
                     encoding, new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()}
             );
             ThingEdge edge = null;
@@ -293,7 +294,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         public ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent) {
             assert !encoding.isOptimisation();
             Predicate<ThingEdge> predicate = direction.isOut() ? e -> e.to().equals(adjacent) : e -> e.from().equals(adjacent);
-            FunctionalIterator<DirectedEdge> iterator = bufferedEdgeIterator(
+            FunctionalIterator<DirectedEdge.Thing> iterator = bufferedEdgeIterator(
                     encoding, new IID[]{adjacent.iid().prefix(), adjacent.iid().type()}
             );
             ThingEdge edge = null;
@@ -317,7 +318,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
             edges.compute(infixIID, (iid, cachedEdges) -> {
                 if (cachedEdges == null) cachedEdges = new ConcurrentSkipListMap<>();
-                DirectedEdge directedEdge = asDirected(edge);
+                DirectedEdge.Thing directedEdge = asDirected(edge);
                 ThingEdge thingEdge = cachedEdges.get(directedEdge);
                 if (thingEdge != null) {
                     if (thingEdge.isInferred() && !edge.isInferred()) thingEdge.isInferred(false);
@@ -414,7 +415,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
             @Override
             public IteratorBuilder edge(Encoding.Edge.Thing.Optimised encoding) {
-                return new IteratorBuilderImpl(bufferedEdgeIterator(encoding, new IID[]{}).map(DirectedEdge::get));
+                return new IteratorBuilderImpl(bufferedEdgeIterator(encoding, new IID[]{}).map(DirectedEdge.Thing::get));
             }
 
             @Override
@@ -438,21 +439,21 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                 Key.Prefix<EdgeIID.Thing> prefix = EdgeIID.Thing.prefix(owner.iid(), infixIID(encoding, lookahead));
                 FunctionalIterator<ThingEdge> storageIterator = owner.graph().storage().iterate(prefix, ASC)
                         .map(keyValue -> cache(newPersistedEdge(EdgeIID.Thing.of(keyValue.key().bytes()))));
-                FunctionalIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead).map(DirectedEdge::get);
+                FunctionalIterator<ThingEdge> bufferedIterator = bufferedEdgeIterator(encoding, lookahead).map(DirectedEdge.Thing::get);
                 return link(bufferedIterator, storageIterator).distinct();
             }
 
-            private SortedIterator.Seekable<DirectedEdge, Order.Asc> edgeIteratorSorted(
+            private SortedIterator.Seekable<DirectedEdge.Thing, Order.Asc> edgeIteratorSorted(
                     Encoding.Edge.Thing encoding, IID... lookahead) {
                 assert encoding != ROLEPLAYER || lookahead.length >= 1;
                 Key.Prefix<EdgeIID.Thing> prefix = EdgeIID.Thing.prefix(owner.iid(), infixIID(encoding, lookahead));
-                SortedIterator.Seekable<DirectedEdge, Order.Asc> storageIter = owner.graph().storage().iterate(prefix, ASC)
+                SortedIterator.Seekable<DirectedEdge.Thing, Order.Asc> storageIter = owner.graph().storage().iterate(prefix, ASC)
                         .mapSorted(
                                 ASC,
                                 kv -> asDirected(cache(newPersistedEdge(EdgeIID.Thing.of(kv.key().bytes())))),
-                                directedEdge -> KeyValue.of(directedEdge.iid(), ByteArray.empty())
+                                directedEdge -> KeyValue.of(directedEdge.directedIID(), ByteArray.empty())
                         );
-                SortedIterator.Seekable<DirectedEdge, Order.Asc> bufferedIter = bufferedEdgeIterator(encoding, lookahead);
+                SortedIterator.Seekable<DirectedEdge.Thing, Order.Asc> bufferedIter = bufferedEdgeIterator(encoding, lookahead);
                 return bufferedIter.merge(storageIter).distinct();
             }
 

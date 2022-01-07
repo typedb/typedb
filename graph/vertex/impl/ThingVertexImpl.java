@@ -99,7 +99,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     @Override
     public int compareTo(ThingVertex o) {
-        return iid.bytes().compareTo(o.iid().bytes());
+        return iid.compareTo(o.iid());
     }
 
     public static class Read extends ThingVertexImpl {

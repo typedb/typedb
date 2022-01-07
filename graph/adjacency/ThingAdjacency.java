@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
-import com.vaticle.typedb.core.graph.iid.EdgeIID;
 import com.vaticle.typedb.core.graph.iid.IID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -81,7 +80,7 @@ public interface ThingAdjacency {
 
         SortedIterator<ThingVertex, Order.Asc> to();
 
-        SortedIterator.Seekable<DirectedEdge, Order.Asc> get();
+        SortedIterator.Seekable<DirectedEdge.Thing, Order.Asc> get();
     }
 
     interface Write extends ThingAdjacency {
@@ -149,53 +148,4 @@ public interface ThingAdjacency {
 
     DirectedEdge asDirected(ThingEdge edge);
 
-    abstract class DirectedEdge implements Comparable<DirectedEdge> {
-
-        public final ThingEdge edge;
-
-        DirectedEdge(ThingEdge edge) {
-            this.edge = edge;
-        }
-
-        public abstract EdgeIID.Thing iid();
-
-        public static DirectedEdge in(ThingEdge edge) {
-            return directedEdge(edge, edge.inIID());
-        }
-
-        public static DirectedEdge out(ThingEdge edge) {
-            return directedEdge(edge, edge.outIID());
-        }
-
-        private static DirectedEdge directedEdge(ThingEdge edge, EdgeIID.Thing iid) {
-            return new DirectedEdge(edge) {
-                @Override
-                public EdgeIID.Thing iid() {
-                    return iid;
-                }
-            };
-        }
-
-        public ThingEdge get() {
-            return edge;
-        }
-
-        @Override
-        public int compareTo(DirectedEdge other) {
-            return iid().compareTo(other.iid());
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            final DirectedEdge that = (DirectedEdge) o;
-            return edge.equals(that.edge);
-        }
-
-        @Override
-        public int hashCode() {
-            return edge.hashCode();
-        }
-    }
 }

@@ -67,7 +67,6 @@ public interface TypeAdjacency {
 
     void commit();
 
-
     /**
      * When used in combination with purely retrieving type edges (by infix encoding),
      * this iterator builder performs safe vertex downcasts at both ends of the edge
