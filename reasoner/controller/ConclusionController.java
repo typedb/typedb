@@ -18,21 +18,24 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
-import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Builder;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Request;
+import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
+import java.util.Map;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-public class ConclusionController extends Controller<ConceptMap, VarConceptMap,
+public class ConclusionController extends Controller<ConceptMap, Map<Variable, Concept>,
         ConclusionController.ConclusionProcessor, ConclusionController> {
     private final Rule.Conclusion conclusion;
     private final MaterialiserController materialiserController;
@@ -79,7 +82,7 @@ public class ConclusionController extends Controller<ConceptMap, VarConceptMap,
 
     }
 
-    protected static class ConclusionProcessor extends Processor<ConclusionPacket, VarConceptMap, ConclusionProcessor> {
+    protected static class ConclusionProcessor extends Processor<ConclusionPacket, Map<Variable, Concept>, ConclusionProcessor> {
 
         private final Rule rule;
         private final ConceptMap bounds;

@@ -33,6 +33,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -48,7 +49,7 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
         ConcludableController.ConcludableProcessor, ConcludableController> {
 
     private final LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions;
-    private final Set<Identifier.Variable.Retrievable> unboundVars;
+    private final Set<Variable.Retrievable> unboundVars;
     private final ControllerRegistry registry;
     private final Concludable concludable;
 
@@ -76,8 +77,8 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
         return upstreamConclusions;
     }
 
-    private Set<Identifier.Variable.Retrievable> unboundVars() {
-        Set<Identifier.Variable.Retrievable> missingBounds = new HashSet<>();
+    private Set<Variable.Retrievable> unboundVars() {
+        Set<Variable.Retrievable> missingBounds = new HashSet<>();
         iterate(concludable.pattern().variables())
                 .filter(var -> var.id().isRetrievable())
                 .forEachRemaining(var -> {
@@ -103,7 +104,7 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
     }
 
     protected static class ConclusionRequest extends Connection.Request<Conclusion, ConceptMap, ConclusionController,
-                VarConceptMap, ConcludableProcessor, ConclusionRequest> {
+                Map<Variable, Concept>, ConcludableProcessor, ConclusionRequest> {
 
         public ConclusionRequest(Driver<ConcludableProcessor> recProcessor, long recEndpointId,
                                  Conclusion provControllerId, ConceptMap provProcessorId) {
@@ -111,20 +112,20 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
         }
 
         @Override
-        public Connection.Builder<ConceptMap, VarConceptMap, ConclusionRequest, ConcludableProcessor, ?> getBuilder(ControllerRegistry registry) {
+        public Connection.Builder<ConceptMap, Map<Variable, Concept>, ConclusionRequest, ConcludableProcessor, ?> getBuilder(ControllerRegistry registry) {
             return createConnectionBuilder(registry.registerConclusionController(pubControllerId()));
         }
     }
 
-    protected static class ConcludableProcessor extends Processor<VarConceptMap, ConceptMap, ConcludableProcessor> {
+    protected static class ConcludableProcessor extends Processor<Map<Variable, Concept>, ConceptMap, ConcludableProcessor> {
 
         private final ConceptMap bounds;
-        private final Set<Identifier.Variable.Retrievable> unboundVars;
+        private final Set<Variable.Retrievable> unboundVars;
         private final LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions;
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
 
         public ConcludableProcessor(Driver<ConcludableProcessor> driver, Driver<ConcludableController> controller,
-                                    String name, ConceptMap bounds, Set<Identifier.Variable.Retrievable> unboundVars,
+                                    String name, ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                                     LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions,
                                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier) {
             super(driver, controller, name, noOp());
@@ -145,7 +146,7 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
 
             upstreamConclusions.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
-                    InletEndpoint<VarConceptMap> endpoint = this.createReceivingEndpoint();
+                    InletEndpoint<Map<Variable, Concept>> endpoint = this.createReceivingEndpoint();
                     requestConnection(new ConclusionRequest(driver(), endpoint.id(), conclusion, boundsAndRequirements.first()));
                     endpoint.flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .publishTo(op);
@@ -153,7 +154,7 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
             });
         }
 
-        private static Map<Identifier.Variable, Concept> unpack(ConceptMap conceptMap) {
+        private static Map<Variable, Concept> unpack(ConceptMap conceptMap) {
             // return conceptMap.concepts();  // TODO: Doesn't work, could be a big issue
             // TODO: Presents the good question: should conclusions be identifiable by ConceptMap, or more precisely by Map<Variable, Concept>?
             return null;

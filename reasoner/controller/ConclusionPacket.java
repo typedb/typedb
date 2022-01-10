@@ -22,8 +22,11 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -111,13 +114,13 @@ public abstract class ConclusionPacket {
     }
 
     public static class MaterialisationAnswer extends ConclusionPacket {
-        private final VarConceptMap concepts;
+        private final Map<Variable, Concept> concepts;
 
-        MaterialisationAnswer(VarConceptMap concepts) {
+        MaterialisationAnswer(Map<Variable, Concept> concepts) {
             this.concepts = concepts;
         }
 
-        VarConceptMap concepts() {
+        Map<Variable, Concept> concepts() {
             return concepts;
         }
 
