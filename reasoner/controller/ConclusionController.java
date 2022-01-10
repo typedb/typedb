@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
@@ -31,8 +32,10 @@ import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
 public class ConclusionController extends Controller<ConceptMap, Map<Variable, Concept>,
@@ -106,6 +109,80 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
                 requestConnection(new ConditionRequest(driver(), materialiserEndpoint.id(), null, ans.asConditionAnswer().conceptMap()));
                     materialiserEndpoint.map(m -> m.asMaterialisationAnswer().concepts()).publishTo(outlet());
             });
+        }
+    }
+
+    public abstract static class ConclusionPacket {
+
+        public MaterialisationAnswer asMaterialisationAnswer() {
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        public ConditionAnswer asConditionAnswer() {
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        public ConclusionPacket asConclusionPacket() {
+            return this;
+        }
+
+        public static class MaterialisationAnswer extends ConclusionPacket {
+            private final Map<Variable, Concept> concepts;
+
+            MaterialisationAnswer(Map<Variable, Concept> concepts) {
+                this.concepts = concepts;
+            }
+
+            Map<Variable, Concept> concepts() {
+                return concepts;
+            }
+
+            public MaterialisationAnswer asMaterialisationAnswer() {
+                return this;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                MaterialisationAnswer that = (MaterialisationAnswer) o;
+                return concepts.equals(that.concepts);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(concepts);
+            }
+        }
+
+        public static class ConditionAnswer extends ConclusionPacket {
+
+            private final ConceptMap conceptMap;
+
+            public ConditionAnswer(ConceptMap conceptMap) {
+                this.conceptMap = conceptMap;
+            }
+
+            public ConceptMap conceptMap() {
+                return conceptMap;
+            }
+
+            public ConditionAnswer asConditionAnswer() {
+                return this;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                ConditionAnswer that = (ConditionAnswer) o;
+                return conceptMap.equals(that.conceptMap);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(conceptMap);
+            }
         }
     }
 }

@@ -25,14 +25,14 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
-import com.vaticle.typedb.core.reasoner.controller.ConclusionPacket.ConditionAnswer;
+import com.vaticle.typedb.core.reasoner.controller.ConclusionController.ConclusionPacket.ConditionAnswer;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-public class ConditionController extends ConjunctionController<ConclusionPacket, ConditionController, ConditionController.ConditionProcessor> {
+public class ConditionController extends ConjunctionController<ConclusionController.ConclusionPacket, ConditionController, ConditionController.ConditionProcessor> {
 
     public ConditionController(Driver<ConditionController> driver, Conjunction conjunction, ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, conjunction, executorService, registry);
@@ -48,7 +48,7 @@ public class ConditionController extends ConjunctionController<ConclusionPacket,
         return null;
     }
 
-    protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<ConclusionPacket, ConditionController.ConditionProcessor>{
+    protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<ConclusionController.ConclusionPacket, ConditionController.ConditionProcessor>{
         protected ConditionProcessor(Driver<ConditionProcessor> driver, Driver<? extends Controller<?, ?,
                 ConditionProcessor, ?>> controller, String name,
                                      ConceptMap bounds, List<Resolvable<?>> plan) {
