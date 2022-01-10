@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -56,7 +57,7 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
         );
     }
 
-    protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap, ConditionController, ConclusionPacket, ConclusionProcessor, ConditionRequest> {
+    protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap, ConditionController, Either<ConceptMap, Map<Variable, Concept>>, ConclusionProcessor, ConditionRequest> {
 
         public ConditionRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
                                 Rule.Condition provControllerId, ConceptMap provProcessorId) {
@@ -64,25 +65,25 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
         }
 
         @Override
-        public Builder<ConceptMap, ConclusionPacket, ConditionRequest, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
+        public Builder<ConceptMap, Either<ConceptMap, Map<Variable, Concept>>, ConditionRequest, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
             return createConnectionBuilder(registry.registerConditionController(pubControllerId()));
         }
     }
 
-    protected static class MaterialiserRequest extends Connection.Request<Void, ConceptMap, MaterialiserController, ConclusionPacket, ConclusionProcessor, MaterialiserRequest> {
+    protected static class MaterialiserRequest extends Connection.Request<Void, MaterialiserController.MaterialisationBounds, MaterialiserController, Either<ConceptMap, Map<Variable, Concept>>, ConclusionProcessor, MaterialiserRequest> {
 
         public MaterialiserRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
-                                   Void provControllerId, ConceptMap provProcessorId) {
+                                   Void provControllerId, MaterialiserController.MaterialisationBounds provProcessorId) {
             super(recProcessor, recEndpointId, provControllerId, provProcessorId);
         }
 
         @Override
-        public Builder<ConceptMap, ConclusionPacket, MaterialiserRequest, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
+        public Builder<MaterialiserController.MaterialisationBounds, Either<ConceptMap, Map<Variable, Concept>>, MaterialiserRequest, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
             return createConnectionBuilder(registry.materialiserController());
         }
     }
 
-    protected static class ConclusionProcessor extends Processor<ConclusionPacket, Map<Variable, Concept>, ConclusionProcessor> {
+    protected static class ConclusionProcessor extends Processor<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>, ConclusionProcessor> {
 
         private final Rule rule;
         private final ConceptMap bounds;
@@ -99,90 +100,17 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
 
         @Override
         public void setUp() {
-            InletEndpoint<ConclusionPacket> conditionEndpoint = createReceivingEndpoint();
+            InletEndpoint<Either<ConceptMap, Map<Variable, Concept>>> conditionEndpoint = createReceivingEndpoint();
             requestConnection(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
             conditionEndpoint.forEach(ans -> {
-                InletEndpoint<ConclusionPacket> materialiserEndpoint = createReceivingEndpoint();
-                requestConnection(new MaterialiserRequest(driver(), materialiserEndpoint.id(), null,
-                                                          ans.asConditionAnswer().conceptMap()));
-                    materialiserEndpoint.map(m -> m.asMaterialisationAnswer().concepts()).publishTo(outlet());
+                InletEndpoint<Either<ConceptMap, Map<Variable, Concept>>> materialiserEndpoint = createReceivingEndpoint();
+                requestConnection(new MaterialiserRequest(
+                        driver(), materialiserEndpoint.id(), null,
+                        new MaterialiserController.MaterialisationBounds(ans.first(), rule.conclusion()))
+                );
+                materialiserEndpoint.map(m -> m.second()).publishTo(outlet());
             });
         }
     }
 
-    public abstract static class ConclusionPacket {
-
-        public MaterialisationAnswer asMaterialisationAnswer() {
-            throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
-        public ConditionAnswer asConditionAnswer() {
-            throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
-        public ConclusionPacket asConclusionPacket() {
-            return this;
-        }
-
-        public static class MaterialisationAnswer extends ConclusionPacket {
-            private final Map<Variable, Concept> concepts;
-
-            MaterialisationAnswer(Map<Variable, Concept> concepts) {
-                this.concepts = concepts;
-            }
-
-            Map<Variable, Concept> concepts() {
-                return concepts;
-            }
-
-            @Override
-            public MaterialisationAnswer asMaterialisationAnswer() {
-                return this;
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                MaterialisationAnswer that = (MaterialisationAnswer) o;
-                return concepts.equals(that.concepts);
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hash(concepts);
-            }
-        }
-
-        public static class ConditionAnswer extends ConclusionPacket {
-
-            private final ConceptMap conceptMap;
-
-            public ConditionAnswer(ConceptMap conceptMap) {
-                this.conceptMap = conceptMap;
-            }
-
-            public ConceptMap conceptMap() {
-                return conceptMap;
-            }
-
-            @Override
-            public ConditionAnswer asConditionAnswer() {
-                return this;
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                ConditionAnswer that = (ConditionAnswer) o;
-                return conceptMap.equals(that.conceptMap);
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hash(conceptMap);
-            }
-        }
-    }
 }
