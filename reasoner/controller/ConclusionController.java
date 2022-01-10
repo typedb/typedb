@@ -41,13 +41,11 @@ import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReac
 public class ConclusionController extends Controller<ConceptMap, Map<Variable, Concept>,
         ConclusionController.ConclusionProcessor, ConclusionController> {
     private final Rule.Conclusion conclusion;
-    private final MaterialiserController materialiserController;
 
     protected ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion conclusion,
                                    ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, name, executorService, registry);
         this.conclusion = conclusion;
-        this.materialiserController = null;  // TODO
     }
 
     @Override
@@ -80,9 +78,8 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
 
         @Override
         public Builder<ConceptMap, ConclusionPacket, MaterialiserRequest, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
-            return null;
+            return createConnectionBuilder(registry.materialiserController());
         }
-
     }
 
     protected static class ConclusionProcessor extends Processor<ConclusionPacket, Map<Variable, Concept>, ConclusionProcessor> {
@@ -106,7 +103,8 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
             requestConnection(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
             conditionEndpoint.forEach(ans -> {
                 InletEndpoint<ConclusionPacket> materialiserEndpoint = createReceivingEndpoint();
-                requestConnection(new ConditionRequest(driver(), materialiserEndpoint.id(), null, ans.asConditionAnswer().conceptMap()));
+                requestConnection(new MaterialiserRequest(driver(), materialiserEndpoint.id(), null,
+                                                          ans.asConditionAnswer().conceptMap()));
                     materialiserEndpoint.map(m -> m.asMaterialisationAnswer().concepts()).publishTo(outlet());
             });
         }
@@ -137,6 +135,7 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
                 return concepts;
             }
 
+            @Override
             public MaterialisationAnswer asMaterialisationAnswer() {
                 return this;
             }
@@ -167,6 +166,7 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
                 return conceptMap;
             }
 
+            @Override
             public ConditionAnswer asConditionAnswer() {
                 return this;
             }

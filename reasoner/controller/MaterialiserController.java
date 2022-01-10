@@ -29,7 +29,8 @@ import java.util.function.Function;
 
 public class MaterialiserController extends Controller<ConceptMap, ConclusionController.ConclusionPacket, MaterialiserController.MaterialiserProcessor, MaterialiserController> {
 
-    protected MaterialiserController(Driver<MaterialiserController> driver, String name, ActorExecutorGroup executorService, ControllerRegistry registry) {
+    public MaterialiserController(Driver<MaterialiserController> driver, String name,
+                                  ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, name, executorService, registry);
     }
 

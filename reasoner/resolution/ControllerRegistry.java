@@ -37,6 +37,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController;
 import com.vaticle.typedb.core.reasoner.controller.ConditionController;
+import com.vaticle.typedb.core.reasoner.controller.MaterialiserController;
 import com.vaticle.typedb.core.reasoner.controller.RetrievableController;
 import com.vaticle.typedb.core.reasoner.controller.RootConjunctionController;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
@@ -95,6 +96,7 @@ public class ControllerRegistry {
     private final boolean resolutionTracing;
     private final AtomicBoolean terminated;
     private final Actor.Driver<Materialiser> materialiser;
+    private final Actor.Driver<MaterialiserController> materialisationController;
     private ActorExecutorGroup executorService;
 
     public ControllerRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
@@ -113,6 +115,7 @@ public class ControllerRegistry {
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
         this.materialiser = Actor.driver(driver -> new Materialiser(driver, this), executorService);
+        this.materialisationController = Actor.driver(driver -> new MaterialiserController(driver, "Materialiser", executorService, this), executorService);
     }
 
     public TraversalEngine traversalEngine() {
@@ -336,6 +339,10 @@ public class ControllerRegistry {
 
     public Actor.Driver<Materialiser> materialiser() {
         return materialiser;
+    }
+
+    public Actor.Driver<MaterialiserController> materialiserController() {
+        return materialisationController;  // TODO
     }
 
     public Actor.Driver<ConditionResolver> conditionResolver(Rule rule) {
