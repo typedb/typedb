@@ -40,13 +40,16 @@ import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Predicate;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -74,7 +77,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
     abstract ThingVertex owner();
 
-    static class EdgeIteratorImpl implements EdgeIterator {
+    static class EdgeIteratorImpl implements com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.EdgeIterator {
 
         private final FunctionalIterator<ThingEdge> edgeIterator;
 
@@ -98,52 +101,76 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         }
     }
 
-    static class SortedEdgeIteratorImpl implements SortedEdgeIterator {
+    static abstract class SortedEdgeIteratorImpl implements com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator {
 
-        private final ThingAdjacencyImpl adjacency;
-        private final Encoding.Edge.Thing encoding;
-        private final TypeVertex optimisedType;
-        private final SortedIterator.Seekable<ComparableEdge.Thing, Order.Asc> comparableEdges;
+        final ThingVertex owner;
+        final Encoding.Edge.Thing encoding;
+        final TypeVertex optimisedType;
+        final SortedIterator.Seekable<ComparableEdge.Thing, Order.Asc> comparableEdges;
 
-        SortedEdgeIteratorImpl(ThingAdjacencyImpl adjacency, Encoding.Edge.Thing encoding, @Nullable TypeVertex optimisedType,
+        SortedEdgeIteratorImpl(ThingVertex owner, Encoding.Edge.Thing encoding, @Nullable TypeVertex optimisedType,
                                SortedIterator.Seekable<ComparableEdge.Thing, Order.Asc> comparableEdges) {
-            this.adjacency = adjacency;
+            this.owner = owner;
             this.encoding = encoding;
             this.optimisedType = optimisedType;
             this.comparableEdges = comparableEdges;
         }
 
         @Override
-        public SortedIterator<ThingVertex, Order.Asc> from() {
-            return adjacency.direction.isOut() ?
-                    comparableEdges.mapSorted(ASC, comparableEdge -> comparableEdge.edge().from()).distinct() :
-                    comparableEdges.mapSorted(
-                            ASC,
-                            comparableEdge -> comparableEdge.edge().from(),
-                            vertex -> adjacency.toComparable(
-                                    new ThingEdgeImpl.Target(encoding, adjacency.owner(), vertex, optimisedType)
-                            )
-                    );
-        }
-
-        @Override
-        public SortedIterator<ThingVertex, Order.Asc> to() {
-            return adjacency.direction.isOut() ?
-                    comparableEdges.mapSorted(
-                            ASC,
-                            comparableEdge -> comparableEdge.edge().to(),
-                            vertex -> adjacency.toComparable(new ThingEdgeImpl.Target(encoding, adjacency.owner(), vertex, optimisedType))
-                    ) :
-                    comparableEdges.mapSorted(ASC, comparableEdge -> comparableEdge.edge().to()).distinct();
-        }
-
-        @Override
         public SortedIterator.Seekable<ComparableEdge.Thing, Order.Asc> get() {
             return comparableEdges;
         }
+
+        static class Ins extends SortedEdgeIteratorImpl implements com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Ins {
+
+            Ins(ThingVertex owner, Encoding.Edge.Thing encoding, @Nullable TypeVertex optimisedType,
+                SortedIterator.Seekable<ComparableEdge.Thing, Order.Asc> comparableEdges) {
+                super(owner, encoding, optimisedType, comparableEdges);
+            }
+
+            @Override
+            public SortedIterator.Seekable<ThingVertex, Order.Asc> from() {
+                return comparableEdges.mapSorted(
+                        ASC,
+                        comparableEdge -> comparableEdge.edge().from(),
+                        vertex -> ComparableEdge.Thing.byInIID(
+                                new ThingEdgeImpl.Target(encoding, owner, vertex, optimisedType)
+                        )
+                );
+            }
+
+            @Override
+            public SortedIterator<ThingVertex, Order.Asc> to() {
+                return iterateSorted(ASC, list(owner));
+            }
+        }
+
+        static class Outs extends SortedEdgeIteratorImpl implements com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Outs {
+
+            Outs(ThingVertex owner, Encoding.Edge.Thing encoding, @Nullable TypeVertex optimisedType,
+                 SortedIterator.Seekable<ComparableEdge.Thing, Order.Asc> comparableEdges) {
+                super(owner, encoding, optimisedType, comparableEdges);
+            }
+
+            @Override
+            public SortedIterator<ThingVertex, Order.Asc> from() {
+                return iterateSorted(ASC, list(owner));
+            }
+
+            @Override
+            public SortedIterator.Seekable<ThingVertex, Order.Asc> to() {
+                return comparableEdges.mapSorted(
+                        ASC,
+                        comparableEdge -> comparableEdge.edge().to(),
+                        vertex -> ComparableEdge.Thing.byOutIID(
+                                new ThingEdgeImpl.Target(encoding, owner, vertex, optimisedType)
+                        )
+                );
+            }
+        }
     }
 
-    public static class Read extends ThingAdjacencyImpl {
+    public static abstract class Read extends ThingAdjacencyImpl {
 
         final ThingVertex owner;
 
@@ -157,7 +184,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             return owner;
         }
 
-        private SortedIterator.Seekable<ComparableEdge.Thing, Order.Asc> edgeIteratorSorted(
+        SortedIterator.Seekable<ComparableEdge.Thing, Order.Asc> edgeIteratorSorted(
                 Encoding.Edge.Thing encoding, IID... lookahead) {
             Key.Prefix<EdgeIID.Thing> prefix = EdgeIID.Thing.prefix(owner.iid(), infixIID(encoding, lookahead));
             return owner.graph().storage().iterate(prefix, ASC)
@@ -172,21 +199,48 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
             return new ThingEdgeImpl.Persisted(owner.graph(), of);
         }
 
-        @Override
-        public SortedEdgeIterator edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead) {
-            return new SortedEdgeIteratorImpl(this, encoding, null, edgeIteratorSorted(encoding, lookAhead));
+        public static class In extends Read implements ThingAdjacency.In {
+
+            public In(ThingVertex owner) {
+                super(owner, Encoding.Direction.Adjacency.IN);
+            }
+
+            @Override
+            public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Ins edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead) {
+                return new SortedEdgeIteratorImpl.Ins(owner, encoding, null, edgeIteratorSorted(encoding, lookAhead));
+            }
+
+            @Override
+            public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Ins edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead) {
+                IID[] mergedLookahead = new IID[1 + lookAhead.length];
+                mergedLookahead[0] = roleType.iid();
+                System.arraycopy(lookAhead, 0, mergedLookahead, 1, lookAhead.length);
+                return new SortedEdgeIteratorImpl.Ins(owner, encoding, roleType, edgeIteratorSorted(encoding, mergedLookahead));
+            }
+        }
+
+        public static class Out extends Read implements ThingAdjacency.Out {
+
+            public Out(ThingVertex owner) {
+                super(owner, Encoding.Direction.Adjacency.OUT);
+            }
+
+            @Override
+            public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Outs edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead) {
+                return new SortedEdgeIteratorImpl.Outs(owner, encoding, null, edgeIteratorSorted(encoding, lookAhead));
+            }
+
+            @Override
+            public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Outs edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead) {
+                IID[] mergedLookahead = new IID[1 + lookAhead.length];
+                mergedLookahead[0] = roleType.iid();
+                System.arraycopy(lookAhead, 0, mergedLookahead, 1, lookAhead.length);
+                return new SortedEdgeIteratorImpl.Outs(owner, encoding, roleType, edgeIteratorSorted(encoding, mergedLookahead));
+            }
         }
 
         @Override
-        public SortedEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead) {
-            IID[] mergedLookahead = new IID[1 + lookAhead.length];
-            mergedLookahead[0] = roleType.iid();
-            System.arraycopy(lookAhead, 0, mergedLookahead, 1, lookAhead.length);
-            return new SortedEdgeIteratorImpl(this, encoding, roleType, edgeIteratorSorted(encoding, mergedLookahead));
-        }
-
-        @Override
-        public EdgeIterator edge(Encoding.Edge.Thing.Optimised encoding) {
+        public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.EdgeIterator edge(Encoding.Edge.Thing.Optimised encoding) {
             Key.Prefix<EdgeIID.Thing> prefix = EdgeIID.Thing.prefix(owner.iid(), infixIID(encoding));
             return new EdgeIteratorImpl(owner.graph().storage().iterate(prefix, ASC)
                     .map(kv -> newPersistedEdge(EdgeIID.Thing.of(kv.key().bytes()))));
@@ -226,11 +280,6 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
         @Override
         ThingVertex owner() {
             return owner;
-        }
-
-        InfixIID.Thing infixIID(Encoding.Edge.Thing encoding, IID... lookAhead) {
-            Encoding.Infix infix = direction.isOut() ? encoding.out() : encoding.in();
-            return InfixIID.Thing.of(infix, lookAhead);
         }
 
         IID[] infixTails(ThingEdge edge) {
@@ -397,23 +446,54 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                 super(owner, direction);
             }
 
-            @Override
-            public SortedEdgeIterator edge(Encoding.Edge.Thing.Base encoding, IID... lookahead) {
-                return new SortedEdgeIteratorImpl(this, encoding, null,
-                        bufferedEdgeIterator(encoding, lookahead));
+            public static class In extends Buffered implements com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.Write.In {
+
+                public In(ThingVertex.Write owner) {
+                    super(owner, Encoding.Direction.Adjacency.IN);
+                }
+
+                @Override
+                public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Ins edge(Encoding.Edge.Thing.Base encoding, IID... lookahead) {
+                    return new SortedEdgeIteratorImpl.Ins(owner, encoding, null,
+                            bufferedEdgeIterator(encoding, lookahead));
+                }
+
+                @Override
+                public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Ins edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookahead) {
+                    IID[] mergedLookahead = new IID[1 + lookahead.length];
+                    mergedLookahead[0] = roleType.iid();
+                    System.arraycopy(lookahead, 0, mergedLookahead, 1, lookahead.length);
+                    return new SortedEdgeIteratorImpl.Ins(owner, encoding, roleType,
+                            bufferedEdgeIterator(ROLEPLAYER, mergedLookahead));
+                }
+
+            }
+
+            public static class Out extends Buffered implements com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.Write.Out {
+
+                public Out(ThingVertex.Write owner) {
+                    super(owner, Encoding.Direction.Adjacency.OUT);
+                }
+
+                @Override
+                public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Outs edge(Encoding.Edge.Thing.Base encoding, IID... lookahead) {
+                    return new SortedEdgeIteratorImpl.Outs(owner, encoding, null,
+                            bufferedEdgeIterator(encoding, lookahead));
+                }
+
+                @Override
+                public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Outs edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookahead) {
+                    IID[] mergedLookahead = new IID[1 + lookahead.length];
+                    mergedLookahead[0] = roleType.iid();
+                    System.arraycopy(lookahead, 0, mergedLookahead, 1, lookahead.length);
+                    return new SortedEdgeIteratorImpl.Outs(owner, encoding, roleType,
+                            bufferedEdgeIterator(ROLEPLAYER, mergedLookahead));
+                }
+
             }
 
             @Override
-            public SortedEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookahead) {
-                IID[] mergedLookahead = new IID[1 + lookahead.length];
-                mergedLookahead[0] = roleType.iid();
-                System.arraycopy(lookahead, 0, mergedLookahead, 1, lookahead.length);
-                return new SortedEdgeIteratorImpl(this, encoding, roleType,
-                        bufferedEdgeIterator(ROLEPLAYER, mergedLookahead));
-            }
-
-            @Override
-            public EdgeIterator edge(Encoding.Edge.Thing.Optimised encoding) {
+            public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.EdgeIterator edge(Encoding.Edge.Thing.Optimised encoding) {
                 return new EdgeIteratorImpl(bufferedEdgeIterator(encoding, new IID[]{}).map(ComparableEdge.Thing::edge));
             }
 
@@ -434,6 +514,55 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                 super(owner, direction);
             }
 
+            public static class In extends Persisted implements com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.Write.In {
+
+                public In(ThingVertex.Write owner) {
+                    super(owner, Encoding.Direction.Adjacency.IN);
+                }
+
+                @Override
+                public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Ins edge(Encoding.Edge.Thing.Base encoding, IID... lookahead) {
+                    return new SortedEdgeIteratorImpl.Ins(owner, encoding, null,
+                            edgeIteratorSorted(encoding, lookahead));
+                }
+
+                @Override
+                public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Ins edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookahead) {
+                    IID[] mergedLookahead = new IID[1 + lookahead.length];
+                    mergedLookahead[0] = roleType.iid();
+                    System.arraycopy(lookahead, 0, mergedLookahead, 1, lookahead.length);
+                    return new SortedEdgeIteratorImpl.Ins(owner, encoding, roleType,
+                            edgeIteratorSorted(ROLEPLAYER, mergedLookahead));
+                }
+            }
+
+            public static class Out extends Persisted implements com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.Write.Out {
+
+                public Out(ThingVertex.Write owner) {
+                    super(owner, Encoding.Direction.Adjacency.OUT);
+                }
+
+                @Override
+                public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Outs edge(Encoding.Edge.Thing.Base encoding, IID... lookahead) {
+                    return new SortedEdgeIteratorImpl.Outs(owner, encoding, null,
+                            edgeIteratorSorted(encoding, lookahead));
+                }
+
+                @Override
+                public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Outs edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookahead) {
+                    IID[] mergedLookahead = new IID[1 + lookahead.length];
+                    mergedLookahead[0] = roleType.iid();
+                    System.arraycopy(lookahead, 0, mergedLookahead, 1, lookahead.length);
+                    return new SortedEdgeIteratorImpl.Outs(owner, encoding, roleType,
+                            edgeIteratorSorted(ROLEPLAYER, mergedLookahead));
+                }
+            }
+
+            @Override
+            public com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.EdgeIterator edge(Encoding.Edge.Thing.Optimised encoding) {
+                return new EdgeIteratorImpl(edgeIterator(encoding));
+            }
+
             private FunctionalIterator<ThingEdge> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
                 Key.Prefix<EdgeIID.Thing> prefix = EdgeIID.Thing.prefix(owner.iid(), infixIID(encoding, lookahead));
                 FunctionalIterator<ThingEdge> storageIterator = owner.graph().storage().iterate(prefix, ASC)
@@ -442,7 +571,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                 return link(bufferedIterator, storageIterator).distinct();
             }
 
-            private SortedIterator.Seekable<ComparableEdge.Thing, Order.Asc> edgeIteratorSorted(
+            SortedIterator.Seekable<ComparableEdge.Thing, Order.Asc> edgeIteratorSorted(
                     Encoding.Edge.Thing encoding, IID... lookahead) {
                 assert encoding != ROLEPLAYER || lookahead.length >= 1;
                 Key.Prefix<EdgeIID.Thing> prefix = EdgeIID.Thing.prefix(owner.iid(), infixIID(encoding, lookahead));
@@ -458,26 +587,6 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
 
             private ThingEdgeImpl.Persisted newPersistedEdge(EdgeIID.Thing of) {
                 return new ThingEdgeImpl.Persisted(owner.graph(), of);
-            }
-
-            @Override
-            public SortedEdgeIterator edge(Encoding.Edge.Thing.Base encoding, IID... lookahead) {
-                return new SortedEdgeIteratorImpl(this, encoding, null,
-                        edgeIteratorSorted(encoding, lookahead));
-            }
-
-            @Override
-            public SortedEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookahead) {
-                IID[] mergedLookahead = new IID[1 + lookahead.length];
-                mergedLookahead[0] = roleType.iid();
-                System.arraycopy(lookahead, 0, mergedLookahead, 1, lookahead.length);
-                return new SortedEdgeIteratorImpl(this, encoding, roleType,
-                        edgeIteratorSorted(ROLEPLAYER, mergedLookahead));
-            }
-
-            @Override
-            public EdgeIterator edge(Encoding.Edge.Thing.Optimised encoding) {
-                return new EdgeIteratorImpl(edgeIterator(encoding));
             }
 
             @Override

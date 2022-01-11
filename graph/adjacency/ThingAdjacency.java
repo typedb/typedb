@@ -83,20 +83,28 @@ public interface ThingAdjacency {
 
         interface Ins extends SortedEdgeIterator {
 
-            SortedIterator<ThingVertex, Order.Asc> from();
-
-            SortedIterator.Seekable<ThingVertex, Order.Asc> to();
-        }
-
-        interface Outs extends SortedEdgeIterator {
-
             SortedIterator.Seekable<ThingVertex, Order.Asc> from();
 
             SortedIterator<ThingVertex, Order.Asc> to();
         }
+
+        interface Outs extends SortedEdgeIterator {
+
+            SortedIterator<ThingVertex, Order.Asc> from();
+
+            SortedIterator.Seekable<ThingVertex, Order.Asc> to();
+        }
     }
 
     interface Write extends ThingAdjacency {
+
+        interface In extends Write, ThingAdjacency.In {
+
+        }
+
+        interface Out extends Write, ThingAdjacency.Out {
+
+        }
 
         /**
          * Puts an adjacent vertex over an edge with a given encoding.

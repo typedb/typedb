@@ -30,7 +30,7 @@ import java.util.function.Predicate;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 
-public class BasedSortedIterator<T extends Comparable<? super T>, ORDER extends Order>
+public class BasedSeekableIterator<T extends Comparable<? super T>, ORDER extends Order>
         extends AbstractSortedIterator<T, ORDER>
         implements SortedIterator.Seekable<T, ORDER> {
 
@@ -39,7 +39,7 @@ public class BasedSortedIterator<T extends Comparable<? super T>, ORDER extends 
     private T next;
     private T last;
 
-    public BasedSortedIterator(ORDER order, NavigableSet<T> source) {
+    public BasedSeekableIterator(ORDER order, NavigableSet<T> source) {
         super(order);
         this.source = source;
         this.iterator = order.iterateOrdered(source);
