@@ -48,7 +48,7 @@ public class Materialiser extends ReasonerActor<Materialiser> {
 
     public void receiveRequest(Request request) {
         if (isTerminated()) return;
-        Optional<Map<Identifier.Variable, Concept>> materialisation = request.conclusion().materialise(
+        Optional<Map<Identifier.Variable, Concept>> materialisation = request.conclusion().materialiseAndBind(
                 request.partialAnswer().conceptMap(), registry.traversalEngine(), registry.conceptManager());
         Response response = new Response(request, materialisation.orElse(null), request.partialAnswer());
         if (registry.resolutionTracing()) {

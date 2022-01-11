@@ -115,7 +115,9 @@ public class ControllerRegistry {
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
         this.materialiser = Actor.driver(driver -> new Materialiser(driver, this), executorService);
-        this.materialisationController = Actor.driver(driver -> new MaterialiserController(driver, "Materialiser", executorService, this), executorService);
+        this.materialisationController = Actor.driver(driver -> new MaterialiserController(
+                driver, executorService, this, traversalEngine(), conceptManager()), executorService
+        );
     }
 
     public TraversalEngine traversalEngine() {

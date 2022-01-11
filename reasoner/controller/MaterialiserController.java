@@ -19,64 +19,70 @@
 package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
-import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
-import com.vaticle.typedb.core.logic.Rule;
-import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
+import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
+import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.controller.MaterialiserController.MaterialisationBounds;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
+import com.vaticle.typedb.core.traversal.TraversalEngine;
 
-import java.util.Map;
 import java.util.function.Function;
 
-public class MaterialiserController extends Controller<MaterialisationBounds, Either<ConceptMap, Map<Variable, Concept>>,
-        MaterialiserController.MaterialiserProcessor, MaterialiserController> {
-    // TODO: It would be better not to use Either, since this class only ever outputs a Map<Variable, Concept>
+import static com.vaticle.typedb.core.logic.Rule.Conclusion.materialise;
+import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-    public MaterialiserController(Driver<MaterialiserController> driver, String name,
-                                  ActorExecutorGroup executorService, ControllerRegistry registry) {
-        super(driver, name, executorService, registry);
+public class MaterialiserController extends Controller<Materialisable, Either<ConceptMap, Materialisation>,
+        MaterialiserController.MaterialiserProcessor, MaterialiserController> {
+    private final TraversalEngine traversalEng;
+    private final ConceptManager conceptMgr;
+    // TODO: It would be better not to use Either, since this class only ever outputs a Materialisation
+
+    public MaterialiserController(Driver<MaterialiserController> driver, ActorExecutorGroup executorService,
+                                  ControllerRegistry registry, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+        super(driver, MaterialiserController.class.getSimpleName(), executorService, registry);
+        this.traversalEng = traversalEng;
+        this.conceptMgr = conceptMgr;
     }
 
     @Override
-    protected Function<Driver<MaterialiserProcessor>, MaterialiserProcessor> createProcessorFunc(MaterialisationBounds bounds) {
-        return null;
+    protected Function<Driver<MaterialiserProcessor>, MaterialiserProcessor> createProcessorFunc(Materialisable materialisable) {
+        return driver -> new MaterialiserProcessor(
+                driver, driver(), materialisable,
+                MaterialiserProcessor.class.getSimpleName() + "(Materialisable: " + materialisable + ")",
+                traversalEng, conceptMgr
+        );
     }
 
-    public static class MaterialiserProcessor extends Processor<Void, Either<ConceptMap, Map<Variable, Concept>>, MaterialiserProcessor> {
+    public static class MaterialiserProcessor extends Processor<Void, Either<ConceptMap, Materialisation>, MaterialiserProcessor> {
+
+        private final Materialisable materialisable;
+        private final TraversalEngine traversalEng;
+        private final ConceptManager conceptMgr;
 
         protected MaterialiserProcessor(
                 Driver<MaterialiserProcessor> driver,
-                Driver<? extends Controller<?, ?, MaterialiserProcessor, ?>> controller,
-                String name, Reactive<Either<ConceptMap, Map<Variable, Concept>>, Either<ConceptMap, Map<Variable, Concept>>> outlet) {
-            super(driver, controller, name, outlet);
+                Driver<? extends Controller<?, ?, MaterialiserProcessor, ?>> controller, Materialisable materialisable,
+                String name, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+            super(driver, controller, name, noOp());
+            this.materialisable = materialisable;
+            this.traversalEng = traversalEng;
+            this.conceptMgr = conceptMgr;
         }
 
         @Override
         public void setUp() {
-            // TODO
-        }
-    }
-
-    public static class MaterialisationBounds {
-        private final ConceptMap conceptMap;
-        private final Rule.Conclusion conclusion;
-
-        public MaterialisationBounds(ConceptMap conceptMap, Rule.Conclusion conclusion) {
-            this.conceptMap = conceptMap;
-            this.conclusion = conclusion;
-        }
-
-        public ConceptMap conceptMap() {
-            return conceptMap;
-        }
-
-        public Rule.Conclusion conclusion() {
-            return conclusion;
+            new Source<>(
+                    () -> materialise(materialisable, traversalEng, conceptMgr)
+                            .map(Iterators::single)
+                            .orElse(Iterators.empty())
+            )
+                    .map(Either::<ConceptMap, Materialisation>second)
+                    .publishTo(outlet());
         }
     }
 }

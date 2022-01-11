@@ -19,23 +19,21 @@
 package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
-import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
+import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
-import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-public class ConditionController extends ConjunctionController<Either<ConceptMap, Map<Variable, Concept>>, ConditionController, ConditionController.ConditionProcessor> {
+public class ConditionController extends ConjunctionController<Either<ConceptMap, Materialisation>, ConditionController, ConditionController.ConditionProcessor> {
     // TODO: It would be better not to use Either, since this class only ever outputs a ConceptMap
 
     public ConditionController(Driver<ConditionController> driver, Conjunction conjunction, ActorExecutorGroup executorService, ControllerRegistry registry) {
@@ -52,17 +50,15 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
         return null;
     }
 
-    protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<Either<ConceptMap, Map<Variable, Concept>>, ConditionController.ConditionProcessor>{
-        protected ConditionProcessor(Driver<ConditionProcessor> driver, Driver<? extends Controller<?, ?,
-                ConditionProcessor, ?>> controller, String name,
-                                     ConceptMap bounds, List<Resolvable<?>> plan) {
+    protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<Either<ConceptMap, Materialisation>, ConditionController.ConditionProcessor>{
+        protected ConditionProcessor(Driver<ConditionProcessor> driver, Driver<? extends Controller<?, ?, ConditionProcessor, ?>> controller, String name,  ConceptMap bounds, List<Resolvable<?>> plan) {
             super(driver, controller, name, bounds, plan);
         }
 
         @Override
         public void setUp() {
             new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds)
-                    .map(Either::<ConceptMap, Map<Variable, Concept>>first).publishTo(outlet());
+                    .map(Either::<ConceptMap, Materialisation>first).publishTo(outlet());
         }
     }
 }

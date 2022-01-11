@@ -560,13 +560,13 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         public FunctionalIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
             ThingVariable owner = has().owner();
-            ThingVariable unifiedOwner = hasConclusion.has().owner();
+            ThingVariable unifiedOwner = hasConclusion.owner();
             if (unificationSatisfiable(owner, unifiedOwner)) {
                 unifierBuilder.addThing(owner, unifiedOwner.id());
             } else return Iterators.empty();
 
             ThingVariable attr = has().attribute();
-            ThingVariable conclusionAttr = hasConclusion.has().attribute();
+            ThingVariable conclusionAttr = hasConclusion.attribute();
             if (unificationSatisfiable(attr, conclusionAttr)) {
                 unifierBuilder.addThing(attr, conclusionAttr.id());
                 if (attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {

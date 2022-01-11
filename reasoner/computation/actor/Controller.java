@@ -51,6 +51,10 @@ public abstract class Controller<
         this.registry = registry;
     }
 
+    protected ControllerRegistry registry() {
+        return registry;
+    }
+
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PROC_ID id);
 
     public <PUB_PROC_ID, INPUT, REQ extends Connection.Request<?, PUB_PROC_ID, ?, INPUT, ?, ?>> void findProviderForConnection(REQ req) {

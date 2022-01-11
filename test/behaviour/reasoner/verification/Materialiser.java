@@ -125,7 +125,7 @@ public class Materialiser {
         private boolean materialise() {
             // Get all the places where the rule condition is satisfied and materialise for each
             requiresReiteration = false;
-            traverse(logicRule.when()).forEachRemaining(conditionAns -> logicRule.conclusion().materialise(
+            traverse(logicRule.when()).forEachRemaining(conditionAns -> logicRule.conclusion().materialiseAndBind(
                     conditionAns, tx.traversal(), tx.concepts()
             ).ifPresent(materialisation -> record(conditionAns, new ConceptMap(filterRetrievable(materialisation)))));
             return requiresReiteration;

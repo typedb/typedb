@@ -113,7 +113,7 @@ public class RuleTest {
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), people.get(0)),
                                                                pair(Identifier.Variable.name("y"), people.get(1))));
 
-                    Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr);
+                    Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertTrue(materialisation.isPresent());
                     assertEquals(5, materialisation.get().size());
 
@@ -169,7 +169,7 @@ public class RuleTest {
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), people.get(0)),
                                                                pair(Identifier.Variable.name("y"), people.get(1))));
 
-                    Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr);
+                    Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertFalse(materialisation.isPresent());
                 }
             }
@@ -211,7 +211,7 @@ public class RuleTest {
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), milkInst),
                                                                pair(Identifier.Variable.name("a"), ageInDays10)));
-                    Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr);
+                    Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertTrue(materialisation.isPresent());
                     assertEquals(2, materialisation.get().size());
 
@@ -257,7 +257,7 @@ public class RuleTest {
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), milkInst)));
-                    Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr);
+                    Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertTrue(materialisation.isPresent());
                     assertEquals(3, materialisation.get().size());
 
