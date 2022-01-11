@@ -133,6 +133,8 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
     protected static abstract class ConjunctionProcessor<OUTPUT, PROCESSOR extends Processor<ConceptMap, OUTPUT, PROCESSOR>> extends Processor<ConceptMap, OUTPUT, PROCESSOR> {
         protected final ConceptMap bounds;
         protected final List<Resolvable<?>> plan;
+        private final Set<RetrievableRequest<?>> retrievableRequests;
+        private final Set<ConcludableRequest<?>> concludableRequests;
 
         protected ConjunctionProcessor(
                 Driver<PROCESSOR> driver,
@@ -142,19 +144,16 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
             super(driver, controller, name, noOp());
             this.bounds = bounds;
             this.plan = plan;
+            this.retrievableRequests = new HashSet<>();
+            this.concludableRequests = new HashSet<>();
         }
-
-//        @Override
-//        public void setUp() {
-//            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds).publishTo(outlet());
-//        }
 
         protected InletEndpoint<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             if (planElement.isRetrievable()) {
-                requestConnection(new RetrievableRequest<>(driver(), endpoint.id(), planElement.asRetrievable(), carriedBounds.filter(planElement.retrieves())));
+                mayRequestRetrievable(new RetrievableRequest<>(driver(), endpoint.id(), planElement.asRetrievable(), carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isConcludable()) {
-                requestConnection(new ConcludableRequest<>(driver(), endpoint.id(), planElement.asConcludable(), carriedBounds.filter(planElement.retrieves())));
+                mayRequestConcludable(new ConcludableRequest<>(driver(), endpoint.id(), planElement.asConcludable(), carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isNegated()) {
                 throw TypeDBException.of(ILLEGAL_STATE);  // TODO: Not implemented yet
             } else {
@@ -162,6 +161,21 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
             }
             return endpoint;
         }
+
+        private void mayRequestRetrievable(RetrievableRequest<PROCESSOR> retrievableRequest) {
+            if (!retrievableRequests.contains(retrievableRequest)) {
+                retrievableRequests.add(retrievableRequest);
+                requestConnection(retrievableRequest);
+            }
+        }
+
+        private void mayRequestConcludable(ConcludableRequest<PROCESSOR> concludableRequest) {
+            if (!concludableRequests.contains(concludableRequest)) {
+                concludableRequests.add(concludableRequest);
+                requestConnection(concludableRequest);
+            }
+        }
+
     }
 
 }

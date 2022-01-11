@@ -122,6 +122,7 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
         private final Set<Variable.Retrievable> unboundVars;
         private final LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions;
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
+        private final Set<ConclusionRequest> requestedConnections;
 
         public ConcludableProcessor(Driver<ConcludableProcessor> driver, Driver<ConcludableController> controller,
                                     String name, ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
@@ -132,6 +133,7 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
             this.unboundVars = unboundVars;
             this.upstreamConclusions = upstreamConclusions;
             this.traversalSuppplier = traversalSuppplier;
+            this.requestedConnections = new HashSet<>();
         }
 
         @Override
@@ -146,17 +148,18 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
             upstreamConclusions.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     InletEndpoint<Map<Variable, Concept>> endpoint = this.createReceivingEndpoint();
-                    requestConnection(new ConclusionRequest(driver(), endpoint.id(), conclusion, boundsAndRequirements.first()));
+                    mayRequestConnection(new ConclusionRequest(driver(), endpoint.id(), conclusion, boundsAndRequirements.first()));
                     endpoint.flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .publishTo(op);
                 }));
             });
         }
 
-        private static Map<Variable, Concept> unpack(ConceptMap conceptMap) {
-            // return conceptMap.concepts();  // TODO: Doesn't work, could be a big issue
-            // TODO: Presents the good question: should conclusions be identifiable by ConceptMap, or more precisely by Map<Variable, Concept>?
-            return null;
+        private void mayRequestConnection(ConclusionRequest conclusionRequest) {
+            if (!requestedConnections.contains(conclusionRequest)) {
+                requestedConnections.add(conclusionRequest);
+                requestConnection(conclusionRequest);
+            }
         }
     }
 }

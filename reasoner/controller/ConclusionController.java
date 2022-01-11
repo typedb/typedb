@@ -34,7 +34,9 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
@@ -89,6 +91,8 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
         private final Rule rule;
         private final ConceptMap bounds;
         private final ConceptManager conceptManager;
+        private final Set<ConditionRequest> conditionRequests;
+        private final Set<MaterialiserRequest> materialiserRequests;
 
         protected ConclusionProcessor(
                 Driver<ConclusionProcessor> driver,
@@ -98,20 +102,36 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
             this.rule = rule;
             this.bounds = bounds;
             this.conceptManager = conceptManager;
+            this.conditionRequests = new HashSet<>();
+            this.materialiserRequests = new HashSet<>();
         }
 
         @Override
         public void setUp() {
             InletEndpoint<Either<ConceptMap, Materialisation>> conditionEndpoint = createReceivingEndpoint();
-            requestConnection(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
+            mayRequestCondition(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
             conditionEndpoint.forEach(ans -> {
                 InletEndpoint<Either<ConceptMap, Materialisation>> materialiserEndpoint = createReceivingEndpoint();
-                requestConnection(new MaterialiserRequest(
+                mayRequestMaterialiser(new MaterialiserRequest(
                         driver(), materialiserEndpoint.id(), null,
                         rule.conclusion().materialisable(ans.first(), conceptManager))
                 );
                 materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), ans.first())).publishTo(outlet());
             });
+        }
+
+        private void mayRequestCondition(ConditionRequest conditionRequest) {
+            if (!conditionRequests.contains(conditionRequest)) {
+                conditionRequests.add(conditionRequest);
+                requestConnection(conditionRequest);
+            }
+        }
+
+        private void mayRequestMaterialiser(MaterialiserRequest materialiserRequest) {
+            if (!materialiserRequests.contains(materialiserRequest)) {
+                materialiserRequests.add(materialiserRequest);
+                requestConnection(materialiserRequest);
+            }
         }
     }
 
