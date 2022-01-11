@@ -18,14 +18,15 @@
 
 package com.vaticle.typedb.core.traversal.procedure;
 
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.TypeGraph;
-import com.vaticle.typedb.core.graph.adjacency.ComparableEdge;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
@@ -53,15 +54,13 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNSUPPORTED_OPERATION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
-import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
-import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
-import static com.vaticle.typedb.core.common.iterator.Iterators.single;
 import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Direction.Edge.BACKWARD;
 import static com.vaticle.typedb.core.graph.common.Encoding.Direction.Edge.FORWARD;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.ISA;
@@ -1148,8 +1147,8 @@ public abstract class ProcedureEdge<
                     return resolvedRoleTypes;
                 }
 
-                public abstract FunctionalIterator<ThingEdge> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                                                                         GraphTraversal.Thing.Parameters params);
+                public abstract FunctionalIterator<KeyValue<ThingVertex, ThingVertex>> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
+                                                                                                  GraphTraversal.Thing.Parameters params);
 
                 public abstract boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                   Vertex<?, ?> toVertex, GraphTraversal.Thing.Parameters params,
@@ -1199,11 +1198,11 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public FunctionalIterator<ThingEdge> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                                                                    GraphTraversal.Thing.Parameters params) {
+                    public FunctionalIterator<KeyValue<ThingVertex, ThingVertex>> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
+                                                                                             GraphTraversal.Thing.Parameters params) {
                         assert fromVertex.isThing();
                         ThingVertex rel = fromVertex.asThing();
-                        FunctionalIterator<ThingEdge> iter;
+                        Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iter;
                         boolean filteredIID = false, filteredTypes = false;
 
                         if (!roleTypes.isEmpty()) {
@@ -1215,31 +1214,36 @@ public abstract class ProcedureEdge<
                                 if (player == null) return empty();
                                 // TODO: the following code can be optimised if we have an API to directly get the
                                 //       roleplayer edge when we have the roleplayer vertex
-                                iter = resolveRoleTypesIter.flatMap(
+                                iter = resolveRoleTypesIter.mergeMap(
+                                        ASC,
                                         rt -> rel.outs()
-                                                .edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type()).get()
-                                                .map(ComparableEdge.Thing::edge)
-                                ).filter(e -> e.to().equals(player));
+                                                .edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type())
+                                                .toAndOptimised()
+                                ).filter(e -> e.key().equals(player));
                             } else if (!to.props().types().isEmpty()) {
                                 filteredTypes = true;
-                                iter = resolveRoleTypesIter.flatMap(
-                                        rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                                .flatMap(t -> rel.outs()
-                                                        .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid()).get()
-                                                        .map(ComparableEdge.Thing::edge))
+                                iter = resolveRoleTypesIter.mergeMap(
+                                        ASC,
+                                        rt -> iterate(to.props().types())
+                                                .map(l -> graphMgr.schema().getType(l)).noNulls()
+                                                .mergeMap(
+                                                        ASC,
+                                                        t -> rel.outs()
+                                                                .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
+                                                                .toAndOptimised()
+                                                )
                                 );
                             } else {
-                                iter = resolveRoleTypesIter.flatMap(rt -> rel.outs()
-                                        .edge(ROLEPLAYER, rt).get()
-                                        .map(ComparableEdge.Thing::edge));
+                                iter = resolveRoleTypesIter.mergeMap(ASC, rt -> rel.outs().edge(ROLEPLAYER, rt).toAndOptimised());
                             }
                         } else {
-                            iter = rel.outs().edge(ROLEPLAYER).get();
+                            throw TypeDBException.of(ILLEGAL_STATE); // TODO disallow
+//                            iter = rel.outs().edge(ROLEPLAYER).get();
                         }
 
-                        if (!filteredIID && to.props().hasIID()) iter = to.filterIIDOnEdge(iter, params, true);
-                        if (!filteredTypes && !to.props().types().isEmpty()) iter = to.filterTypesOnEdge(iter, true);
-                        if (!to.props().predicates().isEmpty()) iter = to.filterPredicatesOnEdge(iter, params, true);
+                        if (!filteredIID && to.props().hasIID()) iter = to.filterIIDOnPlayerAndRole(iter, params);
+                        if (!filteredTypes && !to.props().types().isEmpty()) iter = to.filterTypesOnEdge(iter);
+                        if (!to.props().predicates().isEmpty()) iter = to.filterPredicatesOnEdge(iter, params);
                         return iter;
                     }
 
@@ -1247,21 +1251,23 @@ public abstract class ProcedureEdge<
                                              GraphTraversal.Thing.Parameters params, GraphIterator.Scopes.Scoped scoped) {
                         ThingVertex rel = fromVertex.asThing();
                         ThingVertex player = toVertex.asThing();
-                        Optional<ThingEdge> validEdge;
+                        Optional<KeyValue<ThingVertex, ThingVertex>> valid;
                         if (!roleTypes.isEmpty()) {
-                            validEdge = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
+                            valid = iterate(resolvedRoleTypes(graphMgr.schema())).mergeMap(
+                                    ASC,
                                     rt -> rel.outs()
-                                            .edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type()).get()
-                                            .map(ComparableEdge.Thing::edge)
-                                            .filter(e -> e.to().equals(player) && !scoped.contains(e.optimised().get())))
-                                    .first();
-                        } else {
-                            validEdge = rel.outs().edge(ROLEPLAYER).get().filter(
-                                    e -> e.to().equals(player) && !scoped.contains(e.optimised().get())
+                                            .edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type())
+                                            .toAndOptimised()
+                                            .filter(kv -> kv.key().equals(player) && !scoped.contains(kv.value()))
                             ).first();
+                        } else {
+                            throw TypeDBException.of(ILLEGAL_STATE);
+//                            valid = rel.outs().edge(ROLEPLAYER).get().filter(
+//                                    e -> e.to().equals(player) && !scoped.contains(e.optimised().get())
+//                            ).first();
                         }
-                        validEdge.ifPresent(e -> scoped.push(e.optimised().get(), order()));
-                        return validEdge.isPresent();
+                        valid.ifPresent(kv -> scoped.push(kv.value(), order()));
+                        return valid.isPresent();
                     }
                 }
 
@@ -1272,11 +1278,11 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public FunctionalIterator<ThingEdge> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
-                                                                    GraphTraversal.Thing.Parameters params) {
+                    public FunctionalIterator<KeyValue<ThingVertex, ThingVertex>> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
+                                                                                             GraphTraversal.Thing.Parameters params) {
                         assert fromVertex.isThing() && to.props().predicates().isEmpty();
                         ThingVertex player = fromVertex.asThing();
-                        FunctionalIterator<ThingEdge> iter;
+                        Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iter;
                         boolean filteredIID = false, filteredTypes = false;
 
                         if (!roleTypes.isEmpty()) {
@@ -1286,29 +1292,34 @@ public abstract class ProcedureEdge<
                                 filteredIID = true;
                                 ThingVertex relation = graphMgr.data().getReadable(params.getIID(to.id().asVariable()));
                                 if (relation == null) return empty();
-                                iter = resolveRoleTypesIter.flatMap(
+                                iter = resolveRoleTypesIter.mergeMap(
+                                        ASC,
                                         rt -> player.ins()
-                                                .edge(ROLEPLAYER, rt, relation.iid().prefix(), relation.iid().type()).get()
-                                                .map(ComparableEdge.Thing::edge)
-                                                .filter(r -> r.from().equals(relation)));
+                                                .edge(ROLEPLAYER, rt, relation.iid().prefix(), relation.iid().type())
+                                                .fromAndOptimised().filter(r -> r.key().equals(relation))
+                                );
                             } else if (!to.props().types().isEmpty()) {
                                 filteredTypes = true;
-                                iter = resolveRoleTypesIter.flatMap(
+                                iter = resolveRoleTypesIter.mergeMap(
+                                        ASC,
                                         rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).noNulls()
-                                                .flatMap(t -> player.ins()
-                                                        .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid()).get()
-                                                        .map(ComparableEdge.Thing::edge)));
+                                                .mergeMap(ASC, t -> player.ins()
+                                                        .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
+                                                        .fromAndOptimised())
+                                );
                             } else {
-                                iter = resolveRoleTypesIter.flatMap(
-                                        rt -> player.ins().edge(ROLEPLAYER, rt).get().map(ComparableEdge.Thing::edge)
+                                iter = resolveRoleTypesIter.mergeMap(
+                                        ASC,
+                                        rt -> player.ins().edge(ROLEPLAYER, rt).fromAndOptimised()
                                 );
                             }
                         } else {
-                            iter = player.ins().edge(ROLEPLAYER).get();
+                            throw TypeDBException.of(ILLEGAL_STATE); // TODO always include inferred role types
+//                            iter = player.ins().edge(ROLEPLAYER);
                         }
 
-                        if (!filteredIID && to.props().hasIID()) iter = to.filterIIDOnEdge(iter, params, false);
-                        if (!filteredTypes && !to.props().types().isEmpty()) iter = to.filterTypesOnEdge(iter, false);
+                        if (!filteredIID && to.props().hasIID()) iter = to.filterIIDOnPlayerAndRole(iter, params);
+                        if (!filteredTypes && !to.props().types().isEmpty()) iter = to.filterTypesOnEdge(iter);
                         return iter;
                     }
 
@@ -1316,20 +1327,21 @@ public abstract class ProcedureEdge<
                                              GraphTraversal.Thing.Parameters params, GraphIterator.Scopes.Scoped scoped) {
                         ThingVertex player = fromVertex.asThing();
                         ThingVertex rel = toVertex.asThing();
-                        Optional<ThingEdge> validEdge;
+                        Optional<KeyValue<ThingVertex, ThingVertex>> valid;
                         if (!roleTypes.isEmpty()) {
-                            validEdge = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
-                                    rt -> player.ins().edge(ROLEPLAYER, rt, rel.iid().prefix(), rel.iid().type()).get()
-                                            .map(ComparableEdge.Thing::edge)
-                                            .filter(e -> e.from().equals(rel) && !scoped.contains(e.optimised().get())))
+                            valid = iterate(resolvedRoleTypes(graphMgr.schema())).flatMap(
+                                    rt -> player.ins().edge(ROLEPLAYER, rt, rel.iid().prefix(), rel.iid().type())
+                                            .fromAndOptimised()
+                                            .filter(kv -> kv.key().equals(rel) && !scoped.contains(kv.value())))
                                     .first();
                         } else {
-                            validEdge = player.ins().edge(ROLEPLAYER).get().filter(
-                                    e -> e.from().equals(rel) && !scoped.contains(e.optimised().get())
-                            ).first();
+                            throw TypeDBException.of(ILLEGAL_STATE);
+//                            valid = player.ins().edge(ROLEPLAYER).get().filter(
+//                                    e -> e.from().equals(rel) && !scoped.contains(e.optimised().get())
+//                            ).first();
                         }
-                        validEdge.ifPresent(e -> scoped.push(e.optimised().get(), order()));
-                        return validEdge.isPresent();
+                        valid.ifPresent(kv -> scoped.push(kv.value(), order()));
+                        return valid.isPresent();
                     }
 
                     @Override

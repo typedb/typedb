@@ -18,12 +18,14 @@
 
 package com.vaticle.typedb.core.traversal.procedure;
 
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -40,7 +42,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -243,19 +244,17 @@ public abstract class ProcedureVertex<
             return iterator.filter(v -> v.iid().equals(parameters.getIID(id().asVariable())));
         }
 
-        FunctionalIterator<ThingEdge> filterIIDOnEdge(FunctionalIterator<ThingEdge> iterator,
-                                                      GraphTraversal.Thing.Parameters parameters, boolean isForward) {
-            Function<ThingEdge, ThingVertex> fn = e -> isForward ? e.to() : e.from();
-            return iterator.filter(e -> fn.apply(e).iid().equals(parameters.getIID(id().asVariable())));
+        Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> filterIIDOnPlayerAndRole(Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iterator,
+                                                                                         GraphTraversal.Thing.Parameters parameters) {
+            return iterator.filter(kv -> kv.key().iid().equals(parameters.getIID(id().asVariable())));
+        }
+
+        Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> filterTypesOnEdge(Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iterator) {
+            return iterator.filter(kv -> props().types().contains(kv.key().type().properLabel()));
         }
 
         FunctionalIterator<? extends ThingVertex> filterTypes(FunctionalIterator<? extends ThingVertex> iterator) {
             return iterator.filter(v -> props().types().contains(v.type().properLabel()));
-        }
-
-        FunctionalIterator<ThingEdge> filterTypesOnEdge(FunctionalIterator<ThingEdge> iterator, boolean isForward) {
-            Function<ThingEdge, ThingVertex> fn = e -> isForward ? e.to() : e.from();
-            return iterator.filter(e -> props().types().contains(fn.apply(e).type().properLabel()));
         }
 
         FunctionalIterator<? extends AttributeVertex<?>> filterPredicates(FunctionalIterator<? extends AttributeVertex<?>> iterator,
@@ -278,14 +277,13 @@ public abstract class ProcedureVertex<
             return iterator;
         }
 
-        FunctionalIterator<ThingEdge> filterPredicatesOnEdge(FunctionalIterator<ThingEdge> iterator,
-                                                             GraphTraversal.Thing.Parameters parameters, boolean isForward) {
+        Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> filterPredicatesOnEdge(Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iterator,
+                                                                                       GraphTraversal.Thing.Parameters parameters) {
             assert id().isVariable();
-            Function<ThingEdge, ThingVertex> fn = e -> isForward ? e.to() : e.from();
-            iterator = iterator.filter(e -> fn.apply(e).isAttribute());
+            iterator = iterator.filter(kv -> kv.key().isAttribute());
             for (Predicate.Value<?> predicate : props().predicates()) {
                 for (GraphTraversal.Thing.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
-                    iterator = iterator.filter(e -> predicate.apply(fn.apply(e).asAttribute(), value));
+                    iterator = iterator.filter(kv -> predicate.apply(kv.key().asAttribute(), value));
                 }
             }
             return iterator;

@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.traversal.scanner;
 
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -299,14 +300,14 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         } else if (edge.isRolePlayer()) {
             Identifier.Variable scope = edge.asRolePlayer().scope();
             Scopes.Scoped scoped = scopes.getOrInitialise(scope);
-            toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, params).filter(e -> {
-                if (scoped.contains(e.optimised().get())) return false;
+            toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, params).filter(thingAndRole -> {
+                if (scoped.contains(thingAndRole.value())) return false;
                 else {
-                    if (scoped.orderVisited(edge.order())) scoped.replaceLast(e.optimised().get(), edge.order());
-                    else scoped.push(e.optimised().get(), edge.order());
+                    if (scoped.orderVisited(edge.order())) scoped.replaceLast(thingAndRole.value(), edge.order());
+                    else scoped.push(thingAndRole.value(), edge.order());
                     return true;
                 }
-            }).map(e -> edge.direction().isForward() ? e.to() : e.from());
+            }).map(KeyValue::key);
         } else {
             toIter = edge.branch(graphMgr, fromVertex, params);
         }
