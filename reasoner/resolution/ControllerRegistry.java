@@ -75,6 +75,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED;
 import static java.util.stream.Collectors.toMap;
@@ -87,8 +88,8 @@ public class ControllerRegistry {
     private final LogicManager logicMgr;
     private final Map<Concludable, Actor.Driver<ConcludableController>> concludableControllers;
     private final Map<Actor.Driver<ConcludableController>, Set<Concludable>> controllerConcludables;
-    private final ConcurrentMap<Rule, Actor.Driver<ConditionResolver>> ruleConditions;
-    private final ConcurrentMap<Rule, Actor.Driver<ConclusionResolver>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
+    private final ConcurrentMap<Rule, Actor.Driver<ConditionController>> ruleConditions;
+    private final ConcurrentMap<Rule, Actor.Driver<ConclusionController>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final ConcurrentMap<Actor.Driver<ConclusionResolver>, Rule> conclusionRule;
     private final Set<Actor.Driver<? extends Resolver<?>>> resolvers;
     private final Set<Actor.Driver<? extends Controller<?, ?, ?,?>>> controllers;
@@ -200,11 +201,24 @@ public class ControllerRegistry {
 //    }
 
     public Actor.Driver<ConclusionController> registerConclusionController(Rule.Conclusion conclusion) {
-        return null;  // TODO
+        LOG.debug("Register ConclusionController: '{}'", conclusion);
+        Actor.Driver<ConclusionController> controller = ruleConclusions.computeIfAbsent(
+                conclusion.rule(), r -> Actor.driver(driver -> new ConclusionController(driver, "", conclusion, executorService, this), executorService)
+        );
+        controllers.add(controller);
+        // conclusionRule.put(controller, conclusion.rule());  // TODO: We don't need this now?
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return controller;
     }
 
     public Actor.Driver<ConditionController> registerConditionController(Rule.Condition condition) {
-        return null; // TODO
+        LOG.debug("Register ConditionController: '{}'", condition);
+        Actor.Driver<ConditionController> controller = ruleConditions.computeIfAbsent(
+                condition.rule(), r -> Actor.driver(driver -> new ConditionController(driver, condition, executorService, this), executorService)
+        );
+        controllers.add(controller);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return controller;
     }
 
     public Actor.Driver<RootResolver.Disjunction> createRoot(Disjunction disjunction,
@@ -238,8 +252,7 @@ public class ControllerRegistry {
 
     public Actor.Driver<ConditionResolver> registerCondition(Rule.Condition ruleCondition) {
         LOG.debug("Register retrieval for rule condition actor: '{}'", ruleCondition);
-        Actor.Driver<ConditionResolver> resolver = ruleConditions.computeIfAbsent(ruleCondition.rule(), (r) -> Actor.driver(
-                driver -> new ConditionResolver(driver, ruleCondition, this), executorService));
+        Actor.Driver<ConditionResolver> resolver = null;
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return resolver;
@@ -248,8 +261,7 @@ public class ControllerRegistry {
 
     public Actor.Driver<ConclusionResolver> registerConclusion(Rule.Conclusion conclusion) {
         LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
-        Actor.Driver<ConclusionResolver> resolver = ruleConclusions.computeIfAbsent(conclusion.rule(), r -> Actor.driver(
-                driver -> new ConclusionResolver(driver, conclusion, this), executorService));
+        Actor.Driver<ConclusionResolver> resolver = null;
         conclusionRule.put(resolver, conclusion.rule());
         resolvers.add(resolver);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -344,11 +356,11 @@ public class ControllerRegistry {
     }
 
     public Actor.Driver<MaterialiserController> materialiserController() {
-        return materialisationController;  // TODO
+        return materialisationController;
     }
 
     public Actor.Driver<ConditionResolver> conditionResolver(Rule rule) {
-        return ruleConditions.get(rule);
+        throw TypeDBException.of(ILLEGAL_OPERATION);
     }
 
     public Set<Concludable> concludables(Actor.Driver<ConcludableController> controller) {

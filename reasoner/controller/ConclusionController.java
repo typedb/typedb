@@ -45,8 +45,8 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
         ConclusionController.ConclusionProcessor, ConclusionController> {
     private final Rule.Conclusion conclusion;
 
-    protected ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion conclusion,
-                                   ActorExecutorGroup executorService, ControllerRegistry registry) {
+    public ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion conclusion,
+                                ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, name, executorService, registry);
         this.conclusion = conclusion;
     }
