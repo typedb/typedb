@@ -19,7 +19,8 @@
 package com.vaticle.typedb.core.common.iterator;
 
 import com.vaticle.typedb.common.collection.Either;
-import com.vaticle.typedb.core.common.iterator.sorted.BasedSortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.BaseSortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.BasedSeekableIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.DistinctSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.FilteredSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.FinaliseSortedIterator;
@@ -129,8 +130,12 @@ public class Iterators {
             return iterateSorted(SortedIterator.ASC, new ConcurrentSkipListSet<T>());
         }
 
+        public static <T extends Comparable<T>, ORDER extends Order> SortedIterator<T, ORDER> iterateSorted(ORDER order, List<T> list) {
+            return new BaseSortedIterator<>(order, list);
+        }
+
         public static <T extends Comparable<? super T>, ORDER extends Order> Seekable<T, ORDER> iterateSorted(ORDER order, NavigableSet<T> set) {
-            return new BasedSortedIterator<>(order, set);
+            return new BasedSeekableIterator<>(order, set);
         }
 
         public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator<T, ORDER> distinct(

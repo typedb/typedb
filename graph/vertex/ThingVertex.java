@@ -52,14 +52,14 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
      *
      * @return the {@code ThingAdjacency} set of outgoing edges
      */
-    ThingAdjacency outs();
+    ThingAdjacency.Out outs();
 
     /**
      * Returns the {@code ThingAdjacency} set of incoming edges.
      *
      * @return the {@code ThingAdjacency} set of incoming edges
      */
-    ThingAdjacency ins();
+    ThingAdjacency.In ins();
 
     /**
      * Returns true if this {@code ThingVertex} is a result of inference.
@@ -95,14 +95,14 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
          *
          * @return the {@code ThingAdjacency} set of outgoing edges
          */
-        ThingAdjacency.Write outs();
+        ThingAdjacency.Write.Out outs();
 
         /**
          * Returns the {@code ThingAdjacency} set of incoming edges.
          *
          * @return the {@code ThingAdjacency} set of incoming edges
          */
-        ThingAdjacency.Write ins();
+        ThingAdjacency.Write.In ins();
 
         void setModified();
 
