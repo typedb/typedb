@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.graph.adjacency;
 
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
@@ -31,16 +32,16 @@ public interface ThingAdjacency {
 
     interface In extends ThingAdjacency {
 
-        SortedEdgeIterator.Ins edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead);
+        InEdgeIterator edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead);
 
-        SortedEdgeIterator.Ins edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
+        InEdgeIterator.Optimised edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
     }
 
     interface Out extends ThingAdjacency {
 
-        SortedEdgeIterator.Outs edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead);
+        OutEdgeIterator edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead);
 
-        SortedEdgeIterator.Outs edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
+        OutEdgeIterator.Optimised edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
     }
 
     EdgeIterator edge(Encoding.Edge.Thing.Optimised encoding);
@@ -76,23 +77,27 @@ public interface ThingAdjacency {
         FunctionalIterator<ThingEdge> get();
     }
 
-    interface SortedEdgeIterator {
+    interface InEdgeIterator {
 
-        // TODO ComparableEdge should be an implementation detail of Adjacencies
-        SortedIterator.Seekable<ComparableEdge.Thing, Order.Asc> get();
+        SortedIterator.Seekable<ThingVertex, Order.Asc> from();
 
-        interface Ins extends SortedEdgeIterator {
+        SortedIterator<ThingVertex, Order.Asc> to();
 
-            SortedIterator.Seekable<ThingVertex, Order.Asc> from();
+        interface Optimised extends InEdgeIterator {
 
-            SortedIterator<ThingVertex, Order.Asc> to();
+            SortedIterator.Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> relationAndRole();
         }
+    }
 
-        interface Outs extends SortedEdgeIterator {
+    interface OutEdgeIterator {
 
-            SortedIterator<ThingVertex, Order.Asc> from();
+        SortedIterator<ThingVertex, Order.Asc> from();
 
-            SortedIterator.Seekable<ThingVertex, Order.Asc> to();
+        SortedIterator.Seekable<ThingVertex, Order.Asc> to();
+
+        interface Optimised extends OutEdgeIterator {
+
+            SortedIterator.Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> playerAndRole();
         }
     }
 
@@ -166,4 +171,5 @@ public interface ThingAdjacency {
         void commit();
 
     }
+
 }

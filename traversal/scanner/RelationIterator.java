@@ -22,14 +22,12 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
 import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.graph.adjacency.ComparableEdge;
-import com.vaticle.typedb.core.graph.edge.impl.ThingEdgeImpl;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
@@ -207,14 +205,9 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
         ThingVertex player = answer.get(edge.to().id().asVariable().asRetrievable()).asThing();
         return Iterators.Sorted.merge(ASC, iterate(edge.asNative().asRolePlayer().types()).map(roleLabel -> {
             TypeVertex roleVertex = graphMgr.schema().getType(roleLabel);
-            Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> relRoles = player.ins().edge(ROLEPLAYER, roleVertex)
-                    .get().filter(directedEdge -> relationTypes.contains(directedEdge.edge().from().type().properLabel()))
-                    .mapSorted(
-                            ASC,
-                            dirEdge -> new KeyValue<>(dirEdge.edge().from(), dirEdge.edge().optimised().get()),
-                            relRole -> ComparableEdge.Thing.byInIID(new ThingEdgeImpl.Target(ROLEPLAYER, relRole.key(), player, roleVertex))
-                    );
-            return relRoles;
+            return player.ins().edge(ROLEPLAYER, roleVertex)
+                    .relationAndRole()
+                    .filter(relRole -> relationTypes.contains(relRole.key().type().properLabel()));
         })).filter(relRole -> !scoped.contains(relRole.value())).mapSorted(
                 ASC,
                 relRole -> {
