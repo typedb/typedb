@@ -38,9 +38,10 @@ import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReac
 
 public class MaterialiserController extends Controller<Materialisable, Either<ConceptMap, Materialisation>,
         MaterialiserController.MaterialiserProcessor, MaterialiserController> {
-    private final TraversalEngine traversalEng;
-    private final ConceptManager conceptMgr;
     // TODO: It would be better not to use Either, since this class only ever outputs a Materialisation
+
+    private final ConceptManager conceptMgr;
+    private final TraversalEngine traversalEng;
 
     public MaterialiserController(Driver<MaterialiserController> driver, ActorExecutorGroup executorService,
                                   ControllerRegistry registry, TraversalEngine traversalEng, ConceptManager conceptMgr) {
@@ -52,9 +53,8 @@ public class MaterialiserController extends Controller<Materialisable, Either<Co
     @Override
     protected Function<Driver<MaterialiserProcessor>, MaterialiserProcessor> createProcessorFunc(Materialisable materialisable) {
         return driver -> new MaterialiserProcessor(
-                driver, driver(), materialisable,
-                MaterialiserProcessor.class.getSimpleName() + "(Materialisable: " + materialisable + ")",
-                traversalEng, conceptMgr
+                driver, driver(), materialisable, traversalEng, conceptMgr,
+                MaterialiserProcessor.class.getSimpleName() + "(Materialisable: " + materialisable + ")"
         );
     }
 
@@ -67,8 +67,8 @@ public class MaterialiserController extends Controller<Materialisable, Either<Co
         protected MaterialiserProcessor(
                 Driver<MaterialiserProcessor> driver,
                 Driver<? extends Controller<?, ?, MaterialiserProcessor, ?>> controller, Materialisable materialisable,
-                String name, TraversalEngine traversalEng, ConceptManager conceptMgr) {
-            super(driver, controller, name, noOp());
+                TraversalEngine traversalEng, ConceptManager conceptMgr, String name) {
+            super(driver, controller, noOp(), name);
             this.materialisable = materialisable;
             this.traversalEng = traversalEng;
             this.conceptMgr = conceptMgr;

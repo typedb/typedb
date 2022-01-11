@@ -45,9 +45,10 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
 
     @Override
     protected Function<Driver<RootConjunctionProcessor>, RootConjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
-        return driver -> new RootConjunctionProcessor(driver, driver(),
-                                                      "(pattern:" + conjunction + ", bounds: " + bounds + ")",
-                                                      bounds, plan(), reasonerEndpoint);
+        return driver -> new RootConjunctionProcessor(
+                driver, driver(), bounds, plan(), reasonerEndpoint,
+                RootConjunctionProcessor.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
+        );
     }
 
     @Override
@@ -61,12 +62,11 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
 
         private final Subscriber<ConceptMap> reasonerEndpoint;
 
-        protected RootConjunctionProcessor(
-                Driver<RootConjunctionProcessor> driver,
-                Driver<? extends Controller<?, ?, RootConjunctionProcessor, ?>> controller,
-                String name, ConceptMap bounds, List<Resolvable<?>> plan, Subscriber<ConceptMap> reasonerEndpoint
-        ) {
-            super(driver, controller, name, bounds, plan);
+        protected RootConjunctionProcessor(Driver<RootConjunctionProcessor> driver,
+                                           Driver<? extends Controller<?, ?, RootConjunctionProcessor, ?>> controller,
+                                           ConceptMap bounds, List<Resolvable<?>> plan,
+                                           Subscriber<ConceptMap> reasonerEndpoint, String name) {
+            super(driver, controller, bounds, plan, name);
             this.reasonerEndpoint = reasonerEndpoint;
         }
 

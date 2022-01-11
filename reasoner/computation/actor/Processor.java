@@ -41,7 +41,7 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
 
     protected Processor(Driver<PROCESSOR> driver,
                         Driver<? extends Controller<?, ?, PROCESSOR, ?>> controller,
-                        String name, Reactive<OUTPUT, OUTPUT> outlet) {
+                        Reactive<OUTPUT, OUTPUT> outlet, String name) {
         super(driver, name);
         this.controller = controller;
         this.outlet = outlet;

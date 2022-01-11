@@ -54,9 +54,8 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
     @Override
     protected Function<Driver<ConclusionProcessor>, ConclusionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new ConclusionProcessor(
-                driver, driver(), this.conclusion.rule(), bounds,
-                ConclusionProcessor.class.getSimpleName() + "(pattern: " + conclusion + ", bounds: " + bounds + ")",
-                registry().conceptManager()
+                driver, driver(), this.conclusion.rule(), bounds, registry().conceptManager(),
+                ConclusionProcessor.class.getSimpleName() + "(pattern: " + conclusion + ", bounds: " + bounds + ")"
         );
     }
 
@@ -97,8 +96,8 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
         protected ConclusionProcessor(
                 Driver<ConclusionProcessor> driver,
                 Driver<? extends Controller<?, ?, ConclusionProcessor, ?>> controller, Rule rule,
-                ConceptMap bounds, String name, ConceptManager conceptManager) {
-            super(driver, controller, name, noOp());
+                ConceptMap bounds, ConceptManager conceptManager, String name) {
+            super(driver, controller, noOp(), name);
             this.rule = rule;
             this.bounds = bounds;
             this.conceptManager = conceptManager;

@@ -48,13 +48,9 @@ public class RetrievableController extends Controller<ConceptMap, ConceptMap,
     @Override
     protected Function<Driver<RetrievableProcessor>, RetrievableProcessor> createProcessorFunc(ConceptMap conceptMap) {
         return driver -> new RetrievableProcessor(
-                driver, driver(), processorName(conceptMap),
-                () -> TraversalUtils.traversalIterator(registry, retrievable.pattern(), conceptMap)
+                driver, driver(), () -> TraversalUtils.traversalIterator(registry, retrievable.pattern(), conceptMap),
+                RetrievableProcessor.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ", bounds: " + conceptMap.toString() + ")"
         );
-    }
-
-    private String processorName(ConceptMap conceptMap) {
-        return RetrievableProcessor.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ", bounds: " + conceptMap.toString() + ")";
     }
 
     protected static class RetrievableProcessor extends Processor<Void, ConceptMap, RetrievableProcessor> {
@@ -63,8 +59,8 @@ public class RetrievableController extends Controller<ConceptMap, ConceptMap,
 
         protected RetrievableProcessor(Driver<RetrievableProcessor> driver,
                                        Driver<? extends Controller<?, ?, RetrievableProcessor, ?>> controller,
-                                       String name, Supplier<FunctionalIterator<ConceptMap>> traversalSupplier) {
-            super(driver, controller, name, noOp());
+                                       Supplier<FunctionalIterator<ConceptMap>> traversalSupplier, String name) {
+            super(driver, controller, noOp(), name);
             this.traversalSupplier = traversalSupplier;
         }
 

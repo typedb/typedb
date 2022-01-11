@@ -95,10 +95,9 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
         // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular
         //  concludable. They should be filtered before being passed to the concludableProcessor's constructor
         return driver -> new ConcludableProcessor(
-                driver, driver(),
-                ConcludableProcessor.class.getSimpleName() + "(pattern: " + concludable + ", bounds: " + bounds + ")",
-                bounds, unboundVars, upstreamConclusions,
-                () -> TraversalUtils.traversalIterator(registry, concludable.pattern(), bounds)
+                driver, driver(), bounds, unboundVars, upstreamConclusions,
+                () -> TraversalUtils.traversalIterator(registry, concludable.pattern(), bounds),
+                ConcludableProcessor.class.getSimpleName() + "(pattern: " + concludable + ", bounds: " + bounds + ")"
         );
     }
 
@@ -125,10 +124,10 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
         private final Set<ConclusionRequest> requestedConnections;
 
         public ConcludableProcessor(Driver<ConcludableProcessor> driver, Driver<ConcludableController> controller,
-                                    String name, ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
+                                    ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                                     LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions,
-                                    Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier) {
-            super(driver, controller, name, noOp());
+                                    Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier, String name) {
+            super(driver, controller, noOp(), name);
             this.bounds = bounds;
             this.unboundVars = unboundVars;
             this.upstreamConclusions = upstreamConclusions;

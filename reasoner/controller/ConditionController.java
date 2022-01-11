@@ -21,10 +21,10 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
+import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
-import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
@@ -36,23 +36,31 @@ import java.util.function.Function;
 public class ConditionController extends ConjunctionController<Either<ConceptMap, Materialisation>, ConditionController, ConditionController.ConditionProcessor> {
     // TODO: It would be better not to use Either, since this class only ever outputs a ConceptMap
 
-    public ConditionController(Driver<ConditionController> driver, Conjunction conjunction, ActorExecutorGroup executorService, ControllerRegistry registry) {
-        super(driver, conjunction, executorService, registry);
+    private final Rule.Condition condition;
+
+    public ConditionController(Driver<ConditionController> driver, Rule.Condition condition, ActorExecutorGroup executorService, ControllerRegistry registry) {
+        super(driver, condition.conjunction(), executorService, registry);
+        this.condition = condition;
     }
 
     @Override
     Set<Concludable> concludablesTriggeringRules() {
-        return null;
+        return condition.concludablesTriggeringRules(registry.conceptManager(), registry.logicManager());
     }
 
     @Override
-    protected Function<Driver<ConditionController.ConditionProcessor>, ConditionController.ConditionProcessor> createProcessorFunc(ConceptMap id) {
-        return null;
+    protected Function<Driver<ConditionController.ConditionProcessor>, ConditionController.ConditionProcessor> createProcessorFunc(ConceptMap bounds) {
+        return driver -> new ConditionProcessor(
+                driver, driver(), bounds, plan(),
+                ConditionProcessor.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
+        );
     }
 
     protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<Either<ConceptMap, Materialisation>, ConditionController.ConditionProcessor>{
-        protected ConditionProcessor(Driver<ConditionProcessor> driver, Driver<? extends Controller<?, ?, ConditionProcessor, ?>> controller, String name,  ConceptMap bounds, List<Resolvable<?>> plan) {
-            super(driver, controller, name, bounds, plan);
+        protected ConditionProcessor(Driver<ConditionProcessor> driver,
+                                     Driver<? extends Controller<?, ?, ConditionProcessor, ?>> controller,
+                                     ConceptMap bounds, List<Resolvable<?>> plan, String name) {
+            super(driver, controller, bounds, plan, name);
         }
 
         @Override

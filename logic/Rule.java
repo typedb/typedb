@@ -985,6 +985,14 @@ public class Rule {
                 public int hashCode() {
                     return Objects.hash(relationType, players);
                 }
+
+                @Override
+                public String toString() {
+                    return "Relation{" +
+                            "relationType=" + relationType +
+                            ", players=" + players +
+                            '}';
+                }
             }
 
             public static class Has extends Materialisable {
@@ -1037,6 +1045,15 @@ public class Rule {
                     public int hashCode() {
                         return Objects.hash(owner, attrType, value);
                     }
+
+                    @Override
+                    public String toString() {
+                        return "Explicit{" +
+                                "owner=" + owner +
+                                ", attrType=" + attrType +
+                                ", value=" + value +
+                                '}';
+                    }
                 }
 
                 public static class Variable extends Materialisable {
@@ -1079,6 +1096,14 @@ public class Rule {
                     @Override
                     public int hashCode() {
                         return Objects.hash(owner, attribute);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "Variable{" +
+                                "owner=" + owner +
+                                ", attribute=" + attribute +
+                                '}';
                     }
                 }
             }

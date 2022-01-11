@@ -136,12 +136,10 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
         private final Set<RetrievableRequest<?>> retrievableRequests;
         private final Set<ConcludableRequest<?>> concludableRequests;
 
-        protected ConjunctionProcessor(
-                Driver<PROCESSOR> driver,
+        protected ConjunctionProcessor(Driver<PROCESSOR> driver,
                 Driver<? extends Controller<?, ?, PROCESSOR, ?>> controller,
-                String name, ConceptMap bounds, List<Resolvable<?>> plan
-        ) {
-            super(driver, controller, name, noOp());
+                ConceptMap bounds, List<Resolvable<?>> plan, String name) {
+            super(driver, controller, noOp(), name);
             this.bounds = bounds;
             this.plan = plan;
             this.retrievableRequests = new HashSet<>();
