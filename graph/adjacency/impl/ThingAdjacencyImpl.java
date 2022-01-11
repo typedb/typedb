@@ -53,7 +53,6 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.iterateSo
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
-import static com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.*;
 import static com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Ins;
 import static com.vaticle.typedb.core.graph.adjacency.ThingAdjacency.SortedEdgeIterator.Outs;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
