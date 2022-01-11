@@ -56,15 +56,15 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
                                  ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, ConcludableController.class.getSimpleName() + "(pattern: " + concludable + ")", executorService, registry);
         this.registry = registry;
-        this.upstreamConclusions = initialiseUpstreamConclusions();
-        this.unboundVars = unboundVars();
         this.concludable = concludable;
+        this.unboundVars = unboundVars();
+        this.upstreamConclusions = initialiseUpstreamConclusions(concludable);
     }
 
-    private LinkedHashMap<Conclusion, Set<Unifier>> initialiseUpstreamConclusions() {
+    private LinkedHashMap<Conclusion, Set<Unifier>> initialiseUpstreamConclusions(Concludable c) {
         LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions = new LinkedHashMap<>();
-        concludable.getApplicableRules(registry.conceptManager(), registry.logicManager())
-                .forEachRemaining(rule -> concludable.getUnifiers(rule).forEachRemaining(unifier -> {
+        c.getApplicableRules(registry.conceptManager(), registry.logicManager())
+                .forEachRemaining(rule -> c.getUnifiers(rule).forEachRemaining(unifier -> {
                     // TODO: Do we need to terminate the actor here? We did in the previous model
                     try {
                         registry.registerConclusionController(rule.conclusion());

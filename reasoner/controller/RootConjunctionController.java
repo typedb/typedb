@@ -41,6 +41,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
                                      Subscriber<ConceptMap> reasonerEndpoint) {
         super(driver, conjunction, executorService, registry);
         this.reasonerEndpoint = reasonerEndpoint;
+        initialiseProviderControllers();
     }
 
     @Override

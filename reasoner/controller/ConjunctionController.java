@@ -62,7 +62,6 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
         this.resolvables = new HashSet<>();
         this.negateds = new HashSet<>();
         this.registry = registry;
-        initialiseProviderControllers();
     }
 
     protected void initialiseProviderControllers() {

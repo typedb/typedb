@@ -41,6 +41,7 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
     public ConditionController(Driver<ConditionController> driver, Rule.Condition condition, ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, condition.conjunction(), executorService, registry);
         this.condition = condition;
+        initialiseProviderControllers();
     }
 
     @Override
