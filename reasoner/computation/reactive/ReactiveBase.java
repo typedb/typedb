@@ -51,7 +51,7 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
         if (isPulling()) publisher.pull(this);
     }
 
-    protected void finishPulling() {
+    public void finishPulling() {
         isPulling = false;
     }
 

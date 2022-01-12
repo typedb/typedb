@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
-import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
@@ -33,9 +32,9 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Request;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -134,10 +133,32 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
                 ReactiveBase<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
-                op.sendTo(subscriber());
-                op.pull(subscriber());
-                // TODO: We should set that we're not pulling any more, but then pull again if we fail to find an answer either here or in the new dynamically created reactive
+                InnerReactive innerReactive = new InnerReactive(this, new HashSet<>());
+                op.publishTo(innerReactive);
+                innerReactive.sendTo(subscriber());
+                innerReactive.pull();
+            }
+        }
+
+        private class InnerReactive extends IdentityReactive<Map<Variable, Concept>> {
+
+            private final ConclusionReactive parent;
+
+            public InnerReactive(ConclusionReactive parent, Set<Publisher<Map<Variable, Concept>>> publishers) {
+                super(publishers);
+                this.parent = parent;
+            }
+
+            @Override
+            public void receive(Provider<Map<Variable, Concept>> provider, Map<Variable, Concept> packet) {
+                ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
                 finishPulling();
+                parent.finishPulling();
+                parent.subscriber().receive(parent, packet);
+            }
+
+            public void pull() {
+                pull(parent.subscriber());
             }
         }
 
