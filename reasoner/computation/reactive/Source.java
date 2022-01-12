@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 
 import java.util.function.Supplier;
 
@@ -39,6 +39,7 @@ public class Source<PACKET> extends PublisherImpl<PACKET> {
     @Override
     public void pull(Receiver<PACKET> receiver) {
         assert receiver.equals(subscriber);
+        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         if (iterator == null) iterator = iteratorSupplier.get();
         if (iterator.hasNext()) receiver.receive(this, iterator.next());
     }

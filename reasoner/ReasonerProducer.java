@@ -99,6 +99,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.required.addAndGet(request);
         int canRequest = computeSize - processing.get();
         int toRequest = Math.min(canRequest, request);
+        ResolutionTracer.get().startDefaultTrace();
         reasonerEntryPoint.pull();
         processing.addAndGet(toRequest);
     }

@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+
 import javax.annotation.Nullable;
 
 public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provider<PACKET>  {
@@ -34,6 +36,7 @@ public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provi
 
     @Override
     public void pull(@Nullable Receiver<PACKET> receiver) {
+        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         assert receiver == null;
         isPulling = true;
         if (publisher != null) publisher.pull(this);

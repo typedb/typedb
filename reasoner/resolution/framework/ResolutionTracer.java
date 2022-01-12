@@ -19,10 +19,16 @@ package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -31,6 +37,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -46,9 +53,11 @@ public final class ResolutionTracer {
     private static ResolutionTracer INSTANCE;
     private static Path logDir = null;
     private static final Map<Trace, RootRequestTracer> rootRequestTracers = new HashMap<>();
+    private final Trace defaultTrace;
 
     private ResolutionTracer(Path logDir) {
         ResolutionTracer.logDir = logDir;
+        this.defaultTrace = ResolutionTracer.Trace.create(UUID.randomUUID(), 0);
     }
 
     public static void initialise(Path logDir) {
@@ -63,6 +72,37 @@ public final class ResolutionTracer {
     public static ResolutionTracer get() {
         if (INSTANCE == null) throw TypeDBException.of(REASONER_TRACING_HAS_NOT_BEEN_INITIALISED);
         return INSTANCE;
+    }
+
+    public static Optional<ResolutionTracer> getIfEnabled() {
+        return Optional.ofNullable(INSTANCE);
+    }
+
+    public synchronized void pull(@Nullable Receiver<?> receiver, Provider<?> provider) {
+        String receiverString;
+        if (receiver == null) receiverString = "root";
+        else receiverString = simpleClassId(receiver);
+        addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
+    }
+
+    public synchronized void pull(Connection receiver, Provider<?> provider) {
+        addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
+    }
+
+    public synchronized void pull(Provider<?> receiver, Connection provider) {
+        addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
+    }
+
+    public <PUB_PROCESSOR extends Processor<?, ?, PUB_PROCESSOR>> void pull(Actor.Driver<PUB_PROCESSOR> provProcessor, long provEndpointId, Connection connection) {
+        addMessage(simpleClassId(connection), simpleClassId(provProcessor) + "-" + provEndpointId, defaultTrace, EdgeType.PULL, "pull");
+    }
+
+    public synchronized <PACKET> void receive(Receiver<?> receiver, Provider<?> provider, PACKET packet) {
+        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.PULL, packet.toString());
+    }
+
+    private static String simpleClassId(Object obj) {
+        return obj.getClass().getSimpleName() + "@" + System.identityHashCode(obj);
     }
 
     public synchronized void visit(Request.Visit request) {
@@ -130,8 +170,19 @@ public final class ResolutionTracer {
         rootRequestTracers.get(request.trace()).start();
     }
 
+    public synchronized void startDefaultTrace() {
+        Trace trace = defaultTrace;
+        assert !rootRequestTracers.containsKey(trace);
+        rootRequestTracers.put(trace, new RootRequestTracer(trace));
+        rootRequestTracers.get(trace).start();
+    }
+
     public synchronized void finish(Request request) {
         rootRequestTracers.get(request.trace()).finish();
+    }
+
+    public synchronized void finishDefaultTrace() {
+        rootRequestTracers.get(defaultTrace).finish();
     }
 
     public synchronized void exception() {
@@ -196,8 +247,8 @@ public final class ResolutionTracer {
             writer.println(toWrite);
         }
 
-        private synchronized void addMessage(String sender, String receiver, EdgeType edgeType, String conceptMap) {
-            writeEdge(sender, receiver, edgeType.colour(), messageNumber, conceptMap);
+        private synchronized void addMessage(String sender, String receiver, EdgeType edgeType, String packet) {
+            writeEdge(sender, receiver, edgeType.colour(), messageNumber, packet);
             messageNumber++;
         }
 
@@ -228,7 +279,9 @@ public final class ResolutionTracer {
         BLOCKED("orange"),
         ANSWER("green"),
         VISIT("blue"),
-        REVISIT("purple");
+        REVISIT("purple"),
+        PULL("blue"),
+        RECEIVE("green");
 
         private final String colour;
 

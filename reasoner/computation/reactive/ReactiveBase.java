@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,6 +38,7 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
     @Override
     public void pull(Receiver<OUTPUT> receiver) {
         assert receiver.equals(subscriber);  // TODO: Make a proper exception for this
+        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         if (!isPulling()) {
             setPulling();
             publishers.forEach(p -> p.pull(this));

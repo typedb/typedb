@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+
 import java.util.Set;
 
 public class FindFirstReactive<T> extends IdentityReactive<T> {
@@ -37,6 +39,7 @@ public class FindFirstReactive<T> extends IdentityReactive<T> {
 
     @Override
     public void pull(Receiver<T> receiver) {
+        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         if (!packetFound) super.pull(receiver);
     }
 }
