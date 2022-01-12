@@ -42,9 +42,9 @@ public class DatabaseTest {
         Path logDir = dataDir.resolve("logs");
         Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
                 .storageIndexCacheSize(MB).storageDataCacheSize(MB);
-        RocksTypeDB typedb = rocksFactory.typedb(options);
-        typedb.databases().create("test");
-        typedb.close();
+        RocksDatabaseManager databaseManager = rocksFactory.databaseManager(options);
+        databaseManager.create("test");
+        databaseManager.close();
     }
 
     @Test
@@ -54,7 +54,7 @@ public class DatabaseTest {
         Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
                 .storageIndexCacheSize(MB).storageDataCacheSize(MB);
         assertThrowsWithMessage(
-                () -> rocksFactory.typedb(options),
+                () -> rocksFactory.databaseManager(options),
                 INCOMPATIBLE_ENCODING.message("test", 0, Encoding.ENCODING_VERSION)
         );
     }

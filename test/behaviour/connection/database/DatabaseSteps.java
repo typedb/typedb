@@ -29,7 +29,7 @@ import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.threadPool;
-import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.typedb;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.databaseManager;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -45,7 +45,7 @@ public class DatabaseSteps {
     @When("connection create database(s):")
     public void connection_create_databases(List<String> names) {
         for (String name : names) {
-            typedb.databases().create(name);
+            databaseManager.create(name);
         }
     }
 
@@ -56,7 +56,7 @@ public class DatabaseSteps {
         CompletableFuture<?>[] creations = new CompletableFuture<?>[names.size()];
         int i = 0;
         for (String name : names) {
-            creations[i++] = CompletableFuture.supplyAsync(() -> typedb.databases().create(name), threadPool);
+            creations[i++] = CompletableFuture.supplyAsync(() -> databaseManager.create(name), threadPool);
         }
 
         CompletableFuture.allOf(creations).join();
@@ -70,7 +70,7 @@ public class DatabaseSteps {
     @When("connection delete database(s):")
     public void connection_delete_databases(List<String> names) {
         for (String databaseName : names) {
-            typedb.databases().get(databaseName).delete();
+            databaseManager.get(databaseName).delete();
         }
     }
 
@@ -83,7 +83,7 @@ public class DatabaseSteps {
     public void connection_delete_databases_throws_exception(List<String> names) {
         for (String databaseName : names) {
             try {
-                typedb.databases().get(databaseName).delete();
+                databaseManager.get(databaseName).delete();
                 fail();
             } catch (Exception e) {
                 // successfully failed
@@ -100,7 +100,7 @@ public class DatabaseSteps {
         for (String name : names) {
             deletions[i++] = CompletableFuture.supplyAsync(
                     () -> {
-                        typedb.databases().get(name).delete();
+                        databaseManager.get(name).delete();
                         return null;
                     },
                     threadPool
@@ -118,7 +118,7 @@ public class DatabaseSteps {
     @Then("connection has database(s):")
     public void connection_has_databases(List<String> names) {
         assertEquals(set(names),
-                     typedb.databases().all().stream()
+                     databaseManager.all().stream()
                              .map(database -> database.name())
                              .collect(Collectors.toSet()));
     }
@@ -131,7 +131,7 @@ public class DatabaseSteps {
     @Then("connection does not have database(s):")
     public void connection_does_not_have_databases(List<String> names) {
         for (String name : names) {
-            assertNull(typedb.databases().get(name));
+            assertNull(databaseManager.get(name));
         }
     }
 }

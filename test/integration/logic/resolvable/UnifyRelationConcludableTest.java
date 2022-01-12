@@ -37,6 +37,7 @@ import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.rocks.RocksDatabaseManager;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -82,7 +83,7 @@ public class UnifyRelationConcludableTest {
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "unify-relation-test";
-    private static RocksTypeDB typedb;
+    private static RocksDatabaseManager databaseManager;
     private static RocksSession session;
     private static RocksTransaction rocksTransaction;
     private static ConceptManager conceptMgr;
@@ -91,10 +92,10 @@ public class UnifyRelationConcludableTest {
     @BeforeClass
     public static void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
+        databaseManager = RocksDatabaseManager.open(options);
+        databaseManager.create(database);
 
-        try (RocksSession schemaSession = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession schemaSession = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction tx = schemaSession.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(TypeQL.parseQuery(
                         "define\n" +
@@ -157,7 +158,7 @@ public class UnifyRelationConcludableTest {
             }
         }
 
-        try (RocksSession dataSession = typedb.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession dataSession = databaseManager.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction tx = dataSession.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(TypeQL.parseQuery(
                         "insert " +
@@ -173,13 +174,13 @@ public class UnifyRelationConcludableTest {
                 tx.commit();
             }
         }
-        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
+        session = databaseManager.session(database, Arguments.Session.Type.SCHEMA);
     }
 
     @AfterClass
     public static void tearDown() {
         session.close();
-        typedb.close();
+        databaseManager.close();
     }
 
     @Before

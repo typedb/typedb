@@ -27,9 +27,9 @@ public interface Factory {
 
     interface Database {
 
-        RocksDatabase databaseCreateAndOpen(RocksDatabaseManager typedbDatabaseMgr, String name);
+        RocksDatabase databaseCreateAndOpen(RocksDatabaseManager databaseManager, String name);
 
-        RocksDatabase databaseLoadAndOpen(RocksDatabaseManager typedbDatabaseMgr, String name);
+        RocksDatabase databaseLoadAndOpen(RocksDatabaseManager databaseManager, String name);
     }
 
     interface Session {

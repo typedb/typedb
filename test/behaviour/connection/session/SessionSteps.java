@@ -33,7 +33,7 @@ import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.sessions;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.sessionsParallel;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.threadPool;
-import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.typedb;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.databaseManager;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -53,14 +53,14 @@ public class SessionSteps {
     @When("connection open schema session(s) for database(s):")
     public void connection_open_schema_sessions_for_databases(List<String> names) {
         for (String name : names) {
-            sessions.add(typedb.session(name, Arguments.Session.Type.SCHEMA));
+            sessions.add(databaseManager.session(name, Arguments.Session.Type.SCHEMA));
         }
     }
 
     @When("connection open (data )session(s) for database(s):")
     public void connection_open_data_sessions_for_databases(List<String> names) {
         for (String name : names) {
-            sessions.add(typedb.session(name, Arguments.Session.Type.DATA));
+            sessions.add(databaseManager.session(name, Arguments.Session.Type.DATA));
         }
     }
 
@@ -70,7 +70,7 @@ public class SessionSteps {
 
         for (String name : names) {
             sessionsParallel.add(CompletableFuture.supplyAsync(
-                    () -> typedb.session(name, Arguments.Session.Type.DATA), threadPool)
+                    () -> databaseManager.session(name, Arguments.Session.Type.DATA), threadPool)
             );
         }
     }

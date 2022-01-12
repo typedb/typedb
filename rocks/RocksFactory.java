@@ -37,13 +37,13 @@ public final class RocksFactory implements Factory {
         if (databaseFactory == null) {
             databaseFactory = new Database() {
                 @Override
-                public RocksDatabase databaseCreateAndOpen(RocksDatabaseManager typedbDatabaseMgr, String name) {
-                    return RocksDatabase.createAndOpen(typedbDatabaseMgr, name, sessionFactory());
+                public RocksDatabase databaseCreateAndOpen(RocksDatabaseManager databaseManager, String name) {
+                    return RocksDatabase.createAndOpen(databaseManager, name, sessionFactory());
                 }
 
                 @Override
-                public RocksDatabase databaseLoadAndOpen(RocksDatabaseManager typedbDatabaseMgr, String name) {
-                    return RocksDatabase.loadAndOpen(typedbDatabaseMgr, name, sessionFactory());
+                public RocksDatabase databaseLoadAndOpen(RocksDatabaseManager databaseManager, String name) {
+                    return RocksDatabase.loadAndOpen(databaseManager, name, sessionFactory());
                 }
             };
         }

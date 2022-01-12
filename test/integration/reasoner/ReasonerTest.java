@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.rocks.RocksDatabaseManager;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -55,7 +56,7 @@ public class ReasonerTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "reasoner-test";
-    private static RocksTypeDB typedb;
+    private static RocksDatabaseManager databaseManager;
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType) {
         RocksTransaction transaction = session.transaction(transactionType, new Options.Transaction().infer(true));
@@ -67,17 +68,17 @@ public class ReasonerTest {
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
+        databaseManager = RocksDatabaseManager.open(options);
+        databaseManager.create(database);
     }
 
     @After
     public void tearDown() {
-        typedb.close();
+        databaseManager.close();
     }
     @Test
     public void test_no_rules() {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
 
@@ -87,7 +88,7 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
@@ -107,7 +108,7 @@ public class ReasonerTest {
 
     @Test
     public void test_offset_limit() {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 EntityType milk = conceptMgr.putEntityType("milk");
@@ -116,7 +117,7 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
@@ -142,7 +143,7 @@ public class ReasonerTest {
 
     @Test
     public void test_exception_kills_query() {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -159,7 +160,7 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
@@ -180,7 +181,7 @@ public class ReasonerTest {
 
     @Test
     public void test_has_explicit_rule() {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -198,7 +199,7 @@ public class ReasonerTest {
             }
         }
 
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
@@ -220,7 +221,7 @@ public class ReasonerTest {
 
     @Test
     public void test_relation_rule() {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (RocksSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -243,7 +244,7 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();

@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.common.parameters.Options.Database;
 import com.vaticle.typedb.core.migrator.data.DataExporter;
 import com.vaticle.typedb.core.migrator.data.DataImporter;
 import com.vaticle.typedb.core.migrator.data.DataProto;
+import com.vaticle.typedb.core.rocks.RocksDatabaseManager;
 import com.vaticle.typedb.core.server.Version;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
@@ -57,11 +58,11 @@ public class MigratorTest {
     @Test
     public void test_import_export_schema() throws IOException {
         Util.resetDirectory(dataDir);
-        try (TypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
+        try (TypeDB.DatabaseManager databaseManager = RocksDatabaseManager.open(options)) {
+            databaseManager.create(database);
             String savedSchema = new String(Files.readAllBytes(schemaPath), UTF_8);
-            runSchema(typedb, savedSchema);
-            String exportedSchema = typedb.databases().get(database).schema();
+            runSchema(databaseManager, savedSchema);
+            String exportedSchema = databaseManager.get(database).schema();
             assertEquals(trimSchema(savedSchema), trimSchema(exportedSchema));
         }
     }
@@ -69,18 +70,18 @@ public class MigratorTest {
     @Test
     public void test_import_export_data() throws IOException {
         Util.resetDirectory(dataDir);
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
+        try (RocksDatabaseManager databaseManager = RocksDatabaseManager.open(options)) {
+            databaseManager.create(database);
             String schema = new String(Files.readAllBytes(schemaPath), UTF_8);
-            runSchema(typedb, schema);
-            new DataImporter(typedb, database, dataPath, Version.VERSION).run();
-            new DataExporter(typedb, database, exportDataPath, Version.VERSION).run();
+            runSchema(databaseManager, schema);
+            new DataImporter(databaseManager, database, dataPath, Version.VERSION).run();
+            new DataExporter(databaseManager, database, exportDataPath, Version.VERSION).run();
             assertEquals(getChecksums(dataPath), getChecksums(exportDataPath));
         }
     }
 
-    private void runSchema(TypeDB typedb, String schema) {
-        try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+    private void runSchema(TypeDB.DatabaseManager databaseManager, String schema) {
+        try (TypeDB.Session session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 TypeQLDefine query = TypeQL.parseQuery(schema);
                 tx.query().define(query);

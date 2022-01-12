@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.logic.tool.TypeInference;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.rocks.RocksDatabaseManager;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -64,26 +65,26 @@ public class TypeInferenceTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "type-resolver-test";
-    private static RocksTypeDB typedb;
+    private static RocksDatabaseManager databaseManager;
     private static RocksSession session;
     private static RocksTransaction transaction;
 
     @BeforeClass
     public static void open() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
+        databaseManager = RocksDatabaseManager.open(options);
     }
 
     @AfterClass
     public static void close() {
-        typedb.close();
+        databaseManager.close();
     }
 
     @Before
     public void setup() {
-        assert !typedb.databases().contains(database);
-        typedb.databases().create(database);
-        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
+        assert !databaseManager.contains(database);
+        databaseManager.create(database);
+        session = databaseManager.session(database, Arguments.Session.Type.SCHEMA);
         transaction = session.transaction(WRITE);
     }
 
@@ -91,7 +92,7 @@ public class TypeInferenceTest {
     public void tearDown() {
         transaction.close();
         session.close();
-        typedb.databases().get(database).delete();
+        databaseManager.get(database).delete();
     }
 
     private static void define_standard_schema(String fileName) throws IOException {
@@ -200,7 +201,7 @@ public class TypeInferenceTest {
         define_standard_schema("basic-schema");
         transaction.commit();
         session.close();
-        session = typedb.session(database, DATA);
+        session = databaseManager.session(database, DATA);
         transaction = session.transaction(WRITE);
         Entity person = transaction.concepts().getEntityType("person").create();
 

@@ -33,6 +33,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImp
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
+import com.vaticle.typedb.core.rocks.RocksDatabaseManager;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -68,18 +69,18 @@ public class ResolutionTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "resolution-test";
-    private static RocksTypeDB typedb;
+    private static RocksDatabaseManager databaseManager;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
+        databaseManager = RocksDatabaseManager.open(options);
+        databaseManager.create(database);
     }
 
     @After
     public void tearDown() {
-        typedb.close();
+        databaseManager.close();
     }
 
     @Test
@@ -434,11 +435,11 @@ public class ResolutionTest {
     }
 
     private RocksSession schemaSession() {
-        return typedb.session(database, Arguments.Session.Type.SCHEMA);
+        return databaseManager.session(database, Arguments.Session.Type.SCHEMA);
     }
 
     private RocksSession dataSession() {
-        return typedb.session(database, Arguments.Session.Type.DATA);
+        return databaseManager.session(database, Arguments.Session.Type.DATA);
     }
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session) {

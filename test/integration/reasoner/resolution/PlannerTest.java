@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
+import com.vaticle.typedb.core.rocks.RocksDatabaseManager;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -54,7 +55,7 @@ public class PlannerTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "resolver-manager-test";
-    private static RocksTypeDB typedb;
+    private static RocksDatabaseManager databaseManager;
     private static RocksSession session;
     private static RocksTransaction rocksTransaction;
     private static ConceptManager conceptMgr;
@@ -63,8 +64,8 @@ public class PlannerTest {
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
+        databaseManager = RocksDatabaseManager.open(options);
+        databaseManager.create(database);
         initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
         rocksTransaction.query().define(TypeQL.parseQuery("define person sub entity, plays friendship:friend, owns name; " +
                                                                   "friendship sub relation, relates friend;" +
@@ -75,7 +76,7 @@ public class PlannerTest {
     }
 
     private void initialise(Arguments.Session.Type schema, Arguments.Transaction.Type write) {
-        session = typedb.session(database, schema);
+        session = databaseManager.session(database, schema);
         rocksTransaction = session.transaction(write);
         conceptMgr = rocksTransaction.concepts();
         logicMgr = rocksTransaction.logic();
@@ -85,7 +86,7 @@ public class PlannerTest {
     public void tearDown() {
         rocksTransaction.close();
         session.close();
-        typedb.close();
+        databaseManager.close();
     }
 
     @Test
