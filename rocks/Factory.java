@@ -23,18 +23,13 @@ import com.vaticle.typedb.core.common.parameters.Options;
 
 public interface Factory {
 
-    RocksTypeDB typedb(Options.Database options);
-
-    interface DatabaseManager {
-
-        RocksDatabaseManager databaseManager(RocksTypeDB typedb);
-    }
+    RocksDatabaseManager databaseManager(Options.Database options);
 
     interface Database {
 
-        RocksDatabase databaseCreateAndOpen(RocksTypeDB typedb, String name);
+        RocksDatabase databaseCreateAndOpen(RocksDatabaseManager typedb, String name);
 
-        RocksDatabase databaseLoadAndOpen(RocksTypeDB typedb, String name);
+        RocksDatabase databaseLoadAndOpen(RocksDatabaseManager typedb, String name);
     }
 
     interface Session {
