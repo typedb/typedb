@@ -142,7 +142,7 @@ public class RocksConfiguration {
          * though we have not provably seen much benefit from these.
          */
         private void configureWriteConcurrency(DBOptions options) {
-            options.setMaxSubcompactions(RocksTypeDB.MAX_THREADS).setMaxBackgroundJobs(RocksTypeDB.MAX_THREADS)
+            options.setMaxSubcompactions(RocksDatabaseManager.MAX_THREADS).setMaxBackgroundJobs(RocksDatabaseManager.MAX_THREADS)
                     .setEnableWriteThreadAdaptiveYield(true)
                     .setAllowConcurrentMemtableWrite(true);
         }

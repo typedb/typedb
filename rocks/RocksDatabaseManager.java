@@ -18,10 +18,17 @@
 
 package com.vaticle.typedb.core.rocks;
 
+import com.google.ortools.Loader;
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concurrent.executor.Executors;
+import org.rocksdb.RocksDB;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,29 +39,57 @@ import java.util.stream.Collectors;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_MANAGER_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NAME_RESERVED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.TYPEDB_CLOSED;
 
 public class RocksDatabaseManager implements TypeDB.DatabaseManager {
 
+    static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
+    static {
+        RocksDB.loadLibrary();
+        Loader.loadNativeLibraries();
+        ErrorMessage.loadConstants();
+    }
+
     protected static final String RESERVED_NAME_PREFIX = "_";
 
-    protected final RocksTypeDB typedb;
+    private final Options.Database typeDBOptions;
     protected final ConcurrentMap<String, RocksDatabase> databases;
     protected final Factory.Database databaseFactory;
     protected final AtomicBoolean isOpen;
 
-    protected RocksDatabaseManager(RocksTypeDB typedb, Factory.Database databaseFactory) {
-        this.typedb = typedb;
+    public static RocksDatabaseManager open(Path directory, Factory typeDBFactory) {
+        return open(new Options.Database().dataDir(directory), typeDBFactory);
+    }
+
+    public static RocksDatabaseManager open(Options.Database options) {
+        return open(options, new RocksFactory());
+    }
+
+    public static RocksDatabaseManager open(Options.Database options, Factory typeDBFactory) {
+        return typeDBFactory.databaseManager(options);
+    }
+
+    protected RocksDatabaseManager(Options.Database options, Factory.Database databaseFactory) {
+        if (!Executors.isInitialised()) Executors.initialise(MAX_THREADS);
+        this.typeDBOptions = options;
         this.databaseFactory = databaseFactory;
         databases = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean(true);
+        loadAll();
+    }
+
+    @Override
+    public boolean isOpen() {
+        return this.isOpen.get();
     }
 
     protected void loadAll() {
-        File[] databaseDirectories = typedb.directory().toFile().listFiles(File::isDirectory);
+        File[] databaseDirectories = directory().toFile().listFiles(File::isDirectory);
         if (databaseDirectories != null && databaseDirectories.length > 0) {
             Arrays.stream(databaseDirectories).parallel().forEach(directory -> {
                 String name = directory.getName();
-                RocksDatabase database = databaseFactory.databaseLoadAndOpen(typedb, name);
+                RocksDatabase database = databaseFactory.databaseLoadAndOpen(this, name);
                 databases.put(name, database);
             });
         }
@@ -73,7 +108,7 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
         if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_RESERVED);
         if (databases.containsKey(name)) throw TypeDBException.of(DATABASE_EXISTS, name);
 
-        RocksDatabase database = databaseFactory.databaseCreateAndOpen(typedb, name);
+        RocksDatabase database = databaseFactory.databaseCreateAndOpen(this, name);
         databases.put(name, database);
         return database;
     }
@@ -95,13 +130,34 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
         databases.remove(database.name());
     }
 
-    protected void close() {
+    @Override
+    public RocksSession session(String database, Arguments.Session.Type type) {
+        return session(database, type, new Options.Session());
+    }
+
+    @Override
+    public RocksSession session(String database, Arguments.Session.Type type, Options.Session options) {
+        if (!isOpen.get()) throw TypeDBException.of(TYPEDB_CLOSED);
+        if (contains(database)) return get(database).createAndOpenSession(type, options);
+        else throw TypeDBException.of(DATABASE_NOT_FOUND, database);
+    }
+
+    public Path directory() {
+        return typeDBOptions.dataDir();
+    }
+
+    public Options.Database options() {
+        return typeDBOptions;
+    }
+
+    @Override
+    public void close() {
         if (isOpen.compareAndSet(true, false)) {
             databases.values().parallelStream().forEach(RocksDatabase::close);
         }
     }
 
-    protected boolean isReservedName(String name) {
+    protected static boolean isReservedName(String name) {
         return name.startsWith(RESERVED_NAME_PREFIX);
     }
 }
