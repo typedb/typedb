@@ -96,7 +96,7 @@ public class RocksDatabase implements TypeDB.Database {
     protected final String name;
     protected final AtomicBoolean isOpen;
     private final StampedLock schemaLock;
-    private final RocksTypeDB typedb;
+    private final RocksDatabaseManager typedbDatabaseMgr;
     private final ConsistencyManager consistencyMgr;
     private final AtomicInteger schemaLockWriteRequests;
     private final Factory.Session sessionFactory;
@@ -109,8 +109,8 @@ public class RocksDatabase implements TypeDB.Database {
     protected ScheduledExecutorService scheduledPropertiesLogger;
     private Cache cache;
 
-    protected RocksDatabase(RocksTypeDB typedb, String name, Factory.Session sessionFactory) {
-        this.typedb = typedb;
+    protected RocksDatabase(RocksDatabaseManager typedbDatabaseMgr, String name, Factory.Session sessionFactory) {
+        this.typedbDatabaseMgr = typedbDatabaseMgr;
         this.name = name;
         this.sessionFactory = sessionFactory;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
@@ -124,21 +124,21 @@ public class RocksDatabase implements TypeDB.Database {
         isOpen = new AtomicBoolean(false);
     }
 
-    static RocksDatabase createAndOpen(RocksTypeDB typedb, String name, Factory.Session sessionFactory) {
+    static RocksDatabase createAndOpen(RocksDatabaseManager typedbDatabaseMgr, String name, Factory.Session sessionFactory) {
         try {
-            Files.createDirectory(typedb.directory().resolve(name));
+            Files.createDirectory(typedbDatabaseMgr.directory().resolve(name));
         } catch (IOException e) {
             throw TypeDBException.of(e);
         }
 
-        RocksDatabase database = new RocksDatabase(typedb, name, sessionFactory);
+        RocksDatabase database = new RocksDatabase(typedbDatabaseMgr, name, sessionFactory);
         database.initialise();
         database.statisticsBgCounterStart();
         return database;
     }
 
-    static RocksDatabase loadAndOpen(RocksTypeDB typedb, String name, Factory.Session sessionFactory) {
-        RocksDatabase database = new RocksDatabase(typedb, name, sessionFactory);
+    static RocksDatabase loadAndOpen(RocksDatabaseManager typedbDatabaseMgr, String name, Factory.Session sessionFactory) {
+        RocksDatabase database = new RocksDatabase(typedbDatabaseMgr, name, sessionFactory);
         database.load();
         database.statisticsBgCounterStart();
         return database;
@@ -334,11 +334,11 @@ public class RocksDatabase implements TypeDB.Database {
     }
 
     protected Path directory() {
-        return typedb.directory().resolve(name);
+        return typedbDatabaseMgr.directory().resolve(name);
     }
 
     public Options.Database options() {
-        return typedb.options();
+        return typedbDatabaseMgr.options();
     }
 
     KeyGenerator.Schema schemaKeyGenerator() {
@@ -389,7 +389,7 @@ public class RocksDatabase implements TypeDB.Database {
 
     @Override
     public String schema() {
-        try (TypeDB.Session session = typedb.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
+        try (TypeDB.Session session = typedbDatabaseMgr.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append("define\n\n");
             tx.concepts().exportTypes(stringBuilder);
@@ -440,7 +440,7 @@ public class RocksDatabase implements TypeDB.Database {
     @Override
     public void delete() {
         close();
-        typedb.databases().remove(this);
+        typedbDatabaseMgr.remove(this);
         try {
             Files.walk(directory()).sorted(reverseOrder()).map(Path::toFile).forEach(File::delete);
         } catch (IOException e) {

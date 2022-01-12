@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.test.behaviour.connection;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.rocks.RocksDatabase;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
