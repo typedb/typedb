@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
@@ -127,7 +128,7 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
                                     ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                                     LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions,
                                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier, String name) {
-            super(driver, controller, noOp(), name);
+            super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>()), name);
             this.bounds = bounds;
             this.unboundVars = unboundVars;
             this.upstreamConclusions = upstreamConclusions;

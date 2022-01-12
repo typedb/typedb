@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Builder;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Request;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -97,7 +98,7 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
                 Driver<ConclusionProcessor> driver,
                 Driver<? extends Controller<?, ?, ConclusionProcessor, ?>> controller, Rule rule,
                 ConceptMap bounds, ConceptManager conceptManager, String name) {
-            super(driver, controller, noOp(), name);
+            super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>()), name);
             this.rule = rule;
             this.bounds = bounds;
             this.conceptManager = conceptManager;

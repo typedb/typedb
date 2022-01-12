@@ -510,7 +510,7 @@ public class ResolutionTest {
         }
         Thread.sleep(1000);
         assertEquals(answerCount, answersFound);
-        assertEquals(explainableAnswers, explainableAnswersFound);
+        // assertEquals(explainableAnswers, explainableAnswersFound);  // TODO: Re-enable when explanation are back
         // assertEquals(1, doneReceived.get());  // TODO: Bring back an assertion of doneness
         assertTrue(responses.isEmpty());
         System.out.println("Time : " + (System.currentTimeMillis() - startTime));

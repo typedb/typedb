@@ -27,14 +27,15 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
+import java.util.HashSet;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.logic.Rule.Conclusion.materialise;
-import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
 public class MaterialiserController extends Controller<Materialisable, Either<ConceptMap, Materialisation>,
         MaterialiserController.MaterialiserProcessor, MaterialiserController> {
@@ -68,7 +69,7 @@ public class MaterialiserController extends Controller<Materialisable, Either<Co
                 Driver<MaterialiserProcessor> driver,
                 Driver<? extends Controller<?, ?, MaterialiserProcessor, ?>> controller, Materialisable materialisable,
                 TraversalEngine traversalEng, ConceptManager conceptMgr, String name) {
-            super(driver, controller, noOp(), name);
+            super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>()), name);
             this.materialisable = materialisable;
             this.traversalEng = traversalEng;
             this.conceptMgr = conceptMgr;
