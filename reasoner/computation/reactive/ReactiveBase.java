@@ -74,7 +74,12 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
         subscriber.subscribeTo(this);
     }
 
-    protected Receiver<OUTPUT> subscriber() {
+    public void sendTo(Receiver<OUTPUT> receiver) {
+        // Allows sending of data without the downstream being able to pull from here
+        setSubscriber(receiver);
+    }
+
+    public Receiver<OUTPUT> subscriber() {
         assert this.subscriber != null;
         return subscriber;
     }

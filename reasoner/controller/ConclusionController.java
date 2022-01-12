@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
@@ -32,15 +33,16 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Request;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-
-import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
 public class ConclusionController extends Controller<ConceptMap, Map<Variable, Concept>,
         ConclusionController.ConclusionProcessor, ConclusionController> {
@@ -110,14 +112,27 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
         public void setUp() {
             InletEndpoint<Either<ConceptMap, Materialisation>> conditionEndpoint = createReceivingEndpoint();
             mayRequestCondition(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
-            conditionEndpoint.forEach(ans -> {
+            ReactiveBase<?, ConceptMap> op = conditionEndpoint.map(a -> a.first());
+            new ConclusionReactive(Collections.set(op)).publishTo(outlet());
+        }
+
+        private class ConclusionReactive extends ReactiveBase<ConceptMap, Map<Identifier.Variable, Concept>> {
+
+            protected ConclusionReactive(Set<Publisher<ConceptMap>> publishers) {
+                super(publishers);
+            }
+
+            @Override
+            public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
                 InletEndpoint<Either<ConceptMap, Materialisation>> materialiserEndpoint = createReceivingEndpoint();
                 mayRequestMaterialiser(new MaterialiserRequest(
                         driver(), materialiserEndpoint.id(), null,
-                        rule.conclusion().materialisable(ans.first(), conceptManager))
+                        rule.conclusion().materialisable(packet, conceptManager))
                 );
-                materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), ans.first())).publishTo(outlet());
-            });
+                ReactiveBase<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
+                op.sendTo(subscriber());
+                op.pull(subscriber());
+            }
         }
 
         private void mayRequestCondition(ConditionRequest conditionRequest) {
