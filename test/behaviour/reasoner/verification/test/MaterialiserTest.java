@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.rocks.RocksDatabaseManager;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.Materialiser;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -56,24 +57,24 @@ public class MaterialiserTest {
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
-    private RocksTypeDB typeDB;
+    private RocksDatabaseManager typedb;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        this.typeDB = RocksTypeDB.open(options);
-        this.typeDB.databases().create(database);
+        this.typedb = RocksDatabaseManager.open(options);
+        this.typedb.create(database);
     }
 
     @After
     public void tearDown() {
-        this.typeDB.close();
+        this.typedb.close();
     }
 
     @Test
     public void testDeduplicationOfInferredConcepts() {
-        loadTransitivityExample(typeDB);
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        loadTransitivityExample(typedb);
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             Materialiser materialiser = Materialiser.materialise(session);
             TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy"));
             List<ConceptMap> inferredAnswers = iterate(materialiser.query(inferredAnswersQuery).entrySet())
@@ -82,8 +83,8 @@ public class MaterialiserTest {
         }
     }
 
-    static void loadTransitivityExample(TypeDB typeDB) {
-        try (TypeDB.Session session = typeDB.session(MaterialiserTest.database, Arguments.Session.Type.SCHEMA)) {
+    static void loadTransitivityExample(TypeDB.DatabaseManager typedb) {
+        try (TypeDB.Session session = typedb.session(MaterialiserTest.database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(define(list(
                         type("name").sub(ATTRIBUTE).value(STRING),
@@ -108,7 +109,7 @@ public class MaterialiserTest {
                 tx.commit();
             }
         }
-        try (TypeDB.Session session = typeDB.session(MaterialiserTest.database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = typedb.session(MaterialiserTest.database, Arguments.Session.Type.DATA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(TypeQL.insert(list(
                         var("area").isa("area").has("name", "King's Cross"),

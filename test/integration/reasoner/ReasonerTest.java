@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.rocks.RocksDatabaseManager;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -55,7 +56,7 @@ public class ReasonerTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "reasoner-test";
-    private static RocksTypeDB typedb;
+    private static RocksDatabaseManager typedb;
 
     private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType) {
         RocksTransaction transaction = session.transaction(transactionType, new Options.Transaction().infer(true));
@@ -67,8 +68,8 @@ public class ReasonerTest {
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
+        typedb = RocksDatabaseManager.open(options);
+        typedb.create(database);
     }
 
     @After

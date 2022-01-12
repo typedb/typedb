@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImp
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
+import com.vaticle.typedb.core.rocks.RocksDatabaseManager;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -64,13 +65,13 @@ public class ReiterationTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "resolution-test";
-    private static RocksTypeDB typedb;
+    private static RocksDatabaseManager typedb;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
+        typedb = RocksDatabaseManager.open(options);
+        typedb.create(database);
         ResolutionTracer.initialise(logDir);
     }
 

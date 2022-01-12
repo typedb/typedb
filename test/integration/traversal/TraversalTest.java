@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.rocks.RocksDatabaseManager;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -60,14 +61,14 @@ public class TraversalTest {
             .storageIndexCacheSize(MB).storageDataCacheSize(MB);
     private static String database = "query-test";
 
-    private static RocksTypeDB typedb;
+    private static RocksDatabaseManager typedb;
     private static RocksSession session;
 
     @BeforeClass
     public static void setup() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
+        typedb = RocksDatabaseManager.open(options);
+        typedb.create(database);
         session = typedb.session(database, Arguments.Session.Type.SCHEMA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery(

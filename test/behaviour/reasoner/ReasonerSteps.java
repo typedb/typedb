@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.rocks.RocksDatabase;
+import com.vaticle.typedb.core.rocks.RocksDatabaseManager;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier;
@@ -53,7 +54,7 @@ import static org.junit.Assert.assertNull;
 
 public class ReasonerSteps {
 
-    public static RocksTypeDB typedb;
+    public static RocksDatabaseManager typedb;
     public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("typedb");
     public static Path logsDir = dataDir.resolve("logs");
     public static Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logsDir)
@@ -70,8 +71,8 @@ public class ReasonerSteps {
         assertNull(typedb);
         resetDirectory();
         System.out.println("Connecting to TypeDB ...");
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(DATABASE);
+        typedb = RocksDatabaseManager.open(options);
+        typedb.create(DATABASE);
     }
 
     @After
@@ -82,7 +83,7 @@ public class ReasonerSteps {
         session = null;
         if (correctnessVerifier != null) correctnessVerifier.close();
         correctnessVerifier = null;
-        typedb.databases().all().forEach(RocksDatabase::delete);
+        typedb.all().forEach(RocksDatabase::delete);
         typedb.close();
         assertFalse(typedb.isOpen());
         typedb = null;

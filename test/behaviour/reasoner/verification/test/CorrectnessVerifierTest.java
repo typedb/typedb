@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.test.behaviour.reasoner.verification.test;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.rocks.RocksDatabaseManager;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier;
@@ -55,14 +56,14 @@ public class CorrectnessVerifierTest {
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
-    private RocksTypeDB typeDB;
+    private RocksDatabaseManager typedb;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        this.typeDB = RocksTypeDB.open(options);
-        this.typeDB.databases().create(database);
-        try (TypeDB.Session session = typeDB.session(CorrectnessVerifierTest.database, Arguments.Session.Type.SCHEMA)) {
+        this.typedb = RocksDatabaseManager.open(options);
+        this.typedb.create(database);
+        try (TypeDB.Session session = typedb.session(CorrectnessVerifierTest.database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(define(list(
                         type("employable").sub(ATTRIBUTE).value(BOOLEAN),
@@ -74,7 +75,7 @@ public class CorrectnessVerifierTest {
                 tx.commit();
             }
         }
-        try (TypeDB.Session session = typeDB.session(CorrectnessVerifierTest.database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = typedb.session(CorrectnessVerifierTest.database, Arguments.Session.Type.DATA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(parseQuery("insert $p isa person;").asInsert());
                 tx.commit();
@@ -84,13 +85,13 @@ public class CorrectnessVerifierTest {
 
     @After
     public void tearDown() {
-        this.typeDB.close();
+        this.typedb.close();
     }
 
     @Test
     public void testCorrectnessPassesForEmployableExample() {
         TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             CorrectnessVerifier correctnessVerifier = CorrectnessVerifier.initialise(session);
             correctnessVerifier.verifyCorrectness(inferenceQuery);
             correctnessVerifier.close();
@@ -101,7 +102,7 @@ public class CorrectnessVerifierTest {
     public void testSoundnessThrowsWhenRuleTriggersTooOftenEmployableExample() {
         TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
         CorrectnessVerifier correctnessVerifier;
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             correctnessVerifier = CorrectnessVerifier.initialise(session);
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(parseQuery("insert $p isa person;"));
@@ -116,7 +117,7 @@ public class CorrectnessVerifierTest {
     public void testCompletenessThrowsWhenRuleIsNotTriggeredEmployableExample() {
         TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
         CorrectnessVerifier correctnessVerifier;
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             correctnessVerifier = CorrectnessVerifier.initialise(session);
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().delete(parseQuery("match $p isa person; delete $p isa person;"));

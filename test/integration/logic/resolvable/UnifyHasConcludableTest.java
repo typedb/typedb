@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
+import com.vaticle.typedb.core.rocks.RocksDatabaseManager;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -70,7 +71,7 @@ public class UnifyHasConcludableTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "unify-isa-test";
-    private static RocksTypeDB typedb;
+    private static RocksDatabaseManager typedb;
     private static RocksSession session;
     private static RocksTransaction rocksTransaction;
     private static ConceptManager conceptMgr;
@@ -79,8 +80,8 @@ public class UnifyHasConcludableTest {
     @BeforeClass
     public static void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
+        typedb = RocksDatabaseManager.open(options);
+        typedb.create(database);
         session = typedb.session(database, Arguments.Session.Type.SCHEMA);
         try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
             tx.query().define(TypeQL.parseQuery("define " +

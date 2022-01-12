@@ -51,8 +51,8 @@ public class StatisticsTest {
     @Test
     public void test_statistics() throws IOException {
         Util.resetDirectory(dataDir);
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
+        try (RocksDatabaseManager typedb = RocksDatabaseManager.open(options)) {
+            typedb.create(database);
             setupSchema(typedb);
             int personCount = 1000;
             Set<Long> ages = new HashSet<>();
@@ -64,7 +64,7 @@ public class StatisticsTest {
         }
     }
 
-    private void updateAges(RocksTypeDB typedb, Set<Long> ages) {
+    private void updateAges(RocksDatabaseManager typedb, Set<Long> ages) {
         try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 TypeQLQuery query = TypeQL.parseQuery("match $x isa person, has age $y;");
@@ -83,7 +83,7 @@ public class StatisticsTest {
         }
     }
 
-    private void insertPersonAndAges(RocksTypeDB typedb, int personCount, Set<Long> ages, Random random) {
+    private void insertPersonAndAges(RocksDatabaseManager typedb, int personCount, Set<Long> ages, Random random) {
         try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 for (int i = 0; i < personCount; i++) {
@@ -97,7 +97,7 @@ public class StatisticsTest {
         }
     }
 
-    private void assertStatistics(RocksTypeDB typedb, int personCount, Set<Long> ages) {
+    private void assertStatistics(RocksDatabaseManager typedb, int personCount, Set<Long> ages) {
         waitForStatisticsCounter();
         try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
             try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
@@ -108,7 +108,7 @@ public class StatisticsTest {
         }
     }
 
-    private void setupSchema(RocksTypeDB typedb) {
+    private void setupSchema(RocksDatabaseManager typedb) {
         try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 TypeQLQuery query = TypeQL.parseQuery("" +

@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.parameters.Options.Database;
 import com.vaticle.typedb.core.logic.tool.TypeInference;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.rocks.RocksDatabaseManager;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -60,15 +61,15 @@ public class TypeInferenceTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "type-resolver-test";
-    private static RocksTypeDB typedb;
+    private static RocksDatabaseManager typedb;
     private static RocksSession session;
     private static RocksTransaction transaction;
 
     @BeforeClass
     public static void open_session() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
+        typedb = RocksDatabaseManager.open(options);
+        typedb.create(database);
         session = typedb.session(database, Arguments.Session.Type.SCHEMA);
     }
 
