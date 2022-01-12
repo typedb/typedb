@@ -68,7 +68,7 @@ public class TypeDBServer implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBServer.class);
 
     protected final Factory factory;
-    protected final TypeDB typedb;
+    protected final TypeDB.DatabaseManager typedbDatabaseMgr;
     protected final io.grpc.Server server;
     protected final Configuration configuration;
     protected final boolean debug;
@@ -97,7 +97,7 @@ public class TypeDBServer implements AutoCloseable {
                 .reasonerDebuggerDir(configuration.log().debugger().reasoner().output().path());
 
         this.factory = factory;
-        typedb = factory.typedb(options);
+        typedbDatabaseMgr = factory.databaseManager(options);
         server = rpcServer();
         Thread.setDefaultUncaughtExceptionHandler(
                 (t, e) -> logger().error(UNCAUGHT_EXCEPTION.message(t.getName() + ": " + e.getMessage()), e)
@@ -157,8 +157,8 @@ public class TypeDBServer implements AutoCloseable {
     protected io.grpc.Server rpcServer() {
         assert Executors.isInitialised();
 
-        typeDBService = new TypeDBService(typedb);
-        MigratorService migratorService = new MigratorService(typedb, Version.VERSION);
+        typeDBService = new TypeDBService(typedbDatabaseMgr);
+        MigratorService migratorService = new MigratorService(typedbDatabaseMgr, Version.VERSION);
 
         return NettyServerBuilder.forAddress(configuration.server().address())
                 .executor(Executors.service())
@@ -221,7 +221,7 @@ public class TypeDBServer implements AutoCloseable {
             typeDBService.close();
             server.shutdown();
             server.awaitTermination();
-            typedb.close();
+            typedbDatabaseMgr.close();
             System.runFinalization();
             logger().info("{} has been shutdown", name());
         } catch (InterruptedException e) {

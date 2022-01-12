@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 
 public final class RocksFactory implements Factory {
-    private DatabaseManager databaseManagerFactory;
     private Database databaseFactory;
     private Session sessionFactory;
     private TransactionSchema transactionSchemaFactory;
@@ -30,28 +29,21 @@ public final class RocksFactory implements Factory {
     private Storage storageFactory;
 
     @Override
-    public RocksTypeDB typedb(Options.Database options) {
-        return new RocksTypeDB(options, databaseManagerFactory());
-    }
-
-    private synchronized DatabaseManager databaseManagerFactory() {
-        if (databaseManagerFactory == null) {
-            databaseManagerFactory = typedb -> new RocksDatabaseManager(typedb, databaseFactory());
-        }
-        return databaseManagerFactory;
+    public RocksDatabaseManager databaseManager(Options.Database options) {
+        return new RocksDatabaseManager(options, databaseFactory());
     }
 
     private synchronized Factory.Database databaseFactory() {
         if (databaseFactory == null) {
             databaseFactory = new Database() {
                 @Override
-                public RocksDatabase databaseCreateAndOpen(RocksTypeDB typedb, String name) {
-                    return RocksDatabase.createAndOpen(typedb, name, sessionFactory());
+                public RocksDatabase databaseCreateAndOpen(RocksDatabaseManager typedbDatabaseMgr, String name) {
+                    return RocksDatabase.createAndOpen(typedbDatabaseMgr, name, sessionFactory());
                 }
 
                 @Override
-                public RocksDatabase databaseLoadAndOpen(RocksTypeDB typedb, String name) {
-                    return RocksDatabase.loadAndOpen(typedb, name, sessionFactory());
+                public RocksDatabase databaseLoadAndOpen(RocksDatabaseManager typedbDatabaseMgr, String name) {
+                    return RocksDatabase.loadAndOpen(typedbDatabaseMgr, name, sessionFactory());
                 }
             };
         }

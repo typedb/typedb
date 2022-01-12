@@ -90,7 +90,7 @@ public class DataImporter {
     private final ConcurrentSet<DataProto.Item.Relation> skippedRelations;
     private Checksum checksum;
 
-    public DataImporter(TypeDB typedb, String database, Path dataFile, String version) {
+    public DataImporter(TypeDB.DatabaseManager typedb, String database, Path dataFile, String version) {
         if (!Files.exists(dataFile)) throw TypeDBException.of(FILE_NOT_FOUND, dataFile);
         this.session = typedb.session(database, Arguments.Session.Type.DATA);
         this.dataFile = dataFile;
