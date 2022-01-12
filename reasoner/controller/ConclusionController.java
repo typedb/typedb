@@ -35,6 +35,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -113,8 +114,9 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
         public void setUp() {
             InletEndpoint<Either<ConceptMap, Materialisation>> conditionEndpoint = createReceivingEndpoint();
             mayRequestCondition(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
-            ReactiveBase<?, ConceptMap> op = conditionEndpoint.map(a -> a.first());
-            new ConclusionReactive(Collections.set(op)).publishTo(outlet());
+            ConclusionReactive conclusionReactive = new ConclusionReactive(new HashSet<>());
+            conditionEndpoint.map(a -> a.first()).publishTo(conclusionReactive);
+            conclusionReactive.publishTo(outlet());
         }
 
         private class ConclusionReactive extends ReactiveBase<ConceptMap, Map<Identifier.Variable, Concept>> {
@@ -134,6 +136,8 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
                 ReactiveBase<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
                 op.sendTo(subscriber());
                 op.pull(subscriber());
+                // TODO: We should set that we're not pulling any more, but then pull again if we fail to find an answer either here or in the new dynamically created reactive
+                finishPulling();
             }
         }
 

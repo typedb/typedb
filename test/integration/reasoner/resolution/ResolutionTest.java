@@ -235,7 +235,7 @@ public class ResolutionTest {
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $p1 isa person, has age 42; }", transaction.logic());
-                createRootAndAssertResponses(transaction, conjunctionPattern, 2L, 3L);
+                createRootAndAssertResponses(transaction, conjunctionPattern, 3L, 3L);
             }
         }
     }
@@ -510,6 +510,7 @@ public class ResolutionTest {
             if (answer != null) {
                 answersFound += 1;
                 System.out.println(answersFound + " answers found");
+                System.out.println(answer);
 //                if (answer.explainables().iterator().count() > 0) {  // TODO: Re-enable when explanation are back
 //                    explainableAnswersFound++;
 //                }
