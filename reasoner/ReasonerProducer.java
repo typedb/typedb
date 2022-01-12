@@ -115,13 +115,14 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     public class EntryPoint extends Sink<ConceptMap> {
 
         @Override
-        public void receive(@Nullable Provider<ConceptMap> provider, ConceptMap conceptMap) {
+        public void receive(@Nullable Provider<ConceptMap> provider, ConceptMap packet) {
+            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
             // if (options.traceInference()) ResolutionTracer.get().finish(answeredRequest);  // TODO: Finish tracing on receive
             isPulling = false;
-            if (options.explain() && !conceptMap.explainables().isEmpty()) {
-                explainablesManager.setAndRecordExplainables(conceptMap);
+            if (options.explain() && !packet.explainables().isEmpty()) {
+                explainablesManager.setAndRecordExplainables(packet);
             }
-            queue.put(conceptMap);
+            queue.put(packet);
             if (required.decrementAndGet() > 0) pull();
             else processing.decrementAndGet();
         }

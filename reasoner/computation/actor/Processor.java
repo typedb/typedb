@@ -145,6 +145,7 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
 
         @Override
         public void receive(@Nullable Provider<PACKET> provider, PACKET packet) {
+            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(connection, this, packet));  // TODO: Highlights a smell that the connection is receiving and so provider is null
             assert provider == null;
             isPulling = false;
             subscriber().receive(this, packet);
@@ -178,7 +179,9 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
 
         @Override
         public void receive(@Nullable Provider<PACKET> provider, PACKET packet) {
+            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
             isPulling = false;
+            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(this, connection, packet));  // TODO: We do this here because we don't tell the connection who we are when it receives
             connection.receive(packet);
         }
 

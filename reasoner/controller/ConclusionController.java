@@ -36,6 +36,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReac
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -124,6 +125,7 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
 
             @Override
             public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
+                ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
                 InletEndpoint<Either<ConceptMap, Materialisation>> materialiserEndpoint = createReceivingEndpoint();
                 mayRequestMaterialiser(new MaterialiserRequest(
                         driver(), materialiserEndpoint.id(), null,

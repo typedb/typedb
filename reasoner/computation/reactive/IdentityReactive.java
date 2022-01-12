@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,6 +35,7 @@ public class IdentityReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
+        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         finishPulling();
         subscriber().receive(this, packet);
     }

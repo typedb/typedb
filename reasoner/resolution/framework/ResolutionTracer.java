@@ -93,12 +93,20 @@ public final class ResolutionTracer {
         addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
     }
 
-    public <PUB_PROCESSOR extends Processor<?, ?, PUB_PROCESSOR>> void pull(Actor.Driver<PUB_PROCESSOR> provProcessor, long provEndpointId, Connection connection) {
+    public synchronized <PUB_PROCESSOR extends Processor<?, ?, PUB_PROCESSOR>> void pull(Actor.Driver<PUB_PROCESSOR> provProcessor, long provEndpointId, Connection connection) {
         addMessage(simpleClassId(connection), simpleClassId(provProcessor) + "-" + provEndpointId, defaultTrace, EdgeType.PULL, "pull");
     }
 
-    public synchronized <PACKET> void receive(Receiver<?> receiver, Provider<?> provider, PACKET packet) {
-        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.PULL, packet.toString());
+    public synchronized <PACKET> void receive(Provider<PACKET> provider, Receiver<PACKET> receiver, PACKET packet) {
+        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
+    }
+
+    public synchronized <PACKET> void receive(Connection<PACKET, ?, ?> provider, Processor.InletEndpoint<PACKET> receiver, PACKET packet) {
+        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
+    }
+
+    public synchronized <PACKET> void receive(Processor.OutletEndpoint<PACKET> provider, Connection<PACKET,?,?> receiver, PACKET packet) {
+        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
     }
 
     private static String simpleClassId(Object obj) {

@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+
 import java.util.function.Consumer;
 
 public class ForEachReactive<PACKET> implements Receiver.Subscriber<PACKET> {
@@ -38,6 +40,7 @@ public class ForEachReactive<PACKET> implements Receiver.Subscriber<PACKET> {
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
+        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         consumer.accept(packet);
     }
 }

@@ -19,6 +19,8 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,6 +50,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
+        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         // TODO: Need to implement equals and hashCode? Seems we actually want exact object matches only for reactives
         if (leadingPublisher.equals(provider)) {
             // TODO: Should we pull again from the leader?

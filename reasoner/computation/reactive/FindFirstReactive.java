@@ -33,6 +33,7 @@ public class FindFirstReactive<T> extends IdentityReactive<T> {
 
     @Override
     public void receive(Provider<T> provider, T packet) {
+        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         packetFound = true;
         super.receive(provider, packet);
     }

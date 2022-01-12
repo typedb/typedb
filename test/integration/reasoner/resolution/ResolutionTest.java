@@ -470,6 +470,7 @@ public class ResolutionTest {
 
         @Override
         public void receive(Provider<ConceptMap> provider, ConceptMap conceptMap) {
+            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, conceptMap));
             onReceive.accept(conceptMap);
             pull();
         }
@@ -503,11 +504,12 @@ public class ResolutionTest {
         int answersFound = 0;
         int explainableAnswersFound = 0;
         for (int i = 0; i < n - 1; i++) {
-//            ConceptMap answer = responses.take();
-            ConceptMap answer = responses.poll(1000, TimeUnit.MILLISECONDS);// polling prevents the test hanging
-            System.out.println("Answer " + i + " found");
+            ConceptMap answer = responses.take();
+//            ConceptMap answer = responses.poll(1000, TimeUnit.MILLISECONDS);// polling prevents the test hanging
+
             if (answer != null) {
                 answersFound += 1;
+                System.out.println(answersFound + " answers found");
 //                if (answer.explainables().iterator().count() > 0) {  // TODO: Re-enable when explanation are back
 //                    explainableAnswersFound++;
 //                }

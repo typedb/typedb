@@ -47,6 +47,7 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
+        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         assert subscribers.size() > 0;
         buffer.add(packet);
         pullers.forEach(this::send);
