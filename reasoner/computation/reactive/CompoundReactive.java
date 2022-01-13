@@ -37,12 +37,14 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
     private final BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc;
     private final BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc;
     private final Map<Provider<PACKET>, PACKET> publisherPackets;
+    private final PACKET initialPacket;
 
     public CompoundReactive(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
                             BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
                             String groupName) {
         super(new HashSet<>(), groupName);
         assert plan.size() > 0;
+        this.initialPacket = initialPacket;
         this.remainingPlan = new ArrayList<>(plan);
         this.leadingPublisher = spawnLeaderFunc.apply(this.remainingPlan.remove(0), initialPacket);
         this.compoundPacketsFunc = compoundPacketsFunc;
@@ -55,27 +57,27 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
-        // TODO: Need to implement equals and hashCode? Seems we actually want exact object matches only for reactives
+        PACKET mergedPacket = compoundPacketsFunc.apply(initialPacket, packet);
         if (leadingPublisher.equals(provider)) {
-            leadingPublisher.pull(this);
+            leadingPublisher.pull(this);  // TODO: This shouldn't be here for a single item plan
             if (remainingPlan.size() == 0) {  // For a single item plan
                 finishPulling();
-                subscriber().receive(this, packet);
+                subscriber().receive(this, mergedPacket);
             } else {
                 Publisher<PACKET> nextPublisher;
                 if (remainingPlan.size() == 1) {
-                    nextPublisher = spawnLeaderFunc.apply(remainingPlan.get(0), packet);
+                    nextPublisher = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
                     lastPublishers.add(nextPublisher);
                 } else {
-                    nextPublisher = new CompoundReactive<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, packet, groupName());
+                    nextPublisher = new CompoundReactive<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, groupName());
                 }
-                publisherPackets.put(nextPublisher, packet);
+                publisherPackets.put(nextPublisher, mergedPacket);
                 nextPublisher.publishTo(this);
                 nextPublisher.pull(this);
             }
         } else {
-            PACKET compoundedPacket = compoundPacketsFunc.apply(packet, publisherPackets.get(provider));
-            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+            PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(provider));
+            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, mergedPacket));
             subscriber().receive(this, compoundedPacket);
             if (lastPublishers.contains(provider)) finishPulling();
         }
