@@ -59,7 +59,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
                 subscriber().receive(this, packet);
             } else {
                 Publisher<PACKET> nextPublisher;
-                if (remainingPlan.size() == 1) nextPublisher = spawnLeaderFunc.apply(remainingPlan.remove(0), packet);
+                if (remainingPlan.size() == 1) nextPublisher = spawnLeaderFunc.apply(remainingPlan.get(0), packet);
                 else nextPublisher = new CompoundReactive<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, packet);
                 publisherPackets.put(nextPublisher, packet);
                 nextPublisher.publishTo(this);
