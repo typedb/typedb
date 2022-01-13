@@ -22,10 +22,10 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.database.RocksDatabase;
-import com.vaticle.typedb.core.database.RocksDatabaseManager;
-import com.vaticle.typedb.core.database.RocksSession;
-import com.vaticle.typedb.core.database.RocksTransaction;
+import com.vaticle.typedb.core.database.DatabaseImpl;
+import com.vaticle.typedb.core.database.DatabaseManagerImpl;
+import com.vaticle.typedb.core.database.SessionImpl;
+import com.vaticle.typedb.core.database.TransactionImpl;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
@@ -54,13 +54,13 @@ import static org.junit.Assert.assertNull;
 
 public class ReasonerSteps {
 
-    public static RocksDatabaseManager databaseManager;
+    public static DatabaseManagerImpl databaseManager;
     public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("typedb");
     public static Path logsDir = dataDir.resolve("logs");
     public static Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logsDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
-    public static RocksSession session;
-    public static RocksTransaction reasoningTx;
+    public static SessionImpl session;
+    public static TransactionImpl reasoningTx;
     public static String DATABASE = "typedb-reasoner-test";
     private static CorrectnessVerifier correctnessVerifier;
     private static TypeQLMatch typeQLQuery;
@@ -71,7 +71,7 @@ public class ReasonerSteps {
         assertNull(databaseManager);
         resetDirectory();
         System.out.println("Connecting to TypeDB ...");
-        databaseManager = RocksDatabaseManager.open(options);
+        databaseManager = DatabaseManagerImpl.open(options);
         databaseManager.create(DATABASE);
     }
 
@@ -83,18 +83,18 @@ public class ReasonerSteps {
         session = null;
         if (correctnessVerifier != null) correctnessVerifier.close();
         correctnessVerifier = null;
-        databaseManager.all().forEach(RocksDatabase::delete);
+        databaseManager.all().forEach(DatabaseImpl::delete);
         databaseManager.close();
         assertFalse(databaseManager.isOpen());
         databaseManager = null;
     }
 
-    static RocksSession dataSession() {
+    static SessionImpl dataSession() {
         if (session == null || !session.isOpen()) session = databaseManager.session(DATABASE, Arguments.Session.Type.DATA);
         return session;
     }
 
-    static RocksTransaction reasoningTx() {
+    static TransactionImpl reasoningTx() {
         if (reasoningTx == null || reasoningTx.isOpen()) {
             reasoningTx = dataSession().transaction(Arguments.Transaction.Type.READ,
                                                     new Options.Transaction().infer(true));
@@ -113,8 +113,8 @@ public class ReasonerSteps {
     public void schema(String defineQueryStatements) {
         if (correctnessVerifier != null) correctnessVerifier.close();
         if (session != null) session.close();
-        try (RocksSession session = databaseManager.session(DATABASE, Arguments.Session.Type.SCHEMA)) {
-            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (SessionImpl session = databaseManager.session(DATABASE, Arguments.Session.Type.SCHEMA)) {
+            try (TransactionImpl tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(TypeQL.parseQuery(String.join("\n", defineQueryStatements)).asDefine());
                 tx.commit();
             }
@@ -123,8 +123,8 @@ public class ReasonerSteps {
 
     @Given("reasoning data")
     public void data(String insertQueryStatements) {
-        try (RocksSession session = databaseManager.session(DATABASE, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (SessionImpl session = databaseManager.session(DATABASE, Arguments.Session.Type.DATA)) {
+            try (TransactionImpl tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(TypeQL.parseQuery(String.join("\n", insertQueryStatements)).asInsert());
                 tx.commit();
             }

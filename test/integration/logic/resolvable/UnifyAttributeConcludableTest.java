@@ -30,9 +30,9 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.database.RocksDatabaseManager;
-import com.vaticle.typedb.core.database.RocksSession;
-import com.vaticle.typedb.core.database.RocksTransaction;
+import com.vaticle.typedb.core.database.DatabaseManagerImpl;
+import com.vaticle.typedb.core.database.SessionImpl;
+import com.vaticle.typedb.core.database.TransactionImpl;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
@@ -68,19 +68,19 @@ public class UnifyAttributeConcludableTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "unify-attribute-test";
-    private static RocksDatabaseManager databaseManager;
-    private static RocksSession session;
-    private static RocksTransaction rocksTransaction;
+    private static DatabaseManagerImpl databaseManager;
+    private static SessionImpl session;
+    private static TransactionImpl transaction;
     private static ConceptManager conceptMgr;
     private static LogicManager logicMgr;
 
     @BeforeClass
     public static void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = RocksDatabaseManager.open(options);
+        databaseManager = DatabaseManagerImpl.open(options);
         databaseManager.create(database);
         session = databaseManager.session(database, Arguments.Session.Type.SCHEMA);
-        try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (TransactionImpl tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
             tx.query().define(TypeQL.parseQuery("define " +
                                                         "person sub entity," +
                                                         "    owns first-name," +
@@ -109,13 +109,13 @@ public class UnifyAttributeConcludableTest {
 
     @Before
     public void setUpTransaction() {
-        rocksTransaction = session.transaction(Arguments.Transaction.Type.WRITE);
-        conceptMgr = rocksTransaction.concepts();
-        logicMgr = rocksTransaction.logic();
+        transaction = session.transaction(Arguments.Transaction.Type.WRITE);
+        conceptMgr = transaction.concepts();
+        logicMgr = transaction.logic();
     }
 
     @After
-    public void tearDownTransaction() { rocksTransaction.close(); }
+    public void tearDownTransaction() { transaction.close(); }
 
     private Thing instanceOf(String stringAttributeLabel, String stringValue) {
         AttributeType type = conceptMgr.getAttributeType(stringAttributeLabel);

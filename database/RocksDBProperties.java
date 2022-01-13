@@ -42,7 +42,7 @@ import static java.util.Arrays.stream;
  * All properties are visible here:
  * https://github.com/facebook/rocksdb/blob/20357988345b02efcef303bc274089111507e160/include/rocksdb/db.h#L750
  */
-public class RocksProperties {
+public class RocksDBProperties {
 
     private static final List<Property> properties = list(
             new Property.Byte("Active memtable size", "rocksdb.cur-size-active-mem-table", true),
@@ -196,7 +196,7 @@ public class RocksProperties {
 
     static class Logger implements Runnable {
 
-        private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(RocksProperties.class);
+        private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(RocksDBProperties.class);
 
         private final OptimisticTransactionDB rocksDB;
         private final List<ColumnFamilyHandle> cfHandles;
@@ -218,7 +218,7 @@ public class RocksProperties {
             try {
                 StringBuilder builder = new StringBuilder(format(
                         "Database '%s' rocksdb properties from '%d' column families:\n", database, cfHandles.size()));
-                for (Property property : RocksProperties.properties) {
+                for (Property property : RocksDBProperties.properties) {
                     if (property.isApplicablePerColumnFamily()) {
                         builder.append(format("%-40s %s\n", property.label(), property.getFormatted(rocksDB, cfHandles)));
                     } else {

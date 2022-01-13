@@ -47,9 +47,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 
-public abstract class RocksTransaction implements TypeDB.Transaction {
+public abstract class TransactionImpl implements TypeDB.Transaction {
 
-    protected final RocksSession session;
+    protected final SessionImpl session;
     protected final Context.Transaction context;
     protected GraphManager graphMgr;
     protected ConceptManager conceptMgr;
@@ -59,7 +59,7 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
     Reasoner reasoner;
     QueryManager queryMgr;
 
-    private RocksTransaction(RocksSession session, Arguments.Transaction.Type type, Options.Transaction options) {
+    private TransactionImpl(SessionImpl session, Arguments.Transaction.Type type, Options.Transaction options) {
         this.session = session;
         this.context = new Context.Transaction(session.context(), options).type(type);
     }
@@ -143,12 +143,12 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Data.class));
     }
 
-    public static class Schema extends RocksTransaction {
+    public static class Schema extends TransactionImpl {
 
-        protected final RocksStorage.Schema schemaStorage;
-        protected final RocksStorage.Data dataStorage;
+        protected final StorageImpl.Schema schemaStorage;
+        protected final StorageImpl.Data dataStorage;
 
-        protected Schema(RocksSession.Schema session, Arguments.Transaction.Type type,
+        protected Schema(SessionImpl.Schema session, Arguments.Transaction.Type type,
                          Options.Transaction options, Factory.Storage storageFactory) {
             super(session, type, options);
 
@@ -176,12 +176,12 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
             return graphMgr.schema();
         }
 
-        RocksStorage.Schema schemaStorage() {
+        StorageImpl.Schema schemaStorage() {
             if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
             return schemaStorage;
         }
 
-        RocksStorage.Data dataStorage() {
+        StorageImpl.Data dataStorage() {
             if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
             return dataStorage;
         }
@@ -248,12 +248,12 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
         }
     }
 
-    public static class Data extends RocksTransaction {
+    public static class Data extends TransactionImpl {
 
-        protected final RocksStorage.Data dataStorage;
-        private final RocksDatabase.Cache cache;
+        protected final StorageImpl.Data dataStorage;
+        private final DatabaseImpl.Cache cache;
 
-        public Data(RocksSession.Data session, Arguments.Transaction.Type type,
+        public Data(SessionImpl.Data session, Arguments.Transaction.Type type,
                     Options.Transaction options, Factory.Storage storageFactory) {
             super(session, type, options);
 
@@ -337,7 +337,7 @@ public abstract class RocksTransaction implements TypeDB.Transaction {
         }
 
         /**
-         * Responsible for triggering {@link RocksDatabase.StatisticsBackgroundCounter}, if necessary.
+         * Responsible for triggering {@link DatabaseImpl.StatisticsBackgroundCounter}, if necessary.
          * A different implementation of this class may override it.
          */
         protected void triggerStatisticBgCounter() {

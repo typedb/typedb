@@ -37,9 +37,9 @@ import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.database.RocksDatabaseManager;
-import com.vaticle.typedb.core.database.RocksSession;
-import com.vaticle.typedb.core.database.RocksTransaction;
+import com.vaticle.typedb.core.database.DatabaseManagerImpl;
+import com.vaticle.typedb.core.database.SessionImpl;
+import com.vaticle.typedb.core.database.TransactionImpl;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typeql.lang.TypeQL;
@@ -83,20 +83,20 @@ public class UnifyRelationConcludableTest {
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "unify-relation-test";
-    private static RocksDatabaseManager databaseManager;
-    private static RocksSession session;
-    private static RocksTransaction rocksTransaction;
+    private static DatabaseManagerImpl databaseManager;
+    private static SessionImpl session;
+    private static TransactionImpl transaction;
     private static ConceptManager conceptMgr;
     private static LogicManager logicMgr;
 
     @BeforeClass
     public static void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = RocksDatabaseManager.open(options);
+        databaseManager = DatabaseManagerImpl.open(options);
         databaseManager.create(database);
 
-        try (RocksSession schemaSession = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (RocksTransaction tx = schemaSession.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (SessionImpl schemaSession = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (TransactionImpl tx = schemaSession.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(TypeQL.parseQuery(
                         "define\n" +
                                 "person sub entity,\n" +
@@ -158,8 +158,8 @@ public class UnifyRelationConcludableTest {
             }
         }
 
-        try (RocksSession dataSession = databaseManager.session(database, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction tx = dataSession.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (SessionImpl dataSession = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+            try (TransactionImpl tx = dataSession.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(TypeQL.parseQuery(
                         "insert " +
                                 "(taxi: $x, night-shift-driver: $y) isa part-time-driving; " +
@@ -185,14 +185,14 @@ public class UnifyRelationConcludableTest {
 
     @Before
     public void setUpTransaction() {
-        rocksTransaction = session.transaction(Arguments.Transaction.Type.WRITE);
-        conceptMgr = rocksTransaction.concepts();
-        logicMgr = rocksTransaction.logic();
+        transaction = session.transaction(Arguments.Transaction.Type.WRITE);
+        conceptMgr = transaction.concepts();
+        logicMgr = transaction.logic();
     }
 
     @After
     public void tearDownTransaction() {
-        rocksTransaction.close();
+        transaction.close();
     }
 
     private Thing instanceOf(String label) {
@@ -1169,8 +1169,8 @@ public class UnifyRelationConcludableTest {
 
     private void verifyUnificationSucceeds(String parent, Rule rule) {
         Unifier unifier = uniqueUnifier(parent, rule);
-        List<ConceptMap> childAnswers = rocksTransaction.query().match(TypeQL.match(rule.getThenPreNormalised())).toList();
-        List<ConceptMap> parentAnswers = rocksTransaction.query().match(TypeQL.match(TypeQL.parsePattern(parent))).toList();
+        List<ConceptMap> childAnswers = transaction.query().match(TypeQL.match(rule.getThenPreNormalised())).toList();
+        List<ConceptMap> parentAnswers = transaction.query().match(TypeQL.match(TypeQL.parsePattern(parent))).toList();
         assertFalse(childAnswers.isEmpty());
         assertFalse(parentAnswers.isEmpty());
 

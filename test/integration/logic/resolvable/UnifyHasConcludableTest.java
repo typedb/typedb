@@ -31,9 +31,9 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
-import com.vaticle.typedb.core.database.RocksDatabaseManager;
-import com.vaticle.typedb.core.database.RocksSession;
-import com.vaticle.typedb.core.database.RocksTransaction;
+import com.vaticle.typedb.core.database.DatabaseManagerImpl;
+import com.vaticle.typedb.core.database.SessionImpl;
+import com.vaticle.typedb.core.database.TransactionImpl;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
@@ -71,19 +71,19 @@ public class UnifyHasConcludableTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "unify-isa-test";
-    private static RocksDatabaseManager databaseManager;
-    private static RocksSession session;
-    private static RocksTransaction rocksTransaction;
+    private static DatabaseManagerImpl databaseManager;
+    private static SessionImpl session;
+    private static TransactionImpl transaction;
     private static ConceptManager conceptMgr;
     private static LogicManager logicMgr;
 
     @BeforeClass
     public static void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = RocksDatabaseManager.open(options);
+        databaseManager = DatabaseManagerImpl.open(options);
         databaseManager.create(database);
         session = databaseManager.session(database, Arguments.Session.Type.SCHEMA);
-        try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (TransactionImpl tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
             tx.query().define(TypeQL.parseQuery("define " +
                                                         "person sub entity," +
                                                         "    owns first-name," +
@@ -113,14 +113,14 @@ public class UnifyHasConcludableTest {
 
     @Before
     public void setupTransaction() {
-        rocksTransaction = session.transaction(Arguments.Transaction.Type.WRITE);
-        conceptMgr = rocksTransaction.concepts();
-        logicMgr = rocksTransaction.logic();
+        transaction = session.transaction(Arguments.Transaction.Type.WRITE);
+        conceptMgr = transaction.concepts();
+        logicMgr = transaction.logic();
     }
 
     @After
     public void tearDownTransaction() {
-        rocksTransaction.close();
+        transaction.close();
     }
 
     private Thing instanceOf(String label) {

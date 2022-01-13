@@ -23,40 +23,40 @@ import com.vaticle.typedb.core.common.parameters.Options;
 
 public interface Factory {
 
-    RocksDatabaseManager databaseManager(Options.Database options);
+    DatabaseManagerImpl databaseManager(Options.Database options);
 
     interface Database {
 
-        RocksDatabase databaseCreateAndOpen(RocksDatabaseManager databaseManager, String name);
+        DatabaseImpl databaseCreateAndOpen(DatabaseManagerImpl databaseManager, String name);
 
-        RocksDatabase databaseLoadAndOpen(RocksDatabaseManager databaseManager, String name);
+        DatabaseImpl databaseLoadAndOpen(DatabaseManagerImpl databaseManager, String name);
     }
 
     interface Session {
 
-        RocksSession.Schema sessionSchema(RocksDatabase database, Options.Session options);
+        SessionImpl.Schema sessionSchema(DatabaseImpl database, Options.Session options);
 
-        RocksSession.Data sessionData(RocksDatabase database, Options.Session options);
+        SessionImpl.Data sessionData(DatabaseImpl database, Options.Session options);
     }
 
     interface TransactionSchema {
 
-        RocksTransaction.Schema transaction(RocksSession.Schema session, Arguments.Transaction.Type type,
-                                            Options.Transaction options);
+        TransactionImpl.Schema transaction(SessionImpl.Schema session, Arguments.Transaction.Type type,
+                                           Options.Transaction options);
 
-        RocksTransaction.Schema initialisationTransaction(RocksSession.Schema session);
+        TransactionImpl.Schema initialisationTransaction(SessionImpl.Schema session);
     }
 
     interface TransactionData {
 
-        RocksTransaction.Data transaction(RocksSession.Data session, Arguments.Transaction.Type type,
-                                          Options.Transaction options);
+        TransactionImpl.Data transaction(SessionImpl.Data session, Arguments.Transaction.Type type,
+                                         Options.Transaction options);
     }
 
     interface Storage {
 
-        RocksStorage.Schema storageSchema(RocksDatabase database, RocksTransaction.Schema transaction);
+        StorageImpl.Schema storageSchema(DatabaseImpl database, TransactionImpl.Schema transaction);
 
-        RocksStorage.Data storageData(RocksDatabase database, RocksTransaction transaction);
+        StorageImpl.Data storageData(DatabaseImpl database, TransactionImpl transaction);
     }
 }

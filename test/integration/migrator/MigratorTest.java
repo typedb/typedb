@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.common.parameters.Options.Database;
 import com.vaticle.typedb.core.migrator.data.DataExporter;
 import com.vaticle.typedb.core.migrator.data.DataImporter;
 import com.vaticle.typedb.core.migrator.data.DataProto;
-import com.vaticle.typedb.core.database.RocksDatabaseManager;
+import com.vaticle.typedb.core.database.DatabaseManagerImpl;
 import com.vaticle.typedb.core.server.Version;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
@@ -58,7 +58,7 @@ public class MigratorTest {
     @Test
     public void test_import_export_schema() throws IOException {
         Util.resetDirectory(dataDir);
-        try (TypeDB.DatabaseManager databaseManager = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager databaseManager = DatabaseManagerImpl.open(options)) {
             databaseManager.create(database);
             String savedSchema = new String(Files.readAllBytes(schemaPath), UTF_8);
             runSchema(databaseManager, savedSchema);
@@ -70,7 +70,7 @@ public class MigratorTest {
     @Test
     public void test_import_export_data() throws IOException {
         Util.resetDirectory(dataDir);
-        try (RocksDatabaseManager databaseManager = RocksDatabaseManager.open(options)) {
+        try (DatabaseManagerImpl databaseManager = DatabaseManagerImpl.open(options)) {
             databaseManager.create(database);
             String schema = new String(Files.readAllBytes(schemaPath), UTF_8);
             runSchema(databaseManager, schema);

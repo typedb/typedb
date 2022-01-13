@@ -26,9 +26,9 @@ import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
-import com.vaticle.typedb.core.database.RocksDatabaseManager;
-import com.vaticle.typedb.core.database.RocksSession;
-import com.vaticle.typedb.core.database.RocksTransaction;
+import com.vaticle.typedb.core.database.DatabaseManagerImpl;
+import com.vaticle.typedb.core.database.SessionImpl;
+import com.vaticle.typedb.core.database.TransactionImpl;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
@@ -55,36 +55,36 @@ public class PlannerTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "resolver-manager-test";
-    private static RocksDatabaseManager databaseManager;
-    private static RocksSession session;
-    private static RocksTransaction rocksTransaction;
+    private static DatabaseManagerImpl databaseManager;
+    private static SessionImpl session;
+    private static TransactionImpl transaction;
     private static ConceptManager conceptMgr;
     private static LogicManager logicMgr;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = RocksDatabaseManager.open(options);
+        databaseManager = DatabaseManagerImpl.open(options);
         databaseManager.create(database);
         initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
-        rocksTransaction.query().define(TypeQL.parseQuery("define person sub entity, plays friendship:friend, owns name; " +
+        transaction.query().define(TypeQL.parseQuery("define person sub entity, plays friendship:friend, owns name; " +
                                                                   "friendship sub relation, relates friend;" +
                                                                   "name sub attribute, value string;"));
-        rocksTransaction.commit();
+        transaction.commit();
         session.close();
         initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
     }
 
     private void initialise(Arguments.Session.Type schema, Arguments.Transaction.Type write) {
         session = databaseManager.session(database, schema);
-        rocksTransaction = session.transaction(write);
-        conceptMgr = rocksTransaction.concepts();
-        logicMgr = rocksTransaction.logic();
+        transaction = session.transaction(write);
+        conceptMgr = transaction.concepts();
+        logicMgr = transaction.logic();
     }
 
     @After
     public void tearDown() {
-        rocksTransaction.close();
+        transaction.close();
         session.close();
         databaseManager.close();
     }
@@ -123,10 +123,10 @@ public class PlannerTest {
 
     @Test
     public void test_planner_multiple_dependencies() {
-        rocksTransaction.query().define(TypeQL.parseQuery("define employment sub relation, relates employee, relates employer;" +
+        transaction.query().define(TypeQL.parseQuery("define employment sub relation, relates employee, relates employer;" +
                                                                   "person plays employment:employee;" +
                                                                   "company sub entity, plays employment:employer, owns name;"));
-        rocksTransaction.commit();
+        transaction.commit();
         session.close();
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
 

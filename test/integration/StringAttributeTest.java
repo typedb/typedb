@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.type.AttributeType;
-import com.vaticle.typedb.core.database.RocksDatabaseManager;
+import com.vaticle.typedb.core.database.DatabaseManagerImpl;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.Test;
@@ -62,7 +62,7 @@ public class StringAttributeTest {
     @Test
     public void all_unicode_characters_are_valid() throws IOException {
         Util.resetDirectory(dataDir);
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             typedb.create(database);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
@@ -126,7 +126,7 @@ public class StringAttributeTest {
     @Test
     public void invalid_string_throws() throws IOException {
         Util.resetDirectory(dataDir);
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             typedb.create(database);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {

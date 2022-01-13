@@ -31,7 +31,7 @@ import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
-import com.vaticle.typedb.core.database.RocksDatabaseManager;
+import com.vaticle.typedb.core.database.DatabaseManagerImpl;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Pattern;
@@ -143,7 +143,7 @@ public class BasicTest {
     @Test
     public void write_types_concurrently() throws IOException, InterruptedException {
         Util.resetDirectory(dataDir);
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             typedb.create(database);
 
             assertTrue(typedb.isOpen());
@@ -255,7 +255,7 @@ public class BasicTest {
         }
 
 
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             assertTrue(typedb.isOpen());
             assertEquals(1, typedb.all().size());
             assertEquals(database, typedb.all().iterator().next().name());
@@ -297,7 +297,7 @@ public class BasicTest {
     private void reset_directory_and_create_attribute_types() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             typedb.create(database);
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -317,7 +317,7 @@ public class BasicTest {
     public void write_and_retrieve_attribute_ownership_rule() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             typedb.create(database);
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -353,7 +353,7 @@ public class BasicTest {
     public void write_and_retrieve_relation_rule() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             typedb.create(database);
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -425,7 +425,7 @@ public class BasicTest {
         LocalDateTime date_1991_1_1_0_0 = LocalDateTime.of(1991, 1, 1, 0, 0);
         reset_directory_and_create_attribute_types();
 
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA)) {
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     isAlive(txn).put(true);
@@ -503,7 +503,7 @@ public class BasicTest {
 
         reset_directory_and_create_attribute_types();
 
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA)) {
                 TypeDB.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
                 TypeDB.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
@@ -623,7 +623,7 @@ public class BasicTest {
 
         LocalDateTime date_1992_2_3_4_5 = LocalDateTime.of(1991, 2, 3, 4, 5);
 
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA)) {
                 TypeDB.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
                 TypeDB.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
@@ -723,7 +723,7 @@ public class BasicTest {
     public void write_and_delete_attributes_concurrently() throws IOException {
         reset_directory_and_create_attribute_types();
 
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA)) {
                 TypeDB.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
                 TypeDB.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
@@ -806,7 +806,7 @@ public class BasicTest {
     @Test
     public void test_query_cancelled_asynchronously() throws IOException {
         Util.resetDirectory(dataDir);
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             typedb.create(database);
             for (int i = 0; i < 50; i++) {
                 new Thread(() -> {

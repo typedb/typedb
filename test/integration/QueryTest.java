@@ -29,7 +29,7 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.database.RocksDatabaseManager;
+import com.vaticle.typedb.core.database.DatabaseManagerImpl;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
@@ -66,7 +66,7 @@ public class QueryTest {
     public void test_query_define() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             typedb.create(database);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
@@ -131,7 +131,7 @@ public class QueryTest {
     public void test_query_undefine() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             typedb.create(database);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
@@ -216,7 +216,7 @@ public class QueryTest {
     public void test_query_insert() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             typedb.create(database);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
@@ -267,7 +267,7 @@ public class QueryTest {
     public void test_query_delete() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (TypeDB.DatabaseManager typedb = RocksDatabaseManager.open(options)) {
+        try (TypeDB.DatabaseManager typedb = DatabaseManagerImpl.open(options)) {
             typedb.create(database);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {

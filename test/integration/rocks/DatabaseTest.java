@@ -33,7 +33,7 @@ import static com.vaticle.typedb.core.common.test.Util.assertThrowsWithMessage;
 
 public class DatabaseTest {
 
-    private static final Factory rocksFactory = new RocksFactory();
+    private static final Factory rocksFactory = new FactoryImpl();
 
     @Test
     public void databaseCreationSucceeds() throws IOException {
@@ -41,7 +41,7 @@ public class DatabaseTest {
         Path logDir = dataDir.resolve("logs");
         Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
                 .storageIndexCacheSize(MB).storageDataCacheSize(MB);
-        RocksDatabaseManager databaseManager = rocksFactory.databaseManager(options);
+        DatabaseManagerImpl databaseManager = rocksFactory.databaseManager(options);
         databaseManager.create("test");
         databaseManager.close();
     }

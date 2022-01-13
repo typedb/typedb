@@ -42,7 +42,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DAT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.TYPEDB_CLOSED;
 
-public class RocksDatabaseManager implements TypeDB.DatabaseManager {
+public class DatabaseManagerImpl implements TypeDB.DatabaseManager {
 
     static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
     static {
@@ -54,23 +54,23 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
     protected static final String RESERVED_NAME_PREFIX = "_";
 
     private final Options.Database typeDBOptions;
-    protected final ConcurrentMap<String, RocksDatabase> databases;
+    protected final ConcurrentMap<String, DatabaseImpl> databases;
     protected final Factory.Database databaseFactory;
     protected final AtomicBoolean isOpen;
 
-    public static RocksDatabaseManager open(Path directory, Factory typeDBFactory) {
+    public static DatabaseManagerImpl open(Path directory, Factory typeDBFactory) {
         return open(new Options.Database().dataDir(directory), typeDBFactory);
     }
 
-    public static RocksDatabaseManager open(Options.Database options) {
-        return open(options, new RocksFactory());
+    public static DatabaseManagerImpl open(Options.Database options) {
+        return open(options, new FactoryImpl());
     }
 
-    public static RocksDatabaseManager open(Options.Database options, Factory typeDBFactory) {
+    public static DatabaseManagerImpl open(Options.Database options, Factory typeDBFactory) {
         return typeDBFactory.databaseManager(options);
     }
 
-    protected RocksDatabaseManager(Options.Database options, Factory.Database databaseFactory) {
+    protected DatabaseManagerImpl(Options.Database options, Factory.Database databaseFactory) {
         if (!Executors.isInitialised()) Executors.initialise(MAX_THREADS);
         this.typeDBOptions = options;
         this.databaseFactory = databaseFactory;
@@ -89,7 +89,7 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
         if (databaseDirectories != null && databaseDirectories.length > 0) {
             Arrays.stream(databaseDirectories).parallel().forEach(directory -> {
                 String name = directory.getName();
-                RocksDatabase database = databaseFactory.databaseLoadAndOpen(this, name);
+                DatabaseImpl database = databaseFactory.databaseLoadAndOpen(this, name);
                 databases.put(name, database);
             });
         }
@@ -103,40 +103,40 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
     }
 
     @Override
-    public RocksDatabase create(String name) {
+    public DatabaseImpl create(String name) {
         if (!isOpen.get()) throw TypeDBException.of(DATABASE_MANAGER_CLOSED);
         if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_RESERVED);
         if (databases.containsKey(name)) throw TypeDBException.of(DATABASE_EXISTS, name);
 
-        RocksDatabase database = databaseFactory.databaseCreateAndOpen(this, name);
+        DatabaseImpl database = databaseFactory.databaseCreateAndOpen(this, name);
         databases.put(name, database);
         return database;
     }
 
     @Override
-    public RocksDatabase get(String name) {
+    public DatabaseImpl get(String name) {
         if (!isOpen.get()) throw TypeDBException.of(DATABASE_MANAGER_CLOSED);
         if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_RESERVED);
         return databases.get(name);
     }
 
     @Override
-    public Set<RocksDatabase> all() {
+    public Set<DatabaseImpl> all() {
         if (!isOpen.get()) throw TypeDBException.of(DATABASE_MANAGER_CLOSED);
         return databases.values().stream().filter(database -> !isReservedName(database.name())).collect(Collectors.toSet());
     }
 
-    void remove(RocksDatabase database) {
+    void remove(DatabaseImpl database) {
         databases.remove(database.name());
     }
 
     @Override
-    public RocksSession session(String database, Arguments.Session.Type type) {
+    public SessionImpl session(String database, Arguments.Session.Type type) {
         return session(database, type, new Options.Session());
     }
 
     @Override
-    public RocksSession session(String database, Arguments.Session.Type type, Options.Session options) {
+    public SessionImpl session(String database, Arguments.Session.Type type, Options.Session options) {
         if (!isOpen.get()) throw TypeDBException.of(TYPEDB_CLOSED);
         if (contains(database)) return get(database).createAndOpenSession(type, options);
         else throw TypeDBException.of(DATABASE_NOT_FOUND, database);
@@ -153,7 +153,7 @@ public class RocksDatabaseManager implements TypeDB.DatabaseManager {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            databases.values().parallelStream().forEach(RocksDatabase::close);
+            databases.values().parallelStream().forEach(DatabaseImpl::close);
         }
     }
 

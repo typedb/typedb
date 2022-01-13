@@ -30,7 +30,7 @@ import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.migrator.MigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
 import com.vaticle.typedb.core.database.Factory;
-import com.vaticle.typedb.core.database.RocksFactory;
+import com.vaticle.typedb.core.database.FactoryImpl;
 import com.vaticle.typedb.core.server.common.Command;
 import com.vaticle.typedb.core.server.common.CommandLine;
 import com.vaticle.typedb.core.server.common.Configuration;
@@ -75,7 +75,7 @@ public class TypeDBServer implements AutoCloseable {
     protected TypeDBService typeDBService;
 
     private TypeDBServer(Configuration configuration, boolean debug) {
-        this(configuration, debug, new RocksFactory());
+        this(configuration, debug, new FactoryImpl());
     }
 
     protected TypeDBServer(Configuration configuration, boolean debug, Factory factory) {

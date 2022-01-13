@@ -30,8 +30,8 @@ import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.database.RocksSession;
-import com.vaticle.typedb.core.database.RocksTransaction;
+import com.vaticle.typedb.core.database.SessionImpl;
+import com.vaticle.typedb.core.database.TransactionImpl;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConcludable;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConclusion;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundCondition;
@@ -52,16 +52,16 @@ import static java.util.Collections.singletonList;
 public class Materialiser {
 
     private final Map<com.vaticle.typedb.core.logic.Rule, Rule> rules;
-    private final RocksTransaction tx;
+    private final TransactionImpl tx;
     private final Materialisations materialisations;
 
-    private Materialiser(RocksSession session) {
+    private Materialiser(SessionImpl session) {
         this.rules = new HashMap<>();
         this.tx = session.transaction(Arguments.Transaction.Type.WRITE, new Options.Transaction().infer(false));
         this.materialisations = new Materialisations();
     }
 
-    public static Materialiser materialise(RocksSession session) {
+    public static Materialiser materialise(SessionImpl session) {
         Materialiser materialiser = new Materialiser(session);
         materialiser.materialise();
         return materialiser;

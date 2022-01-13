@@ -34,13 +34,13 @@ import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static org.rocksdb.CompressionType.LZ4_COMPRESSION;
 import static org.rocksdb.CompressionType.NO_COMPRESSION;
 
-public class RocksConfiguration {
+public class Configuration {
 
     private final Schema schemaOptions;
     private final Data dataOptions;
     private final boolean loggingEnabled;
 
-    public RocksConfiguration(long dataCacheSize, long indexCacheSize, boolean loggingEnabled, int logStatisticsPeriodSec) {
+    public Configuration(long dataCacheSize, long indexCacheSize, boolean loggingEnabled, int logStatisticsPeriodSec) {
         this.schemaOptions = new Schema();
         this.dataOptions = new Data(dataCacheSize, indexCacheSize, loggingEnabled, logStatisticsPeriodSec);
         this.loggingEnabled = loggingEnabled;
@@ -142,7 +142,7 @@ public class RocksConfiguration {
          * though we have not provably seen much benefit from these.
          */
         private void configureWriteConcurrency(DBOptions options) {
-            options.setMaxSubcompactions(RocksDatabaseManager.MAX_THREADS).setMaxBackgroundJobs(RocksDatabaseManager.MAX_THREADS)
+            options.setMaxSubcompactions(DatabaseManagerImpl.MAX_THREADS).setMaxBackgroundJobs(DatabaseManagerImpl.MAX_THREADS)
                     .setEnableWriteThreadAdaptiveYield(true)
                     .setAllowConcurrentMemtableWrite(true);
         }

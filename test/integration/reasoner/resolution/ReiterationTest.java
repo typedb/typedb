@@ -32,9 +32,9 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImp
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
-import com.vaticle.typedb.core.database.RocksDatabaseManager;
-import com.vaticle.typedb.core.database.RocksSession;
-import com.vaticle.typedb.core.database.RocksTransaction;
+import com.vaticle.typedb.core.database.DatabaseManagerImpl;
+import com.vaticle.typedb.core.database.SessionImpl;
+import com.vaticle.typedb.core.database.TransactionImpl;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
@@ -65,12 +65,12 @@ public class ReiterationTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "resolution-test";
-    private static RocksDatabaseManager databaseManager;
+    private static DatabaseManagerImpl databaseManager;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = RocksDatabaseManager.open(options);
+        databaseManager = DatabaseManagerImpl.open(options);
         databaseManager.create(database);
         ResolutionTracer.initialise(logDir);
     }
@@ -82,8 +82,8 @@ public class ReiterationTest {
 
     @Test
     public void test_first_iteration_exhausts_and_second_iteration_recurses_infinitely() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (SessionImpl session = schemaSession()) {
+            try (TransactionImpl transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(TypeQL.parseQuery(
                         "define " +
                                 "X sub relation, relates item, plays Y:item;" +
@@ -111,15 +111,15 @@ public class ReiterationTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (SessionImpl session = dataSession()) {
+            try (TransactionImpl transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(TypeQL.parseQuery("insert $o isa object;"));
                 transaction.commit();
             }
         }
 
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (SessionImpl session = dataSession()) {
+            try (TransactionImpl transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunction = resolvedConjunction("{ $y isa Y; }", transaction.logic());
                 Set<Identifier.Variable.Retrievable> filter = new HashSet<>();
                 iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName)
@@ -189,16 +189,16 @@ public class ReiterationTest {
         );
     }
 
-    private RocksSession schemaSession() {
+    private SessionImpl schemaSession() {
         return databaseManager.session(database, Arguments.Session.Type.SCHEMA);
     }
 
-    private RocksSession dataSession() {
+    private SessionImpl dataSession() {
         return databaseManager.session(database, Arguments.Session.Type.DATA);
     }
 
-    private RocksTransaction singleThreadElgTransaction(RocksSession session) {
-        RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE, new Options.Transaction().infer(true));
+    private TransactionImpl singleThreadElgTransaction(SessionImpl session) {
+        TransactionImpl transaction = session.transaction(Arguments.Transaction.Type.WRITE, new Options.Transaction().infer(true));
         ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("typedb-actor"));
         transaction.reasoner().resolverRegistry().setExecutorService(service);
         return transaction;

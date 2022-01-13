@@ -22,8 +22,8 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.database.RocksDatabaseManager;
-import com.vaticle.typedb.core.database.RocksSession;
+import com.vaticle.typedb.core.database.DatabaseManagerImpl;
+import com.vaticle.typedb.core.database.SessionImpl;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.Materialiser;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
@@ -57,12 +57,12 @@ public class MaterialiserTest {
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
-    private RocksDatabaseManager databaseManager;
+    private DatabaseManagerImpl databaseManager;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        this.databaseManager = RocksDatabaseManager.open(options);
+        this.databaseManager = DatabaseManagerImpl.open(options);
         this.databaseManager.create(database);
     }
 
@@ -74,7 +74,7 @@ public class MaterialiserTest {
     @Test
     public void testDeduplicationOfInferredConcepts() {
         loadTransitivityExample(databaseManager);
-        try (RocksSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
             Materialiser materialiser = Materialiser.materialise(session);
             TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy"));
             List<ConceptMap> inferredAnswers = iterate(materialiser.query(inferredAnswersQuery).entrySet())
