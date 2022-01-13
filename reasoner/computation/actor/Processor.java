@@ -29,8 +29,10 @@ import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT, OUTPUT, PROCESSOR>> extends Actor<PROCESSOR> {
 
@@ -72,9 +74,15 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
 
     protected void acceptConnection(Connection.Builder<?, OUTPUT, ?, ?, ?> connectionBuilder) {
         Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
-        Subscriber<OUTPUT> transformOp = connection.applyConnectionTransforms(createProvidingEndpoint(connection));
-        outlet().publishTo(transformOp);
+        applyConnectionTransforms(connection.transformations(), outlet(), createProvidingEndpoint(connection));
         connectionBuilder.request().recProcessor().execute(actor -> actor.finaliseConnection(connection));
+    }
+
+    public void applyConnectionTransforms(List<Function<OUTPUT, OUTPUT>> transformations,
+                                          Reactive<OUTPUT, OUTPUT> outlet, OutletEndpoint<OUTPUT> upstreamEndpoint) {
+        Provider.Publisher<OUTPUT> op = outlet;
+        for (Function<OUTPUT, OUTPUT> t : transformations) op = op.map(t);
+        op.publishTo(upstreamEndpoint);
     }
 
     protected <PUB_PROCESSOR extends Processor<?, INPUT, PUB_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PUB_PROCESSOR> connection) {
@@ -87,13 +95,13 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
     }
 
     protected OutletEndpoint<OUTPUT> createProvidingEndpoint(Connection<OUTPUT, ?, PROCESSOR> connection) {
-        OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection);
+        OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection, name());
         providingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
 
     protected InletEndpoint<INPUT> createReceivingEndpoint() {
-        InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId());
+        InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId(), name());
         receivingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
@@ -116,7 +124,8 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
         private Connection<PACKET, ?, ?> connection;
         protected boolean isPulling;
 
-        public InletEndpoint(long id) {
+        public InletEndpoint(long id, String groupName) {
+            super(groupName);
             this.id = id;
             this.ready = false;
             this.isPulling = false;
@@ -160,8 +169,10 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
         private final Connection<PACKET, ?, ?> connection;
         private final Set<Provider<PACKET>> publishers;
         protected boolean isPulling;
+        private final String groupName;
 
-        public OutletEndpoint(Connection<PACKET, ?, ?> connection) {
+        public OutletEndpoint(Connection<PACKET, ?, ?> connection, String groupName) {
+            this.groupName = groupName;
             this.publishers = new HashSet<>();
             this.connection = connection;
             this.isPulling = false;
@@ -169,6 +180,11 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
 
         public long id() {
             return connection.providingEndpointId();
+        }
+
+        @Override
+        public String groupName() {
+            return groupName;
         }
 
         @Override

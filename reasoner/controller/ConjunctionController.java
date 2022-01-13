@@ -138,7 +138,7 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
         protected ConjunctionProcessor(Driver<PROCESSOR> driver,
                 Driver<? extends Controller<?, ?, PROCESSOR, ?>> controller,
                 ConceptMap bounds, List<Resolvable<?>> plan, String name) {
-            super(driver, controller, noOp(), name);
+            super(driver, controller, noOp(name), name);
             this.bounds = bounds;
             this.plan = plan;
             this.retrievableRequests = new HashSet<>();

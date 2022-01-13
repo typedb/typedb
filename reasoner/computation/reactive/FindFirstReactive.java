@@ -26,8 +26,8 @@ public class FindFirstReactive<T> extends IdentityReactive<T> {
 
     private boolean packetFound;
 
-    FindFirstReactive(Set<Publisher<T>> publishers) {
-        super(publishers);
+    FindFirstReactive(Set<Publisher<T>> publishers, String groupName) {
+        super(publishers, groupName);
         this.packetFound = false;
     }
 

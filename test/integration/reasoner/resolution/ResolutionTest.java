@@ -475,6 +475,11 @@ public class ResolutionTest {
             pull();
         }
 
+        @Override
+        public String groupName() {
+            return "EntryPoint";
+        }
+
     }
 
     private void createRootAndAssertResponses(RocksTransaction transaction, Conjunction conjunction, long answerCount, long explainableAnswers)

@@ -28,6 +28,8 @@ public interface Provider<R> {
 
     void pull(Receiver<R> receiver);
 
+    String groupName();
+
     interface Publisher<T> extends Provider<T> {
 
         void publishTo(Subscriber<T> subscriber);

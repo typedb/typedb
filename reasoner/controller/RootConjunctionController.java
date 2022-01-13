@@ -74,7 +74,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         @Override
         public void setUp() {
             outlet().publishTo(reasonerEndpoint);
-            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds).publishTo(outlet());
+            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, name()).publishTo(outlet());
         }
     }
 }

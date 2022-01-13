@@ -27,27 +27,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
-
 public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR>, PUB_PROCESSOR extends Processor<?, PACKET, PUB_PROCESSOR>> {
 
     private final Actor.Driver<PROCESSOR> recProcessor;
     private final Actor.Driver<PUB_PROCESSOR> provProcessor;
     private final long recEndpointId;
     private final long provEndpointId;
-    private final List<Function<Receiver.Subscriber<PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms;
+    private final List<Function<PACKET, PACKET>> transforms;
 
     /**
      * Connects a processor outlet (upstream, publishing) to another processor's inlet (downstream, subscribing)
      */
     Connection(Actor.Driver<PROCESSOR> recProcessor, Actor.Driver<PUB_PROCESSOR> provProcessor, long recEndpointId,
                long provEndpointId,
-               List<Function<Receiver.Subscriber<PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms) {
+               List<Function<PACKET, PACKET>> transforms) {
         this.recProcessor = recProcessor;
         this.provProcessor = provProcessor;
         this.recEndpointId = recEndpointId;
         this.provEndpointId = provEndpointId;
-        this.connectionTransforms = connectionTransforms;
+        this.transforms = transforms;
     }
 
     protected void receive(PACKET packet) {
@@ -62,17 +60,12 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR
         return recEndpointId;
     }
 
-    public Receiver.Subscriber<PACKET> applyConnectionTransforms(Processor.OutletEndpoint<PACKET> upstreamEndpoint) {
-        assert upstreamEndpoint.id() == provEndpointId;
-        Receiver.Subscriber<PACKET> op = upstreamEndpoint;
-        for (Function<Receiver.Subscriber<PACKET>, Reactive<PACKET, PACKET>> t : connectionTransforms) {
-            op = t.apply(op);
-        }
-        return op;
-    }
-
     public long providingEndpointId() {
         return provEndpointId;
+    }
+
+    public List<Function<PACKET, PACKET>> transformations() {
+        return transforms;
     }
 
     public static abstract class Request<
@@ -86,7 +79,7 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR
         private final PUB_CID provControllerId;
         private final Actor.Driver<PROCESSOR> recProcessor;
         private final long recEndpointId;
-        private final List<Function<Receiver.Subscriber<PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms;
+        private final List<Function<PACKET, PACKET>> connectionTransforms;
         private PUB_PROC_ID provProcessorId;
 
         protected Request(Actor.Driver<PROCESSOR> recProcessor, long recEndpointId, PUB_CID provControllerId,
@@ -105,11 +98,7 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR
         public abstract Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, ?> getBuilder(ControllerRegistry registry);
 
         public void withMap(Function<PACKET, PACKET> function) {
-            connectionTransforms.add(r -> {
-                Reactive<PACKET, PACKET> op = noOp();
-                op.map(function).publishTo(r);
-                return op;
-            });
+            connectionTransforms.add(function);
         }
 
         public void withNewProcessorId(PUB_PROC_ID newPID) {
@@ -132,7 +121,7 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR
             return recEndpointId;
         }
 
-        public List<Function<Receiver.Subscriber<PACKET>, Reactive<PACKET, PACKET>>> connectionTransforms() {
+        public List<Function<PACKET, PACKET>> connectionTransforms() {
             return connectionTransforms;
         }
     }

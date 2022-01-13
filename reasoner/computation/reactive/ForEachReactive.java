@@ -24,11 +24,13 @@ import java.util.function.Consumer;
 
 public class ForEachReactive<PACKET> implements Receiver.Subscriber<PACKET> {
 
-    private Provider<PACKET> publisher;
     private final Consumer<PACKET> consumer;
+    private final String groupName;
+    private Provider<PACKET> publisher;
 
-    protected ForEachReactive(Consumer<PACKET> consumer) {
+    protected ForEachReactive(Consumer<PACKET> consumer, String groupName) {
         this.consumer = consumer;
+        this.groupName = groupName;
     }
 
     @Override
@@ -42,5 +44,10 @@ public class ForEachReactive<PACKET> implements Receiver.Subscriber<PACKET> {
     public void receive(Provider<PACKET> provider, PACKET packet) {
         ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         consumer.accept(packet);
+    }
+
+    @Override
+    public String groupName() {
+        return groupName;
     }
 }

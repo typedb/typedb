@@ -25,12 +25,12 @@ import java.util.Set;
 
 public class IdentityReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
-    protected IdentityReactive(Set<Publisher<PACKET>> publishers) {
-        super(publishers);
+    protected IdentityReactive(Set<Publisher<PACKET>> publishers, String groupName) {
+        super(publishers, groupName);
     }
 
-    public static <T> IdentityReactive<T> noOp() {
-        return new IdentityReactive<>(new HashSet<>());
+    public static <T> IdentityReactive<T> noOp(String groupName) {
+        return new IdentityReactive<>(new HashSet<>(), groupName);
     }
 
     @Override

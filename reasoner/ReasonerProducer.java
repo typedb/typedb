@@ -65,7 +65,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
-        this.reasonerEntryPoint = new EntryPoint();
+        this.reasonerEntryPoint = new EntryPoint(conjunction.toString());
         this.controllerRegistry.createRoot(conjunction, reasonerEntryPoint);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
@@ -81,7 +81,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
-        this.reasonerEntryPoint = new EntryPoint();
+        this.reasonerEntryPoint = new EntryPoint(disjunction.toString());
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
@@ -109,8 +109,13 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
      */
     public class EntryPoint extends Sink<ConceptMap> {
 
+        private final String groupName;
         private final UUID traceId = UUID.randomUUID();
         private int traceCounter = 0;
+
+        public EntryPoint(String groupName) {
+            this.groupName = groupName;
+        }
 
         @Override
         public void receive(@Nullable Provider<ConceptMap> provider, ConceptMap packet) {
@@ -123,6 +128,11 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
             queue.put(packet);
             if (required.decrementAndGet() > 0) pull();
             else processing.decrementAndGet();
+        }
+
+        @Override
+        public String groupName() {
+            return groupName;
         }
         // Trace trace = Trace.create(traceId, requestIdCounter);  // TODO: Trace on pull
         // ResolutionTracer.get().start(visitRequest);

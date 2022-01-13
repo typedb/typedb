@@ -28,12 +28,14 @@ public class Source<PACKET> extends PublisherImpl<PACKET> {
     private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
     private FunctionalIterator<PACKET> iterator;
 
-    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier) {
+    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, String groupName) {
+        super(groupName);
         this.iteratorSupplier = iteratorSupplier;
     }
 
-    public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier) {
-        return new Source<>(iteratorSupplier);
+    public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier,
+                                                             String groupName) {
+        return new Source<>(iteratorSupplier, groupName);
     }
 
     @Override

@@ -101,7 +101,7 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
                 Driver<ConclusionProcessor> driver,
                 Driver<? extends Controller<?, ?, ConclusionProcessor, ?>> controller, Rule rule,
                 ConceptMap bounds, ConceptManager conceptManager, String name) {
-            super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>()), name);
+            super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>(), name), name);
             this.rule = rule;
             this.bounds = bounds;
             this.conceptManager = conceptManager;
@@ -113,15 +113,15 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
         public void setUp() {
             InletEndpoint<Either<ConceptMap, Materialisation>> conditionEndpoint = createReceivingEndpoint();
             mayRequestCondition(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
-            ConclusionReactive conclusionReactive = new ConclusionReactive(new HashSet<>());
+            ConclusionReactive conclusionReactive = new ConclusionReactive(new HashSet<>(), name());
             conditionEndpoint.map(a -> a.first()).publishTo(conclusionReactive);
             conclusionReactive.publishTo(outlet());
         }
 
         private class ConclusionReactive extends ReactiveBase<ConceptMap, Map<Identifier.Variable, Concept>> {
 
-            protected ConclusionReactive(Set<Publisher<ConceptMap>> publishers) {
-                super(publishers);
+            protected ConclusionReactive(Set<Publisher<ConceptMap>> publishers, String groupName) {
+                super(publishers, groupName);
             }
 
             @Override
@@ -133,7 +133,7 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
                 ReactiveBase<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
-                InnerReactive innerReactive = new InnerReactive(this, new HashSet<>());
+                InnerReactive innerReactive = new InnerReactive(this, new HashSet<>(), groupName());
                 op.publishTo(innerReactive);
                 innerReactive.sendTo(subscriber());
                 innerReactive.pull();
@@ -144,8 +144,8 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
 
             private final ConclusionReactive parent;
 
-            public InnerReactive(ConclusionReactive parent, Set<Publisher<Map<Variable, Concept>>> publishers) {
-                super(publishers);
+            public InnerReactive(ConclusionReactive parent, Set<Publisher<Map<Variable, Concept>>> publishers, String groupName) {
+                super(publishers, groupName);
                 this.parent = parent;
             }
 

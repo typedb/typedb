@@ -98,7 +98,7 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
         return driver -> new ConcludableProcessor(
                 driver, driver(), bounds, unboundVars, upstreamConclusions,
                 () -> TraversalUtils.traversalIterator(registry, concludable.pattern(), bounds),
-                ConcludableProcessor.class.getSimpleName() + "(pattern: " + concludable + ", bounds: " + bounds + ")"
+                ConcludableProcessor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
         );
     }
 
@@ -128,7 +128,7 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
                                     ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                                     LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions,
                                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier, String name) {
-            super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>()), name);
+            super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>(), name), name);
             this.bounds = bounds;
             this.unboundVars = unboundVars;
             this.upstreamConclusions = upstreamConclusions;
@@ -139,11 +139,11 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
         @Override
         public void setUp() {
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
-            ReactiveBase<ConceptMap, ConceptMap> op = noOp();
+            ReactiveBase<ConceptMap, ConceptMap> op = noOp(name());
             if (singleAnswerRequired) op.findFirst().publishTo(outlet());
             else op.publishTo(outlet());
 
-            Source.fromIteratorSupplier(traversalSuppplier).publishTo(op);
+            Source.fromIteratorSupplier(traversalSuppplier, name()).publishTo(op);
 
             upstreamConclusions.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {

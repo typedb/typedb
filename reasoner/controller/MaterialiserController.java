@@ -69,7 +69,7 @@ public class MaterialiserController extends Controller<Materialisable, Either<Co
                 Driver<MaterialiserProcessor> driver,
                 Driver<? extends Controller<?, ?, MaterialiserProcessor, ?>> controller, Materialisable materialisable,
                 TraversalEngine traversalEng, ConceptManager conceptMgr, String name) {
-            super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>()), name);
+            super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>(), name), name);
             this.materialisable = materialisable;
             this.traversalEng = traversalEng;
             this.conceptMgr = conceptMgr;
@@ -80,7 +80,8 @@ public class MaterialiserController extends Controller<Materialisable, Either<Co
             new Source<>(
                     () -> materialise(materialisable, traversalEng, conceptMgr)
                             .map(Iterators::single)
-                            .orElse(Iterators.empty())
+                            .orElse(Iterators.empty()),
+                    name()
             )
                     .map(Either::<ConceptMap, Materialisation>second)
                     .publishTo(outlet());

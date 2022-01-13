@@ -26,19 +26,22 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> {
 
     private final Publisher<PACKET> leadingPublisher;
+    private final Set<Provider<PACKET>> lastPublishers;
     private final List<PLAN_ID> remainingPlan;
     private final BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc;
     private final BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc;
     private final Map<Provider<PACKET>, PACKET> publisherPackets;
 
     public CompoundReactive(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
-                            BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket) {
-        super(new HashSet<>());
+                            BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
+                            String groupName) {
+        super(new HashSet<>(), groupName);
         assert plan.size() > 0;
         this.remainingPlan = new ArrayList<>(plan);
         this.leadingPublisher = spawnLeaderFunc.apply(this.remainingPlan.remove(0), initialPacket);
@@ -46,6 +49,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
         this.spawnLeaderFunc = spawnLeaderFunc;
         this.publisherPackets = new HashMap<>();
         this.leadingPublisher.publishTo(this);
+        this.lastPublishers = new HashSet<>();
     }
 
     @Override
@@ -53,21 +57,27 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
         ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         // TODO: Need to implement equals and hashCode? Seems we actually want exact object matches only for reactives
         if (leadingPublisher.equals(provider)) {
-            // TODO: Should we pull again from the leader?
+            leadingPublisher.pull(this);
             if (remainingPlan.size() == 0) {  // For a single item plan
                 finishPulling();
                 subscriber().receive(this, packet);
             } else {
                 Publisher<PACKET> nextPublisher;
-                if (remainingPlan.size() == 1) nextPublisher = spawnLeaderFunc.apply(remainingPlan.get(0), packet);
-                else nextPublisher = new CompoundReactive<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, packet);
+                if (remainingPlan.size() == 1) {
+                    nextPublisher = spawnLeaderFunc.apply(remainingPlan.get(0), packet);
+                    lastPublishers.add(nextPublisher);
+                } else {
+                    nextPublisher = new CompoundReactive<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, packet, groupName());
+                }
                 publisherPackets.put(nextPublisher, packet);
                 nextPublisher.publishTo(this);
                 nextPublisher.pull(this);
             }
         } else {
             PACKET compoundedPacket = compoundPacketsFunc.apply(packet, publisherPackets.get(provider));
-            super.receive(this, compoundedPacket);
+            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+            subscriber().receive(this, compoundedPacket);
+            if (lastPublishers.contains(provider)) finishPulling();
         }
     }
 

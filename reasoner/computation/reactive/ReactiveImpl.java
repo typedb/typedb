@@ -27,23 +27,32 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 
 public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUTPUT> {
 
+    private final String groupName;
+
+    protected ReactiveImpl(String groupName) {this.groupName = groupName;}
+
+    @Override
+    public String groupName() {
+        return groupName;
+    }
+
     @Override
     public ReactiveBase<OUTPUT, OUTPUT> findFirst() {
-        return new FindFirstReactive<>(set(this));
+        return new FindFirstReactive<>(set(this), groupName());
     }
 
     @Override
     public <R> ReactiveBase<OUTPUT, R> map(Function<OUTPUT, R> function) {
-        return new MapReactive<>(set(this), function);
+        return new MapReactive<>(set(this), function, groupName());
     }
 
     @Override
     public <R> ReactiveBase<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
-        return new FlatMapOrRetryReactive<>(set(this), function);
+        return new FlatMapOrRetryReactive<>(set(this), function, groupName());
     }
 
     @Override
     public void forEach(Consumer<OUTPUT> function) {
-        this.publishTo(new ForEachReactive<>(function));
+        this.publishTo(new ForEachReactive<>(function, groupName()));
     }
 }

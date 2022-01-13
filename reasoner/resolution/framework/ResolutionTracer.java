@@ -80,40 +80,39 @@ public final class ResolutionTracer {
     public synchronized void pull(@Nullable Receiver<?> receiver, Provider<?> provider) {
         String receiverString;
         if (receiver == null) receiverString = "root";
-        else receiverString = simpleClassId(receiver);
+        else {
+            receiverString = simpleClassId(receiver);
+            addNodeGroup(simpleClassId(provider), receiver.groupName(), defaultTrace);
+        }
         addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
-        addNodeGroup(receiverString, "rootGroup", defaultTrace);
-        addNodeGroup(simpleClassId(provider), "rootGroup", defaultTrace);
+        addNodeGroup(receiverString, provider.groupName(), defaultTrace);
+
     }
 
     public synchronized void pull(Connection<?, ?, ?> receiver, Provider<?> provider) {
         addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
-        addNodeGroup(simpleClassId(receiver), "rootGroup", defaultTrace);
-        addNodeGroup(simpleClassId(provider), "rootGroup", defaultTrace);
+        addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 
     public synchronized void pull(Provider<?> receiver, Connection<?, ?, ?> provider) {
         addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
-        addNodeGroup(simpleClassId(receiver), "rootGroup", defaultTrace);
-        addNodeGroup(simpleClassId(provider), "rootGroup", defaultTrace);
+        addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
     }
 
     public synchronized <PACKET> void receive(Provider<PACKET> provider, Receiver<PACKET> receiver, PACKET packet) {
         addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
-        addNodeGroup(simpleClassId(receiver), "rootGroup", defaultTrace);
-        addNodeGroup(simpleClassId(provider), "rootGroup", defaultTrace);
+        addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
+        addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 
     public synchronized <PACKET> void receive(Connection<PACKET, ?, ?> provider, Processor.InletEndpoint<PACKET> receiver, PACKET packet) {
         addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
-        addNodeGroup(simpleClassId(receiver), "rootGroup", defaultTrace);
-        addNodeGroup(simpleClassId(provider), "rootGroup", defaultTrace);
+        addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
     }
 
     public synchronized <PACKET> void receive(Processor.OutletEndpoint<PACKET> provider, Connection<PACKET,?,?> receiver, PACKET packet) {
         addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
-        addNodeGroup(simpleClassId(receiver), "rootGroup", defaultTrace);
-        addNodeGroup(simpleClassId(provider), "rootGroup", defaultTrace);
+        addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 
     private static String simpleClassId(Object obj) {

@@ -66,7 +66,7 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
 
         @Override
         public void setUp() {
-            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds)
+            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, name())
                     .map(Either::<ConceptMap, Materialisation>first).publishTo(outlet());
         }
     }

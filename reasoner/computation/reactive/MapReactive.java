@@ -27,8 +27,8 @@ public class MapReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, OUTPUT> {
 
     private final Function<INPUT, OUTPUT> mappingFunc;
 
-    protected MapReactive(Set<Publisher<INPUT>> publishers, Function<INPUT, OUTPUT> mappingFunc) {
-        super(publishers);
+    protected MapReactive(Set<Publisher<INPUT>> publishers, Function<INPUT, OUTPUT> mappingFunc, String groupName) {
+        super(publishers, groupName);
         this.mappingFunc = mappingFunc;
     }
 

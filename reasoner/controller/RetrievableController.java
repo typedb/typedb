@@ -60,13 +60,13 @@ public class RetrievableController extends Controller<ConceptMap, ConceptMap,
         protected RetrievableProcessor(Driver<RetrievableProcessor> driver,
                                        Driver<? extends Controller<?, ?, RetrievableProcessor, ?>> controller,
                                        Supplier<FunctionalIterator<ConceptMap>> traversalSupplier, String name) {
-            super(driver, controller, noOp(), name);
+            super(driver, controller, noOp(name), name);
             this.traversalSupplier = traversalSupplier;
         }
 
         @Override
         public void setUp() {
-            new Source<>(traversalSupplier).publishTo(outlet());
+            new Source<>(traversalSupplier, name()).publishTo(outlet());
         }
     }
 }

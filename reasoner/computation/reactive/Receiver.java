@@ -22,6 +22,8 @@ public interface Receiver<R> {
 
     void receive(Provider<R> provider, R packet);  // TODO: The provider argument is only needed by compound - can we do without it?
 
+    String groupName();
+
     interface Subscriber<T> extends Receiver<T> {
 
         void subscribeTo(Provider<T> publisher);
