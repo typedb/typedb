@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.test.integration.database;
+package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
