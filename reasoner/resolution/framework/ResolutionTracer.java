@@ -19,7 +19,6 @@ package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
-import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
@@ -83,26 +82,38 @@ public final class ResolutionTracer {
         if (receiver == null) receiverString = "root";
         else receiverString = simpleClassId(receiver);
         addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
+        addNodeGroup(receiverString, "rootGroup", defaultTrace);
+        addNodeGroup(simpleClassId(provider), "rootGroup", defaultTrace);
     }
 
     public synchronized void pull(Connection<?, ?, ?> receiver, Provider<?> provider) {
         addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
+        addNodeGroup(simpleClassId(receiver), "rootGroup", defaultTrace);
+        addNodeGroup(simpleClassId(provider), "rootGroup", defaultTrace);
     }
 
     public synchronized void pull(Provider<?> receiver, Connection<?, ?, ?> provider) {
         addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
+        addNodeGroup(simpleClassId(receiver), "rootGroup", defaultTrace);
+        addNodeGroup(simpleClassId(provider), "rootGroup", defaultTrace);
     }
 
     public synchronized <PACKET> void receive(Provider<PACKET> provider, Receiver<PACKET> receiver, PACKET packet) {
         addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
+        addNodeGroup(simpleClassId(receiver), "rootGroup", defaultTrace);
+        addNodeGroup(simpleClassId(provider), "rootGroup", defaultTrace);
     }
 
     public synchronized <PACKET> void receive(Connection<PACKET, ?, ?> provider, Processor.InletEndpoint<PACKET> receiver, PACKET packet) {
         addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
+        addNodeGroup(simpleClassId(receiver), "rootGroup", defaultTrace);
+        addNodeGroup(simpleClassId(provider), "rootGroup", defaultTrace);
     }
 
     public synchronized <PACKET> void receive(Processor.OutletEndpoint<PACKET> provider, Connection<PACKET,?,?> receiver, PACKET packet) {
         addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
+        addNodeGroup(simpleClassId(receiver), "rootGroup", defaultTrace);
+        addNodeGroup(simpleClassId(provider), "rootGroup", defaultTrace);
     }
 
     private static String simpleClassId(Object obj) {
@@ -168,6 +179,10 @@ public final class ResolutionTracer {
         rootRequestTracers.get(trace).addMessage(sender, receiver, edgeType, conceptMap);
     }
 
+    private void addNodeGroup(String node, String group, Trace trace) {
+        rootRequestTracers.get(trace).addNodeGroup(node, group);
+    }
+
     public synchronized void start(Request.Visit request) {
         assert !rootRequestTracers.containsKey(request.trace());
         rootRequestTracers.put(request.trace(), new RootRequestTracer(request.trace()));
@@ -197,11 +212,15 @@ public final class ResolutionTracer {
 
         private final AtomicReference<Path> path = new AtomicReference<>(null);
         private final Trace trace;
+        private final Map<String, Integer> clusterMap;
         private int messageNumber = 0;
         private PrintWriter writer;
+        private int clusterIndex;
 
         private RootRequestTracer(Trace trace) {
             this.trace = trace;
+            this.clusterMap = new HashMap<>();
+            this.clusterIndex = 0;
         }
 
         public void start() {
@@ -220,6 +239,7 @@ public final class ResolutionTracer {
         private void startFile() {
             write(String.format(
                     "digraph request_%s_%d {\n" +
+                            "graph [fontsize=10 fontname=arial width=0.5]\n" +
                             "node [fontsize=12 fontname=arial width=0.5 shape=box style=filled]\n" +
                             "edge [fontsize=10 fontname=arial width=0.5]",
                     trace.scope().toString().replace('-', '_'), trace.root()));
@@ -252,17 +272,32 @@ public final class ResolutionTracer {
         }
 
         private synchronized void addMessage(String sender, String receiver, EdgeType edgeType, String packet) {
-            writeEdge(sender, receiver, edgeType.colour(), messageNumber, packet);
+            writeEdge(sender, receiver, edgeType.colour(), "m" + messageNumber + "_" + packet);
             messageNumber++;
         }
 
-        private void writeEdge(String fromId, String toId, String colour, int messageNumber, String conceptMap) {
+        private synchronized void addNodeGroup(String node, String group) {
+            writeNodeToCluster(node, group);
+        }
+
+        private void writeEdge(String fromId, String toId, String colour, String label) {
             write(String.format("%s -> %s [style=bold,label=%s,color=%s];",
                                 doubleQuotes(escapeNewlines(escapeDoubleQuotes(fromId))),
                                 doubleQuotes(escapeNewlines(escapeDoubleQuotes(toId))),
-                                doubleQuotes("m" + messageNumber + "_" + conceptMap),
+                                doubleQuotes(label),
                                 doubleQuotes(colour)));
 
+        }
+
+        private int nextClusterId() {
+            clusterIndex += 1;
+            return clusterIndex;
+        }
+
+        private void writeNodeToCluster(String nodeId, String clusterLabel) {
+            int ci = clusterMap.computeIfAbsent(clusterLabel, ignored -> nextClusterId());
+            write(String.format("subgraph cluster_%d {%s; label=%s;}", ci, doubleQuotes(escapeNewlines(nodeId)),
+                                doubleQuotes(escapeNewlines(clusterLabel))));
         }
 
         private String escapeNewlines(String toFormat) {
