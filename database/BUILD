@@ -27,7 +27,7 @@ package(
 )
 
 native_java_libraries(
-    name = "rocks",
+    name = "database",
     srcs = glob(["*.java"]),
     native_libraries_deps = [
         # Internal dependencies

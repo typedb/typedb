@@ -26,7 +26,7 @@ host_compatible_java_test(
         "//:typedb",
         "//common:common",
         "//graph:graph",
-        "//rocks:rocks",
+        "//database:database",
 
         "//common/test:util",
     ],

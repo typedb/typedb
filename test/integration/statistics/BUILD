@@ -25,7 +25,7 @@ host_compatible_java_test(
     native_libraries_deps = [
         # Internal dependencies
         "//:typedb",
-        "//rocks:rocks",
+        "//database:database",
         "//common:common",
         "//concept:concept",
     ],

@@ -25,7 +25,7 @@ native_java_libraries(
     native_libraries_deps = [
         "//:typedb",
         "//common:common",
-        "//rocks:rocks",
+        "//database:database",
         "//concept:concept",
         "//traversal:traversal",
         "//logic:logic",

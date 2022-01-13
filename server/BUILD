@@ -54,7 +54,7 @@ native_java_libraries(
         "//concept:concept",
         "//logic:logic",
         "//query:query",
-        "//rocks:rocks",
+        "//database:database",
         "//reasoner:reasoner",
         "//migrator:migrator",
     ],

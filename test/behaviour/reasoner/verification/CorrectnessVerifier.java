@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.test.behaviour.reasoner.verification;
 
-import com.vaticle.typedb.core.rocks.RocksSession;
+import com.vaticle.typedb.core.database.RocksSession;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 public class CorrectnessVerifier {

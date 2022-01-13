@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.rocks;
+package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.core.graph.common.Storage.Key;
 import org.rocksdb.BlockBasedTableConfig;

@@ -28,7 +28,7 @@ host_compatible_java_library(
         # Internal dependencies
         "//:typedb",
         "//common",
-        "//rocks:rocks",
+        "//database:database",
     ],
     deps = [
         # External Maven Dependencies
