@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Sink;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,11 +51,9 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     private final ControllerRegistry controllerRegistry;
     private final ExplainablesManager explainablesManager;
     private final int computeSize;
-    private final UUID traceId;
     private final EntryPoint reasonerEntryPoint;
     private boolean done;
     private Queue<ConceptMap> queue;
-    private int requestIdCounter;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
@@ -70,8 +69,6 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.controllerRegistry.createRoot(conjunction, reasonerEntryPoint);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        this.requestIdCounter = 0;
-        this.traceId = UUID.randomUUID();
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -87,8 +84,6 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.reasonerEntryPoint = new EntryPoint();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        this.requestIdCounter = 0;
-        this.traceId = UUID.randomUUID();
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
     }
 
@@ -114,6 +109,9 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
      */
     public class EntryPoint extends Sink<ConceptMap> {
 
+        private final UUID traceId = UUID.randomUUID();
+        private int traceCounter = 0;
+
         @Override
         public void receive(@Nullable Provider<ConceptMap> provider, ConceptMap packet) {
             ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
@@ -129,6 +127,10 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         // Trace trace = Trace.create(traceId, requestIdCounter);  // TODO: Trace on pull
         // ResolutionTracer.get().start(visitRequest);
 
+        public Trace trace(){
+            // traceCounter += 1;
+            return Trace.create(traceId, traceCounter);
+        }
     }
 
     // note: root resolver calls this single-threaded, so is threads safe

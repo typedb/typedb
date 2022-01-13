@@ -85,16 +85,12 @@ public final class ResolutionTracer {
         addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
     }
 
-    public synchronized void pull(Connection receiver, Provider<?> provider) {
+    public synchronized void pull(Connection<?, ?, ?> receiver, Provider<?> provider) {
         addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
     }
 
-    public synchronized void pull(Provider<?> receiver, Connection provider) {
+    public synchronized void pull(Provider<?> receiver, Connection<?, ?, ?> provider) {
         addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
-    }
-
-    public synchronized <PUB_PROCESSOR extends Processor<?, ?, PUB_PROCESSOR>> void pull(Actor.Driver<PUB_PROCESSOR> provProcessor, long provEndpointId, Connection connection) {
-        addMessage(simpleClassId(connection), simpleClassId(provProcessor) + "-" + provEndpointId, defaultTrace, EdgeType.PULL, "pull");
     }
 
     public synchronized <PACKET> void receive(Provider<PACKET> provider, Receiver<PACKET> receiver, PACKET packet) {
