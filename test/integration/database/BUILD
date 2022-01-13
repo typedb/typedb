@@ -21,7 +21,7 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test
 host_compatible_java_test(
     name = "test-database",
     srcs = ["DatabaseTest.java"],
-    test_class = "com.vaticle.typedb.core.rocks.DatabaseTest",
+    test_class = "com.vaticle.typedb.core.database.DatabaseTest",
     native_libraries_deps = [
         "//:typedb",
         "//common:common",

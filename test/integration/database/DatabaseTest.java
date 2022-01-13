@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.database;
+package com.vaticle.typedb.core.test.integration.database;
 
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
@@ -51,7 +51,7 @@ public class DatabaseTest {
 
     @Test
     public void incompatibleDataEncodingThrows() {
-        Path dataDir = Paths.get("test/integration/rocks/data");
+        Path dataDir = Paths.get("test/integration/database/data");
         Path logDir = dataDir.resolve("logs");
         Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
                 .storageIndexCacheSize(MB).storageDataCacheSize(MB);
