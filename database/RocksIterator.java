@@ -32,11 +32,11 @@ import java.util.function.Predicate;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
-public final class IteratorImpl<T extends Key> extends AbstractFunctionalIterator.Sorted<KeyValue<T, ByteArray>>
+public final class RocksIterator<T extends Key> extends AbstractFunctionalIterator.Sorted<KeyValue<T, ByteArray>>
         implements FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>>, AutoCloseable {
 
     private final Key.Prefix<T> prefix;
-    private final StorageImpl storage;
+    private final CoreStorage storage;
     private State state;
     private KeyValue<T, ByteArray> next;
     private boolean isClosed;
@@ -44,7 +44,7 @@ public final class IteratorImpl<T extends Key> extends AbstractFunctionalIterato
 
     private enum State {INIT, UNFETCHED, FORWARDED, FETCHED, COMPLETED;}
 
-    IteratorImpl(StorageImpl storage, Key.Prefix<T> prefix) {
+    RocksIterator(CoreStorage storage, Key.Prefix<T> prefix) {
         this.storage = storage;
         this.prefix = prefix;
         state = State.INIT;

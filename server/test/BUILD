@@ -29,7 +29,7 @@ package(default_visibility = ["//visibility:private",])
 host_compatible_java_test(
     name = "test-configuration",
     srcs = [
-        "ConfigurationTest.java",
+        "RocksConfigurationTest.java",
     ],
     native_libraries_deps = [
         "//common:common",

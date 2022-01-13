@@ -42,7 +42,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DAT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.TYPEDB_CLOSED;
 
-public class DatabaseManagerImpl implements TypeDB.DatabaseManager {
+public class CoreDatabaseManager implements TypeDB.DatabaseManager {
 
     static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
     static {
@@ -54,23 +54,23 @@ public class DatabaseManagerImpl implements TypeDB.DatabaseManager {
     protected static final String RESERVED_NAME_PREFIX = "_";
 
     private final Options.Database typeDBOptions;
-    protected final ConcurrentMap<String, DatabaseImpl> databases;
+    protected final ConcurrentMap<String, CoreDatabase> databases;
     protected final Factory.Database databaseFactory;
     protected final AtomicBoolean isOpen;
 
-    public static DatabaseManagerImpl open(Path directory, Factory typeDBFactory) {
+    public static CoreDatabaseManager open(Path directory, Factory typeDBFactory) {
         return open(new Options.Database().dataDir(directory), typeDBFactory);
     }
 
-    public static DatabaseManagerImpl open(Options.Database options) {
-        return open(options, new FactoryImpl());
+    public static CoreDatabaseManager open(Options.Database options) {
+        return open(options, new CoreFactory());
     }
 
-    public static DatabaseManagerImpl open(Options.Database options, Factory typeDBFactory) {
+    public static CoreDatabaseManager open(Options.Database options, Factory typeDBFactory) {
         return typeDBFactory.databaseManager(options);
     }
 
-    protected DatabaseManagerImpl(Options.Database options, Factory.Database databaseFactory) {
+    protected CoreDatabaseManager(Options.Database options, Factory.Database databaseFactory) {
         if (!Executors.isInitialised()) Executors.initialise(MAX_THREADS);
         this.typeDBOptions = options;
         this.databaseFactory = databaseFactory;
@@ -89,7 +89,7 @@ public class DatabaseManagerImpl implements TypeDB.DatabaseManager {
         if (databaseDirectories != null && databaseDirectories.length > 0) {
             Arrays.stream(databaseDirectories).parallel().forEach(directory -> {
                 String name = directory.getName();
-                DatabaseImpl database = databaseFactory.databaseLoadAndOpen(this, name);
+                CoreDatabase database = databaseFactory.databaseLoadAndOpen(this, name);
                 databases.put(name, database);
             });
         }
@@ -103,40 +103,40 @@ public class DatabaseManagerImpl implements TypeDB.DatabaseManager {
     }
 
     @Override
-    public DatabaseImpl create(String name) {
+    public CoreDatabase create(String name) {
         if (!isOpen.get()) throw TypeDBException.of(DATABASE_MANAGER_CLOSED);
         if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_RESERVED);
         if (databases.containsKey(name)) throw TypeDBException.of(DATABASE_EXISTS, name);
 
-        DatabaseImpl database = databaseFactory.databaseCreateAndOpen(this, name);
+        CoreDatabase database = databaseFactory.databaseCreateAndOpen(this, name);
         databases.put(name, database);
         return database;
     }
 
     @Override
-    public DatabaseImpl get(String name) {
+    public CoreDatabase get(String name) {
         if (!isOpen.get()) throw TypeDBException.of(DATABASE_MANAGER_CLOSED);
         if (isReservedName(name)) throw TypeDBException.of(DATABASE_NAME_RESERVED);
         return databases.get(name);
     }
 
     @Override
-    public Set<DatabaseImpl> all() {
+    public Set<CoreDatabase> all() {
         if (!isOpen.get()) throw TypeDBException.of(DATABASE_MANAGER_CLOSED);
         return databases.values().stream().filter(database -> !isReservedName(database.name())).collect(Collectors.toSet());
     }
 
-    void remove(DatabaseImpl database) {
+    void remove(CoreDatabase database) {
         databases.remove(database.name());
     }
 
     @Override
-    public SessionImpl session(String database, Arguments.Session.Type type) {
+    public CoreSession session(String database, Arguments.Session.Type type) {
         return session(database, type, new Options.Session());
     }
 
     @Override
-    public SessionImpl session(String database, Arguments.Session.Type type, Options.Session options) {
+    public CoreSession session(String database, Arguments.Session.Type type, Options.Session options) {
         if (!isOpen.get()) throw TypeDBException.of(TYPEDB_CLOSED);
         if (contains(database)) return get(database).createAndOpenSession(type, options);
         else throw TypeDBException.of(DATABASE_NOT_FOUND, database);
@@ -153,7 +153,7 @@ public class DatabaseManagerImpl implements TypeDB.DatabaseManager {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            databases.values().parallelStream().forEach(DatabaseImpl::close);
+            databases.values().parallelStream().forEach(CoreDatabase::close);
         }
     }
 

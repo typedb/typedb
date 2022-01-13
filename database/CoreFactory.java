@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.database;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 
-public final class FactoryImpl implements Factory {
+public final class CoreFactory implements Factory {
     private Database databaseFactory;
     private Session sessionFactory;
     private TransactionSchema transactionSchemaFactory;
@@ -29,21 +29,21 @@ public final class FactoryImpl implements Factory {
     private Storage storageFactory;
 
     @Override
-    public DatabaseManagerImpl databaseManager(Options.Database options) {
-        return new DatabaseManagerImpl(options, databaseFactory());
+    public CoreDatabaseManager databaseManager(Options.Database options) {
+        return new CoreDatabaseManager(options, databaseFactory());
     }
 
     private synchronized Factory.Database databaseFactory() {
         if (databaseFactory == null) {
             databaseFactory = new Database() {
                 @Override
-                public DatabaseImpl databaseCreateAndOpen(DatabaseManagerImpl databaseManager, String name) {
-                    return DatabaseImpl.createAndOpen(databaseManager, name, sessionFactory());
+                public CoreDatabase databaseCreateAndOpen(CoreDatabaseManager databaseManager, String name) {
+                    return CoreDatabase.createAndOpen(databaseManager, name, sessionFactory());
                 }
 
                 @Override
-                public DatabaseImpl databaseLoadAndOpen(DatabaseManagerImpl databaseManager, String name) {
-                    return DatabaseImpl.loadAndOpen(databaseManager, name, sessionFactory());
+                public CoreDatabase databaseLoadAndOpen(CoreDatabaseManager databaseManager, String name) {
+                    return CoreDatabase.loadAndOpen(databaseManager, name, sessionFactory());
                 }
             };
         }
@@ -55,13 +55,13 @@ public final class FactoryImpl implements Factory {
             sessionFactory = new Session() {
 
                 @Override
-                public SessionImpl.Schema sessionSchema(DatabaseImpl database, Options.Session options) {
-                    return new SessionImpl.Schema(database, Arguments.Session.Type.SCHEMA, options, transactionSchemaFactory());
+                public CoreSession.Schema sessionSchema(CoreDatabase database, Options.Session options) {
+                    return new CoreSession.Schema(database, Arguments.Session.Type.SCHEMA, options, transactionSchemaFactory());
                 }
 
                 @Override
-                public SessionImpl.Data sessionData(DatabaseImpl database, Options.Session options) {
-                    return new SessionImpl.Data(database, Arguments.Session.Type.DATA, options, transactionDataFactory());
+                public CoreSession.Data sessionData(CoreDatabase database, Options.Session options) {
+                    return new CoreSession.Data(database, Arguments.Session.Type.DATA, options, transactionDataFactory());
                 }
             };
         }
@@ -72,13 +72,13 @@ public final class FactoryImpl implements Factory {
         if (transactionSchemaFactory == null) {
             transactionSchemaFactory = new Factory.TransactionSchema() {
                 @Override
-                public TransactionImpl.Schema transaction(SessionImpl.Schema session, Arguments.Transaction.Type type, Options.Transaction options) {
-                    return new TransactionImpl.Schema(session, type, options, storageFactory());
+                public CoreTransaction.Schema transaction(CoreSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options) {
+                    return new CoreTransaction.Schema(session, type, options, storageFactory());
                 }
 
                 @Override
-                public TransactionImpl.Schema initialisationTransaction(SessionImpl.Schema session) {
-                    return new TransactionImpl.Schema(session, Arguments.Transaction.Type.WRITE, new Options.Transaction(), storageFactory());
+                public CoreTransaction.Schema initialisationTransaction(CoreSession.Schema session) {
+                    return new CoreTransaction.Schema(session, Arguments.Transaction.Type.WRITE, new Options.Transaction(), storageFactory());
                 }
             };
         }
@@ -88,7 +88,7 @@ public final class FactoryImpl implements Factory {
     private synchronized Factory.TransactionData transactionDataFactory() {
         if (transactionDataFactory == null) {
             transactionDataFactory = (session, type, options) ->
-                    new TransactionImpl.Data(session, type, options, storageFactory());
+                    new CoreTransaction.Data(session, type, options, storageFactory());
         }
         return transactionDataFactory;
     }
@@ -98,13 +98,13 @@ public final class FactoryImpl implements Factory {
             storageFactory = new Storage() {
 
                 @Override
-                public StorageImpl.Schema storageSchema(DatabaseImpl database, TransactionImpl.Schema transaction) {
-                    return new StorageImpl.Schema(database, transaction);
+                public CoreStorage.Schema storageSchema(CoreDatabase database, CoreTransaction.Schema transaction) {
+                    return new CoreStorage.Schema(database, transaction);
                 }
 
                 @Override
-                public StorageImpl.Data storageData(DatabaseImpl database, TransactionImpl transaction) {
-                    return new StorageImpl.Data(database, transaction);
+                public CoreStorage.Data storageData(CoreDatabase database, CoreTransaction transaction) {
+                    return new CoreStorage.Data(database, transaction);
                 }
             };
         }

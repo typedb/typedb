@@ -25,8 +25,8 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.database.SessionImpl;
-import com.vaticle.typedb.core.database.TransactionImpl;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundCondition;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConjunction;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier.CompletenessException;
@@ -42,16 +42,16 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 class CompletenessVerifier {
 
     private final Materialiser materialiser;
-    private final SessionImpl session;
+    private final CoreSession session;
     private final Set<BoundCondition> verifiedConditions;
 
-    private CompletenessVerifier(Materialiser materialiser, SessionImpl session) {
+    private CompletenessVerifier(Materialiser materialiser, CoreSession session) {
         this.materialiser = materialiser;
         this.session = session;
         this.verifiedConditions = new HashSet<>();
     }
 
-    static CompletenessVerifier create(Materialiser materialiser, SessionImpl session) {
+    static CompletenessVerifier create(Materialiser materialiser, CoreSession session) {
         return new CompletenessVerifier(materialiser, session);
     }
 
@@ -131,7 +131,7 @@ class CompletenessVerifier {
     }
 
     private int numReasonedAnswers(BoundConjunction boundConjunction, Set<Identifier.Variable.Retrievable> filter) {
-        try (TransactionImpl tx = session.transaction(Arguments.Transaction.Type.READ,
+        try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.READ,
                                                        new Options.Transaction().infer(true))) {
             return tx.reasoner().executeReasoner(
                     new Disjunction(Collections.singletonList(boundConjunction.conjunction())),

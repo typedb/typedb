@@ -39,15 +39,15 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESS
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.DATA_ACQUIRE_LOCK_TIMEOUT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public abstract class SessionImpl implements TypeDB.Session {
+public abstract class CoreSession implements TypeDB.Session {
 
-    private final DatabaseImpl database;
+    private final CoreDatabase database;
     private final UUID uuid;
     private final Context.Session context;
-    protected final ConcurrentMap<TransactionImpl, Long> transactions;
+    protected final ConcurrentMap<CoreTransaction, Long> transactions;
     protected final AtomicBoolean isOpen;
 
-    private SessionImpl(DatabaseImpl database, Arguments.Session.Type type, Options.Session options) {
+    private CoreSession(CoreDatabase database, Arguments.Session.Type type, Options.Session options) {
         this.database = database;
         this.context = new Context.Session(database.options(), options).type(type);
 
@@ -68,15 +68,15 @@ public abstract class SessionImpl implements TypeDB.Session {
         return false;
     }
 
-    SessionImpl.Schema asSchema() {
-        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(SessionImpl.Schema.class));
+    CoreSession.Schema asSchema() {
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(CoreSession.Schema.class));
     }
 
-    SessionImpl.Data asData() {
-        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(SessionImpl.Data.class));
+    CoreSession.Data asData() {
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(CoreSession.Data.class));
     }
 
-    abstract void remove(TransactionImpl transaction);
+    abstract void remove(CoreTransaction transaction);
 
     @Override
     public Arguments.Session.Type type() {
@@ -84,15 +84,15 @@ public abstract class SessionImpl implements TypeDB.Session {
     }
 
     @Override
-    public DatabaseImpl database() {
+    public CoreDatabase database() {
         return database;
     }
 
     @Override
-    public abstract TransactionImpl transaction(Arguments.Transaction.Type type);
+    public abstract CoreTransaction transaction(Arguments.Transaction.Type type);
 
     @Override
-    public abstract TransactionImpl transaction(Arguments.Transaction.Type type, Options.Transaction options);
+    public abstract CoreTransaction transaction(Arguments.Transaction.Type type, Options.Transaction options);
 
     @Override
     public UUID uuid() {
@@ -107,16 +107,16 @@ public abstract class SessionImpl implements TypeDB.Session {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            transactions.keySet().parallelStream().forEach(TransactionImpl::close);
+            transactions.keySet().parallelStream().forEach(CoreTransaction::close);
             database().remove(this);
         }
     }
 
-    public static class Schema extends SessionImpl {
+    public static class Schema extends CoreSession {
         protected final Factory.TransactionSchema txSchemaFactory;
         protected final Lock writeLock;
 
-        public Schema(DatabaseImpl database, Arguments.Session.Type type, Options.Session options,
+        public Schema(CoreDatabase database, Arguments.Session.Type type, Options.Session options,
                       Factory.TransactionSchema txSchemaFactory) {
             super(database, type, options);
             this.txSchemaFactory = txSchemaFactory;
@@ -129,17 +129,17 @@ public abstract class SessionImpl implements TypeDB.Session {
         }
 
         @Override
-        SessionImpl.Schema asSchema() {
+        CoreSession.Schema asSchema() {
             return this;
         }
 
         @Override
-        public TransactionImpl.Schema transaction(Arguments.Transaction.Type type) {
+        public CoreTransaction.Schema transaction(Arguments.Transaction.Type type) {
             return transaction(type, new Options.Transaction());
         }
 
         @Override
-        public TransactionImpl.Schema transaction(Arguments.Transaction.Type type, Options.Transaction options) {
+        public CoreTransaction.Schema transaction(Arguments.Transaction.Type type, Options.Transaction options) {
             if (!isOpen.get()) throw TypeDBException.of(SESSION_CLOSED);
             if (type.isWrite()) {
                 try {
@@ -150,13 +150,13 @@ public abstract class SessionImpl implements TypeDB.Session {
                     throw TypeDBException.of(e);
                 }
             }
-            TransactionImpl.Schema transaction = txSchemaFactory.transaction(this, type, options);
+            CoreTransaction.Schema transaction = txSchemaFactory.transaction(this, type, options);
             transactions.put(transaction, 0L);
             return transaction;
 
         }
 
-        TransactionImpl.Schema initialisationTransaction() {
+        CoreTransaction.Schema initialisationTransaction() {
             if (!isOpen.get()) throw TypeDBException.of(SESSION_CLOSED);
             try {
                 if (!writeLock.tryLock(new Options.Transaction().schemaLockTimeoutMillis(), MILLISECONDS)) {
@@ -165,23 +165,23 @@ public abstract class SessionImpl implements TypeDB.Session {
             } catch (InterruptedException e) {
                 throw TypeDBException.of(e);
             }
-            TransactionImpl.Schema transaction = txSchemaFactory.initialisationTransaction(this);
+            CoreTransaction.Schema transaction = txSchemaFactory.initialisationTransaction(this);
             transactions.put(transaction, 0L);
             return transaction;
         }
 
         @Override
-        void remove(TransactionImpl transaction) {
+        void remove(CoreTransaction transaction) {
             transactions.remove(transaction);
             if (transaction.type().isWrite()) writeLock.unlock();
         }
     }
 
-    public static class Data extends SessionImpl {
+    public static class Data extends CoreSession {
 
         protected final Factory.TransactionData txDataFactory;
 
-        public Data(DatabaseImpl database, Arguments.Session.Type type, Options.Session options, Factory.TransactionData txDataFactory) {
+        public Data(CoreDatabase database, Arguments.Session.Type type, Options.Session options, Factory.TransactionData txDataFactory) {
             super(database, type, options);
             this.txDataFactory = txDataFactory;
         }
@@ -192,17 +192,17 @@ public abstract class SessionImpl implements TypeDB.Session {
         }
 
         @Override
-        SessionImpl.Data asData() {
+        CoreSession.Data asData() {
             return this;
         }
 
         @Override
-        public TransactionImpl.Data transaction(Arguments.Transaction.Type type) {
+        public CoreTransaction.Data transaction(Arguments.Transaction.Type type) {
             return transaction(type, new Options.Transaction());
         }
 
         @Override
-        public TransactionImpl.Data transaction(Arguments.Transaction.Type type, Options.Transaction options) {
+        public CoreTransaction.Data transaction(Arguments.Transaction.Type type, Options.Transaction options) {
             if (!isOpen.get()) throw TypeDBException.of(SESSION_CLOSED);
             long lock = 0;
             if (type == Arguments.Transaction.Type.WRITE) {
@@ -214,13 +214,13 @@ public abstract class SessionImpl implements TypeDB.Session {
                     throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
                 }
             }
-            TransactionImpl.Data transaction = txDataFactory.transaction(this, type, options);
+            CoreTransaction.Data transaction = txDataFactory.transaction(this, type, options);
             transactions.put(transaction, lock);
             return transaction;
         }
 
         @Override
-        void remove(TransactionImpl transaction) {
+        void remove(CoreTransaction transaction) {
             long lock = transactions.remove(transaction);
             if (transaction.type().isWrite()) {
                 assert lock != 0;

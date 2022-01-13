@@ -29,9 +29,9 @@ import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.LogicManager;
-import com.vaticle.typedb.core.database.DatabaseManagerImpl;
-import com.vaticle.typedb.core.database.SessionImpl;
-import com.vaticle.typedb.core.database.TransactionImpl;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
@@ -56,10 +56,10 @@ public class ReasonerTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "reasoner-test";
-    private static DatabaseManagerImpl databaseManager;
+    private static CoreDatabaseManager databaseManager;
 
-    private TransactionImpl singleThreadElgTransaction(SessionImpl session, Arguments.Transaction.Type transactionType) {
-        TransactionImpl transaction = session.transaction(transactionType, new Options.Transaction().infer(true));
+    private CoreTransaction singleThreadElgTransaction(CoreSession session, Arguments.Transaction.Type transactionType) {
+        CoreTransaction transaction = session.transaction(transactionType, new Options.Transaction().infer(true));
         ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("typedb-actor"));
         transaction.reasoner().resolverRegistry().setExecutorService(service);
         return transaction;
@@ -68,7 +68,7 @@ public class ReasonerTest {
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = DatabaseManagerImpl.open(options);
+        databaseManager = CoreDatabaseManager.open(options);
         databaseManager.create(database);
     }
 
@@ -78,8 +78,8 @@ public class ReasonerTest {
     }
     @Test
     public void test_no_rules() {
-        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
 
                 EntityType milk = conceptMgr.putEntityType("milk");
@@ -88,13 +88,13 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
                 txn.commit();
             }
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
                 List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x has age-in-days $a;").asMatch()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
@@ -108,8 +108,8 @@ public class ReasonerTest {
 
     @Test
     public void test_offset_limit() {
-        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 EntityType milk = conceptMgr.putEntityType("milk");
                 AttributeType ageInDays = conceptMgr.putAttributeType("age-in-days", AttributeType.ValueType.LONG);
@@ -117,13 +117,13 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
                 txn.commit();
             }
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
                 List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x has age-in-days $a;").asMatch()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
@@ -143,8 +143,8 @@ public class ReasonerTest {
 
     @Test
     public void test_exception_kills_query() {
-        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
 
@@ -160,13 +160,13 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
                 txn.commit();
             }
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
                 txn.reasoner().resolverRegistry().terminateResolvers(new RuntimeException());
                 try {
                     List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x isa is-still-good;").asMatch()).toList();
@@ -181,8 +181,8 @@ public class ReasonerTest {
 
     @Test
     public void test_has_explicit_rule() {
-        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
 
@@ -199,14 +199,14 @@ public class ReasonerTest {
             }
         }
 
-        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 15;").asInsert());
                 txn.commit();
             }
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
                 List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x has is-still-good $a;").asMatch()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
@@ -221,8 +221,8 @@ public class ReasonerTest {
 
     @Test
     public void test_relation_rule() {
-        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
 
@@ -244,12 +244,12 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();
             }
-            try (TransactionImpl txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
                 List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
 
                 ans.iterator().forEachRemaining(a -> {

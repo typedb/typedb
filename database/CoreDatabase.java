@@ -84,32 +84,32 @@ import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class DatabaseImpl implements TypeDB.Database {
+public class CoreDatabase implements TypeDB.Database {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DatabaseImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
     private static final int ROCKS_LOG_PERIOD = 300;
 
-    protected final Configuration configuration;
+    protected final RocksConfiguration rocksConfiguration;
     protected final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     protected final KeyGenerator.Data.Persisted dataKeyGenerator;
-    protected final ConcurrentMap<UUID, Pair<SessionImpl, Long>> sessions;
+    protected final ConcurrentMap<UUID, Pair<CoreSession, Long>> sessions;
     protected final String name;
     protected final AtomicBoolean isOpen;
     private final StampedLock schemaLock;
-    private final DatabaseManagerImpl databaseManager;
+    private final CoreDatabaseManager databaseManager;
     private final ConsistencyManager consistencyMgr;
     private final AtomicInteger schemaLockWriteRequests;
     private final Factory.Session sessionFactory;
     protected OptimisticTransactionDB rocksSchema;
     protected OptimisticTransactionDB rocksData;
-    protected PartitionManager.Schema rocksSchemaPartitionMgr;
-    protected PartitionManager.Data rocksDataPartitionMgr;
-    protected SessionImpl.Data statisticsBackgroundCounterSession;
+    protected RocksPartitionManager.Schema rocksSchemaPartitionMgr;
+    protected RocksPartitionManager.Data rocksDataPartitionMgr;
+    protected CoreSession.Data statisticsBackgroundCounterSession;
     protected StatisticsBackgroundCounter statisticsBackgroundCounter;
     protected ScheduledExecutorService scheduledPropertiesLogger;
     private Cache cache;
 
-    protected DatabaseImpl(DatabaseManagerImpl databaseManager, String name, Factory.Session sessionFactory) {
+    protected CoreDatabase(CoreDatabaseManager databaseManager, String name, Factory.Session sessionFactory) {
         this.databaseManager = databaseManager;
         this.name = name;
         this.sessionFactory = sessionFactory;
@@ -119,26 +119,26 @@ public class DatabaseImpl implements TypeDB.Database {
         schemaLock = new StampedLock();
         schemaLockWriteRequests = new AtomicInteger(0);
         consistencyMgr = new ConsistencyManager();
-        configuration = new Configuration(options().storageDataCacheSize(),
+        rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
                 options().storageIndexCacheSize(), LOG.isDebugEnabled(), ROCKS_LOG_PERIOD);
         isOpen = new AtomicBoolean(false);
     }
 
-    static DatabaseImpl createAndOpen(DatabaseManagerImpl databaseManager, String name, Factory.Session sessionFactory) {
+    static CoreDatabase createAndOpen(CoreDatabaseManager databaseManager, String name, Factory.Session sessionFactory) {
         try {
             Files.createDirectory(databaseManager.directory().resolve(name));
         } catch (IOException e) {
             throw TypeDBException.of(e);
         }
 
-        DatabaseImpl database = new DatabaseImpl(databaseManager, name, sessionFactory);
+        CoreDatabase database = new CoreDatabase(databaseManager, name, sessionFactory);
         database.initialise();
         database.statisticsBgCounterStart();
         return database;
     }
 
-    static DatabaseImpl loadAndOpen(DatabaseManagerImpl databaseManager, String name, Factory.Session sessionFactory) {
-        DatabaseImpl database = new DatabaseImpl(databaseManager, name, sessionFactory);
+    static CoreDatabase loadAndOpen(CoreDatabaseManager databaseManager, String name, Factory.Session sessionFactory) {
+        CoreDatabase database = new CoreDatabase(databaseManager, name, sessionFactory);
         database.load();
         database.statisticsBgCounterStart();
         return database;
@@ -149,8 +149,8 @@ public class DatabaseImpl implements TypeDB.Database {
         initialiseEncodingVersion();
         openAndInitialiseData();
         isOpen.set(true);
-        try (SessionImpl.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
-            try (TransactionImpl.Schema txn = session.initialisationTransaction()) {
+        try (CoreSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
+            try (CoreTransaction.Schema txn = session.initialisationTransaction()) {
                 if (txn.graph().isInitialised()) throw TypeDBException.of(DIRTY_INITIALISATION);
                 txn.graph().initialise();
                 txn.commit();
@@ -160,15 +160,15 @@ public class DatabaseImpl implements TypeDB.Database {
 
     private void openSchema() {
         try {
-            List<ColumnFamilyDescriptor> schemaDescriptors = PartitionManager.Schema.descriptors(configuration.schema());
+            List<ColumnFamilyDescriptor> schemaDescriptors = RocksPartitionManager.Schema.descriptors(rocksConfiguration.schema());
             List<ColumnFamilyHandle> schemaHandles = new ArrayList<>();
             rocksSchema = OptimisticTransactionDB.open(
-                    configuration.schema().dbOptions(),
+                    rocksConfiguration.schema().dbOptions(),
                     directory().resolve(Encoding.ROCKS_SCHEMA).toString(),
                     schemaDescriptors,
                     schemaHandles
             );
-            rocksSchemaPartitionMgr = new PartitionManager.Schema(schemaDescriptors, schemaHandles);
+            rocksSchemaPartitionMgr = new RocksPartitionManager.Schema(schemaDescriptors, schemaHandles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
@@ -176,17 +176,17 @@ public class DatabaseImpl implements TypeDB.Database {
 
     private void openAndInitialiseData() {
         try {
-            List<ColumnFamilyDescriptor> dataDescriptors = PartitionManager.Data.descriptors(configuration.data());
+            List<ColumnFamilyDescriptor> dataDescriptors = RocksPartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
             rocksData = OptimisticTransactionDB.open(
-                    configuration.data().dbOptions(),
+                    rocksConfiguration.data().dbOptions(),
                     directory().resolve(Encoding.ROCKS_DATA).toString(),
                     dataDescriptors.subList(0, 1),
                     dataHandles
             );
             assert dataHandles.size() == 1;
             dataHandles.addAll(rocksData.createColumnFamilies(dataDescriptors.subList(1, dataDescriptors.size())));
-            rocksDataPartitionMgr = new PartitionManager.Data(dataDescriptors, dataHandles);
+            rocksDataPartitionMgr = new RocksPartitionManager.Data(dataDescriptors, dataHandles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
@@ -198,8 +198,8 @@ public class DatabaseImpl implements TypeDB.Database {
         validateEncodingVersion();
         openData();
         isOpen.set(true);
-        try (SessionImpl.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
-            try (TransactionImpl.Schema txn = session.initialisationTransaction()) {
+        try (CoreSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
+            try (CoreTransaction.Schema txn = session.initialisationTransaction()) {
                 schemaKeyGenerator.sync(txn.schemaStorage());
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
@@ -208,16 +208,16 @@ public class DatabaseImpl implements TypeDB.Database {
 
     private void openData() {
         try {
-            List<ColumnFamilyDescriptor> dataDescriptors = PartitionManager.Data.descriptors(configuration.data());
+            List<ColumnFamilyDescriptor> dataDescriptors = RocksPartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
             rocksData = OptimisticTransactionDB.open(
-                    configuration.data().dbOptions(),
+                    rocksConfiguration.data().dbOptions(),
                     directory().resolve(Encoding.ROCKS_DATA).toString(),
                     dataDescriptors,
                     dataHandles
             );
             assert dataDescriptors.size() == dataHandles.size();
-            rocksDataPartitionMgr = new PartitionManager.Data(dataDescriptors, dataHandles);
+            rocksDataPartitionMgr = new RocksPartitionManager.Data(dataDescriptors, dataHandles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
@@ -225,10 +225,10 @@ public class DatabaseImpl implements TypeDB.Database {
     }
 
     private void mayInitRocksDataLogger() {
-        if (configuration.isLoggingEnabled()) {
+        if (rocksConfiguration.isLoggingEnabled()) {
             scheduledPropertiesLogger = Executors.newScheduledThreadPool(1);
             scheduledPropertiesLogger.scheduleAtFixedRate(
-                    new RocksDBProperties.Logger(rocksData, rocksDataPartitionMgr.handles, name),
+                    new RocksProperties.Logger(rocksData, rocksDataPartitionMgr.handles, name),
                     0, ROCKS_LOG_PERIOD, SECONDS
             );
         } else {
@@ -263,11 +263,11 @@ public class DatabaseImpl implements TypeDB.Database {
         }
     }
 
-    public SessionImpl createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
+    public CoreSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
         if (!isOpen.get()) throw TypeDBException.of(DATABASE_CLOSED, name);
 
         long lock = 0;
-        SessionImpl session;
+        CoreSession session;
 
         if (type.isSchema()) {
             try {
@@ -398,7 +398,7 @@ public class DatabaseImpl implements TypeDB.Database {
         }
     }
 
-    void remove(SessionImpl session) {
+    void remove(CoreSession session) {
         if (session != statisticsBackgroundCounterSession) {
             long lock = sessions.remove(session.uuid()).second();
             if (session.type().isSchema()) schemaLock().unlockWrite(lock);
@@ -463,23 +463,23 @@ public class DatabaseImpl implements TypeDB.Database {
             this.storageTimeline = new StorageTimeline();
         }
 
-        void register(StorageImpl.Data storage) {
+        void register(CoreStorage.Data storage) {
             storageTimeline.opened(storage);
         }
 
-        public void closed(StorageImpl.Data storage) {
+        public void closed(CoreStorage.Data storage) {
             storageTimeline.closed(storage);
         }
 
-        public void commitCompletely(StorageImpl.Data storage) {
+        public void commitCompletely(CoreStorage.Data storage) {
             storageTimeline.commitCompletely(storage);
         }
 
-        void tryCommitOptimistically(StorageImpl.Data storage) {
+        void tryCommitOptimistically(CoreStorage.Data storage) {
             assert storageTimeline.isUncommitted(storage);
-            Set<StorageImpl.Data> concurrent = storageTimeline.concurrentlyCommitted(storage);
+            Set<CoreStorage.Data> concurrent = storageTimeline.concurrentlyCommitted(storage);
             synchronized (this) {
-                for (StorageImpl.Data committed : concurrent) {
+                for (CoreStorage.Data committed : concurrent) {
                     validateModifiedKeys(storage, committed);
                     if (hasIntersection(storage.deletedKeys(), committed.modifiedKeys())) {
                         throw TypeDBException.of(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);
@@ -491,7 +491,7 @@ public class DatabaseImpl implements TypeDB.Database {
             }
         }
 
-        private void validateModifiedKeys(StorageImpl.Data storage, StorageImpl.Data committed) {
+        private void validateModifiedKeys(CoreStorage.Data storage, CoreStorage.Data committed) {
             NavigableSet<ByteArray> active = storage.modifiedKeys();
             NavigableSet<ByteArray> other = committed.deletedKeys();
             if (active.isEmpty()) return;
@@ -519,8 +519,8 @@ public class DatabaseImpl implements TypeDB.Database {
 
         private static class StorageTimeline {
 
-            private final ConcurrentNavigableMap<Long, ConcurrentMap<StorageImpl.Data, Event>> events;
-            private final ConcurrentMap<StorageImpl.Data, CommitState> commitState;
+            private final ConcurrentNavigableMap<Long, ConcurrentMap<CoreStorage.Data, Event>> events;
+            private final ConcurrentMap<CoreStorage.Data, CommitState> commitState;
             private final AtomicBoolean cleanupRunning;
 
             enum Event {OPENED, COMMITTED}
@@ -533,20 +533,20 @@ public class DatabaseImpl implements TypeDB.Database {
                 this.cleanupRunning = new AtomicBoolean(false);
             }
 
-            void opened(StorageImpl.Data storage) {
+            void opened(CoreStorage.Data storage) {
                 events.computeIfAbsent(storage.snapshotStart(), (key) -> new ConcurrentHashMap<>()).put(storage, Event.OPENED);
                 commitState.put(storage, CommitState.UNCOMMITTED);
             }
 
-            boolean isUncommitted(StorageImpl.Data storage) {
+            boolean isUncommitted(CoreStorage.Data storage) {
                 return commitState.containsKey(storage);
             }
 
-            void commitOptimistically(StorageImpl.Data storage) {
+            void commitOptimistically(CoreStorage.Data storage) {
                 commitState.put(storage, CommitState.COMMITTING);
             }
 
-            void commitCompletely(StorageImpl.Data storage) {
+            void commitCompletely(CoreStorage.Data storage) {
                 assert commitState.get(storage) == CommitState.COMMITTING && storage.snapshotEnd().isPresent();
                 events.compute(storage.snapshotEnd().get(), (snapshot, events) -> {
                     if (events == null) events = new ConcurrentHashMap<>();
@@ -556,12 +556,12 @@ public class DatabaseImpl implements TypeDB.Database {
                 commitState.remove(storage);
             }
 
-            void closed(StorageImpl.Data storage) {
+            void closed(CoreStorage.Data storage) {
                 if (commitState.containsKey(storage)) {
                     commitState.remove(storage);
                     deleteOpenedEvent(storage);
                 } else {
-                    Map<StorageImpl.Data, Event> events = this.events.get(storage.snapshotEnd().get());
+                    Map<CoreStorage.Data, Event> events = this.events.get(storage.snapshotEnd().get());
                     if (events != null) {
                         Event event = events.get(storage);
                         assert event == null || event == Event.COMMITTED;
@@ -574,9 +574,9 @@ public class DatabaseImpl implements TypeDB.Database {
                 }
             }
 
-            Set<StorageImpl.Data> concurrentlyCommitted(StorageImpl.Data storage) {
+            Set<CoreStorage.Data> concurrentlyCommitted(CoreStorage.Data storage) {
                 assert !storage.snapshotEnd().isPresent();
-                Set<StorageImpl.Data> concurrentCommitted = iterate(commitState.keySet())
+                Set<CoreStorage.Data> concurrentCommitted = iterate(commitState.keySet())
                         .filter(s -> commitState.get(s) == CommitState.COMMITTING).toSet();
                 events.tailMap(storage.snapshotStart() + 1).forEach((snapshot, events) -> {
                     events.forEach((s, type) -> {
@@ -586,13 +586,13 @@ public class DatabaseImpl implements TypeDB.Database {
                 return concurrentCommitted;
             }
 
-            private boolean isDeletable(StorageImpl.Data storage) {
+            private boolean isDeletable(CoreStorage.Data storage) {
                 assert storage.snapshotEnd().isPresent() || commitState.containsKey(storage);
                 if (commitState.containsKey(storage)) return false;
                 // check for: open transactions that were opened before this one was committed
-                Map<Long, ConcurrentMap<StorageImpl.Data, Event>> beforeCommitted = events.headMap(storage.snapshotEnd().get());
-                for (StorageImpl.Data uncommitted : commitState.keySet()) {
-                    ConcurrentMap<StorageImpl.Data, Event> events = beforeCommitted.get(uncommitted.snapshotStart());
+                Map<Long, ConcurrentMap<CoreStorage.Data, Event>> beforeCommitted = events.headMap(storage.snapshotEnd().get());
+                for (CoreStorage.Data uncommitted : commitState.keySet()) {
+                    ConcurrentMap<CoreStorage.Data, Event> events = beforeCommitted.get(uncommitted.snapshotStart());
                     if (events != null && events.containsKey(uncommitted) && events.get(uncommitted) == Event.OPENED) {
                         return false;
                     }
@@ -600,7 +600,7 @@ public class DatabaseImpl implements TypeDB.Database {
                 return true;
             }
 
-            private void deleteCommittedEvent(StorageImpl.Data storage) {
+            private void deleteCommittedEvent(CoreStorage.Data storage) {
                 events.compute(storage.snapshotEnd().get(), (snapshot, events) -> {
                     if (events != null) {
                         events.remove(storage);
@@ -610,7 +610,7 @@ public class DatabaseImpl implements TypeDB.Database {
                 });
             }
 
-            private void deleteOpenedEvent(StorageImpl.Data storage) {
+            private void deleteOpenedEvent(CoreStorage.Data storage) {
                 events.compute(storage.snapshotStart(), (snapshot, events) -> {
                     if (events != null) {
                         events.remove(storage);
@@ -622,11 +622,11 @@ public class DatabaseImpl implements TypeDB.Database {
 
             private void cleanupCommitted() {
                 if (cleanupRunning.compareAndSet(false, true)) {
-                    for (Map.Entry<Long, ConcurrentMap<StorageImpl.Data, Event>> entry : this.events.entrySet()) {
+                    for (Map.Entry<Long, ConcurrentMap<CoreStorage.Data, Event>> entry : this.events.entrySet()) {
                         Long snapshot = entry.getKey();
-                        ConcurrentMap<StorageImpl.Data, Event> events = entry.getValue();
-                        StorageImpl.Data other;
-                        for (Iterator<StorageImpl.Data> iter = events.keySet().iterator(); iter.hasNext(); ) {
+                        ConcurrentMap<CoreStorage.Data, Event> events = entry.getValue();
+                        CoreStorage.Data other;
+                        for (Iterator<CoreStorage.Data> iter = events.keySet().iterator(); iter.hasNext(); ) {
                             other = iter.next();
                             if (other.snapshotEnd().isPresent() && isDeletable(other)) iter.remove();
                         }
@@ -637,7 +637,7 @@ public class DatabaseImpl implements TypeDB.Database {
             }
 
             private int committedEventCount() {
-                Set<StorageImpl.Data> recorded = new HashSet<>();
+                Set<CoreStorage.Data> recorded = new HashSet<>();
                 this.events.forEach((snapshot, events) ->
                         events.forEach((storage, type) -> {
                             if (type == Event.COMMITTED) recorded.add(storage);
@@ -653,12 +653,12 @@ public class DatabaseImpl implements TypeDB.Database {
         private final TraversalCache traversalCache;
         private final LogicCache logicCache;
         private final TypeGraph typeGraph;
-        private final StorageImpl schemaStorage;
+        private final CoreStorage schemaStorage;
         private long borrowerCount;
         private boolean invalidated;
 
-        private Cache(DatabaseImpl database) {
-            schemaStorage = new StorageImpl.Cache(database.rocksSchema, database.rocksSchemaPartitionMgr);
+        private Cache(CoreDatabase database) {
+            schemaStorage = new CoreStorage.Cache(database.rocksSchema, database.rocksSchemaPartitionMgr);
             typeGraph = new TypeGraph(schemaStorage, true);
             traversalCache = new TraversalCache();
             logicCache = new LogicCache();
@@ -705,12 +705,12 @@ public class DatabaseImpl implements TypeDB.Database {
 
     public static class StatisticsBackgroundCounter {
 
-        private final SessionImpl.Data session;
+        private final CoreSession.Data session;
         private final Thread thread;
         private final Semaphore countJobNotifications;
         private boolean isStopped;
 
-        StatisticsBackgroundCounter(SessionImpl.Data session) {
+        StatisticsBackgroundCounter(CoreSession.Data session) {
             this.session = session;
             countJobNotifications = new Semaphore(0);
             thread = NamedThreadFactory.create(session.database().name + "::statistics-background-counter")
@@ -724,7 +724,7 @@ public class DatabaseImpl implements TypeDB.Database {
 
         private void countFn() {
             do {
-                try (TransactionImpl.Data tx = session.transaction(WRITE)) {
+                try (CoreTransaction.Data tx = session.transaction(WRITE)) {
                     boolean shouldRestart = tx.graphMgr.data().stats().processCountJobs();
                     if (shouldRestart) countJobNotifications.release();
                     tx.commit();

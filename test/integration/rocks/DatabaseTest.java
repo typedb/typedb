@@ -19,6 +19,9 @@
 package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.Factory;
+import com.vaticle.typedb.core.database.CoreFactory;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import org.junit.Test;
 
@@ -33,7 +36,7 @@ import static com.vaticle.typedb.core.common.test.Util.assertThrowsWithMessage;
 
 public class DatabaseTest {
 
-    private static final Factory rocksFactory = new FactoryImpl();
+    private static final Factory factory = new CoreFactory();
 
     @Test
     public void databaseCreationSucceeds() throws IOException {
@@ -41,7 +44,7 @@ public class DatabaseTest {
         Path logDir = dataDir.resolve("logs");
         Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
                 .storageIndexCacheSize(MB).storageDataCacheSize(MB);
-        DatabaseManagerImpl databaseManager = rocksFactory.databaseManager(options);
+        CoreDatabaseManager databaseManager = factory.databaseManager(options);
         databaseManager.create("test");
         databaseManager.close();
     }
@@ -53,7 +56,7 @@ public class DatabaseTest {
         Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
                 .storageIndexCacheSize(MB).storageDataCacheSize(MB);
         assertThrowsWithMessage(
-                () -> rocksFactory.databaseManager(options),
+                () -> factory.databaseManager(options),
                 INCOMPATIBLE_ENCODING.message("test", 0, Encoding.ENCODING_VERSION)
         );
     }

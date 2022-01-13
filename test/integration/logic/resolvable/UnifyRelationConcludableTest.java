@@ -37,9 +37,9 @@ import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.database.DatabaseManagerImpl;
-import com.vaticle.typedb.core.database.SessionImpl;
-import com.vaticle.typedb.core.database.TransactionImpl;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typeql.lang.TypeQL;
@@ -83,20 +83,20 @@ public class UnifyRelationConcludableTest {
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "unify-relation-test";
-    private static DatabaseManagerImpl databaseManager;
-    private static SessionImpl session;
-    private static TransactionImpl transaction;
+    private static CoreDatabaseManager databaseManager;
+    private static CoreSession session;
+    private static CoreTransaction transaction;
     private static ConceptManager conceptMgr;
     private static LogicManager logicMgr;
 
     @BeforeClass
     public static void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = DatabaseManagerImpl.open(options);
+        databaseManager = CoreDatabaseManager.open(options);
         databaseManager.create(database);
 
-        try (SessionImpl schemaSession = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (TransactionImpl tx = schemaSession.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession schemaSession = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction tx = schemaSession.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(TypeQL.parseQuery(
                         "define\n" +
                                 "person sub entity,\n" +
@@ -158,8 +158,8 @@ public class UnifyRelationConcludableTest {
             }
         }
 
-        try (SessionImpl dataSession = databaseManager.session(database, Arguments.Session.Type.DATA)) {
-            try (TransactionImpl tx = dataSession.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession dataSession = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction tx = dataSession.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(TypeQL.parseQuery(
                         "insert " +
                                 "(taxi: $x, night-shift-driver: $y) isa part-time-driving; " +

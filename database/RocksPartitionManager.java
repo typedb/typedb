@@ -43,12 +43,12 @@ import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.OPTIMIS
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.STATISTICS;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.VARIABLE_START_EDGE;
 
-abstract class PartitionManager {
+abstract class RocksPartitionManager {
 
     private final List<ColumnFamilyDescriptor> descriptors;
     final List<ColumnFamilyHandle> handles;
 
-    private PartitionManager(List<ColumnFamilyDescriptor> descriptors, List<ColumnFamilyHandle> handles) {
+    private RocksPartitionManager(List<ColumnFamilyDescriptor> descriptors, List<ColumnFamilyHandle> handles) {
         validateListsMatch(descriptors, handles);
         this.descriptors = descriptors;
         this.handles = handles;
@@ -73,7 +73,7 @@ abstract class PartitionManager {
         handles.forEach(AbstractImmutableNativeReference::close);
     }
 
-    static class Schema extends PartitionManager {
+    static class Schema extends RocksPartitionManager {
 
         private final ColumnFamilyHandle defaultHandle;
 
@@ -82,7 +82,7 @@ abstract class PartitionManager {
             defaultHandle = handles.get(0);
         }
 
-        static List<ColumnFamilyDescriptor> descriptors(Configuration.Schema configuration) {
+        static List<ColumnFamilyDescriptor> descriptors(RocksConfiguration.Schema configuration) {
             return list(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, configuration.defaultCFOptions()));
         }
 
@@ -98,7 +98,7 @@ abstract class PartitionManager {
         }
     }
 
-    static class Data extends PartitionManager {
+    static class Data extends RocksPartitionManager {
 
         private static final int DEFAULT_HANDLE_INDEX = 0;
         private static final int VARIABLE_START_EDGE_HANDLE_INDEX = 1;
@@ -121,7 +121,7 @@ abstract class PartitionManager {
             statisticsHandle = handles.get(STATISTICS_HANDLE_INDEX);
         }
 
-        static List<ColumnFamilyDescriptor> descriptors(Configuration.Data configuration) {
+        static List<ColumnFamilyDescriptor> descriptors(RocksConfiguration.Data configuration) {
             ColumnFamilyDescriptor[] descriptors = new ColumnFamilyDescriptor[5];
             descriptors[DEFAULT_HANDLE_INDEX] = new ColumnFamilyDescriptor(
                     RocksDB.DEFAULT_COLUMN_FAMILY,

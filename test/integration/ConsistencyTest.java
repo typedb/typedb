@@ -23,8 +23,8 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
-import com.vaticle.typedb.core.database.DatabaseManagerImpl;
-import com.vaticle.typedb.core.database.SessionImpl;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
@@ -52,12 +52,12 @@ public class ConsistencyTest {
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageIndexCacheSize(MB).storageDataCacheSize(MB);
 
-    private DatabaseManagerImpl databaseManager;
+    private CoreDatabaseManager databaseManager;
 
     @Before
     public void setup() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = DatabaseManagerImpl.open(options);
+        databaseManager = CoreDatabaseManager.open(options);
         databaseManager.create(database);
         try (TypeDB.Session session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -333,7 +333,7 @@ public class ConsistencyTest {
 
     @Test
     public void large_loads_end_with_zero_transaction_isolation_sets() throws ExecutionException, InterruptedException {
-        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
 
             TypeDB.Transaction setupTxn = session.transaction(Arguments.Transaction.Type.WRITE);
             setupTxn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Bob'; $y isa person, has name 'Alice';"));

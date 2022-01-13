@@ -30,9 +30,9 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.database.DatabaseManagerImpl;
-import com.vaticle.typedb.core.database.SessionImpl;
-import com.vaticle.typedb.core.database.TransactionImpl;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
@@ -68,19 +68,19 @@ public class UnifyAttributeConcludableTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "unify-attribute-test";
-    private static DatabaseManagerImpl databaseManager;
-    private static SessionImpl session;
-    private static TransactionImpl transaction;
+    private static CoreDatabaseManager databaseManager;
+    private static CoreSession session;
+    private static CoreTransaction transaction;
     private static ConceptManager conceptMgr;
     private static LogicManager logicMgr;
 
     @BeforeClass
     public static void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = DatabaseManagerImpl.open(options);
+        databaseManager = CoreDatabaseManager.open(options);
         databaseManager.create(database);
         session = databaseManager.session(database, Arguments.Session.Type.SCHEMA);
-        try (TransactionImpl tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
             tx.query().define(TypeQL.parseQuery("define " +
                                                         "person sub entity," +
                                                         "    owns first-name," +

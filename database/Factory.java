@@ -23,40 +23,40 @@ import com.vaticle.typedb.core.common.parameters.Options;
 
 public interface Factory {
 
-    DatabaseManagerImpl databaseManager(Options.Database options);
+    CoreDatabaseManager databaseManager(Options.Database options);
 
     interface Database {
 
-        DatabaseImpl databaseCreateAndOpen(DatabaseManagerImpl databaseManager, String name);
+        CoreDatabase databaseCreateAndOpen(CoreDatabaseManager databaseManager, String name);
 
-        DatabaseImpl databaseLoadAndOpen(DatabaseManagerImpl databaseManager, String name);
+        CoreDatabase databaseLoadAndOpen(CoreDatabaseManager databaseManager, String name);
     }
 
     interface Session {
 
-        SessionImpl.Schema sessionSchema(DatabaseImpl database, Options.Session options);
+        CoreSession.Schema sessionSchema(CoreDatabase database, Options.Session options);
 
-        SessionImpl.Data sessionData(DatabaseImpl database, Options.Session options);
+        CoreSession.Data sessionData(CoreDatabase database, Options.Session options);
     }
 
     interface TransactionSchema {
 
-        TransactionImpl.Schema transaction(SessionImpl.Schema session, Arguments.Transaction.Type type,
+        CoreTransaction.Schema transaction(CoreSession.Schema session, Arguments.Transaction.Type type,
                                            Options.Transaction options);
 
-        TransactionImpl.Schema initialisationTransaction(SessionImpl.Schema session);
+        CoreTransaction.Schema initialisationTransaction(CoreSession.Schema session);
     }
 
     interface TransactionData {
 
-        TransactionImpl.Data transaction(SessionImpl.Data session, Arguments.Transaction.Type type,
+        CoreTransaction.Data transaction(CoreSession.Data session, Arguments.Transaction.Type type,
                                          Options.Transaction options);
     }
 
     interface Storage {
 
-        StorageImpl.Schema storageSchema(DatabaseImpl database, TransactionImpl.Schema transaction);
+        CoreStorage.Schema storageSchema(CoreDatabase database, CoreTransaction.Schema transaction);
 
-        StorageImpl.Data storageData(DatabaseImpl database, TransactionImpl transaction);
+        CoreStorage.Data storageData(CoreDatabase database, CoreTransaction transaction);
     }
 }

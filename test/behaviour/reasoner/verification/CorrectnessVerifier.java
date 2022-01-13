@@ -18,20 +18,20 @@
 
 package com.vaticle.typedb.core.test.behaviour.reasoner.verification;
 
-import com.vaticle.typedb.core.database.SessionImpl;
+import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 public class CorrectnessVerifier {
 
     private final Materialiser materialiser;
-    private final SessionImpl session;
+    private final CoreSession session;
 
-    public CorrectnessVerifier(SessionImpl session, Materialiser materialiser) {
+    public CorrectnessVerifier(CoreSession session, Materialiser materialiser) {
         this.session = session;
         this.materialiser = materialiser;
     }
 
-    public static CorrectnessVerifier initialise(SessionImpl session) {
+    public static CorrectnessVerifier initialise(CoreSession session) {
         return new CorrectnessVerifier(session, Materialiser.materialise(session));
     }
 

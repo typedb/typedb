@@ -21,9 +21,9 @@ package com.vaticle.typedb.core.test.behaviour.reasoner.verification.test;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
-import com.vaticle.typedb.core.database.DatabaseManagerImpl;
-import com.vaticle.typedb.core.database.SessionImpl;
-import com.vaticle.typedb.core.database.TransactionImpl;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier.CompletenessException;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier.SoundnessException;
@@ -56,12 +56,12 @@ public class CorrectnessVerifierTest {
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
-    private DatabaseManagerImpl databaseManager;
+    private CoreDatabaseManager databaseManager;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        this.databaseManager = DatabaseManagerImpl.open(options);
+        this.databaseManager = CoreDatabaseManager.open(options);
         this.databaseManager.create(database);
         try (TypeDB.Session session = databaseManager.session(CorrectnessVerifierTest.database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -91,7 +91,7 @@ public class CorrectnessVerifierTest {
     @Test
     public void testCorrectnessPassesForEmployableExample() {
         TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
-        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
             CorrectnessVerifier correctnessVerifier = CorrectnessVerifier.initialise(session);
             correctnessVerifier.verifyCorrectness(inferenceQuery);
             correctnessVerifier.close();
@@ -102,9 +102,9 @@ public class CorrectnessVerifierTest {
     public void testSoundnessThrowsWhenRuleTriggersTooOftenEmployableExample() {
         TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
         CorrectnessVerifier correctnessVerifier;
-        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
             correctnessVerifier = CorrectnessVerifier.initialise(session);
-            try (TransactionImpl tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(parseQuery("insert $p isa person;"));
                 tx.commit();
             }
@@ -117,9 +117,9 @@ public class CorrectnessVerifierTest {
     public void testCompletenessThrowsWhenRuleIsNotTriggeredEmployableExample() {
         TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
         CorrectnessVerifier correctnessVerifier;
-        try (SessionImpl session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
             correctnessVerifier = CorrectnessVerifier.initialise(session);
-            try (TransactionImpl tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().delete(parseQuery("match $p isa person; delete $p isa person;"));
                 tx.commit();
             }

@@ -23,9 +23,9 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Options;
-import com.vaticle.typedb.core.database.DatabaseManagerImpl;
-import com.vaticle.typedb.core.database.SessionImpl;
-import com.vaticle.typedb.core.database.TransactionImpl;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
@@ -61,13 +61,13 @@ public class TraversalTest {
             .storageIndexCacheSize(MB).storageDataCacheSize(MB);
     private static String database = "query-test";
 
-    private static DatabaseManagerImpl databaseManager;
-    private static SessionImpl session;
+    private static CoreDatabaseManager databaseManager;
+    private static CoreSession session;
 
     @BeforeClass
     public static void setup() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = DatabaseManagerImpl.open(options);
+        databaseManager = CoreDatabaseManager.open(options);
         databaseManager.create(database);
         session = databaseManager.session(database, Arguments.Session.Type.SCHEMA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
@@ -109,18 +109,18 @@ public class TraversalTest {
     public void backtrack_seeks_do_not_skip_answers() {
         session = databaseManager.session(database, Arguments.Session.Type.DATA);
         // note: must insert in separate Tx's so that the relations are retrieved in a specific order later
-        try (TransactionImpl transaction = session.transaction(WRITE)) {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
             transaction.query().insert(TypeQL.parseQuery(
                     "insert $x isa person; (friend: $x) isa friendship;").asInsert()
             );
             transaction.commit();
         }
-        try (TransactionImpl transaction = session.transaction(WRITE)) {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
             transaction.query().insert(TypeQL.parseQuery("insert" +
                     "$y isa dog; (friend: $y) isa friendship;").asInsert());
             transaction.commit();
         }
-        try (TransactionImpl transaction = session.transaction(READ)) {
+        try (CoreTransaction transaction = session.transaction(READ)) {
             /*
             match
             $rel ($role: $friend);
@@ -203,7 +203,7 @@ public class TraversalTest {
             transaction.commit();
         }
 
-        try (TransactionImpl transaction = session.transaction(READ)) {
+        try (CoreTransaction transaction = session.transaction(READ)) {
             GraphProcedure.Builder proc = GraphProcedure.builder(10);
             /*
             vertices:

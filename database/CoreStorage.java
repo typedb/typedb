@@ -59,18 +59,18 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 import static com.vaticle.typedb.core.graph.common.Encoding.System.TRANSACTION_DUMMY_WRITE;
 
-public abstract class StorageImpl implements Storage {
+public abstract class CoreStorage implements Storage {
 
-    private static final Logger LOG = LoggerFactory.getLogger(StorageImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CoreStorage.class);
 
     protected final Transaction rocksTransaction;
     // TODO: use a single read options when 'setAutoPrefixMode(true)' is available on ReadOptions API
     protected final ReadOptions readOptions;
     protected final ReadOptions readOptionsWithPrefixBloom;
-    protected final PartitionManager partitionMgr;
+    protected final RocksPartitionManager partitionMgr;
     protected final Snapshot snapshot;
     protected final ReadWriteLock deleteCloseSchemaWriteLock;
-    protected final ConcurrentSet<IteratorImpl<?>> iterators;
+    protected final ConcurrentSet<RocksIterator<?>> iterators;
     // TODO: use a single set of iterators when 'setAutoPrefixMode(true)' is available on ReadOptions API
     protected final ConcurrentMap<Partition, ConcurrentLinkedQueue<org.rocksdb.RocksIterator>> recycled;
     protected final ConcurrentMap<Partition, ConcurrentLinkedQueue<org.rocksdb.RocksIterator>> recycledWithPrefixBloom;
@@ -79,7 +79,7 @@ public abstract class StorageImpl implements Storage {
     private final WriteOptions writeOptions;
     private final AtomicBoolean isOpen;
 
-    private StorageImpl(OptimisticTransactionDB rocksDB, PartitionManager partitionMgr, boolean isReadOnly) {
+    private CoreStorage(OptimisticTransactionDB rocksDB, RocksPartitionManager partitionMgr, boolean isReadOnly) {
         this.isReadOnly = isReadOnly;
         this.partitionMgr = partitionMgr;
         iterators = new ConcurrentSet<>();
@@ -138,7 +138,7 @@ public abstract class StorageImpl implements Storage {
         }
     }
 
-    void recycle(IteratorImpl<?> iterator) {
+    void recycle(RocksIterator<?> iterator) {
         if (iterator.usePrefixBloom()) {
             recycledWithPrefixBloom.get(iterator.partition()).add(iterator.internalRocksIterator);
         } else {
@@ -146,7 +146,7 @@ public abstract class StorageImpl implements Storage {
         }
     }
 
-    void remove(IteratorImpl<?> iterator) {
+    void remove(RocksIterator<?> iterator) {
         iterators.remove(iterator);
     }
 
@@ -171,7 +171,7 @@ public abstract class StorageImpl implements Storage {
         try {
             deleteCloseSchemaWriteLock.writeLock().lock();
             if (isOpen.compareAndSet(true, false)) {
-                iterators.parallelStream().forEach(IteratorImpl::close);
+                iterators.parallelStream().forEach(RocksIterator::close);
                 recycledWithPrefixBloom.values().forEach(iters -> iters.forEach(AbstractImmutableNativeReference::close));
                 recycled.values().forEach(iters -> iters.forEach(AbstractImmutableNativeReference::close));
                 rocksTransaction.close();
@@ -186,9 +186,9 @@ public abstract class StorageImpl implements Storage {
         }
     }
 
-    static class Cache extends StorageImpl {
+    static class Cache extends CoreStorage {
 
-        Cache(OptimisticTransactionDB rocksDB, PartitionManager partitionMgr) {
+        Cache(OptimisticTransactionDB rocksDB, RocksPartitionManager partitionMgr) {
             super(rocksDB, partitionMgr, true);
         }
 
@@ -209,18 +209,18 @@ public abstract class StorageImpl implements Storage {
 
         @Override
         public <T extends Key> FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>> iterate(Key.Prefix<T> prefix) {
-            IteratorImpl<T> iterator = new IteratorImpl<>(this, prefix);
+            RocksIterator<T> iterator = new RocksIterator<>(this, prefix);
             iterators.add(iterator);
             if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED); //guard against close() race conditions
             return iterator.onFinalise(iterator::close);
         }
     }
 
-    static abstract class TransactionBounded extends StorageImpl {
+    static abstract class TransactionBounded extends CoreStorage {
 
-        protected final TransactionImpl transaction;
+        protected final CoreTransaction transaction;
 
-        TransactionBounded(OptimisticTransactionDB rocksDB, PartitionManager partitionMgr, TransactionImpl transaction) {
+        TransactionBounded(OptimisticTransactionDB rocksDB, RocksPartitionManager partitionMgr, CoreTransaction transaction) {
             super(rocksDB, partitionMgr, transaction.type().isRead());
             this.transaction = transaction;
         }
@@ -291,7 +291,7 @@ public abstract class StorageImpl implements Storage {
 
         @Override
         public <T extends Key> FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>> iterate(Key.Prefix<T> prefix) {
-            IteratorImpl<T> iterator = new IteratorImpl<>(this, prefix);
+            RocksIterator<T> iterator = new RocksIterator<>(this, prefix);
             iterators.add(iterator);
             if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED); //guard against close() race conditions
             return iterator;
@@ -328,7 +328,7 @@ public abstract class StorageImpl implements Storage {
 
         private final KeyGenerator.Schema schemaKeyGenerator;
 
-        public Schema(DatabaseImpl database, TransactionImpl transaction) {
+        public Schema(CoreDatabase database, CoreTransaction transaction) {
             super(database.rocksSchema, database.rocksSchemaPartitionMgr, transaction);
             this.schemaKeyGenerator = database.schemaKeyGenerator();
         }
@@ -360,7 +360,7 @@ public abstract class StorageImpl implements Storage {
     @NotThreadSafe
     public static class Data extends TransactionBounded implements Storage.Data {
 
-        private final DatabaseImpl database;
+        private final CoreDatabase database;
         private final KeyGenerator.Data dataKeyGenerator;
 
         private final ConcurrentNavigableMap<ByteArray, Boolean> modifiedKeys;
@@ -369,7 +369,7 @@ public abstract class StorageImpl implements Storage {
         private final long snapshotStart;
         private volatile Long snapshotEnd;
 
-        public Data(DatabaseImpl database, TransactionImpl transaction) {
+        public Data(CoreDatabase database, CoreTransaction transaction) {
             super(database.rocksData, database.rocksDataPartitionMgr, transaction);
             this.database = database;
             this.dataKeyGenerator = database.dataKeyGenerator();
