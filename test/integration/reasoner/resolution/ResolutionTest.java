@@ -226,16 +226,16 @@ public class ResolutionTest {
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has name \"Bob\";"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has name \"Bob\";"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has name \"Bob\";"));
-//                transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 42;"));
-//                transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 42;"));
-//                transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 42;"));
+                transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 42;"));
+                transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 42;"));
+                transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 42;"));
                 transaction.commit();
             }
         }
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $p1 isa person, has age 42; }", transaction.logic());
-                createRootAndAssertResponses(transaction, conjunctionPattern, 3L, 3L);
+                createRootAndAssertResponses(transaction, conjunctionPattern, 6L, 3L);
             }
         }
     }
@@ -504,8 +504,8 @@ public class ResolutionTest {
         int answersFound = 0;
         int explainableAnswersFound = 0;
         for (int i = 0; i < n - 1; i++) {
-            ConceptMap answer = responses.take();
-//            ConceptMap answer = responses.poll(1000, TimeUnit.MILLISECONDS);// polling prevents the test hanging
+//            ConceptMap answer = responses.take();
+            ConceptMap answer = responses.poll(500, TimeUnit.MILLISECONDS);// polling prevents the test hanging
 
             if (answer != null) {
                 answersFound += 1;
@@ -516,7 +516,6 @@ public class ResolutionTest {
 //                }
             }
         }
-        Thread.sleep(1000);
         ResolutionTracer.get().finishDefaultTrace();  // TODO: Not nice that we start tracing in a different method
         assertEquals(answerCount, answersFound);
         // assertEquals(explainableAnswers, explainableAnswersFound);  // TODO: Re-enable when explanation are back
