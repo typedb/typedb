@@ -53,7 +53,7 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
 
     protected static final String RESERVED_NAME_PREFIX = "_";
 
-    private final Options.Database typeDBOptions;
+    private final Options.Database databaseOptions;
     protected final ConcurrentMap<String, CoreDatabase> databases;
     protected final Factory.Database databaseFactory;
     protected final AtomicBoolean isOpen;
@@ -62,17 +62,17 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
         return open(new Options.Database().dataDir(directory), typeDBFactory);
     }
 
-    public static CoreDatabaseManager open(Options.Database options) {
-        return open(options, new CoreFactory());
+    public static CoreDatabaseManager open(Options.Database databaseOptions) {
+        return open(databaseOptions, new CoreFactory());
     }
 
-    public static CoreDatabaseManager open(Options.Database options, Factory typeDBFactory) {
-        return typeDBFactory.databaseManager(options);
+    public static CoreDatabaseManager open(Options.Database databaseOptions, Factory typeDBFactory) {
+        return typeDBFactory.databaseManager(databaseOptions);
     }
 
-    protected CoreDatabaseManager(Options.Database options, Factory.Database databaseFactory) {
+    protected CoreDatabaseManager(Options.Database databaseOptions, Factory.Database databaseFactory) {
         if (!Executors.isInitialised()) Executors.initialise(MAX_THREADS);
-        this.typeDBOptions = options;
+        this.databaseOptions = databaseOptions;
         this.databaseFactory = databaseFactory;
         databases = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean(true);
@@ -143,11 +143,11 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
     }
 
     public Path directory() {
-        return typeDBOptions.dataDir();
+        return databaseOptions.dataDir();
     }
 
     public Options.Database options() {
-        return typeDBOptions;
+        return databaseOptions;
     }
 
     @Override
