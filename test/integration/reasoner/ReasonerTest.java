@@ -56,7 +56,7 @@ public class ReasonerTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "reasoner-test";
-    private static CoreDatabaseManager databaseManager;
+    private static CoreDatabaseManager databaseMgr;
 
     private CoreTransaction singleThreadElgTransaction(CoreSession session, Arguments.Transaction.Type transactionType) {
         CoreTransaction transaction = session.transaction(transactionType, new Options.Transaction().infer(true));
@@ -68,17 +68,17 @@ public class ReasonerTest {
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = CoreDatabaseManager.open(options);
-        databaseManager.create(database);
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(database);
     }
 
     @After
     public void tearDown() {
-        databaseManager.close();
+        databaseMgr.close();
     }
     @Test
     public void test_no_rules() {
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
 
@@ -88,7 +88,7 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
@@ -108,7 +108,7 @@ public class ReasonerTest {
 
     @Test
     public void test_offset_limit() {
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 EntityType milk = conceptMgr.putEntityType("milk");
@@ -117,7 +117,7 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
@@ -143,7 +143,7 @@ public class ReasonerTest {
 
     @Test
     public void test_exception_kills_query() {
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -160,7 +160,7 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
@@ -181,7 +181,7 @@ public class ReasonerTest {
 
     @Test
     public void test_has_explicit_rule() {
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -199,7 +199,7 @@ public class ReasonerTest {
             }
         }
 
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
@@ -221,7 +221,7 @@ public class ReasonerTest {
 
     @Test
     public void test_relation_rule() {
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -244,7 +244,7 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();

@@ -96,7 +96,7 @@ public class CoreDatabase implements TypeDB.Database {
     protected final String name;
     protected final AtomicBoolean isOpen;
     private final StampedLock schemaLock;
-    private final CoreDatabaseManager databaseManager;
+    private final CoreDatabaseManager databaseMgr;
     private final ConsistencyManager consistencyMgr;
     private final AtomicInteger schemaLockWriteRequests;
     private final Factory.Session sessionFactory;
@@ -109,8 +109,8 @@ public class CoreDatabase implements TypeDB.Database {
     protected ScheduledExecutorService scheduledPropertiesLogger;
     private Cache cache;
 
-    protected CoreDatabase(CoreDatabaseManager databaseManager, String name, Factory.Session sessionFactory) {
-        this.databaseManager = databaseManager;
+    protected CoreDatabase(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
+        this.databaseMgr = databaseMgr;
         this.name = name;
         this.sessionFactory = sessionFactory;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
@@ -124,21 +124,21 @@ public class CoreDatabase implements TypeDB.Database {
         isOpen = new AtomicBoolean(false);
     }
 
-    static CoreDatabase createAndOpen(CoreDatabaseManager databaseManager, String name, Factory.Session sessionFactory) {
+    static CoreDatabase createAndOpen(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
         try {
-            Files.createDirectory(databaseManager.directory().resolve(name));
+            Files.createDirectory(databaseMgr.directory().resolve(name));
         } catch (IOException e) {
             throw TypeDBException.of(e);
         }
 
-        CoreDatabase database = new CoreDatabase(databaseManager, name, sessionFactory);
+        CoreDatabase database = new CoreDatabase(databaseMgr, name, sessionFactory);
         database.initialise();
         database.statisticsBgCounterStart();
         return database;
     }
 
-    static CoreDatabase loadAndOpen(CoreDatabaseManager databaseManager, String name, Factory.Session sessionFactory) {
-        CoreDatabase database = new CoreDatabase(databaseManager, name, sessionFactory);
+    static CoreDatabase loadAndOpen(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
+        CoreDatabase database = new CoreDatabase(databaseMgr, name, sessionFactory);
         database.load();
         database.statisticsBgCounterStart();
         return database;
@@ -334,11 +334,11 @@ public class CoreDatabase implements TypeDB.Database {
     }
 
     protected Path directory() {
-        return databaseManager.directory().resolve(name);
+        return databaseMgr.directory().resolve(name);
     }
 
     public Options.Database options() {
-        return databaseManager.options();
+        return databaseMgr.options();
     }
 
     KeyGenerator.Schema schemaKeyGenerator() {
@@ -389,7 +389,7 @@ public class CoreDatabase implements TypeDB.Database {
 
     @Override
     public String schema() {
-        try (TypeDB.Session session = databaseManager.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
+        try (TypeDB.Session session = databaseMgr.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append("define\n\n");
             tx.concepts().exportTypes(stringBuilder);
@@ -440,7 +440,7 @@ public class CoreDatabase implements TypeDB.Database {
     @Override
     public void delete() {
         close();
-        databaseManager.remove(this);
+        databaseMgr.remove(this);
         try {
             Files.walk(directory()).sorted(reverseOrder()).map(Path::toFile).forEach(File::delete);
         } catch (IOException e) {

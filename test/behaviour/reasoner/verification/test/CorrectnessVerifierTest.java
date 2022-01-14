@@ -56,14 +56,14 @@ public class CorrectnessVerifierTest {
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
-    private CoreDatabaseManager databaseManager;
+    private CoreDatabaseManager databaseMgr;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        this.databaseManager = CoreDatabaseManager.open(options);
-        this.databaseManager.create(database);
-        try (TypeDB.Session session = databaseManager.session(CorrectnessVerifierTest.database, Arguments.Session.Type.SCHEMA)) {
+        this.databaseMgr = CoreDatabaseManager.open(options);
+        this.databaseMgr.create(database);
+        try (TypeDB.Session session = databaseMgr.session(CorrectnessVerifierTest.database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(define(list(
                         type("employable").sub(ATTRIBUTE).value(BOOLEAN),
@@ -75,7 +75,7 @@ public class CorrectnessVerifierTest {
                 tx.commit();
             }
         }
-        try (TypeDB.Session session = databaseManager.session(CorrectnessVerifierTest.database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(CorrectnessVerifierTest.database, Arguments.Session.Type.DATA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(parseQuery("insert $p isa person;").asInsert());
                 tx.commit();
@@ -85,13 +85,13 @@ public class CorrectnessVerifierTest {
 
     @After
     public void tearDown() {
-        this.databaseManager.close();
+        this.databaseMgr.close();
     }
 
     @Test
     public void testCorrectnessPassesForEmployableExample() {
         TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             CorrectnessVerifier correctnessVerifier = CorrectnessVerifier.initialise(session);
             correctnessVerifier.verifyCorrectness(inferenceQuery);
             correctnessVerifier.close();
@@ -102,7 +102,7 @@ public class CorrectnessVerifierTest {
     public void testSoundnessThrowsWhenRuleTriggersTooOftenEmployableExample() {
         TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
         CorrectnessVerifier correctnessVerifier;
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             correctnessVerifier = CorrectnessVerifier.initialise(session);
             try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(parseQuery("insert $p isa person;"));
@@ -117,7 +117,7 @@ public class CorrectnessVerifierTest {
     public void testCompletenessThrowsWhenRuleIsNotTriggeredEmployableExample() {
         TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
         CorrectnessVerifier correctnessVerifier;
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             correctnessVerifier = CorrectnessVerifier.initialise(session);
             try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().delete(parseQuery("match $p isa person; delete $p isa person;"));

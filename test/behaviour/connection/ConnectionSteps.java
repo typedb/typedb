@@ -51,7 +51,7 @@ public class ConnectionSteps {
     public static int THREAD_POOL_SIZE = 32;
     public static ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
-    public static CoreDatabaseManager databaseManager;
+    public static CoreDatabaseManager databaseMgr;
     public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("typedb");
     public static Path logsDir = dataDir.resolve("logs");
     public static Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logsDir)
@@ -70,10 +70,10 @@ public class ConnectionSteps {
 
     @Before
     public synchronized void before() throws IOException {
-        assertNull(databaseManager);
+        assertNull(databaseMgr);
         resetDirectory();
         System.out.println("Connecting to TypeDB ...");
-        databaseManager = CoreDatabaseManager.open(options);
+        databaseMgr = CoreDatabaseManager.open(options);
     }
 
     @After
@@ -93,21 +93,21 @@ public class ConnectionSteps {
         sessions.clear();
         sessionsParallel.forEach(c -> c.thenAccept(TypeDB.Session::close));
         sessionsParallel.clear();
-        databaseManager.all().forEach(CoreDatabase::delete);
-        databaseManager.close();
-        assertFalse(databaseManager.isOpen());
-        databaseManager = null;
+        databaseMgr.all().forEach(CoreDatabase::delete);
+        databaseMgr.close();
+        assertFalse(databaseMgr.isOpen());
+        databaseMgr = null;
     }
 
     @Given("connection has been opened")
     public void connection_has_been_opened() {
-        assertNotNull(databaseManager);
-        assertTrue(databaseManager.isOpen());
+        assertNotNull(databaseMgr);
+        assertTrue(databaseMgr.isOpen());
     }
 
     @Given("connection does not have any database")
     public void connection_does_not_have_any_database() {
-        assertTrue(databaseManager.all().isEmpty());
+        assertTrue(databaseMgr.all().isEmpty());
     }
 
     private static void resetDirectory() throws IOException {

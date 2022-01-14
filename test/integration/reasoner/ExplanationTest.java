@@ -65,7 +65,7 @@ public class ExplanationTest {
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageIndexCacheSize(MB).storageDataCacheSize(MB);
     private static final String database = "explanation-test";
-    private static CoreDatabaseManager databaseManager;
+    private static CoreDatabaseManager databaseMgr;
 
     private CoreTransaction singleThreadElgTransaction(CoreSession session, Arguments.Transaction.Type transactionType) {
         return singleThreadElgTransaction(session, transactionType, new Options.Transaction().infer(true));
@@ -81,18 +81,18 @@ public class ExplanationTest {
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = CoreDatabaseManager.open(options);
-        databaseManager.create(database);
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(database);
     }
 
     @After
     public void tearDown() {
-        databaseManager.close();
+        databaseMgr.close();
     }
 
     @Test
     public void test_disjunction_explainable() {
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -115,7 +115,7 @@ public class ExplanationTest {
                 txn.commit();
             }
         }
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();
@@ -155,7 +155,7 @@ public class ExplanationTest {
 
     @Test
     public void test_relation_explainable() {
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -178,7 +178,7 @@ public class ExplanationTest {
                 txn.commit();
             }
         }
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();
@@ -198,7 +198,7 @@ public class ExplanationTest {
 
     @Test
     public void test_relation_explainable_multiple_ways() {
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -225,7 +225,7 @@ public class ExplanationTest {
                 txn.commit();
             }
         }
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();
@@ -245,7 +245,7 @@ public class ExplanationTest {
 
     @Test
     public void test_has_explicit_explainable_two_ways() {
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -267,7 +267,7 @@ public class ExplanationTest {
             }
         }
 
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
@@ -300,7 +300,7 @@ public class ExplanationTest {
 
     @Test
     public void test_has_variable_explainable_two_ways() {
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 LogicManager logicMgr = txn.logic();
                 txn.query().define(TypeQL.parseQuery("define " +
@@ -329,7 +329,7 @@ public class ExplanationTest {
             }
         }
 
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert " +
                                                              "$x isa user; " +
@@ -352,7 +352,7 @@ public class ExplanationTest {
 
     @Test
     public void test_all_transitive_explanations() {
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 LogicManager logicMgr = txn.logic();
                 txn.query().define(TypeQL.parseQuery("define " +
@@ -372,7 +372,7 @@ public class ExplanationTest {
             }
         }
 
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert " +
                                                              "(subordinate: $a, superior: $b) isa location-hierarchy; " +
@@ -419,7 +419,7 @@ public class ExplanationTest {
 
     @Test
     public void test_nested_explanations() {
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
@@ -459,7 +459,7 @@ public class ExplanationTest {
             }
         }
 
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert " +
                                                              "(male: $x, female: $y, location: $l) isa wedding;" +

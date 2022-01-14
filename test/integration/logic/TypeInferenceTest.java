@@ -64,26 +64,26 @@ public class TypeInferenceTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "type-resolver-test";
-    private static CoreDatabaseManager databaseManager;
+    private static CoreDatabaseManager databaseMgr;
     private static CoreSession session;
     private static CoreTransaction transaction;
 
     @BeforeClass
     public static void open() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = CoreDatabaseManager.open(options);
+        databaseMgr = CoreDatabaseManager.open(options);
     }
 
     @AfterClass
     public static void close() {
-        databaseManager.close();
+        databaseMgr.close();
     }
 
     @Before
     public void setup() {
-        assert !databaseManager.contains(database);
-        databaseManager.create(database);
-        session = databaseManager.session(database, Arguments.Session.Type.SCHEMA);
+        assert !databaseMgr.contains(database);
+        databaseMgr.create(database);
+        session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
         transaction = session.transaction(WRITE);
     }
 
@@ -91,7 +91,7 @@ public class TypeInferenceTest {
     public void tearDown() {
         transaction.close();
         session.close();
-        databaseManager.get(database).delete();
+        databaseMgr.get(database).delete();
     }
 
     private static void define_standard_schema(String fileName) throws IOException {
@@ -200,7 +200,7 @@ public class TypeInferenceTest {
         define_standard_schema("basic-schema");
         transaction.commit();
         session.close();
-        session = databaseManager.session(database, DATA);
+        session = databaseMgr.session(database, DATA);
         transaction = session.transaction(WRITE);
         Entity person = transaction.concepts().getEntityType("person").create();
 

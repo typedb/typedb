@@ -44,9 +44,9 @@ public class DatabaseTest {
         Path logDir = dataDir.resolve("logs");
         Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
                 .storageIndexCacheSize(MB).storageDataCacheSize(MB);
-        CoreDatabaseManager databaseManager = factory.databaseManager(options);
-        databaseManager.create("test");
-        databaseManager.close();
+        CoreDatabaseManager databaseMgr = factory.databaseManager(options);
+        databaseMgr.create("test");
+        databaseMgr.close();
     }
 
     @Test

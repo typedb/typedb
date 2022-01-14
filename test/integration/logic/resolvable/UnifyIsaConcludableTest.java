@@ -71,7 +71,7 @@ public class UnifyIsaConcludableTest {
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "unify-isa-test";
-    private static CoreDatabaseManager databaseManager;
+    private static CoreDatabaseManager databaseMgr;
     private static CoreSession session;
     private static CoreTransaction transaction;
     private static ConceptManager conceptMgr;
@@ -80,9 +80,9 @@ public class UnifyIsaConcludableTest {
     @BeforeClass
     public static void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = CoreDatabaseManager.open(options);
-        databaseManager.create(database);
-        session = databaseManager.session(database, Arguments.Session.Type.SCHEMA);
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(database);
+        session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
         try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
             tx.query().define(TypeQL.parseQuery("define " +
                                                         "person sub entity," +
@@ -107,7 +107,7 @@ public class UnifyIsaConcludableTest {
     @AfterClass
     public static void tearDown() {
         session.close();
-        databaseManager.close();
+        databaseMgr.close();
     }
 
     @Before

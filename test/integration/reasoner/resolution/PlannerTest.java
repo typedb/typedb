@@ -55,7 +55,7 @@ public class PlannerTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "resolver-manager-test";
-    private static CoreDatabaseManager databaseManager;
+    private static CoreDatabaseManager databaseMgr;
     private static CoreSession session;
     private static CoreTransaction transaction;
     private static ConceptManager conceptMgr;
@@ -64,8 +64,8 @@ public class PlannerTest {
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = CoreDatabaseManager.open(options);
-        databaseManager.create(database);
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(database);
         initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
         transaction.query().define(TypeQL.parseQuery("define person sub entity, plays friendship:friend, owns name; " +
                                                                   "friendship sub relation, relates friend;" +
@@ -76,7 +76,7 @@ public class PlannerTest {
     }
 
     private void initialise(Arguments.Session.Type schema, Arguments.Transaction.Type write) {
-        session = databaseManager.session(database, schema);
+        session = databaseMgr.session(database, schema);
         transaction = session.transaction(write);
         conceptMgr = transaction.concepts();
         logicMgr = transaction.logic();
@@ -86,7 +86,7 @@ public class PlannerTest {
     public void tearDown() {
         transaction.close();
         session.close();
-        databaseManager.close();
+        databaseMgr.close();
     }
 
     @Test

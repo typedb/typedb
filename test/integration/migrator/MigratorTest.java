@@ -58,11 +58,11 @@ public class MigratorTest {
     @Test
     public void test_import_export_schema() throws IOException {
         Util.resetDirectory(dataDir);
-        try (TypeDB.DatabaseManager databaseManager = CoreDatabaseManager.open(options)) {
-            databaseManager.create(database);
+        try (TypeDB.DatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
             String savedSchema = new String(Files.readAllBytes(schemaPath), UTF_8);
-            runSchema(databaseManager, savedSchema);
-            String exportedSchema = databaseManager.get(database).schema();
+            runSchema(databaseMgr, savedSchema);
+            String exportedSchema = databaseMgr.get(database).schema();
             assertEquals(trimSchema(savedSchema), trimSchema(exportedSchema));
         }
     }
@@ -70,18 +70,18 @@ public class MigratorTest {
     @Test
     public void test_import_export_data() throws IOException {
         Util.resetDirectory(dataDir);
-        try (CoreDatabaseManager databaseManager = CoreDatabaseManager.open(options)) {
-            databaseManager.create(database);
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
             String schema = new String(Files.readAllBytes(schemaPath), UTF_8);
-            runSchema(databaseManager, schema);
-            new DataImporter(databaseManager, database, dataPath, Version.VERSION).run();
-            new DataExporter(databaseManager, database, exportDataPath, Version.VERSION).run();
+            runSchema(databaseMgr, schema);
+            new DataImporter(databaseMgr, database, dataPath, Version.VERSION).run();
+            new DataExporter(databaseMgr, database, exportDataPath, Version.VERSION).run();
             assertEquals(getChecksums(dataPath), getChecksums(exportDataPath));
         }
     }
 
-    private void runSchema(TypeDB.DatabaseManager databaseManager, String schema) {
-        try (TypeDB.Session session = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+    private void runSchema(TypeDB.DatabaseManager databaseMgr, String schema) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 TypeQLDefine query = TypeQL.parseQuery(schema);
                 tx.query().define(query);

@@ -61,15 +61,15 @@ public class TraversalTest {
             .storageIndexCacheSize(MB).storageDataCacheSize(MB);
     private static String database = "query-test";
 
-    private static CoreDatabaseManager databaseManager;
+    private static CoreDatabaseManager databaseMgr;
     private static CoreSession session;
 
     @BeforeClass
     public static void setup() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = CoreDatabaseManager.open(options);
-        databaseManager.create(database);
-        session = databaseManager.session(database, Arguments.Session.Type.SCHEMA);
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(database);
+        session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery(
                     "define " +
@@ -92,7 +92,7 @@ public class TraversalTest {
 
     @AfterClass
     public static void teardown() {
-        databaseManager.close();
+        databaseMgr.close();
     }
 
     /**
@@ -107,7 +107,7 @@ public class TraversalTest {
     @Ignore
     @Test
     public void backtrack_seeks_do_not_skip_answers() {
-        session = databaseManager.session(database, Arguments.Session.Type.DATA);
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
         // note: must insert in separate Tx's so that the relations are retrieved in a specific order later
         try (CoreTransaction transaction = session.transaction(WRITE)) {
             transaction.query().insert(TypeQL.parseQuery(
@@ -174,7 +174,7 @@ public class TraversalTest {
 
     @Test
     public void test_closure_backtrack_clears_scopes() {
-        session = databaseManager.session(database, Arguments.Session.Type.SCHEMA);
+        session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery("define " +
                     "lastname sub attribute, value string; " +
@@ -186,7 +186,7 @@ public class TraversalTest {
         }
         session.close();
 
-        session = databaseManager.session(database, Arguments.Session.Type.DATA);
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLInsert query = TypeQL.parseQuery("insert " +
                     "$x isa person," +

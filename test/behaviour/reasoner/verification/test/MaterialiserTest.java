@@ -57,24 +57,24 @@ public class MaterialiserTest {
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
-    private CoreDatabaseManager databaseManager;
+    private CoreDatabaseManager databaseMgr;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        this.databaseManager = CoreDatabaseManager.open(options);
-        this.databaseManager.create(database);
+        this.databaseMgr = CoreDatabaseManager.open(options);
+        this.databaseMgr.create(database);
     }
 
     @After
     public void tearDown() {
-        this.databaseManager.close();
+        this.databaseMgr.close();
     }
 
     @Test
     public void testDeduplicationOfInferredConcepts() {
-        loadTransitivityExample(databaseManager);
-        try (CoreSession session = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        loadTransitivityExample(databaseMgr);
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             Materialiser materialiser = Materialiser.materialise(session);
             TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy"));
             List<ConceptMap> inferredAnswers = iterate(materialiser.query(inferredAnswersQuery).entrySet())

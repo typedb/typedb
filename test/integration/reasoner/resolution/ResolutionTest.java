@@ -69,18 +69,18 @@ public class ResolutionTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "resolution-test";
-    private static CoreDatabaseManager databaseManager;
+    private static CoreDatabaseManager databaseMgr;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = CoreDatabaseManager.open(options);
-        databaseManager.create(database);
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(database);
     }
 
     @After
     public void tearDown() {
-        databaseManager.close();
+        databaseMgr.close();
     }
 
     @Test
@@ -435,11 +435,11 @@ public class ResolutionTest {
     }
 
     private CoreSession schemaSession() {
-        return databaseManager.session(database, Arguments.Session.Type.SCHEMA);
+        return databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
     }
 
     private CoreSession dataSession() {
-        return databaseManager.session(database, Arguments.Session.Type.DATA);
+        return databaseMgr.session(database, Arguments.Session.Type.DATA);
     }
 
     private CoreTransaction singleThreadElgTransaction(CoreSession session) {

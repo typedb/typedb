@@ -27,9 +27,9 @@ public interface Factory {
 
     interface Database {
 
-        CoreDatabase databaseCreateAndOpen(CoreDatabaseManager databaseManager, String name);
+        CoreDatabase databaseCreateAndOpen(CoreDatabaseManager databaseMgr, String name);
 
-        CoreDatabase databaseLoadAndOpen(CoreDatabaseManager databaseManager, String name);
+        CoreDatabase databaseLoadAndOpen(CoreDatabaseManager databaseMgr, String name);
     }
 
     interface Session {

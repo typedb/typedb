@@ -37,13 +37,13 @@ public final class CoreFactory implements Factory {
         if (databaseFactory == null) {
             databaseFactory = new Database() {
                 @Override
-                public CoreDatabase databaseCreateAndOpen(CoreDatabaseManager databaseManager, String name) {
-                    return CoreDatabase.createAndOpen(databaseManager, name, sessionFactory());
+                public CoreDatabase databaseCreateAndOpen(CoreDatabaseManager databaseMgr, String name) {
+                    return CoreDatabase.createAndOpen(databaseMgr, name, sessionFactory());
                 }
 
                 @Override
-                public CoreDatabase databaseLoadAndOpen(CoreDatabaseManager databaseManager, String name) {
-                    return CoreDatabase.loadAndOpen(databaseManager, name, sessionFactory());
+                public CoreDatabase databaseLoadAndOpen(CoreDatabaseManager databaseMgr, String name) {
+                    return CoreDatabase.loadAndOpen(databaseMgr, name, sessionFactory());
                 }
             };
         }

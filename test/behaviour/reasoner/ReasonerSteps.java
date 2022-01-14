@@ -54,7 +54,7 @@ import static org.junit.Assert.assertNull;
 
 public class ReasonerSteps {
 
-    public static CoreDatabaseManager databaseManager;
+    public static CoreDatabaseManager databaseMgr;
     public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("typedb");
     public static Path logsDir = dataDir.resolve("logs");
     public static Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logsDir)
@@ -68,11 +68,11 @@ public class ReasonerSteps {
 
     @Before
     public synchronized void before() throws IOException {
-        assertNull(databaseManager);
+        assertNull(databaseMgr);
         resetDirectory();
         System.out.println("Connecting to TypeDB ...");
-        databaseManager = CoreDatabaseManager.open(options);
-        databaseManager.create(DATABASE);
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(DATABASE);
     }
 
     @After
@@ -83,14 +83,14 @@ public class ReasonerSteps {
         session = null;
         if (correctnessVerifier != null) correctnessVerifier.close();
         correctnessVerifier = null;
-        databaseManager.all().forEach(CoreDatabase::delete);
-        databaseManager.close();
-        assertFalse(databaseManager.isOpen());
-        databaseManager = null;
+        databaseMgr.all().forEach(CoreDatabase::delete);
+        databaseMgr.close();
+        assertFalse(databaseMgr.isOpen());
+        databaseMgr = null;
     }
 
     static CoreSession dataSession() {
-        if (session == null || !session.isOpen()) session = databaseManager.session(DATABASE, Arguments.Session.Type.DATA);
+        if (session == null || !session.isOpen()) session = databaseMgr.session(DATABASE, Arguments.Session.Type.DATA);
         return session;
     }
 
@@ -113,7 +113,7 @@ public class ReasonerSteps {
     public void schema(String defineQueryStatements) {
         if (correctnessVerifier != null) correctnessVerifier.close();
         if (session != null) session.close();
-        try (CoreSession session = databaseManager.session(DATABASE, Arguments.Session.Type.SCHEMA)) {
+        try (CoreSession session = databaseMgr.session(DATABASE, Arguments.Session.Type.SCHEMA)) {
             try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(TypeQL.parseQuery(String.join("\n", defineQueryStatements)).asDefine());
                 tx.commit();
@@ -123,7 +123,7 @@ public class ReasonerSteps {
 
     @Given("reasoning data")
     public void data(String insertQueryStatements) {
-        try (CoreSession session = databaseManager.session(DATABASE, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(DATABASE, Arguments.Session.Type.DATA)) {
             try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(TypeQL.parseQuery(String.join("\n", insertQueryStatements)).asInsert());
                 tx.commit();

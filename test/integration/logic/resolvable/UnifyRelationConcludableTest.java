@@ -83,7 +83,7 @@ public class UnifyRelationConcludableTest {
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "unify-relation-test";
-    private static CoreDatabaseManager databaseManager;
+    private static CoreDatabaseManager databaseMgr;
     private static CoreSession session;
     private static CoreTransaction transaction;
     private static ConceptManager conceptMgr;
@@ -92,10 +92,10 @@ public class UnifyRelationConcludableTest {
     @BeforeClass
     public static void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        databaseManager = CoreDatabaseManager.open(options);
-        databaseManager.create(database);
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(database);
 
-        try (CoreSession schemaSession = databaseManager.session(database, Arguments.Session.Type.SCHEMA)) {
+        try (CoreSession schemaSession = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (CoreTransaction tx = schemaSession.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(TypeQL.parseQuery(
                         "define\n" +
@@ -158,7 +158,7 @@ public class UnifyRelationConcludableTest {
             }
         }
 
-        try (CoreSession dataSession = databaseManager.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession dataSession = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction tx = dataSession.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(TypeQL.parseQuery(
                         "insert " +
@@ -174,13 +174,13 @@ public class UnifyRelationConcludableTest {
                 tx.commit();
             }
         }
-        session = databaseManager.session(database, Arguments.Session.Type.SCHEMA);
+        session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
     }
 
     @AfterClass
     public static void tearDown() {
         session.close();
-        databaseManager.close();
+        databaseMgr.close();
     }
 
     @Before
