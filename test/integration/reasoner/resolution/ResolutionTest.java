@@ -28,7 +28,6 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Sink;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
@@ -132,7 +131,7 @@ public class ResolutionTest {
                 EntryPoint reasonerEntryPoint = new EntryPoint(responses::add);
                 LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
                 try {
-                    registry.createRoot(conjunctionPattern, reasonerEntryPoint);
+                    registry.createRootConjunctionController(conjunctionPattern, reasonerEntryPoint);
                 } catch (TypeDBException e) {
                     fail();
                 }
@@ -494,7 +493,7 @@ public class ResolutionTest {
         EntryPoint entryPoint = new EntryPoint(responses::add);
         entryPoint.pull();
         try {
-            registry.createRoot(conjunction, entryPoint);
+            registry.createRootConjunctionController(conjunction, entryPoint);
         } catch (TypeDBException e) {
             fail();
             return;

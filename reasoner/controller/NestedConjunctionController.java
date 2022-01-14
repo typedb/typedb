@@ -26,30 +26,17 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-public class RootConjunctionController extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.RootConjunctionProcessor> {
-    private final Subscriber<ConceptMap> reasonerEndpoint;
+public class NestedConjunctionController extends ConjunctionController<ConceptMap, NestedConjunctionController, NestedConjunctionController.NestedConjunctionProcessor> {
 
-    public RootConjunctionController(Driver<RootConjunctionController> driver, Conjunction conjunction,
-                                     ActorExecutorGroup executorService, ControllerRegistry registry,
-                                     Subscriber<ConceptMap> reasonerEndpoint) {
+    public NestedConjunctionController(Driver<NestedConjunctionController> driver, Conjunction conjunction,
+                                       ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, conjunction, executorService, registry);
-        this.reasonerEndpoint = reasonerEndpoint;
-        initialiseProviderControllers();
-    }
-
-    @Override
-    protected Function<Driver<RootConjunctionProcessor>, RootConjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
-        return driver -> new RootConjunctionProcessor(
-                driver, driver(), bounds, plan(), reasonerEndpoint,
-                RootConjunctionProcessor.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
-        );
     }
 
     @Override
@@ -59,22 +46,28 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
                 .toSet();
     }
 
-    protected static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, RootConjunctionProcessor> {
+    @Override
+    protected Function<Driver<NestedConjunctionController.NestedConjunctionProcessor>,
+            NestedConjunctionController.NestedConjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
+        return driver -> new NestedConjunctionProcessor(
+                driver, driver(), bounds, plan(),
+                NestedConjunctionProcessor.class.getSimpleName() + "(pattern: " + conjunction + ", bounds: " + bounds + ")"
+        );
+    }
 
-        private final Subscriber<ConceptMap> reasonerEndpoint;
+    protected static class NestedConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, NestedConjunctionController.NestedConjunctionProcessor> {
 
-        protected RootConjunctionProcessor(Driver<RootConjunctionProcessor> driver,
-                                           Driver<? extends Controller<?, ?, RootConjunctionProcessor, ?>> controller,
-                                           ConceptMap bounds, List<Resolvable<?>> plan,
-                                           Subscriber<ConceptMap> reasonerEndpoint, String name) {
+        protected NestedConjunctionProcessor(Driver<NestedConjunctionProcessor> driver,
+                                             Driver<? extends Controller<?, ?, NestedConjunctionProcessor, ?>> controller,
+                                             ConceptMap bounds, List<Resolvable<?>> plan,
+                                             String name) {
             super(driver, controller, bounds, plan, name);
-            this.reasonerEndpoint = reasonerEndpoint;
         }
 
         @Override
         public void setUp() {
-            outlet().publishTo(reasonerEndpoint);
             new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, name()).publishTo(outlet());
         }
     }
+
 }

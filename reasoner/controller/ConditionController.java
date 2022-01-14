@@ -46,7 +46,7 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
 
     @Override
     Set<Concludable> concludablesTriggeringRules() {
-        return condition.concludablesTriggeringRules(registry.conceptManager(), registry.logicManager());
+        return condition.concludablesTriggeringRules(registry().conceptManager(), registry().logicManager());
     }
 
     @Override

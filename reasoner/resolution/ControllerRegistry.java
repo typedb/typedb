@@ -38,9 +38,11 @@ import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController;
 import com.vaticle.typedb.core.reasoner.controller.ConditionController;
 import com.vaticle.typedb.core.reasoner.controller.MaterialiserController;
+import com.vaticle.typedb.core.reasoner.controller.NestedConjunctionController;
 import com.vaticle.typedb.core.reasoner.controller.RetrievableController;
 import com.vaticle.typedb.core.reasoner.controller.RootConjunctionController;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
+import com.vaticle.typedb.core.reasoner.controller.RootDisjunctionController;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Materialiser;
@@ -91,6 +93,7 @@ public class ControllerRegistry {
     private final ConcurrentMap<Rule, Actor.Driver<ConditionController>> ruleConditions;
     private final ConcurrentMap<Rule, Actor.Driver<ConclusionController>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final ConcurrentMap<Actor.Driver<ConclusionResolver>, Rule> conclusionRule;
+    private final Map<Conjunction, Actor.Driver<NestedConjunctionController>> nestedConjunctions;
     private final Set<Actor.Driver<? extends Resolver<?>>> resolvers;
     private final Set<Actor.Driver<? extends Controller<?, ?, ?,?>>> controllers;
     private final TraversalEngine traversalEngine;
@@ -115,6 +118,7 @@ public class ControllerRegistry {
         this.controllers = new ConcurrentSet<>();
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
+        this.nestedConjunctions = new HashMap<>();
         this.materialiser = Actor.driver(driver -> new Materialiser(driver, this), executorService);
         this.materialisationController = Actor.driver(driver -> new MaterialiserController(
                 driver, executorService, this, traversalEngine(), conceptManager()), executorService
@@ -144,13 +148,34 @@ public class ControllerRegistry {
         }
     }
 
-    public Actor.Driver<RootConjunctionController> createRoot(Conjunction conjunction, Subscriber<ConceptMap> reasonerEntryPoint) {
+    public Actor.Driver<RootConjunctionController> createRootConjunctionController(Conjunction conjunction, Subscriber<ConceptMap> reasonerEntryPoint) {
         LOG.debug("Creating Root Conjunction for: '{}'", conjunction);
         Actor.Driver<RootConjunctionController> controller =
                 Actor.driver(driver -> new RootConjunctionController(driver, conjunction, executorService, this,
                                                                      reasonerEntryPoint), executorService);
         controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));
         // TODO: Consider exception handling
+        controllers.add(controller);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return controller;
+    }
+
+    public Actor.Driver<RootDisjunctionController> createRootDisjunctionController(Disjunction disjunction, Subscriber<ConceptMap> reasonerEntryPoint) {
+        LOG.debug("Creating Root Disjunction for: '{}'", disjunction);
+        Actor.Driver<RootDisjunctionController> controller =
+                Actor.driver(driver -> new RootDisjunctionController(driver, disjunction, executorService, this,
+                                                                     reasonerEntryPoint), executorService);
+        controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));
+        // TODO: Consider exception handling
+        controllers.add(controller);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        return controller;
+    }
+
+    public Actor.Driver<NestedConjunctionController> nestedConjunctionController(Conjunction conjunction) {
+        LOG.debug("Creating Nested Conjunction for: '{}'", conjunction);
+        Actor.Driver<NestedConjunctionController> controller = nestedConjunctions.computeIfAbsent(conjunction, c ->
+                Actor.driver(driver -> new NestedConjunctionController(driver, c, executorService, this), executorService));
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return controller;

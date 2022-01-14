@@ -66,7 +66,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
         this.reasonerEntryPoint = new EntryPoint(conjunction.toString());
-        this.controllerRegistry.createRoot(conjunction, reasonerEntryPoint);
+        this.controllerRegistry.createRootConjunctionController(conjunction, reasonerEntryPoint);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
@@ -82,6 +82,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
         this.reasonerEntryPoint = new EntryPoint(disjunction.toString());
+        this.controllerRegistry.createRootDisjunctionController(disjunction, reasonerEntryPoint);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
         if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());

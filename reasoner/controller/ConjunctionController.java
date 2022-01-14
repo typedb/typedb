@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Request;
+import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry.ResolverView;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
@@ -50,7 +51,6 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
         PROCESSOR extends Processor<ConceptMap, OUTPUT, PROCESSOR>> extends Controller<ConceptMap, OUTPUT, PROCESSOR, CONTROLLER> {
 
     protected final Conjunction conjunction;
-    protected final ControllerRegistry registry;
     final Set<Resolvable<?>> resolvables;
     final Set<Negated> negateds;
 
@@ -61,7 +61,6 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
         this.conjunction = conjunction;
         this.resolvables = new HashSet<>();
         this.negateds = new HashSet<>();
-        this.registry = registry;
     }
 
     protected void initialiseProviderControllers() {
@@ -77,7 +76,8 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
         return new ArrayList<>(resolvables);
     }
 
-    static class RetrievableRequest<P extends Processor<ConceptMap, ?, P>> extends Connection.Request<Retrievable, ConceptMap, RetrievableController, ConceptMap, P, RetrievableRequest<P>> {
+    static class RetrievableRequest<P extends Processor<ConceptMap, ?, P>>
+            extends Connection.Request<Retrievable, ConceptMap, RetrievableController, ConceptMap, P, RetrievableRequest<P>> {
 
         public RetrievableRequest(Driver<P> recProcessor, long recEndpointId, Retrievable provControllerId, ConceptMap provProcessorId) {
             super(recProcessor, recEndpointId, provControllerId, provProcessorId);
@@ -93,7 +93,8 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
         }
     }
 
-    static class ConcludableRequest<P extends Processor<ConceptMap, ?, P>> extends Request<Concludable, ConceptMap, ConcludableController, ConceptMap, P, ConcludableRequest<P>> {
+    static class ConcludableRequest<P extends Processor<ConceptMap, ?, P>>
+            extends Request<Concludable, ConceptMap, ConcludableController, ConceptMap, P, ConcludableRequest<P>> {
 
         public ConcludableRequest(Driver<P> recProcessor, long recEndpointId, Concludable provControllerId, ConceptMap provProcessorId) {
             super(recProcessor, recEndpointId, provControllerId, provProcessorId);
@@ -129,7 +130,8 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
         return new ConceptMap(compounded);
     }
 
-    protected static abstract class ConjunctionProcessor<OUTPUT, PROCESSOR extends Processor<ConceptMap, OUTPUT, PROCESSOR>> extends Processor<ConceptMap, OUTPUT, PROCESSOR> {
+    protected static abstract class ConjunctionProcessor<OUTPUT, PROCESSOR extends Processor<ConceptMap, OUTPUT, PROCESSOR>>
+            extends Processor<ConceptMap, OUTPUT, PROCESSOR> {
         protected final ConceptMap bounds;
         protected final List<Resolvable<?>> plan;
         private final Set<RetrievableRequest<?>> retrievableRequests;
