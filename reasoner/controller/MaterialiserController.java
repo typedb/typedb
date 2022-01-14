@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
@@ -37,7 +38,7 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.logic.Rule.Conclusion.materialise;
 
-public class MaterialiserController extends Controller<Materialisable, Either<ConceptMap, Materialisation>,
+public class MaterialiserController extends Controller<Materialisable, Void, Either<ConceptMap, Materialisation>,
         MaterialiserController.MaterialiserProcessor, MaterialiserController> {
     // TODO: It would be better not to use Either, since this class only ever outputs a Materialisation
 
@@ -59,6 +60,12 @@ public class MaterialiserController extends Controller<Materialisable, Either<Co
         );
     }
 
+    @Override
+    protected <PUB_CID, PUB_PROC_ID, REQ extends Processor.Request<PUB_CID, PUB_PROC_ID, PUB_C, Void, MaterialiserProcessor, REQ>,
+            PUB_C extends Controller<PUB_PROC_ID, ?, Void, ?, PUB_C>> Connection.Builder<PUB_PROC_ID, Void, ?, ?, ?> createBuilder(REQ req) {
+        return null;
+    }
+
     public static class MaterialiserProcessor extends Processor<Void, Either<ConceptMap, Materialisation>, MaterialiserProcessor> {
 
         private final Materialisable materialisable;
@@ -67,7 +74,7 @@ public class MaterialiserController extends Controller<Materialisable, Either<Co
 
         protected MaterialiserProcessor(
                 Driver<MaterialiserProcessor> driver,
-                Driver<? extends Controller<?, ?, MaterialiserProcessor, ?>> controller, Materialisable materialisable,
+                Driver<? extends Controller<?, Void, ?, MaterialiserProcessor, ?>> controller, Materialisable materialisable,
                 TraversalEngine traversalEng, ConceptManager conceptMgr, String name) {
             super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>(), name), name);
             this.materialisable = materialisable;

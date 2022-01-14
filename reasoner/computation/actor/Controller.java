@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.actor;
 
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
@@ -30,9 +31,9 @@ import java.util.function.Function;
 
 
 public abstract class Controller<
-        PROC_ID, OUTPUT,
-        PROCESSOR extends Processor<?, OUTPUT, PROCESSOR>,
-        CONTROLLER extends Controller<PROC_ID, ?, PROCESSOR, CONTROLLER>
+        PROC_ID, INPUT, OUTPUT,
+        PROCESSOR extends Processor<INPUT, OUTPUT, PROCESSOR>,
+        CONTROLLER extends Controller<PROC_ID, INPUT, OUTPUT, PROCESSOR, CONTROLLER>
         > extends Actor<CONTROLLER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
@@ -57,12 +58,16 @@ public abstract class Controller<
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PROC_ID id);
 
-    public <PUB_PROC_ID, INPUT, REQ extends Connection.Request<?, PUB_PROC_ID, ?, INPUT, ?, ?>> void findProviderForConnection(REQ req) {
-        Connection.Builder<PUB_PROC_ID, INPUT, ?, ?, ?> builder = req.getBuilder(registry);
+    public <PUB_CID, PUB_PROC_ID, REQ extends Processor.Request<PUB_CID, PUB_PROC_ID, PUB_C, INPUT, PROCESSOR, REQ>,
+            PUB_C extends Controller<PUB_PROC_ID, ?, INPUT, ?, PUB_C>> void findProviderForConnection(REQ req) {
+        Connection.Builder<PUB_PROC_ID, INPUT, ?, ?, ?> builder = createBuilder(req);
         builder.providerController().execute(actor -> actor.makeConnection(builder));
     }
 
-    void makeConnection(Connection.Builder<PROC_ID, OUTPUT, ?, ?, ?> connectionBuilder) {
+    protected abstract <PUB_CID, PUB_PROC_ID, REQ extends Processor.Request<PUB_CID, PUB_PROC_ID, PUB_C, INPUT, PROCESSOR, REQ>,
+            PUB_C extends Controller<PUB_PROC_ID, ?, INPUT, ?, PUB_C>> Connection.Builder<PUB_PROC_ID, INPUT, ?, ?, ?> createBuilder(REQ req);
+
+    public void makeConnection(Connection.Builder<PROC_ID, OUTPUT, ?, ?, ?> connectionBuilder) {
         computeProcessorIfAbsent(connectionBuilder.request().pubProcessorId())
                 .execute(actor -> actor.acceptConnection(connectionBuilder));
     }

@@ -30,8 +30,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Request;
-import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Request;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry.ResolverView;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
@@ -47,8 +46,8 @@ import java.util.Set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controller<ConceptMap, OUTPUT, PROCESSOR, CONTROLLER>,
-        PROCESSOR extends Processor<ConceptMap, OUTPUT, PROCESSOR>> extends Controller<ConceptMap, OUTPUT, PROCESSOR, CONTROLLER> {
+public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controller<ConceptMap, ConceptMap, OUTPUT, PROCESSOR, CONTROLLER>,
+        PROCESSOR extends Processor<ConceptMap, OUTPUT, PROCESSOR>> extends Controller<ConceptMap, ConceptMap, OUTPUT, PROCESSOR, CONTROLLER> {
 
     protected final Conjunction conjunction;
     final Set<Resolvable<?>> resolvables;
@@ -77,7 +76,7 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
     }
 
     static class RetrievableRequest<P extends Processor<ConceptMap, ?, P>>
-            extends Connection.Request<Retrievable, ConceptMap, RetrievableController, ConceptMap, P, RetrievableRequest<P>> {
+            extends Request<Retrievable, ConceptMap, RetrievableController, ConceptMap, P, RetrievableRequest<P>> {
 
         public RetrievableRequest(Driver<P> recProcessor, long recEndpointId, Retrievable provControllerId, ConceptMap provProcessorId) {
             super(recProcessor, recEndpointId, provControllerId, provProcessorId);
@@ -138,7 +137,7 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
         private final Set<ConcludableRequest<?>> concludableRequests;
 
         protected ConjunctionProcessor(Driver<PROCESSOR> driver,
-                Driver<? extends Controller<?, ?, PROCESSOR, ?>> controller,
+                Driver<? extends Controller<?, ConceptMap, ?, PROCESSOR, ?>> controller,
                 ConceptMap bounds, List<Resolvable<?>> plan, String name) {
             super(driver, controller, noOp(name), name);
             this.bounds = bounds;

@@ -19,11 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.actor;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
@@ -68,73 +64,15 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR
         return transforms;
     }
 
-    public static abstract class Request<
-            PUB_CID, PUB_PROC_ID,
-            PUB_C extends Controller<PUB_PROC_ID, PACKET, ?, PUB_C>,
-            PACKET,
-            PROCESSOR extends Processor<PACKET, ?, PROCESSOR>,
-            REQ extends Request<PUB_CID, PUB_PROC_ID, PUB_C, PACKET, PROCESSOR, REQ>
-            > {
-
-        private final PUB_CID provControllerId;
-        private final Actor.Driver<PROCESSOR> recProcessor;
-        private final long recEndpointId;
-        private final List<Function<PACKET, PACKET>> connectionTransforms;
-        private PUB_PROC_ID provProcessorId;
-
-        protected Request(Actor.Driver<PROCESSOR> recProcessor, long recEndpointId, PUB_CID provControllerId,
-                          PUB_PROC_ID provProcessorId) {
-            this.recProcessor = recProcessor;
-            this.recEndpointId = recEndpointId;
-            this.provControllerId = provControllerId;
-            this.provProcessorId = provProcessorId;
-            this.connectionTransforms = new ArrayList<>();
-        }
-
-        public Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, PUB_C> createConnectionBuilder(Actor.Driver<PUB_C> pubController) {
-            return new Builder<>(pubController, this);
-        }
-
-        public abstract Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, ?> getBuilder(ControllerRegistry registry);
-
-        public void withMap(Function<PACKET, PACKET> function) {
-            connectionTransforms.add(function);
-        }
-
-        public void withNewProcessorId(PUB_PROC_ID newPID) {
-            provProcessorId = newPID;
-        }
-
-        public Actor.Driver<PROCESSOR> recProcessor() {
-            return recProcessor;
-        }
-
-        public PUB_CID pubControllerId() {
-            return provControllerId;
-        }
-
-        public PUB_PROC_ID pubProcessorId() {
-            return provProcessorId;
-        }
-
-        public long recEndpointId() {
-            return recEndpointId;
-        }
-
-        public List<Function<PACKET, PACKET>> connectionTransforms() {
-            return connectionTransforms;
-        }
-    }
-
     public static class Builder<PUB_PROC_ID, PACKET,
-            REQ extends Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ>,  // TODO: Try removing REQ
+            REQ extends Processor.Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ>,  // TODO: Try removing REQ
             PROCESSOR extends Processor<PACKET, ?, PROCESSOR>,
-            PUB_CONTROLLER extends Controller<PUB_PROC_ID, PACKET, ?, PUB_CONTROLLER>> {
+            PUB_CONTROLLER extends Controller<PUB_PROC_ID, ?, PACKET, ?, PUB_CONTROLLER>> {
 
         private final Actor.Driver<PUB_CONTROLLER> provController;
-        private final Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> connectionRequest;
+        private final Processor.Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> connectionRequest;
 
-        public Builder(Actor.Driver<PUB_CONTROLLER> provController, Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> connectionRequest) {
+        public Builder(Actor.Driver<PUB_CONTROLLER> provController, Processor.Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> connectionRequest) {
             this.provController = provController;
             this.connectionRequest = connectionRequest;
         }
@@ -143,7 +81,7 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, PROCESSOR
             return provController;
         }
 
-        public Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> request() {
+        public Processor.Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, REQ> request() {
             return connectionRequest;
         }
 

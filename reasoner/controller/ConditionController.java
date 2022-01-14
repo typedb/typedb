@@ -25,7 +25,9 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
@@ -57,9 +59,15 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
         );
     }
 
+    @Override
+    protected <PUB_CID, PUB_PROC_ID, REQ extends Processor.Request<PUB_CID, PUB_PROC_ID, PUB_C, ConceptMap,
+            ConditionProcessor, REQ>, PUB_C extends Controller<PUB_PROC_ID, ?, ConceptMap, ?, PUB_C>> Connection.Builder<PUB_PROC_ID, ConceptMap, ?, ?, ?> createBuilder(REQ req) {
+        return null;
+    }
+
     protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<Either<ConceptMap, Materialisation>, ConditionController.ConditionProcessor>{
         protected ConditionProcessor(Driver<ConditionProcessor> driver,
-                                     Driver<? extends Controller<?, ?, ConditionProcessor, ?>> controller,
+                                     Driver<? extends Controller<?, ?, ?, ConditionProcessor, ?>> controller,
                                      ConceptMap bounds, List<Resolvable<?>> plan, String name) {
             super(driver, controller, bounds, plan, name);
         }

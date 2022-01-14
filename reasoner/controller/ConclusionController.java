@@ -26,9 +26,8 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Builder;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Request;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Request;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
@@ -45,7 +44,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-public class ConclusionController extends Controller<ConceptMap, Map<Variable, Concept>,
+public class ConclusionController extends Controller<ConceptMap, Either<ConceptMap, Materialisation>, Map<Variable, Concept>,
         ConclusionController.ConclusionProcessor, ConclusionController> {
     private final Rule.Conclusion conclusion;
 
@@ -63,6 +62,13 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
         );
     }
 
+    @Override
+    protected <PUB_CID, PUB_PROC_ID, REQ extends Request<PUB_CID, PUB_PROC_ID, PUB_C, Either<ConceptMap,
+            Materialisation>, ConclusionProcessor, REQ>, PUB_C extends Controller<PUB_PROC_ID, ?, Either<ConceptMap,
+            Materialisation>, ?, PUB_C>> Builder<PUB_PROC_ID, Either<ConceptMap, Materialisation>, ?, ?, ?> createBuilder(REQ req) {
+        return null;
+    }
+
     protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap, ConditionController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConditionRequest> {
 
         public ConditionRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
@@ -76,7 +82,7 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
         }
     }
 
-    protected static class MaterialiserRequest extends Connection.Request<Void, Materialisable, MaterialiserController, Either<ConceptMap, Materialisation>, ConclusionProcessor, MaterialiserRequest> {
+    protected static class MaterialiserRequest extends Request<Void, Materialisable, MaterialiserController, Either<ConceptMap, Materialisation>, ConclusionProcessor, MaterialiserRequest> {
 
         public MaterialiserRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
                                    Void provControllerId, Materialisable provProcessorId) {
@@ -99,7 +105,7 @@ public class ConclusionController extends Controller<ConceptMap, Map<Variable, C
 
         protected ConclusionProcessor(
                 Driver<ConclusionProcessor> driver,
-                Driver<? extends Controller<?, ?, ConclusionProcessor, ?>> controller, Rule rule,
+                Driver<? extends Controller<?, Either<ConceptMap, Materialisation>, ?, ConclusionProcessor, ?>> controller, Rule rule,
                 ConceptMap bounds, ConceptManager conceptManager, String name) {
             super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>(), name), name);
             this.rule = rule;

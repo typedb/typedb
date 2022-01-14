@@ -47,8 +47,9 @@ public class RootDisjunctionController extends DisjunctionController<RootDisjunc
 
         private final Receiver.Subscriber<ConceptMap> reasonerEndpoint;
 
-        protected RootDisjunctionProcessor(Driver<RootDisjunctionProcessor> driver, Driver<? extends Controller<?, ?,
-                RootDisjunctionProcessor, ?>> controller, Disjunction disjunction,
+        protected RootDisjunctionProcessor(Driver<RootDisjunctionProcessor> driver,
+                                           Driver<? extends Controller<?, ConceptMap, ?, RootDisjunctionProcessor, ?>> controller,
+                                           Disjunction disjunction,
                                            ConceptMap bounds, Receiver.Subscriber<ConceptMap> reasonerEndpoint, String name) {
             super(driver, controller, disjunction, bounds, name);
             this.reasonerEndpoint = reasonerEndpoint;

@@ -42,7 +42,7 @@ public class NestedDisjunctionController extends DisjunctionController<NestedDis
     protected static class NestedDisjunctionProcessor extends DisjunctionController.DisjunctionProcessor<NestedDisjunctionProcessor> {
 
         protected NestedDisjunctionProcessor(Driver<NestedDisjunctionProcessor> driver,
-                                             Driver<? extends Controller<?, ?, NestedDisjunctionProcessor, ?>> controller,
+                                             Driver<? extends Controller<?, ConceptMap, ?, NestedDisjunctionProcessor, ?>> controller,
                                              Disjunction disjunction, ConceptMap bounds, String name) {
             super(driver, controller, disjunction, bounds, name);
         }

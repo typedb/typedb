@@ -45,7 +45,7 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-public class ConcludableController extends Controller<ConceptMap, ConceptMap,
+public class ConcludableController extends Controller<ConceptMap, Map<Variable, Concept>, ConceptMap,
         ConcludableController.ConcludableProcessor, ConcludableController> {
 
     private final LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions;
@@ -102,8 +102,15 @@ public class ConcludableController extends Controller<ConceptMap, ConceptMap,
         );
     }
 
-    protected static class ConclusionRequest extends Connection.Request<Conclusion, ConceptMap, ConclusionController,
-                Map<Variable, Concept>, ConcludableProcessor, ConclusionRequest> {
+    @Override
+    protected <PUB_CID, PUB_PROC_ID, REQ extends Processor.Request<PUB_CID, PUB_PROC_ID, PUB_C, Map<Variable,
+            Concept>, ConcludableProcessor, REQ>, PUB_C extends Controller<PUB_PROC_ID, ?, Map<Variable, Concept>, ?,
+            PUB_C>> Connection.Builder<PUB_PROC_ID, Map<Variable, Concept>, ?, ?, ?> createBuilder(REQ req) {
+        return null;
+    }
+
+    protected static class ConclusionRequest extends Processor.Request<Conclusion, ConceptMap, ConclusionController,
+                    Map<Variable, Concept>, ConcludableProcessor, ConclusionRequest> {
 
         public ConclusionRequest(Driver<ConcludableProcessor> recProcessor, long recEndpointId,
                                  Conclusion provControllerId, ConceptMap provProcessorId) {

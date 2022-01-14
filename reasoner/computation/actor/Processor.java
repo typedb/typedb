@@ -24,9 +24,11 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.PublisherImpl;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
+import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,14 +38,14 @@ import java.util.function.Function;
 
 public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT, OUTPUT, PROCESSOR>> extends Actor<PROCESSOR> {
 
-    private final Driver<? extends Controller<?, ?, PROCESSOR, ?>> controller;
+    private final Driver<? extends Controller<?, INPUT, ?, PROCESSOR, ?>> controller;
     private final Reactive<OUTPUT, OUTPUT> outlet;
     private final Map<Long, InletEndpoint<INPUT>> receivingEndpoints;
     private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
     private long endpointId;
 
     protected Processor(Driver<PROCESSOR> driver,
-                        Driver<? extends Controller<?, ?, PROCESSOR, ?>> controller,
+                        Driver<? extends Controller<?, INPUT, ?, PROCESSOR, ?>> controller,
                         Reactive<OUTPUT, OUTPUT> outlet, String name) {
         super(driver, name);
         this.controller = controller;
@@ -68,7 +70,8 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
         }
     }
 
-    protected <PUB_PROC_ID, REQ extends Connection.Request<?, PUB_PROC_ID, ?, INPUT, PROCESSOR, REQ>> void requestConnection(REQ req) {
+    protected <PUB_CID, PUB_PROC_ID, REQ extends Request<PUB_CID, PUB_PROC_ID, PUB_C, INPUT, PROCESSOR, REQ>,
+            PUB_C extends Controller<PUB_PROC_ID, ?, INPUT, ?, PUB_C>> void requestConnection(REQ req) {
         controller.execute(actor -> actor.findProviderForConnection(req));
     }
 
@@ -212,4 +215,61 @@ public abstract class Processor<INPUT, OUTPUT, PROCESSOR extends Processor<INPUT
         }
     }
 
+    public static abstract class Request<
+            PUB_CID, PUB_PROC_ID,
+            PUB_C extends Controller<?, ?, PACKET, ?, PUB_C>,
+            PACKET,
+            PROCESSOR extends Processor<PACKET, ?, PROCESSOR>,
+            REQ extends Request<PUB_CID, PUB_PROC_ID, PUB_C, PACKET, PROCESSOR, REQ>
+            > {
+
+        private final PUB_CID provControllerId;
+        private final Driver<PROCESSOR> recProcessor;
+        private final long recEndpointId;
+        private final List<Function<PACKET, PACKET>> connectionTransforms;
+        private PUB_PROC_ID provProcessorId;
+
+        protected Request(Driver<PROCESSOR> recProcessor, long recEndpointId, PUB_CID provControllerId,
+                          PUB_PROC_ID provProcessorId) {
+            this.recProcessor = recProcessor;
+            this.recEndpointId = recEndpointId;
+            this.provControllerId = provControllerId;
+            this.provProcessorId = provProcessorId;
+            this.connectionTransforms = new ArrayList<>();
+        }
+
+        public Connection.Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, ?> createConnectionBuilder(Driver<PUB_C> pubController) {
+            return null;
+        }
+
+        public abstract Connection.Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, ?> getBuilder(ControllerRegistry registry);
+
+        public void withMap(Function<PACKET, PACKET> function) {
+            connectionTransforms.add(function);
+        }
+
+        public void withNewProcessorId(PUB_PROC_ID newPID) {
+            provProcessorId = newPID;
+        }
+
+        public Driver<PROCESSOR> recProcessor() {
+            return recProcessor;
+        }
+
+        public PUB_CID pubControllerId() {
+            return provControllerId;
+        }
+
+        public PUB_PROC_ID pubProcessorId() {
+            return provProcessorId;
+        }
+
+        public long recEndpointId() {
+            return recEndpointId;
+        }
+
+        public List<Function<PACKET, PACKET>> connectionTransforms() {
+            return connectionTransforms;
+        }
+    }
 }
