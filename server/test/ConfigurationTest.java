@@ -43,7 +43,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class RocksConfigurationTest {
+public class ConfigurationTest {
 
     @Test
     public void config_file_is_read() {
