@@ -138,11 +138,11 @@ public abstract class CoreStorage implements Storage {
         }
     }
 
-    void recycle(RocksIterator<?> iterator) {
-        if (iterator.usePrefixBloom()) {
-            recycledWithPrefixBloom.get(iterator.partition()).add(iterator.internalRocksIterator);
+    void recycle(RocksIterator<?> rocksIterator) {
+        if (rocksIterator.usePrefixBloom()) {
+            recycledWithPrefixBloom.get(rocksIterator.partition()).add(rocksIterator.internalRocksIterator);
         } else {
-            recycled.get(iterator.partition()).add(iterator.internalRocksIterator);
+            recycled.get(rocksIterator.partition()).add(rocksIterator.internalRocksIterator);
         }
     }
 
