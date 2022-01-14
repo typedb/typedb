@@ -59,9 +59,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 import static com.vaticle.typedb.core.graph.common.Encoding.System.TRANSACTION_DUMMY_WRITE;
 
-public abstract class CoreStorage implements Storage {
+public abstract class RocksStorage implements Storage {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CoreStorage.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RocksStorage.class);
 
     protected final Transaction rocksTransaction;
     // TODO: use a single read options when 'setAutoPrefixMode(true)' is available on ReadOptions API
@@ -79,7 +79,7 @@ public abstract class CoreStorage implements Storage {
     private final WriteOptions writeOptions;
     private final AtomicBoolean isOpen;
 
-    private CoreStorage(OptimisticTransactionDB rocksDB, RocksPartitionManager partitionMgr, boolean isReadOnly) {
+    private RocksStorage(OptimisticTransactionDB rocksDB, RocksPartitionManager partitionMgr, boolean isReadOnly) {
         this.isReadOnly = isReadOnly;
         this.partitionMgr = partitionMgr;
         iterators = new ConcurrentSet<>();
@@ -186,7 +186,7 @@ public abstract class CoreStorage implements Storage {
         }
     }
 
-    static class Cache extends CoreStorage {
+    static class Cache extends RocksStorage {
 
         Cache(OptimisticTransactionDB rocksDB, RocksPartitionManager partitionMgr) {
             super(rocksDB, partitionMgr, true);
@@ -216,7 +216,7 @@ public abstract class CoreStorage implements Storage {
         }
     }
 
-    static abstract class TransactionBounded extends CoreStorage {
+    static abstract class TransactionBounded extends RocksStorage {
 
         protected final CoreTransaction transaction;
 

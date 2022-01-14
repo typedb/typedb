@@ -55,8 +55,8 @@ public interface Factory {
 
     interface Storage {
 
-        CoreStorage.Schema storageSchema(CoreDatabase database, CoreTransaction.Schema transaction);
+        RocksStorage.Schema storageSchema(CoreDatabase database, CoreTransaction.Schema transaction);
 
-        CoreStorage.Data storageData(CoreDatabase database, CoreTransaction transaction);
+        RocksStorage.Data storageData(CoreDatabase database, CoreTransaction transaction);
     }
 }

@@ -145,8 +145,8 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
     public static class Schema extends CoreTransaction {
 
-        protected final CoreStorage.Schema schemaStorage;
-        protected final CoreStorage.Data dataStorage;
+        protected final RocksStorage.Schema schemaStorage;
+        protected final RocksStorage.Data dataStorage;
 
         protected Schema(CoreSession.Schema session, Arguments.Transaction.Type type,
                          Options.Transaction options, Factory.Storage storageFactory) {
@@ -176,12 +176,12 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             return graphMgr.schema();
         }
 
-        CoreStorage.Schema schemaStorage() {
+        RocksStorage.Schema schemaStorage() {
             if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
             return schemaStorage;
         }
 
-        CoreStorage.Data dataStorage() {
+        RocksStorage.Data dataStorage() {
             if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
             return dataStorage;
         }
@@ -250,7 +250,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
     public static class Data extends CoreTransaction {
 
-        protected final CoreStorage.Data dataStorage;
+        protected final RocksStorage.Data dataStorage;
         private final CoreDatabase.Cache cache;
 
         public Data(CoreSession.Data session, Arguments.Transaction.Type type,

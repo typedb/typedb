@@ -36,7 +36,7 @@ public final class RocksIterator<T extends Key> extends AbstractFunctionalIterat
         implements FunctionalIterator.Sorted.Forwardable<KeyValue<T, ByteArray>>, AutoCloseable {
 
     private final Key.Prefix<T> prefix;
-    private final CoreStorage storage;
+    private final RocksStorage storage;
     private State state;
     private KeyValue<T, ByteArray> next;
     private boolean isClosed;
@@ -44,7 +44,7 @@ public final class RocksIterator<T extends Key> extends AbstractFunctionalIterat
 
     private enum State {INIT, UNFETCHED, FORWARDED, FETCHED, COMPLETED;}
 
-    RocksIterator(CoreStorage storage, Key.Prefix<T> prefix) {
+    RocksIterator(RocksStorage storage, Key.Prefix<T> prefix) {
         this.storage = storage;
         this.prefix = prefix;
         state = State.INIT;

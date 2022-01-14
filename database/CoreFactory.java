@@ -98,13 +98,13 @@ public final class CoreFactory implements Factory {
             storageFactory = new Storage() {
 
                 @Override
-                public CoreStorage.Schema storageSchema(CoreDatabase database, CoreTransaction.Schema transaction) {
-                    return new CoreStorage.Schema(database, transaction);
+                public RocksStorage.Schema storageSchema(CoreDatabase database, CoreTransaction.Schema transaction) {
+                    return new RocksStorage.Schema(database, transaction);
                 }
 
                 @Override
-                public CoreStorage.Data storageData(CoreDatabase database, CoreTransaction transaction) {
-                    return new CoreStorage.Data(database, transaction);
+                public RocksStorage.Data storageData(CoreDatabase database, CoreTransaction transaction) {
+                    return new RocksStorage.Data(database, transaction);
                 }
             };
         }

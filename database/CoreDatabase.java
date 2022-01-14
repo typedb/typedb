@@ -463,23 +463,23 @@ public class CoreDatabase implements TypeDB.Database {
             this.storageTimeline = new StorageTimeline();
         }
 
-        void register(CoreStorage.Data storage) {
+        void register(RocksStorage.Data storage) {
             storageTimeline.opened(storage);
         }
 
-        public void closed(CoreStorage.Data storage) {
+        public void closed(RocksStorage.Data storage) {
             storageTimeline.closed(storage);
         }
 
-        public void commitCompletely(CoreStorage.Data storage) {
+        public void commitCompletely(RocksStorage.Data storage) {
             storageTimeline.commitCompletely(storage);
         }
 
-        void tryCommitOptimistically(CoreStorage.Data storage) {
+        void tryCommitOptimistically(RocksStorage.Data storage) {
             assert storageTimeline.isUncommitted(storage);
-            Set<CoreStorage.Data> concurrent = storageTimeline.concurrentlyCommitted(storage);
+            Set<RocksStorage.Data> concurrent = storageTimeline.concurrentlyCommitted(storage);
             synchronized (this) {
-                for (CoreStorage.Data committed : concurrent) {
+                for (RocksStorage.Data committed : concurrent) {
                     validateModifiedKeys(storage, committed);
                     if (hasIntersection(storage.deletedKeys(), committed.modifiedKeys())) {
                         throw TypeDBException.of(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);
@@ -491,7 +491,7 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        private void validateModifiedKeys(CoreStorage.Data storage, CoreStorage.Data committed) {
+        private void validateModifiedKeys(RocksStorage.Data storage, RocksStorage.Data committed) {
             NavigableSet<ByteArray> active = storage.modifiedKeys();
             NavigableSet<ByteArray> other = committed.deletedKeys();
             if (active.isEmpty()) return;
@@ -519,8 +519,8 @@ public class CoreDatabase implements TypeDB.Database {
 
         private static class StorageTimeline {
 
-            private final ConcurrentNavigableMap<Long, ConcurrentMap<CoreStorage.Data, Event>> events;
-            private final ConcurrentMap<CoreStorage.Data, CommitState> commitState;
+            private final ConcurrentNavigableMap<Long, ConcurrentMap<RocksStorage.Data, Event>> events;
+            private final ConcurrentMap<RocksStorage.Data, CommitState> commitState;
             private final AtomicBoolean cleanupRunning;
 
             enum Event {OPENED, COMMITTED}
@@ -533,20 +533,20 @@ public class CoreDatabase implements TypeDB.Database {
                 this.cleanupRunning = new AtomicBoolean(false);
             }
 
-            void opened(CoreStorage.Data storage) {
+            void opened(RocksStorage.Data storage) {
                 events.computeIfAbsent(storage.snapshotStart(), (key) -> new ConcurrentHashMap<>()).put(storage, Event.OPENED);
                 commitState.put(storage, CommitState.UNCOMMITTED);
             }
 
-            boolean isUncommitted(CoreStorage.Data storage) {
+            boolean isUncommitted(RocksStorage.Data storage) {
                 return commitState.containsKey(storage);
             }
 
-            void commitOptimistically(CoreStorage.Data storage) {
+            void commitOptimistically(RocksStorage.Data storage) {
                 commitState.put(storage, CommitState.COMMITTING);
             }
 
-            void commitCompletely(CoreStorage.Data storage) {
+            void commitCompletely(RocksStorage.Data storage) {
                 assert commitState.get(storage) == CommitState.COMMITTING && storage.snapshotEnd().isPresent();
                 events.compute(storage.snapshotEnd().get(), (snapshot, events) -> {
                     if (events == null) events = new ConcurrentHashMap<>();
@@ -556,12 +556,12 @@ public class CoreDatabase implements TypeDB.Database {
                 commitState.remove(storage);
             }
 
-            void closed(CoreStorage.Data storage) {
+            void closed(RocksStorage.Data storage) {
                 if (commitState.containsKey(storage)) {
                     commitState.remove(storage);
                     deleteOpenedEvent(storage);
                 } else {
-                    Map<CoreStorage.Data, Event> events = this.events.get(storage.snapshotEnd().get());
+                    Map<RocksStorage.Data, Event> events = this.events.get(storage.snapshotEnd().get());
                     if (events != null) {
                         Event event = events.get(storage);
                         assert event == null || event == Event.COMMITTED;
@@ -574,9 +574,9 @@ public class CoreDatabase implements TypeDB.Database {
                 }
             }
 
-            Set<CoreStorage.Data> concurrentlyCommitted(CoreStorage.Data storage) {
+            Set<RocksStorage.Data> concurrentlyCommitted(RocksStorage.Data storage) {
                 assert !storage.snapshotEnd().isPresent();
-                Set<CoreStorage.Data> concurrentCommitted = iterate(commitState.keySet())
+                Set<RocksStorage.Data> concurrentCommitted = iterate(commitState.keySet())
                         .filter(s -> commitState.get(s) == CommitState.COMMITTING).toSet();
                 events.tailMap(storage.snapshotStart() + 1).forEach((snapshot, events) -> {
                     events.forEach((s, type) -> {
@@ -586,13 +586,13 @@ public class CoreDatabase implements TypeDB.Database {
                 return concurrentCommitted;
             }
 
-            private boolean isDeletable(CoreStorage.Data storage) {
+            private boolean isDeletable(RocksStorage.Data storage) {
                 assert storage.snapshotEnd().isPresent() || commitState.containsKey(storage);
                 if (commitState.containsKey(storage)) return false;
                 // check for: open transactions that were opened before this one was committed
-                Map<Long, ConcurrentMap<CoreStorage.Data, Event>> beforeCommitted = events.headMap(storage.snapshotEnd().get());
-                for (CoreStorage.Data uncommitted : commitState.keySet()) {
-                    ConcurrentMap<CoreStorage.Data, Event> events = beforeCommitted.get(uncommitted.snapshotStart());
+                Map<Long, ConcurrentMap<RocksStorage.Data, Event>> beforeCommitted = events.headMap(storage.snapshotEnd().get());
+                for (RocksStorage.Data uncommitted : commitState.keySet()) {
+                    ConcurrentMap<RocksStorage.Data, Event> events = beforeCommitted.get(uncommitted.snapshotStart());
                     if (events != null && events.containsKey(uncommitted) && events.get(uncommitted) == Event.OPENED) {
                         return false;
                     }
@@ -600,7 +600,7 @@ public class CoreDatabase implements TypeDB.Database {
                 return true;
             }
 
-            private void deleteCommittedEvent(CoreStorage.Data storage) {
+            private void deleteCommittedEvent(RocksStorage.Data storage) {
                 events.compute(storage.snapshotEnd().get(), (snapshot, events) -> {
                     if (events != null) {
                         events.remove(storage);
@@ -610,7 +610,7 @@ public class CoreDatabase implements TypeDB.Database {
                 });
             }
 
-            private void deleteOpenedEvent(CoreStorage.Data storage) {
+            private void deleteOpenedEvent(RocksStorage.Data storage) {
                 events.compute(storage.snapshotStart(), (snapshot, events) -> {
                     if (events != null) {
                         events.remove(storage);
@@ -622,11 +622,11 @@ public class CoreDatabase implements TypeDB.Database {
 
             private void cleanupCommitted() {
                 if (cleanupRunning.compareAndSet(false, true)) {
-                    for (Map.Entry<Long, ConcurrentMap<CoreStorage.Data, Event>> entry : this.events.entrySet()) {
+                    for (Map.Entry<Long, ConcurrentMap<RocksStorage.Data, Event>> entry : this.events.entrySet()) {
                         Long snapshot = entry.getKey();
-                        ConcurrentMap<CoreStorage.Data, Event> events = entry.getValue();
-                        CoreStorage.Data other;
-                        for (Iterator<CoreStorage.Data> iter = events.keySet().iterator(); iter.hasNext(); ) {
+                        ConcurrentMap<RocksStorage.Data, Event> events = entry.getValue();
+                        RocksStorage.Data other;
+                        for (Iterator<RocksStorage.Data> iter = events.keySet().iterator(); iter.hasNext(); ) {
                             other = iter.next();
                             if (other.snapshotEnd().isPresent() && isDeletable(other)) iter.remove();
                         }
@@ -637,7 +637,7 @@ public class CoreDatabase implements TypeDB.Database {
             }
 
             private int committedEventCount() {
-                Set<CoreStorage.Data> recorded = new HashSet<>();
+                Set<RocksStorage.Data> recorded = new HashSet<>();
                 this.events.forEach((snapshot, events) ->
                         events.forEach((storage, type) -> {
                             if (type == Event.COMMITTED) recorded.add(storage);
@@ -653,12 +653,12 @@ public class CoreDatabase implements TypeDB.Database {
         private final TraversalCache traversalCache;
         private final LogicCache logicCache;
         private final TypeGraph typeGraph;
-        private final CoreStorage schemaStorage;
+        private final RocksStorage schemaStorage;
         private long borrowerCount;
         private boolean invalidated;
 
         private Cache(CoreDatabase database) {
-            schemaStorage = new CoreStorage.Cache(database.rocksSchema, database.rocksSchemaPartitionMgr);
+            schemaStorage = new RocksStorage.Cache(database.rocksSchema, database.rocksSchemaPartitionMgr);
             typeGraph = new TypeGraph(schemaStorage, true);
             traversalCache = new TraversalCache();
             logicCache = new LogicCache();
