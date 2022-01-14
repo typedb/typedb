@@ -58,16 +58,16 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
     protected final Factory.Database databaseFactory;
     protected final AtomicBoolean isOpen;
 
-    public static CoreDatabaseManager open(Path directory, Factory typeDBFactory) {
-        return open(new Options.Database().dataDir(directory), typeDBFactory);
+    public static CoreDatabaseManager open(Path directory, Factory factory) {
+        return open(new Options.Database().dataDir(directory), factory);
     }
 
     public static CoreDatabaseManager open(Options.Database databaseOptions) {
         return open(databaseOptions, new CoreFactory());
     }
 
-    public static CoreDatabaseManager open(Options.Database databaseOptions, Factory typeDBFactory) {
-        return typeDBFactory.databaseManager(databaseOptions);
+    public static CoreDatabaseManager open(Options.Database databaseOptions, Factory factory) {
+        return factory.databaseManager(databaseOptions);
     }
 
     protected CoreDatabaseManager(Options.Database databaseOptions, Factory.Database databaseFactory) {
