@@ -24,9 +24,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
@@ -43,7 +41,6 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
                                      Subscriber<ConceptMap> reasonerEndpoint) {
         super(driver, conjunction, executorService, registry);
         this.reasonerEndpoint = reasonerEndpoint;
-        initialiseProviderControllers();
     }
 
     @Override
@@ -55,9 +52,8 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
     }
 
     @Override
-    protected <PUB_CID, PUB_PROC_ID, REQ extends Processor.Request<PUB_CID, PUB_PROC_ID, PUB_C, ConceptMap,
-            RootConjunctionProcessor, REQ>, PUB_C extends Controller<PUB_PROC_ID, ?, ConceptMap, ?, PUB_C>> Connection.Builder<PUB_PROC_ID, ConceptMap, ?, ?, ?> createBuilder(REQ req) {
-        return null;
+    public RootConjunctionController asController() {
+        return this;
     }
 
     @Override
@@ -67,12 +63,12 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
                 .toSet();
     }
 
-    protected static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, RootConjunctionProcessor> {
+    protected static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, RootConjunctionController, RootConjunctionProcessor> {
 
         private final Subscriber<ConceptMap> reasonerEndpoint;
 
         protected RootConjunctionProcessor(Driver<RootConjunctionProcessor> driver,
-                                           Driver<? extends Controller<?, ConceptMap, ?, RootConjunctionProcessor, ?>> controller,
+                                           Driver<RootConjunctionController> controller,
                                            ConceptMap bounds, List<Resolvable<?>> plan,
                                            Subscriber<ConceptMap> reasonerEndpoint, String name) {
             super(driver, controller, bounds, plan, name);

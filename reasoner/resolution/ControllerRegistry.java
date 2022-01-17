@@ -37,6 +37,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController;
 import com.vaticle.typedb.core.reasoner.controller.ConditionController;
+import com.vaticle.typedb.core.reasoner.controller.ConjunctionController;
 import com.vaticle.typedb.core.reasoner.controller.MaterialiserController;
 import com.vaticle.typedb.core.reasoner.controller.NestedConjunctionController;
 import com.vaticle.typedb.core.reasoner.controller.RetrievableController;
@@ -95,7 +96,7 @@ public class ControllerRegistry {
     private final ConcurrentMap<Actor.Driver<ConclusionResolver>, Rule> conclusionRule;
     private final Map<Conjunction, Actor.Driver<NestedConjunctionController>> nestedConjunctions;
     private final Set<Actor.Driver<? extends Resolver<?>>> resolvers;
-    private final Set<Actor.Driver<? extends Controller<?, ?, ?, ?,?>>> controllers;
+    private final Set<Actor.Driver<? extends Controller<?, ?, ?, ?, ?>>> controllers;
     private final TraversalEngine traversalEngine;
     private final boolean resolutionTracing;
     private final AtomicBoolean terminated;
@@ -153,6 +154,7 @@ public class ControllerRegistry {
         Actor.Driver<RootConjunctionController> controller =
                 Actor.driver(driver -> new RootConjunctionController(driver, conjunction, executorService, this,
                                                                      reasonerEntryPoint), executorService);
+        controller.execute(RootConjunctionController::setUpUpstreamProviders);
         controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));
         // TODO: Consider exception handling
         controllers.add(controller);
@@ -165,6 +167,7 @@ public class ControllerRegistry {
         Actor.Driver<RootDisjunctionController> controller =
                 Actor.driver(driver -> new RootDisjunctionController(driver, disjunction, executorService, this,
                                                                      reasonerEntryPoint), executorService);
+        controller.execute(RootDisjunctionController::setUpUpstreamProviders);
         controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));
         // TODO: Consider exception handling
         controllers.add(controller);
@@ -176,6 +179,7 @@ public class ControllerRegistry {
         LOG.debug("Creating Nested Conjunction for: '{}'", conjunction);
         Actor.Driver<NestedConjunctionController> controller = nestedConjunctions.computeIfAbsent(conjunction, c ->
                 Actor.driver(driver -> new NestedConjunctionController(driver, c, executorService, this), executorService));
+        controller.execute(ConjunctionController::setUpUpstreamProviders);
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return controller;
@@ -190,6 +194,7 @@ public class ControllerRegistry {
             controllerConcludables.get(controllerView.controller()).add(concludable);
         } else {
             Actor.Driver<ConcludableController> controller = Actor.driver(driver -> new ConcludableController(driver, concludable, executorService, this), executorService);
+            controller.execute(ConcludableController::setUpUpstreamProviders);
             controllerView = ResolverView.concludable(controller, identity(concludable));
             controllers.add(controller);
             concludableControllers.put(concludable, controllerView.controller());
@@ -228,8 +233,9 @@ public class ControllerRegistry {
     public Actor.Driver<ConclusionController> registerConclusionController(Rule.Conclusion conclusion) {
         LOG.debug("Register ConclusionController: '{}'", conclusion);
         Actor.Driver<ConclusionController> controller = ruleConclusions.computeIfAbsent(
-                conclusion.rule(), r -> Actor.driver(driver -> new ConclusionController(driver, "", conclusion, executorService, this), executorService)
+                conclusion.rule(), r -> Actor.driver(driver -> new ConclusionController(driver, "", conclusion, executorService, materialisationController, this), executorService)
         );
+        controller.execute(ConclusionController::setUpUpstreamProviders);
         controllers.add(controller);
         // conclusionRule.put(controller, conclusion.rule());  // TODO: We don't need this now?
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
@@ -241,6 +247,7 @@ public class ControllerRegistry {
         Actor.Driver<ConditionController> controller = ruleConditions.computeIfAbsent(
                 condition.rule(), r -> Actor.driver(driver -> new ConditionController(driver, condition, executorService, this), executorService)
         );
+        controller.execute(ConditionController::setUpUpstreamProviders);
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
         return controller;

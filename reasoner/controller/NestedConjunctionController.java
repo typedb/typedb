@@ -24,9 +24,6 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
-import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
@@ -58,15 +55,14 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
     }
 
     @Override
-    protected <PUB_CID, PUB_PROC_ID, REQ extends Processor.Request<PUB_CID, PUB_PROC_ID, PUB_C, ConceptMap,
-            NestedConjunctionProcessor, REQ>, PUB_C extends Controller<PUB_PROC_ID, ?, ConceptMap, ?, PUB_C>> Connection.Builder<PUB_PROC_ID, ConceptMap, ?, ?, ?> createBuilder(REQ req) {
-        return null;
+    public NestedConjunctionController asController() {
+        return this;
     }
 
-    protected static class NestedConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, NestedConjunctionController.NestedConjunctionProcessor> {
+    protected static class NestedConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, NestedConjunctionController, NestedConjunctionProcessor> {
 
         protected NestedConjunctionProcessor(Driver<NestedConjunctionProcessor> driver,
-                                             Driver<? extends Controller<?, ConceptMap, ?, NestedConjunctionProcessor, ?>> controller,
+                                             Driver<NestedConjunctionController> controller,
                                              ConceptMap bounds, List<Resolvable<?>> plan,
                                              String name) {
             super(driver, controller, bounds, plan, name);

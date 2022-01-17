@@ -25,7 +25,6 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
@@ -42,8 +41,10 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 import static com.vaticle.typedb.core.reasoner.controller.ConjunctionController.merge;
 
-public abstract class DisjunctionController<CONTROLLER extends Controller<ConceptMap, ConceptMap, ConceptMap, PROCESSOR, CONTROLLER>,
-        PROCESSOR extends Processor<ConceptMap, ConceptMap, PROCESSOR>> extends Controller<ConceptMap, ConceptMap, ConceptMap, PROCESSOR, CONTROLLER> {
+public abstract class DisjunctionController<
+        PROCESSOR extends DisjunctionController.DisjunctionProcessor<CONTROLLER, PROCESSOR>,
+        CONTROLLER extends DisjunctionController<PROCESSOR, CONTROLLER>>
+        extends Controller<ConceptMap, ConceptMap, ConceptMap, PROCESSOR, CONTROLLER> {
 
     private final List<Pair<Conjunction, Driver<NestedConjunctionController>>> conjunctionControllers;
     protected Disjunction disjunction;
@@ -52,13 +53,17 @@ public abstract class DisjunctionController<CONTROLLER extends Controller<Concep
         super(driver, DisjunctionController.class.getSimpleName() + "(pattern:" + disjunction + ")", executorService, registry);
         this.disjunction = disjunction;
         this.conjunctionControllers = new ArrayList<>();
+    }
+
+    @Override
+    public void setUpUpstreamProviders() {
         disjunction.conjunctions().forEach(conjunction -> {
             Driver<NestedConjunctionController> controller = registry().nestedConjunctionController(conjunction);
             conjunctionControllers.add(new Pair<>(conjunction, controller));
         });
     }
 
-    private Driver<NestedConjunctionController> getConjunctionController(Conjunction conjunction) {
+    protected Driver<NestedConjunctionController> conjunctionProvider(Conjunction conjunction) {
         // TODO: Only necessary because conjunction equality is not well defined
         Optional<Driver<NestedConjunctionController>> controller =
                 iterate(conjunctionControllers).filter(p -> p.first() == conjunction).map(Pair::second).first();
@@ -66,36 +71,15 @@ public abstract class DisjunctionController<CONTROLLER extends Controller<Concep
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    @Override
-    public <PUB_CID, PUB_PROC_ID, REQ extends Processor.Request<PUB_CID, PUB_PROC_ID, PUB_C, ConceptMap, PROCESSOR, REQ>,
-            PUB_C extends Controller<PUB_PROC_ID, ?, ConceptMap, ?, PUB_C>> void findProviderForConnection(REQ req) {
-        Connection.Builder<PUB_PROC_ID, ConceptMap, ?, ?, ?> builder = createBuilder(req);
-        builder.providerController().execute(actor -> actor.makeConnection(builder));
-    }
-
-    @Override
-    protected <PUB_CID, PUB_PROC_ID, REQ extends Processor.Request<PUB_CID, PUB_PROC_ID, PUB_C, ConceptMap, PROCESSOR,
-            REQ>, PUB_C extends Controller<PUB_PROC_ID, ?, ConceptMap, ?, PUB_C>> Connection.Builder<PUB_PROC_ID,
-            ConceptMap, ?, ?, ?> createBuilder(REQ req) {
-        PUB_CID cid = req.pubControllerId();
-        Connection.Builder<PUB_PROC_ID, ConceptMap, ?, ?, ?> builder;
-        if (cid instanceof Conjunction) {
-            Driver<PUB_C> conjunctionController = (Driver<PUB_C>) getConjunctionController((Conjunction) req.pubControllerId());
-            builder = new Connection.Builder<PUB_PROC_ID, ConceptMap, REQ, PROCESSOR, PUB_C>(conjunctionController, req).withMap(c -> merge(c, (ConceptMap) req.pubProcessorId()));
-        } else {
-            throw TypeDBException.of(ILLEGAL_STATE);
-        }
-        return builder;
-    }
-
-    protected static abstract class DisjunctionProcessor<PROCESSOR extends Processor<ConceptMap, ConceptMap, PROCESSOR>>
-            extends Processor<ConceptMap, ConceptMap, PROCESSOR> {
+    protected static abstract class DisjunctionProcessor<
+            CONTROLLER extends DisjunctionController<PROCESSOR, CONTROLLER>,
+            PROCESSOR extends DisjunctionProcessor<CONTROLLER, PROCESSOR>>
+            extends Processor<ConceptMap, ConceptMap, CONTROLLER, PROCESSOR> {
 
         private final Disjunction disjunction;
         private final ConceptMap bounds;
 
-        protected DisjunctionProcessor(Driver<PROCESSOR> driver,
-                                       Driver<? extends Controller<?, ConceptMap, ?, PROCESSOR, ?>> controller,
+        protected DisjunctionProcessor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller,
                                        Disjunction disjunction, ConceptMap bounds, String name) {
             super(driver, controller, noOp(name), name);
             this.disjunction = disjunction;
@@ -114,21 +98,19 @@ public abstract class DisjunctionController<CONTROLLER extends Controller<Concep
             }
         }
 
-        private static class NestedConjunctionRequest<P extends Processor<ConceptMap, ?, P>>
-                extends Request<Conjunction, ConceptMap, NestedConjunctionController, ConceptMap, P, NestedConjunctionRequest<P>> {
+        private static class NestedConjunctionRequest<P extends DisjunctionProcessor<C, P>, C extends DisjunctionController<P, C>>
+                extends Request<Conjunction, ConceptMap, NestedConjunctionController, ConceptMap, P, C, NestedConjunctionRequest<P, C>> {
+
             protected NestedConjunctionRequest(Driver<P> recProcessor, long recEndpointId, Conjunction provControllerId,
                                                ConceptMap provProcessorId) {
                 super(recProcessor, recEndpointId, provControllerId, provProcessorId);
             }
 
             @Override
-            public Connection.Builder<ConceptMap, ConceptMap, NestedConjunctionRequest<P>, P, ?> getBuilder(ControllerRegistry registry) {
-                // TODO: Conjunction equality can prove to be a real problem here when using it to uniquely refer to conjunctionControllers in the registry
-                // TODO: In fact we shouldn't be looking up the controller more than once.
-                return createConnectionBuilder(registry.nestedConjunctionController(pubControllerId()))
+            public Builder<ConceptMap, ConceptMap, NestedConjunctionRequest<P, C>, P, ?> getBuilder(C controller) {
+                return new Builder<>(controller.conjunctionProvider(pubControllerId()), this)
                         .withMap(c -> merge(c, pubProcessorId()));
             }
-            // TODO: Copy over the PROCESSOR type from a conjuntion type somewhere
         }
     }
 }

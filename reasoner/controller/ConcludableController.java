@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -26,7 +25,6 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
@@ -35,8 +33,8 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -48,7 +46,8 @@ import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReac
 public class ConcludableController extends Controller<ConceptMap, Map<Variable, Concept>, ConceptMap,
         ConcludableController.ConcludableProcessor, ConcludableController> {
 
-    private final LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions;
+    private final Map<Conclusion, Driver<ConclusionController>> conclusionControllers;
+    private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
     private final Set<Variable.Retrievable> unboundVars;
     private final ControllerRegistry registry;
     private final Concludable concludable;
@@ -59,22 +58,18 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         this.registry = registry;
         this.concludable = concludable;
         this.unboundVars = unboundVars();
-        this.upstreamConclusions = initialiseUpstreamConclusions(concludable);
+        this.conclusionControllers = new HashMap<>();  // TODO: Any reason to use LinkedHashMap over HashMap?
+        this.conclusionUnifiers = new HashMap<>();
     }
 
-    private LinkedHashMap<Conclusion, Set<Unifier>> initialiseUpstreamConclusions(Concludable c) {
-        LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions = new LinkedHashMap<>();
-        c.getApplicableRules(registry.conceptManager(), registry.logicManager())
-                .forEachRemaining(rule -> c.getUnifiers(rule).forEachRemaining(unifier -> {
-                    // TODO: Do we need to terminate the actor here? We did in the previous model
-                    try {
-                        registry.registerConclusionController(rule.conclusion());
-                        upstreamConclusions.computeIfAbsent(rule.conclusion(), r -> new HashSet<>()).add(unifier);
-                    } catch (TypeDBException e) {
-                        terminate(e);
-                    }
-                }));
-        return upstreamConclusions;
+    @Override
+    public void setUpUpstreamProviders() {
+        concludable.getApplicableRules(registry.conceptManager(), registry.logicManager())
+                .forEachRemaining(rule -> {
+                    Driver<ConclusionController> controller = registry.registerConclusionController(rule.conclusion());
+                    conclusionControllers.put(rule.conclusion(), controller);
+                    conclusionUnifiers.put(rule.conclusion(), concludable.getUnifiers(rule).toSet());
+                });
     }
 
     private Set<Variable.Retrievable> unboundVars() {
@@ -96,21 +91,23 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular
         //  concludable. They should be filtered before being passed to the concludableProcessor's constructor
         return driver -> new ConcludableProcessor(
-                driver, driver(), bounds, unboundVars, upstreamConclusions,
+                driver, driver(), bounds, unboundVars, conclusionUnifiers,
                 () -> TraversalUtils.traversalIterator(registry, concludable.pattern(), bounds),
                 ConcludableProcessor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
         );
     }
 
+    private Driver<ConclusionController> conclusionProvider(Conclusion conclusion) {
+        return conclusionControllers.get(conclusion);
+    }
+
     @Override
-    protected <PUB_CID, PUB_PROC_ID, REQ extends Processor.Request<PUB_CID, PUB_PROC_ID, PUB_C, Map<Variable,
-            Concept>, ConcludableProcessor, REQ>, PUB_C extends Controller<PUB_PROC_ID, ?, Map<Variable, Concept>, ?,
-            PUB_C>> Connection.Builder<PUB_PROC_ID, Map<Variable, Concept>, ?, ?, ?> createBuilder(REQ req) {
-        return null;
+    public ConcludableController asController() {
+        return this;
     }
 
     protected static class ConclusionRequest extends Processor.Request<Conclusion, ConceptMap, ConclusionController,
-                    Map<Variable, Concept>, ConcludableProcessor, ConclusionRequest> {
+                    Map<Variable, Concept>, ConcludableProcessor, ConcludableController, ConclusionRequest> {
 
         public ConclusionRequest(Driver<ConcludableProcessor> recProcessor, long recEndpointId,
                                  Conclusion provControllerId, ConceptMap provProcessorId) {
@@ -118,27 +115,27 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         }
 
         @Override
-        public Connection.Builder<ConceptMap, Map<Variable, Concept>, ConclusionRequest, ConcludableProcessor, ?> getBuilder(ControllerRegistry registry) {
-            return createConnectionBuilder(registry.registerConclusionController(pubControllerId()));
+        public Builder<ConceptMap, Map<Variable, Concept>, ConclusionRequest, ConcludableProcessor, ?> getBuilder(ConcludableController controller) {
+            return new Builder<>(controller.conclusionProvider(pubControllerId()), this);
         }
     }
 
-    protected static class ConcludableProcessor extends Processor<Map<Variable, Concept>, ConceptMap, ConcludableProcessor> {
+    protected static class ConcludableProcessor extends Processor<Map<Variable, Concept>, ConceptMap, ConcludableController, ConcludableProcessor> {
 
         private final ConceptMap bounds;
         private final Set<Variable.Retrievable> unboundVars;
-        private final LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions;
+        private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
         private final Set<ConclusionRequest> requestedConnections;
 
         public ConcludableProcessor(Driver<ConcludableProcessor> driver, Driver<ConcludableController> controller,
                                     ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
-                                    LinkedHashMap<Conclusion, Set<Unifier>> upstreamConclusions,
+                                    Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier, String name) {
             super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>(), name), name);
             this.bounds = bounds;
             this.unboundVars = unboundVars;
-            this.upstreamConclusions = upstreamConclusions;
+            this.conclusionUnifiers = conclusionUnifiers;
             this.traversalSuppplier = traversalSuppplier;
             this.requestedConnections = new HashSet<>();
         }
@@ -152,7 +149,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 
             Source.fromIteratorSupplier(traversalSuppplier, name()).publishTo(op);
 
-            upstreamConclusions.forEach((conclusion, unifiers) -> {
+            conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     InletEndpoint<Map<Variable, Concept>> endpoint = this.createReceivingEndpoint();
                     mayRequestConnection(new ConclusionRequest(driver(), endpoint.id(), conclusion, boundsAndRequirements.first()));

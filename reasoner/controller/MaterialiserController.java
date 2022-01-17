@@ -25,7 +25,6 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
@@ -53,6 +52,11 @@ public class MaterialiserController extends Controller<Materialisable, Void, Eit
     }
 
     @Override
+    public void setUpUpstreamProviders() {
+        // None to set up
+    }
+
+    @Override
     protected Function<Driver<MaterialiserProcessor>, MaterialiserProcessor> createProcessorFunc(Materialisable materialisable) {
         return driver -> new MaterialiserProcessor(
                 driver, driver(), materialisable, traversalEng, conceptMgr,
@@ -61,21 +65,20 @@ public class MaterialiserController extends Controller<Materialisable, Void, Eit
     }
 
     @Override
-    protected <PUB_CID, PUB_PROC_ID, REQ extends Processor.Request<PUB_CID, PUB_PROC_ID, PUB_C, Void, MaterialiserProcessor, REQ>,
-            PUB_C extends Controller<PUB_PROC_ID, ?, Void, ?, PUB_C>> Connection.Builder<PUB_PROC_ID, Void, ?, ?, ?> createBuilder(REQ req) {
-        return null;
+    public MaterialiserController asController() {
+        return this;
     }
 
-    public static class MaterialiserProcessor extends Processor<Void, Either<ConceptMap, Materialisation>, MaterialiserProcessor> {
+    public static class MaterialiserProcessor
+            extends Processor<Void, Either<ConceptMap, Materialisation>, MaterialiserController, MaterialiserProcessor> {
 
         private final Materialisable materialisable;
         private final TraversalEngine traversalEng;
         private final ConceptManager conceptMgr;
 
         protected MaterialiserProcessor(
-                Driver<MaterialiserProcessor> driver,
-                Driver<? extends Controller<?, Void, ?, MaterialiserProcessor, ?>> controller, Materialisable materialisable,
-                TraversalEngine traversalEng, ConceptManager conceptMgr, String name) {
+                Driver<MaterialiserProcessor> driver, Driver<MaterialiserController> controller,
+                Materialisable materialisable, TraversalEngine traversalEng, ConceptManager conceptMgr, String name) {
             super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>(), name), name);
             this.materialisable = materialisable;
             this.traversalEng = traversalEng;

@@ -26,8 +26,6 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection.Builder;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Request;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
@@ -47,11 +45,19 @@ import java.util.function.Function;
 public class ConclusionController extends Controller<ConceptMap, Either<ConceptMap, Materialisation>, Map<Variable, Concept>,
         ConclusionController.ConclusionProcessor, ConclusionController> {
     private final Rule.Conclusion conclusion;
+    private final Driver<MaterialiserController> materialiserController;
+    private Driver<ConditionController> conditionController;
 
     public ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion conclusion,
-                                ActorExecutorGroup executorService, ControllerRegistry registry) {
+                                ActorExecutorGroup executorService, Driver<MaterialiserController> materialiserController, ControllerRegistry registry) {
         super(driver, name, executorService, registry);
         this.conclusion = conclusion;
+        this.materialiserController = materialiserController;
+    }
+
+    @Override
+    public void setUpUpstreamProviders() {
+        conditionController = registry().registerConditionController(conclusion.rule().condition());
     }
 
     @Override
@@ -63,39 +69,19 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
     }
 
     @Override
-    protected <PUB_CID, PUB_PROC_ID, REQ extends Request<PUB_CID, PUB_PROC_ID, PUB_C, Either<ConceptMap,
-            Materialisation>, ConclusionProcessor, REQ>, PUB_C extends Controller<PUB_PROC_ID, ?, Either<ConceptMap,
-            Materialisation>, ?, PUB_C>> Builder<PUB_PROC_ID, Either<ConceptMap, Materialisation>, ?, ?, ?> createBuilder(REQ req) {
-        return null;
+    public ConclusionController asController() {
+        return this;
     }
 
-    protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap, ConditionController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConditionRequest> {
-
-        public ConditionRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
-                                Rule.Condition provControllerId, ConceptMap provProcessorId) {
-            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
-        }
-
-        @Override
-        public Builder<ConceptMap, Either<ConceptMap, Materialisation>, ConditionRequest, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
-            return createConnectionBuilder(registry.registerConditionController(pubControllerId()));
-        }
+    private Driver<MaterialiserController> materialiserController() {
+        return materialiserController;
     }
 
-    protected static class MaterialiserRequest extends Request<Void, Materialisable, MaterialiserController, Either<ConceptMap, Materialisation>, ConclusionProcessor, MaterialiserRequest> {
-
-        public MaterialiserRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
-                                   Void provControllerId, Materialisable provProcessorId) {
-            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
-        }
-
-        @Override
-        public Builder<Materialisable, Either<ConceptMap, Materialisation>, MaterialiserRequest, ConclusionProcessor, ?> getBuilder(ControllerRegistry registry) {
-            return createConnectionBuilder(registry.materialiserController());
-        }
+    private Driver<ConditionController> conditionController() {
+        return conditionController;
     }
 
-    protected static class ConclusionProcessor extends Processor<Either<ConceptMap, Materialisation>, Map<Variable, Concept>, ConclusionProcessor> {
+    protected static class ConclusionProcessor extends Processor<Either<ConceptMap, Materialisation>, Map<Variable, Concept>, ConclusionController, ConclusionProcessor> {
 
         private final Rule rule;
         private final ConceptMap bounds;
@@ -105,7 +91,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         protected ConclusionProcessor(
                 Driver<ConclusionProcessor> driver,
-                Driver<? extends Controller<?, Either<ConceptMap, Materialisation>, ?, ConclusionProcessor, ?>> controller, Rule rule,
+                Driver<ConclusionController> controller, Rule rule,
                 ConceptMap bounds, ConceptManager conceptManager, String name) {
             super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>(), name), name);
             this.rule = rule;
@@ -122,6 +108,34 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             ConclusionReactive conclusionReactive = new ConclusionReactive(new HashSet<>(), name());
             conditionEndpoint.map(a -> a.first()).publishTo(conclusionReactive);
             conclusionReactive.publishTo(outlet());
+        }
+
+        protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap, ConditionController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController, ConditionRequest> {
+
+            public ConditionRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
+                                    Rule.Condition provControllerId, ConceptMap provProcessorId) {
+                super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+            }
+
+            @Override
+            public Builder<ConceptMap, Either<ConceptMap, Materialisation>, ConditionRequest, ConclusionProcessor, ?> getBuilder(ConclusionController controller) {
+                return new Builder<>(controller.conditionController(), this);
+            }
+
+        }
+
+        protected static class MaterialiserRequest extends Request<Void, Materialisable, MaterialiserController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController, MaterialiserRequest> {
+
+            public MaterialiserRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
+                                       Void provControllerId, Materialisable provProcessorId) {
+                super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+            }
+
+            @Override
+            public Builder<Materialisable, Either<ConceptMap, Materialisation>, MaterialiserRequest, ConclusionProcessor, ?> getBuilder(ConclusionController controller) {
+                return new Builder<>(controller.materialiserController(), this);
+            }
+
         }
 
         private class ConclusionReactive extends ReactiveBase<ConceptMap, Map<Identifier.Variable, Concept>> {

@@ -21,28 +21,36 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.function.Function;
 
-public class NestedDisjunctionController extends DisjunctionController<NestedDisjunctionController, NestedDisjunctionController.NestedDisjunctionProcessor>{
+public class NestedDisjunctionController
+        extends DisjunctionController<NestedDisjunctionController.NestedDisjunctionProcessor, NestedDisjunctionController>{
 
-    protected NestedDisjunctionController(Driver<NestedDisjunctionController> driver, Disjunction disjunction, ActorExecutorGroup executorService, ControllerRegistry registry) {
+    protected NestedDisjunctionController(Driver<NestedDisjunctionController> driver, Disjunction disjunction,
+                                          ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, disjunction, executorService, registry);
     }
 
     @Override
     protected Function<Driver<NestedDisjunctionProcessor>, NestedDisjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
-        return driver -> new NestedDisjunctionProcessor(driver, driver(), disjunction, bounds,
-                                                        NestedDisjunctionProcessor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")");
-
+        return driver -> new NestedDisjunctionProcessor(
+                driver, driver(), disjunction, bounds,
+                NestedDisjunctionProcessor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
+        );
     }
 
-    protected static class NestedDisjunctionProcessor extends DisjunctionController.DisjunctionProcessor<NestedDisjunctionProcessor> {
+    @Override
+    public NestedDisjunctionController asController() {
+        return this;
+    }
+
+    protected static class NestedDisjunctionProcessor
+            extends DisjunctionController.DisjunctionProcessor<NestedDisjunctionController, NestedDisjunctionProcessor> {
 
         protected NestedDisjunctionProcessor(Driver<NestedDisjunctionProcessor> driver,
-                                             Driver<? extends Controller<?, ConceptMap, ?, NestedDisjunctionProcessor, ?>> controller,
+                                             Driver<NestedDisjunctionController> controller,
                                              Disjunction disjunction, ConceptMap bounds, String name) {
             super(driver, controller, disjunction, bounds, name);
         }

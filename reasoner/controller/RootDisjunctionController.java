@@ -21,13 +21,13 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.function.Function;
 
-public class RootDisjunctionController extends DisjunctionController<RootDisjunctionController, RootDisjunctionController.RootDisjunctionProcessor> {
+public class RootDisjunctionController
+        extends DisjunctionController<RootDisjunctionController.RootDisjunctionProcessor, RootDisjunctionController> {
     private final Receiver.Subscriber<ConceptMap> reasonerEndpoint;
 
     public RootDisjunctionController(Driver<RootDisjunctionController> driver, Disjunction disjunction,
@@ -43,12 +43,18 @@ public class RootDisjunctionController extends DisjunctionController<RootDisjunc
                                                       RootDisjunctionProcessor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")");
     }
 
-    protected static class RootDisjunctionProcessor extends DisjunctionController.DisjunctionProcessor<RootDisjunctionProcessor> {
+    @Override
+    public RootDisjunctionController asController() {
+        return this;
+    }
+
+    protected static class RootDisjunctionProcessor
+            extends DisjunctionController.DisjunctionProcessor<RootDisjunctionController, RootDisjunctionProcessor> {
 
         private final Receiver.Subscriber<ConceptMap> reasonerEndpoint;
 
         protected RootDisjunctionProcessor(Driver<RootDisjunctionProcessor> driver,
-                                           Driver<? extends Controller<?, ConceptMap, ?, RootDisjunctionProcessor, ?>> controller,
+                                           Driver<RootDisjunctionController> controller,
                                            Disjunction disjunction,
                                            ConceptMap bounds, Receiver.Subscriber<ConceptMap> reasonerEndpoint, String name) {
             super(driver, controller, disjunction, bounds, name);

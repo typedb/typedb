@@ -92,6 +92,4 @@ public class TraversalUtils {
         }
         return Optional.of(new ConceptMap(newBounds));
     }
-
-
 }

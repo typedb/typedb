@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -27,7 +28,6 @@ import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Request;
@@ -41,17 +41,23 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
-public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controller<ConceptMap, ConceptMap, OUTPUT, PROCESSOR, CONTROLLER>,
-        PROCESSOR extends Processor<ConceptMap, OUTPUT, PROCESSOR>> extends Controller<ConceptMap, ConceptMap, OUTPUT, PROCESSOR, CONTROLLER> {
+public abstract class ConjunctionController<OUTPUT,
+        CONTROLLER extends ConjunctionController<OUTPUT, CONTROLLER, PROCESSOR>,
+        PROCESSOR extends Processor<ConceptMap, OUTPUT, ?, PROCESSOR>>
+        extends Controller<ConceptMap, ConceptMap, OUTPUT, PROCESSOR, CONTROLLER> {
 
     protected final Conjunction conjunction;
-    final Set<Resolvable<?>> resolvables;
-    final Set<Negated> negateds;
+    private final Set<Resolvable<?>> resolvables;
+    private final Set<Negated> negateds;
+    private final List<Pair<Retrievable, ResolverView.FilteredRetrievable>> retrievableControllers;
+    private final Map<Concludable, ResolverView.MappedConcludable> concludableControllers;
 
     public ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction,
                                  ActorExecutorGroup executorService, ControllerRegistry registry) {
@@ -60,11 +66,20 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
         this.conjunction = conjunction;
         this.resolvables = new HashSet<>();
         this.negateds = new HashSet<>();
+        this.retrievableControllers = new ArrayList<>();
+        this.concludableControllers = new HashMap<>();
     }
 
-    protected void initialiseProviderControllers() {
+    @Override
+    public void setUpUpstreamProviders() {
         Set<Concludable> concludables = concludablesTriggeringRules();
+        iterate(concludables).forEachRemaining(c -> {
+            concludableControllers.put(c, registry().registerConcludableController(c));
+        });
         Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
+        iterate(retrievables).forEachRemaining(r -> {
+            retrievableControllers.add(new Pair<>(r, registry().registerRetrievableController(r)));
+        });
         resolvables.addAll(concludables);
         resolvables.addAll(retrievables);
     }
@@ -75,37 +90,47 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
         return new ArrayList<>(resolvables);
     }
 
-    static class RetrievableRequest<P extends Processor<ConceptMap, ?, P>>
-            extends Request<Retrievable, ConceptMap, RetrievableController, ConceptMap, P, RetrievableRequest<P>> {
+    protected ResolverView.FilteredRetrievable retrievableProvider(Retrievable retrievable) {
+        Optional<ResolverView.FilteredRetrievable> controller =
+                iterate(retrievableControllers).filter(r -> r.first() == retrievable).map(Pair::second).first();
+        if (controller.isPresent()) return controller.get();
+        else throw TypeDBException.of(ILLEGAL_STATE);
+    }
+
+    protected ResolverView.MappedConcludable concludableProvider(Concludable concludable) {
+        return concludableControllers.get(concludable);
+    }
+
+    static class RetrievableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
+            extends Request<Retrievable, ConceptMap, RetrievableController, ConceptMap, P, C, RetrievableRequest<P, C>> {
 
         public RetrievableRequest(Driver<P> recProcessor, long recEndpointId, Retrievable provControllerId, ConceptMap provProcessorId) {
             super(recProcessor, recEndpointId, provControllerId, provProcessorId);
         }
 
         @Override
-        public Connection.Builder<ConceptMap, ConceptMap, RetrievableRequest<P>, P, RetrievableController> getBuilder(ControllerRegistry registry) {
-            ResolverView.FilteredRetrievable controller = registry.registerRetrievableController(pubControllerId().asRetrievable());
-            ConceptMap newPID = pubProcessorId().filter(controller.filter());
-            return createConnectionBuilder(controller.controller())
+        public Builder<ConceptMap, ConceptMap, RetrievableRequest<P, C>, P, ?> getBuilder(C controller) {
+            ResolverView.FilteredRetrievable retrievableView = controller.retrievableProvider(pubControllerId());
+            ConceptMap newPID = pubProcessorId().filter(retrievableView.filter());
+            return new Builder<>(retrievableView.controller(), this)
                     .withMap(c -> merge(c, pubProcessorId()))
                     .withNewProcessorId(newPID);
         }
     }
 
-    static class ConcludableRequest<P extends Processor<ConceptMap, ?, P>>
-            extends Request<Concludable, ConceptMap, ConcludableController, ConceptMap, P, ConcludableRequest<P>> {
+    static class ConcludableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
+            extends Request<Concludable, ConceptMap, ConcludableController, ConceptMap, P, C, ConcludableRequest<P, C>> {
 
         public ConcludableRequest(Driver<P> recProcessor, long recEndpointId, Concludable provControllerId, ConceptMap provProcessorId) {
             super(recProcessor, recEndpointId, provControllerId, provProcessorId);
         }
 
         @Override
-        public Connection.Builder<ConceptMap, ConceptMap, ConcludableRequest<P>, P, ConcludableController> getBuilder(ControllerRegistry registry) {
-            ResolverView.MappedConcludable controllerView = registry.registerConcludableController(pubControllerId().asConcludable());
-            Driver<ConcludableController> controller = controllerView.controller();
+        public Builder<ConceptMap, ConceptMap, ConcludableRequest<P, C>, P, ?> getBuilder(C controller) {
+            ResolverView.MappedConcludable controllerView = controller.concludableProvider(pubControllerId());
             Mapping mapping = Mapping.of(controllerView.mapping());
             ConceptMap newPID = mapping.transform(pubProcessorId());
-            return createConnectionBuilder(controller)
+            return new Builder<>(controllerView.controller(), this)
                     .withMap(mapping::unTransform)
                     .withNewProcessorId(newPID);
         }
@@ -129,16 +154,17 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
         return new ConceptMap(compounded);
     }
 
-    protected static abstract class ConjunctionProcessor<OUTPUT, PROCESSOR extends Processor<ConceptMap, OUTPUT, PROCESSOR>>
-            extends Processor<ConceptMap, OUTPUT, PROCESSOR> {
+    protected static abstract class ConjunctionProcessor<OUTPUT,
+            CONTROLLER extends ConjunctionController<OUTPUT, CONTROLLER, PROCESSOR>,
+            PROCESSOR extends Processor<ConceptMap, OUTPUT, CONTROLLER, PROCESSOR>>
+            extends Processor<ConceptMap, OUTPUT, CONTROLLER, PROCESSOR> {
         protected final ConceptMap bounds;
         protected final List<Resolvable<?>> plan;
-        private final Set<RetrievableRequest<?>> retrievableRequests;
-        private final Set<ConcludableRequest<?>> concludableRequests;
+        private final Set<RetrievableRequest<?, ?>> retrievableRequests;
+        private final Set<ConcludableRequest<?, ?>> concludableRequests;
 
-        protected ConjunctionProcessor(Driver<PROCESSOR> driver,
-                Driver<? extends Controller<?, ConceptMap, ?, PROCESSOR, ?>> controller,
-                ConceptMap bounds, List<Resolvable<?>> plan, String name) {
+        protected ConjunctionProcessor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller,
+                                       ConceptMap bounds, List<Resolvable<?>> plan, String name) {
             super(driver, controller, noOp(name), name);
             this.bounds = bounds;
             this.plan = plan;
@@ -160,14 +186,14 @@ public abstract class ConjunctionController<OUTPUT, CONTROLLER extends Controlle
             return endpoint;
         }
 
-        private void mayRequestRetrievable(RetrievableRequest<PROCESSOR> retrievableRequest) {
+        private void mayRequestRetrievable(RetrievableRequest<PROCESSOR, CONTROLLER> retrievableRequest) {
             if (!retrievableRequests.contains(retrievableRequest)) {
                 retrievableRequests.add(retrievableRequest);
                 requestConnection(retrievableRequest);
             }
         }
 
-        private void mayRequestConcludable(ConcludableRequest<PROCESSOR> concludableRequest) {
+        private void mayRequestConcludable(ConcludableRequest<PROCESSOR, CONTROLLER> concludableRequest) {
             if (!concludableRequests.contains(concludableRequest)) {
                 concludableRequests.add(concludableRequest);
                 requestConnection(concludableRequest);

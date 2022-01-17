@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
@@ -47,6 +46,11 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     }
 
     @Override
+    public void setUpUpstreamProviders() {
+        // None to set up
+    }
+
+    @Override
     protected Function<Driver<RetrievableProcessor>, RetrievableProcessor> createProcessorFunc(ConceptMap conceptMap) {
         return driver -> new RetrievableProcessor(
                 driver, driver(), () -> TraversalUtils.traversalIterator(registry, retrievable.pattern(), conceptMap),
@@ -55,17 +59,15 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     }
 
     @Override
-    protected <PUB_CID, PUB_PROC_ID, REQ extends Processor.Request<PUB_CID, PUB_PROC_ID, PUB_C, Void,
-            RetrievableProcessor, REQ>, PUB_C extends Controller<PUB_PROC_ID, ?, Void, ?, PUB_C>> Connection.Builder<PUB_PROC_ID, Void, ?, ?, ?> createBuilder(REQ req) {
-        return null;
+    public RetrievableController asController() {
+        return this;
     }
 
-    protected static class RetrievableProcessor extends Processor<Void, ConceptMap, RetrievableProcessor> {
+    protected static class RetrievableProcessor extends Processor<Void, ConceptMap, RetrievableController, RetrievableProcessor> {
 
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
 
-        protected RetrievableProcessor(Driver<RetrievableProcessor> driver,
-                                       Driver<? extends Controller<?, Void, ?, RetrievableProcessor, ?>> controller,
+        protected RetrievableProcessor(Driver<RetrievableProcessor> driver, Driver<RetrievableController> controller,
                                        Supplier<FunctionalIterator<ConceptMap>> traversalSupplier, String name) {
             super(driver, controller, noOp(name), name);
             this.traversalSupplier = traversalSupplier;
