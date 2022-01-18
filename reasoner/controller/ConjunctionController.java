@@ -171,9 +171,11 @@ public abstract class ConjunctionController<OUTPUT,
         protected InletEndpoint<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             if (planElement.isRetrievable()) {
-                requestConnection(new RetrievableRequest<>(driver(), endpoint.id(), planElement.asRetrievable(), carriedBounds.filter(planElement.retrieves())));
+                requestConnection(new RetrievableRequest<>(driver(), endpoint.id(), planElement.asRetrievable(),
+                                                           carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isConcludable()) {
-                requestConnection(new ConcludableRequest<>(driver(), endpoint.id(), planElement.asConcludable(), carriedBounds.filter(planElement.retrieves())));
+                requestConnection(new ConcludableRequest<>(driver(), endpoint.id(), planElement.asConcludable(),
+                                                           carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isNegated()) {
                 throw TypeDBException.of(ILLEGAL_STATE);  // TODO: Not implemented yet
             } else {

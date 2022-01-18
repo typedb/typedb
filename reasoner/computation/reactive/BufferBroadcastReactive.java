@@ -31,14 +31,16 @@ import java.util.Set;
 public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET> {
 
     final Map<Receiver<PACKET>, Integer> bufferPositions;  // Points to the next item needed
-    final List<PACKET> buffer;
+    final Set<PACKET> bufferSet;
+    final List<PACKET> bufferList;
     final Set<Receiver<PACKET>> pullers;
     protected final Set<Receiver<PACKET>> subscribers;
     protected final Set<Provider<PACKET>> publishers;
 
     public BufferBroadcastReactive(Set<Publisher<PACKET>> publishers, String groupName) {
         super(groupName);
-        this.buffer = new ArrayList<>();
+        this.bufferSet = new HashSet<>();
+        this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
         this.pullers = new HashSet<>();
         this.subscribers = new HashSet<>();
@@ -50,17 +52,22 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
     public void receive(Provider<PACKET> provider, PACKET packet) {
         ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         assert subscribers.size() > 0;
-        buffer.add(packet);
-        pullers.forEach(this::send);
-        finishPulling();
+        if (bufferSet.add(packet)) {
+            bufferList.add(packet);
+            Set<Receiver<PACKET>> toSend = new HashSet<>(pullers);
+            finishPulling();
+            toSend.forEach(this::send);
+        } else if (isPulling()) {
+            provider.pull(this);
+        }
     }
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
         ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
-        createBufferPosition(receiver);
+        bufferPositions.putIfAbsent(receiver, 0);
         subscribers.add(receiver);
-        if (buffer.size() == bufferPositions.get(receiver)) {
+        if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
             setPulling(receiver);
             publishers.forEach(p -> p.pull(this));
@@ -90,20 +97,15 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
 
     private void send(Receiver<PACKET> receiver) {
         Integer pos = bufferPositions.get(receiver);
-        receiver.receive(this, buffer.get(pos));
         bufferPositions.put(receiver, pos + 1);
+        receiver.receive(this, bufferList.get(pos));
     }
 
     @Override
     public void publishTo(Subscriber<PACKET> subscriber) {
-        createBufferPosition(subscriber);
+        bufferPositions.putIfAbsent(subscriber, 0);
         subscribers.add(subscriber);
         subscriber.subscribeTo(this);
     }
 
-    private void createBufferPosition(Receiver<PACKET> subscriber) {
-        if (!subscribers.contains(subscriber)) {
-            bufferPositions.put(subscriber, 0);
-        }
-    }
 }
