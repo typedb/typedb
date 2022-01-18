@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.actor;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
@@ -29,6 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 
 public abstract class Controller<
@@ -96,11 +99,16 @@ public abstract class Controller<
 
     @Override
     protected void exception(Throwable e) {
-        try {
-            throw e;
-        } catch (Throwable throwable) {
-            throwable.printStackTrace();
+        if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent()) {
+            String code = ((TypeDBException) e).code().get();
+            if (code.equals(RESOURCE_CLOSED.code())) {
+                LOG.debug("Resolver interrupted by resource close: {}", e.getMessage());
+                registry.terminate(e);
+                return;
+            }
         }
+        LOG.error("Actor exception", e);
+        registry.terminate(e);
     }
 
     public static class Builder<PUB_PROC_ID, PACKET,
