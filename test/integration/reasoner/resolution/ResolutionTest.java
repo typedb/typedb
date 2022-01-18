@@ -444,23 +444,6 @@ public class ResolutionTest {
         return transaction;
     }
 
-    private void createRootAndAssertResponses(RocksTransaction transaction, Disjunction disjunction,
-                                              Set<Identifier.Variable.Retrievable> filter, long answerCount,
-                                              long explainableAnswers) throws InterruptedException {
-        ControllerRegistry registry = transaction.reasoner().controllerRegistry();
-        LinkedBlockingQueue<ConceptMap> responses = new LinkedBlockingQueue<>();
-        EntryPoint entryPoint = new EntryPoint(responses::add);
-        AtomicLong doneReceived = new AtomicLong(0L);
-        try {
-            // registry.createRoot(disjunction, (r, f) -> responses.add(f), (r) -> doneReceived.incrementAndGet(), (throwable) -> fail());
-            // registry.createRoot(disjunction, entryPoint);  // TODO: Use this instead
-        } catch (TypeDBException e) {
-            fail();
-            return;
-        }
-        assertResponses(responses, filter, answerCount, explainableAnswers);
-    }
-    
     private static class EntryPoint extends Sink<ConceptMap> {
 
         private final Consumer<ConceptMap> onReceive;
@@ -471,7 +454,7 @@ public class ResolutionTest {
 
         @Override
         public void receive(Provider<ConceptMap> provider, ConceptMap conceptMap) {
-            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, conceptMap));
+//            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, conceptMap));
             onReceive.accept(conceptMap);
             pull();
         }
@@ -483,10 +466,29 @@ public class ResolutionTest {
 
     }
 
-    private void createRootAndAssertResponses(RocksTransaction transaction, Conjunction conjunction, long answerCount, long explainableAnswers)
+    private void createRootAndAssertResponses(RocksTransaction transaction, Disjunction disjunction,
+                                              Set<Identifier.Variable.Retrievable> filter, long answerCount,
+                                              long explainableAnswers) throws InterruptedException {
+//        ResolutionTracer.initialise(options.logsDir());
+//        ResolutionTracer.get().startDefaultTrace();
+        ControllerRegistry registry = transaction.reasoner().controllerRegistry();
+        LinkedBlockingQueue<ConceptMap> responses = new LinkedBlockingQueue<>();
+        EntryPoint entryPoint = new EntryPoint(responses::add);
+        entryPoint.pull();
+        try {
+             registry.createRootDisjunctionController(disjunction, entryPoint);
+        } catch (TypeDBException e) {
+            fail();
+            return;
+        }
+        assertResponses(responses, filter, answerCount, explainableAnswers);
+    }
+
+    private void createRootAndAssertResponses(RocksTransaction transaction, Conjunction conjunction, long answerCount,
+                                              long explainableAnswers)
             throws InterruptedException {
-        ResolutionTracer.initialise(options.logsDir());
-        ResolutionTracer.get().startDefaultTrace();
+//        ResolutionTracer.initialise(options.logsDir());
+//        ResolutionTracer.get().startDefaultTrace();
         ControllerRegistry registry = transaction.reasoner().controllerRegistry();
         Set<Identifier.Variable.Retrievable> filter = new HashSet<>();
         iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName).map(Identifier.Variable::asName)
@@ -510,8 +512,8 @@ public class ResolutionTest {
         int answersFound = 0;
         int explainableAnswersFound = 0;
         for (int i = 0; i < n - 1; i++) {
-//            ConceptMap answer = responses.take();
-            ConceptMap answer = responses.poll(500, TimeUnit.MILLISECONDS);// polling prevents the test hanging
+            ConceptMap answer = responses.take();
+//            ConceptMap answer = responses.poll(500, TimeUnit.MILLISECONDS);// polling prevents the test hanging
 
             if (answer != null) {
                 answersFound += 1;
@@ -522,7 +524,7 @@ public class ResolutionTest {
 //                }
             }
         }
-        ResolutionTracer.get().finishDefaultTrace();  // TODO: Not nice that we start tracing in a different method
+//        ResolutionTracer.get().finishDefaultTrace();  // TODO: Not nice that we start tracing in a different method
         assertEquals(answerCount, answersFound);
         // assertEquals(explainableAnswers, explainableAnswersFound);  // TODO: Re-enable when explanation are back
         // assertEquals(1, doneReceived.get());  // TODO: Bring back an assertion of doneness

@@ -276,6 +276,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
         @Override
         public boolean equals(Object o) {
+            // TODO: be wary with request equality when conjunctions are involved
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Request<?, ?, ?, ?, ?, ?, ?> request = (Request<?, ?, ?, ?, ?, ?, ?>) o;
