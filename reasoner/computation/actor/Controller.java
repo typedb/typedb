@@ -24,7 +24,9 @@ import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -68,7 +70,7 @@ public abstract class Controller<
     public abstract CONTROLLER asController();
 
     public void makeConnection(Builder<PROC_ID, OUTPUT, ?, ?, ?> connectionBuilder) {
-        computeProcessorIfAbsent(connectionBuilder.request().pubProcessorId())
+        computeProcessorIfAbsent(connectionBuilder.pubProcessorId())
                 .execute(actor -> actor.acceptConnection(connectionBuilder));
     }
 
@@ -107,33 +109,53 @@ public abstract class Controller<
             PUB_CONTROLLER extends Controller<PUB_PROC_ID, ?, PACKET, ?, PUB_CONTROLLER>> {
 
         private final Driver<PUB_CONTROLLER> provController;
-        private final Processor.Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, ?, REQ> connectionRequest;
+        private final Driver<PROCESSOR> recProcessor;
+        private final long recEndpointId;
+        private final List<Function<PACKET, PACKET>> connectionTransforms;
+        private final PUB_PROC_ID provProcessorId;
 
-        public Builder(Driver<PUB_CONTROLLER> provController, Processor.Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, ?, REQ> connectionRequest) {
+        public Builder(Driver<PUB_CONTROLLER> provController,
+                       Processor.Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, ?, REQ> connectionRequest) {
             this.provController = provController;
-            this.connectionRequest = connectionRequest;
+            this.recProcessor = connectionRequest.recProcessor();
+            this.recEndpointId = connectionRequest.recEndpointId();
+            this.connectionTransforms = connectionRequest.connectionTransforms();
+            this.provProcessorId = connectionRequest.pubProcessorId();
+        }
+
+        public Builder(Driver<PUB_CONTROLLER> provController, Driver<PROCESSOR> recProcessor, long recEndpointId,
+                       List<Function<PACKET, PACKET>> connectionTransforms, PUB_PROC_ID provProcessorId) {
+            this.provController = provController;
+            this.recProcessor = recProcessor;
+            this.recEndpointId = recEndpointId;
+            this.connectionTransforms = connectionTransforms;
+            this.provProcessorId = provProcessorId;
         }
 
         public Driver<PUB_CONTROLLER> providerController() {
             return provController;
         }
 
-        public Processor.Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, ?, REQ> request() {
-            return connectionRequest;
+        public PUB_PROC_ID pubProcessorId(){
+            return provProcessorId;
+        }
+
+        public Driver<PROCESSOR> recProcessor() {
+            return recProcessor;
         }
 
         public Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, PUB_CONTROLLER> withMap(Function<PACKET, PACKET> function) {
-            connectionRequest.withMap(function);
-            return this;
+            ArrayList<Function<PACKET, PACKET>> newTransforms = new ArrayList<>(connectionTransforms);
+            newTransforms.add(function);
+            return new Builder<>(provController, recProcessor, recEndpointId, newTransforms, provProcessorId);
         }
 
         public Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, PUB_CONTROLLER> withNewProcessorId(PUB_PROC_ID newPID) {
-            connectionRequest.withNewProcessorId(newPID);
-            return this;
+            return new Builder<>(provController, recProcessor, recEndpointId, connectionTransforms, newPID);
         }
 
         public <PUB_PROCESSOR extends Processor<?, PACKET, ?, PUB_PROCESSOR>> Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build(Driver<PUB_PROCESSOR> pubProcessor, long pubEndpointId) {
-            return new Connection<>(request().recProcessor(), pubProcessor, request().recEndpointId(), pubEndpointId, request().connectionTransforms());
+            return new Connection<>(recProcessor, pubProcessor, recEndpointId, pubEndpointId, connectionTransforms);
         }
     }
 }

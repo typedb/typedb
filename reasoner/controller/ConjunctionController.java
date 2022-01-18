@@ -160,24 +160,20 @@ public abstract class ConjunctionController<OUTPUT,
             extends Processor<ConceptMap, OUTPUT, CONTROLLER, PROCESSOR> {
         protected final ConceptMap bounds;
         protected final List<Resolvable<?>> plan;
-        private final Set<RetrievableRequest<?, ?>> retrievableRequests;
-        private final Set<ConcludableRequest<?, ?>> concludableRequests;
 
         protected ConjunctionProcessor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller,
                                        ConceptMap bounds, List<Resolvable<?>> plan, String name) {
             super(driver, controller, noOp(name), name);
             this.bounds = bounds;
             this.plan = plan;
-            this.retrievableRequests = new HashSet<>();
-            this.concludableRequests = new HashSet<>();
         }
 
         protected InletEndpoint<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             if (planElement.isRetrievable()) {
-                mayRequestRetrievable(new RetrievableRequest<>(driver(), endpoint.id(), planElement.asRetrievable(), carriedBounds.filter(planElement.retrieves())));
+                requestConnection(new RetrievableRequest<>(driver(), endpoint.id(), planElement.asRetrievable(), carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isConcludable()) {
-                mayRequestConcludable(new ConcludableRequest<>(driver(), endpoint.id(), planElement.asConcludable(), carriedBounds.filter(planElement.retrieves())));
+                requestConnection(new ConcludableRequest<>(driver(), endpoint.id(), planElement.asConcludable(), carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isNegated()) {
                 throw TypeDBException.of(ILLEGAL_STATE);  // TODO: Not implemented yet
             } else {
@@ -186,19 +182,6 @@ public abstract class ConjunctionController<OUTPUT,
             return endpoint;
         }
 
-        private void mayRequestRetrievable(RetrievableRequest<PROCESSOR, CONTROLLER> retrievableRequest) {
-            if (!retrievableRequests.contains(retrievableRequest)) {
-                retrievableRequests.add(retrievableRequest);
-                requestConnection(retrievableRequest);
-            }
-        }
-
-        private void mayRequestConcludable(ConcludableRequest<PROCESSOR, CONTROLLER> concludableRequest) {
-            if (!concludableRequests.contains(concludableRequest)) {
-                concludableRequests.add(concludableRequest);
-                requestConnection(concludableRequest);
-            }
-        }
 
     }
 

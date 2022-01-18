@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Sink;
+import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
@@ -383,8 +384,9 @@ public class ResolutionTest {
         }
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
-                Conjunction conjunctionPattern = resolvedConjunction("{ $x isa man; " +
-                                                                             "(friend: $x, friend: $y) isa friendship; $y isa woman; (associated: $y, associated: $z) isa association; $z isa company; }", transaction.logic());
+                Conjunction conjunctionPattern = resolvedConjunction(
+                        "{ $x isa man; (friend: $x, friend: $y) isa friendship; $y isa woman; " +
+                                "(associated: $y, associated: $z) isa association; $z isa company; }", transaction.logic());
                 createRootAndAssertResponses(transaction, conjunctionPattern, 1L, 1L);
             }
         }

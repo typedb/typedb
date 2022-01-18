@@ -25,6 +25,8 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -32,12 +34,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
 public abstract class Processor<INPUT, OUTPUT,
         CONTROLLER extends Controller<?, INPUT, OUTPUT, PROCESSOR, CONTROLLER>,
         PROCESSOR extends Processor<INPUT, OUTPUT, ?, PROCESSOR>> extends Actor<PROCESSOR> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Processor.class);
 
     private final Driver<CONTROLLER> controller;
     private final Reactive<OUTPUT, OUTPUT> outlet;
@@ -81,7 +86,7 @@ public abstract class Processor<INPUT, OUTPUT,
     protected void acceptConnection(Controller.Builder<?, OUTPUT, ?, ?, ?> connectionBuilder) {
         Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
         applyConnectionTransforms(connection.transformations(), outlet(), createProvidingEndpoint(connection));
-        connectionBuilder.request().recProcessor().execute(actor -> actor.finaliseConnection(connection));
+        connectionBuilder.recProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
 
     public void applyConnectionTransforms(List<Function<OUTPUT, OUTPUT>> transformations,
@@ -219,9 +224,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     public static abstract class Request<
-            PUB_CID, PUB_PROC_ID,
-            PUB_C extends Controller<?, ?, PACKET, ?, PUB_C>,
-            PACKET,
+            PUB_CID, PUB_PROC_ID, PUB_C extends Controller<?, ?, PACKET, ?, PUB_C>, PACKET,
             PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>,
             CONTROLLER extends Controller<?, PACKET, ?, PROCESSOR, CONTROLLER>,
             REQ extends Request<PUB_CID, PUB_PROC_ID, PUB_C, PACKET, PROCESSOR, ?, REQ>> {
@@ -230,7 +233,7 @@ public abstract class Processor<INPUT, OUTPUT,
         private final Driver<PROCESSOR> recProcessor;
         private final long recEndpointId;
         private final List<Function<PACKET, PACKET>> connectionTransforms;
-        private PUB_PROC_ID provProcessorId;
+        private final PUB_PROC_ID provProcessorId;
 
         protected Request(Driver<PROCESSOR> recProcessor, long recEndpointId, PUB_CID provControllerId,
                           PUB_PROC_ID provProcessorId) {
@@ -242,14 +245,6 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         public abstract Controller.Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, ?> getBuilder(CONTROLLER controller);
-
-        public void withMap(Function<PACKET, PACKET> function) {
-            connectionTransforms.add(function);
-        }
-
-        public void withNewProcessorId(PUB_PROC_ID newPID) {
-            provProcessorId = newPID;
-        }
 
         public Driver<PROCESSOR> recProcessor() {
             return recProcessor;
@@ -269,6 +264,23 @@ public abstract class Processor<INPUT, OUTPUT,
 
         public List<Function<PACKET, PACKET>> connectionTransforms() {
             return connectionTransforms;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Request<?, ?, ?, ?, ?, ?, ?> request = (Request<?, ?, ?, ?, ?, ?, ?>) o;
+            return recEndpointId == request.recEndpointId &&
+                    provControllerId.equals(request.provControllerId) &&
+                    recProcessor.equals(request.recProcessor) &&
+                    connectionTransforms.equals(request.connectionTransforms) &&
+                    provProcessorId.equals(request.provProcessorId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(provControllerId, recProcessor, recEndpointId, connectionTransforms, provProcessorId);
         }
     }
 }

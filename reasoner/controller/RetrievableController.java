@@ -24,13 +24,13 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
+import java.util.HashSet;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
 
 public class RetrievableController extends Controller<ConceptMap, Void, ConceptMap,
         RetrievableController.RetrievableProcessor, RetrievableController> {
@@ -69,7 +69,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
 
         protected RetrievableProcessor(Driver<RetrievableProcessor> driver, Driver<RetrievableController> controller,
                                        Supplier<FunctionalIterator<ConceptMap>> traversalSupplier, String name) {
-            super(driver, controller, noOp(name), name);
+            super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>(), name), name);
             this.traversalSupplier = traversalSupplier;
         }
 
