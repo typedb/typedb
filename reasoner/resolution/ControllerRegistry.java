@@ -46,20 +46,6 @@ import com.vaticle.typedb.core.reasoner.controller.NestedDisjunctionController;
 import com.vaticle.typedb.core.reasoner.controller.RetrievableController;
 import com.vaticle.typedb.core.reasoner.controller.RootConjunctionController;
 import com.vaticle.typedb.core.reasoner.controller.RootDisjunctionController;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Materialiser;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConcludableResolver.BoundConcludableContext;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundConclusionResolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.BoundRetrievableResolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.ConclusionResolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.ConditionResolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.ConjunctionResolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.DisjunctionResolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import org.slf4j.Logger;
@@ -73,14 +59,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED_WITH_CAUSE;
 import static java.util.stream.Collectors.toMap;
 
@@ -94,12 +75,9 @@ public class ControllerRegistry {
     private final Map<Actor.Driver<ConcludableController>, Set<Concludable>> controllerConcludables;
     private final ConcurrentMap<Rule, Actor.Driver<ConditionController>> ruleConditions;
     private final ConcurrentMap<Rule, Actor.Driver<ConclusionController>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
-    private final ConcurrentMap<Actor.Driver<ConclusionResolver>, Rule> conclusionRule;
-    private final Set<Actor.Driver<? extends Resolver<?>>> resolvers;
     private final Set<Actor.Driver<? extends Controller<?, ?, ?, ?, ?>>> controllers;
     private final TraversalEngine traversalEngine;
     private final boolean resolutionTracing;
-    private final Actor.Driver<Materialiser> materialiser;
     private final Actor.Driver<MaterialiserController> materialiserController;
     private final AtomicBoolean terminated;
     private Throwable terminationCause;
@@ -115,12 +93,9 @@ public class ControllerRegistry {
         this.controllerConcludables = new HashMap<>();
         this.ruleConditions = new ConcurrentHashMap<>();
         this.ruleConclusions = new ConcurrentHashMap<>();
-        this.conclusionRule = new ConcurrentHashMap<>();
-        this.resolvers = new ConcurrentSet<>();
         this.controllers = new ConcurrentSet<>();
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
-        this.materialiser = Actor.driver(driver -> new Materialiser(driver, this), executorService);
         this.materialiserController = Actor.driver(driver -> new MaterialiserController(
                 driver, executorService, this, traversalEngine(), conceptManager()), executorService
         );
@@ -219,6 +194,10 @@ public class ControllerRegistry {
         return controllerView;
     }
 
+    private static Map<Variable.Retrievable, Variable.Retrievable> identity(Resolvable<Conjunction> conjunctionResolvable) {
+        return conjunctionResolvable.retrieves().stream().collect(toMap(Function.identity(), Function.identity()));
+    }
+
     private Optional<ResolverView.MappedConcludable> getConcludableResolver(Concludable concludable) {
         for (Map.Entry<Concludable, Actor.Driver<ConcludableController>> c : concludableControllers.entrySet()) {
             // TODO: This needs to be optimised from a linear search to use an alpha hash
@@ -250,6 +229,13 @@ public class ControllerRegistry {
         return ResolverView.negation(negationController, filter);
     }
 
+    private static Set<Variable.Retrievable> filter(Conjunction scope, Negated inner) {
+        return scope.variables().stream()
+                .filter(var -> var.id().isRetrievable() && inner.retrieves().contains(var.id().asRetrievable()))
+                .map(var -> var.id().asRetrievable())
+                .collect(Collectors.toSet());
+    }
+
     public Actor.Driver<ConclusionController> registerConclusionController(Rule.Conclusion conclusion) {
         LOG.debug("Register ConclusionController: '{}'", conclusion);
         Actor.Driver<ConclusionController> controller = ruleConclusions.computeIfAbsent(
@@ -257,7 +243,6 @@ public class ControllerRegistry {
         );
         controller.execute(ConclusionController::setUpUpstreamProviders);
         controllers.add(controller);
-        // conclusionRule.put(controller, conclusion.rule());  // TODO: We don't need this now?
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
     }
@@ -273,144 +258,19 @@ public class ControllerRegistry {
         return controller;
     }
 
-    public Actor.Driver<RootResolver.Disjunction> createRoot(Disjunction disjunction,
-                                                             BiConsumer<Request, Match.Finished> onAnswer,
-                                                             Consumer<Request> onExhausted,
-                                                             Consumer<Throwable> onException) {
-        LOG.debug("Creating Root.Disjunction for: '{}'", disjunction);
-        Actor.Driver<RootResolver.Disjunction> resolver = Actor.driver(driver -> new RootResolver.Disjunction(
-                driver, disjunction, onAnswer, onExhausted, onException, this), executorService);
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-        return resolver;
-    }
-
-    public ResolverView.FilteredNegation negated(Negated negated, Conjunction upstream) {
-        return null;
-    }
-
-    private static Set<Variable.Retrievable> filter(Conjunction scope, Negated inner) {
-        return scope.variables().stream()
-                .filter(var -> var.id().isRetrievable() && inner.retrieves().contains(var.id().asRetrievable()))
-                .map(var -> var.id().asRetrievable())
-                .collect(Collectors.toSet());
-    }
-
-    public Actor.Driver<ConditionResolver> registerCondition(Rule.Condition ruleCondition) {
-        LOG.debug("Register retrieval for rule condition actor: '{}'", ruleCondition);
-        Actor.Driver<ConditionResolver> resolver = null;
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-        return resolver;
-
-    }
-
-    public Actor.Driver<ConclusionResolver> registerConclusion(Rule.Conclusion conclusion) {
-        LOG.debug("Register retrieval for rule conclusion actor: '{}'", conclusion);
-        Actor.Driver<ConclusionResolver> resolver = null;
-        conclusionRule.put(resolver, conclusion.rule());
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-        return resolver;
-    }
-
-    public Actor.Driver<BoundConclusionResolver> registerBoundConclusion(Rule.Conclusion conclusion, ConceptMap bounds) {
-        LOG.debug("Register BoundConclusionResolver, pattern: {} bounds: {}", conclusion.conjunction(), bounds);
-        Actor.Driver<BoundConclusionResolver> resolver = Actor.driver(driver -> new BoundConclusionResolver(
-                driver, conclusion, bounds, this), executorService);
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-        return resolver;
-    }
-
-    public ResolverView registerResolvable(Resolvable<?> resolvable) {
-        if (resolvable.isRetrievable()) {
-            return null;  // TODO: Remove
-        } else if (resolvable.isConcludable()) {
-            return null;  // TODO: Remove
-        } else throw TypeDBException.of(ILLEGAL_STATE);
-    }
-
-    public Actor.Driver<BoundRetrievableResolver> registerBoundRetrievable(Retrievable retrievable, ConceptMap bounds) {
-        LOG.debug("Register BoundRetrievableResolver, pattern: {} bounds: {}", retrievable.pattern(), bounds);
-        Actor.Driver<BoundRetrievableResolver> resolver = Actor.driver(
-                driver -> new BoundRetrievableResolver(driver, retrievable, bounds, this), executorService);
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-        return resolver;
-    }
-
-    public Actor.Driver<BoundConcludableResolver.Exploring> registerExploring(ConceptMap bounds,
-                                                                              BoundConcludableContext context) {
-        LOG.debug("Register Exploring BoundConcludableResolver, pattern: {} bounds: {}", context.concludable().pattern(), bounds);
-        Actor.Driver<BoundConcludableResolver.Exploring> resolver = Actor.driver(
-                driver -> new BoundConcludableResolver.Exploring(driver, context, bounds, this), executorService);
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-        return resolver;
-    }
-
-    public Actor.Driver<BoundConcludableResolver.Blocked> registerBlocked(ConceptMap bounds,
-                                                                          BoundConcludableContext context) {
-        LOG.debug("Register Blocked BoundConcludableResolver, pattern: {} bounds: {}", context.concludable().pattern(), bounds);
-        Actor.Driver<BoundConcludableResolver.Blocked> resolver = Actor.driver(
-                driver -> new BoundConcludableResolver.Blocked(driver, context, bounds, this), executorService);
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-        return resolver;
-    }
-
-    public Actor.Driver<ConjunctionResolver.Nested> nested(Conjunction conjunction) {
-        LOG.debug("Creating Conjunction resolver for : {}", conjunction);
-        Actor.Driver<ConjunctionResolver.Nested> resolver = Actor.driver(
-                driver -> new ConjunctionResolver.Nested(driver, conjunction, this), executorService);
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-        return resolver;
-    }
-
-    public Actor.Driver<DisjunctionResolver.Nested> nested(Disjunction disjunction) {
-        LOG.debug("Creating Disjunction resolver for : {}", disjunction);
-        Actor.Driver<DisjunctionResolver.Nested> resolver = Actor.driver(
-                driver -> new DisjunctionResolver.Nested(driver, disjunction, this), executorService);
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-        return resolver;
-    }
-
-    private static Map<Variable.Retrievable, Variable.Retrievable> identity(Resolvable<Conjunction> conjunctionResolvable) {
-        return conjunctionResolvable.retrieves().stream().collect(toMap(Function.identity(), Function.identity()));
-    }
-
-    public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction,
-                                                        BiConsumer<Request, Explain.Finished> requestAnswered,
-                                                        Consumer<Request> requestFailed, Consumer<Throwable> exception) {
-        Actor.Driver<RootResolver.Explain> resolver = Actor.driver(
-                driver -> new RootResolver.Explain(
-                        driver, conjunction, requestAnswered, requestFailed, exception, this), executorService);
-        resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-        return resolver;
-    }
+//    public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction,
+//                                                        BiConsumer<Request, Explain.Finished> requestAnswered,
+//                                                        Consumer<Request> requestFailed, Consumer<Throwable> exception) {
+//        Actor.Driver<RootResolver.Explain> resolver = Actor.driver(
+//                driver -> new RootResolver.Explain(
+//                        driver, conjunction, requestAnswered, requestFailed, exception, this), executorService);
+//        resolvers.add(resolver);
+//        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+//        return resolver;
+//    }
 
     public void setExecutorService(ActorExecutorGroup executorService) {
         this.executorService = executorService;
-    }
-
-    public Actor.Driver<Materialiser> materialiser() {
-        return materialiser;
-    }
-
-    public Actor.Driver<ConditionResolver> conditionResolver(Rule rule) {
-        throw TypeDBException.of(ILLEGAL_OPERATION);
-    }
-
-    public Set<Concludable> concludables(Actor.Driver<ConcludableController> controller) {
-        return controllerConcludables.get(controller);
-    }
-
-    public Rule conclusionRule(Actor.Driver<ConclusionResolver> resolver) {
-        return conclusionRule.get(resolver);
     }
 
     public static abstract class ResolverView {
@@ -427,24 +287,6 @@ public class ControllerRegistry {
             return new FilteredRetrievable(controller, filter);
         }
 
-        public boolean isMappedConcludable() { return false; }
-
-        public boolean isFilteredNegation() { return false; }
-
-        public boolean isFilteredRetrievable() { return false; }
-
-        public MappedConcludable asMappedConcludable() {
-            throw TypeDBException.of(ILLEGAL_CAST, getClass(), MappedConcludable.class);
-        }
-
-        public FilteredNegation asFilteredNegation() {
-            throw TypeDBException.of(ILLEGAL_CAST, getClass(), FilteredNegation.class);
-        }
-
-        public FilteredRetrievable asFilteredRetrievable() {
-            throw TypeDBException.of(ILLEGAL_CAST, getClass(), FilteredRetrievable.class);
-        }
-
         public abstract Actor.Driver<? extends Controller<?, ?, ?, ?, ?>> controller();
 
         public static class MappedConcludable extends ResolverView {
@@ -458,16 +300,6 @@ public class ControllerRegistry {
 
             public Map<Variable.Retrievable, Variable.Retrievable> mapping() {
                 return mapping;
-            }
-
-            @Override
-            public boolean isMappedConcludable() {
-                return true;
-            }
-
-            @Override
-            public MappedConcludable asMappedConcludable() {
-                return this;
             }
 
             @Override
@@ -490,16 +322,6 @@ public class ControllerRegistry {
             }
 
             @Override
-            public boolean isFilteredNegation() {
-                return true;
-            }
-
-            @Override
-            public FilteredNegation asFilteredNegation() {
-                return this;
-            }
-
-            @Override
             public Actor.Driver<NegationController> controller() {
                 return controller;
             }
@@ -516,14 +338,6 @@ public class ControllerRegistry {
 
             public Set<Variable.Retrievable> filter() {
                 return filter;
-            }
-
-            @Override
-            public boolean isFilteredRetrievable() { return true; }
-
-            @Override
-            public FilteredRetrievable asFilteredRetrievable() {
-                return this;
             }
 
             @Override

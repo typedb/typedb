@@ -18,12 +18,10 @@
 package com.vaticle.typedb.core.reasoner.resolution.framework;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
-import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,59 +117,6 @@ public final class ResolutionTracer {
         return obj.getClass().getSimpleName() + "@" + System.identityHashCode(obj);
     }
 
-    public synchronized void visit(Request.Visit request) {
-        String sender = request.sender().name();
-        String receiver = request.receiver().name();
-        String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, request.trace(), EdgeType.VISIT, conceptMap);
-    }
-
-    public synchronized void visit(Materialiser.Request request) {
-        String sender = request.sender().name();
-        String receiver = request.receiver().name();
-        String conceptMap = request.partialAnswer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, request.trace(), EdgeType.VISIT, conceptMap);
-    }
-
-    public void revisit(Request.Revisit request) {
-        String sender = request.visit().sender().name();
-        String receiver = request.visit().receiver().name();
-        String conceptMap = request.visit().partialAnswer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, request.trace(), EdgeType.REVISIT, conceptMap);
-    }
-
-    public void responseAnswer(Materialiser.Response request, Map<Identifier.Variable, Concept> materialisation) {
-        // Not static due to having one Materialiser
-        String sender = request.sender().name();
-        String receiver = request.receiver().name();
-        String concepts = materialisation.keySet().toString();
-        addMessage(sender, receiver, request.trace(), EdgeType.ANSWER, concepts);
-    }
-
-    public synchronized void responseAnswer(Response.Answer response) {
-        String sender = response.sender().name();
-        String receiver = response.receiver().name();
-        String conceptMap = response.answer().conceptMap().concepts().keySet().toString();
-        addMessage(sender, receiver, response.trace(), EdgeType.ANSWER, conceptMap);
-    }
-
-    public synchronized void responseExhausted(Response.Fail response) {
-        String sender = response.sender().name();
-        String receiver = response.receiver().name();
-        addMessage(sender, receiver, response.trace(), EdgeType.EXHAUSTED, "");
-    }
-
-    public synchronized void responseExhausted(Materialiser.Response response) {
-        String sender = response.sender().name();
-        String receiver = response.receiver().name();
-        addMessage(sender, receiver, response.trace(), EdgeType.EXHAUSTED, "");
-    }
-
-    public synchronized void responseBlocked(Response.Blocked response) {
-        String sender = response.sender().name();
-        String receiver = response.receiver().name();
-        addMessage(sender, receiver, response.trace(), EdgeType.BLOCKED, "");
-    }
 
     private void addMessage(String sender, String receiver, Trace trace, EdgeType edgeType,
                             String conceptMap) {
@@ -182,21 +127,12 @@ public final class ResolutionTracer {
         rootRequestTracers.get(trace).addNodeGroup(node, group);
     }
 
-    public synchronized void start(Request.Visit request) {
-        assert !rootRequestTracers.containsKey(request.trace());
-        rootRequestTracers.put(request.trace(), new RootRequestTracer(request.trace()));
-        rootRequestTracers.get(request.trace()).start();
-    }
 
     public synchronized void startDefaultTrace() {
         Trace trace = defaultTrace;
         assert !rootRequestTracers.containsKey(trace);
         rootRequestTracers.put(trace, new RootRequestTracer(trace));
         rootRequestTracers.get(trace).start();
-    }
-
-    public synchronized void finish(Request request) {
-        rootRequestTracers.get(request.trace()).finish();
     }
 
     public synchronized void finishDefaultTrace() {
