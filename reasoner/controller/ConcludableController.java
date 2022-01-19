@@ -106,20 +106,6 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         return this;
     }
 
-    protected static class ConclusionRequest extends Processor.Request<Conclusion, ConceptMap, ConclusionController,
-                    Map<Variable, Concept>, ConcludableProcessor, ConcludableController, ConclusionRequest> {
-
-        public ConclusionRequest(Driver<ConcludableProcessor> recProcessor, long recEndpointId,
-                                 Conclusion provControllerId, ConceptMap provProcessorId) {
-            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
-        }
-
-        @Override
-        public Builder<ConceptMap, Map<Variable, Concept>, ConclusionRequest, ConcludableProcessor, ?> getBuilder(ConcludableController controller) {
-            return new Builder<>(controller.conclusionProvider(pubControllerId()), this);
-        }
-    }
-
     protected static class ConcludableProcessor extends Processor<Map<Variable, Concept>, ConceptMap, ConcludableController, ConcludableProcessor> {
 
         private final ConceptMap bounds;
@@ -163,6 +149,20 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
             if (!requestedConnections.contains(conclusionRequest)) {
                 requestedConnections.add(conclusionRequest);
                 requestConnection(conclusionRequest);
+            }
+        }
+
+        protected static class ConclusionRequest extends Request<Conclusion, ConceptMap, ConclusionController,
+                        Map<Variable, Concept>, ConcludableProcessor, ConcludableController, ConclusionRequest> {
+
+            public ConclusionRequest(Driver<ConcludableProcessor> recProcessor, long recEndpointId,
+                                     Conclusion provControllerId, ConceptMap provProcessorId) {
+                super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+            }
+
+            @Override
+            public Builder<ConceptMap, Map<Variable, Concept>, ConclusionRequest, ConcludableProcessor, ?> getBuilder(ConcludableController controller) {
+                return new Builder<>(controller.conclusionProvider(pubControllerId()), this);
             }
         }
     }
