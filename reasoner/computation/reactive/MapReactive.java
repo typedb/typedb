@@ -21,14 +21,15 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class MapReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, OUTPUT> {
 
     private final Function<INPUT, OUTPUT> mappingFunc;
 
-    protected MapReactive(Set<Publisher<INPUT>> publishers, Function<INPUT, OUTPUT> mappingFunc, String groupName) {
-        super(publishers, groupName);
+    protected MapReactive(Set<Publisher<INPUT>> publishers, Function<INPUT, OUTPUT> mappingFunc, PacketMonitor monitor, String groupName) {
+        super(publishers, monitor, groupName);
         this.mappingFunc = mappingFunc;
     }
 

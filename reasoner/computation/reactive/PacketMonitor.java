@@ -18,27 +18,10 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
+public interface PacketMonitor {
 
-import java.util.function.Consumer;
-import java.util.function.Function;
+    void onPacketCreate();
 
-public interface Provider<R> {
+    void onPacketDestroy();
 
-    void pull(Receiver<R> receiver);
-
-    String groupName();
-
-    interface Publisher<T> extends Provider<T> {
-
-        void publishTo(Subscriber<T> subscriber);
-
-        ReactiveBase<T, T> findFirst();
-
-        <R> ReactiveBase<T, R> map(Function<T, R> function);
-
-        <R> ReactiveBase<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
-
-    }
 }

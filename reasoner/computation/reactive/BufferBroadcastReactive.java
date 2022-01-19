@@ -37,8 +37,8 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
     protected final Set<Receiver<PACKET>> subscribers;
     protected final Set<Provider<PACKET>> publishers;
 
-    public BufferBroadcastReactive(Set<Publisher<PACKET>> publishers, String groupName) {
-        super(groupName);
+    public BufferBroadcastReactive(Set<Publisher<PACKET>> publishers, PacketMonitor monitor, String groupName) {
+        super(monitor, groupName);
         this.bufferSet = new HashSet<>();
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
@@ -58,6 +58,7 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
             finishPulling();
             toSend.forEach(this::send);
         } else if (isPulling()) {
+            monitor().onPacketDestroy();
             provider.pull(this);
         }
     }

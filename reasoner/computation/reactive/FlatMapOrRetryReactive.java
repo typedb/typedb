@@ -29,8 +29,8 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, O
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
 
     FlatMapOrRetryReactive(Set<Publisher<INPUT>> publishers, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
-                           String groupName) {
-        super(publishers, groupName);
+                           PacketMonitor monitor, String groupName) {
+        super(publishers, monitor, groupName);
         this.transform = transform;
     }
 
@@ -40,10 +40,14 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, O
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {
             finishPulling();
-            transformed.forEachRemaining(t -> subscriber().receive(this, t));
+            transformed.forEachRemaining(t -> {
+                monitor().onPacketCreate();
+                subscriber().receive(this, t);
+            });
         } else if (isPulling()) {
             provider.pull(this);  // Automatic retry
         }
+        monitor().onPacketDestroy();  // Because we lost the original packet and gained as many as are in the iterator
     }
 
 }

@@ -28,14 +28,14 @@ public class Source<PACKET> extends PublisherImpl<PACKET> {
     private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
     private FunctionalIterator<PACKET> iterator;
 
-    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, String groupName) {
-        super(groupName);
+    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, PacketMonitor monitor, String groupName) {
+        super(monitor, groupName);
         this.iteratorSupplier = iteratorSupplier;
     }
 
     public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier,
-                                                             String groupName) {
-        return new Source<>(iteratorSupplier, groupName);
+                                                             PacketMonitor monitor, String groupName) {
+        return new Source<>(iteratorSupplier, monitor, groupName);
     }
 
     @Override
@@ -43,7 +43,10 @@ public class Source<PACKET> extends PublisherImpl<PACKET> {
         assert receiver.equals(subscriber);
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         if (iterator == null) iterator = iteratorSupplier.get();
-        if (iterator.hasNext()) receiver.receive(this, iterator.next());
+        if (iterator.hasNext()) {
+            monitor().onPacketCreate();
+            receiver.receive(this, iterator.next());
+        }
     }
 
 }

@@ -29,8 +29,8 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
     protected Receiver<OUTPUT> subscriber;
     private boolean isPulling;
 
-    protected ReactiveBase(Set<Publisher<INPUT>> publishers, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
-        super(groupName);
+    protected ReactiveBase(Set<Publisher<INPUT>> publishers, PacketMonitor monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
+        super(monitor, groupName);
         this.publishers = new HashSet<>();
         publishers.forEach(pub -> pub.publishTo(this));
         this.isPulling = false;

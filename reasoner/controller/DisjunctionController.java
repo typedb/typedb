@@ -81,13 +81,14 @@ public abstract class DisjunctionController<
 
         protected DisjunctionProcessor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller,
                                        Disjunction disjunction, ConceptMap bounds, String name) {
-            super(driver, controller, noOp(name), name);
+            super(driver, controller, name);
             this.disjunction = disjunction;
             this.bounds = bounds;
         }
 
         @Override
         public void setUp() {
+            setOutlet(noOp(this, name()));
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
                 InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
                 endpoint.publishTo(outlet());

@@ -41,8 +41,8 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
 
     public CompoundReactive(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
                             BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
-                            String groupName) {
-        super(new HashSet<>(), groupName);
+                            PacketMonitor monitor, String groupName) {
+        super(new HashSet<>(), monitor, groupName);
         assert plan.size() > 0;
         this.initialPacket = initialPacket;
         this.remainingPlan = new ArrayList<>(plan);
@@ -69,7 +69,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
                     nextPublisher = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
                     lastPublishers.add(nextPublisher);
                 } else {
-                    nextPublisher = new CompoundReactive<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, groupName());
+                    nextPublisher = new CompoundReactive<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, monitor(), groupName());
                 }
                 publisherPackets.put(nextPublisher, mergedPacket);
                 nextPublisher.publishTo(this);

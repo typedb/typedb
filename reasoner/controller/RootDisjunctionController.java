@@ -69,8 +69,8 @@ public class RootDisjunctionController
 
         @Override
         public void setUp() {
-            outlet().publishTo(reasonerEndpoint);
             super.setUp();
+            outlet().publishTo(reasonerEndpoint);
         }
     }
 }

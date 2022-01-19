@@ -119,7 +119,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
                                     ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier, String name) {
-            super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>(), name), name);
+            super(driver, controller, name);
             this.bounds = bounds;
             this.unboundVars = unboundVars;
             this.conclusionUnifiers = conclusionUnifiers;
@@ -129,12 +129,13 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 
         @Override
         public void setUp() {
+            setOutlet(new BufferBroadcastReactive<>(new HashSet<>(), this, name()));
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
-            ReactiveBase<ConceptMap, ConceptMap> op = noOp(name());
+            ReactiveBase<ConceptMap, ConceptMap> op = noOp(this, name());
             if (singleAnswerRequired) op.findFirst().publishTo(outlet());
             else op.publishTo(outlet());
 
-            Source.fromIteratorSupplier(traversalSuppplier, name()).publishTo(op);
+            Source.fromIteratorSupplier(traversalSuppplier, this, name()).publishTo(op);
 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {

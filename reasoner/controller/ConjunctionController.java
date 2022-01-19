@@ -136,9 +136,14 @@ public abstract class ConjunctionController<OUTPUT,
 
         protected ConjunctionProcessor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller,
                                        ConceptMap bounds, List<Resolvable<?>> plan, String name) {
-            super(driver, controller, noOp(name), name);
+            super(driver, controller, name);
             this.bounds = bounds;
             this.plan = plan;
+        }
+
+        @Override
+        public void setUp() {
+            setOutlet(noOp(this, name()));
         }
 
         protected InletEndpoint<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {

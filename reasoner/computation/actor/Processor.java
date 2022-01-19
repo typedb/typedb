@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.PacketMonitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PublisherImpl;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
@@ -43,28 +44,30 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 
 public abstract class Processor<INPUT, OUTPUT,
         CONTROLLER extends Controller<?, INPUT, OUTPUT, PROCESSOR, CONTROLLER>,
-        PROCESSOR extends Processor<INPUT, OUTPUT, ?, PROCESSOR>> extends Actor<PROCESSOR> {
+        PROCESSOR extends Processor<INPUT, OUTPUT, ?, PROCESSOR>> extends Actor<PROCESSOR> implements PacketMonitor {
 
     private static final Logger LOG = LoggerFactory.getLogger(Processor.class);
 
     private final Driver<CONTROLLER> controller;
-    private final Reactive<OUTPUT, OUTPUT> outlet;
     private final Map<Long, InletEndpoint<INPUT>> receivingEndpoints;
     private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
+    private Reactive<OUTPUT, OUTPUT> outlet;
     private long endpointId;
     private boolean terminated;
 
-    protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, Reactive<OUTPUT, OUTPUT> outlet,
-                        String name) {
+    protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, String name) {
         super(driver, name);
         this.controller = controller;
-        this.outlet = outlet;
         this.endpointId = 0;
         this.receivingEndpoints = new HashMap<>();
         this.providingEndpoints = new HashMap<>();
     }
 
     public abstract void setUp();
+
+    protected void setOutlet(Reactive<OUTPUT, OUTPUT> outlet) {
+        this.outlet = outlet;
+    }
 
     public Reactive<OUTPUT, OUTPUT> outlet() {
         return outlet;
@@ -108,7 +111,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     protected InletEndpoint<INPUT> createReceivingEndpoint() {
-        InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId(), name());
+        InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId(), this, name());
         receivingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
@@ -119,6 +122,14 @@ public abstract class Processor<INPUT, OUTPUT,
 
     protected void endpointReceive(INPUT packet, long subEndpointId) {
         receivingEndpoints.get(subEndpointId).receive(null, packet);
+    }
+
+    public void onPacketCreate() {
+        // TODO
+    }
+
+    public void onPacketDestroy() {
+        // TODO
     }
 
     @Override
@@ -154,8 +165,8 @@ public abstract class Processor<INPUT, OUTPUT,
         private Connection<PACKET, ?, ?> connection;
         protected boolean isPulling;
 
-        public InletEndpoint(long id, String groupName) {
-            super(groupName);
+        public InletEndpoint(long id, PacketMonitor monitor, String groupName) {
+            super(monitor, groupName);
             this.id = id;
             this.ready = false;
             this.isPulling = false;

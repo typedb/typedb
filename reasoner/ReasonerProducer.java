@@ -163,6 +163,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
             isPulling = false;
             answerConsumer.accept(packet);
+            // monitor().onPacketDestroy();  // TODO: Or do this directly in the root actor(s) instead
         }
 
         @Override

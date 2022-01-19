@@ -71,13 +71,14 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
         protected NegationProcessor(Driver<NegationProcessor> driver, Driver<NegationController> controller,
                                     Negated negated, ConceptMap bounds, String name) {
-            super(driver, controller, noOp(name), name);
+            super(driver, controller, name);
             this.negated = negated;
             this.bounds = bounds;
         }
 
         @Override
         public void setUp() {
+            setOutlet(noOp(this, name()));
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             requestConnection(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
             endpoint.publishTo(outlet());

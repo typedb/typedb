@@ -69,13 +69,14 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
 
         protected RetrievableProcessor(Driver<RetrievableProcessor> driver, Driver<RetrievableController> controller,
                                        Supplier<FunctionalIterator<ConceptMap>> traversalSupplier, String name) {
-            super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>(), name), name);
+            super(driver, controller, name);
             this.traversalSupplier = traversalSupplier;
         }
 
         @Override
         public void setUp() {
-            new Source<>(traversalSupplier, name()).publishTo(outlet());
+            setOutlet(new BufferBroadcastReactive<>(new HashSet<>(), this, name()));
+            new Source<>(traversalSupplier, this, name()).publishTo(outlet());
         }
     }
 }

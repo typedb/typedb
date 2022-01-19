@@ -20,16 +20,23 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
 public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUTPUT> {
 
+    private final PacketMonitor monitor;
     private final String groupName;
 
-    protected ReactiveImpl(String groupName) {this.groupName = groupName;}
+    protected ReactiveImpl(PacketMonitor monitor, String groupName) {
+        this.monitor = monitor;
+        this.groupName = groupName;
+    }
+
+    public PacketMonitor monitor() {
+        return monitor;
+    }
 
     @Override
     public String groupName() {
@@ -38,21 +45,17 @@ public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUT
 
     @Override
     public ReactiveBase<OUTPUT, OUTPUT> findFirst() {
-        return new FindFirstReactive<>(set(this), groupName());
+        return new FindFirstReactive<>(set(this), monitor, groupName());
     }
 
     @Override
     public <R> ReactiveBase<OUTPUT, R> map(Function<OUTPUT, R> function) {
-        return new MapReactive<>(set(this), function, groupName());
+        return new MapReactive<>(set(this), function, monitor, groupName());
     }
 
     @Override
     public <R> ReactiveBase<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
-        return new FlatMapOrRetryReactive<>(set(this), function, groupName());
+        return new FlatMapOrRetryReactive<>(set(this), function, monitor, groupName());
     }
 
-    @Override
-    public void forEach(Consumer<OUTPUT> function) {
-        this.publishTo(new ForEachReactive<>(function, groupName()));
-    }
 }

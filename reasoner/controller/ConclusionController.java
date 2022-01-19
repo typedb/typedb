@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.PacketMonitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
@@ -92,7 +93,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 Driver<ConclusionProcessor> driver,
                 Driver<ConclusionController> controller, Rule rule,
                 ConceptMap bounds, ConceptManager conceptManager, String name) {
-            super(driver, controller, new BufferBroadcastReactive<>(new HashSet<>(), name), name);
+            super(driver, controller, name);
             this.rule = rule;
             this.bounds = bounds;
             this.conceptManager = conceptManager;
@@ -102,9 +103,10 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         @Override
         public void setUp() {
+            setOutlet(new BufferBroadcastReactive<>(new HashSet<>(), this, name()));
             InletEndpoint<Either<ConceptMap, Materialisation>> conditionEndpoint = createReceivingEndpoint();
             mayRequestCondition(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
-            ConclusionReactive conclusionReactive = new ConclusionReactive(new HashSet<>(), name());
+            ConclusionReactive conclusionReactive = new ConclusionReactive(new HashSet<>(), name(), this);
             conditionEndpoint.map(a -> a.first()).publishTo(conclusionReactive);
             conclusionReactive.publishTo(outlet());
         }
@@ -139,8 +141,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         private class ConclusionReactive extends ReactiveBase<ConceptMap, Map<Identifier.Variable, Concept>> {
 
-            protected ConclusionReactive(Set<Publisher<ConceptMap>> publishers, String groupName) {
-                super(publishers, groupName);
+            protected ConclusionReactive(Set<Publisher<ConceptMap>> publishers, String groupName, PacketMonitor monitor) {
+                super(publishers, monitor, groupName);
             }
 
             @Override
@@ -152,10 +154,11 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
                 ReactiveBase<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
-                InnerReactive innerReactive = new InnerReactive(this, new HashSet<>(), groupName());
+                InnerReactive innerReactive = new InnerReactive(this, new HashSet<>(), monitor(), groupName());
                 op.publishTo(innerReactive);
                 innerReactive.sendTo(subscriber());
                 innerReactive.pull();
+                monitor().onPacketDestroy();  // The materialiser will create one as it creates a source
             }
         }
 
@@ -163,8 +166,9 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
             private final ConclusionReactive parent;
 
-            public InnerReactive(ConclusionReactive parent, Set<Publisher<Map<Variable, Concept>>> publishers, String groupName) {
-                super(publishers, groupName);
+            public InnerReactive(ConclusionReactive parent, Set<Publisher<Map<Variable, Concept>>> publishers,
+                                 PacketMonitor monitor, String groupName) {
+                super(publishers, monitor, groupName);
                 this.parent = parent;
             }
 

@@ -26,16 +26,20 @@ public class FindFirstReactive<T> extends IdentityReactive<T> {
 
     private boolean packetFound;
 
-    FindFirstReactive(Set<Publisher<T>> publishers, String groupName) {
-        super(publishers, groupName);
+    FindFirstReactive(Set<Publisher<T>> publishers, PacketMonitor monitor, String groupName) {
+        super(publishers, monitor, groupName);
         this.packetFound = false;
     }
 
     @Override
     public void receive(Provider<T> provider, T packet) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
-        packetFound = true;
-        super.receive(provider, packet);
+        if (!packetFound) {
+            packetFound = true;
+            super.receive(provider, packet);
+        } else {
+            monitor().onPacketDestroy();
+        }
     }
 
     @Override
