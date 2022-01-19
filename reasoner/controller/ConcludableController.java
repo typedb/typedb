@@ -30,7 +30,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
+import com.vaticle.typedb.core.reasoner.utils.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashMap;
@@ -49,11 +49,11 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
     private final Map<Conclusion, Driver<ConclusionController>> conclusionControllers;
     private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
     private final Set<Variable.Retrievable> unboundVars;
-    private final ControllerRegistry registry;
+    private final Registry registry;
     private final Concludable concludable;
 
     public ConcludableController(Driver<ConcludableController> driver, Concludable concludable,
-                                 ActorExecutorGroup executorService, ControllerRegistry registry) {
+                                 ActorExecutorGroup executorService, Registry registry) {
         super(driver, executorService, registry,
               ConcludableController.class.getSimpleName() + "(pattern: " + concludable + ")");
         this.registry = registry;
@@ -93,7 +93,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         //  concludable. They should be filtered before being passed to the concludableProcessor's constructor
         return driver -> new ConcludableProcessor(
                 driver, driver(), bounds, unboundVars, conclusionUnifiers,
-                () -> TraversalUtils.traversalIterator(registry, concludable.pattern(), bounds),
+                () -> Traversal.traversalIterator(registry, concludable.pattern(), bounds),
                 ConcludableProcessor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
         );
     }

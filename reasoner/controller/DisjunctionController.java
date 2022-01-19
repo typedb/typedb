@@ -27,7 +27,6 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
@@ -49,7 +48,7 @@ public abstract class DisjunctionController<
     private final List<Pair<Conjunction, Driver<NestedConjunctionController>>> conjunctionControllers;
     protected Disjunction disjunction;
 
-    protected DisjunctionController(Driver<CONTROLLER> driver, Disjunction disjunction, ActorExecutorGroup executorService, ControllerRegistry registry) {
+    protected DisjunctionController(Driver<CONTROLLER> driver, Disjunction disjunction, ActorExecutorGroup executorService, Registry registry) {
         super(driver, executorService, registry,
               DisjunctionController.class.getSimpleName() + "(pattern:" + disjunction + ")");
         this.disjunction = disjunction;

@@ -29,7 +29,7 @@ import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.LogicManager;
-import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;

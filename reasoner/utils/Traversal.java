@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.controller;
+package com.vaticle.typedb.core.reasoner.utils;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.concurrent.producer.Producers;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
+import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
@@ -39,9 +39,9 @@ import java.util.Optional;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 
-public class TraversalUtils {
+public class Traversal {
 
-    public static FunctionalIterator<ConceptMap> traversalIterator(ControllerRegistry registry,
+    public static FunctionalIterator<ConceptMap> traversalIterator(Registry registry,
                                                                    Conjunction conjunction, ConceptMap bounds) {
         return compatibleBounds(conjunction, bounds).map(c -> {
             GraphTraversal.Thing traversal = boundTraversal(conjunction.traversal(), c);
@@ -49,7 +49,7 @@ public class TraversalUtils {
         }).orElse(Iterators.empty());
     }
 
-    public static Producer<ConceptMap> traversalProducer(ControllerRegistry registry, Conjunction conjunction,
+    public static Producer<ConceptMap> traversalProducer(Registry registry, Conjunction conjunction,
                                                          ConceptMap bounds, int parallelisation) {
         return compatibleBounds(conjunction, bounds).map(b -> {
             GraphTraversal.Thing traversal = boundTraversal(conjunction.traversal(), b);

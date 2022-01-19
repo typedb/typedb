@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,7 +56,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
-        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         PACKET mergedPacket = compoundPacketsFunc.apply(initialPacket, packet);
         if (leadingPublisher.equals(provider)) {
             leadingPublisher.pull(this);  // TODO: This shouldn't be here for a single item plan
@@ -77,7 +77,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
             }
         } else {
             PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(provider));
-            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, mergedPacket));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, mergedPacket));
             subscriber().receive(this, compoundedPacket);
             if (lastPublishers.contains(provider)) finishPulling();
         }

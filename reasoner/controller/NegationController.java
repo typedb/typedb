@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.function.Function;
 
@@ -36,7 +35,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
     private Driver<NestedDisjunctionController> disjunctionContoller;
 
     public NegationController(Driver<NegationController> driver, Negated negated, ActorExecutorGroup executorService,
-                              ControllerRegistry registry) {
+                              Registry registry) {
         super(driver, executorService, registry, NegationController.class.getSimpleName() + "(pattern:" + negated + ")");
         this.negated = negated;
     }

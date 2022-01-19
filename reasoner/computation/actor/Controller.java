@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
+import com.vaticle.typedb.core.reasoner.controller.Registry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,10 +44,10 @@ public abstract class Controller<
 
     private boolean terminated;
     private final ActorExecutorGroup executorService;
-    private final ControllerRegistry registry;
+    private final Registry registry;
     protected final Map<PROC_ID, Actor.Driver<PROCESSOR>> processors;
 
-    protected Controller(Driver<CONTROLLER> driver, ActorExecutorGroup executorService, ControllerRegistry registry,
+    protected Controller(Driver<CONTROLLER> driver, ActorExecutorGroup executorService, Registry registry,
                          String name) {
         super(driver, name);
         this.executorService = executorService;
@@ -58,7 +58,7 @@ public abstract class Controller<
 
     public abstract void setUpUpstreamProviders();
 
-    protected ControllerRegistry registry() {
+    protected Registry registry() {
         return registry;
     }
 

@@ -13,9 +13,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
-package com.vaticle.typedb.core.reasoner.resolution;
+package com.vaticle.typedb.core.reasoner.utils;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;

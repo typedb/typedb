@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.Set;
 
@@ -33,14 +33,14 @@ public class FindFirstReactive<T> extends IdentityReactive<T> {
 
     @Override
     public void receive(Provider<T> provider, T packet) {
-        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         packetFound = true;
         super.receive(provider, packet);
     }
 
     @Override
     public void pull(Receiver<T> receiver) {
-        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         if (!packetFound) super.pull(receiver);
     }
 }

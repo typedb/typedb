@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,7 +50,7 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
-        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         assert subscribers.size() > 0;
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
@@ -64,7 +64,7 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
-        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         bufferPositions.putIfAbsent(receiver, 0);
         subscribers.add(receiver);
         if (bufferList.size() == bufferPositions.get(receiver)) {

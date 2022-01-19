@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.Set;
 import java.util.function.Function;
@@ -34,7 +34,7 @@ public class MapReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, OUTPUT> {
 
     @Override
     public void receive(Provider<INPUT> provider, INPUT packet) {
-        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         finishPulling();
         subscriber().receive(this, mappingFunc.apply(packet));
     }

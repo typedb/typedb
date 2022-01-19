@@ -35,10 +35,8 @@ native_java_libraries(
         "computation/actor/*.java",
         "computation/reactive/*.java",
         "controller/*.java",
-        "resolution/*.java",
-        "resolution/framework/*.java",
-        "resolution/resolver/*.java",
-        "resolution/answer/*.java",
+        "answer/*.java",
+        "utils/*.java",
         ], exclude = ["*Test.java", "**/*Test.java"],
     ),
     native_libraries_deps = [

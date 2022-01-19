@@ -19,13 +19,12 @@ package com.vaticle.typedb.core.reasoner;
 
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.controller.Registry;
+import com.vaticle.typedb.core.reasoner.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +49,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     private Queue<Explanation> queue;
 
     public ExplanationProducer(Conjunction conjunction, ConceptMap bounds, Options.Query options,
-                               ControllerRegistry registry, ExplainablesManager explainablesManager) {
+                               Registry registry, ExplainablesManager explainablesManager) {
         this.bounds = bounds;
         this.explainablesManager = explainablesManager;
         this.options = options;
@@ -62,7 +61,7 @@ public class ExplanationProducer implements Producer<Explanation> {
 //        this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.requestTraceIdCounter = 0;
         this.traceId = UUID.randomUUID();
-        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
+        if (options.traceInference()) Tracer.initialise(options.logsDir());
     }
 
     @Override
@@ -83,7 +82,7 @@ public class ExplanationProducer implements Producer<Explanation> {
 //        if (options.traceInference()) {
 //            Trace trace = Trace.create(traceId, requestTraceIdCounter);
 //            resolveRequest = requestFactory.createVisit(trace);
-//            ResolutionTracer.get().start(resolveRequest);
+//            Tracer.get().start(resolveRequest);
 //            requestTraceIdCounter += 1;
 //        } else {
 //            resolveRequest = untracedResolveRequest;
@@ -93,7 +92,7 @@ public class ExplanationProducer implements Producer<Explanation> {
 
     // note: root resolver calls this single-threaded, so is threads safe
 //    private void requestAnswered(Request requestAnswered, Explain.Finished explainedAnswer) {
-//        if (options.traceInference()) ResolutionTracer.get().finish(requestAnswered);
+//        if (options.traceInference()) Tracer.get().finish(requestAnswered);
 //        Explanation explanation = explainedAnswer.explanation();
 //        explainablesManager.setAndRecordExplainables(explanation.conditionAnswer());
 //        queue.put(explanation);
@@ -104,7 +103,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     // note: root resolver calls this single-threaded, so is threads safe
 //    private void requestFailed(Request failedRequest) {
 //        LOG.trace("Failed to find answer to request {}", failedRequest);
-//        if (options.traceInference()) ResolutionTracer.get().finish(failedRequest);
+//        if (options.traceInference()) Tracer.get().finish(failedRequest);
 //        finish();
 //    }
 
@@ -118,7 +117,7 @@ public class ExplanationProducer implements Producer<Explanation> {
     }
 
     private void exception(Throwable e) {
-        if (options.traceInference()) ResolutionTracer.get().exception();
+        if (options.traceInference()) Tracer.get().exception();
         if (!done) {
             done = true;
             required.set(0);

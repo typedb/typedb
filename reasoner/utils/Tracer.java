@@ -13,9 +13,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
-package com.vaticle.typedb.core.reasoner.resolution.framework;
+package com.vaticle.typedb.core.reasoner.utils;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
@@ -43,35 +44,35 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REA
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CALL_TO_WRITE_BEFORE_START;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_HAS_NOT_BEEN_INITIALISED;
 
-public final class ResolutionTracer {
+public final class Tracer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ResolutionTracer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Tracer.class);
 
-    private static ResolutionTracer INSTANCE;
+    private static Tracer INSTANCE;
     private static Path logDir = null;
     private static final Map<Trace, RootRequestTracer> rootRequestTracers = new HashMap<>();
     private final Trace defaultTrace;
 
-    private ResolutionTracer(Path logDir) {
-        ResolutionTracer.logDir = logDir;
-        this.defaultTrace = ResolutionTracer.Trace.create(UUID.randomUUID(), 0);
+    private Tracer(Path logDir) {
+        Tracer.logDir = logDir;
+        this.defaultTrace = Tracer.Trace.create(UUID.randomUUID(), 0);
     }
 
     public static void initialise(Path logDir) {
-        if (ResolutionTracer.logDir != null && !ResolutionTracer.logDir.equals(logDir)) {
+        if (Tracer.logDir != null && !Tracer.logDir.equals(logDir)) {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
         if (INSTANCE == null) {
-            INSTANCE = new ResolutionTracer(logDir);
+            INSTANCE = new Tracer(logDir);
         }
     }
 
-    public static ResolutionTracer get() {
+    public static Tracer get() {
         if (INSTANCE == null) throw TypeDBException.of(REASONER_TRACING_HAS_NOT_BEEN_INITIALISED);
         return INSTANCE;
     }
 
-    public static Optional<ResolutionTracer> getIfEnabled() {
+    public static Optional<Tracer> getIfEnabled() {
         return Optional.ofNullable(INSTANCE);
     }
 

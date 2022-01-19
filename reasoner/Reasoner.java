@@ -37,8 +37,8 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.Negation;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.controller.Registry;
+import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
@@ -67,7 +67,7 @@ public class Reasoner {
     private final TraversalEngine traversalEng;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
-    private final ControllerRegistry controllerRegistry;
+    private final Registry controllerRegistry;
     private final ExplainablesManager explainablesManager;
     private final Context.Query defaultContext;
 
@@ -78,12 +78,12 @@ public class Reasoner {
         this.logicMgr = logicMgr;
         this.defaultContext = new Context.Query(context, new Options.Query());
         this.defaultContext.producer(Either.first(EXHAUSTIVE));
-        this.controllerRegistry = new ControllerRegistry(actor(), traversalEng, conceptMgr, logicMgr,
-                                                         defaultContext.options().traceInference());
+        this.controllerRegistry = new Registry(actor(), traversalEng, conceptMgr, logicMgr,
+                                               defaultContext.options().traceInference());
         this.explainablesManager = new ExplainablesManager();
     }
 
-    public ControllerRegistry controllerRegistry() {
+    public Registry controllerRegistry() {
         return controllerRegistry;
     }
 

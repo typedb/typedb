@@ -25,9 +25,9 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Sink;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
+import com.vaticle.typedb.core.reasoner.controller.Registry;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
+import com.vaticle.typedb.core.reasoner.utils.Tracer.Trace;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +48,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     private final AtomicInteger required;
     private final AtomicInteger processing;
     private final Options.Query options;
-    private final ControllerRegistry controllerRegistry;
+    private final Registry controllerRegistry;
     private final ExplainablesManager explainablesManager;
     private final int computeSize;
     private final EntryPoint reasonerEntryPoint;
@@ -57,7 +57,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
-                            ControllerRegistry controllerRegistry, ExplainablesManager explainablesManager) {
+                            Registry controllerRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
         this.controllerRegistry = controllerRegistry;
         this.explainablesManager = explainablesManager;
@@ -69,11 +69,11 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.controllerRegistry.createRootConjunctionController(conjunction, reasonerEntryPoint);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
+        if (options.traceInference()) Tracer.initialise(options.logsDir());
     }
 
     public ReasonerProducer(Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
-                            ControllerRegistry controllerRegistry, ExplainablesManager explainablesManager) {
+                            Registry controllerRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
         this.controllerRegistry = controllerRegistry;
         this.explainablesManager = explainablesManager;
@@ -85,7 +85,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.controllerRegistry.createRootDisjunctionController(disjunction, reasonerEntryPoint);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
-        if (options.traceInference()) ResolutionTracer.initialise(options.logsDir());
+        if (options.traceInference()) Tracer.initialise(options.logsDir());
     }
 
     @Override
@@ -100,12 +100,12 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     }
 
     private void pullAnswer() {
-        ResolutionTracer.get().startDefaultTrace();
+        Tracer.get().startDefaultTrace();
         reasonerEntryPoint.pull();
     }
 
     private void receiveAnswer(ConceptMap answer) {
-        // if (options.traceInference()) ResolutionTracer.get().finishDefaultTrace();
+        // if (options.traceInference()) Tracer.get().finishDefaultTrace();
         if (options.explain() && !answer.explainables().isEmpty()) {
             explainablesManager.setAndRecordExplainables(answer);
         }
@@ -119,7 +119,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     private void answersFinished() {
         // TODO: Call when the end of answers has been detected
         LOG.trace("All answers found.");
-        if (options.traceInference()) ResolutionTracer.get().finishDefaultTrace();
+        if (options.traceInference()) Tracer.get().finishDefaultTrace();
         finish();
     }
 
@@ -160,7 +160,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
         @Override
         public void receive(@Nullable Provider<ConceptMap> provider, ConceptMap packet) {
-            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
             isPulling = false;
             answerConsumer.accept(packet);
         }

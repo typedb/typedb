@@ -30,10 +30,9 @@ import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry.ResolverView;
-import com.vaticle.typedb.core.reasoner.resolution.Planner;
-import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
+import com.vaticle.typedb.core.reasoner.controller.Registry.ResolverView;
+import com.vaticle.typedb.core.reasoner.utils.Planner;
+import com.vaticle.typedb.core.reasoner.answer.Mapping;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.ArrayList;
@@ -63,7 +62,7 @@ public abstract class ConjunctionController<OUTPUT,
     private List<Resolvable<?>> plan;
 
     public ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction,
-                                 ActorExecutorGroup executorService, ControllerRegistry registry) {
+                                 ActorExecutorGroup executorService, Registry registry) {
         super(driver, executorService, registry,
               ConjunctionController.class.getSimpleName() + "(pattern:" + conjunction + ")");
         this.conjunction = conjunction;

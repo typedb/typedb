@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.Set;
 import java.util.function.Function;
@@ -36,7 +36,7 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, O
 
     @Override
     public void receive(Provider<INPUT> provider, INPUT packet) {
-        ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {
             finishPulling();

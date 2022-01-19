@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.PublisherImpl;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,17 +174,17 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void pull(Receiver<PACKET> receiver) {
             assert receiver.equals(subscriber);
-            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
             isPulling = true;
             if (ready) {
                 connection.pull();
-                ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, connection));  // TODO: We do this here because we don't tell the connection who we are when we pull
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, connection));  // TODO: We do this here because we don't tell the connection who we are when we pull
             }
         }
 
         @Override
         public void receive(@Nullable Provider<PACKET> provider, PACKET packet) {
-            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(connection, this, packet));  // TODO: Highlights a smell that the connection is receiving and so provider is null
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(connection, this, packet));  // TODO: Highlights a smell that the connection is receiving and so provider is null
             assert provider == null;
             isPulling = false;
             subscriber().receive(this, packet);
@@ -225,16 +225,16 @@ public abstract class Processor<INPUT, OUTPUT,
 
         @Override
         public void receive(@Nullable Provider<PACKET> provider, PACKET packet) {
-            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
             isPulling = false;
-            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(this, connection, packet));  // TODO: We do this here because we don't tell the connection who we are when it receives
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(this, connection, packet));  // TODO: We do this here because we don't tell the connection who we are when it receives
             connection.receive(packet);
         }
 
         @Override
         public void pull(@Nullable Receiver<PACKET> receiver) {
             assert receiver == null;
-            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.pull(connection, this));  // TODO: Highlights a smell that the connection is pulling and so receiver is null
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(connection, this));  // TODO: Highlights a smell that the connection is pulling and so receiver is null
             if (!isPulling) {
                 isPulling = true;
                 publishers.forEach(p -> p.pull(this));

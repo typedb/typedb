@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
+import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
@@ -124,7 +125,7 @@ public class ResolutionTest {
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }", transaction.logic());
-                ControllerRegistry registry = transaction.reasoner().controllerRegistry();
+                Registry registry = transaction.reasoner().controllerRegistry();
                 LinkedBlockingQueue<ConceptMap> responses = new LinkedBlockingQueue<>();
                 LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
                 EntryPoint reasonerEntryPoint = new EntryPoint(responses::add, exceptions::add, "EntryPoint");
@@ -443,7 +444,7 @@ public class ResolutionTest {
     private void createRootAndAssertResponses(RocksTransaction transaction, Disjunction disjunction,
                                               Set<Identifier.Variable.Retrievable> filter, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
-        ControllerRegistry registry = transaction.reasoner().controllerRegistry();
+        Registry registry = transaction.reasoner().controllerRegistry();
         LinkedBlockingQueue<ConceptMap> responses = new LinkedBlockingQueue<>();
         LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
         EntryPoint entryPoint = new EntryPoint(responses::add, exceptions::add, "EntryPoint");
@@ -459,7 +460,7 @@ public class ResolutionTest {
 
     private void createRootAndAssertResponses(RocksTransaction transaction, Conjunction conjunction, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
-        ControllerRegistry registry = transaction.reasoner().controllerRegistry();
+        Registry registry = transaction.reasoner().controllerRegistry();
         Set<Identifier.Variable.Retrievable> filter = new HashSet<>();
         iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName).map(Identifier.Variable::asName)
                 .forEachRemaining(filter::add);

@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import java.util.HashSet;
@@ -45,7 +44,7 @@ public class MaterialiserController extends Controller<Materialisable, Void, Eit
     private final TraversalEngine traversalEng;
 
     public MaterialiserController(Driver<MaterialiserController> driver, ActorExecutorGroup executorService,
-                                  ControllerRegistry registry, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                                  Registry registry, TraversalEngine traversalEng, ConceptManager conceptMgr) {
         super(driver, executorService, registry, MaterialiserController.class.getSimpleName());
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;

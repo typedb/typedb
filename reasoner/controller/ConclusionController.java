@@ -32,8 +32,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReac
 import com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -49,7 +48,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
     private Driver<ConditionController> conditionController;
 
     public ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion conclusion,
-                                ActorExecutorGroup executorService, Driver<MaterialiserController> materialiserController, ControllerRegistry registry) {
+                                ActorExecutorGroup executorService, Driver<MaterialiserController> materialiserController, Registry registry) {
         super(driver, executorService, registry, name);
         this.conclusion = conclusion;
         this.materialiserController = materialiserController;
@@ -146,7 +145,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
             @Override
             public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
-                ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
                 InletEndpoint<Either<ConceptMap, Materialisation>> materialiserEndpoint = createReceivingEndpoint();
                 mayRequestMaterialiser(new MaterialiserRequest(
                         driver(), materialiserEndpoint.id(), null,
@@ -171,7 +170,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
             @Override
             public void receive(Provider<Map<Variable, Concept>> provider, Map<Variable, Concept> packet) {
-                ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
                 finishPulling();
                 parent.finishPulling();
                 parent.subscriber().receive(parent, packet);

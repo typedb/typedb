@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.List;
 import java.util.Set;
@@ -37,7 +36,7 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
 
     private final Rule.Condition condition;
 
-    public ConditionController(Driver<ConditionController> driver, Rule.Condition condition, ActorExecutorGroup executorService, ControllerRegistry registry) {
+    public ConditionController(Driver<ConditionController> driver, Rule.Condition condition, ActorExecutorGroup executorService, Registry registry) {
         super(driver, condition.conjunction(), executorService, registry);
         this.condition = condition;
     }

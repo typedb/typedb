@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
+import com.vaticle.typedb.core.reasoner.utils.Traversal;
 
 import java.util.HashSet;
 import java.util.function.Function;
@@ -36,10 +36,10 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
         RetrievableController.RetrievableProcessor, RetrievableController> {
 
     private final Retrievable retrievable;
-    private final ControllerRegistry registry;
+    private final Registry registry;
 
     public RetrievableController(Driver<RetrievableController> driver, String name, Retrievable retrievable,
-                                 ActorExecutorGroup executorService, ControllerRegistry registry) {
+                                 ActorExecutorGroup executorService, Registry registry) {
         super(driver, executorService, registry, name);
         this.retrievable = retrievable;
         this.registry = registry;
@@ -53,7 +53,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     @Override
     protected Function<Driver<RetrievableProcessor>, RetrievableProcessor> createProcessorFunc(ConceptMap conceptMap) {
         return driver -> new RetrievableProcessor(
-                driver, driver(), () -> TraversalUtils.traversalIterator(registry, retrievable.pattern(), conceptMap),
+                driver, driver(), () -> Traversal.traversalIterator(registry, retrievable.pattern(), conceptMap),
                 RetrievableProcessor.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ", bounds: " + conceptMap.toString() + ")"
         );
     }

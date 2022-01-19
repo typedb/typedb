@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.function.Function;
 
@@ -32,7 +31,7 @@ public class RootDisjunctionController
     private final EntryPoint reasonerEndpoint;
 
     public RootDisjunctionController(Driver<RootDisjunctionController> driver, Disjunction disjunction,
-                                     ActorExecutorGroup executorService, ControllerRegistry registry,
+                                     ActorExecutorGroup executorService, Registry registry,
                                      EntryPoint reasonerEndpoint) {
         super(driver, disjunction, executorService, registry);
         this.reasonerEndpoint = reasonerEndpoint;

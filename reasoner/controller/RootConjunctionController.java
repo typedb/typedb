@@ -27,7 +27,6 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
 import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.List;
 import java.util.Set;
@@ -37,7 +36,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
     private final EntryPoint reasonerEndpoint;
 
     public RootConjunctionController(Driver<RootConjunctionController> driver, Conjunction conjunction,
-                                     ActorExecutorGroup executorService, ControllerRegistry registry,
+                                     ActorExecutorGroup executorService, Registry registry,
                                      EntryPoint reasonerEndpoint) {
         super(driver, conjunction, executorService, registry);
         this.reasonerEndpoint = reasonerEndpoint;

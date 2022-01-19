@@ -33,7 +33,7 @@ import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
-import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.protocol.AnswerProto;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabase;

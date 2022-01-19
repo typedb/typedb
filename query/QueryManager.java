@@ -29,7 +29,7 @@ import com.vaticle.typedb.core.concept.answer.Numeric;
 import com.vaticle.typedb.core.concept.answer.NumericGroup;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.reasoner.Reasoner;
-import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
 import com.vaticle.typeql.lang.query.TypeQLInsert;

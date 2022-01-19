@@ -25,7 +25,6 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.List;
 import java.util.Set;
@@ -34,7 +33,7 @@ import java.util.function.Function;
 public class NestedConjunctionController extends ConjunctionController<ConceptMap, NestedConjunctionController, NestedConjunctionController.NestedConjunctionProcessor> {
 
     public NestedConjunctionController(Driver<NestedConjunctionController> driver, Conjunction conjunction,
-                                       ActorExecutorGroup executorService, ControllerRegistry registry) {
+                                       ActorExecutorGroup executorService, Registry registry) {
         super(driver, conjunction, executorService, registry);
     }
 

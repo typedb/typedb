@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
 import java.util.function.Function;
 
@@ -29,7 +28,7 @@ public class NestedDisjunctionController
         extends DisjunctionController<NestedDisjunctionController.NestedDisjunctionProcessor, NestedDisjunctionController>{
 
     public NestedDisjunctionController(Driver<NestedDisjunctionController> driver, Disjunction disjunction,
-                                       ActorExecutorGroup executorService, ControllerRegistry registry) {
+                                       ActorExecutorGroup executorService, Registry registry) {
         super(driver, disjunction, executorService, registry);
     }
 

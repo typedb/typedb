@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.resolution;
+package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
@@ -35,17 +35,6 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
-import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
-import com.vaticle.typedb.core.reasoner.controller.ConclusionController;
-import com.vaticle.typedb.core.reasoner.controller.ConditionController;
-import com.vaticle.typedb.core.reasoner.controller.ConjunctionController;
-import com.vaticle.typedb.core.reasoner.controller.MaterialiserController;
-import com.vaticle.typedb.core.reasoner.controller.NegationController;
-import com.vaticle.typedb.core.reasoner.controller.NestedConjunctionController;
-import com.vaticle.typedb.core.reasoner.controller.NestedDisjunctionController;
-import com.vaticle.typedb.core.reasoner.controller.RetrievableController;
-import com.vaticle.typedb.core.reasoner.controller.RootConjunctionController;
-import com.vaticle.typedb.core.reasoner.controller.RootDisjunctionController;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import org.slf4j.Logger;
@@ -65,9 +54,9 @@ import java.util.stream.Collectors;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED_WITH_CAUSE;
 import static java.util.stream.Collectors.toMap;
 
-public class ControllerRegistry {
+public class Registry {
 
-    private final static Logger LOG = LoggerFactory.getLogger(ControllerRegistry.class);
+    private final static Logger LOG = LoggerFactory.getLogger(Registry.class);
 
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
@@ -83,8 +72,8 @@ public class ControllerRegistry {
     private Throwable terminationCause;
     private ActorExecutorGroup executorService;
 
-    public ControllerRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                              LogicManager logicMgr, boolean resolutionTracing) {
+    public Registry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
+                    LogicManager logicMgr, boolean resolutionTracing) {
         this.executorService = executorService;
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
