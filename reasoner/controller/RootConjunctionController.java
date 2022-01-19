@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
+import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
 import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
@@ -34,11 +34,11 @@ import java.util.Set;
 import java.util.function.Function;
 
 public class RootConjunctionController extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.RootConjunctionProcessor> {
-    private final Subscriber<ConceptMap> reasonerEndpoint;
+    private final EntryPoint reasonerEndpoint;
 
     public RootConjunctionController(Driver<RootConjunctionController> driver, Conjunction conjunction,
                                      ActorExecutorGroup executorService, ControllerRegistry registry,
-                                     Subscriber<ConceptMap> reasonerEndpoint) {
+                                     EntryPoint reasonerEndpoint) {
         super(driver, conjunction, executorService, registry);
         this.reasonerEndpoint = reasonerEndpoint;
     }
@@ -61,6 +61,12 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         return Iterators.iterate(Concludable.create(conjunction))
                 .filter(c -> c.getApplicableRules(registry().conceptManager(), registry().logicManager()).hasNext())
                 .toSet();
+    }
+
+    @Override
+    protected void exception(Throwable e) {
+        super.exception(e);
+        reasonerEndpoint.exception(e);
     }
 
     protected static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, RootConjunctionController, RootConjunctionProcessor> {

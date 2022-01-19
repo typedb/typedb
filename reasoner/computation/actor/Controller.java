@@ -67,12 +67,14 @@ public abstract class Controller<
     public <PUB_CID, PUB_PROC_ID, REQ extends Processor.Request<PUB_CID, PUB_PROC_ID, PUB_C, INPUT, PROCESSOR, CONTROLLER, REQ>,
             PUB_C extends Controller<PUB_PROC_ID, ?, INPUT, ?, PUB_C>> void findProviderForConnection(REQ req) {
         Builder<PUB_PROC_ID, INPUT, ?, ?, ?> builder = req.getBuilder(asController());
+        if (isTerminated()) return;
         builder.providerController().execute(actor -> actor.makeConnection(builder));
     }
 
     public abstract CONTROLLER asController();
 
     public void makeConnection(Builder<PROC_ID, OUTPUT, ?, ?, ?> connectionBuilder) {
+        if (isTerminated()) return;
         computeProcessorIfAbsent(connectionBuilder.pubProcessorId())
                 .execute(actor -> actor.acceptConnection(connectionBuilder));
     }
@@ -83,18 +85,10 @@ public abstract class Controller<
     }
 
     private Actor.Driver<PROCESSOR> buildProcessor(PROC_ID id) {
+        if (isTerminated()) return null;
         Driver<PROCESSOR> processor = Actor.driver(createProcessorFunc(id), executorService);
         processor.execute(Processor::setUp);
         return processor;
-    }
-
-    public void terminate(Throwable cause) {
-        LOG.debug("Actor terminated.", cause);
-        this.terminated = true;
-    }
-
-    public boolean isTerminated() {
-        return terminated;
     }
 
     @Override
@@ -109,6 +103,16 @@ public abstract class Controller<
         }
         LOG.error("Actor exception", e);
         registry.terminate(e);
+    }
+
+    public void terminate(Throwable cause) {
+        LOG.debug("Actor terminated.", cause);
+        this.terminated = true;
+        processors.values().forEach(p -> p.execute(actor -> actor.terminate(cause)));
+    }
+
+    public boolean isTerminated() {
+        return terminated;
     }
 
     public static class Builder<PUB_PROC_ID, PACKET,

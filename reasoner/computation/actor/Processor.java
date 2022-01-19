@@ -52,6 +52,7 @@ public abstract class Processor<INPUT, OUTPUT,
     private final Map<Long, InletEndpoint<INPUT>> receivingEndpoints;
     private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
     private long endpointId;
+    private boolean terminated;
 
     protected Processor(Driver<PROCESSOR> driver,
                         Driver<CONTROLLER> controller,
@@ -70,30 +71,18 @@ public abstract class Processor<INPUT, OUTPUT,
         return outlet;
     }
 
-    @Override
-    protected void exception(Throwable e) {
-        if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent()) {
-            String code = ((TypeDBException) e).code().get();
-            if (code.equals(RESOURCE_CLOSED.code())) {
-                LOG.debug("Resolver interrupted by resource close: {}", e.getMessage());
-                controller.execute(actor -> actor.exception(e));
-                return;
-            }
-        }
-        LOG.error("Actor exception", e);
-        controller.execute(actor -> actor.exception(e));
-    }
-
     protected <PUB_CID, PUB_PROC_ID,
             REQ extends Request<PUB_CID, PUB_PROC_ID, PUB_C, INPUT, PROCESSOR, CONTROLLER, REQ>,
             PUB_C extends Controller<PUB_PROC_ID, ?, INPUT, ?, PUB_C>
             > void requestConnection(REQ req) {
+        if (isTerminated()) return;
         controller.execute(actor -> actor.findProviderForConnection(req));
     }
 
     protected void acceptConnection(Controller.Builder<?, OUTPUT, ?, ?, ?> connectionBuilder) {
         Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
         applyConnectionTransforms(connection.transformations(), outlet(), createProvidingEndpoint(connection));
+        if (isTerminated()) return;
         connectionBuilder.recProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
 
@@ -131,6 +120,29 @@ public abstract class Processor<INPUT, OUTPUT,
 
     protected void endpointReceive(INPUT packet, long subEndpointId) {
         receivingEndpoints.get(subEndpointId).receive(null, packet);
+    }
+
+    @Override
+    protected void exception(Throwable e) {
+        if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent()) {
+            String code = ((TypeDBException) e).code().get();
+            if (code.equals(RESOURCE_CLOSED.code())) {
+                LOG.debug("Resolver interrupted by resource close: {}", e.getMessage());
+                controller.execute(actor -> actor.exception(e));
+                return;
+            }
+        }
+        LOG.error("Actor exception", e);
+        controller.execute(actor -> actor.exception(e));
+    }
+
+    public void terminate(Throwable cause) {
+        LOG.debug("Actor terminated.", cause);
+        this.terminated = true;
+    }
+
+    public boolean isTerminated() {
+        return terminated;
     }
 
     /**

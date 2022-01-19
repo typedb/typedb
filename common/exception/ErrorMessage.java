@@ -534,8 +534,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Reasoner(1, "Reasoning cannot be enabled/disabled per query. Try using Transaction options instead.");
         public static final Reasoner REVERSE_UNIFICATION_MISSING_CONCEPT =
                 new Reasoner(2, "Reverse unification failed because a concept for identifier '%s' was not found in the provided map '%s'.");
-        public static final Reasoner RESOLUTION_TERMINATED =
-                new Reasoner(3, "Resolution is terminated.");
+        public static final Reasoner RESOLUTION_TERMINATED_WITH_CAUSE =
+                new Reasoner(3, "Resolution is terminated, caused by '%s'.");
         public static final Reasoner REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY =
                 new Reasoner(4, "Reasoner tracing cannot be enabled/disabled per query. Try using Transaction options instead.");
         public static final Reasoner REASONER_TRACING_HAS_NOT_BEEN_INITIALISED =

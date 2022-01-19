@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 
@@ -28,11 +29,11 @@ import java.util.function.Function;
 
 public class RootDisjunctionController
         extends DisjunctionController<RootDisjunctionController.RootDisjunctionProcessor, RootDisjunctionController> {
-    private final Receiver.Subscriber<ConceptMap> reasonerEndpoint;
+    private final EntryPoint reasonerEndpoint;
 
     public RootDisjunctionController(Driver<RootDisjunctionController> driver, Disjunction disjunction,
                                      ActorExecutorGroup executorService, ControllerRegistry registry,
-                                     Receiver.Subscriber<ConceptMap> reasonerEndpoint) {
+                                     EntryPoint reasonerEndpoint) {
         super(driver, disjunction, executorService, registry);
         this.reasonerEndpoint = reasonerEndpoint;
     }
@@ -46,6 +47,12 @@ public class RootDisjunctionController
     @Override
     public RootDisjunctionController asController() {
         return this;
+    }
+
+    @Override
+    protected void exception(Throwable e) {
+        super.exception(e);
+        reasonerEndpoint.exception(e);
     }
 
     protected static class RootDisjunctionProcessor

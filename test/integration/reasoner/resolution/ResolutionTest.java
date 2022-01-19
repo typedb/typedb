@@ -26,9 +26,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Sink;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
+import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
 import com.vaticle.typedb.core.rocks.RocksSession;
 import com.vaticle.typedb.core.rocks.RocksTransaction;
 import com.vaticle.typedb.core.rocks.RocksTypeDB;
@@ -46,11 +44,10 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED_WITH_CAUSE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedConjunction;
 import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedDisjunction;
@@ -129,18 +126,17 @@ public class ResolutionTest {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }", transaction.logic());
                 ControllerRegistry registry = transaction.reasoner().controllerRegistry();
                 LinkedBlockingQueue<ConceptMap> responses = new LinkedBlockingQueue<>();
-                EntryPoint reasonerEntryPoint = new EntryPoint(responses::add);
                 LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
+                EntryPoint reasonerEntryPoint = new EntryPoint(responses::add, exceptions::add, "EntryPoint");
                 try {
                     registry.createRootConjunctionController(conjunctionPattern, reasonerEntryPoint);
                 } catch (TypeDBException e) {
                     fail();
                 }
-
                 Exception e = new RuntimeException();
                 registry.terminate(e);
                 Throwable receivedException = exceptions.poll(100, TimeUnit.MILLISECONDS);
-                assertEquals(e, receivedException);
+                assertEquals(TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, e), receivedException);
             }
         }
     }
@@ -444,28 +440,6 @@ public class ResolutionTest {
         return transaction;
     }
 
-    private static class EntryPoint extends Sink<ConceptMap> {
-
-        private final Consumer<ConceptMap> onReceive;
-
-        EntryPoint(Consumer<ConceptMap> onReceive) {
-            this.onReceive = onReceive;
-        }
-
-        @Override
-        public void receive(Provider<ConceptMap> provider, ConceptMap conceptMap) {
-//            ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, conceptMap));
-            onReceive.accept(conceptMap);
-            pull();
-        }
-
-        @Override
-        public String groupName() {
-            return "EntryPoint";
-        }
-
-    }
-
     private void createRootAndAssertResponses(RocksTransaction transaction, Disjunction disjunction,
                                               Set<Identifier.Variable.Retrievable> filter, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
@@ -473,7 +447,8 @@ public class ResolutionTest {
 //        ResolutionTracer.get().startDefaultTrace();
         ControllerRegistry registry = transaction.reasoner().controllerRegistry();
         LinkedBlockingQueue<ConceptMap> responses = new LinkedBlockingQueue<>();
-        EntryPoint entryPoint = new EntryPoint(responses::add);
+        LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
+        EntryPoint entryPoint = new EntryPoint(responses::add, exceptions::add, "EntryPoint");
         entryPoint.pull();
         try {
              registry.createRootDisjunctionController(disjunction, entryPoint);
@@ -494,7 +469,8 @@ public class ResolutionTest {
         iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName).map(Identifier.Variable::asName)
                 .forEachRemaining(filter::add);
         LinkedBlockingQueue<ConceptMap> responses = new LinkedBlockingQueue<>();
-        EntryPoint entryPoint = new EntryPoint(responses::add);
+        LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
+        EntryPoint entryPoint = new EntryPoint(responses::add, exceptions::add, "EntryPoint");
         entryPoint.pull();
         try {
             registry.createRootConjunctionController(conjunction, entryPoint);

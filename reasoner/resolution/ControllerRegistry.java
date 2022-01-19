@@ -33,6 +33,7 @@ import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
+import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController;
@@ -42,7 +43,6 @@ import com.vaticle.typedb.core.reasoner.controller.MaterialiserController;
 import com.vaticle.typedb.core.reasoner.controller.NestedConjunctionController;
 import com.vaticle.typedb.core.reasoner.controller.RetrievableController;
 import com.vaticle.typedb.core.reasoner.controller.RootConjunctionController;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.controller.RootDisjunctionController;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Explain;
 import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match;
@@ -80,7 +80,7 @@ import java.util.stream.Collectors;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED_WITH_CAUSE;
 import static java.util.stream.Collectors.toMap;
 
 public class ControllerRegistry {
@@ -98,9 +98,10 @@ public class ControllerRegistry {
     private final Set<Actor.Driver<? extends Controller<?, ?, ?, ?, ?>>> controllers;
     private final TraversalEngine traversalEngine;
     private final boolean resolutionTracing;
-    private final AtomicBoolean terminated;
     private final Actor.Driver<Materialiser> materialiser;
-    private final Actor.Driver<MaterialiserController> materialisationController;
+    private final Actor.Driver<MaterialiserController> materialiserController;
+    private final AtomicBoolean terminated;
+    private Throwable terminationCause;
     private ActorExecutorGroup executorService;
 
     public ControllerRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
@@ -119,7 +120,7 @@ public class ControllerRegistry {
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
         this.materialiser = Actor.driver(driver -> new Materialiser(driver, this), executorService);
-        this.materialisationController = Actor.driver(driver -> new MaterialiserController(
+        this.materialiserController = Actor.driver(driver -> new MaterialiserController(
                 driver, executorService, this, traversalEngine(), conceptManager()), executorService
         );
     }
@@ -142,12 +143,13 @@ public class ControllerRegistry {
 
     public void terminate(Throwable cause) {
         if (terminated.compareAndSet(false, true)) {
-            resolvers.forEach(actor -> actor.execute(r -> r.terminate(cause)));
-            materialiser.execute(r -> r.terminate(cause));
+            terminationCause = cause;
+            controllers.forEach(actor -> actor.execute(r -> r.terminate(cause)));
+            materialiserController.execute(actor -> actor.terminate(cause));
         }
     }
 
-    public Actor.Driver<RootConjunctionController> createRootConjunctionController(Conjunction conjunction, Subscriber<ConceptMap> reasonerEntryPoint) {
+    public Actor.Driver<RootConjunctionController> createRootConjunctionController(Conjunction conjunction, EntryPoint reasonerEntryPoint) {
         LOG.debug("Creating Root Conjunction for: '{}'", conjunction);
         Actor.Driver<RootConjunctionController> controller =
                 Actor.driver(driver -> new RootConjunctionController(driver, conjunction, executorService, this,
@@ -156,11 +158,11 @@ public class ControllerRegistry {
         controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));
         // TODO: Consider exception handling
         controllers.add(controller);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
     }
 
-    public Actor.Driver<RootDisjunctionController> createRootDisjunctionController(Disjunction disjunction, Subscriber<ConceptMap> reasonerEntryPoint) {
+    public Actor.Driver<RootDisjunctionController> createRootDisjunctionController(Disjunction disjunction, EntryPoint reasonerEntryPoint) {
         LOG.debug("Creating Root Disjunction for: '{}'", disjunction);
         Actor.Driver<RootDisjunctionController> controller =
                 Actor.driver(driver -> new RootDisjunctionController(driver, disjunction, executorService, this,
@@ -169,7 +171,7 @@ public class ControllerRegistry {
         controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));
         // TODO: Consider exception handling
         controllers.add(controller);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
     }
 
@@ -180,7 +182,7 @@ public class ControllerRegistry {
                              executorService);
         controller.execute(ConjunctionController::setUpUpstreamProviders);
         controllers.add(controller);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
     }
 
@@ -201,7 +203,7 @@ public class ControllerRegistry {
             concludables.add(concludable);
             controllerConcludables.put(controllerView.controller(), concludables);
         }
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controllerView;
     }
 
@@ -221,7 +223,7 @@ public class ControllerRegistry {
         Actor.Driver<RetrievableController> controller = Actor.driver(
                 driver -> new RetrievableController(driver, "", retrievable, executorService, this), executorService);
         controllers.add(controller);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return ResolverView.retrievable(controller, retrievable.retrieves());
     }
 
@@ -232,12 +234,12 @@ public class ControllerRegistry {
     public Actor.Driver<ConclusionController> registerConclusionController(Rule.Conclusion conclusion) {
         LOG.debug("Register ConclusionController: '{}'", conclusion);
         Actor.Driver<ConclusionController> controller = ruleConclusions.computeIfAbsent(
-                conclusion.rule(), r -> Actor.driver(driver -> new ConclusionController(driver, "", conclusion, executorService, materialisationController, this), executorService)
+                conclusion.rule(), r -> Actor.driver(driver -> new ConclusionController(driver, "", conclusion, executorService, materialiserController, this), executorService)
         );
         controller.execute(ConclusionController::setUpUpstreamProviders);
         controllers.add(controller);
         // conclusionRule.put(controller, conclusion.rule());  // TODO: We don't need this now?
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
     }
 
@@ -248,7 +250,7 @@ public class ControllerRegistry {
         );
         controller.execute(ConditionController::setUpUpstreamProviders);
         controllers.add(controller);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
     }
 
@@ -260,7 +262,7 @@ public class ControllerRegistry {
         Actor.Driver<RootResolver.Disjunction> resolver = Actor.driver(driver -> new RootResolver.Disjunction(
                 driver, disjunction, onAnswer, onExhausted, onException, this), executorService);
         resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return resolver;
     }
 
@@ -269,7 +271,7 @@ public class ControllerRegistry {
         Actor.Driver<NegationResolver> negatedResolver = Actor.driver(
                 driver -> new NegationResolver(driver, negated, this), executorService);
         resolvers.add(negatedResolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         Set<Variable.Retrievable> filter = filter(upstream, negated);
         return ResolverView.negation(negatedResolver, filter);
     }
@@ -285,7 +287,7 @@ public class ControllerRegistry {
         LOG.debug("Register retrieval for rule condition actor: '{}'", ruleCondition);
         Actor.Driver<ConditionResolver> resolver = null;
         resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return resolver;
 
     }
@@ -295,7 +297,7 @@ public class ControllerRegistry {
         Actor.Driver<ConclusionResolver> resolver = null;
         conclusionRule.put(resolver, conclusion.rule());
         resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return resolver;
     }
 
@@ -304,7 +306,7 @@ public class ControllerRegistry {
         Actor.Driver<BoundConclusionResolver> resolver = Actor.driver(driver -> new BoundConclusionResolver(
                 driver, conclusion, bounds, this), executorService);
         resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return resolver;
     }
 
@@ -321,7 +323,7 @@ public class ControllerRegistry {
         Actor.Driver<BoundRetrievableResolver> resolver = Actor.driver(
                 driver -> new BoundRetrievableResolver(driver, retrievable, bounds, this), executorService);
         resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return resolver;
     }
 
@@ -331,7 +333,7 @@ public class ControllerRegistry {
         Actor.Driver<BoundConcludableResolver.Exploring> resolver = Actor.driver(
                 driver -> new BoundConcludableResolver.Exploring(driver, context, bounds, this), executorService);
         resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return resolver;
     }
 
@@ -341,7 +343,7 @@ public class ControllerRegistry {
         Actor.Driver<BoundConcludableResolver.Blocked> resolver = Actor.driver(
                 driver -> new BoundConcludableResolver.Blocked(driver, context, bounds, this), executorService);
         resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return resolver;
     }
 
@@ -350,7 +352,7 @@ public class ControllerRegistry {
         Actor.Driver<ConjunctionResolver.Nested> resolver = Actor.driver(
                 driver -> new ConjunctionResolver.Nested(driver, conjunction, this), executorService);
         resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return resolver;
     }
 
@@ -359,7 +361,7 @@ public class ControllerRegistry {
         Actor.Driver<DisjunctionResolver.Nested> resolver = Actor.driver(
                 driver -> new DisjunctionResolver.Nested(driver, disjunction, this), executorService);
         resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return resolver;
     }
 
@@ -374,7 +376,7 @@ public class ControllerRegistry {
                 driver -> new RootResolver.Explain(
                         driver, conjunction, requestAnswered, requestFailed, exception, this), executorService);
         resolvers.add(resolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return resolver;
     }
 
@@ -384,10 +386,6 @@ public class ControllerRegistry {
 
     public Actor.Driver<Materialiser> materialiser() {
         return materialiser;
-    }
-
-    public Actor.Driver<MaterialiserController> materialiserController() {
-        return materialisationController;
     }
 
     public Actor.Driver<ConditionResolver> conditionResolver(Rule rule) {

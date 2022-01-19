@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Sink;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
 import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer.Trace;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -39,6 +38,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 @ThreadSafe
 public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename to MatchProducer and create abstract supertype
@@ -65,7 +65,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
-        this.reasonerEntryPoint = new EntryPoint(conjunction.toString());
+        this.reasonerEntryPoint = new EntryPoint(this::receiveAnswer, this::exception, conjunction.toString());
         this.controllerRegistry.createRootConjunctionController(conjunction, reasonerEntryPoint);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
@@ -81,7 +81,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
-        this.reasonerEntryPoint = new EntryPoint(disjunction.toString());
+        this.reasonerEntryPoint = new EntryPoint(this::receiveAnswer, this::exception, disjunction.toString());
         this.controllerRegistry.createRootDisjunctionController(disjunction, reasonerEntryPoint);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
@@ -95,9 +95,48 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.required.addAndGet(request);
         int canRequest = computeSize - processing.get();
         int toRequest = Math.min(canRequest, request);
+        pullAnswer();
+        processing.addAndGet(toRequest);
+    }
+
+    private void pullAnswer() {
         ResolutionTracer.get().startDefaultTrace();
         reasonerEntryPoint.pull();
-        processing.addAndGet(toRequest);
+    }
+
+    private void receiveAnswer(ConceptMap answer) {
+        // if (options.traceInference()) ResolutionTracer.get().finishDefaultTrace();
+        if (options.explain() && !answer.explainables().isEmpty()) {
+            explainablesManager.setAndRecordExplainables(answer);
+        }
+        queue.put(answer);
+        if (required.decrementAndGet() > 0) pullAnswer();
+        else processing.decrementAndGet();
+    }
+
+    // note: root resolver calls this single-threaded, so is threads safe
+
+    private void answersFinished() {
+        // TODO: Call when the end of answers has been detected
+        LOG.trace("All answers found.");
+        if (options.traceInference()) ResolutionTracer.get().finishDefaultTrace();
+        finish();
+    }
+
+    private void finish() {
+        // query is completely terminated
+        done = true;
+        queue.done();
+        required.set(0);
+    }
+
+    private void exception(Throwable e) {
+        // TODO: Should this mirror finish()?
+        if (!done) {
+            done = true;
+            required.set(0);
+            queue.done(e);
+        }
     }
 
     @Override
@@ -105,68 +144,38 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
     }
 
-    /**
-     * Essentially the reasoner sink
-     */
-    public class EntryPoint extends Sink<ConceptMap> {
+    public static class EntryPoint extends Sink<ConceptMap> {
 
+        private final Consumer<ConceptMap> answerConsumer;
+        private final Consumer<Throwable> exceptionConsumer;
         private final String groupName;
         private final UUID traceId = UUID.randomUUID();
         private int traceCounter = 0;
 
-        public EntryPoint(String groupName) {
+        public EntryPoint(Consumer<ConceptMap> answerConsumer, Consumer<Throwable> exceptionConsumer, String groupName) {
+            this.answerConsumer = answerConsumer;
+            this.exceptionConsumer = exceptionConsumer;
             this.groupName = groupName;
         }
 
         @Override
         public void receive(@Nullable Provider<ConceptMap> provider, ConceptMap packet) {
             ResolutionTracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
-            // if (options.traceInference()) ResolutionTracer.get().finish(answeredRequest);  // TODO: Finish tracing on receive
             isPulling = false;
-            if (options.explain() && !packet.explainables().isEmpty()) {
-                explainablesManager.setAndRecordExplainables(packet);
-            }
-            queue.put(packet);
-            if (required.decrementAndGet() > 0) pull();
-            else processing.decrementAndGet();
+            answerConsumer.accept(packet);
         }
 
         @Override
         public String groupName() {
             return groupName;
         }
-        // Trace trace = Trace.create(traceId, requestIdCounter);  // TODO: Trace on pull
-        // ResolutionTracer.get().start(visitRequest);
 
         public Trace trace(){
-            // traceCounter += 1;
             return Trace.create(traceId, traceCounter);
         }
-    }
 
-    // note: root resolver calls this single-threaded, so is threads safe
-    private void requestFailed(Request failedRequest) {
-        // TODO: Add some fail signal
-        LOG.trace("Failed to find answer to request {}", failedRequest);
-        if (options.traceInference()) ResolutionTracer.get().finish(failedRequest);
-        finish();
-    }
-
-    private void finish() {
-        if (!done) {
-            // query is completely terminated
-            done = true;
-            queue.done();
-            required.set(0);
-        }
-    }
-
-    private void exception(Throwable e) {
-        // TODO: Add exception propagation through reactives?
-        if (!done) {
-            done = true;
-            required.set(0);
-            queue.done(e);
+        public void exception(Throwable e) {
+            exceptionConsumer.accept(e);
         }
     }
 
