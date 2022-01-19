@@ -119,7 +119,7 @@ public class CommandLine {
         private final String name;
         private final String value;
 
-        interface CliHelp {
+        public interface CliHelp {
 
             default Help help() {
                 return help("");
@@ -137,11 +137,11 @@ public class CommandLine {
                     this.description = description;
                 }
 
-                static class Section extends Help {
+                public static class Section extends Help {
 
                     private final List<Help> contents;
 
-                    Section(String scopedName, String description, List<Help> contents) {
+                    public Section(String scopedName, String description, List<Help> contents) {
                         super(scopedName, description);
                         this.contents = contents;
                     }

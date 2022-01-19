@@ -63,12 +63,12 @@ import static com.vaticle.typedb.core.server.common.Util.setValue;
 
 public class Configuration {
 
-    private final Server server;
-    private final Storage storage;
-    private final Log log;
-    private final VaticleFactory vaticleFactory;
+    protected final Server server;
+    protected final Storage storage;
+    protected final Log log;
+    protected final VaticleFactory vaticleFactory;
 
-    private Configuration(Server server, Storage storage, Log log, @Nullable VaticleFactory vaticleFactory) {
+    protected Configuration(Server server, Storage storage, Log log, @Nullable VaticleFactory vaticleFactory) {
         this.server = server;
         this.storage = storage;
         this.log = log;
@@ -149,17 +149,17 @@ public class Configuration {
 
         private final InetSocketAddress address;
 
-        private Server(InetSocketAddress address) {
+        protected Server(InetSocketAddress address) {
             this.address = address;
         }
 
-        static class Parser extends ValueParser.Nested<Server> {
+        public static class Parser extends ValueParser.Nested<Server> {
 
             private static final EntryParser<InetSocketAddress> addressParser = Value.create("address", "Address to listen for GRPC clients on.", INET_SOCKET_ADDRESS);
             private static final Set<EntryParser<?>> entryParsers = set(addressParser);
 
             @Override
-            Server parse(Yaml yaml, String scope) {
+            public Server parse(Yaml yaml, String scope) {
                 if (yaml.isMap()) {
                     validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                     return new Server(addressParser.parse(yaml.asMap(), scope));
@@ -167,7 +167,7 @@ public class Configuration {
             }
 
             @Override
-            List<Help> help(String scope) {
+            public List<Help> help(String scope) {
                 return list(addressParser.help(scope));
             }
         }
@@ -185,7 +185,7 @@ public class Configuration {
         private final Path dataDir;
         private final DatabaseCache databaseCache;
 
-        private Storage(Path dataDir, DatabaseCache databaseCache) {
+        protected Storage(Path dataDir, DatabaseCache databaseCache) {
             this.dataDir = dataDir;
             this.databaseCache = databaseCache;
         }
@@ -197,7 +197,7 @@ public class Configuration {
             private static final Set<EntryParser<?>> entryParsers = set(dataParser, databaseCacheParser);
 
             @Override
-            Storage parse(Yaml yaml, String scope) {
+            public Storage parse(Yaml yaml, String scope) {
                 if (yaml.isMap()) {
                     validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                     return new Storage(getConfigPath(dataParser.parse(yaml.asMap(), scope)),
@@ -206,7 +206,7 @@ public class Configuration {
             }
 
             @Override
-            List<Help> help(String scope) {
+            public List<Help> help(String scope) {
                 return list(dataParser.help(scope), databaseCacheParser.help(scope));
             }
         }
@@ -221,8 +221,8 @@ public class Configuration {
 
         public static class DatabaseCache {
 
-            private static final String name = "database-cache";
-            private static final String description = "Per-database storage-layer cache configuration.";
+            public static final String name = "database-cache";
+            public static final String description = "Per-database storage-layer cache configuration.";
 
             private final long dataSize;
             private final long indexSize;
@@ -232,14 +232,14 @@ public class Configuration {
                 this.indexSize = indexSize;
             }
 
-            static class Parser extends ValueParser.Nested<DatabaseCache> {
+            public static class Parser extends ValueParser.Nested<DatabaseCache> {
 
                 private static final EntryParser<Long> dataParser = Value.create("data", "Size of storage-layer cache for data.", BYTES_SIZE);
                 private static final EntryParser<Long> indexParser = Value.create("index", "Size of storage-layer cache for index.", BYTES_SIZE);
                 private static final Set<EntryParser<?>> entryParsers = set(dataParser, indexParser);
 
                 @Override
-                DatabaseCache parse(Yaml yaml, String scope) {
+                public DatabaseCache parse(Yaml yaml, String scope) {
                     if (yaml.isMap()) {
                         validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                         return new DatabaseCache(dataParser.parse(yaml.asMap(), scope), indexParser.parse(yaml.asMap(), scope));
@@ -247,7 +247,7 @@ public class Configuration {
                 }
 
                 @Override
-                List<Help> help(String scope) {
+                public List<Help> help(String scope) {
                     return list(dataParser.help(scope), indexParser.help(scope));
                 }
             }
@@ -264,14 +264,14 @@ public class Configuration {
 
     public static class Log {
 
-        private static final String name = "log";
-        private static final String description = "Logging configuration.";
+        public static final String name = "log";
+        public static final String description = "Logging configuration.";
 
         private final Output output;
         private final Logger logger;
         private final Debugger debugger;
 
-        private Log(Output output, Logger logger, Debugger debugger) {
+        public Log(Output output, Logger logger, Debugger debugger) {
             this.output = output;
             this.logger = logger;
             this.debugger = debugger;
@@ -285,7 +285,7 @@ public class Configuration {
             private static final Set<EntryParser<?>> entryParsers = set(outputParser, loggerParser, debuggerParser);
 
             @Override
-            Log parse(Yaml yaml, String scope) {
+            public Log parse(Yaml yaml, String scope) {
                 if (yaml.isMap()) {
                     validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                     Output output = outputParser.parse(yaml.asMap(), scope);
@@ -298,7 +298,7 @@ public class Configuration {
             }
 
             @Override
-            List<Help> help(String scope) {
+            public List<Help> help(String scope) {
                 return list(outputParser.help(scope), loggerParser.help(scope), debuggerParser.help(scope));
             }
         }
@@ -317,12 +317,12 @@ public class Configuration {
 
         public static class Output {
 
-            private static final String name = "output";
-            private static final String description = "Log output definitions.";
+            public static final String name = "output";
+            public static final String description = "Log output definitions.";
 
             private final Map<String, Type> outputs;
 
-            private Output(Map<String, Type> outputs) {
+            public Output(Map<String, Type> outputs) {
                 this.outputs = outputs;
             }
 
@@ -331,13 +331,13 @@ public class Configuration {
                 private static final MapParser<Type> typeEntry = MapParser.create(Type.description, new Type.Parser());
 
                 @Override
-                Output parse(Yaml yaml, String scope) {
+                public Output parse(Yaml yaml, String scope) {
                     if (yaml.isMap()) return new Output(typeEntry.parseFrom(yaml.asMap(), scope));
                     else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
                 }
 
                 @Override
-                List<Help> help(String scope) {
+                public List<Help> help(String scope) {
                     return list(typeEntry.help(scope));
                 }
             }
@@ -348,7 +348,7 @@ public class Configuration {
 
             public static abstract class Type {
 
-                private final static String description = "A named log output definition.";
+                public final static String description = "A named log output definition.";
 
                 public boolean isStdout() {
                     return false;
@@ -373,7 +373,7 @@ public class Configuration {
                     private static final ValueParser.Nested<File> fileParser = new File.Parser();
 
                     @Override
-                    Type parse(Yaml yaml, String scope) {
+                    public Type parse(Yaml yaml, String scope) {
                         if (yaml.isMap()) {
                             String type = typeParser.parse(yaml.asMap(), scope);
                             switch (type) {
@@ -388,7 +388,7 @@ public class Configuration {
                     }
 
                     @Override
-                    List<Help> help(String scope) {
+                    public List<Help> help(String scope) {
                         return list(new Help.Section(scope, Stdout.description, stdoutParser.help(scope)),
                                 new Help.Section(scope, File.description, fileParser.help(scope)));
                     }
@@ -396,8 +396,8 @@ public class Configuration {
 
                 public static class Stdout extends Type {
 
-                    private static final String type = "stdout";
-                    private static final String description = "Options to configure a log output to stdout.";
+                    public static final String type = "stdout";
+                    public static final String description = "Options to configure a log output to stdout.";
 
                     private Stdout(String type) {
                         assert type.equals(Stdout.type);
@@ -413,13 +413,13 @@ public class Configuration {
                         return this;
                     }
 
-                    static class Parser extends ValueParser.Nested<Stdout> {
+                    public static class Parser extends ValueParser.Nested<Stdout> {
 
                         private static final EntryParser<String> typeParser = EnumValue.create("type", "An output that writes to stdout.", STRING, list(Stdout.type));
                         private static final Set<EntryParser<?>> entryParsers = set(typeParser);
 
                         @Override
-                        Stdout parse(Yaml yaml, String scope) {
+                        public Stdout parse(Yaml yaml, String scope) {
                             if (yaml.isMap()) {
                                 validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                                 String type = typeParser.parse(yaml.asMap(), scope);
@@ -428,7 +428,7 @@ public class Configuration {
                         }
 
                         @Override
-                        List<Help> help(String scope) {
+                        public List<Help> help(String scope) {
                             return list(typeParser.help(scope));
                         }
                     }
@@ -436,8 +436,8 @@ public class Configuration {
 
                 public static class File extends Type {
 
-                    private static final String type = "file";
-                    private static final String description = "Options to configure a log output to files in a directory.";
+                    public static final String type = "file";
+                    public static final String description = "Options to configure a log output to files in a directory.";
 
                     private final Path path;
                     private final long fileSizeCap;
@@ -450,7 +450,7 @@ public class Configuration {
                         this.archivesSizeCap = archivesSizeCap;
                     }
 
-                    static class Parser extends ValueParser.Nested<File> {
+                    public static class Parser extends ValueParser.Nested<File> {
 
                         private static final EntryParser<String> typeParser = EnumValue.create("type", "An output that writes to a directory.", STRING, list(File.type));
                         private static final EntryParser<Path> pathParser = Value.create("directory", "Directory to write to. Relative paths are relative to distribution path.", PATH);
@@ -459,7 +459,7 @@ public class Configuration {
                         private static final Set<EntryParser<?>> entryParsers = set(typeParser, pathParser, fileSizeCapParser, archivesSizeCapParser);
 
                         @Override
-                        File parse(Yaml yaml, String scope) {
+                        public File parse(Yaml yaml, String scope) {
                             if (yaml.isMap()) {
                                 validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                                 return new File(
@@ -472,7 +472,7 @@ public class Configuration {
                         }
 
                         @Override
-                        List<Help> help(String scope) {
+                        public List<Help> help(String scope) {
                             return list(typeParser.help(scope), pathParser.help(scope), fileSizeCapParser.help(scope),
                                     archivesSizeCapParser.help(scope));
                         }
@@ -506,8 +506,8 @@ public class Configuration {
         public static class Logger {
             private static final List<String> LEVELS = list("trace", "debug", "info", "warn", "error");
 
-            private static final String name = "logger";
-            private static final String description = "Loggers to activate.";
+            public static final String name = "logger";
+            public static final String description = "Loggers to activate.";
 
             private final Unfiltered defaultLogger;
             private final Map<String, Filtered> filteredLoggers;
@@ -530,13 +530,13 @@ public class Configuration {
                 return filteredLoggers;
             }
 
-            static class Parser extends ValueParser.Nested<Logger> {
+            public static class Parser extends ValueParser.Nested<Logger> {
 
                 private static final EntryParser<Unfiltered> defaultParser = Value.create("default", "The default logger.", new Unfiltered.Parser());
                 private static final MapParser<Filtered> filteredParsers = MapParser.create("Custom filtered loggers.", new Filtered.Parser());
 
                 @Override
-                Logger parse(Yaml yaml, String scope) {
+                public Logger parse(Yaml yaml, String scope) {
                     if (yaml.isMap()) {
                         return new Logger(defaultParser.parse(yaml.asMap(), scope),
                                 filteredParsers.parseFrom(yaml.asMap(), scope, defaultParser));
@@ -544,7 +544,7 @@ public class Configuration {
                 }
 
                 @Override
-                List<Help> help(String scope) {
+                public List<Help> help(String scope) {
                     return list(defaultParser.help(scope), filteredParsers.help(scope));
                 }
             }
@@ -566,7 +566,7 @@ public class Configuration {
                     private static final Set<EntryParser<?>> entryParsers = set(levelParser, outputsParser);
 
                     @Override
-                    Unfiltered parse(Yaml yaml, String scope) {
+                    public Unfiltered parse(Yaml yaml, String scope) {
                         if (yaml.isMap()) {
                             validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                             return new Unfiltered(levelParser.parse(yaml.asMap(), scope),
@@ -575,7 +575,7 @@ public class Configuration {
                     }
 
                     @Override
-                    List<Help> help(String scope) {
+                    public List<Help> help(String scope) {
                         return list(levelParser.help(scope), outputsParser.help(scope));
                     }
                 }
@@ -618,7 +618,7 @@ public class Configuration {
                     private static final Set<EntryParser<?>> entryParsers = set(filterParser, levelParser, outputsParser);
 
                     @Override
-                    Filtered parse(Yaml yaml, String scope) {
+                    public Filtered parse(Yaml yaml, String scope) {
                         if (yaml.isMap()) {
                             validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                             return new Filtered(levelParser.parse(yaml.asMap(), scope),
@@ -627,7 +627,7 @@ public class Configuration {
                     }
 
                     @Override
-                    List<Help> help(String scope) {
+                    public List<Help> help(String scope) {
                         return list(filterParser.help(scope), levelParser.help(scope), outputsParser.help(scope));
                     }
                 }
@@ -636,8 +636,8 @@ public class Configuration {
 
         public static class Debugger {
 
-            private static final String name = "debugger";
-            private static final String description = "Debuggers that may be enabled at runtime.";
+            public static final String name = "debugger";
+            public static final String description = "Debuggers that may be enabled at runtime.";
 
             private final Reasoner reasoner;
 
@@ -651,7 +651,7 @@ public class Configuration {
                 private static final Set<EntryParser<?>> entryParsers = set(reasonerParser);
 
                 @Override
-                Debugger parse(Yaml yaml, String scope) {
+                public Debugger parse(Yaml yaml, String scope) {
                     if (yaml.isMap()) {
                         validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                         return new Debugger(reasonerParser.parse(yaml.asMap(), scope));
@@ -659,7 +659,7 @@ public class Configuration {
                 }
 
                 @Override
-                List<Help> help(String scope) {
+                public List<Help> help(String scope) {
                     return list(reasonerParser.help(scope));
                 }
             }
@@ -713,7 +713,7 @@ public class Configuration {
                     private static final Set<EntryParser<?>> entryParsers = set(typeParser, outputParser, enableParser);
 
                     @Override
-                    Reasoner parse(Yaml yaml, String scope) {
+                    public Reasoner parse(Yaml yaml, String scope) {
                         if (yaml.isMap()) {
                             validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
                             return new Reasoner(typeParser.parse(yaml.asMap(), scope), outputParser.parse(yaml.asMap(), scope),
@@ -722,7 +722,7 @@ public class Configuration {
                     }
 
                     @Override
-                    List<Help> help(String scope) {
+                    public List<Help> help(String scope) {
                         return list(typeParser.help(scope), outputParser.help(scope), enableParser.help(scope));
                     }
                 }
@@ -735,8 +735,8 @@ public class Configuration {
      */
     public static class VaticleFactory {
 
-        private static final String name = "vaticle-factory";
-        private static final String description = "Configure Vaticle Factory connection.";
+        public static final String name = "vaticle-factory";
+        public static final String description = "Configure Vaticle Factory connection.";
 
         private final boolean enable;
         private final String uri;
@@ -750,7 +750,7 @@ public class Configuration {
             this.token = token;
         }
 
-        static class Parser extends ValueParser.Nested<VaticleFactory> {
+        public static class Parser extends ValueParser.Nested<VaticleFactory> {
 
             private static final EntryParser<Boolean> enableParser = Value.create("enable", "Enable Vaticle Factory tracing.", BOOLEAN);
             private static final EntryParser<String> uriParser = Value.create("uri", "URI of Vaticle Factory server.", STRING);
@@ -759,7 +759,7 @@ public class Configuration {
             private static final Set<EntryParser<?>> entryParsers = set(enableParser, uriParser, usernameParser, tokenParser);
 
             @Override
-            VaticleFactory parse(Yaml yaml, String scope) {
+            public VaticleFactory parse(Yaml yaml, String scope) {
                 if (yaml.isMap()) {
                     boolean trace = enableParser.parse(yaml.asMap(), scope);
                     validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
@@ -773,7 +773,7 @@ public class Configuration {
             }
 
             @Override
-            List<Help> help(String scope) {
+            public List<Help> help(String scope) {
                 return list(enableParser.help(scope), uriParser.help(scope), usernameParser.help(scope), tokenParser.help(scope));
             }
         }

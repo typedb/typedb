@@ -83,7 +83,7 @@ public class Util {
         }
     }
 
-    static Yaml.Map readConfig(Path path) {
+    public static Yaml.Map readConfig(Path path) {
         try {
             Yaml yaml = Yaml.load(path);
             if (!yaml.isMap()) throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP);

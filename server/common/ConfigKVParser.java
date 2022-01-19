@@ -55,7 +55,7 @@ public abstract class ConfigKVParser implements Option.CliHelp {
         return description;
     }
 
-    static class MapParser<TYPE> extends ConfigKVParser {
+    public static class MapParser<TYPE> extends ConfigKVParser {
 
         private final ValueParser<TYPE> valueParser;
 
@@ -64,11 +64,11 @@ public abstract class ConfigKVParser implements Option.CliHelp {
             this.valueParser = valueParser;
         }
 
-        static <TYPE> MapParser<TYPE> create(String description, ValueParser<TYPE> valueParser) {
+        public static <TYPE> MapParser<TYPE> create(String description, ValueParser<TYPE> valueParser) {
             return new MapParser<>(description, valueParser);
         }
 
-        Map<String, TYPE> parseFrom(Yaml.Map yaml, String scope, EntryParser<?>... exclude) {
+        public Map<String, TYPE> parseFrom(Yaml.Map yaml, String scope, EntryParser<?>... exclude) {
             Set<String> excludeKeys = iterate(exclude).map(EntryParser::key).toSet();
             Map<String, TYPE> read = new HashMap<>();
             yaml.forEach((key, value) -> {
@@ -90,7 +90,7 @@ public abstract class ConfigKVParser implements Option.CliHelp {
         }
     }
 
-    static abstract class EntryParser<TYPE> extends ConfigKVParser {
+    public static abstract class EntryParser<TYPE> extends ConfigKVParser {
 
         private final String key;
         final ValueParser<TYPE> valueParser;
@@ -105,20 +105,20 @@ public abstract class ConfigKVParser implements Option.CliHelp {
             return key;
         }
 
-        abstract TYPE parse(Yaml.Map yaml, String scope);
+        public abstract TYPE parse(Yaml.Map yaml, String scope);
 
-        static class Value<TYPE> extends EntryParser<TYPE> {
+        public static class Value<TYPE> extends EntryParser<TYPE> {
 
             private Value(String key, String description, ValueParser<TYPE> valueParser) {
                 super(key, description, valueParser);
             }
 
-            static <TYPE> Value<TYPE> create(String key, String description, ValueParser<TYPE> valueType) {
+            public static <TYPE> Value<TYPE> create(String key, String description, ValueParser<TYPE> valueType) {
                 return new Value<>(key, description, valueType);
             }
 
             @Override
-            TYPE parse(Yaml.Map yaml, String scope) {
+            public TYPE parse(Yaml.Map yaml, String scope) {
                 String scopedKey = scopeKey(scope, key());
                 if (!yaml.containsKey(key())) throw TypeDBException.of(MISSING_CONFIG_OPTION, scopedKey);
                 else return valueParser.parse(yaml.get(key()), scopedKey);
@@ -135,7 +135,7 @@ public abstract class ConfigKVParser implements Option.CliHelp {
             }
         }
 
-        static class EnumValue<TYPE> extends EntryParser<TYPE> {
+        public static class EnumValue<TYPE> extends EntryParser<TYPE> {
 
             private final List<TYPE> values;
 
@@ -144,12 +144,12 @@ public abstract class ConfigKVParser implements Option.CliHelp {
                 this.values = values;
             }
 
-            static <T> EnumValue<T> create(String key, String description, ValueParser<T> valueParser, List<T> values) {
+            public static <T> EnumValue<T> create(String key, String description, ValueParser<T> valueParser, List<T> values) {
                 return new EnumValue<>(key, values, valueParser, description);
             }
 
             @Override
-            TYPE parse(Yaml.Map yaml, String scope) {
+            public TYPE parse(Yaml.Map yaml, String scope) {
                 String scopedKey = scopeKey(scope, key());
                 if (!yaml.containsKey(key())) throw TypeDBException.of(MISSING_CONFIG_OPTION, scopedKey);
                 else {
@@ -174,7 +174,7 @@ public abstract class ConfigKVParser implements Option.CliHelp {
 
     public static abstract class ValueParser<TYPE> {
 
-        abstract TYPE parse(Yaml yaml, String scope);
+        public abstract TYPE parse(Yaml yaml, String scope);
 
         boolean isLeaf() {
             return false;
@@ -192,17 +192,17 @@ public abstract class ConfigKVParser implements Option.CliHelp {
             throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Nested.class));
         }
 
-        static abstract class Nested<T> extends ValueParser<T> {
+        public static abstract class Nested<T> extends ValueParser<T> {
 
-            abstract List<Help> help(String scope);
+            public abstract List<Help> help(String scope);
 
             @Override
-            boolean isNested() {
+            public boolean isNested() {
                 return true;
             }
 
             @Override
-            Nested<T> asNested() {
+            public Nested<T> asNested() {
                 return this;
             }
         }
@@ -213,17 +213,17 @@ public abstract class ConfigKVParser implements Option.CliHelp {
                     (yaml) -> yaml.asString().value(),
                     "<string>"
             );
-            static final Leaf<Integer> INTEGER = new Leaf<>(
+            public static final Leaf<Integer> INTEGER = new Leaf<>(
                     (yaml) -> yaml.isInt(),
                     (yaml) -> yaml.asInt().value(),
                     "<int>"
             );
-            static final Leaf<Float> FLOAT = new Leaf<>(
+            public static final Leaf<Float> FLOAT = new Leaf<>(
                     (yaml) -> yaml.isFloat(),
                     (yaml) -> yaml.asFloat().value(),
                     "<float>"
             );
-            static final Leaf<Boolean> BOOLEAN = new Leaf<>(
+            public static final Leaf<Boolean> BOOLEAN = new Leaf<>(
                     (yaml) -> yaml.isBoolean(),
                     (yaml) -> yaml.asBoolean().value(),
                     "<boolean>"
@@ -251,7 +251,7 @@ public abstract class ConfigKVParser implements Option.CliHelp {
                     },
                     "<address:port>"
             );
-            static final Leaf<List<String>> LIST_STRING = new Leaf<>(
+            public static final Leaf<List<String>> LIST_STRING = new Leaf<>(
                     (yaml) -> yaml.isList() && iterate(yaml.asList().iterator()).allMatch(Yaml::isString),
                     (yaml) -> iterate(yaml.asList().iterator()).map(elem -> elem.asString().value()).toList(),
                     "<[string, ...]>");
@@ -267,7 +267,7 @@ public abstract class ConfigKVParser implements Option.CliHelp {
             }
 
             @Override
-            T parse(Yaml yaml, String scope) {
+            public T parse(Yaml yaml, String scope) {
                 if (!validator.apply(yaml)) {
                     throw TypeDBException.of(CONFIG_UNEXPECTED_VALUE, scope, yaml, help);
                 } else {
