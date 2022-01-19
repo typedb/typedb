@@ -25,7 +25,7 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@vaticle_dependencies//tool/release:rules.bzl", "release_validate_deps")
+load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
 load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
@@ -233,7 +233,9 @@ checkstyle_test(
 filegroup(
     name = "ci",
     data = [
+        "@vaticle_dependencies//factory/analysis:dependency-analysis",
         "@vaticle_dependencies//library/maven:update",
+        "@vaticle_dependencies//tool/release/notes:create",
         "@vaticle_dependencies//tool/checkstyle:test-coverage",
         "@vaticle_dependencies//tool/sonarcloud:code-analysis",
         "@vaticle_dependencies//tool/unuseddeps:unused-deps",
