@@ -37,7 +37,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
     public NegationController(Driver<NegationController> driver, Negated negated, ActorExecutorGroup executorService,
                               ControllerRegistry registry) {
-        super(driver, NegationController.class.getSimpleName() + "(pattern:" + negated + ")", executorService, registry);
+        super(driver, executorService, registry, NegationController.class.getSimpleName() + "(pattern:" + negated + ")");
         this.negated = negated;
     }
 

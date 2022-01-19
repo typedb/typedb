@@ -54,9 +54,8 @@ public abstract class Processor<INPUT, OUTPUT,
     private long endpointId;
     private boolean terminated;
 
-    protected Processor(Driver<PROCESSOR> driver,
-                        Driver<CONTROLLER> controller,
-                        Reactive<OUTPUT, OUTPUT> outlet, String name) {
+    protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, Reactive<OUTPUT, OUTPUT> outlet,
+                        String name) {
         super(driver, name);
         this.controller = controller;
         this.outlet = outlet;

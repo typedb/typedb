@@ -40,7 +40,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
 
     public RetrievableController(Driver<RetrievableController> driver, String name, Retrievable retrievable,
                                  ActorExecutorGroup executorService, ControllerRegistry registry) {
-        super(driver, name, executorService, registry);
+        super(driver, executorService, registry, name);
         this.retrievable = retrievable;
         this.registry = registry;
     }

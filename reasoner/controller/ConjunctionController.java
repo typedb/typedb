@@ -61,8 +61,8 @@ public abstract class ConjunctionController<OUTPUT,
 
     public ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction,
                                  ActorExecutorGroup executorService, ControllerRegistry registry) {
-        super(driver, ConjunctionController.class.getSimpleName() + "(pattern:" + conjunction + ")", executorService,
-              registry);
+        super(driver, executorService, registry,
+              ConjunctionController.class.getSimpleName() + "(pattern:" + conjunction + ")");
         this.conjunction = conjunction;
         this.resolvables = new HashSet<>();
         this.negateds = new HashSet<>();

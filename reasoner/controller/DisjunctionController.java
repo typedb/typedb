@@ -50,7 +50,8 @@ public abstract class DisjunctionController<
     protected Disjunction disjunction;
 
     protected DisjunctionController(Driver<CONTROLLER> driver, Disjunction disjunction, ActorExecutorGroup executorService, ControllerRegistry registry) {
-        super(driver, DisjunctionController.class.getSimpleName() + "(pattern:" + disjunction + ")", executorService, registry);
+        super(driver, executorService, registry,
+              DisjunctionController.class.getSimpleName() + "(pattern:" + disjunction + ")");
         this.disjunction = disjunction;
         this.conjunctionControllers = new ArrayList<>();
     }

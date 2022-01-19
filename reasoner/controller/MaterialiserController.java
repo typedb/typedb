@@ -46,7 +46,7 @@ public class MaterialiserController extends Controller<Materialisable, Void, Eit
 
     public MaterialiserController(Driver<MaterialiserController> driver, ActorExecutorGroup executorService,
                                   ControllerRegistry registry, TraversalEngine traversalEng, ConceptManager conceptMgr) {
-        super(driver, MaterialiserController.class.getSimpleName(), executorService, registry);
+        super(driver, executorService, registry, MaterialiserController.class.getSimpleName());
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
     }

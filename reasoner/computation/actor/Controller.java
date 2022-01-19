@@ -47,8 +47,8 @@ public abstract class Controller<
     private final ControllerRegistry registry;
     protected final Map<PROC_ID, Actor.Driver<PROCESSOR>> processors;
 
-    protected Controller(Driver<CONTROLLER> driver, String name, ActorExecutorGroup executorService,
-                         ControllerRegistry registry) {
+    protected Controller(Driver<CONTROLLER> driver, ActorExecutorGroup executorService, ControllerRegistry registry,
+                         String name) {
         super(driver, name);
         this.executorService = executorService;
         this.processors = new HashMap<>();

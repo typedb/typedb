@@ -50,7 +50,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
     public ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion conclusion,
                                 ActorExecutorGroup executorService, Driver<MaterialiserController> materialiserController, ControllerRegistry registry) {
-        super(driver, name, executorService, registry);
+        super(driver, executorService, registry, name);
         this.conclusion = conclusion;
         this.materialiserController = materialiserController;
     }
