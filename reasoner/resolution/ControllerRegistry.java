@@ -40,7 +40,9 @@ import com.vaticle.typedb.core.reasoner.controller.ConclusionController;
 import com.vaticle.typedb.core.reasoner.controller.ConditionController;
 import com.vaticle.typedb.core.reasoner.controller.ConjunctionController;
 import com.vaticle.typedb.core.reasoner.controller.MaterialiserController;
+import com.vaticle.typedb.core.reasoner.controller.NegationController;
 import com.vaticle.typedb.core.reasoner.controller.NestedConjunctionController;
+import com.vaticle.typedb.core.reasoner.controller.NestedDisjunctionController;
 import com.vaticle.typedb.core.reasoner.controller.RetrievableController;
 import com.vaticle.typedb.core.reasoner.controller.RootConjunctionController;
 import com.vaticle.typedb.core.reasoner.controller.RootDisjunctionController;
@@ -57,7 +59,6 @@ import com.vaticle.typedb.core.reasoner.resolution.resolver.ConclusionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConditionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.ConjunctionResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.DisjunctionResolver;
-import com.vaticle.typedb.core.reasoner.resolution.resolver.NegationResolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -175,12 +176,23 @@ public class ControllerRegistry {
         return controller;
     }
 
-    public Actor.Driver<NestedConjunctionController> nestedConjunctionController(Conjunction conjunction) {
+    public Actor.Driver<NestedConjunctionController> registerNestedConjunctionController(Conjunction conjunction) {
         LOG.debug("Creating Nested Conjunction for: '{}'", conjunction);
         Actor.Driver<NestedConjunctionController> controller =
                 Actor.driver(driver -> new NestedConjunctionController(driver, conjunction, executorService, this),
                              executorService);
         controller.execute(ConjunctionController::setUpUpstreamProviders);
+        controllers.add(controller);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+        return controller;
+    }
+
+    public Actor.Driver<NestedDisjunctionController> registerNestedDisjunctionController(Disjunction disjunction) {
+        LOG.debug("Creating Nested Disjunction for: '{}'", disjunction);
+        Actor.Driver<NestedDisjunctionController> controller =
+                Actor.driver(driver -> new NestedDisjunctionController(driver, disjunction, executorService, this),
+                             executorService);
+        controller.execute(NestedDisjunctionController::setUpUpstreamProviders);
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
@@ -227,9 +239,16 @@ public class ControllerRegistry {
         return ResolverView.retrievable(controller, retrievable.retrieves());
     }
 
-//    public Pair<Actor.Driver<NegationController>, Set<Variable.Retrievable>> registerNegationController(Negation negation) {
-//        return null;
-//    }
+    public ResolverView.FilteredNegation registerNegationController(Negated negated, Conjunction conjunction) {
+        LOG.debug("Creating NegationController for : {}", negated);
+        Actor.Driver<NegationController> negationController = Actor.driver(
+                driver -> new NegationController(driver, negated, executorService, this), executorService);
+        negationController.execute(NegationController::setUpUpstreamProviders);
+        controllers.add(negationController);
+        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+        Set<Variable.Retrievable> filter = filter(conjunction, negated);
+        return ResolverView.negation(negationController, filter);
+    }
 
     public Actor.Driver<ConclusionController> registerConclusionController(Rule.Conclusion conclusion) {
         LOG.debug("Register ConclusionController: '{}'", conclusion);
@@ -267,13 +286,7 @@ public class ControllerRegistry {
     }
 
     public ResolverView.FilteredNegation negated(Negated negated, Conjunction upstream) {
-        LOG.debug("Creating Negation resolver for : {}", negated);
-        Actor.Driver<NegationResolver> negatedResolver = Actor.driver(
-                driver -> new NegationResolver(driver, negated, this), executorService);
-        resolvers.add(negatedResolver);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-        Set<Variable.Retrievable> filter = filter(upstream, negated);
-        return ResolverView.negation(negatedResolver, filter);
+        return null;
     }
 
     private static Set<Variable.Retrievable> filter(Conjunction scope, Negated inner) {
@@ -402,12 +415,12 @@ public class ControllerRegistry {
 
     public static abstract class ResolverView {
 
-        public static MappedConcludable concludable(Actor.Driver<ConcludableController> resolver, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
-            return new MappedConcludable(resolver, mapping);
+        public static MappedConcludable concludable(Actor.Driver<ConcludableController> controller, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
+            return new MappedConcludable(controller, mapping);
         }
 
-        public static FilteredNegation negation(Actor.Driver<NegationResolver> resolver, Set<Variable.Retrievable> filter) {
-            return new FilteredNegation(resolver, filter);
+        public static FilteredNegation negation(Actor.Driver<NegationController> controller, Set<Variable.Retrievable> filter) {
+            return new FilteredNegation(controller, filter);
         }
 
         public static FilteredRetrievable retrievable(Actor.Driver<RetrievableController> controller, Set<Variable.Retrievable> filter) {
@@ -464,11 +477,11 @@ public class ControllerRegistry {
         }
 
         public static class FilteredNegation extends ResolverView {
-            private final Actor.Driver<NegationResolver> resolver;
+            private final Actor.Driver<NegationController> controller;
             private final Set<Variable.Retrievable> filter;
 
-            public FilteredNegation(Actor.Driver<NegationResolver> resolver, Set<Variable.Retrievable> filter) {
-                this.resolver = resolver;
+            public FilteredNegation(Actor.Driver<NegationController> controller, Set<Variable.Retrievable> filter) {
+                this.controller = controller;
                 this.filter = filter;
             }
 
@@ -487,8 +500,8 @@ public class ControllerRegistry {
             }
 
             @Override
-            public Actor.Driver<? extends Controller<?, ?, ?, ?, ?>> controller() {
-                return null;  // TODO
+            public Actor.Driver<NegationController> controller() {
+                return controller;
             }
         }
 

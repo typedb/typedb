@@ -28,8 +28,8 @@ import java.util.function.Function;
 public class NestedDisjunctionController
         extends DisjunctionController<NestedDisjunctionController.NestedDisjunctionProcessor, NestedDisjunctionController>{
 
-    protected NestedDisjunctionController(Driver<NestedDisjunctionController> driver, Disjunction disjunction,
-                                          ActorExecutorGroup executorService, ControllerRegistry registry) {
+    public NestedDisjunctionController(Driver<NestedDisjunctionController> driver, Disjunction disjunction,
+                                       ActorExecutorGroup executorService, ControllerRegistry registry) {
         super(driver, disjunction, executorService, registry);
     }
 

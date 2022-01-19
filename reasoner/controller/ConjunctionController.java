@@ -58,6 +58,7 @@ public abstract class ConjunctionController<OUTPUT,
     private final Set<Negated> negateds;
     private final List<Pair<Retrievable, ResolverView.FilteredRetrievable>> retrievableControllers;
     private final Map<Concludable, ResolverView.MappedConcludable> concludableControllers;
+    private final Map<Negated, ResolverView.FilteredNegation> negationControllers;
 
     public ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction,
                                  ActorExecutorGroup executorService, ControllerRegistry registry) {
@@ -68,6 +69,7 @@ public abstract class ConjunctionController<OUTPUT,
         this.negateds = new HashSet<>();
         this.retrievableControllers = new ArrayList<>();
         this.concludableControllers = new HashMap<>();
+        this.negationControllers = new HashMap<>();
     }
 
     @Override
@@ -82,12 +84,23 @@ public abstract class ConjunctionController<OUTPUT,
         iterate(retrievables).forEachRemaining(r -> {
             retrievableControllers.add(new Pair<>(r, registry().registerRetrievableController(r)));
         });
+        iterate(conjunction.negations()).forEachRemaining(negation -> {
+            Negated negated = new Negated(negation);
+            try {
+                negationControllers.put(negated, registry().registerNegationController(negated, conjunction));
+                negateds.add(negated);
+            } catch (TypeDBException e) {
+                terminate(e);
+            }
+        });
     }
 
     abstract Set<Concludable> concludablesTriggeringRules();
 
     protected List<Resolvable<?>> plan() {
-        return new ArrayList<>(resolvables);
+        List<Resolvable<?>> plan = new ArrayList<>(resolvables);
+        plan.addAll(negateds);
+        return plan;
     }
 
     protected ResolverView.FilteredRetrievable retrievableProvider(Retrievable retrievable) {
@@ -101,6 +114,10 @@ public abstract class ConjunctionController<OUTPUT,
         return concludableControllers.get(concludable);
     }
 
+    protected ResolverView.FilteredNegation negationProvider(Negated negated) {
+        return negationControllers.get(negated);
+    }
+
     static class RetrievableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
             extends Request<Retrievable, ConceptMap, RetrievableController, ConceptMap, P, C, RetrievableRequest<P, C>> {
 
@@ -110,9 +127,9 @@ public abstract class ConjunctionController<OUTPUT,
 
         @Override
         public Builder<ConceptMap, ConceptMap, RetrievableRequest<P, C>, P, ?> getBuilder(C controller) {
-            ResolverView.FilteredRetrievable retrievableView = controller.retrievableProvider(pubControllerId());
-            ConceptMap newPID = pubProcessorId().filter(retrievableView.filter());
-            return new Builder<>(retrievableView.controller(), this)
+            ResolverView.FilteredRetrievable controllerView = controller.retrievableProvider(pubControllerId());
+            ConceptMap newPID = pubProcessorId().filter(controllerView.filter());
+            return new Builder<>(controllerView.controller(), this)
                     .withMap(c -> merge(c, pubProcessorId()))
                     .withNewProcessorId(newPID);
         }
@@ -136,17 +153,23 @@ public abstract class ConjunctionController<OUTPUT,
         }
     }
 
-//    static class NegatedRequest<P extends Processor<ConceptMap, ?, P>> extends Request<Negated, ConceptMap, NegatedController, ConceptMap, P, NegatedRequest<P>> {
-//
-//        public NegatedRequest(Driver<P> recProcessor, long recEndpointId, Negated provControllerId, ConceptMap provProcessorId) {
-//            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
-//        }
-//
-//        @Override
-//        public Builder<ConceptMap, ConceptMap, NegatedRequest<P>, P, NegatedController> getBuilder(ControllerRegistry registry) {
-//            return null;  // TODO: Get the retrievable controller from the registry. Apply the filter in the same way as the mapping for concludable.
-//        }
-//    }
+    static class NegatedRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
+            extends Request<Negated, ConceptMap, NegationController, ConceptMap, P, C, NegatedRequest<P, C>> {
+
+        protected NegatedRequest(Driver<P> recProcessor, long recEndpointId, Negated provControllerId,
+                                 ConceptMap provProcessorId) {
+            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+        }
+
+        @Override
+        public Builder<ConceptMap, ConceptMap, NegatedRequest<P, C>, P, ?> getBuilder(C controller) {
+            ResolverView.FilteredNegation controllerView = controller.negationProvider(pubControllerId());
+            ConceptMap newPID = pubProcessorId().filter(controllerView.filter());
+            return new Builder<>(controllerView.controller(), this)
+                    .withMap(c -> merge(c, pubProcessorId()))
+                    .withNewProcessorId(newPID);
+        }
+    }
 
     protected static ConceptMap merge(ConceptMap c1, ConceptMap c2) {
         Map<Variable.Retrievable, Concept> compounded = new HashMap<>(c1.concepts());
@@ -177,7 +200,8 @@ public abstract class ConjunctionController<OUTPUT,
                 requestConnection(new ConcludableRequest<>(driver(), endpoint.id(), planElement.asConcludable(),
                                                            carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isNegated()) {
-                throw TypeDBException.of(ILLEGAL_STATE);  // TODO: Not implemented yet
+                requestConnection(new NegatedRequest<>(driver(), endpoint.id(), planElement.asNegated(),
+                                                       carriedBounds.filter(planElement.retrieves())));
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
