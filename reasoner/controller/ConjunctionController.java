@@ -73,15 +73,15 @@ public abstract class ConjunctionController<OUTPUT,
     @Override
     public void setUpUpstreamProviders() {
         Set<Concludable> concludables = concludablesTriggeringRules();
+        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
+        resolvables.addAll(concludables);
+        resolvables.addAll(retrievables);
         iterate(concludables).forEachRemaining(c -> {
             concludableControllers.put(c, registry().registerConcludableController(c));
         });
-        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
         iterate(retrievables).forEachRemaining(r -> {
             retrievableControllers.add(new Pair<>(r, registry().registerRetrievableController(r)));
         });
-        resolvables.addAll(concludables);
-        resolvables.addAll(retrievables);
     }
 
     abstract Set<Concludable> concludablesTriggeringRules();
