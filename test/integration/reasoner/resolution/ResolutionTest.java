@@ -443,8 +443,6 @@ public class ResolutionTest {
     private void createRootAndAssertResponses(RocksTransaction transaction, Disjunction disjunction,
                                               Set<Identifier.Variable.Retrievable> filter, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
-//        ResolutionTracer.initialise(options.logsDir());
-//        ResolutionTracer.get().startDefaultTrace();
         ControllerRegistry registry = transaction.reasoner().controllerRegistry();
         LinkedBlockingQueue<ConceptMap> responses = new LinkedBlockingQueue<>();
         LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
@@ -460,10 +458,7 @@ public class ResolutionTest {
     }
 
     private void createRootAndAssertResponses(RocksTransaction transaction, Conjunction conjunction, long answerCount,
-                                              long explainableAnswers)
-            throws InterruptedException {
-//        ResolutionTracer.initialise(options.logsDir());
-//        ResolutionTracer.get().startDefaultTrace();
+                                              long explainableAnswers) throws InterruptedException {
         ControllerRegistry registry = transaction.reasoner().controllerRegistry();
         Set<Identifier.Variable.Retrievable> filter = new HashSet<>();
         iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName).map(Identifier.Variable::asName)
@@ -500,7 +495,6 @@ public class ResolutionTest {
 //                }
             }
         }
-//        ResolutionTracer.get().finishDefaultTrace();  // TODO: Not nice that we start tracing in a different method
         assertEquals(answerCount, answersFound);
         // assertEquals(explainableAnswers, explainableAnswersFound);  // TODO: Re-enable when explanation are back
         // assertEquals(1, doneReceived.get());  // TODO: Bring back an assertion of doneness
