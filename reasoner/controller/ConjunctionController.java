@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.resolution.ControllerRegistry.ResolverView;
+import com.vaticle.typedb.core.reasoner.resolution.Planner;
 import com.vaticle.typedb.core.reasoner.resolution.answer.Mapping;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -43,6 +44,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
@@ -58,6 +60,7 @@ public abstract class ConjunctionController<OUTPUT,
     private final List<Pair<Retrievable, ResolverView.FilteredRetrievable>> retrievableControllers;
     private final Map<Concludable, ResolverView.MappedConcludable> concludableControllers;
     private final Map<Negated, ResolverView.FilteredNegation> negationControllers;
+    private List<Resolvable<?>> plan;
 
     public ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction,
                                  ActorExecutorGroup executorService, ControllerRegistry registry) {
@@ -97,8 +100,10 @@ public abstract class ConjunctionController<OUTPUT,
     abstract Set<Concludable> concludablesTriggeringRules();
 
     protected List<Resolvable<?>> plan() {
-        List<Resolvable<?>> plan = new ArrayList<>(resolvables);
-        plan.addAll(negateds);
+        if (plan == null) {
+            plan = Planner.plan(resolvables, new HashMap<>(), set());
+            plan.addAll(negateds);
+        }
         return plan;
     }
 
