@@ -94,7 +94,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     protected <PROV_PROCESSOR extends Processor<?, INPUT, ?, PROV_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PROV_PROCESSOR> connection) {
-        receivingEndpoints.get(connection.subEndpointId()).setReady(connection);
+        receivingEndpoints.get(connection.receiverEndpointId()).setReady(connection);
     }
 
     private long nextEndpointId() {
@@ -210,7 +210,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         public long id() {
-            return connection.providingEndpointId();
+            return connection.providerEndpointId();
         }
 
         @Override

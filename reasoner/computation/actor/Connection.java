@@ -52,11 +52,11 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
         provProcessor.execute(actor -> actor.endpointPull(provEndpointId));
     }
 
-    protected long subEndpointId() {
+    protected long receiverEndpointId() {
         return recEndpointId;
     }
 
-    public long providingEndpointId() {
+    public long providerEndpointId() {
         return provEndpointId;
     }
 
