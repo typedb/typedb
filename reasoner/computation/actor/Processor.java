@@ -71,9 +71,9 @@ public abstract class Processor<INPUT, OUTPUT,
         return outlet;
     }
 
-    protected <PUB_CID, PUB_PROC_ID,
-            REQ extends Request<PUB_CID, PUB_PROC_ID, PUB_C, INPUT, PROCESSOR, CONTROLLER, REQ>,
-            PUB_C extends Controller<PUB_PROC_ID, ?, INPUT, ?, PUB_C>
+    protected <PROV_CID, PROV_PROC_ID,
+            REQ extends Request<PROV_CID, PROV_PROC_ID, PROV_C, INPUT, PROCESSOR, CONTROLLER, REQ>,
+            PROV_C extends Controller<PROV_PROC_ID, ?, INPUT, ?, PROV_C>
             > void requestConnection(REQ req) {
         if (isTerminated()) return;
         controller.execute(actor -> actor.findProviderForConnection(req));
@@ -83,7 +83,7 @@ public abstract class Processor<INPUT, OUTPUT,
         Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
         applyConnectionTransforms(connection.transformations(), outlet(), createProvidingEndpoint(connection));
         if (isTerminated()) return;
-        connectionBuilder.recProcessor().execute(actor -> actor.finaliseConnection(connection));
+        connectionBuilder.receivingProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
 
     public void applyConnectionTransforms(List<Function<OUTPUT, OUTPUT>> transformations,
@@ -93,7 +93,7 @@ public abstract class Processor<INPUT, OUTPUT,
         op.publishTo(upstreamEndpoint);
     }
 
-    protected <PUB_PROCESSOR extends Processor<?, INPUT, ?, PUB_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PUB_PROCESSOR> connection) {
+    protected <PROV_PROCESSOR extends Processor<?, INPUT, ?, PROV_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PROV_PROCESSOR> connection) {
         receivingEndpoints.get(connection.subEndpointId()).setReady(connection);
     }
 
@@ -244,19 +244,19 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     public static abstract class Request<
-            PUB_CID, PUB_PROC_ID, PUB_C extends Controller<?, ?, PACKET, ?, PUB_C>, PACKET,
+            PROV_CID, PROV_PROC_ID, PROV_C extends Controller<?, ?, PACKET, ?, PROV_C>, PACKET,
             PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>,
             CONTROLLER extends Controller<?, PACKET, ?, PROCESSOR, CONTROLLER>,
-            REQ extends Request<PUB_CID, PUB_PROC_ID, PUB_C, PACKET, PROCESSOR, ?, REQ>> {
+            REQ extends Request<PROV_CID, PROV_PROC_ID, PROV_C, PACKET, PROCESSOR, ?, REQ>> {
 
-        private final PUB_CID provControllerId;
+        private final PROV_CID provControllerId;
         private final Driver<PROCESSOR> recProcessor;
         private final long recEndpointId;
         private final List<Function<PACKET, PACKET>> connectionTransforms;
-        private final PUB_PROC_ID provProcessorId;
+        private final PROV_PROC_ID provProcessorId;
 
-        protected Request(Driver<PROCESSOR> recProcessor, long recEndpointId, PUB_CID provControllerId,
-                          PUB_PROC_ID provProcessorId) {
+        protected Request(Driver<PROCESSOR> recProcessor, long recEndpointId, PROV_CID provControllerId,
+                          PROV_PROC_ID provProcessorId) {
             this.recProcessor = recProcessor;
             this.recEndpointId = recEndpointId;
             this.provControllerId = provControllerId;
@@ -264,21 +264,21 @@ public abstract class Processor<INPUT, OUTPUT,
             this.connectionTransforms = new ArrayList<>();
         }
 
-        public abstract Controller.Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, ?> getBuilder(CONTROLLER controller);
+        public abstract Controller.Builder<PROV_PROC_ID, PACKET, REQ, PROCESSOR, ?> getBuilder(CONTROLLER controller);
 
-        public Driver<PROCESSOR> recProcessor() {
+        public Driver<PROCESSOR> receivingProcessor() {
             return recProcessor;
         }
 
-        public PUB_CID pubControllerId() {
+        public PROV_CID providingControllerId() {
             return provControllerId;
         }
 
-        public PUB_PROC_ID pubProcessorId() {
+        public PROV_PROC_ID providingProcessorId() {
             return provProcessorId;
         }
 
-        public long recEndpointId() {
+        public long receivingEndpointId() {
             return recEndpointId;
         }
 

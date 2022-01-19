@@ -64,9 +64,9 @@ public abstract class Controller<
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PROC_ID id);
 
-    public <PUB_CID, PUB_PROC_ID, REQ extends Processor.Request<PUB_CID, PUB_PROC_ID, PUB_C, INPUT, PROCESSOR, CONTROLLER, REQ>,
-            PUB_C extends Controller<PUB_PROC_ID, ?, INPUT, ?, PUB_C>> void findProviderForConnection(REQ req) {
-        Builder<PUB_PROC_ID, INPUT, ?, ?, ?> builder = req.getBuilder(asController());
+    public <PROV_CID, PROV_PROC_ID, REQ extends Processor.Request<PROV_CID, PROV_PROC_ID, PROV_C, INPUT, PROCESSOR, CONTROLLER, REQ>,
+            PROV_C extends Controller<PROV_PROC_ID, ?, INPUT, ?, PROV_C>> void findProviderForConnection(REQ req) {
+        Builder<PROV_PROC_ID, INPUT, ?, ?, ?> builder = req.getBuilder(asController());
         if (isTerminated()) return;
         builder.providerController().execute(actor -> actor.makeConnection(builder));
     }
@@ -75,7 +75,7 @@ public abstract class Controller<
 
     public void makeConnection(Builder<PROC_ID, OUTPUT, ?, ?, ?> connectionBuilder) {
         if (isTerminated()) return;
-        computeProcessorIfAbsent(connectionBuilder.pubProcessorId())
+        computeProcessorIfAbsent(connectionBuilder.providingProcessorId())
                 .execute(actor -> actor.acceptConnection(connectionBuilder));
     }
 
@@ -115,28 +115,28 @@ public abstract class Controller<
         return terminated;
     }
 
-    public static class Builder<PUB_PROC_ID, PACKET,
-            REQ extends Processor.Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, ?, REQ>,
+    public static class Builder<PROV_PROC_ID, PACKET,
+            REQ extends Processor.Request<?, PROV_PROC_ID, PROV_CONTROLLER, PACKET, PROCESSOR, ?, REQ>,
             PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>,
-            PUB_CONTROLLER extends Controller<PUB_PROC_ID, ?, PACKET, ?, PUB_CONTROLLER>> {
+            PROV_CONTROLLER extends Controller<PROV_PROC_ID, ?, PACKET, ?, PROV_CONTROLLER>> {
 
-        private final Driver<PUB_CONTROLLER> provController;
+        private final Driver<PROV_CONTROLLER> provController;
         private final Driver<PROCESSOR> recProcessor;
         private final long recEndpointId;
         private final List<Function<PACKET, PACKET>> connectionTransforms;
-        private final PUB_PROC_ID provProcessorId;
+        private final PROV_PROC_ID provProcessorId;
 
-        public Builder(Driver<PUB_CONTROLLER> provController,
-                       Processor.Request<?, PUB_PROC_ID, PUB_CONTROLLER, PACKET, PROCESSOR, ?, REQ> connectionRequest) {
+        public Builder(Driver<PROV_CONTROLLER> provController,
+                       Processor.Request<?, PROV_PROC_ID, PROV_CONTROLLER, PACKET, PROCESSOR, ?, REQ> connectionRequest) {
             this.provController = provController;
-            this.recProcessor = connectionRequest.recProcessor();
-            this.recEndpointId = connectionRequest.recEndpointId();
+            this.recProcessor = connectionRequest.receivingProcessor();
+            this.recEndpointId = connectionRequest.receivingEndpointId();
             this.connectionTransforms = connectionRequest.connectionTransforms();
-            this.provProcessorId = connectionRequest.pubProcessorId();
+            this.provProcessorId = connectionRequest.providingProcessorId();
         }
 
-        public Builder(Driver<PUB_CONTROLLER> provController, Driver<PROCESSOR> recProcessor, long recEndpointId,
-                       List<Function<PACKET, PACKET>> connectionTransforms, PUB_PROC_ID provProcessorId) {
+        public Builder(Driver<PROV_CONTROLLER> provController, Driver<PROCESSOR> recProcessor, long recEndpointId,
+                       List<Function<PACKET, PACKET>> connectionTransforms, PROV_PROC_ID provProcessorId) {
             this.provController = provController;
             this.recProcessor = recProcessor;
             this.recEndpointId = recEndpointId;
@@ -144,29 +144,30 @@ public abstract class Controller<
             this.provProcessorId = provProcessorId;
         }
 
-        public Driver<PUB_CONTROLLER> providerController() {
+        public Driver<PROV_CONTROLLER> providerController() {
             return provController;
         }
 
-        public PUB_PROC_ID pubProcessorId(){
+        public PROV_PROC_ID providingProcessorId(){
             return provProcessorId;
         }
 
-        public Driver<PROCESSOR> recProcessor() {
+        public Driver<PROCESSOR> receivingProcessor() {
             return recProcessor;
         }
 
-        public Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, PUB_CONTROLLER> withMap(Function<PACKET, PACKET> function) {
+        public Builder<PROV_PROC_ID, PACKET, REQ, PROCESSOR, PROV_CONTROLLER> withMap(Function<PACKET, PACKET> function) {
             ArrayList<Function<PACKET, PACKET>> newTransforms = new ArrayList<>(connectionTransforms);
             newTransforms.add(function);
             return new Builder<>(provController, recProcessor, recEndpointId, newTransforms, provProcessorId);
         }
 
-        public Builder<PUB_PROC_ID, PACKET, REQ, PROCESSOR, PUB_CONTROLLER> withNewProcessorId(PUB_PROC_ID newPID) {
+        public Builder<PROV_PROC_ID, PACKET, REQ, PROCESSOR, PROV_CONTROLLER> withNewProcessorId(PROV_PROC_ID newPID) {
             return new Builder<>(provController, recProcessor, recEndpointId, connectionTransforms, newPID);
         }
 
-        public <PUB_PROCESSOR extends Processor<?, PACKET, ?, PUB_PROCESSOR>> Connection<PACKET, PROCESSOR, PUB_PROCESSOR> build(Driver<PUB_PROCESSOR> pubProcessor, long pubEndpointId) {
+        public <PROV_PROCESSOR extends Processor<?, PACKET, ?, PROV_PROCESSOR>> Connection<PACKET, PROCESSOR,
+                PROV_PROCESSOR> build(Driver<PROV_PROCESSOR> pubProcessor, long pubEndpointId) {
             return new Connection<>(recProcessor, pubProcessor, recEndpointId, pubEndpointId, connectionTransforms);
         }
     }

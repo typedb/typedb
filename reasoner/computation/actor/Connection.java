@@ -23,10 +23,10 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import java.util.List;
 import java.util.function.Function;
 
-public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>, PUB_PROCESSOR extends Processor<?, PACKET, ?, PUB_PROCESSOR>> {
+public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>, PROV_PROCESSOR extends Processor<?, PACKET, ?, PROV_PROCESSOR>> {
 
     private final Actor.Driver<PROCESSOR> recProcessor;
-    private final Actor.Driver<PUB_PROCESSOR> provProcessor;
+    private final Actor.Driver<PROV_PROCESSOR> provProcessor;
     private final long recEndpointId;
     private final long provEndpointId;
     private final List<Function<PACKET, PACKET>> transforms;
@@ -34,7 +34,7 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
     /**
      * Connects a processor outlet (upstream, publishing) to another processor's inlet (downstream, subscribing)
      */
-    Connection(Actor.Driver<PROCESSOR> recProcessor, Actor.Driver<PUB_PROCESSOR> provProcessor, long recEndpointId,
+    Connection(Actor.Driver<PROCESSOR> recProcessor, Actor.Driver<PROV_PROCESSOR> provProcessor, long recEndpointId,
                long provEndpointId,
                List<Function<PACKET, PACKET>> transforms) {
         this.recProcessor = recProcessor;

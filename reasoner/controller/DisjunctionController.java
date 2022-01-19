@@ -108,8 +108,8 @@ public abstract class DisjunctionController<
 
             @Override
             public Builder<ConceptMap, ConceptMap, NestedConjunctionRequest<P, C>, P, ?> getBuilder(C controller) {
-                return new Builder<>(controller.conjunctionProvider(pubControllerId()), this)
-                        .withMap(c -> merge(c, pubProcessorId()));
+                return new Builder<>(controller.conjunctionProvider(providingControllerId()), this)
+                        .withMap(c -> merge(c, providingProcessorId()));
             }
         }
     }

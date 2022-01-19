@@ -162,7 +162,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 
             @Override
             public Builder<ConceptMap, Map<Variable, Concept>, ConclusionRequest, ConcludableProcessor, ?> getBuilder(ConcludableController controller) {
-                return new Builder<>(controller.conclusionProvider(pubControllerId()), this);
+                return new Builder<>(controller.conclusionProvider(providingControllerId()), this);
             }
         }
     }
