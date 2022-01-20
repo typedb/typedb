@@ -85,10 +85,15 @@ public class TypeInference {
         this.graphMgr = graphMgr;
     }
 
-    public FunctionalIterator<Map<Name, Label>> typePermutations(Conjunction conjunction, boolean insertable) {
+    public FunctionalIterator<Map<Name, Label>> typePermutations(Conjunction conjunction, boolean insertable,
+                                                                 Set<? extends Identifier.Variable.Retrievable> filter) {
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
         GraphTraversal.Type traversal = traversalBuilder.traversal();
-        traversal.filter(traversalBuilder.retrievedResolvers());
+        Set<Identifier.Variable.Retrievable> resolverFilter = iterate(filter).map(id -> {
+            assert traversalBuilder.originalToResolver.containsKey(id);
+            return traversalBuilder.originalToResolver.get(id).id().asRetrievable();
+        }).toSet();
+        traversal.filter(resolverFilter);
         return traversalEng.iterator(traversal).map(vertexMap -> {
             Map<Name, Label> mapping = new HashMap<>();
             vertexMap.forEach((id, vertex) -> {

@@ -402,8 +402,12 @@ public class Rule {
         }
 
         private void validateInsertable(LogicManager logicMgr) {
-            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeInference().typePermutations(rule.when, false);
-            Set<Map<Identifier.Variable.Name, Label>> allowedThenCombinations = logicMgr.typeInference().typePermutations(rule.then, true).toSet();
+            Set<Identifier.Variable.Name> thenNamed = iterate(rule.then.identifiers()).filter(Identifier::isName)
+                    .map(Identifier.Variable::asName).toSet();
+            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeInference()
+                    .typePermutations(rule.when, false, thenNamed);
+            Set<Map<Identifier.Variable.Name, Label>> allowedThenCombinations = logicMgr.typeInference()
+                    .typePermutations(rule.then, true, thenNamed).toSet();
 
             whenCombinations.forEachRemaining(nameLabelMap -> {
                 if (allowedThenCombinations.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
