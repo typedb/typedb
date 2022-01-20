@@ -65,7 +65,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
-        this.reasonerEntryPoint = new EntryPoint(this::receiveAnswer, this::exception, conjunction.toString());
+        this.reasonerEntryPoint = new EntryPoint(this::receiveAnswer, this::exception, this::answersFinished, conjunction.toString());
         this.controllerRegistry.createRootConjunctionController(conjunction, reasonerEntryPoint);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
@@ -81,7 +81,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.done = false;
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
-        this.reasonerEntryPoint = new EntryPoint(this::receiveAnswer, this::exception, disjunction.toString());
+        this.reasonerEntryPoint = new EntryPoint(this::receiveAnswer, this::exception, this::answersFinished, disjunction.toString());
         this.controllerRegistry.createRootDisjunctionController(disjunction, reasonerEntryPoint);
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
         assert computeSize > 0;
@@ -116,7 +116,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
     // note: root resolver calls this single-threaded, so is threads safe
 
-    private void answersFinished() {
+    private void answersFinished(Boolean aVoid) {  // TODO: Is there a nicer way?
         // TODO: Call when the end of answers has been detected
         LOG.trace("All answers found.");
         if (options.traceInference()) Tracer.get().finishDefaultTrace();
@@ -148,13 +148,15 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
         private final Consumer<ConceptMap> answerConsumer;
         private final Consumer<Throwable> exceptionConsumer;
+        private final Consumer<Boolean> onDone;
         private final String groupName;
         private final UUID traceId = UUID.randomUUID();
         private int traceCounter = 0;
 
-        public EntryPoint(Consumer<ConceptMap> answerConsumer, Consumer<Throwable> exceptionConsumer, String groupName) {
+        public EntryPoint(Consumer<ConceptMap> answerConsumer, Consumer<Throwable> exceptionConsumer, Consumer<Boolean> onDone, String groupName) {
             this.answerConsumer = answerConsumer;
             this.exceptionConsumer = exceptionConsumer;
+            this.onDone = onDone;
             this.groupName = groupName;
         }
 
@@ -163,7 +165,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
             isPulling = false;
             answerConsumer.accept(packet);
-            // monitor().onPacketDestroy();  // TODO: Or do this directly in the root actor(s) instead
+            monitor().onPathTerminate();
         }
 
         @Override
@@ -177,6 +179,10 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
         public void exception(Throwable e) {
             exceptionConsumer.accept(e);
+        }
+
+        public void done() {
+            onDone.accept(true);
         }
     }
 

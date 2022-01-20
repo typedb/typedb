@@ -38,7 +38,7 @@ public class FindFirstReactive<T> extends IdentityReactive<T> {
             packetFound = true;
             super.receive(provider, packet);
         } else {
-            monitor().onPacketDestroy();
+            monitor().onPathTerminate();
         }
     }
 

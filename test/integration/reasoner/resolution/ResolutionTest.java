@@ -54,6 +54,7 @@ import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedConjuncti
 import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedDisjunction;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 public class ResolutionTest {
@@ -128,7 +129,8 @@ public class ResolutionTest {
                 Registry registry = transaction.reasoner().controllerRegistry();
                 LinkedBlockingQueue<ConceptMap> responses = new LinkedBlockingQueue<>();
                 LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
-                EntryPoint reasonerEntryPoint = new EntryPoint(responses::add, exceptions::add, "EntryPoint");
+
+                EntryPoint reasonerEntryPoint = new EntryPoint(responses::add, exceptions::add, l -> {}, "EntryPoint");
                 try {
                     registry.createRootConjunctionController(conjunctionPattern, reasonerEntryPoint);
                 } catch (TypeDBException e) {
@@ -447,7 +449,8 @@ public class ResolutionTest {
         Registry registry = transaction.reasoner().controllerRegistry();
         LinkedBlockingQueue<ConceptMap> responses = new LinkedBlockingQueue<>();
         LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
-        EntryPoint entryPoint = new EntryPoint(responses::add, exceptions::add, "EntryPoint");
+        LinkedBlockingQueue<Boolean> doneReceived = new LinkedBlockingQueue<>();
+        EntryPoint entryPoint = new EntryPoint(responses::add, exceptions::add, doneReceived::add, "EntryPoint");
         entryPoint.pull();
         try {
              registry.createRootDisjunctionController(disjunction, entryPoint);
@@ -455,7 +458,7 @@ public class ResolutionTest {
             fail();
             return;
         }
-        assertResponses(responses, filter, answerCount, explainableAnswers);
+        assertResponses(responses, filter, answerCount, explainableAnswers, doneReceived);
     }
 
     private void createRootAndAssertResponses(RocksTransaction transaction, Conjunction conjunction, long answerCount,
@@ -466,7 +469,8 @@ public class ResolutionTest {
                 .forEachRemaining(filter::add);
         LinkedBlockingQueue<ConceptMap> responses = new LinkedBlockingQueue<>();
         LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
-        EntryPoint entryPoint = new EntryPoint(responses::add, exceptions::add, "EntryPoint");
+        LinkedBlockingQueue<Boolean> doneReceived = new LinkedBlockingQueue<>();
+        EntryPoint entryPoint = new EntryPoint(responses::add, exceptions::add, doneReceived::add, "EntryPoint");
         entryPoint.pull();
         try {
             registry.createRootConjunctionController(conjunction, entryPoint);
@@ -474,11 +478,11 @@ public class ResolutionTest {
             fail();
             return;
         }
-        assertResponses(responses, filter, answerCount, explainableAnswers);
+        assertResponses(responses, filter, answerCount, explainableAnswers, doneReceived);
     }
 
     private void assertResponses(LinkedBlockingQueue<ConceptMap> responses, Set<Identifier.Variable.Retrievable> filter,
-                                 long answerCount, long explainableAnswers) throws InterruptedException {
+                                 long answerCount, long explainableAnswers, LinkedBlockingQueue<Boolean> doneReceived) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         int answersFound = 0;
@@ -498,7 +502,9 @@ public class ResolutionTest {
         }
         assertEquals(answerCount, answersFound);
         // assertEquals(explainableAnswers, explainableAnswersFound);  // TODO: Re-enable when explanation are back
-        // assertEquals(1, doneReceived.get());  // TODO: Bring back an assertion of doneness
+//        assertEquals(1, doneReceived.get());
+//        assertTrue(doneReceived.take());
+        assertNotNull(doneReceived.poll(500, TimeUnit.MILLISECONDS));
         assertTrue(responses.isEmpty());
         System.out.println("Time : " + (System.currentTimeMillis() - startTime));
     }

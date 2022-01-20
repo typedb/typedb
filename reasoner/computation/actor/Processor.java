@@ -40,6 +40,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 public abstract class Processor<INPUT, OUTPUT,
@@ -51,9 +52,11 @@ public abstract class Processor<INPUT, OUTPUT,
     private final Driver<CONTROLLER> controller;
     private final Map<Long, InletEndpoint<INPUT>> receivingEndpoints;
     private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
+    protected final Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors;
     private Reactive<OUTPUT, OUTPUT> outlet;
     private long endpointId;
     private boolean terminated;
+    private long answerPathsTally;
 
     protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, String name) {
         super(driver, name);
@@ -61,6 +64,8 @@ public abstract class Processor<INPUT, OUTPUT,
         this.endpointId = 0;
         this.receivingEndpoints = new HashMap<>();
         this.providingEndpoints = new HashMap<>();
+        this.monitors = new HashSet<>();
+        this.answerPathsTally = 0;
     }
 
     public abstract void setUp();
@@ -97,6 +102,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
     protected <PROV_PROCESSOR extends Processor<?, INPUT, ?, PROV_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PROV_PROCESSOR> connection) {
         receivingEndpoints.get(connection.receiverEndpointId()).setReady(connection);
+        connection.propagateMonitors(addSelfIfMonitor(monitors));
     }
 
     private long nextEndpointId() {
@@ -105,7 +111,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     protected OutletEndpoint<OUTPUT> createProvidingEndpoint(Connection<OUTPUT, ?, PROCESSOR> connection) {
-        OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection, name());
+        OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection, this, name());
         providingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
@@ -124,12 +130,63 @@ public abstract class Processor<INPUT, OUTPUT,
         receivingEndpoints.get(subEndpointId).receive(null, packet);
     }
 
-    public void onPacketCreate() {
-        // TODO
+    protected void addMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
+        Set<Driver<? extends Processor<?, ?, ?, ?>>> unseenMonitors = new HashSet<>(addSelfIfMonitor(monitors));
+        unseenMonitors.removeAll(this.monitors);
+        unseenMonitors.forEach(this::fastForwardPacketTally);
+        this.monitors.addAll(unseenMonitors);
+        if (unseenMonitors.size() > 0) {
+            providingEndpoints.values().forEach(e -> e.connection().propagateMonitors(unseenMonitors));
+        }
     }
 
-    public void onPacketDestroy() {
-        // TODO
+    private void fastForwardPacketTally(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
+        monitor.execute(actor -> actor.updatePathsTally(answerPathsTally));
+    }
+
+    public void updatePathsTally(long tallyDelta) {
+        answerPathsTally += tallyDelta;
+        checkTermination();
+    }
+
+    @Override
+    public void onPathFork(int numForks) {
+        assert numForks > 0;
+        answerPathsTally += numForks;
+        monitors.forEach(monitor -> monitor.execute(actor -> actor.onPathFork(numForks)));
+        checkTermination();
+    }
+
+    @Override
+    public void onPathTerminate() {
+        answerPathsTally -= 1;
+        monitors.forEach(monitor -> monitor.execute(actor -> actor.onPathTerminate()));
+        checkTermination();
+    }
+
+    private Set<Driver<? extends Processor<?, ?, ?, ?>>> addSelfIfMonitor(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
+        if (isMonitor()) {
+            Set<Driver<? extends Processor<?, ?, ?, ?>>> upstreamMonitors = new HashSet<>(monitors);
+            upstreamMonitors.add(driver());
+            return upstreamMonitors;
+        } else {
+            return monitors;
+        }
+    }
+
+    private void checkTermination() {
+        if (isMonitor()) {
+            assert answerPathsTally >= 0;
+            if (answerPathsTally == 0) onDone();
+        }
+    }
+
+    protected void onDone() {
+        throw TypeDBException.of(ILLEGAL_STATE);
+    }
+
+    protected boolean isMonitor() {
+        return false;
     }
 
     @Override
@@ -210,13 +267,25 @@ public abstract class Processor<INPUT, OUTPUT,
         private final Connection<PACKET, ?, ?> connection;
         private final Set<Provider<PACKET>> publishers;
         protected boolean isPulling;
+        private final PacketMonitor monitor;
         private final String groupName;
+        private boolean hasForked;
 
-        public OutletEndpoint(Connection<PACKET, ?, ?> connection, String groupName) {
+        public OutletEndpoint(Connection<PACKET, ?, ?> connection, PacketMonitor monitor, String groupName) {
+            this.monitor = monitor;
             this.groupName = groupName;
             this.publishers = new HashSet<>();
             this.connection = connection;
             this.isPulling = false;
+            this.hasForked = false;
+        }
+
+        protected PacketMonitor monitor() {
+            return monitor;
+        }
+
+        public Connection<PACKET, ?, ?> connection() {
+            return connection;
         }
 
         public long id() {
@@ -226,12 +295,6 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public String groupName() {
             return groupName;
-        }
-
-        @Override
-        public void subscribeTo(Provider<PACKET> publisher) {
-            publishers.add(publisher);
-            if (isPulling) publisher.pull(this);
         }
 
         @Override
@@ -248,8 +311,29 @@ public abstract class Processor<INPUT, OUTPUT,
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(connection, this));  // TODO: Highlights a smell that the connection is pulling and so receiver is null
             if (!isPulling) {
                 isPulling = true;
-                publishers.forEach(p -> p.pull(this));
+                pullFromAllPublishers();
             }
+        }
+
+        // TODO: These duplicates go away if there's only one publisher, because then path fork monitoring isn't needed here
+        // TODO: Duplicated from ReactiveImpl
+        @Override
+        public void subscribeTo(Provider<PACKET> publisher) {
+            publishers.add(publisher);
+            if (isPulling) pullFromPublisher(publisher);
+        }
+
+        // TODO: Duplicated from ReactiveImpl
+        protected void pullFromAllPublishers() {
+            publishers.forEach(this::pullFromPublisher);
+        }
+
+        // TODO: Duplicated from ReactiveImpl
+        private void pullFromPublisher(Provider<PACKET> publisher) {
+            monitor().onPathFork(1);
+            publisher.pull(this);
+            if (!hasForked) monitor().onPathTerminate();
+            hasForked = true;
         }
     }
 

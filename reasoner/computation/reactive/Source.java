@@ -44,8 +44,9 @@ public class Source<PACKET> extends PublisherImpl<PACKET> {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         if (iterator == null) iterator = iteratorSupplier.get();
         if (iterator.hasNext()) {
-            monitor().onPacketCreate();
             receiver.receive(this, iterator.next());
+        } else {
+            monitor().onPathTerminate();
         }
     }
 

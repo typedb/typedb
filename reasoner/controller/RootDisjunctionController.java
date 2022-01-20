@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
 
 import java.util.function.Function;
 
@@ -57,20 +56,30 @@ public class RootDisjunctionController
     protected static class RootDisjunctionProcessor
             extends DisjunctionController.DisjunctionProcessor<RootDisjunctionController, RootDisjunctionProcessor> {
 
-        private final Receiver.Subscriber<ConceptMap> reasonerEndpoint;
+        private final EntryPoint reasonerEndpoint;
 
         protected RootDisjunctionProcessor(Driver<RootDisjunctionProcessor> driver,
-                                           Driver<RootDisjunctionController> controller,
-                                           Disjunction disjunction,
-                                           ConceptMap bounds, Receiver.Subscriber<ConceptMap> reasonerEndpoint, String name) {
+                                           Driver<RootDisjunctionController> controller, Disjunction disjunction,
+                                           ConceptMap bounds, EntryPoint reasonerEndpoint, String name) {
             super(driver, controller, disjunction, bounds, name);
             this.reasonerEndpoint = reasonerEndpoint;
+            this.reasonerEndpoint.setMonitor(this);
         }
 
         @Override
         public void setUp() {
             super.setUp();
             outlet().publishTo(reasonerEndpoint);
+        }
+
+        @Override
+        protected boolean isMonitor() {
+            return true;
+        }
+
+        @Override
+        protected void onDone() {
+            reasonerEndpoint.done();
         }
     }
 }

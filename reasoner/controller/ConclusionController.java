@@ -158,7 +158,6 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 op.publishTo(innerReactive);
                 innerReactive.sendTo(subscriber());
                 innerReactive.pull();
-                monitor().onPacketDestroy();  // The materialiser will create one as it creates a source
             }
         }
 

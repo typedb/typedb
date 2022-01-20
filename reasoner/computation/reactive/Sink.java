@@ -24,14 +24,26 @@ import javax.annotation.Nullable;
 
 public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provider<PACKET>  {
 
+    private PacketMonitor monitor;
     private Provider<PACKET> publisher;
     protected boolean isPulling;
+
+    protected PacketMonitor monitor() {
+        assert monitor != null;
+        return monitor;
+    }
+
+    public void setMonitor(PacketMonitor monitor) {
+        this.monitor = monitor;
+    }
 
     @Override
     public void subscribeTo(Provider<PACKET> publisher) {
         assert this.publisher == null;
         this.publisher = publisher;
-        if (isPulling) publisher.pull(this);
+        if (isPulling) {
+            pullFromPublisher();
+        }
     }
 
     @Override
@@ -39,7 +51,14 @@ public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provi
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         assert receiver == null;
         isPulling = true;
-        if (publisher != null) publisher.pull(this);
+        if (publisher != null) {
+            pullFromPublisher();
+        }
+    }
+
+    private void pullFromPublisher() {
+        monitor().onPathFork(1);
+        publisher.pull(this);
     }
 
     public void pull() {
@@ -47,5 +66,4 @@ public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provi
         //  Actually we can not enforce that the publisher must be present. When subscribeTo is called then pulling will start
         pull(null);
     }
-
 }

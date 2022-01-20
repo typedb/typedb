@@ -20,8 +20,8 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 public interface PacketMonitor {
 
-    void onPacketCreate();
+    void onPathFork(int numForks);
 
-    void onPacketDestroy();
+    void onPathTerminate();
 
 }

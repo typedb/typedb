@@ -40,14 +40,15 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, O
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {
             finishPulling();
+            // TODO: This can actually create more receive() calls to downstream than the number of pull()s it receives. Should buffer instead.
             transformed.forEachRemaining(t -> {
-                monitor().onPacketCreate();
+                monitor().onPathFork(1);
                 subscriber().receive(this, t);
             });
         } else if (isPulling()) {
             provider.pull(this);  // Automatic retry
         }
-        monitor().onPacketDestroy();  // Because we lost the original packet and gained as many as are in the iterator
+        monitor().onPathTerminate();  // Because we lost the original packet and gained as many as are in the iterator
     }
 
 }

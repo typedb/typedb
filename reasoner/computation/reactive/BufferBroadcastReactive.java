@@ -35,17 +35,14 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
     final List<PACKET> bufferList;
     final Set<Receiver<PACKET>> pullers;
     protected final Set<Receiver<PACKET>> subscribers;
-    protected final Set<Provider<PACKET>> publishers;
 
     public BufferBroadcastReactive(Set<Publisher<PACKET>> publishers, PacketMonitor monitor, String groupName) {
-        super(monitor, groupName);
+        super(publishers, monitor, groupName);
         this.bufferSet = new HashSet<>();
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
         this.pullers = new HashSet<>();
         this.subscribers = new HashSet<>();
-        this.publishers = new HashSet<>();
-        publishers.forEach(pub -> pub.publishTo(this));
     }
 
     @Override
@@ -58,7 +55,7 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
             finishPulling();
             toSend.forEach(this::send);
         } else if (isPulling()) {
-            monitor().onPacketDestroy();
+            monitor().onPathTerminate();
             provider.pull(this);
         }
     }
@@ -71,16 +68,10 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
             setPulling(receiver);
-            publishers.forEach(p -> p.pull(this));
+            pullFromAllPublishers();
         } else {
             send(receiver);
         }
-    }
-
-    @Override
-    public void subscribeTo(Provider<PACKET> publisher) {
-        publishers.add(publisher);
-        if (isPulling()) publisher.pull(this);
     }
 
     // TODO: Should pulling methods be abstracted into a reactive interface? These calls are only used internally
@@ -92,7 +83,8 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
         pullers.add(receiver);
     }
 
-    boolean isPulling() {
+    @Override
+    protected boolean isPulling() {
         return pullers.size() > 0;
     }
 

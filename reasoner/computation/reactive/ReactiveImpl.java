@@ -20,23 +20,49 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
 public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUTPUT> {
 
+    private final Set<Provider<INPUT>> publishers;
     private final PacketMonitor monitor;
     private final String groupName;
+    private boolean hasForked;
 
-    protected ReactiveImpl(PacketMonitor monitor, String groupName) {
+    protected ReactiveImpl(Set<Publisher<INPUT>> publishers, PacketMonitor monitor, String groupName) {
+        this.publishers = new HashSet<>();
+        publishers.forEach(pub -> pub.publishTo(this));
         this.monitor = monitor;
         this.groupName = groupName;
+        this.hasForked = false;
     }
 
     public PacketMonitor monitor() {
         return monitor;
     }
+
+    @Override
+    public void subscribeTo(Provider<INPUT> publisher) {
+        publishers.add(publisher);
+        if (isPulling()) pullFromPublisher(publisher);
+    }
+
+    protected void pullFromAllPublishers() {
+        publishers.forEach(this::pullFromPublisher);
+    }
+
+    private void pullFromPublisher(Provider<INPUT> publisher) {
+        monitor().onPathFork(1);
+        publisher.pull(this);
+        if (!hasForked) monitor().onPathTerminate();
+        hasForked = true;
+    }
+
+    protected abstract boolean isPulling();
 
     @Override
     public String groupName() {

@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
 import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
 
 import java.util.List;
 import java.util.Set;
@@ -70,14 +69,15 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
 
     protected static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, RootConjunctionController, RootConjunctionProcessor> {
 
-        private final Subscriber<ConceptMap> reasonerEndpoint;
+        private final EntryPoint reasonerEndpoint;
 
         protected RootConjunctionProcessor(Driver<RootConjunctionProcessor> driver,
                                            Driver<RootConjunctionController> controller,
                                            ConceptMap bounds, List<Resolvable<?>> plan,
-                                           Subscriber<ConceptMap> reasonerEndpoint, String name) {
+                                           EntryPoint reasonerEndpoint, String name) {
             super(driver, controller, bounds, plan, name);
             this.reasonerEndpoint = reasonerEndpoint;
+            this.reasonerEndpoint.setMonitor(this);
         }
 
         @Override
@@ -85,6 +85,16 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
             super.setUp();
             outlet().publishTo(reasonerEndpoint);
             new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, this, name()).publishTo(outlet());
+        }
+
+        @Override
+        protected boolean isMonitor() {
+            return true;
+        }
+
+        @Override
+        protected void onDone() {
+            reasonerEndpoint.done();
         }
     }
 }

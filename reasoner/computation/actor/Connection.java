@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>, PROV_PROCESSOR extends Processor<?, PACKET, ?, PROV_PROCESSOR>> {
@@ -50,6 +51,10 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
 
     protected void pull() {
         provProcessor.execute(actor -> actor.endpointPull(provEndpointId));
+    }
+
+    protected void propagateMonitors(Set<Actor.Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
+        provProcessor.execute(actor -> actor.addMonitors(monitors));
     }
 
     protected long receiverEndpointId() {

@@ -20,19 +20,15 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-import java.util.HashSet;
 import java.util.Set;
 
 public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OUTPUT> {
 
-    protected final Set<Provider<INPUT>> publishers;
     protected Receiver<OUTPUT> subscriber;
     private boolean isPulling;
 
     protected ReactiveBase(Set<Publisher<INPUT>> publishers, PacketMonitor monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
-        super(monitor, groupName);
-        this.publishers = new HashSet<>();
-        publishers.forEach(pub -> pub.publishTo(this));
+        super(publishers, monitor, groupName);
         this.isPulling = false;
     }
 
@@ -42,14 +38,8 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         if (!isPulling()) {
             setPulling();
-            publishers.forEach(p -> p.pull(this));
+            pullFromAllPublishers();
         }
-    }
-
-    @Override
-    public void subscribeTo(Provider<INPUT> publisher) {
-        publishers.add(publisher);
-        if (isPulling()) publisher.pull(this);
     }
 
     public void finishPulling() {
@@ -60,7 +50,8 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
         isPulling = true;
     }
 
-    boolean isPulling() {
+    @Override
+    protected boolean isPulling() {
         return isPulling;
     }
 
