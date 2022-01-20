@@ -57,6 +57,7 @@ public abstract class Processor<INPUT, OUTPUT,
     private long endpointId;
     private boolean terminated;
     private long answerPathsTally;
+    private final Set<Connection<INPUT, ?, ?>> upstreamConnections;
 
     protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, String name) {
         super(driver, name);
@@ -66,6 +67,7 @@ public abstract class Processor<INPUT, OUTPUT,
         this.providingEndpoints = new HashMap<>();
         this.monitors = new HashSet<>();
         this.answerPathsTally = 0;
+        this.upstreamConnections = new HashSet<>();
     }
 
     public abstract void setUp();
@@ -103,6 +105,7 @@ public abstract class Processor<INPUT, OUTPUT,
     protected <PROV_PROCESSOR extends Processor<?, INPUT, ?, PROV_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PROV_PROCESSOR> connection) {
         receivingEndpoints.get(connection.receiverEndpointId()).setReady(connection);
         connection.propagateMonitors(addSelfIfMonitor(monitors));
+        upstreamConnections.add(connection);
     }
 
     private long nextEndpointId() {
@@ -133,14 +136,14 @@ public abstract class Processor<INPUT, OUTPUT,
     protected void addMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
         Set<Driver<? extends Processor<?, ?, ?, ?>>> unseenMonitors = new HashSet<>(addSelfIfMonitor(monitors));
         unseenMonitors.removeAll(this.monitors);
-        unseenMonitors.forEach(this::fastForwardPacketTally);
+        unseenMonitors.forEach(this::fastForwardAnswerPathsTally);
         this.monitors.addAll(unseenMonitors);
         if (unseenMonitors.size() > 0) {
-            providingEndpoints.values().forEach(e -> e.connection().propagateMonitors(unseenMonitors));
+            upstreamConnections.forEach(e -> e.propagateMonitors(unseenMonitors));
         }
     }
 
-    private void fastForwardPacketTally(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
+    private void fastForwardAnswerPathsTally(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
         monitor.execute(actor -> actor.updatePathsTally(answerPathsTally));
     }
 
@@ -166,9 +169,9 @@ public abstract class Processor<INPUT, OUTPUT,
 
     private Set<Driver<? extends Processor<?, ?, ?, ?>>> addSelfIfMonitor(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
         if (isMonitor()) {
-            Set<Driver<? extends Processor<?, ?, ?, ?>>> upstreamMonitors = new HashSet<>(monitors);
-            upstreamMonitors.add(driver());
-            return upstreamMonitors;
+            Set<Driver<? extends Processor<?, ?, ?, ?>>> newMonitorSet = new HashSet<>(monitors);
+            newMonitorSet.add(driver());
+            return newMonitorSet;
         } else {
             return monitors;
         }
@@ -282,10 +285,6 @@ public abstract class Processor<INPUT, OUTPUT,
 
         protected PacketMonitor monitor() {
             return monitor;
-        }
-
-        public Connection<PACKET, ?, ?> connection() {
-            return connection;
         }
 
         public long id() {
