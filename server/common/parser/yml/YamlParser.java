@@ -16,12 +16,12 @@
  *
  */
 
-package com.vaticle.typedb.core.server.options.conf;
+package com.vaticle.typedb.core.server.common.parser.yml;
 
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.options.cli.CommandLine.Option;
+import com.vaticle.typedb.core.server.common.parser.Describable;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -43,11 +43,11 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSI
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.Util.scopeKey;
 
-public abstract class ConfigKVParser implements Option.CliHelp {
+public abstract class YamlParser implements Describable {
 
     private final String description;
 
-    ConfigKVParser(String description) {
+    YamlParser(String description) {
         this.description = description;
     }
 
@@ -55,7 +55,7 @@ public abstract class ConfigKVParser implements Option.CliHelp {
         return description;
     }
 
-    public static class MapParser<TYPE> extends ConfigKVParser {
+    public static class MapParser<TYPE> extends YamlParser {
 
         private final ValueParser<TYPE> valueParser;
 
@@ -81,16 +81,16 @@ public abstract class ConfigKVParser implements Option.CliHelp {
         }
 
         @Override
-        public Help help(String optionScope) {
+        public Description help(String optionScope) {
             if (valueParser.isLeaf()) {
-                return new Help.Leaf(scopeKey(optionScope, "<name>"), description(), valueParser.asLeaf().help());
+                return new Description.Simple(scopeKey(optionScope, "<name>"), description(), valueParser.asLeaf().help());
             } else {
-                return new Help.Section(scopeKey(optionScope, "<name>"), description(), valueParser.asNested().help(scopeKey(optionScope, "<name>")));
+                return new Description.Complex(scopeKey(optionScope, "<name>"), description(), valueParser.asNested().help(scopeKey(optionScope, "<name>")));
             }
         }
     }
 
-    public static abstract class EntryParser<TYPE> extends ConfigKVParser {
+    public static abstract class EntryParser<TYPE> extends YamlParser {
 
         private final String key;
         final ValueParser<TYPE> valueParser;
@@ -125,12 +125,12 @@ public abstract class ConfigKVParser implements Option.CliHelp {
             }
 
             @Override
-            public Help help(String optionScope) {
+            public Description help(String optionScope) {
                 String scopedKey = scopeKey(optionScope, key());
                 if (valueParser.isLeaf()) {
-                    return new Help.Leaf(scopedKey, description(), valueParser.asLeaf().help());
+                    return new Description.Simple(scopedKey, description(), valueParser.asLeaf().help());
                 } else {
-                    return new Help.Section(scopedKey, description(), valueParser.asNested().help(scopedKey));
+                    return new Description.Complex(scopedKey, description(), valueParser.asNested().help(scopedKey));
                 }
             }
         }
@@ -160,13 +160,13 @@ public abstract class ConfigKVParser implements Option.CliHelp {
             }
 
             @Override
-            public Help help(String optionScope) {
+            public Description help(String optionScope) {
                 String scopedKey = scopeKey(optionScope, key());
                 if (valueParser.isLeaf()) {
                     String values = String.join("|", iterate(this.values).map(Object::toString).toList());
-                    return new Help.Leaf(scopedKey, description(), values);
+                    return new Description.Simple(scopedKey, description(), values);
                 } else {
-                    return new Help.Section(scopedKey, description(), valueParser.asNested().help(scopedKey));
+                    return new Description.Complex(scopedKey, description(), valueParser.asNested().help(scopedKey));
                 }
             }
         }
@@ -194,7 +194,7 @@ public abstract class ConfigKVParser implements Option.CliHelp {
 
         public static abstract class Nested<T> extends ValueParser<T> {
 
-            public abstract List<Help> help(String scope);
+            public abstract List<Description> help(String scope);
 
             @Override
             public boolean isNested() {

@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.server.options.conf;
+package com.vaticle.typedb.core.server.parameters.config;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 
@@ -27,13 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_OUTPUT_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_REASONER_REQUIRES_DIR_OUTPUT;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Config {
 

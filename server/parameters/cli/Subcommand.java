@@ -16,15 +16,20 @@
  *
  */
 
-package com.vaticle.typedb.core.server.options.cli;
+package com.vaticle.typedb.core.server.parameters.cli;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.options.conf.Config;
+import com.vaticle.typedb.core.server.common.parser.cli.Option;
+
+import javax.annotation.Nullable;
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.Set;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public abstract class Command {
+public abstract class Subcommand {
 
     public boolean isServer() {
         return false;
@@ -50,18 +55,21 @@ public abstract class Command {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Export.class));
     }
 
-    public static class Server extends Command {
+    public static class Server extends Subcommand {
 
         private final boolean isDebug;
         private final boolean isHelp;
         private final boolean isVersion;
-        private final Config config;
+        @Nullable
+        private final Path configPath;
+        private final Set<Option> configOptions;
 
-        Server(boolean isDebug, boolean isHelp, boolean isVersion, Config config) {
+        Server(boolean isDebug, boolean isHelp, boolean isVersion, @Nullable Path configPath, Set<Option> configOptions) {
             this.isDebug = isDebug;
             this.isHelp = isHelp;
             this.isVersion = isVersion;
-            this.config = config;
+            this.configPath = configPath;
+            this.configOptions = configOptions;
         }
 
         @Override
@@ -86,33 +94,37 @@ public abstract class Command {
             return isVersion;
         }
 
-        public Config configuration() {
-            return config;
+        public Optional<Path> configPath() {
+            return Optional.ofNullable(configPath);
+        }
+
+        public Set<Option> configOptions() {
+            return configOptions;
         }
     }
 
-    public static class Import extends Command {
+    public static class Import extends Subcommand {
 
         private final String database;
-        private final String file;
-        private final int typedbPort;
+        private final Path file;
+        private final int port;
 
-        Import(String database, String file, int typedbPort) {
+        Import(String database, Path file, int port) {
             this.database = database;
             this.file = file;
-            this.typedbPort = typedbPort;
+            this.port = port;
         }
 
         public String database() {
             return database;
         }
 
-        public String file() {
+        public Path file() {
             return file;
         }
 
-        public int typedbPort() {
-            return typedbPort;
+        public int port() {
+            return port;
         }
 
         @Override
@@ -126,28 +138,28 @@ public abstract class Command {
         }
     }
 
-    public static class Export extends Command {
+    public static class Export extends Subcommand {
 
         private final String database;
-        private final String file;
-        private final int typedbPort;
+        private final Path file;
+        private final int port;
 
-        public Export(String database, String file, int typedbPort) {
+        public Export(String database, Path file, int port) {
             this.database = database;
             this.file = file;
-            this.typedbPort = typedbPort;
+            this.port = port;
         }
 
         public String database() {
             return database;
         }
 
-        public String file() {
+        public Path file() {
             return file;
         }
 
-        public int typedbPort() {
-            return typedbPort;
+        public int port() {
+            return port;
         }
 
         @Override

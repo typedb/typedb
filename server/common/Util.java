@@ -18,20 +18,12 @@
 
 package com.vaticle.typedb.core.server.common;
 
-import com.vaticle.typedb.common.yaml.Yaml;
-import com.vaticle.typedb.core.common.exception.TypeDBException;
-
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_FILE_NOT_FOUND;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_YAML_MUST_BE_MAP;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ENV_VAR_NOT_FOUND;
 import static com.vaticle.typedb.core.server.common.Constants.ASCII_LOGO_FILE;
 
 public class Util {
@@ -50,52 +42,13 @@ public class Util {
         return Paths.get(homeDir);
     }
 
-    public static Path getConfigPath(Path relativeOrAbsolutePath) {
-        if (relativeOrAbsolutePath.isAbsolute()) return relativeOrAbsolutePath;
-        else {
-            Path typeDBDir = getTypedbDir();
-            return typeDBDir.resolve(relativeOrAbsolutePath);
-        }
-    }
-
-    public static Yaml.Map readConfig(Path path) {
-        try {
-            Yaml yaml = Yaml.load(path);
-            if (!yaml.isMap()) throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP);
-            replaceEnvVars(yaml.asMap());
-            return yaml.asMap();
-        } catch (FileNotFoundException e) {
-            throw TypeDBException.of(CONFIG_FILE_NOT_FOUND, path);
-        }
-    }
-
-    private static void replaceEnvVars(Yaml.Map yaml) {
-        for (String key : yaml.keys()) {
-            if (yaml.get(key).isString()) {
-                String value = yaml.get(key).asString().value();
-                if (value.startsWith("$")) {
-                    String envVarName = value.substring(1);
-                    if (System.getenv(envVarName) == null) throw TypeDBException.of(ENV_VAR_NOT_FOUND, value);
-                    else yaml.put(key, Yaml.load(System.getenv(envVarName)));
-                }
-            } else if (yaml.get(key).isMap()) {
-                replaceEnvVars(yaml.get(key).asMap());
-            }
-        }
+    public static Path configPathAbsolute(Path configPath) {
+        if (configPath.isAbsolute()) return configPath;
+        else return getTypedbDir().resolve(configPath);
     }
 
     public static String scopeKey(String scope, String key) {
         return scope.isEmpty() ? key : scope + "." + key;
-    }
-
-    public static void setValue(Yaml.Map yaml, String[] path, Yaml value) {
-        Yaml.Map nested = yaml.asMap();
-        for (int i = 0; i < path.length - 1; i++) {
-            String key = path[i];
-            if (!nested.containsKey(key)) nested.put(key, new Yaml.Map(new HashMap<>()));
-            nested = nested.get(key).asMap();
-        }
-        nested.put(path[path.length - 1], value);
     }
 
 }

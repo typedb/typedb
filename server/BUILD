@@ -28,7 +28,7 @@ package(default_visibility = ["//visibility:private",])
 
 filegroup(
     name = "config",
-    srcs = ["options/conf/config.yml"],
+    srcs = ["conf/config.yml"],
     visibility = ["//visibility:public"],
 )
 
@@ -51,7 +51,7 @@ java_library(
 
 native_java_libraries(
     name = "server",
-    srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["templates/**", "test/**"]),
+    srcs = glob(["*.java", "*/*.java", "*/*/*.java", "*/*/*/*.java"], exclude=["templates/**", "test/**"]),
     native_libraries_deps = [
         # Internal dependencies
         "//:typedb",
