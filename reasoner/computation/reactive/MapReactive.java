@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
-
 import java.util.function.Function;
 
 public class MapReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, OUTPUT> {

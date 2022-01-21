@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
-
 import javax.annotation.Nullable;
 
 public class IdentityReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {

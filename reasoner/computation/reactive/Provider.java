@@ -143,14 +143,17 @@ public interface Provider<R> {
         @Override
         public void receivedFrom(Provider<R> provider) {
             providersPulling.put(provider, false);
+            // TODO: Put a path join here would be ideal except it might mean the path tally drops to zero right before it will go back up to 1.
         }
 
         @Override
         public void pull(Provider<R> provider) {
-            if (hasForked) monitor.onPathFork(1);
-            providersPulling.put(provider, true);
-            provider.pull(receiver);
-            hasForked = true;
+            if (!providersPulling.get(provider)) {
+                if (hasForked) monitor.onPathFork(1);
+                providersPulling.put(provider, true);
+                provider.pull(receiver);
+                hasForked = true;
+            }
         }
     }
 }

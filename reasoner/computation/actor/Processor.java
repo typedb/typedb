@@ -268,7 +268,7 @@ public abstract class Processor<INPUT, OUTPUT,
     public static class OutletEndpoint<PACKET> implements Subscriber<PACKET>, Provider<PACKET> {
 
         private final Connection<PACKET, ?, ?> connection;
-        private final SingleManager<PACKET> providers;  // TODO: We should only have one provider here
+        private final SingleManager<PACKET> providerManager;
         protected boolean isPulling;
         private final PacketMonitor monitor;
         private final String groupName;
@@ -278,7 +278,7 @@ public abstract class Processor<INPUT, OUTPUT,
             this.groupName = groupName;
             this.connection = connection;
             this.isPulling = false;
-            this.providers = new Provider.SingleManager<>(this);
+            this.providerManager = new Provider.SingleManager<>(this);
         }
 
         protected PacketMonitor monitor() {
@@ -300,6 +300,7 @@ public abstract class Processor<INPUT, OUTPUT,
             isPulling = false;
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(this, connection, packet));  // TODO: We do this here because we don't tell the connection who we are when it receives
             connection.receive(packet);
+            providerManager.receivedFrom(provider);
         }
 
         @Override
@@ -308,14 +309,14 @@ public abstract class Processor<INPUT, OUTPUT,
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(connection, this));  // TODO: Highlights a smell that the connection is pulling and so receiver is null
             if (!isPulling) {
                 isPulling = true;
-                providers.pullAll();
+                providerManager.pullAll();
             }
         }
 
         @Override
         public void subscribeTo(Provider<PACKET> provider) {
-            providers.add(provider);
-            if (isPulling) providers.pull(provider);
+            providerManager.add(provider);
+            if (isPulling) providerManager.pull(provider);
         }
 
     }

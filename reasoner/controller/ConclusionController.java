@@ -154,8 +154,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
             @Override
             public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
-                providerManager().receivedFrom(provider);
+                super.receive(provider, packet);
                 InletEndpoint<Either<ConceptMap, Materialisation>> materialiserEndpoint = createReceivingEndpoint();
                 mayRequestMaterialiser(new MaterialiserRequest(
                         driver(), materialiserEndpoint.id(), null,
@@ -187,8 +186,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
             @Override
             public void receive(Provider<Map<Variable, Concept>> provider, Map<Variable, Concept> packet) {
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
-                providerManager().receivedFrom(provider);
+                super.receive(provider, packet);
                 finishPulling();
                 parent.finishPulling();
                 parent.subscriber().receive(parent, packet);

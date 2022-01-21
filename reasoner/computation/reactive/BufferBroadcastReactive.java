@@ -71,7 +71,7 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
             setPulling(receiver);
-            providerManager.pullAll();  // TODO: This pulls from all providers regardless of whether they're already pulling. This introduces double-pulls which we can't undo. Needs fixing.
+            providerManager.pullAll();
         } else {
             send(receiver);
         }

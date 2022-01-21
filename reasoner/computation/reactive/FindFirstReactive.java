@@ -20,28 +20,36 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-public class FindFirstReactive<T> extends IdentityReactive<T> {
+public class FindFirstReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
+    private final SingleManager<PACKET> providerManager;
     private boolean packetFound;
 
-    FindFirstReactive(Publisher<T> publisher, PacketMonitor monitor, String groupName) {
-        super(publisher, monitor, groupName);
+    FindFirstReactive(Publisher<PACKET> publisher, PacketMonitor monitor, String groupName) {
+        super(monitor, groupName);
+        this.providerManager = new Provider.SingleManager<>(publisher, this);
         this.packetFound = false;
     }
 
     @Override
-    public void receive(Provider<T> provider, T packet) {
+    protected Manager<PACKET> providerManager() {
+        return providerManager;
+    }
+
+    @Override
+    public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
         if (!packetFound) {
             packetFound = true;
-            super.receive(provider, packet);
+            finishPulling();
+            subscriber().receive(this, packet);
         } else {
             monitor().onPathJoin();
         }
     }
 
     @Override
-    public void pull(Receiver<T> receiver) {
+    public void pull(Receiver<PACKET> receiver) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         if (!packetFound) super.pull(receiver);
     }
