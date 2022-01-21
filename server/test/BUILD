@@ -29,7 +29,7 @@ package(default_visibility = ["//visibility:private",])
 host_compatible_java_test(
     name = "test-configuration",
     srcs = [
-        "ConfigurationTest.java",
+        "ConfigTest.java",
     ],
     native_libraries_deps = [
         "//common:common",
@@ -43,7 +43,7 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
     ],
     data = [
-        "//server/conf:typedb",
+        "//server:typedb",
         ":configurations"
     ],
 )

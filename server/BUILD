@@ -26,6 +26,12 @@ load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
 
 package(default_visibility = ["//visibility:private",])
 
+filegroup(
+    name = "typedb",
+    srcs = ["conf/typedb.yml"],
+    visibility = ["//visibility:public"],
+)
+
 genrule(
     name = "version-src",
     srcs = [
@@ -93,7 +99,7 @@ java_binary(
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-mac"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    data = ["//server/conf:typedb"],
+    data = ["//server:typedb"],
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-mac can depend directly on :server-mac (lib)
@@ -108,7 +114,7 @@ java_binary(
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-linux"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    data = ["//server/conf:typedb"],
+    data = ["//server:typedb"],
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-linux can depend directly on :server-linux (lib)
@@ -123,7 +129,7 @@ java_binary(
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-windows"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    data = ["//server/conf:typedb"],
+    data = ["//server:typedb"],
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-windows can depend directly on :server-windows (lib)
@@ -179,7 +185,7 @@ assemble_deps_common = [
 ]
 
 assemble_files = {
-    "//server/conf:typedb": "server/conf/typedb.yml",
+    "//server:typedb": "server/conf/typedb.yml",
     "//server/resources:logo": "server/resources/typedb-ascii.txt",
     "//:LICENSE": "LICENSE",
 }

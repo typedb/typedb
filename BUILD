@@ -53,7 +53,7 @@ native_java_libraries(
 )
 
 assemble_files = {
-    "//server/conf:typedb": "server/conf/typedb.yml",
+    "//server:typedb": "server/conf/typedb.yml",
     "//server/resources:logo": "server/resources/typedb-ascii.txt",
     "//:LICENSE": "LICENSE",
 }

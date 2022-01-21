@@ -16,11 +16,12 @@
  *
  */
 
-package com.vaticle.typedb.core.server.common;
+package com.vaticle.typedb.core.server.option.cli;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.server.common.CommandLine.Option.CliHelp.Help;
+import com.vaticle.typedb.core.server.option.conf.Config;
+import com.vaticle.typedb.core.server.option.cli.CommandLine.Option.CliHelp.Help;
 
 import java.nio.file.Paths;
 import java.util.List;
@@ -124,13 +125,13 @@ public abstract class Command {
         private final boolean isDebug;
         private final boolean isHelp;
         private final boolean isVersion;
-        private final Configuration configuration;
+        private final Config config;
 
-        private Server(boolean isDebug, boolean isHelp, boolean isVersion, Configuration configuration) {
+        private Server(boolean isDebug, boolean isHelp, boolean isVersion, Config config) {
             this.isDebug = isDebug;
             this.isHelp = isHelp;
             this.isVersion = isVersion;
-            this.configuration = configuration;
+            this.config = config;
         }
 
         public static class Parser extends Command.Parser<Server> {
@@ -141,9 +142,9 @@ public abstract class Command {
             private static final OptionParser.Path configFile = new OptionParser.Path("config", "Path to TypeDB YAML configuration file.");
             private static final Set<OptionParser> auxiliary = set(debug, help, version, configFile);
 
-            private final Configuration.Parser configurationParser;
+            private final Config.Parser configurationParser;
 
-            public Parser(Configuration.Parser configurationParser) {
+            public Parser(Config.Parser configurationParser) {
                 super(Server.tokens, Server.description);
                 this.configurationParser = configurationParser;
             }
@@ -153,12 +154,12 @@ public abstract class Command {
                 Set<CommandLine.Option> auxiliaryCliOptions = findAuxiliary(cliOptions);
                 Set<CommandLine.Option> configurationOptions = excludeOptions(cliOptions, auxiliaryCliOptions);
 
-                Configuration configuration = configFile.parse(auxiliaryCliOptions)
+                Config config = configFile.parse(auxiliaryCliOptions)
                         .map(file -> configurationParser.getConfig(getConfigPath(file), configurationOptions))
                         .orElseGet(() -> configurationParser.getConfig(configurationOptions));
 
                 return new Server(debug.parse(auxiliaryCliOptions), help.parse(auxiliaryCliOptions),
-                        version.parse(auxiliaryCliOptions), configuration);
+                        version.parse(auxiliaryCliOptions), config);
             }
 
             private Set<CommandLine.Option> findAuxiliary(Set<CommandLine.Option> cliOptions) {
@@ -200,8 +201,8 @@ public abstract class Command {
             return isVersion;
         }
 
-        public Configuration configuration() {
-            return configuration;
+        public Config configuration() {
+            return config;
         }
     }
 

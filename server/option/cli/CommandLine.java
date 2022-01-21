@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.server.common;
+package com.vaticle.typedb.core.server.option.cli;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 
@@ -164,7 +164,7 @@ public class CommandLine {
                     }
                 }
 
-                static class Leaf extends Help {
+                public static class Leaf extends Help {
 
                     private final String valueHelp;
 
@@ -172,7 +172,7 @@ public class CommandLine {
                         this(scopedName, description, null);
                     }
 
-                    Leaf(String scopedName, String description, @Nullable String valueHelp) {
+                    public Leaf(String scopedName, String description, @Nullable String valueHelp) {
                         super(scopedName, description);
                         this.valueHelp = valueHelp;
                     }
@@ -198,15 +198,15 @@ public class CommandLine {
             this.value = value;
         }
 
-        String name() {
+        public String name() {
             return name;
         }
 
-        boolean hasValue() {
+        public boolean hasValue() {
             return value != null;
         }
 
-        Optional<String> stringValue() {
+        public Optional<String> stringValue() {
             return Optional.ofNullable(value);
         }
 

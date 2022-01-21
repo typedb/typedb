@@ -16,11 +16,12 @@
  *
  */
 
-package com.vaticle.typedb.core.server.common;
+package com.vaticle.typedb.core.server.option.conf;
 
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.CommandLine.Option.CliHelp.Help;
+import com.vaticle.typedb.core.server.option.cli.CommandLine;
+import com.vaticle.typedb.core.server.option.cli.CommandLine.Option.CliHelp.Help;
 import com.vaticle.typedb.core.server.common.ConfigKVParser.EntryParser;
 import com.vaticle.typedb.core.server.common.ConfigKVParser.EntryParser.EnumValue;
 import com.vaticle.typedb.core.server.common.ConfigKVParser.EntryParser.Value;
@@ -61,14 +62,14 @@ import static com.vaticle.typedb.core.server.common.Util.readConfig;
 import static com.vaticle.typedb.core.server.common.Util.scopeKey;
 import static com.vaticle.typedb.core.server.common.Util.setValue;
 
-public class Configuration {
+public class Config {
 
     protected final Server server;
     protected final Storage storage;
     protected final Log log;
     protected final VaticleFactory vaticleFactory;
 
-    protected Configuration(Server server, Storage storage, Log log, @Nullable VaticleFactory vaticleFactory) {
+    protected Config(Server server, Storage storage, Log log, @Nullable VaticleFactory vaticleFactory) {
         this.server = server;
         this.storage = storage;
         this.log = log;
@@ -83,20 +84,20 @@ public class Configuration {
         private static final EntryParser<VaticleFactory> vaticleFactoryParser = Value.create(VaticleFactory.name, VaticleFactory.description, new VaticleFactory.Parser());
         private static final Set<EntryParser<?>> entryParsers = set(serverParser, storageParser, logParser, vaticleFactoryParser);
 
-        public Configuration getConfig() {
+        public Config getConfig() {
             return getConfig(new HashSet<>());
         }
 
-        public Configuration getConfig(Set<CommandLine.Option> overrides) {
+        public Config getConfig(Set<CommandLine.Option> overrides) {
             return getConfig(CONFIG_PATH, overrides);
         }
 
-        public Configuration getConfig(Path configFile, Set<CommandLine.Option> overrides) {
+        public Config getConfig(Path configFile, Set<CommandLine.Option> overrides) {
             Yaml.Map yaml = readConfig(configFile);
             Map<String, Yaml> yamlOverrides = toYamlOverrides(overrides);
             yamlOverrides.forEach((key, value) -> setValue(yaml, key.split("\\."), value));
             validatedRecognisedParsers(entryParsers, yaml.keys(), "");
-            return new Configuration(serverParser.parse(yaml, ""), storageParser.parse(yaml, ""),
+            return new Config(serverParser.parse(yaml, ""), storageParser.parse(yaml, ""),
                     logParser.parse(yaml, ""), vaticleFactoryParser.parse(yaml, "")
             );
         }
