@@ -12,8 +12,8 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
 import ch.qos.logback.core.util.FileSize;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.option.cli.Command;
 import com.vaticle.typedb.core.server.option.cli.CommandLine;
+import com.vaticle.typedb.core.server.option.cli.CommandParser;
 import com.vaticle.typedb.core.server.option.conf.Config;
 import com.vaticle.typedb.core.server.option.conf.ConfigParser;
 
@@ -27,9 +27,9 @@ import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_AR
 public class Option {
     public static CommandLine commandLine() {
         return new CommandLine()
-                .command(new Command.Server.Parser(new ConfigParser()))
-                .command(new Command.Import.Parser())
-                .command(new Command.Export.Parser());
+                .command(new CommandParser.ServerParser(new ConfigParser()))
+                .command(new CommandParser.ImportParser())
+                .command(new CommandParser.ExportParser());
     }
 
     public static void configureLogback(LoggerContext context, Config config) {

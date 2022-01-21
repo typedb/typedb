@@ -36,27 +36,27 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class CommandLine {
 
-    private final ArrayList<Command.Parser<?>> parsers;
+    private final ArrayList<CommandParser<?>> parsers;
 
     public CommandLine() {
         this.parsers = new ArrayList<>();
     }
 
-    public CommandLine command(Command.Parser<?> parser) {
+    public CommandLine command(CommandParser<?> parser) {
         parsers.add(parser);
         return this;
     }
 
     public Optional<Command> parse(String[] cliArgs) {
-        Optional<Command.Parser<?>> parser = matchParserByTokens(cliArgs);
+        Optional<CommandParser<?>> parser = matchParserByTokens(cliArgs);
         return parser.map(commandParser -> {
             String[] args = Arrays.copyOfRange(cliArgs, commandParser.tokens().length, cliArgs.length);
             return commandParser.parse(parseSpaceOrEqSeparated(args));
         });
     }
 
-    private Optional<Command.Parser<?>> matchParserByTokens(String[] cliArgs) {
-        for (Command.Parser<?> parser : specificToGeneralCommands(parsers)) {
+    private Optional<CommandParser<?>> matchParserByTokens(String[] cliArgs) {
+        for (CommandParser<?> parser : specificToGeneralCommands(parsers)) {
             String[] commandTokens = parser.tokens();
             if (cliArgs.length >= commandTokens.length) {
                 String[] tokens = Arrays.copyOfRange(cliArgs, 0, commandTokens.length);
@@ -106,8 +106,8 @@ public class CommandLine {
         return help.toString();
     }
 
-    private List<Command.Parser<?>> specificToGeneralCommands(ArrayList<Command.Parser<?>> parser) {
-        Comparator<Command.Parser<?>> comparator = Comparator.comparing(c -> c.tokens().length);
+    private List<CommandParser<?>> specificToGeneralCommands(ArrayList<CommandParser<?>> parser) {
+        Comparator<CommandParser<?>> comparator = Comparator.comparing(c -> c.tokens().length);
         return parser.stream().sorted(comparator.reversed()).collect(Collectors.toList());
     }
 
