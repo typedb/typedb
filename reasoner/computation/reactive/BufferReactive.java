@@ -25,12 +25,12 @@ import java.util.Stack;
 public class BufferReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
     private final SingleManager<PACKET> providerManager;
-    final Stack<PACKET> buffer;
+    private final Stack<PACKET> stack;
 
     protected BufferReactive(Publisher<PACKET> publisher, PacketMonitor monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new Provider.SingleManager<>(publisher, this);
-        this.buffer = new Stack<>();
+        this.stack = new Stack<>();
     }
 
     @Override
@@ -42,12 +42,11 @@ public class BufferReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
         if (isPulling()) {
+            finishPulling();
             subscriber().receive(this, packet);
         } else {
-            finishPulling();
-            if (!buffer.add(packet)) {
-                monitor().onPathJoin();
-            }
+            // Can add an answer deduplication optimisation here, but means holding an extra set of all answers seen
+            stack.add(packet);
         }
     }
 
@@ -55,8 +54,9 @@ public class BufferReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
     public void pull(Receiver<PACKET> receiver) {
         assert receiver.equals(subscriber);  // TODO: Make a proper exception for this
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
-        if (buffer.size() > 0) {
-            receiver.receive(this, buffer.pop());
+        if (stack.size() > 0) {
+            assert !isPulling();
+            receiver.receive(this, stack.pop());
         } else if (!isPulling()) {
             setPulling();
             providerManager().pullAll();
