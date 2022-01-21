@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PacketMonitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
@@ -103,10 +102,10 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         @Override
         public void setUp() {
-            setOutlet(new BufferBroadcastReactive<>(new HashSet<>(), this, name()));
+            setOutlet(new BufferBroadcastReactive<>(this, name()));
             InletEndpoint<Either<ConceptMap, Materialisation>> conditionEndpoint = createReceivingEndpoint();
             mayRequestCondition(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
-            ConclusionReactive conclusionReactive = new ConclusionReactive(new HashSet<>(), name(), this);
+            ConclusionReactive conclusionReactive = new ConclusionReactive(name(), this);
             conditionEndpoint.map(a -> a.first()).publishTo(conclusionReactive);
             conclusionReactive.publishTo(outlet());
         }
@@ -141,8 +140,16 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         private class ConclusionReactive extends ReactiveBase<ConceptMap, Map<Identifier.Variable, Concept>> {
 
-            protected ConclusionReactive(Set<Publisher<ConceptMap>> publishers, String groupName, PacketMonitor monitor) {
-                super(publishers, monitor, groupName);
+            private final SingleManager<ConceptMap> providerManager;
+
+            protected ConclusionReactive(String groupName, PacketMonitor monitor) {
+                super(monitor, groupName);
+                this.providerManager = new Provider.SingleManager<>(this);
+            }
+
+            @Override
+            protected Manager<ConceptMap> providerManager() {
+                return providerManager;
             }
 
             @Override
@@ -154,21 +161,27 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
                 ReactiveBase<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
-                InnerReactive innerReactive = new InnerReactive(this, new HashSet<>(), monitor(), groupName());
+                InnerReactive innerReactive = new InnerReactive(this, monitor(), groupName());
                 op.publishTo(innerReactive);
                 innerReactive.sendTo(subscriber());
                 innerReactive.pull();
             }
         }
 
-        private class InnerReactive extends IdentityReactive<Map<Variable, Concept>> {
+        private class InnerReactive extends ReactiveBase<Map<Variable, Concept>, Map<Variable, Concept>> {
 
             private final ConclusionReactive parent;
+            private final SingleManager<Map<Variable, Concept>> providerManager;
 
-            public InnerReactive(ConclusionReactive parent, Set<Publisher<Map<Variable, Concept>>> publishers,
-                                 PacketMonitor monitor, String groupName) {
-                super(publishers, monitor, groupName);
+            public InnerReactive(ConclusionReactive parent, PacketMonitor monitor, String groupName) {
+                super(monitor, groupName);
                 this.parent = parent;
+                this.providerManager = new Provider.SingleManager<>(this);
+            }
+
+            @Override
+            protected Manager<Map<Variable, Concept>> providerManager() {
+                return providerManager;
             }
 
             @Override

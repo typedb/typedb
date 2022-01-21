@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> {
+public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveBase<PACKET, PACKET> {
 
     private final Publisher<PACKET> leadingPublisher;
     private final Set<Provider<PACKET>> lastPublishers;
@@ -38,12 +38,14 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
     private final BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc;
     private final Map<Provider<PACKET>, PACKET> publisherPackets;
     private final PACKET initialPacket;
+    private final MultiManager<PACKET> providerManager;
 
     public CompoundReactive(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
                             BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
                             PacketMonitor monitor, String groupName) {
-        super(new HashSet<>(), monitor, groupName);
+        super(monitor, groupName);
         assert plan.size() > 0;
+        this.providerManager = Provider.MultiManager.create(this, monitor());
         this.initialPacket = initialPacket;
         this.remainingPlan = new ArrayList<>(plan);
         this.leadingPublisher = spawnLeaderFunc.apply(this.remainingPlan.remove(0), initialPacket);
@@ -55,11 +57,16 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
     }
 
     @Override
+    protected Manager<PACKET> providerManager() {
+        return providerManager;
+    }
+
+    @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         PACKET mergedPacket = compoundPacketsFunc.apply(initialPacket, packet);
         if (leadingPublisher.equals(provider)) {
-            leadingPublisher.pull(this);  // TODO: This shouldn't be here for a single item plan
+            providerManager().pull(leadingPublisher);  // TODO: This shouldn't be here for a single item plan
             if (remainingPlan.size() == 0) {  // For a single item plan
                 finishPulling();
                 subscriber().receive(this, mergedPacket);
@@ -73,7 +80,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
                 }
                 publisherPackets.put(nextPublisher, mergedPacket);
                 nextPublisher.publishTo(this);
-                nextPublisher.pull(this);
+                providerManager().pull(nextPublisher);
             }
         } else {
             PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(provider));
@@ -82,5 +89,4 @@ public class CompoundReactive<PLAN_ID, PACKET> extends IdentityReactive<PACKET> 
             if (lastPublishers.contains(provider)) finishPulling();
         }
     }
-
 }

@@ -35,14 +35,16 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
     final List<PACKET> bufferList;
     final Set<Receiver<PACKET>> pullers;
     protected final Set<Receiver<PACKET>> subscribers;
+    private final MultiManager<PACKET> providerManager;
 
-    public BufferBroadcastReactive(Set<Publisher<PACKET>> publishers, PacketMonitor monitor, String groupName) {
-        super(publishers, monitor, groupName);
+    public BufferBroadcastReactive(PacketMonitor monitor, String groupName) {
+        super(monitor, groupName);
         this.bufferSet = new HashSet<>();
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
         this.pullers = new HashSet<>();
         this.subscribers = new HashSet<>();
+        this.providerManager = new Provider.MultiManager<>(this, monitor());
     }
 
     @Override
@@ -55,8 +57,8 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
             finishPulling();
             toSend.forEach(this::send);
         } else if (isPulling()) {
+            providerManager.pull(provider);
             monitor().onPathTerminate();
-            provider.pull(this);
         }
     }
 
@@ -68,7 +70,7 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
             setPulling(receiver);
-            pullFromAllPublishers();
+            providerManager.pullAll();  // TODO: This pulls from all providers regardless of whether they're already pulling. This introduces double-pulls which we can't undo. Needs fixing.
         } else {
             send(receiver);
         }
@@ -99,6 +101,12 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
         bufferPositions.putIfAbsent(subscriber, 0);
         subscribers.add(subscriber);
         subscriber.subscribeTo(this);
+    }
+
+    @Override
+    public void subscribeTo(Provider<PACKET> provider) {
+        providerManager.add(provider);
+        if (isPulling()) providerManager.pull(provider);
     }
 
 }

@@ -31,7 +31,6 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReac
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
-import java.util.HashSet;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.logic.Rule.Conclusion.materialise;
@@ -86,7 +85,7 @@ public class MaterialiserController extends Controller<Materialisable, Void, Eit
 
         @Override
         public void setUp() {
-            setOutlet(new BufferBroadcastReactive<>(new HashSet<>(), this, name()));
+            setOutlet(new BufferBroadcastReactive<>(this, name()));
             new Source<>(
                     () -> materialise(materialisable, traversalEng, conceptMgr)
                             .map(Iterators::single)

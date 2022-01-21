@@ -63,17 +63,23 @@ public abstract class PublisherImpl<OUTPUT> implements Provider.Publisher<OUTPUT
 
     @Override
     public ReactiveBase<OUTPUT, OUTPUT> findFirst() {
-        return new FindFirstReactive<>(set(this), monitor, groupName());
+        FindFirstReactive<OUTPUT> findFirst = new FindFirstReactive<>(this, monitor, groupName());
+        publishTo(findFirst);
+        return findFirst;
     }
 
     @Override
     public <R> ReactiveBase<OUTPUT, R> map(Function<OUTPUT, R> function) {
-        return new MapReactive<>(set(this), function, monitor(), groupName());
+        MapReactive<OUTPUT, R> map = new MapReactive<>(this, function, monitor(), groupName());
+        publishTo(map);
+        return map;
     }
 
     @Override
     public <R> ReactiveBase<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
-        return new FlatMapOrRetryReactive<>(set(this), function, monitor(), groupName());
+        FlatMapOrRetryReactive<OUTPUT, R> flatMap = new FlatMapOrRetryReactive<>(this, function, monitor(), groupName());
+        publishTo(flatMap);
+        return flatMap;
     }
 
 }

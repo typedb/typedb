@@ -20,14 +20,12 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-import java.util.Set;
-
 public class FindFirstReactive<T> extends IdentityReactive<T> {
 
     private boolean packetFound;
 
-    FindFirstReactive(Set<Publisher<T>> publishers, PacketMonitor monitor, String groupName) {
-        super(publishers, monitor, groupName);
+    FindFirstReactive(Publisher<T> publisher, PacketMonitor monitor, String groupName) {
+        super(publisher, monitor, groupName);
         this.packetFound = false;
     }
 

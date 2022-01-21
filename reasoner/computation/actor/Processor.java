@@ -239,7 +239,7 @@ public abstract class Processor<INPUT, OUTPUT,
         void setReady(Connection<PACKET, ?, ?> connection) {
             this.connection = connection;
             this.ready = true;
-            if (isPulling) this.pull(subscriber());
+            if (isPulling) pull(subscriber());
         }
 
         @Override
@@ -268,19 +268,17 @@ public abstract class Processor<INPUT, OUTPUT,
     public static class OutletEndpoint<PACKET> implements Subscriber<PACKET>, Provider<PACKET> {
 
         private final Connection<PACKET, ?, ?> connection;
-        private final Set<Provider<PACKET>> publishers;
+        private final SingleManager<PACKET> providers;  // TODO: We should only have one provider here
         protected boolean isPulling;
         private final PacketMonitor monitor;
         private final String groupName;
-        private boolean hasForked;
 
         public OutletEndpoint(Connection<PACKET, ?, ?> connection, PacketMonitor monitor, String groupName) {
             this.monitor = monitor;
             this.groupName = groupName;
-            this.publishers = new HashSet<>();
             this.connection = connection;
             this.isPulling = false;
-            this.hasForked = false;
+            this.providers = new Provider.SingleManager<>(this);
         }
 
         protected PacketMonitor monitor() {
@@ -310,30 +308,16 @@ public abstract class Processor<INPUT, OUTPUT,
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(connection, this));  // TODO: Highlights a smell that the connection is pulling and so receiver is null
             if (!isPulling) {
                 isPulling = true;
-                pullFromAllPublishers();
+                providers.pullAll();
             }
         }
 
-        // TODO: These duplicates go away if there's only one publisher, because then path fork monitoring isn't needed here
-        // TODO: Duplicated from ReactiveImpl
         @Override
-        public void subscribeTo(Provider<PACKET> publisher) {
-            publishers.add(publisher);
-            if (isPulling) pullFromPublisher(publisher);
+        public void subscribeTo(Provider<PACKET> provider) {
+            providers.add(provider);
+            if (isPulling) providers.pull(provider);
         }
 
-        // TODO: Duplicated from ReactiveImpl
-        protected void pullFromAllPublishers() {
-            publishers.forEach(this::pullFromPublisher);
-        }
-
-        // TODO: Duplicated from ReactiveImpl
-        private void pullFromPublisher(Provider<PACKET> publisher) {
-            monitor().onPathFork(1);
-            publisher.pull(this);
-            if (!hasForked) monitor().onPathTerminate();
-            hasForked = true;
-        }
     }
 
     public static abstract class Request<

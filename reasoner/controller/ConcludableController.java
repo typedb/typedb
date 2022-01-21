@@ -41,7 +41,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
+import static com.vaticle.typedb.core.reasoner.computation.reactive.FanInReactive.fanIn;
 
 public class ConcludableController extends Controller<ConceptMap, Map<Variable, Concept>, ConceptMap,
         ConcludableController.ConcludableProcessor, ConcludableController> {
@@ -129,9 +129,9 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 
         @Override
         public void setUp() {
-            setOutlet(new BufferBroadcastReactive<>(new HashSet<>(), this, name()));
+            setOutlet(new BufferBroadcastReactive<>(this, name()));
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
-            ReactiveBase<ConceptMap, ConceptMap> op = noOp(this, name());
+            ReactiveBase<ConceptMap, ConceptMap> op = fanIn(this, name());
             if (singleAnswerRequired) op.findFirst().publishTo(outlet());
             else op.publishTo(outlet());
 

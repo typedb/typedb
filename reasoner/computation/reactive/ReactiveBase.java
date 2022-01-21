@@ -27,10 +27,12 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
     protected Receiver<OUTPUT> subscriber;
     private boolean isPulling;
 
-    protected ReactiveBase(Set<Publisher<INPUT>> publishers, PacketMonitor monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
-        super(publishers, monitor, groupName);
+    protected ReactiveBase(PacketMonitor monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
+        super(monitor, groupName);
         this.isPulling = false;
     }
+
+    protected abstract Manager<INPUT> providerManager();
 
     @Override
     public void pull(Receiver<OUTPUT> receiver) {
@@ -38,8 +40,14 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         if (!isPulling()) {
             setPulling();
-            pullFromAllPublishers();
+            providerManager().pullAll();
         }
+    }
+
+    @Override
+    public void subscribeTo(Provider<INPUT> provider) {
+        providerManager().add(provider);
+        if (isPulling()) providerManager().pull(provider);
     }
 
     public void finishPulling() {

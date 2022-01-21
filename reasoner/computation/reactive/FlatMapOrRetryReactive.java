@@ -21,17 +21,23 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-import java.util.Set;
 import java.util.function.Function;
 
 public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, OUTPUT> {
 
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
+    private final SingleManager<INPUT> providerManager;
 
-    FlatMapOrRetryReactive(Set<Publisher<INPUT>> publishers, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
+    FlatMapOrRetryReactive(Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
                            PacketMonitor monitor, String groupName) {
-        super(publishers, monitor, groupName);
+        super(monitor, groupName);
         this.transform = transform;
+        this.providerManager = new Provider.SingleManager<>(publisher, this);
+    }
+
+    @Override
+    protected Manager<INPUT> providerManager() {
+        return providerManager;
     }
 
     @Override
@@ -46,9 +52,8 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, O
                 subscriber().receive(this, t);
             });
         } else if (isPulling()) {
-            provider.pull(this);  // Automatic retry
+            providerManager.pull(provider);  // Automatic retry
         }
-        monitor().onPathTerminate();  // Because we lost the original packet and gained as many as are in the iterator
+        monitor().onPathTerminate();  // Because we discarded the original packet and gained as many as are in the iterator
     }
-
 }

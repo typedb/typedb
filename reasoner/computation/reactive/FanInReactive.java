@@ -20,28 +20,28 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-import java.util.function.Function;
+public class FanInReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
-public class MapReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, OUTPUT> {
+    private final Provider.MultiManager<PACKET> providerManager;
 
-    private final Function<INPUT, OUTPUT> mappingFunc;
-    private final SingleManager<INPUT> providerManager;
-
-    protected MapReactive(Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, PacketMonitor monitor, String groupName) {
+    protected FanInReactive(PacketMonitor monitor, String groupName) {
         super(monitor, groupName);
-        this.mappingFunc = mappingFunc;
-        this.providerManager = new Provider.SingleManager<>(publisher, this);
+        this.providerManager = new Provider.MultiManager<>(this, monitor);
     }
 
     @Override
-    protected Manager<INPUT> providerManager() {
+    protected Manager<PACKET> providerManager() {
         return providerManager;
     }
 
+    public static <T> FanInReactive<T> fanIn(PacketMonitor monitor, String groupName) {
+        return new FanInReactive<>(monitor, groupName);
+    }
+
     @Override
-    public void receive(Provider<INPUT> provider, INPUT packet) {
+    public void receive(Provider<PACKET> provider, PACKET packet) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         finishPulling();
-        subscriber().receive(this, mappingFunc.apply(packet));
+        subscriber().receive(this, packet);
     }
 }

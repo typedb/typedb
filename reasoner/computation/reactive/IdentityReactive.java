@@ -20,17 +20,24 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-import java.util.HashSet;
-import java.util.Set;
+import javax.annotation.Nullable;
 
 public class IdentityReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
-    protected IdentityReactive(Set<Publisher<PACKET>> publishers, PacketMonitor monitor, String groupName) {
-        super(publishers, monitor, groupName);
+    private final SingleManager<PACKET> providerManager;
+
+    protected IdentityReactive(@Nullable Publisher<PACKET> publisher, PacketMonitor monitor, String groupName) {
+        super(monitor, groupName);
+        this.providerManager = new Provider.SingleManager<>(publisher, this);
+    }
+
+    @Override
+    protected Manager<PACKET> providerManager() {
+        return providerManager;
     }
 
     public static <T> IdentityReactive<T> noOp(PacketMonitor monitor, String groupName) {
-        return new IdentityReactive<>(new HashSet<>(), monitor, groupName);
+        return new IdentityReactive<>(null, monitor, groupName);
     }
 
     @Override

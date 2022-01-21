@@ -24,9 +24,13 @@ import javax.annotation.Nullable;
 
 public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provider<PACKET>  {
 
+    private final SingleManager<PACKET> providerManager;
     private PacketMonitor monitor;
-    private Provider<PACKET> publisher;
     protected boolean isPulling;
+
+    public Sink() {
+        this.providerManager = new Provider.SingleManager<>(this);
+    }
 
     protected PacketMonitor monitor() {
         assert monitor != null;
@@ -38,11 +42,11 @@ public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provi
     }
 
     @Override
-    public void subscribeTo(Provider<PACKET> publisher) {
-        assert this.publisher == null;
-        this.publisher = publisher;
+    public void subscribeTo(Provider<PACKET> provider) {
+        providerManager.add(provider);
         if (isPulling) {
-            pullFromPublisher();
+            monitor().onPathFork(1);  // This is the exception for where we add a fork when we initialise a new path
+            providerManager.pull(provider);
         }
     }
 
@@ -51,19 +55,13 @@ public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provi
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         assert receiver == null;
         isPulling = true;
-        if (publisher != null) {
-            pullFromPublisher();
+        if (providerManager.size() > 0) {
+            // TODO: This condition isn't congruent with others, can we omit?
+            providerManager.pullAll();
         }
     }
 
-    private void pullFromPublisher() {
-        monitor().onPathFork(1);
-        publisher.pull(this);
-    }
-
     public void pull() {
-        // TODO: Block until the publisher is set with subscribeTo. rename blockingPull.
-        //  Actually we can not enforce that the publisher must be present. When subscribeTo is called then pulling will start
         pull(null);
     }
 }

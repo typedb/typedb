@@ -37,7 +37,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
+import static com.vaticle.typedb.core.reasoner.computation.reactive.FanInReactive.fanIn;
 import static com.vaticle.typedb.core.reasoner.controller.ConjunctionController.merge;
 
 public abstract class DisjunctionController<
@@ -88,7 +88,7 @@ public abstract class DisjunctionController<
 
         @Override
         public void setUp() {
-            setOutlet(noOp(this, name()));
+            setOutlet(fanIn(this, name()));
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
                 InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
                 endpoint.publishTo(outlet());

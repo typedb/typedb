@@ -28,7 +28,6 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReac
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
 
-import java.util.HashSet;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -75,7 +74,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
 
         @Override
         public void setUp() {
-            setOutlet(new BufferBroadcastReactive<>(new HashSet<>(), this, name()));
+            setOutlet(new BufferBroadcastReactive<>(this, name()));
             new Source<>(traversalSupplier, this, name()).publishTo(outlet());
         }
     }

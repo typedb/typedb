@@ -20,46 +20,20 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Function;
-
-import static com.vaticle.typedb.common.collection.Collections.set;
 
 public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUTPUT> {
 
-    private final Set<Provider<INPUT>> publishers;
     private final PacketMonitor monitor;
     private final String groupName;
-    private boolean hasForked;
 
-    protected ReactiveImpl(Set<Publisher<INPUT>> publishers, PacketMonitor monitor, String groupName) {
-        this.publishers = new HashSet<>();
-        publishers.forEach(pub -> pub.publishTo(this));
+    protected ReactiveImpl(PacketMonitor monitor, String groupName) {
         this.monitor = monitor;
         this.groupName = groupName;
-        this.hasForked = false;
     }
 
     public PacketMonitor monitor() {
         return monitor;
-    }
-
-    @Override
-    public void subscribeTo(Provider<INPUT> publisher) {
-        publishers.add(publisher);
-        if (isPulling()) pullFromPublisher(publisher);
-    }
-
-    protected void pullFromAllPublishers() {
-        publishers.forEach(this::pullFromPublisher);
-    }
-
-    private void pullFromPublisher(Provider<INPUT> publisher) {
-        monitor().onPathFork(1);
-        publisher.pull(this);
-        if (!hasForked) monitor().onPathTerminate();
-        hasForked = true;
     }
 
     protected abstract boolean isPulling();
@@ -71,17 +45,23 @@ public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUT
 
     @Override
     public ReactiveBase<OUTPUT, OUTPUT> findFirst() {
-        return new FindFirstReactive<>(set(this), monitor, groupName());
+        FindFirstReactive<OUTPUT> findFirst = new FindFirstReactive<>(this, monitor, groupName());
+        publishTo(findFirst);
+        return findFirst;
     }
 
     @Override
     public <R> ReactiveBase<OUTPUT, R> map(Function<OUTPUT, R> function) {
-        return new MapReactive<>(set(this), function, monitor, groupName());
+        MapReactive<OUTPUT, R> map = new MapReactive<>(this, function, monitor(), groupName());
+        publishTo(map);
+        return map;
     }
 
     @Override
     public <R> ReactiveBase<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
-        return new FlatMapOrRetryReactive<>(set(this), function, monitor, groupName());
+        FlatMapOrRetryReactive<OUTPUT, R> flatMap = new FlatMapOrRetryReactive<>(this, function, monitor(), groupName());
+        publishTo(flatMap);
+        return flatMap;
     }
 
 }
