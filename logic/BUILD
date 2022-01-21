@@ -23,7 +23,7 @@ package(
     default_visibility = [
         "//:__pkg__",
         "//reasoner:__pkg__",
-        "//rocks:__pkg__",
+        "//database:__pkg__",
         "//test:__subpackages__",
     ],
 )

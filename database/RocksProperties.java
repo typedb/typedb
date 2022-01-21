@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.rocks;
+package com.vaticle.typedb.core.database;
 
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.OptimisticTransactionDB;

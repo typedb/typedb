@@ -32,17 +32,17 @@ import java.util.concurrent.CompletableFuture;
 public class MigratorService extends MigratorGrpc.MigratorImplBase {
     private static final Logger LOG = LoggerFactory.getLogger(MigratorService.class);
 
-    private final TypeDB typedb;
+    private final TypeDB.DatabaseManager databaseMgr;
     private final String version;
 
-    public MigratorService(TypeDB typedb, String version) {
-        this.typedb = typedb;
+    public MigratorService(TypeDB.DatabaseManager databaseMgr, String version) {
+        this.databaseMgr = databaseMgr;
         this.version = version;
     }
 
     @Override
     public void exportData(MigratorProto.Export.Req request, StreamObserver<MigratorProto.Export.Progress> responseObserver) {
-        DataExporter exporter = new DataExporter(typedb, request.getDatabase(), Paths.get(request.getFilename()), version);
+        DataExporter exporter = new DataExporter(databaseMgr, request.getDatabase(), Paths.get(request.getFilename()), version);
         try {
             CompletableFuture<Void> migratorJob = CompletableFuture.runAsync(exporter::run);
             while (!migratorJob.isDone()) {
@@ -59,7 +59,7 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
 
     @Override
     public void importData(MigratorProto.Import.Req request, StreamObserver<MigratorProto.Import.Progress> responseObserver) {
-        DataImporter importer = new DataImporter(typedb, request.getDatabase(), Paths.get(request.getFilename()), version);
+        DataImporter importer = new DataImporter(databaseMgr, request.getDatabase(), Paths.get(request.getFilename()), version);
         try {
             CompletableFuture<Void> migratorJob = CompletableFuture.runAsync(importer::run);
             while (!migratorJob.isDone()) {

@@ -20,26 +20,22 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test
 
 host_compatible_java_test(
     name = "test-database",
+    size = "small",
     srcs = ["DatabaseTest.java"],
-    test_class = "com.vaticle.typedb.core.rocks.DatabaseTest",
+    data = glob(["data/**"]),
     native_libraries_deps = [
         "//:typedb",
         "//common:common",
         "//graph:graph",
-        "//rocks:rocks",
-
+        "//database:database",
         "//common/test:util",
     ],
-    deps = [
-        "//test/integration/util:util",
-    ],
-    data = glob(["data/**"]),
-    size = "small",
+    test_class = "com.vaticle.typedb.core.database.DatabaseTest",
 )
 
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
-    exclude=glob(["data/**"]),
+    exclude = glob(["data/**"]),
     license_type = "agpl",
 )

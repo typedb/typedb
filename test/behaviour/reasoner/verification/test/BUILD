@@ -31,7 +31,7 @@ host_compatible_java_test(
         "//common:common",
         "//concept:concept",
         "//logic:logic",
-        "//rocks:rocks",
+        "//database:database",
         "//test/behaviour/reasoner/verification:verification",
     ],
     deps = [
@@ -53,7 +53,7 @@ host_compatible_java_test(
     test_class = "com.vaticle.typedb.core.test.behaviour.reasoner.verification.test.CorrectnessVerifierTest",
     native_libraries_deps = [
         "//:typedb",
-        "//rocks:rocks",
+        "//database:database",
         "//common",
         "//common/test:util",
         "//test/behaviour/reasoner/verification:verification",

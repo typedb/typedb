@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.rocks;
+package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.collection.ByteArray;
@@ -57,8 +57,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
-import static com.vaticle.typedb.core.graph.common.Encoding.ENCODING_VERSION;
-import static com.vaticle.typedb.core.graph.common.Encoding.System.ENCODING_VERSION_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.System.TRANSACTION_DUMMY_WRITE;
 
 public abstract class RocksStorage implements Storage {
@@ -220,9 +218,9 @@ public abstract class RocksStorage implements Storage {
 
     static abstract class TransactionBounded extends RocksStorage {
 
-        protected final RocksTransaction transaction;
+        protected final CoreTransaction transaction;
 
-        TransactionBounded(OptimisticTransactionDB rocksDB, RocksPartitionManager partitionMgr, RocksTransaction transaction) {
+        TransactionBounded(OptimisticTransactionDB rocksDB, RocksPartitionManager partitionMgr, CoreTransaction transaction) {
             super(rocksDB, partitionMgr, transaction.type().isRead());
             this.transaction = transaction;
         }
@@ -330,7 +328,7 @@ public abstract class RocksStorage implements Storage {
 
         private final KeyGenerator.Schema schemaKeyGenerator;
 
-        public Schema(RocksDatabase database, RocksTransaction transaction) {
+        public Schema(CoreDatabase database, CoreTransaction transaction) {
             super(database.rocksSchema, database.rocksSchemaPartitionMgr, transaction);
             this.schemaKeyGenerator = database.schemaKeyGenerator();
         }
@@ -362,7 +360,7 @@ public abstract class RocksStorage implements Storage {
     @NotThreadSafe
     public static class Data extends TransactionBounded implements Storage.Data {
 
-        private final RocksDatabase database;
+        private final CoreDatabase database;
         private final KeyGenerator.Data dataKeyGenerator;
 
         private final ConcurrentNavigableMap<ByteArray, Boolean> modifiedKeys;
@@ -371,7 +369,7 @@ public abstract class RocksStorage implements Storage {
         private final long snapshotStart;
         private volatile Long snapshotEnd;
 
-        public Data(RocksDatabase database, RocksTransaction transaction) {
+        public Data(CoreDatabase database, CoreTransaction transaction) {
             super(database.rocksData, database.rocksDataPartitionMgr, transaction);
             this.database = database;
             this.dataKeyGenerator = database.dataKeyGenerator();

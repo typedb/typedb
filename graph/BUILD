@@ -20,7 +20,7 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 package(
     default_visibility = [
         "//concept:__pkg__",
-        "//rocks:__pkg__",
+        "//database:__pkg__",
         "//traversal:__pkg__",
         "//reasoner:__pkg__"
     ]

@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.rocks;
+package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
@@ -84,19 +84,19 @@ import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class RocksDatabase implements TypeDB.Database {
+public class CoreDatabase implements TypeDB.Database {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RocksDatabase.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
     private static final int ROCKS_LOG_PERIOD = 300;
 
     protected final RocksConfiguration rocksConfiguration;
     protected final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     protected final KeyGenerator.Data.Persisted dataKeyGenerator;
-    protected final ConcurrentMap<UUID, Pair<RocksSession, Long>> sessions;
+    protected final ConcurrentMap<UUID, Pair<CoreSession, Long>> sessions;
     protected final String name;
     protected final AtomicBoolean isOpen;
     private final StampedLock schemaLock;
-    private final RocksTypeDB typedb;
+    private final CoreDatabaseManager databaseMgr;
     private final ConsistencyManager consistencyMgr;
     private final AtomicInteger schemaLockWriteRequests;
     private final Factory.Session sessionFactory;
@@ -104,13 +104,13 @@ public class RocksDatabase implements TypeDB.Database {
     protected OptimisticTransactionDB rocksData;
     protected RocksPartitionManager.Schema rocksSchemaPartitionMgr;
     protected RocksPartitionManager.Data rocksDataPartitionMgr;
-    protected RocksSession.Data statisticsBackgroundCounterSession;
+    protected CoreSession.Data statisticsBackgroundCounterSession;
     protected StatisticsBackgroundCounter statisticsBackgroundCounter;
     protected ScheduledExecutorService scheduledPropertiesLogger;
     private Cache cache;
 
-    protected RocksDatabase(RocksTypeDB typedb, String name, Factory.Session sessionFactory) {
-        this.typedb = typedb;
+    protected CoreDatabase(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
+        this.databaseMgr = databaseMgr;
         this.name = name;
         this.sessionFactory = sessionFactory;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
@@ -124,21 +124,21 @@ public class RocksDatabase implements TypeDB.Database {
         isOpen = new AtomicBoolean(false);
     }
 
-    static RocksDatabase createAndOpen(RocksTypeDB typedb, String name, Factory.Session sessionFactory) {
+    static CoreDatabase createAndOpen(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
         try {
-            Files.createDirectory(typedb.directory().resolve(name));
+            Files.createDirectory(databaseMgr.directory().resolve(name));
         } catch (IOException e) {
             throw TypeDBException.of(e);
         }
 
-        RocksDatabase database = new RocksDatabase(typedb, name, sessionFactory);
+        CoreDatabase database = new CoreDatabase(databaseMgr, name, sessionFactory);
         database.initialise();
         database.statisticsBgCounterStart();
         return database;
     }
 
-    static RocksDatabase loadAndOpen(RocksTypeDB typedb, String name, Factory.Session sessionFactory) {
-        RocksDatabase database = new RocksDatabase(typedb, name, sessionFactory);
+    static CoreDatabase loadAndOpen(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
+        CoreDatabase database = new CoreDatabase(databaseMgr, name, sessionFactory);
         database.load();
         database.statisticsBgCounterStart();
         return database;
@@ -149,8 +149,8 @@ public class RocksDatabase implements TypeDB.Database {
         initialiseEncodingVersion();
         openAndInitialiseData();
         isOpen.set(true);
-        try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
-            try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
+        try (CoreSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
+            try (CoreTransaction.Schema txn = session.initialisationTransaction()) {
                 if (txn.graph().isInitialised()) throw TypeDBException.of(DIRTY_INITIALISATION);
                 txn.graph().initialise();
                 txn.commit();
@@ -198,8 +198,8 @@ public class RocksDatabase implements TypeDB.Database {
         validateEncodingVersion();
         openData();
         isOpen.set(true);
-        try (RocksSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
-            try (RocksTransaction.Schema txn = session.initialisationTransaction()) {
+        try (CoreSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
+            try (CoreTransaction.Schema txn = session.initialisationTransaction()) {
                 schemaKeyGenerator.sync(txn.schemaStorage());
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
@@ -263,11 +263,11 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    public RocksSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
+    public CoreSession createAndOpenSession(Arguments.Session.Type type, Options.Session options) {
         if (!isOpen.get()) throw TypeDBException.of(DATABASE_CLOSED, name);
 
         long lock = 0;
-        RocksSession session;
+        CoreSession session;
 
         if (type.isSchema()) {
             try {
@@ -334,11 +334,11 @@ public class RocksDatabase implements TypeDB.Database {
     }
 
     protected Path directory() {
-        return typedb.directory().resolve(name);
+        return databaseMgr.directory().resolve(name);
     }
 
     public Options.Database options() {
-        return typedb.options();
+        return databaseMgr.options();
     }
 
     KeyGenerator.Schema schemaKeyGenerator() {
@@ -389,7 +389,7 @@ public class RocksDatabase implements TypeDB.Database {
 
     @Override
     public String schema() {
-        try (TypeDB.Session session = typedb.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
+        try (TypeDB.Session session = databaseMgr.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append("define\n\n");
             tx.concepts().exportTypes(stringBuilder);
@@ -398,7 +398,7 @@ public class RocksDatabase implements TypeDB.Database {
         }
     }
 
-    void remove(RocksSession session) {
+    void remove(CoreSession session) {
         if (session != statisticsBackgroundCounterSession) {
             long lock = sessions.remove(session.uuid()).second();
             if (session.type().isSchema()) schemaLock().unlockWrite(lock);
@@ -440,7 +440,7 @@ public class RocksDatabase implements TypeDB.Database {
     @Override
     public void delete() {
         close();
-        typedb.databases().remove(this);
+        databaseMgr.remove(this);
         try {
             Files.walk(directory()).sorted(reverseOrder()).map(Path::toFile).forEach(File::delete);
         } catch (IOException e) {
@@ -657,7 +657,7 @@ public class RocksDatabase implements TypeDB.Database {
         private long borrowerCount;
         private boolean invalidated;
 
-        private Cache(RocksDatabase database) {
+        private Cache(CoreDatabase database) {
             schemaStorage = new RocksStorage.Cache(database.rocksSchema, database.rocksSchemaPartitionMgr);
             typeGraph = new TypeGraph(schemaStorage, true);
             traversalCache = new TraversalCache();
@@ -705,12 +705,12 @@ public class RocksDatabase implements TypeDB.Database {
 
     public static class StatisticsBackgroundCounter {
 
-        private final RocksSession.Data session;
+        private final CoreSession.Data session;
         private final Thread thread;
         private final Semaphore countJobNotifications;
         private boolean isStopped;
 
-        StatisticsBackgroundCounter(RocksSession.Data session) {
+        StatisticsBackgroundCounter(CoreSession.Data session) {
             this.session = session;
             countJobNotifications = new Semaphore(0);
             thread = NamedThreadFactory.create(session.database().name + "::statistics-background-counter")
@@ -724,7 +724,7 @@ public class RocksDatabase implements TypeDB.Database {
 
         private void countFn() {
             do {
-                try (RocksTransaction.Data tx = session.transaction(WRITE)) {
+                try (CoreTransaction.Data tx = session.transaction(WRITE)) {
                     boolean shouldRestart = tx.graphMgr.data().stats().processCountJobs();
                     if (shouldRestart) countJobNotifications.release();
                     tx.commit();

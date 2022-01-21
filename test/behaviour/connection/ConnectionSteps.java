@@ -20,8 +20,8 @@ package com.vaticle.typedb.core.test.behaviour.connection;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Options;
-import com.vaticle.typedb.core.rocks.RocksDatabase;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.database.CoreDatabase;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
@@ -51,7 +51,7 @@ public class ConnectionSteps {
     public static int THREAD_POOL_SIZE = 32;
     public static ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
-    public static RocksTypeDB typedb;
+    public static CoreDatabaseManager databaseMgr;
     public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("typedb");
     public static Path logsDir = dataDir.resolve("logs");
     public static Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logsDir)
@@ -70,10 +70,10 @@ public class ConnectionSteps {
 
     @Before
     public synchronized void before() throws IOException {
-        assertNull(typedb);
+        assertNull(databaseMgr);
         resetDirectory();
         System.out.println("Connecting to TypeDB ...");
-        typedb = RocksTypeDB.open(options);
+        databaseMgr = CoreDatabaseManager.open(options);
     }
 
     @After
@@ -93,21 +93,21 @@ public class ConnectionSteps {
         sessions.clear();
         sessionsParallel.forEach(c -> c.thenAccept(TypeDB.Session::close));
         sessionsParallel.clear();
-        typedb.databases().all().forEach(RocksDatabase::delete);
-        typedb.close();
-        assertFalse(typedb.isOpen());
-        typedb = null;
+        databaseMgr.all().forEach(CoreDatabase::delete);
+        databaseMgr.close();
+        assertFalse(databaseMgr.isOpen());
+        databaseMgr = null;
     }
 
     @Given("connection has been opened")
     public void connection_has_been_opened() {
-        assertNotNull(typedb);
-        assertTrue(typedb.isOpen());
+        assertNotNull(databaseMgr);
+        assertTrue(databaseMgr.isOpen());
     }
 
     @Given("connection does not have any database")
     public void connection_does_not_have_any_database() {
-        assertTrue(typedb.databases().all().isEmpty());
+        assertTrue(databaseMgr.all().isEmpty());
     }
 
     private static void resetDirectory() throws IOException {

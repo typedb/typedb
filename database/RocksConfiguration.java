@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.rocks;
+package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.core.graph.common.Storage.Key;
 import org.rocksdb.BlockBasedTableConfig;
@@ -142,7 +142,7 @@ public class RocksConfiguration {
          * though we have not provably seen much benefit from these.
          */
         private void configureWriteConcurrency(DBOptions options) {
-            options.setMaxSubcompactions(RocksTypeDB.MAX_THREADS).setMaxBackgroundJobs(RocksTypeDB.MAX_THREADS)
+            options.setMaxSubcompactions(CoreDatabaseManager.MAX_THREADS).setMaxBackgroundJobs(CoreDatabaseManager.MAX_THREADS)
                     .setEnableWriteThreadAdaptiveYield(true)
                     .setAllowConcurrentMemtableWrite(true);
         }

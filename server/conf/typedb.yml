@@ -45,8 +45,8 @@ log:
       level: info
       output: [ stdout, file ]
     storage:
-      filter: com.vaticle.typedb.core.rocks
-      level: info # on 'debug' the server will periodically log storage properties
+      filter: com.vaticle.typedb.core.database
+      level: info # on 'debug' the server will periodically log database storage properties
       output: [ stdout, file ]
   debugger:
     reasoner:

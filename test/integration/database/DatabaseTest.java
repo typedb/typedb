@@ -16,11 +16,13 @@
  *
  */
 
-package com.vaticle.typedb.core.rocks;
+package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.Factory;
+import com.vaticle.typedb.core.database.CoreFactory;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.test.integration.util.Util;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -34,7 +36,7 @@ import static com.vaticle.typedb.core.common.test.Util.assertThrowsWithMessage;
 
 public class DatabaseTest {
 
-    private static final Factory rocksFactory = new RocksFactory();
+    private static final Factory factory = new CoreFactory();
 
     @Test
     public void databaseCreationSucceeds() throws IOException {
@@ -42,19 +44,19 @@ public class DatabaseTest {
         Path logDir = dataDir.resolve("logs");
         Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
                 .storageIndexCacheSize(MB).storageDataCacheSize(MB);
-        RocksTypeDB typedb = rocksFactory.typedb(options);
-        typedb.databases().create("test");
-        typedb.close();
+        CoreDatabaseManager databaseMgr = factory.databaseManager(options);
+        databaseMgr.create("test");
+        databaseMgr.close();
     }
 
     @Test
     public void incompatibleDataEncodingThrows() {
-        Path dataDir = Paths.get("test/integration/rocks/data");
+        Path dataDir = Paths.get("test/integration/database/data");
         Path logDir = dataDir.resolve("logs");
         Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
                 .storageIndexCacheSize(MB).storageDataCacheSize(MB);
         assertThrowsWithMessage(
-                () -> rocksFactory.typedb(options),
+                () -> factory.databaseManager(options),
                 INCOMPATIBLE_ENCODING.message("test", 0, Encoding.ENCODING_VERSION)
         );
     }

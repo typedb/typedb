@@ -28,7 +28,7 @@ host_compatible_java_test(
         # Internal dependencies
         "//:typedb",
         "//common:common",
-        "//rocks:rocks",
+        "//database:database",
         "//traversal:traversal",
         "//concept:concept",
     ],

@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.rocks;
+package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -51,22 +51,22 @@ public class StatisticsTest {
     @Test
     public void test_statistics() throws IOException {
         Util.resetDirectory(dataDir);
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
-            setupSchema(typedb);
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            setupSchema(databaseMgr);
             int personCount = 1000;
             Set<Long> ages = new HashSet<>();
             Random random = new Random(0);
-            insertPersonAndAges(typedb, personCount, ages, random);
-            assertStatistics(typedb, personCount, ages);
-            updateAges(typedb, ages);
-            assertStatistics(typedb, personCount, ages);
+            insertPersonAndAges(databaseMgr, personCount, ages, random);
+            assertStatistics(databaseMgr, personCount, ages);
+            updateAges(databaseMgr, ages);
+            assertStatistics(databaseMgr, personCount, ages);
         }
     }
 
-    private void updateAges(RocksTypeDB typedb, Set<Long> ages) {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+    private void updateAges(CoreDatabaseManager databaseMgr, Set<Long> ages) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 TypeQLQuery query = TypeQL.parseQuery("match $x isa person, has age $y;");
                 List<ConceptMap> conceptMaps = tx.query().match(query.asMatch()).toList();
                 conceptMaps.forEach(cm -> {
@@ -83,9 +83,9 @@ public class StatisticsTest {
         }
     }
 
-    private void insertPersonAndAges(RocksTypeDB typedb, int personCount, Set<Long> ages, Random random) {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+    private void insertPersonAndAges(CoreDatabaseManager databaseMgr, int personCount, Set<Long> ages, Random random) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 for (int i = 0; i < personCount; i++) {
                     long age = random.nextInt(personCount);
                     ages.add(age);
@@ -97,10 +97,10 @@ public class StatisticsTest {
         }
     }
 
-    private void assertStatistics(RocksTypeDB typedb, int personCount, Set<Long> ages) {
+    private void assertStatistics(CoreDatabaseManager databaseMgr, int personCount, Set<Long> ages) {
         waitForStatisticsCounter();
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 assertEquals(personCount, tx.graphMgr.data().stats().thingVertexCount(Label.of("person")));
                 assertEquals(ages.size(), tx.graphMgr.data().stats().thingVertexCount(Label.of("age")));
                 assertEquals(personCount, tx.graphMgr.data().stats().hasEdgeCount(Label.of("person"), Label.of("age")));
@@ -108,8 +108,8 @@ public class StatisticsTest {
         }
     }
 
-    private void setupSchema(RocksTypeDB typedb) {
-        try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+    private void setupSchema(CoreDatabaseManager databaseMgr) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 TypeQLQuery query = TypeQL.parseQuery("" +
                                                               "define " +

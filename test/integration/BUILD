@@ -26,7 +26,7 @@ host_compatible_java_test(
         # Internal dependencies
         "//:typedb",
         "//common:common",
-        "//rocks:rocks",
+        "//database:database",
         "//concept:concept",
         "//logic:logic",
     ],
@@ -45,7 +45,7 @@ host_compatible_java_test(
     test_class = "com.vaticle.typedb.core.test.integration.QueryTest",
     native_libraries_deps = [
         "//:typedb",
-        "//rocks:rocks",
+        "//database:database",
         "//common:common",
         "//concept:concept",
     ],
@@ -67,7 +67,7 @@ host_compatible_java_test(
     native_libraries_deps = [
         # Internal dependencies
         "//:typedb",
-        "//rocks:rocks",
+        "//database:database",
         "//common:common",
         "//concept:concept",
         "//logic:logic",
@@ -89,7 +89,7 @@ host_compatible_java_test(
         # Internal dependencies
         "//:typedb",
         "//common:common",
-        "//rocks:rocks",
+        "//database:database",
         "//concept:concept",
         "//logic:logic",
     ],

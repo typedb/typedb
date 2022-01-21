@@ -33,9 +33,9 @@ import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImp
 import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
 import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
 import com.vaticle.typedb.core.reasoner.resolution.resolver.RootResolver;
-import com.vaticle.typedb.core.rocks.RocksSession;
-import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
@@ -69,24 +69,24 @@ public class ResolutionTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "resolution-test";
-    private static RocksTypeDB typedb;
+    private static CoreDatabaseManager databaseMgr;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(database);
     }
 
     @After
     public void tearDown() {
-        typedb.close();
+        databaseMgr.close();
     }
 
     @Test
     public void test_conjunction_no_rules() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = schemaSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(TypeQL.parseQuery(
                         "define person sub entity, owns age, plays twins:twin1, plays twins:twin2;" +
                                 "age sub attribute, value long;" +
@@ -94,16 +94,16 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }", transaction.logic());
                 createRootAndAssertResponses(transaction, conjunctionPattern, 3L, 0L);
             }
@@ -112,8 +112,8 @@ public class ResolutionTest {
 
     @Test
     public void test_exceptions_are_propagated() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = schemaSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(TypeQL.parseQuery(
                         "define person sub entity, owns age, plays twins:twin1, plays twins:twin2;" +
                                 "age sub attribute, value long;" +
@@ -121,16 +121,16 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }", transaction.logic());
                 ResolverRegistry registry = transaction.reasoner().resolverRegistry();
                 LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();
@@ -153,8 +153,8 @@ public class ResolutionTest {
 
     @Test
     public void test_disjunction_no_rules() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = schemaSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(TypeQL.parseQuery(
                         "define person sub entity, owns age, plays twins:twin1, plays twins:twin2;" +
                                 "age sub attribute, value long;" +
@@ -162,16 +162,16 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 24; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 25; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 26; $t(twin1: $p1, twin2: $p2) isa twins; $p2 isa person;"));
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 Set<Identifier.Variable.Retrievable> filter = set(Identifier.Variable.name("t"),
                                                            Identifier.Variable.name("p1"),
                                                            Identifier.Variable.name("p2"));
@@ -183,8 +183,8 @@ public class ResolutionTest {
 
     @Test
     public void test_no_rules_with_no_answers() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = schemaSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(TypeQL.parseQuery(
                         "define person sub entity, owns age, plays twins:twin1, plays twins:twin2;" +
                                 "age sub attribute, value long;" +
@@ -192,16 +192,16 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 24;"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 24;"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has age 24;"));
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; " +
                                                                              "$p1 has age $a; }", transaction.logic());
                 createRootAndAssertResponses(transaction, conjunctionPattern, 0L, 0L);
@@ -216,8 +216,8 @@ public class ResolutionTest {
         //  - 3 answers come from the concludable via the rule and its retrievable, checking their sent/received messages
         //  are consistent with our expectation.
 
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = schemaSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(TypeQL.parseQuery(
                         "define person sub entity, owns name, owns age, plays twins:twin1, plays twins:twin2;" +
                                 "age sub attribute, value long;" +
@@ -227,8 +227,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has name \"Bob\";"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has name \"Bob\";"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has name \"Bob\";"));
@@ -238,8 +238,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $p1 isa person, has age 42; }", transaction.logic());
                 createRootAndAssertResponses(transaction, conjunctionPattern, 6L, 3L);
             }
@@ -248,8 +248,8 @@ public class ResolutionTest {
 
     @Test
     public void test_nested_disjunction() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = schemaSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(TypeQL.parseQuery(
                         "define person sub entity, owns age, owns name;" +
                                 "age sub attribute, value long;" +
@@ -261,8 +261,8 @@ public class ResolutionTest {
             }
         }
 
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has name \"Bob\";"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has name \"Bob\";"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has name \"Susan\";"));
@@ -270,8 +270,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $p isa person; not { { $p has age 24; } or { $p has age 42; }; }; }", transaction.logic());
                 createRootAndAssertResponses(transaction, conjunctionPattern, 1L, 0L);
             }
@@ -280,8 +280,8 @@ public class ResolutionTest {
 
     @Test
     public void test_chained_rules() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = schemaSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(TypeQL.parseQuery(
                         "define person sub entity, owns name, owns age, plays employment:employee;" +
                                 "age sub attribute, value long;" +
@@ -292,8 +292,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(TypeQL.parseQuery("insert $p isa person, has name \"Bob\";"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p isa person, has name \"Bob\";"));
                 transaction.query().insert(TypeQL.parseQuery("insert $p isa person, has name \"Bob\";"));
@@ -306,8 +306,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
 
                 String rootConjunction = "{ $e(employee: $x) isa employment; }";
                 Conjunction conjunctionPattern = resolvedConjunction(rootConjunction, transaction.logic());
@@ -318,8 +318,8 @@ public class ResolutionTest {
 
     @Test
     public void test_shallow_rerequest_chain() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = schemaSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(TypeQL.parseQuery(
                         "define woman sub entity, plays marriage:wife, plays friendship:friend;" +
                                 "man sub entity, plays marriage:husband, plays friendship:friend;" +
@@ -330,8 +330,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 String insert = "insert $y isa woman; $x isa man; (husband: $x, wife: $y) isa marriage;";
                 transaction.query().insert(TypeQL.parseQuery(insert));
                 transaction.query().insert(TypeQL.parseQuery(insert));
@@ -346,8 +346,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 String rootConjunction = "{ $a isa woman; $b isa man; $f(friend: $a, friend: $b) isa friendship; }";
                 Conjunction conjunctionPattern = resolvedConjunction(rootConjunction, transaction.logic());
                 createRootAndAssertResponses(transaction, conjunctionPattern, 2L, 2L);
@@ -357,8 +357,8 @@ public class ResolutionTest {
 
     @Test
     public void test_deep_rerequest_chain() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = schemaSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(TypeQL.parseQuery(
                         "define woman sub entity, plays marriage:wife, plays friendship:friend, plays employment:employee, plays association:associated;" +
                                 "man sub entity, plays marriage:husband, plays friendship:friend;" +
@@ -374,8 +374,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 Stream.of(
                         "insert $y isa woman; $x isa man; (husband: $x, wife: $y) isa marriage; (employee: $y, employer: $z) isa employment; $z isa company;",
                         "insert $y isa woman; $x isa man; (husband: $x, wife: $y) isa marriage;",
@@ -388,8 +388,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $x isa man; " +
                                                                              "(friend: $x, friend: $y) isa friendship; $y isa woman; (associated: $y, associated: $z) isa association; $z isa company; }", transaction.logic());
                 createRootAndAssertResponses(transaction, conjunctionPattern, 1L, 1L);
@@ -399,8 +399,8 @@ public class ResolutionTest {
 
     @Test
     public void test_recursive_termination_and_deduplication_in_transitivity() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = schemaSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(TypeQL.parseQuery(
                         "define location sub entity, plays containment:container, plays containment:contained;" +
                                 "containment sub relation, relates contained, relates container;" +
@@ -413,8 +413,8 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(
                         TypeQL.parseQuery(
                                 "insert " +
@@ -426,30 +426,30 @@ public class ResolutionTest {
                 transaction.commit();
             }
         }
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ (container:$l3, contained:$l4) isa containment; }", transaction.logic());
                 createRootAndAssertResponses(transaction, conjunctionPattern, 6L, 3L);
             }
         }
     }
 
-    private RocksSession schemaSession() {
-        return typedb.session(database, Arguments.Session.Type.SCHEMA);
+    private CoreSession schemaSession() {
+        return databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
     }
 
-    private RocksSession dataSession() {
-        return typedb.session(database, Arguments.Session.Type.DATA);
+    private CoreSession dataSession() {
+        return databaseMgr.session(database, Arguments.Session.Type.DATA);
     }
 
-    private RocksTransaction singleThreadElgTransaction(RocksSession session) {
-        RocksTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE);
+    private CoreTransaction singleThreadElgTransaction(CoreSession session) {
+        CoreTransaction transaction = session.transaction(Arguments.Transaction.Type.WRITE);
         ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("typedb-actor"));
         transaction.reasoner().resolverRegistry().setExecutorService(service);
         return transaction;
     }
 
-    private void createRootAndAssertResponses(RocksTransaction transaction, Disjunction disjunction,
+    private void createRootAndAssertResponses(CoreTransaction transaction, Disjunction disjunction,
                                               Set<Identifier.Variable.Retrievable> filter, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
@@ -465,7 +465,7 @@ public class ResolutionTest {
         assertResponses(root, filter, responses, doneReceived, answerCount, explainableAnswers);
     }
 
-    private void createRootAndAssertResponses(RocksTransaction transaction, Conjunction conjunction, long answerCount, long explainableAnswers)
+    private void createRootAndAssertResponses(CoreTransaction transaction, Conjunction conjunction, long answerCount, long explainableAnswers)
             throws InterruptedException {
         ResolverRegistry registry = transaction.reasoner().resolverRegistry();
         LinkedBlockingQueue<Match.Finished> responses = new LinkedBlockingQueue<>();

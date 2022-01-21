@@ -16,13 +16,12 @@
  *
  */
 
-package com.vaticle.typedb.core.rocks;
+package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 
-public final class RocksFactory implements Factory {
-    private DatabaseManager databaseManagerFactory;
+public final class CoreFactory implements Factory {
     private Database databaseFactory;
     private Session sessionFactory;
     private TransactionSchema transactionSchemaFactory;
@@ -30,28 +29,21 @@ public final class RocksFactory implements Factory {
     private Storage storageFactory;
 
     @Override
-    public RocksTypeDB typedb(Options.Database options) {
-        return new RocksTypeDB(options, databaseManagerFactory());
-    }
-
-    private synchronized DatabaseManager databaseManagerFactory() {
-        if (databaseManagerFactory == null) {
-            databaseManagerFactory = typedb -> new RocksDatabaseManager(typedb, databaseFactory());
-        }
-        return databaseManagerFactory;
+    public CoreDatabaseManager databaseManager(Options.Database options) {
+        return new CoreDatabaseManager(options, databaseFactory());
     }
 
     private synchronized Factory.Database databaseFactory() {
         if (databaseFactory == null) {
             databaseFactory = new Database() {
                 @Override
-                public RocksDatabase databaseCreateAndOpen(RocksTypeDB typedb, String name) {
-                    return RocksDatabase.createAndOpen(typedb, name, sessionFactory());
+                public CoreDatabase databaseCreateAndOpen(CoreDatabaseManager databaseMgr, String name) {
+                    return CoreDatabase.createAndOpen(databaseMgr, name, sessionFactory());
                 }
 
                 @Override
-                public RocksDatabase databaseLoadAndOpen(RocksTypeDB typedb, String name) {
-                    return RocksDatabase.loadAndOpen(typedb, name, sessionFactory());
+                public CoreDatabase databaseLoadAndOpen(CoreDatabaseManager databaseMgr, String name) {
+                    return CoreDatabase.loadAndOpen(databaseMgr, name, sessionFactory());
                 }
             };
         }
@@ -63,13 +55,13 @@ public final class RocksFactory implements Factory {
             sessionFactory = new Session() {
 
                 @Override
-                public RocksSession.Schema sessionSchema(RocksDatabase database, Options.Session options) {
-                    return new RocksSession.Schema(database, Arguments.Session.Type.SCHEMA, options, transactionSchemaFactory());
+                public CoreSession.Schema sessionSchema(CoreDatabase database, Options.Session options) {
+                    return new CoreSession.Schema(database, Arguments.Session.Type.SCHEMA, options, transactionSchemaFactory());
                 }
 
                 @Override
-                public RocksSession.Data sessionData(RocksDatabase database, Options.Session options) {
-                    return new RocksSession.Data(database, Arguments.Session.Type.DATA, options, transactionDataFactory());
+                public CoreSession.Data sessionData(CoreDatabase database, Options.Session options) {
+                    return new CoreSession.Data(database, Arguments.Session.Type.DATA, options, transactionDataFactory());
                 }
             };
         }
@@ -80,13 +72,13 @@ public final class RocksFactory implements Factory {
         if (transactionSchemaFactory == null) {
             transactionSchemaFactory = new Factory.TransactionSchema() {
                 @Override
-                public RocksTransaction.Schema transaction(RocksSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options) {
-                    return new RocksTransaction.Schema(session, type, options, storageFactory());
+                public CoreTransaction.Schema transaction(CoreSession.Schema session, Arguments.Transaction.Type type, Options.Transaction options) {
+                    return new CoreTransaction.Schema(session, type, options, storageFactory());
                 }
 
                 @Override
-                public RocksTransaction.Schema initialisationTransaction(RocksSession.Schema session) {
-                    return new RocksTransaction.Schema(session, Arguments.Transaction.Type.WRITE, new Options.Transaction(), storageFactory());
+                public CoreTransaction.Schema initialisationTransaction(CoreSession.Schema session) {
+                    return new CoreTransaction.Schema(session, Arguments.Transaction.Type.WRITE, new Options.Transaction(), storageFactory());
                 }
             };
         }
@@ -96,7 +88,7 @@ public final class RocksFactory implements Factory {
     private synchronized Factory.TransactionData transactionDataFactory() {
         if (transactionDataFactory == null) {
             transactionDataFactory = (session, type, options) ->
-                    new RocksTransaction.Data(session, type, options, storageFactory());
+                    new CoreTransaction.Data(session, type, options, storageFactory());
         }
         return transactionDataFactory;
     }
@@ -106,12 +98,12 @@ public final class RocksFactory implements Factory {
             storageFactory = new Storage() {
 
                 @Override
-                public RocksStorage.Schema storageSchema(RocksDatabase database, RocksTransaction.Schema transaction) {
+                public RocksStorage.Schema storageSchema(CoreDatabase database, CoreTransaction.Schema transaction) {
                     return new RocksStorage.Schema(database, transaction);
                 }
 
                 @Override
-                public RocksStorage.Data storageData(RocksDatabase database, RocksTransaction transaction) {
+                public RocksStorage.Data storageData(CoreDatabase database, CoreTransaction transaction) {
                     return new RocksStorage.Data(database, transaction);
                 }
             };

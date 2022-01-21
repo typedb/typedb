@@ -25,9 +25,9 @@ import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.logic.tool.TypeInference;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.rocks.RocksSession;
-import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
@@ -51,7 +51,6 @@ import java.util.stream.Collectors;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.DATA;
-import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -65,26 +64,26 @@ public class TypeInferenceTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "type-resolver-test";
-    private static RocksTypeDB typedb;
-    private static RocksSession session;
-    private static RocksTransaction transaction;
+    private static CoreDatabaseManager databaseMgr;
+    private static CoreSession session;
+    private static CoreTransaction transaction;
 
     @BeforeClass
     public static void open() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
+        databaseMgr = CoreDatabaseManager.open(options);
     }
 
     @AfterClass
     public static void close() {
-        typedb.close();
+        databaseMgr.close();
     }
 
     @Before
     public void setup() {
-        assert !typedb.databases().contains(database);
-        typedb.databases().create(database);
-        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
+        assert !databaseMgr.contains(database);
+        databaseMgr.create(database);
+        session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
         transaction = session.transaction(WRITE);
     }
 
@@ -92,7 +91,7 @@ public class TypeInferenceTest {
     public void tearDown() {
         transaction.close();
         session.close();
-        typedb.databases().get(database).delete();
+        databaseMgr.get(database).delete();
     }
 
     private static void define_standard_schema(String fileName) throws IOException {
@@ -201,7 +200,7 @@ public class TypeInferenceTest {
         define_standard_schema("basic-schema");
         transaction.commit();
         session.close();
-        session = typedb.session(database, DATA);
+        session = databaseMgr.session(database, DATA);
         transaction = session.transaction(WRITE);
         Entity person = transaction.concepts().getEntityType("person").create();
 

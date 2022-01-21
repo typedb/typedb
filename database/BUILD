@@ -27,7 +27,7 @@ package(
 )
 
 native_java_libraries(
-    name = "rocks",
+    name = "database",
     srcs = glob(["*.java"]),
     native_libraries_deps = [
         # Internal dependencies
@@ -64,7 +64,7 @@ native_java_libraries(
         "@maven//:com_google_ortools_ortools_win32_x86_64_java",
         "@maven//:org_rocksdb_rocksdbjni",
     ],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-rocks:{pom_version}"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-database:{pom_version}"],
     visibility = [ "//visibility:public" ]
 )
 

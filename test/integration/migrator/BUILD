@@ -26,7 +26,7 @@ host_compatible_java_test(
         "//:typedb",
         "//common:common",
         "//server:server",
-        "//rocks:rocks",
+        "//database:database",
         "//migrator:migrator",
     ],
     deps = [

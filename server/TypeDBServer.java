@@ -29,8 +29,8 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.migrator.MigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
-import com.vaticle.typedb.core.rocks.Factory;
-import com.vaticle.typedb.core.rocks.RocksFactory;
+import com.vaticle.typedb.core.database.Factory;
+import com.vaticle.typedb.core.database.CoreFactory;
 import com.vaticle.typedb.core.server.common.Command;
 import com.vaticle.typedb.core.server.common.CommandLine;
 import com.vaticle.typedb.core.server.common.Configuration;
@@ -68,14 +68,14 @@ public class TypeDBServer implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBServer.class);
 
     protected final Factory factory;
-    protected final TypeDB typedb;
+    protected final TypeDB.DatabaseManager databaseMgr;
     protected final io.grpc.Server server;
     protected final Configuration configuration;
     protected final boolean debug;
     protected TypeDBService typeDBService;
 
     private TypeDBServer(Configuration configuration, boolean debug) {
-        this(configuration, debug, new RocksFactory());
+        this(configuration, debug, new CoreFactory());
     }
 
     protected TypeDBServer(Configuration configuration, boolean debug, Factory factory) {
@@ -97,7 +97,7 @@ public class TypeDBServer implements AutoCloseable {
                 .reasonerDebuggerDir(configuration.log().debugger().reasoner().output().path());
 
         this.factory = factory;
-        typedb = factory.typedb(options);
+        databaseMgr = factory.databaseManager(options);
         server = rpcServer();
         Thread.setDefaultUncaughtExceptionHandler(
                 (t, e) -> logger().error(UNCAUGHT_EXCEPTION.message(t.getName() + ": " + e.getMessage()), e)
@@ -157,8 +157,8 @@ public class TypeDBServer implements AutoCloseable {
     protected io.grpc.Server rpcServer() {
         assert Executors.isInitialised();
 
-        typeDBService = new TypeDBService(typedb);
-        MigratorService migratorService = new MigratorService(typedb, Version.VERSION);
+        typeDBService = new TypeDBService(databaseMgr);
+        MigratorService migratorService = new MigratorService(databaseMgr, Version.VERSION);
 
         return NettyServerBuilder.forAddress(configuration.server().address())
                 .executor(Executors.service())
@@ -221,7 +221,7 @@ public class TypeDBServer implements AutoCloseable {
             typeDBService.close();
             server.shutdown();
             server.awaitTermination();
-            typedb.close();
+            databaseMgr.close();
             System.runFinalization();
             logger().info("{} has been shutdown", name());
         } catch (InterruptedException e) {

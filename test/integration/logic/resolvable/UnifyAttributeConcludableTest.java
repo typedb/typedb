@@ -30,9 +30,9 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.rocks.RocksSession;
-import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
@@ -68,19 +68,19 @@ public class UnifyAttributeConcludableTest {
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "unify-attribute-test";
-    private static RocksTypeDB typedb;
-    private static RocksSession session;
-    private static RocksTransaction rocksTransaction;
+    private static CoreDatabaseManager databaseMgr;
+    private static CoreSession session;
+    private static CoreTransaction transaction;
     private static ConceptManager conceptMgr;
     private static LogicManager logicMgr;
 
     @BeforeClass
     public static void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
-        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
-        try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(database);
+        session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
+        try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
             tx.query().define(TypeQL.parseQuery("define " +
                                                         "person sub entity," +
                                                         "    owns first-name," +
@@ -104,18 +104,18 @@ public class UnifyAttributeConcludableTest {
     @AfterClass
     public static void tearDown() {
         session.close();
-        typedb.close();
+        databaseMgr.close();
     }
 
     @Before
     public void setUpTransaction() {
-        rocksTransaction = session.transaction(Arguments.Transaction.Type.WRITE);
-        conceptMgr = rocksTransaction.concepts();
-        logicMgr = rocksTransaction.logic();
+        transaction = session.transaction(Arguments.Transaction.Type.WRITE);
+        conceptMgr = transaction.concepts();
+        logicMgr = transaction.logic();
     }
 
     @After
-    public void tearDownTransaction() { rocksTransaction.close(); }
+    public void tearDownTransaction() { transaction.close(); }
 
     private Thing instanceOf(String stringAttributeLabel, String stringValue) {
         AttributeType type = conceptMgr.getAttributeType(stringAttributeLabel);

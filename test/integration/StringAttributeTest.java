@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.type.AttributeType;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.Test;
@@ -62,8 +62,8 @@ public class StringAttributeTest {
     @Test
     public void all_unicode_characters_are_valid() throws IOException {
         Util.resetDirectory(dataDir);
-        try (TypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
+        try (TypeDB.DatabaseManager typedb = CoreDatabaseManager.open(options)) {
+            typedb.create(database);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -126,8 +126,8 @@ public class StringAttributeTest {
     @Test
     public void invalid_string_throws() throws IOException {
         Util.resetDirectory(dataDir);
-        try (TypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
+        try (TypeDB.DatabaseManager typedb = CoreDatabaseManager.open(options)) {
+            typedb.create(database);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {

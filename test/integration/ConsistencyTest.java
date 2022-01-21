@@ -23,8 +23,8 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
-import com.vaticle.typedb.core.rocks.RocksSession;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
@@ -52,14 +52,14 @@ public class ConsistencyTest {
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageIndexCacheSize(MB).storageDataCacheSize(MB);
 
-    private RocksTypeDB typeDB;
+    private CoreDatabaseManager databaseMgr;
 
     @Before
     public void setup() throws IOException {
         Util.resetDirectory(dataDir);
-        typeDB = RocksTypeDB.open(options);
-        typeDB.databases().create(database);
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.SCHEMA)) {
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(database);
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 txn.query().define(TypeQL.parseQuery("define " +
                                                             "person sub entity, owns name, plays friendship:friend;" +
@@ -74,12 +74,12 @@ public class ConsistencyTest {
 
     @After
     public void tearDown() {
-        typeDB.close();
+        databaseMgr.close();
     }
 
     @Test
     public void concurrent_write_same_attribute_does_not_conflict() {
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
             TypeDB.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
             txn1.query().insert(TypeQL.parseQuery("insert $x 'Alice' isa name;"));
@@ -91,7 +91,7 @@ public class ConsistencyTest {
 
     @Test
     public void concurrent_write_same_ownership_does_not_conflict() {
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction setupTxn = session.transaction(Arguments.Transaction.Type.WRITE);
             setupTxn.query().insert(TypeQL.parseQuery("insert $x isa person; $a 'Alice' isa name;"));
             setupTxn.commit();
@@ -106,7 +106,7 @@ public class ConsistencyTest {
 
     @Test
     public void concurrent_delete_same_concept_does_not_conflict() {
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction setupTxn = session.transaction(Arguments.Transaction.Type.WRITE);
             setupTxn.query().insert(TypeQL.parseQuery("insert $x isa person; $a 'Alice' isa name;"));
             setupTxn.commit();
@@ -121,7 +121,7 @@ public class ConsistencyTest {
 
     @Test
     public void concurrent_delete_same_ownership_does_not_conflict() {
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction setupTxn = session.transaction(Arguments.Transaction.Type.WRITE);
             setupTxn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Alice';"));
             setupTxn.commit();
@@ -136,7 +136,7 @@ public class ConsistencyTest {
 
     @Test
     public void concurrent_delete_same_role_does_not_conflict() {
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction setupTxn = session.transaction(Arguments.Transaction.Type.WRITE);
             setupTxn.query().insert(TypeQL.parseQuery(
                     "insert $x isa person, has name 'Bob'; $y isa person, has name 'Alice'; (friend: $x, friend: $y) isa friendship;"
@@ -153,7 +153,7 @@ public class ConsistencyTest {
 
     @Test
     public void concurrent_insert_delete_attribute_conflicts() {
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction setupTxn = session.transaction(Arguments.Transaction.Type.WRITE);
             setupTxn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Bob';"));
             setupTxn.commit();
@@ -176,7 +176,7 @@ public class ConsistencyTest {
 
     @Test
     public void sequential_insert_delete_attribute_does_not_conflict_in_any_order() {
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction setupTxn = session.transaction(Arguments.Transaction.Type.WRITE);
             setupTxn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Bob';"));
             setupTxn.commit();
@@ -187,7 +187,7 @@ public class ConsistencyTest {
             txn2.query().insert(TypeQL.parseQuery("insert $a 'Bob' isa name;"));
             txn2.commit();
         }
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction setupTxn = session.transaction(Arguments.Transaction.Type.WRITE);
             setupTxn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Bob';"));
             setupTxn.commit();
@@ -202,7 +202,7 @@ public class ConsistencyTest {
 
     @Test
     public void insert_delete_concurrent_insert_attribute_conflicts() {
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
             TypeDB.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
             txn1.query().insert(TypeQL.parseQuery("insert $a 'Bob' isa name;"));
@@ -223,7 +223,7 @@ public class ConsistencyTest {
 
     @Test
     public void delete_insert_concurrent_insert_attribute_does_not_conflict() {
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction setupTxn = session.transaction(Arguments.Transaction.Type.WRITE);
             setupTxn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Bob';"));
             setupTxn.commit();
@@ -239,7 +239,7 @@ public class ConsistencyTest {
 
     @Test
     public void concurrent_insert_delete_ownership_conflicts() {
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction setupTxn = session.transaction(Arguments.Transaction.Type.WRITE);
             setupTxn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Bob';"));
             setupTxn.commit();
@@ -262,7 +262,7 @@ public class ConsistencyTest {
 
     @Test
     public void concurrent_add_ownership_delete_attribute_conflicts() {
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction setupTxn = session.transaction(Arguments.Transaction.Type.WRITE);
             setupTxn.query().insert(TypeQL.parseQuery("insert $x isa person; $a 'Bob' isa name;"));
             setupTxn.commit();
@@ -286,7 +286,7 @@ public class ConsistencyTest {
 
     @Test
     public void concurrent_add_ownership_delete_owner_conflicts() {
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction setupTxn = session.transaction(Arguments.Transaction.Type.WRITE);
             setupTxn.query().insert(TypeQL.parseQuery("insert $x isa person; $a 'Bob' isa name;"));
             setupTxn.commit();
@@ -309,7 +309,7 @@ public class ConsistencyTest {
 
     @Test
     public void concurrent_add_relation_delete_player_conflicts() {
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction setupTxn = session.transaction(Arguments.Transaction.Type.WRITE);
             setupTxn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Bob'; $y isa person, has name 'Alice';"));
             setupTxn.commit();
@@ -333,7 +333,7 @@ public class ConsistencyTest {
 
     @Test
     public void large_loads_end_with_zero_transaction_isolation_sets() throws ExecutionException, InterruptedException {
-        try (RocksSession session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
 
             TypeDB.Transaction setupTxn = session.transaction(Arguments.Transaction.Type.WRITE);
             setupTxn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Bob'; $y isa person, has name 'Alice';"));
@@ -372,7 +372,7 @@ public class ConsistencyTest {
     @Test
     public void concurrent_key_insertion_conflicts() {
 
-        try (TypeDB.Session session = typeDB.session(database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
             TypeDB.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
             txn1.query().insert(TypeQL.parseQuery("insert $x isa company, has address 'abc-key-1';"));

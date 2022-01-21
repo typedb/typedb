@@ -23,9 +23,9 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Options;
-import com.vaticle.typedb.core.rocks.RocksSession;
-import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
@@ -61,15 +61,15 @@ public class TraversalTest {
             .storageIndexCacheSize(MB).storageDataCacheSize(MB);
     private static String database = "query-test";
 
-    private static RocksTypeDB typedb;
-    private static RocksSession session;
+    private static CoreDatabaseManager databaseMgr;
+    private static CoreSession session;
 
     @BeforeClass
     public static void setup() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
-        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(database);
+        session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery(
                     "define " +
@@ -92,7 +92,7 @@ public class TraversalTest {
 
     @AfterClass
     public static void teardown() {
-        typedb.close();
+        databaseMgr.close();
     }
 
     /**
@@ -107,20 +107,20 @@ public class TraversalTest {
     @Ignore
     @Test
     public void backtrack_seeks_do_not_skip_answers() {
-        session = typedb.session(database, Arguments.Session.Type.DATA);
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
         // note: must insert in separate Tx's so that the relations are retrieved in a specific order later
-        try (RocksTransaction transaction = session.transaction(WRITE)) {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
             transaction.query().insert(TypeQL.parseQuery(
                     "insert $x isa person; (friend: $x) isa friendship;").asInsert()
             );
             transaction.commit();
         }
-        try (RocksTransaction transaction = session.transaction(WRITE)) {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
             transaction.query().insert(TypeQL.parseQuery("insert" +
                     "$y isa dog; (friend: $y) isa friendship;").asInsert());
             transaction.commit();
         }
-        try (RocksTransaction transaction = session.transaction(READ)) {
+        try (CoreTransaction transaction = session.transaction(READ)) {
             /*
             match
             $rel ($role: $friend);
@@ -174,7 +174,7 @@ public class TraversalTest {
 
     @Test
     public void test_closure_backtrack_clears_scopes() {
-        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
+        session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery("define " +
                     "lastname sub attribute, value string; " +
@@ -186,7 +186,7 @@ public class TraversalTest {
         }
         session.close();
 
-        session = typedb.session(database, Arguments.Session.Type.DATA);
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLInsert query = TypeQL.parseQuery("insert " +
                     "$x isa person," +
@@ -203,7 +203,7 @@ public class TraversalTest {
             transaction.commit();
         }
 
-        try (RocksTransaction transaction = session.transaction(READ)) {
+        try (CoreTransaction transaction = session.transaction(READ)) {
             GraphProcedure.Builder proc = GraphProcedure.builder(10);
             /*
             vertices:
