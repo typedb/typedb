@@ -32,7 +32,6 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReac
 import com.vaticle.typedb.core.reasoner.computation.reactive.PacketMonitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -161,19 +160,19 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
                 ReactiveBase<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
-                InnerReactive innerReactive = new InnerReactive(this, monitor(), groupName());
-                op.publishTo(innerReactive);
-                innerReactive.sendTo(subscriber());
-                innerReactive.pull();
+                MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, monitor(), groupName());
+                op.publishTo(materialiserReactive);
+                materialiserReactive.sendTo(subscriber());
+                materialiserReactive.pull();
             }
         }
 
-        private class InnerReactive extends ReactiveBase<Map<Variable, Concept>, Map<Variable, Concept>> {
+        private class MaterialiserReactive extends ReactiveBase<Map<Variable, Concept>, Map<Variable, Concept>> {
 
             private final ConclusionReactive parent;
             private final SingleManager<Map<Variable, Concept>> providerManager;
 
-            public InnerReactive(ConclusionReactive parent, PacketMonitor monitor, String groupName) {
+            public MaterialiserReactive(ConclusionReactive parent, PacketMonitor monitor, String groupName) {
                 super(monitor, groupName);
                 this.parent = parent;
                 this.providerManager = new Provider.SingleManager<>(this);
