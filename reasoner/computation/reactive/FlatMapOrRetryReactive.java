@@ -42,7 +42,7 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, O
 
     @Override
     public void receive(Provider<INPUT> provider, INPUT packet) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        super.receive(provider, packet);
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {
             finishPulling();

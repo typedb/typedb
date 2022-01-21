@@ -22,8 +22,8 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
 
 import javax.annotation.Nullable;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 public interface Provider<R> {
@@ -47,9 +47,15 @@ public interface Provider<R> {
     interface Manager<R> {
         // TODO: Consider managing whether to pull on upstreams by telling the manager whether we are pulling or not
         void add(Provider<R> provider);
+
         void pull(Provider<R> provider);
+
         void pullAll();
+
         int size();
+
+        void receivedFrom(Provider<R> provider);
+
     }
 
     class SingleManager<R> implements Manager<R> {
@@ -92,17 +98,22 @@ public interface Provider<R> {
             if (provider == null) return 0;
             else return 1;
         }
+
+        @Override
+        public void receivedFrom(Provider<R> provider) {
+
+        }
     }
 
     class MultiManager<R> implements Manager<R> {
 
-        private final Set<Provider<R>> providers;
+        private final Map<Provider<R>, Boolean> providersPulling;
         private final Receiver<R> receiver;
         private final PacketMonitor monitor;
         private boolean hasForked;
 
         public MultiManager(Subscriber<R> subscriber, PacketMonitor monitor) {
-            this.providers = new HashSet<>();
+            this.providersPulling = new HashMap<>();
             this.receiver = subscriber;
             this.monitor = monitor;
             this.hasForked = false;
@@ -114,24 +125,30 @@ public interface Provider<R> {
 
         @Override
         public void add(Provider<R> provider) {
-            providers.add(provider);
+            providersPulling.putIfAbsent(provider, false);
         }
 
-        // TODO: Duplicated from ReactiveImpl
         @Override
         public void pullAll() {
-            providers.forEach(this::pull);
+            providersPulling.forEach((provider, hasBeenPulled) -> {
+                if (!hasBeenPulled) pull(provider);
+            });
         }
 
         @Override
         public int size() {
-            return providers.size();
+            return providersPulling.size();
         }
 
-        // TODO: Duplicated from ReactiveImpl
+        @Override
+        public void receivedFrom(Provider<R> provider) {
+            providersPulling.put(provider, false);
+        }
+
         @Override
         public void pull(Provider<R> provider) {
             if (hasForked) monitor.onPathFork(1);
+            providersPulling.put(provider, true);
             provider.pull(receiver);
             hasForked = true;
         }

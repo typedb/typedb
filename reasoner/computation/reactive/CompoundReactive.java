@@ -63,7 +63,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveBase<PACKET, PACK
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        super.receive(provider, packet);
         PACKET mergedPacket = compoundPacketsFunc.apply(initialPacket, packet);
         if (leadingPublisher.equals(provider)) {
             providerManager().pull(leadingPublisher);  // TODO: This shouldn't be here for a single item plan

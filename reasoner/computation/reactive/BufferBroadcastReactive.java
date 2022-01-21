@@ -50,6 +50,7 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        providerManager.receivedFrom(provider);
         assert subscribers.size() > 0;
         if (bufferSet.add(packet)) {
             bufferList.add(packet);

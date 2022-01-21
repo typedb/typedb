@@ -35,6 +35,12 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
     protected abstract Manager<INPUT> providerManager();
 
     @Override
+    public void receive(Provider<INPUT> provider, INPUT packet) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        providerManager().receivedFrom(provider);
+    }
+
+    @Override
     public void pull(Receiver<OUTPUT> receiver) {
         assert receiver.equals(subscriber);  // TODO: Make a proper exception for this
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));

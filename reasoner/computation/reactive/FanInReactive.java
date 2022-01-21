@@ -40,7 +40,7 @@ public class FanInReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        super.receive(provider, packet);
         finishPulling();
         subscriber().receive(this, packet);
     }
