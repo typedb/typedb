@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PacketMonitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -159,7 +160,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                         driver(), materialiserEndpoint.id(), null,
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
-                ReactiveBase<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
+                Reactive<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
                 MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, monitor(), groupName());
                 op.publishTo(materialiserReactive);
                 materialiserReactive.sendTo(subscriber());

@@ -36,13 +36,13 @@ public interface Provider<R> {
 
         void publishTo(Subscriber<T> subscriber);
 
-        ReactiveBase<T, T> findFirst();
+        Reactive<T, T> findFirst();
 
-        <R> ReactiveBase<T, R> map(Function<T, R> function);
+        <R> Reactive<T, R> map(Function<T, R> function);
 
-        <R> ReactiveBase<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
+        <R> Reactive<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
 
-        ReactiveBase<T, T> buffer();
+        Reactive<T, T> buffer();
 
     }
 

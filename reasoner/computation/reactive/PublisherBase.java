@@ -18,16 +18,30 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-public abstract class Reactive<INPUT, OUTPUT> extends PublisherImpl<OUTPUT> implements Receiver.Subscriber<INPUT>  {
+import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
 
-    protected Reactive(PacketMonitor monitor, String groupName) {
+public abstract class PublisherBase<OUTPUT> extends PublisherImpl<OUTPUT> {
+
+    protected Receiver<OUTPUT> subscriber;
+
+    protected PublisherBase(PacketMonitor monitor, String groupName) {
         super(monitor, groupName);
     }
 
-    protected abstract boolean isPulling();
+    @Override
+    public void publishTo(Subscriber<OUTPUT> subscriber) {
+        setSubscriber(subscriber);
+        subscriber.subscribeTo(this);
+    }
 
-    protected abstract void finishPulling();
+    protected void setSubscriber(Receiver<OUTPUT> subscriber) {
+        // TODO: This is duplicated in the Reactive class hierarchy
+        assert this.subscriber == null;
+        this.subscriber = subscriber;
+    }
 
-    protected abstract Manager<INPUT> providerManager();
+    protected Receiver<OUTPUT> subscriber() {
+        return subscriber;
+    }
 
 }

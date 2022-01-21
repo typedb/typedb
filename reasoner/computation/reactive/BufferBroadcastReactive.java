@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 
-public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET> {
+public class BufferBroadcastReactive<PACKET> extends Reactive<PACKET, PACKET> {
 
     final Map<Receiver<PACKET>, Integer> bufferPositions;  // Points to the next item needed
     final Set<PACKET> bufferSet;
@@ -48,9 +48,14 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
     }
 
     @Override
+    protected Manager<PACKET> providerManager() {
+        return providerManager;
+    }
+
+    @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
-        providerManager.receivedFrom(provider);
+        providerManager().receivedFrom(provider);
         assert subscribers.size() > 0;
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
@@ -58,7 +63,7 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
             finishPulling();
             toSend.forEach(this::send);
         } else if (isPulling()) {
-            providerManager.pull(provider);
+            providerManager().pull(provider);
             monitor().onPathJoin();
         }
     }
@@ -71,30 +76,31 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
             setPulling(receiver);
-            providerManager.pullAll();
+            providerManager().pullAll();
         } else {
             send(receiver);
         }
-    }
-
-    // TODO: Should pulling methods be abstracted into a reactive interface? These calls are only used internally
-    protected void finishPulling() {
-        pullers.clear();
-    }
-
-    void setPulling(Receiver<PACKET> receiver) {
-        pullers.add(receiver);
-    }
-
-    @Override
-    protected boolean isPulling() {
-        return pullers.size() > 0;
     }
 
     private void send(Receiver<PACKET> receiver) {
         Integer pos = bufferPositions.get(receiver);
         bufferPositions.put(receiver, pos + 1);
         receiver.receive(this, bufferList.get(pos));
+    }
+
+    // TODO: Should pulling methods be abstracted into a reactive interface? These calls are only used internally
+    @Override
+    protected void finishPulling() {
+        pullers.clear();
+    }
+
+    protected void setPulling(Receiver<PACKET> receiver) {
+        pullers.add(receiver);
+    }
+
+    @Override
+    protected boolean isPulling() {
+        return pullers.size() > 0;
     }
 
     @Override
@@ -106,8 +112,8 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
 
     @Override
     public void subscribeTo(Provider<PACKET> provider) {
-        providerManager.add(provider);
-        if (isPulling()) providerManager.pull(provider);
+        providerManager().add(provider);
+        if (isPulling()) providerManager().pull(provider);
     }
 
 }

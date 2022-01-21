@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Supplier;
 
-public class Source<PACKET> extends PublisherImpl<PACKET> {
+public class Source<PACKET> extends PublisherBase<PACKET> {
 
     private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
     private FunctionalIterator<PACKET> iterator;

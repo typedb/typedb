@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.Set;
 
-public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OUTPUT> {
+public abstract class ReactiveBase<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
 
     protected Receiver<OUTPUT> subscriber;
     private boolean isPulling;
@@ -32,6 +32,7 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
         this.isPulling = false;
     }
 
+    @Override
     protected abstract Manager<INPUT> providerManager();
 
     @Override
@@ -56,6 +57,7 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends ReactiveImpl<INPUT, OU
         if (isPulling()) providerManager().pull(provider);
     }
 
+    @Override
     public void finishPulling() {
         isPulling = false;
     }

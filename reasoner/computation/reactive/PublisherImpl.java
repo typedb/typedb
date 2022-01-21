@@ -19,11 +19,8 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
 
 import java.util.function.Function;
-
-import static com.vaticle.typedb.common.collection.Collections.set;
 
 public abstract class PublisherImpl<OUTPUT> implements Provider.Publisher<OUTPUT> {
 
@@ -46,47 +43,30 @@ public abstract class PublisherImpl<OUTPUT> implements Provider.Publisher<OUTPUT
     }
 
     @Override
-    public void publishTo(Subscriber<OUTPUT> subscriber) {
-        setSubscriber(subscriber);
-        subscriber.subscribeTo(this);
-    }
-
-    protected void setSubscriber(Receiver<OUTPUT> subscriber) {
-        // TODO: This is duplicated in the Reactive class hierarchy
-        assert this.subscriber == null;
-        this.subscriber = subscriber;
-    }
-
-    protected Receiver<OUTPUT> subscriber() {
-        return subscriber;
-    }
-
-    @Override
-    public ReactiveBase<OUTPUT, OUTPUT> findFirst() {
+    public Reactive<OUTPUT, OUTPUT> findFirst() {
         FindFirstReactive<OUTPUT> findFirst = new FindFirstReactive<>(this, monitor, groupName());
         publishTo(findFirst);
         return findFirst;
     }
 
     @Override
-    public <R> ReactiveBase<OUTPUT, R> map(Function<OUTPUT, R> function) {
+    public <R> Reactive<OUTPUT, R> map(Function<OUTPUT, R> function) {
         MapReactive<OUTPUT, R> map = new MapReactive<>(this, function, monitor(), groupName());
         publishTo(map);
         return map;
     }
 
     @Override
-    public <R> ReactiveBase<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
+    public <R> Reactive<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
         FlatMapOrRetryReactive<OUTPUT, R> flatMap = new FlatMapOrRetryReactive<>(this, function, monitor(), groupName());
         publishTo(flatMap);
         return flatMap;
     }
 
     @Override
-    public ReactiveBase<OUTPUT, OUTPUT> buffer() {
+    public Reactive<OUTPUT, OUTPUT> buffer() {
         BufferReactive<OUTPUT> buffer = new BufferReactive<>(this, monitor(), groupName());
         publishTo(buffer);
         return buffer;
     }
-
 }

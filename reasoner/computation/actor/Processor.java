@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PacketMonitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
-import com.vaticle.typedb.core.reasoner.computation.reactive.PublisherImpl;
+import com.vaticle.typedb.core.reasoner.computation.reactive.PublisherBase;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
@@ -218,7 +218,7 @@ public abstract class Processor<INPUT, OUTPUT,
     /**
      * Governs an input to a processor
      */
-    public static class InletEndpoint<PACKET> extends PublisherImpl<PACKET> implements Receiver<PACKET> {
+    public static class InletEndpoint<PACKET> extends PublisherBase<PACKET> implements Receiver<PACKET> {
 
         private final long id;
         private boolean ready;
