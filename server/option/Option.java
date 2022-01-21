@@ -15,6 +15,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.option.cli.Command;
 import com.vaticle.typedb.core.server.option.cli.CommandLine;
 import com.vaticle.typedb.core.server.option.conf.Config;
+import com.vaticle.typedb.core.server.option.conf.ConfigParser;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +27,7 @@ import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_AR
 public class Option {
     public static CommandLine commandLine() {
         return new CommandLine()
-                .command(new Command.Server.Parser(new Config.Parser()))
+                .command(new Command.Server.Parser(new ConfigParser()))
                 .command(new Command.Import.Parser())
                 .command(new Command.Export.Parser());
     }

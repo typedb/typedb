@@ -43,7 +43,7 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
     ],
     data = [
-        "//server:typedb",
+        "//server:config",
         ":configurations"
     ],
 )

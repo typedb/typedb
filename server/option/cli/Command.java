@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.server.option.conf.Config;
 import com.vaticle.typedb.core.server.option.cli.CommandLine.Option.CliHelp.Help;
+import com.vaticle.typedb.core.server.option.conf.ConfigParser;
 
 import java.nio.file.Paths;
 import java.util.List;
@@ -127,7 +128,7 @@ public abstract class Command {
         private final boolean isVersion;
         private final Config config;
 
-        private Server(boolean isDebug, boolean isHelp, boolean isVersion, Config config) {
+        Server(boolean isDebug, boolean isHelp, boolean isVersion, Config config) {
             this.isDebug = isDebug;
             this.isHelp = isHelp;
             this.isVersion = isVersion;
@@ -142,9 +143,9 @@ public abstract class Command {
             private static final OptionParser.Path configFile = new OptionParser.Path("config", "Path to TypeDB YAML configuration file.");
             private static final Set<OptionParser> auxiliary = set(debug, help, version, configFile);
 
-            private final Config.Parser configurationParser;
+            private final ConfigParser configurationParser;
 
-            public Parser(Config.Parser configurationParser) {
+            public Parser(ConfigParser configurationParser) {
                 super(Server.tokens, Server.description);
                 this.configurationParser = configurationParser;
             }

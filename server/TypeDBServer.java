@@ -35,6 +35,7 @@ import com.vaticle.typedb.core.server.option.Option;
 import com.vaticle.typedb.core.server.option.cli.Command;
 import com.vaticle.typedb.core.server.option.cli.CommandLine;
 import com.vaticle.typedb.core.server.option.conf.Config;
+import com.vaticle.typedb.core.server.option.conf.ConfigParser;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
@@ -123,7 +124,7 @@ public class TypeDBServer implements AutoCloseable {
 
     private void configureAndVerifyDataDir() {
         if (!Files.isDirectory(config.storage().dataDir())) {
-            if (config.storage().dataDir().equals((new Config.Parser()).getConfig().storage().dataDir())) {
+            if (config.storage().dataDir().equals((new ConfigParser()).getConfig().storage().dataDir())) {
                 try {
                     Files.createDirectory(config.storage().dataDir());
                 } catch (IOException e) {
