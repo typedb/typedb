@@ -45,7 +45,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveBase<PACKET, PACK
                             PacketMonitor monitor, String groupName) {
         super(monitor, groupName);
         assert plan.size() > 0;
-        this.providerManager = Provider.MultiManager.create(this, monitor());
+        this.providerManager = new MultiManager<>(this, null);
         this.initialPacket = initialPacket;
         this.remainingPlan = new ArrayList<>(plan);
         this.leadingPublisher = spawnLeaderFunc.apply(this.remainingPlan.remove(0), initialPacket);

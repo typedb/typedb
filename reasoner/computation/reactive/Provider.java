@@ -112,15 +112,11 @@ public interface Provider<R> {
         private final PacketMonitor monitor;
         private boolean hasForked;
 
-        public MultiManager(Subscriber<R> subscriber, PacketMonitor monitor) {
+        public MultiManager(Subscriber<R> subscriber, @Nullable PacketMonitor monitor) {
             this.providersPulling = new HashMap<>();
             this.receiver = subscriber;
             this.monitor = monitor;
             this.hasForked = false;
-        }
-
-        public static <R> MultiManager<R> create(Subscriber<R> subscriber, PacketMonitor monitor) {
-            return new MultiManager<>(subscriber, monitor);
         }
 
         @Override
@@ -149,7 +145,7 @@ public interface Provider<R> {
         @Override
         public void pull(Provider<R> provider) {
             if (!providersPulling.get(provider)) {
-                if (hasForked) monitor.onPathFork(1);
+                if (hasForked && monitor != null) monitor.onPathFork(1);
                 providersPulling.put(provider, true);
                 provider.pull(receiver);
                 hasForked = true;
