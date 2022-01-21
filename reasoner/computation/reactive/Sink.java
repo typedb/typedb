@@ -52,7 +52,6 @@ public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provi
 
     @Override
     public void pull(@Nullable Receiver<PACKET> receiver) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         assert receiver == null;
         isPulling = true;
         if (providerManager.size() > 0) {

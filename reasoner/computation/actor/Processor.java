@@ -245,7 +245,6 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void pull(Receiver<PACKET> receiver) {
             assert receiver.equals(subscriber);
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
             isPulling = true;
             if (ready) {
                 connection.pull();

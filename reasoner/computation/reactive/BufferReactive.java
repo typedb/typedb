@@ -53,7 +53,6 @@ public class BufferReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
     @Override
     public void pull(Receiver<PACKET> receiver) {
         assert receiver.equals(subscriber);  // TODO: Make a proper exception for this
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         if (stack.size() > 0) {
             assert !isPulling();
             receiver.receive(this, stack.pop());

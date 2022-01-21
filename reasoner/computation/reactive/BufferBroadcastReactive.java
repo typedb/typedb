@@ -70,7 +70,6 @@ public class BufferBroadcastReactive<PACKET> extends Reactive<PACKET, PACKET> {
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         bufferPositions.putIfAbsent(receiver, 0);
         subscribers.add(receiver);
         if (bufferList.size() == bufferPositions.get(receiver)) {

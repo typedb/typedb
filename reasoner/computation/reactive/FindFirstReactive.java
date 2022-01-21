@@ -50,7 +50,6 @@ public class FindFirstReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         if (!packetFound) super.pull(receiver);
     }
 }

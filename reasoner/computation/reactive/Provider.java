@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -85,14 +86,13 @@ public interface Provider<R> {
         public void pull(Provider<R> provider) {
             assert this.provider != null;
             assert this.provider == provider;
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
             provider.pull(receiver);
         }
 
         @Override
         public void pullAll() {
-            if (provider != null) {
-                provider.pull(receiver);
-            }
+            if (provider != null) pull(provider);
         }
 
         @Override
@@ -149,6 +149,7 @@ public interface Provider<R> {
             if (!providersPulling.get(provider)) {
                 if (hasForked && monitor != null) monitor.onPathFork(1);
                 providersPulling.put(provider, true);
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
                 provider.pull(receiver);
                 hasForked = true;
             }

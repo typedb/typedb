@@ -44,7 +44,6 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT
     @Override
     public void pull(Receiver<OUTPUT> receiver) {
         assert receiver.equals(subscriber);  // TODO: Make a proper exception for this
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         if (!isPulling()) {
             setPulling();
             providerManager().pullAll();

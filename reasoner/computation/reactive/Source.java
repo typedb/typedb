@@ -41,7 +41,6 @@ public class Source<PACKET> extends PublisherBase<PACKET> {
     @Override
     public void pull(Receiver<PACKET> receiver) {
         assert receiver.equals(subscriber);
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, this));
         if (iterator == null) iterator = iteratorSupplier.get();
         if (iterator.hasNext()) {
             receiver.receive(this, iterator.next());
