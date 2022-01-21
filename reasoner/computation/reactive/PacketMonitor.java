@@ -22,6 +22,6 @@ public interface PacketMonitor {
 
     void onPathFork(int numForks);
 
-    void onPathTerminate();
+    void onPathJoin();
 
 }

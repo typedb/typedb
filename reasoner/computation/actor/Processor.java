@@ -161,9 +161,9 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     @Override
-    public void onPathTerminate() {
+    public void onPathJoin() {
         answerPathsTally -= 1;
-        monitors.forEach(monitor -> monitor.execute(actor -> actor.onPathTerminate()));
+        monitors.forEach(monitor -> monitor.execute(actor -> actor.onPathJoin()));
         checkTermination();
     }
 

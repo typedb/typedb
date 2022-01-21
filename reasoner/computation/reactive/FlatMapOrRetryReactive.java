@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Function;
 
@@ -54,6 +53,6 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, O
         } else if (isPulling()) {
             providerManager.pull(provider);  // Automatic retry
         }
-        monitor().onPathTerminate();  // Because we discarded the original packet and gained as many as are in the iterator
+        monitor().onPathJoin();  // Because we discarded the original packet and gained as many as are in the iterator
     }
 }

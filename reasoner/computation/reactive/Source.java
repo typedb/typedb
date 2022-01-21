@@ -46,7 +46,7 @@ public class Source<PACKET> extends PublisherImpl<PACKET> {
         if (iterator.hasNext()) {
             receiver.receive(this, iterator.next());
         } else {
-            monitor().onPathTerminate();
+            monitor().onPathJoin();
         }
     }
 

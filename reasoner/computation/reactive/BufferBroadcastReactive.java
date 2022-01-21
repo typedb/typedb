@@ -59,7 +59,7 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveImpl<PACKET, PACKET
             toSend.forEach(this::send);
         } else if (isPulling()) {
             providerManager.pull(provider);
-            monitor().onPathTerminate();
+            monitor().onPathJoin();
         }
     }
 
