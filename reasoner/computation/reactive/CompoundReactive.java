@@ -76,7 +76,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveBase<PACKET, PACK
                     nextPublisher = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
                     lastPublishers.add(nextPublisher);
                 } else {
-                    nextPublisher = new CompoundReactive<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, monitor(), groupName());
+                    nextPublisher = new CompoundReactive<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, monitor(), groupName()).buffer();
                 }
                 publisherPackets.put(nextPublisher, mergedPacket);
                 nextPublisher.publishTo(this);

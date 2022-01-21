@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
-
 public class FanInReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
     private final Provider.MultiManager<PACKET> providerManager;

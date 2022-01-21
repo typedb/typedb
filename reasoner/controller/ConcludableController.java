@@ -132,8 +132,8 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
             setOutlet(new BufferBroadcastReactive<>(this, name()));
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
             ReactiveBase<ConceptMap, ConceptMap> op = fanIn(this, name());
-            if (singleAnswerRequired) op.findFirst().publishTo(outlet());
-            else op.publishTo(outlet());
+            if (singleAnswerRequired) op.buffer().findFirst().publishTo(outlet());
+            else op.buffer().publishTo(outlet());
 
             Source.fromIteratorSupplier(traversalSuppplier, this, name()).publishTo(op);
 

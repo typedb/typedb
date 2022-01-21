@@ -82,4 +82,11 @@ public abstract class PublisherImpl<OUTPUT> implements Provider.Publisher<OUTPUT
         return flatMap;
     }
 
+    @Override
+    public ReactiveBase<OUTPUT, OUTPUT> buffer() {
+        BufferReactive<OUTPUT> buffer = new BufferReactive<>(this, monitor(), groupName());
+        publishTo(buffer);
+        return buffer;
+    }
+
 }

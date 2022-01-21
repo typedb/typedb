@@ -64,4 +64,11 @@ public abstract class ReactiveImpl<INPUT, OUTPUT> implements Reactive<INPUT, OUT
         return flatMap;
     }
 
+    @Override
+    public ReactiveBase<OUTPUT, OUTPUT> buffer() {
+        BufferReactive<OUTPUT> buffer = new BufferReactive<>(this, monitor(), groupName());
+        publishTo(buffer);
+        return buffer;
+    }
+
 }

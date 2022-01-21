@@ -88,7 +88,7 @@ public abstract class DisjunctionController<
 
         @Override
         public void setUp() {
-            setOutlet(fanIn(this, name()));
+            setOutlet(fanIn(this, name()));  // TODO: Needs separating to be able to add a buffer()
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
                 InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
                 endpoint.publishTo(outlet());

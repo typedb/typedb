@@ -70,7 +70,7 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
         @Override
         public void setUp() {
             super.setUp();
-            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, this, name()).publishTo(outlet());
+            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, this, name()).buffer().publishTo(outlet());
         }
     }
 

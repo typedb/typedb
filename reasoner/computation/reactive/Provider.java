@@ -42,6 +42,8 @@ public interface Provider<R> {
 
         <R> ReactiveBase<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
 
+        ReactiveBase<T, T> buffer();
+
     }
 
     interface Manager<R> {
