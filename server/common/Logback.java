@@ -1,4 +1,4 @@
-package com.vaticle.typedb.core.server.option;
+package com.vaticle.typedb.core.server.common;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -12,10 +12,7 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
 import ch.qos.logback.core.util.FileSize;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.option.cli.CommandLine;
-import com.vaticle.typedb.core.server.option.cli.CommandParser;
-import com.vaticle.typedb.core.server.option.conf.Config;
-import com.vaticle.typedb.core.server.option.conf.ConfigParser;
+import com.vaticle.typedb.core.server.options.conf.Config;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,15 +21,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_ARCHIVE_SUFFIX;
 
-public class Option {
-    public static CommandLine commandLine() {
-        return new CommandLine()
-                .command(new CommandParser.ServerParser(new ConfigParser()))
-                .command(new CommandParser.ImportParser())
-                .command(new CommandParser.ExportParser());
-    }
+public class Logback {
 
-    public static void configureLogback(LoggerContext context, Config config) {
+    public static void configure(LoggerContext context, Config config) {
         // all appenders use the same layout
         LayoutWrappingEncoder<ILoggingEvent> encoder = new LayoutWrappingEncoder<>();
         encoder.setContext(context);

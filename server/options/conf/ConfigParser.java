@@ -1,9 +1,8 @@
-package com.vaticle.typedb.core.server.option.conf;
+package com.vaticle.typedb.core.server.options.conf;
 
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.ConfigKVParser;
-import com.vaticle.typedb.core.server.option.cli.CommandLine;
+import com.vaticle.typedb.core.server.options.cli.CommandLine;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
@@ -21,12 +20,12 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_YAML_MUST_BE_MAP;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CONFIGURATION_OPTIONS;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.BOOLEAN;
-import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.BYTES_SIZE;
-import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.INET_SOCKET_ADDRESS;
-import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.LIST_STRING;
-import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.PATH;
-import static com.vaticle.typedb.core.server.common.ConfigKVParser.ValueParser.Leaf.STRING;
+import static com.vaticle.typedb.core.server.options.conf.ConfigKVParser.ValueParser.Leaf.BOOLEAN;
+import static com.vaticle.typedb.core.server.options.conf.ConfigKVParser.ValueParser.Leaf.BYTES_SIZE;
+import static com.vaticle.typedb.core.server.options.conf.ConfigKVParser.ValueParser.Leaf.INET_SOCKET_ADDRESS;
+import static com.vaticle.typedb.core.server.options.conf.ConfigKVParser.ValueParser.Leaf.LIST_STRING;
+import static com.vaticle.typedb.core.server.options.conf.ConfigKVParser.ValueParser.Leaf.PATH;
+import static com.vaticle.typedb.core.server.options.conf.ConfigKVParser.ValueParser.Leaf.STRING;
 import static com.vaticle.typedb.core.server.common.Constants.CONFIG_PATH;
 import static com.vaticle.typedb.core.server.common.Util.getConfigPath;
 import static com.vaticle.typedb.core.server.common.Util.readConfig;

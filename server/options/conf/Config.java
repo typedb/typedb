@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.server.option.conf;
+package com.vaticle.typedb.core.server.options.conf;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 

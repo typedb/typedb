@@ -16,12 +16,12 @@
  *
  */
 
-package com.vaticle.typedb.core.server.common;
+package com.vaticle.typedb.core.server.options.conf;
 
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.option.cli.CommandLine.Option;
+import com.vaticle.typedb.core.server.options.cli.CommandLine.Option;
 
 import java.net.InetSocketAddress;
 import java.net.URI;

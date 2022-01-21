@@ -31,11 +31,11 @@ import com.vaticle.typedb.core.migrator.MigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
 import com.vaticle.typedb.core.database.Factory;
 import com.vaticle.typedb.core.database.CoreFactory;
-import com.vaticle.typedb.core.server.option.Option;
-import com.vaticle.typedb.core.server.option.cli.Command;
-import com.vaticle.typedb.core.server.option.cli.CommandLine;
-import com.vaticle.typedb.core.server.option.conf.Config;
-import com.vaticle.typedb.core.server.option.conf.ConfigParser;
+import com.vaticle.typedb.core.server.options.cli.Command;
+import com.vaticle.typedb.core.server.options.cli.CommandLine;
+import com.vaticle.typedb.core.server.options.cli.CommandParser;
+import com.vaticle.typedb.core.server.options.conf.Config;
+import com.vaticle.typedb.core.server.options.conf.ConfigParser;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
@@ -61,7 +61,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILE
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
-import static com.vaticle.typedb.core.server.option.Option.configureLogback;
+import static com.vaticle.typedb.core.server.common.Logback.configure;
 import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
 
@@ -109,7 +109,7 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     private void configureLogging() {
-        configureLogback((LoggerContext) LoggerFactory.getILoggerFactory(), config);
+        configure((LoggerContext) LoggerFactory.getILoggerFactory(), config);
         java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
@@ -235,7 +235,10 @@ public class TypeDBServer implements AutoCloseable {
         try {
             printASCIILogo();
 
-            CommandLine commandLine = Option.commandLine();
+            CommandLine commandLine = new CommandLine()
+                    .command(new CommandParser.ServerParser(new ConfigParser()))
+                    .command(new CommandParser.ImportParser())
+                    .command(new CommandParser.ExportParser());
             Optional<Command> command = commandLine.parse(args);
             if (command.isEmpty()) {
                 LOG.error(UNRECOGNISED_CLI_COMMAND.message(String.join(" ", args)));

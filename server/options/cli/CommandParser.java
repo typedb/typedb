@@ -1,9 +1,9 @@
-package com.vaticle.typedb.core.server.option.cli;
+package com.vaticle.typedb.core.server.options.cli;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.server.option.conf.Config;
-import com.vaticle.typedb.core.server.option.conf.ConfigParser;
+import com.vaticle.typedb.core.server.options.conf.Config;
+import com.vaticle.typedb.core.server.options.conf.ConfigParser;
 
 import java.nio.file.Paths;
 import java.util.List;

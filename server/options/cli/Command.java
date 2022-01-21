@@ -16,10 +16,10 @@
  *
  */
 
-package com.vaticle.typedb.core.server.option.cli;
+package com.vaticle.typedb.core.server.options.cli;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.option.conf.Config;
+import com.vaticle.typedb.core.server.options.conf.Config;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;

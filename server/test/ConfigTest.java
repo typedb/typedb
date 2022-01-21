@@ -20,11 +20,11 @@ package com.vaticle.typedb.core.server.test;
 
 import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.option.cli.CommandLine;
-import com.vaticle.typedb.core.server.common.ConfigKVParser;
-import com.vaticle.typedb.core.server.option.conf.Config;
+import com.vaticle.typedb.core.server.options.cli.CommandLine;
+import com.vaticle.typedb.core.server.options.conf.ConfigKVParser;
+import com.vaticle.typedb.core.server.options.conf.Config;
 import com.vaticle.typedb.core.server.common.Util;
-import com.vaticle.typedb.core.server.option.conf.ConfigParser;
+import com.vaticle.typedb.core.server.options.conf.ConfigParser;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;

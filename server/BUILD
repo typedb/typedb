@@ -28,7 +28,7 @@ package(default_visibility = ["//visibility:private",])
 
 filegroup(
     name = "config",
-    srcs = ["option/conf/config.yml"],
+    srcs = ["options/conf/config.yml"],
     visibility = ["//visibility:public"],
 )
 
