@@ -85,7 +85,7 @@ public interface ThingAdjacency {
 
         interface Optimised extends InEdgeIterator {
 
-            SortedIterator.Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> relationAndRole();
+            SortedIterator.Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> fromAndOptimised();
         }
     }
 
@@ -97,7 +97,7 @@ public interface ThingAdjacency {
 
         interface Optimised extends OutEdgeIterator {
 
-            SortedIterator.Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> playerAndRole();
+            SortedIterator.Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> toAndOptimised();
         }
     }
 

@@ -206,7 +206,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
         return Iterators.Sorted.merge(ASC, iterate(edge.asNative().asRolePlayer().types()).map(roleLabel -> {
             TypeVertex roleVertex = graphMgr.schema().getType(roleLabel);
             return player.ins().edge(ROLEPLAYER, roleVertex)
-                    .relationAndRole()
+                    .fromAndOptimised()
                     .filter(relRole -> relationTypes.contains(relRole.key().type().properLabel()));
         })).filter(relRole -> !scoped.contains(relRole.value())).mapSorted(
                 ASC,

@@ -129,7 +129,7 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                         ASC,
                         comparableEdge -> comparableEdge.edge().from(),
                         vertex -> ComparableEdge.Thing.byInIID(
-                                new ThingEdgeImpl.Target(encoding, owner, vertex, optimisedType)
+                                new ThingEdgeImpl.Target(encoding, vertex, owner, optimisedType)
                         )
                 );
             }
@@ -147,12 +147,12 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                 }
 
                 @Override
-                public SortedIterator.Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> relationAndRole() {
+                public SortedIterator.Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> fromAndOptimised() {
                     return comparableEdges.mapSorted(
                             ASC,
                             comparableEdge -> KeyValue.of(comparableEdge.edge().from(), comparableEdge.edge().optimised().get()),
-                            relationAndRole -> ComparableEdge.Thing.byInIID(
-                                    new ThingEdgeImpl.Target(encoding, owner, relationAndRole.key(), optimisedType)
+                            fromAndOptimised -> ComparableEdge.Thing.byInIID(
+                                    new ThingEdgeImpl.Target(encoding, fromAndOptimised.key(), owner, optimisedType)
                             )
                     );
                 }
@@ -190,12 +190,12 @@ public abstract class ThingAdjacencyImpl implements ThingAdjacency {
                 }
 
                 @Override
-                public SortedIterator.Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> playerAndRole() {
+                public SortedIterator.Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> toAndOptimised() {
                     return comparableEdges.mapSorted(
                             ASC,
                             comparableEdge -> KeyValue.of(comparableEdge.edge().to(), comparableEdge.edge().optimised().get()),
-                            playerAndRole -> ComparableEdge.Thing.byOutIID(
-                                    new ThingEdgeImpl.Target(encoding, owner, playerAndRole.key(), optimisedType)
+                            toAndOptimised -> ComparableEdge.Thing.byOutIID(
+                                    new ThingEdgeImpl.Target(encoding, owner, toAndOptimised.key(), optimisedType)
                             )
                     );
                 }
