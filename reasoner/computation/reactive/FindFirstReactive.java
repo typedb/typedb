@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
-
 public class FindFirstReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
     private final SingleManager<PACKET> providerManager;
@@ -44,7 +42,7 @@ public class FindFirstReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
             finishPulling();
             subscriber().receive(this, packet);
         } else {
-            monitor().onPathJoin();
+            monitor().onPathJoin(this);
         }
     }
 

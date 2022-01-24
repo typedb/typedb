@@ -20,9 +20,9 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 public interface PacketMonitor {
 
-    void onPathFork(int numForks);
+    void onPathFork(int numForks, Receiver<?> forker);
 
-    void onPathJoin();
+    void onPathJoin(Provider<?> joiner);
 
     long pathsCount();
 }

@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.utils;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
@@ -143,6 +144,25 @@ public final class Tracer {
         rootRequestTracers.get(trace).addNodeGroup(node, group);
     }
 
+    public void pathJoin(Provider<?> joiner, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numJoins) {
+        pathCount(simpleClassId(joiner), monitor, "c" + numJoins);
+    }
+
+    public void pathFork(Receiver<?> forker, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numForks) {
+        pathCount(simpleClassId(forker), monitor, "c" + numForks);
+    }
+
+    public void pathCountFastForward(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?,?,?,?>> monitor, long answerPathsCount) {
+        String senderName = sender.name() + "-actor";
+        pathCount(senderName, monitor, "ff" + answerPathsCount);
+        addNodeGroup(senderName, sender.name(), defaultTrace);
+    }
+
+    public void pathCount(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
+        String monitorName = monitor.name() + "-actor";
+        addMessage(sender, monitorName, defaultTrace, EdgeType.MONITOR, label);
+        addNodeGroup(monitorName, monitor.name(), defaultTrace);
+    }
 
     public synchronized void startDefaultTrace() {
         Trace trace = defaultTrace;
@@ -157,10 +177,6 @@ public final class Tracer {
 
     public synchronized void exception() {
         rootRequestTracers.forEach((r, t) -> t.finish());
-    }
-
-    public void pathCount(String sender, String monitor, long answerPathsCount) {
-        addMessage(sender, monitor, defaultTrace, EdgeType.MONITOR, "c" + answerPathsCount);
     }
 
     private static class RootRequestTracer {
@@ -251,8 +267,8 @@ public final class Tracer {
 
         private void writeNodeToCluster(String nodeId, String clusterLabel) {
             int ci = clusterMap.computeIfAbsent(clusterLabel, ignored -> nextClusterId());
-            write(String.format("subgraph cluster_%d {%s; label=%s;}", ci, doubleQuotes(escapeNewlines(nodeId)),
-                                doubleQuotes(escapeNewlines(clusterLabel))));
+            write(String.format("subgraph cluster_%d {%s; label=%s;}", ci, doubleQuotes(escapeNewlines(escapeDoubleQuotes(nodeId))),
+                                doubleQuotes(escapeNewlines(escapeDoubleQuotes(clusterLabel)))));
         }
 
         private String escapeNewlines(String toFormat) {

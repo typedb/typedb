@@ -144,7 +144,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     private void fastForwardAnswerPathsCount(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathCount(driver().name(), monitor.name(), answerPathsCount));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathCountFastForward(driver(), monitor, answerPathsCount));
         monitor.execute(actor -> actor.updatePathsCount(answerPathsCount));
     }
 
@@ -154,22 +154,23 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     @Override
-    public void onPathFork(int numForks) {
+    public void onPathFork(int numForks, Receiver<?> forker) {
         assert numForks > 0;
         answerPathsCount += numForks;
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathFork(forker, driver(), numForks));
         monitors.forEach(monitor -> {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathCount(driver().name(), monitor.name(), numForks));
-            monitor.execute(actor -> actor.onPathFork(numForks));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathFork(forker, monitor, numForks));
+            monitor.execute(actor -> actor.onPathFork(numForks, forker));
         });
         checkTermination();
     }
 
     @Override
-    public void onPathJoin() {
+    public void onPathJoin(Provider<?> joiner) {
         answerPathsCount -= 1;
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathJoin(joiner, driver(), -1));
         monitors.forEach(monitor -> {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathCount(driver().name(), monitor.name(), -1));
-            monitor.execute(actor -> actor.onPathJoin());
+            monitor.execute(actor -> actor.onPathJoin(joiner));
         });
         checkTermination();
     }

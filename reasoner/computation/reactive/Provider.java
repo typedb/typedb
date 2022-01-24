@@ -24,7 +24,9 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 public interface Provider<R> {
@@ -114,12 +116,14 @@ public interface Provider<R> {
     class MultiManager<R> implements Manager<R> {
 
         private final Map<Provider<R>, Boolean> providersPulling;
+        private final Set<Provider<R>> forkedProviders;
         private final Receiver<R> receiver;
         private final PacketMonitor monitor;
         private boolean hasForked;
 
         public MultiManager(Subscriber<R> subscriber, @Nullable PacketMonitor monitor) {
             this.providersPulling = new HashMap<>();
+            this.forkedProviders = new HashSet<>();
             this.receiver = subscriber;
             this.monitor = monitor;
             this.hasForked = false;
@@ -128,13 +132,6 @@ public interface Provider<R> {
         @Override
         public void add(Provider<R> provider) {
             providersPulling.putIfAbsent(provider, false);
-        }
-
-        @Override
-        public void pullAll() {
-            providersPulling.forEach((provider, hasBeenPulled) -> {
-                if (!hasBeenPulled) pull(provider);
-            });
         }
 
         @Override
@@ -149,13 +146,25 @@ public interface Provider<R> {
         }
 
         @Override
+        public void pullAll() {
+            providersPulling.forEach((provider, hasBeenPulled) -> {
+                if (!hasBeenPulled) pull(provider);
+            });
+        }
+
+        @Override
         public void pull(Provider<R> provider) {
+            assert providersPulling.containsKey(provider);
             if (!providersPulling.get(provider)) {
-                if (hasForked && monitor != null) monitor.onPathFork(1);
+                if (monitor != null && !forkedProviders.contains(provider)) monitor.onPathFork(1, receiver);
+                forkedProviders.add(provider);
                 providersPulling.put(provider, true);
                 if (monitor == null) Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
                 else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.pathsCount()));
                 provider.pull(receiver);
+                if (!hasForked && monitor != null) {
+                    monitor.onPathJoin(provider);  // TODO: This misdirects the arrow in tracing which is very confusing
+                }
                 hasForked = true;
             }
         }

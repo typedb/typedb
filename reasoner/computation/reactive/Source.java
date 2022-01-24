@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Supplier;
 
@@ -45,7 +44,7 @@ public class Source<PACKET> extends PublisherBase<PACKET> {
         if (iterator.hasNext()) {
             receiver.receive(this, iterator.next());
         } else {
-            monitor().onPathJoin();
+            monitor().onPathJoin(this);
         }
     }
 

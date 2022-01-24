@@ -66,21 +66,22 @@ public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveBase<PACKET, PACK
         super.receive(provider, packet);
         PACKET mergedPacket = compoundPacketsFunc.apply(initialPacket, packet);
         if (leadingPublisher.equals(provider)) {
-            providerManager().pull(leadingPublisher);  // TODO: This shouldn't be here for a single item plan
             if (remainingPlan.size() == 0) {  // For a single item plan
                 finishPulling();
                 subscriber().receive(this, mergedPacket);
             } else {
-                Publisher<PACKET> nextPublisher;
+                Publisher<PACKET> follower;
                 if (remainingPlan.size() == 1) {
-                    nextPublisher = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
-                    lastPublishers.add(nextPublisher);
+                    follower = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
+                    lastPublishers.add(follower);
                 } else {
-                    nextPublisher = new CompoundReactive<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, monitor(), groupName()).buffer();
+                    follower = new CompoundReactive<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, monitor(), groupName()).buffer();
                 }
-                publisherPackets.put(nextPublisher, mergedPacket);
-                nextPublisher.publishTo(this);
-                providerManager().pull(nextPublisher);
+                publisherPackets.put(follower, mergedPacket);
+                follower.publishTo(this);
+                monitor().onPathFork(1, this);  // We have created one new path to an answer by pulling again from the leader
+                providerManager().pull(leadingPublisher);  // Pull again on the leader in case the follower never produces an answer
+                providerManager().pull(follower);
             }
         } else {
             PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(provider));
