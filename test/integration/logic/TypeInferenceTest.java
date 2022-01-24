@@ -239,7 +239,7 @@ public class TypeInferenceTest {
     }
 
     @Test
-    public void has_with_cycle() throws IOException {
+    public void has_with_cycle() {
         define_custom_schema(
                 "define" +
                         "  person sub entity, owns name, owns height;" +
@@ -1248,5 +1248,47 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(query);
         transaction.logic().typeInference().infer(disjunction);
         assertTrue(disjunction.conjunctions().get(0).negations().iterator().next().disjunction().conjunctions().get(0).isCoherent());
+    }
+
+    @Test
+    public void variable_types_are_inferred() {
+        define_custom_schema("define " +
+                "person sub entity," +
+                "    owns first-name," +
+                "    owns last-name," +
+                "    owns age," +
+                "    plays employment:employee;" +
+                "company sub entity," +
+                "    plays employment:employer;" +
+                "employment sub relation," +
+                "    relates employee," +
+                "    relates employer;" +
+                "name sub attribute, value string, abstract;" +
+                "first-name sub name;" +
+                "last-name sub name;" +
+                "age sub attribute, value long;");
+
+
+        String query = "match $x isa $rel-type; $rel-type relates $role-type; $role-type type employment:employee;";
+        Disjunction disjunction = createDisjunction(query);
+        transaction.logic().typeInference().infer(disjunction);
+
+        HashMap<String, Set<String>> expected = new HashMap<>() {{
+            put("$x", set("employment"));
+            put("$rel-type", set("employment"));
+            put("$role-type", set("employment:employee"));
+        }};
+        assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
+
+        query = "match $x isa $t; $t plays $role-type; $role-type type employment:employee;";
+        disjunction = createDisjunction(query);
+        transaction.logic().typeInference().infer(disjunction);
+
+        expected = new HashMap<>() {{
+            put("$x", set("person"));
+            put("$t", set("person"));
+            put("$role-type", set("employment:employee"));
+        }};
+        assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
 }

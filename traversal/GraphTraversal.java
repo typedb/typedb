@@ -146,6 +146,12 @@ public abstract class GraphTraversal extends Traversal {
         structure.typeVertex(attributeType).props().valueType(Encoding.ValueType.of(valueType));
     }
 
+    public void valueType(Identifier.Variable attributeType, Set<TypeQLArg.ValueType> valueTypes) {
+        valueTypes.forEach(valueType ->
+                structure.typeVertex(attributeType).props().valueType(Encoding.ValueType.of(valueType))
+        );
+    }
+
     public static class Type extends GraphTraversal {
 
         public Type() {
