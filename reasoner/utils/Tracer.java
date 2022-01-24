@@ -85,39 +85,54 @@ public final class Tracer {
         }
         addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
         addNodeGroup(receiverString, provider.groupName(), defaultTrace);
-
     }
 
-    public synchronized void pull(Connection<?, ?, ?> receiver, Provider<?> provider) {
-        addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
+    public synchronized void pull(@Nullable Receiver<?> receiver, Provider<?> provider, long pathsCount) {
+        String receiverString;
+        if (receiver == null) receiverString = "root";
+        else {
+            receiverString = simpleClassId(receiver);
+            addNodeGroup(simpleClassId(provider), receiver.groupName(), defaultTrace);
+        }
+        addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull_c" + pathsCount);
+        addNodeGroup(receiverString, provider.groupName(), defaultTrace);
+    }
+
+    public synchronized void pull(Connection<?, ?, ?> receiver, Provider<?> provider, long pathsCount) {
+        addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull_c" + pathsCount);
         addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 
-    public synchronized void pull(Provider<?> receiver, Connection<?, ?, ?> provider) {
-        addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
+    public synchronized void pull(Provider<?> receiver, Connection<?, ?, ?> provider, long pathsCount) {
+        addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull_c" + pathsCount);
         addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
     }
 
-    public synchronized <PACKET> void receive(Provider<PACKET> provider, Receiver<PACKET> receiver, PACKET packet) {
-        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
+    public synchronized <PACKET> void receive(Provider<PACKET> provider, Receiver<PACKET> receiver, PACKET packet,
+                                              long pathsCount) {
+        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE,
+                   packet.toString() + "c" + pathsCount);
         addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
         addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 
-    public synchronized <PACKET> void receive(Connection<PACKET, ?, ?> provider, Processor.InletEndpoint<PACKET> receiver, PACKET packet) {
-        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
+    public synchronized <PACKET> void receive(Connection<PACKET, ?, ?> provider,
+                                              Processor.InletEndpoint<PACKET> receiver, PACKET packet, long pathsCount) {
+        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE,
+                   packet.toString() + "c" + pathsCount);
         addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
     }
 
-    public synchronized <PACKET> void receive(Processor.OutletEndpoint<PACKET> provider, Connection<PACKET,?,?> receiver, PACKET packet) {
-        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
+    public synchronized <PACKET> void receive(Processor.OutletEndpoint<PACKET> provider,
+                                              Connection<PACKET, ?, ?> receiver, PACKET packet, long pathsCount) {
+        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE,
+                   packet.toString() + "c" + pathsCount);
         addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 
     private static String simpleClassId(Object obj) {
         return obj.getClass().getSimpleName() + "@" + System.identityHashCode(obj);
     }
-
 
     private void addMessage(String sender, String receiver, Trace trace, EdgeType edgeType,
                             String conceptMap) {
@@ -142,6 +157,10 @@ public final class Tracer {
 
     public synchronized void exception() {
         rootRequestTracers.forEach((r, t) -> t.finish());
+    }
+
+    public void pathCount(String sender, String monitor, long answerPathsCount) {
+        addMessage(sender, monitor, defaultTrace, EdgeType.MONITOR, "c" + answerPathsCount);
     }
 
     private static class RootRequestTracer {
@@ -250,13 +269,9 @@ public final class Tracer {
     }
 
     enum EdgeType {
-        EXHAUSTED("red"),
-        BLOCKED("orange"),
-        ANSWER("green"),
-        VISIT("blue"),
-        REVISIT("purple"),
         PULL("blue"),
-        RECEIVE("green");
+        RECEIVE("green"),
+        MONITOR("orange");
 
         private final String colour;
 

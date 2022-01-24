@@ -20,8 +20,6 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-import java.util.Set;
-
 public abstract class ReactiveBase<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
 
     protected Receiver<OUTPUT> subscriber;
@@ -37,7 +35,7 @@ public abstract class ReactiveBase<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT
 
     @Override
     public void receive(Provider<INPUT> provider, INPUT packet) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().pathsCount()));
         providerManager().receivedFrom(provider);
     }
 

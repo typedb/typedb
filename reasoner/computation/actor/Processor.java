@@ -56,7 +56,7 @@ public abstract class Processor<INPUT, OUTPUT,
     private Reactive<OUTPUT, OUTPUT> outlet;
     private long endpointId;
     private boolean terminated;
-    private long answerPathsTally;
+    private long answerPathsCount;
     private final Set<Connection<INPUT, ?, ?>> upstreamConnections;
 
     protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, String name) {
@@ -66,7 +66,7 @@ public abstract class Processor<INPUT, OUTPUT,
         this.receivingEndpoints = new HashMap<>();
         this.providingEndpoints = new HashMap<>();
         this.monitors = new HashSet<>();
-        this.answerPathsTally = 0;
+        this.answerPathsCount = 0;
         this.upstreamConnections = new HashSet<>();
     }
 
@@ -136,35 +136,47 @@ public abstract class Processor<INPUT, OUTPUT,
     protected void addMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
         Set<Driver<? extends Processor<?, ?, ?, ?>>> unseenMonitors = new HashSet<>(addSelfIfMonitor(monitors));
         unseenMonitors.removeAll(this.monitors);
-        unseenMonitors.forEach(this::fastForwardAnswerPathsTally);
+        unseenMonitors.forEach(this::fastForwardAnswerPathsCount);
         this.monitors.addAll(unseenMonitors);
         if (unseenMonitors.size() > 0) {
             upstreamConnections.forEach(e -> e.propagateMonitors(unseenMonitors));
         }
     }
 
-    private void fastForwardAnswerPathsTally(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
-        monitor.execute(actor -> actor.updatePathsTally(answerPathsTally));
+    private void fastForwardAnswerPathsCount(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathCount(driver().name(), monitor.name(), answerPathsCount));
+        monitor.execute(actor -> actor.updatePathsCount(answerPathsCount));
     }
 
-    public void updatePathsTally(long tallyDelta) {
-        answerPathsTally += tallyDelta;
+    public void updatePathsCount(long pathCountDelta) {
+        answerPathsCount += pathCountDelta;
         checkTermination();
     }
 
     @Override
     public void onPathFork(int numForks) {
         assert numForks > 0;
-        answerPathsTally += numForks;
-        monitors.forEach(monitor -> monitor.execute(actor -> actor.onPathFork(numForks)));
+        answerPathsCount += numForks;
+        monitors.forEach(monitor -> {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathCount(driver().name(), monitor.name(), numForks));
+            monitor.execute(actor -> actor.onPathFork(numForks));
+        });
         checkTermination();
     }
 
     @Override
     public void onPathJoin() {
-        answerPathsTally -= 1;
-        monitors.forEach(monitor -> monitor.execute(actor -> actor.onPathJoin()));
+        answerPathsCount -= 1;
+        monitors.forEach(monitor -> {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathCount(driver().name(), monitor.name(), -1));
+            monitor.execute(actor -> actor.onPathJoin());
+        });
         checkTermination();
+    }
+
+    @Override
+    public long pathsCount() {
+        return answerPathsCount;
     }
 
     private Set<Driver<? extends Processor<?, ?, ?, ?>>> addSelfIfMonitor(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
@@ -179,8 +191,8 @@ public abstract class Processor<INPUT, OUTPUT,
 
     private void checkTermination() {
         if (isMonitor()) {
-            assert answerPathsTally >= 0;
-            if (answerPathsTally == 0) onDone();
+            assert answerPathsCount >= 0;
+            if (answerPathsCount == 0) onDone();
         }
     }
 
@@ -248,13 +260,13 @@ public abstract class Processor<INPUT, OUTPUT,
             isPulling = true;
             if (ready) {
                 connection.pull();
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, connection));  // TODO: We do this here because we don't tell the connection who we are when we pull
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, connection, monitor().pathsCount()));  // TODO: We do this here because we don't tell the connection who we are when we pull
             }
         }
 
         @Override
         public void receive(@Nullable Provider<PACKET> provider, PACKET packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(connection, this, packet));  // TODO: Highlights a smell that the connection is receiving and so provider is null
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(connection, this, packet, monitor().pathsCount()));  // TODO: Highlights a smell that the connection is receiving and so provider is null
             assert provider == null;
             isPulling = false;
             subscriber().receive(this, packet);
@@ -277,7 +289,7 @@ public abstract class Processor<INPUT, OUTPUT,
             this.groupName = groupName;
             this.connection = connection;
             this.isPulling = false;
-            this.providerManager = new Provider.SingleManager<>(this);
+            this.providerManager = new Provider.SingleManager<>(this, monitor());
         }
 
         protected PacketMonitor monitor() {
@@ -295,9 +307,9 @@ public abstract class Processor<INPUT, OUTPUT,
 
         @Override
         public void receive(@Nullable Provider<PACKET> provider, PACKET packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().pathsCount()));
             isPulling = false;
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(this, connection, packet));  // TODO: We do this here because we don't tell the connection who we are when it receives
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(this, connection, packet, monitor().pathsCount()));  // TODO: We do this here because we don't tell the connection who we are when it receives
             connection.receive(packet);
             providerManager.receivedFrom(provider);
         }
@@ -305,7 +317,7 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void pull(@Nullable Receiver<PACKET> receiver) {
             assert receiver == null;
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(connection, this));  // TODO: Highlights a smell that the connection is pulling and so receiver is null
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(connection, this, monitor().pathsCount()));  // TODO: Highlights a smell that the connection is pulling and so receiver is null
             if (!isPulling) {
                 isPulling = true;
                 providerManager.pullAll();

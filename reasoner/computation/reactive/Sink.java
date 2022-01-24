@@ -18,22 +18,21 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
-
 import javax.annotation.Nullable;
 
 public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provider<PACKET>  {
 
-    private final SingleManager<PACKET> providerManager;
+    private SingleManager<PACKET> providerManager;
     private PacketMonitor monitor;
     protected boolean isPulling;
 
-    public Sink() {
-        this.providerManager = new Provider.SingleManager<>(this);
+    protected SingleManager<PACKET> providerManager() {
+        // TODO: We would initialise this on construction if the monitor was ready, but that is set later via setMonitor()
+        if (providerManager == null) this.providerManager = new Provider.SingleManager<>(this, monitor());
+        return providerManager;
     }
 
     protected PacketMonitor monitor() {
-        assert monitor != null;
         return monitor;
     }
 
@@ -43,10 +42,10 @@ public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provi
 
     @Override
     public void subscribeTo(Provider<PACKET> provider) {
-        providerManager.add(provider);
+        providerManager().add(provider);
         if (isPulling) {
             monitor().onPathFork(1);  // This is the exception for where we add a fork when we initialise a new path
-            providerManager.pull(provider);
+            providerManager().pull(provider);
         }
     }
 
@@ -54,9 +53,9 @@ public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provi
     public void pull(@Nullable Receiver<PACKET> receiver) {
         assert receiver == null;
         isPulling = true;
-        if (providerManager.size() > 0) {
+        if (providerManager().size() > 0) {
             // TODO: This condition isn't congruent with others, can we omit?
-            providerManager.pullAll();
+            providerManager().pullAll();
         }
     }
 

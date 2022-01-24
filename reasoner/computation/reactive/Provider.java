@@ -65,15 +65,18 @@ public interface Provider<R> {
 
         private @Nullable Provider<R> provider;
         private final Receiver<R> receiver;
+        private final PacketMonitor monitor;
 
-        public SingleManager(@Nullable Publisher<R> provider, Subscriber<R> subscriber) {
+        public SingleManager(@Nullable Publisher<R> provider, Subscriber<R> subscriber, PacketMonitor monitor) {
             this.provider = provider;
             this.receiver = subscriber;
+            this.monitor = monitor;
         }
 
-        public SingleManager(Subscriber<R> subscriber) {
+        public SingleManager(Subscriber<R> subscriber, PacketMonitor monitor) {
             this.provider = null;
             this.receiver = subscriber;
+            this.monitor = monitor;
         }
 
         @Override
@@ -86,7 +89,8 @@ public interface Provider<R> {
         public void pull(Provider<R> provider) {
             assert this.provider != null;
             assert this.provider == provider;
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
+            if (monitor == null) Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
+            else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.pathsCount()));
             provider.pull(receiver);
         }
 
@@ -149,7 +153,8 @@ public interface Provider<R> {
             if (!providersPulling.get(provider)) {
                 if (hasForked && monitor != null) monitor.onPathFork(1);
                 providersPulling.put(provider, true);
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
+                if (monitor == null) Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
+                else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.pathsCount()));
                 provider.pull(receiver);
                 hasForked = true;
             }

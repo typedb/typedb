@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
-
 import java.util.Stack;
 
 public class BufferReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
@@ -29,7 +27,7 @@ public class BufferReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
     protected BufferReactive(Publisher<PACKET> publisher, PacketMonitor monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new Provider.SingleManager<>(publisher, this);
+        this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
         this.stack = new Stack<>();
     }
 

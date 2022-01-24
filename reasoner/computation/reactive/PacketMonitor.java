@@ -24,4 +24,5 @@ public interface PacketMonitor {
 
     void onPathJoin();
 
+    long pathsCount();
 }

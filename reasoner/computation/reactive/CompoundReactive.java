@@ -84,7 +84,8 @@ public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveBase<PACKET, PACK
             }
         } else {
             PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(provider));
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, mergedPacket));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, mergedPacket,
+                                                                     monitor().pathsCount()));
             subscriber().receive(this, compoundedPacket);
             if (lastPublishers.contains(provider)) finishPulling();
         }

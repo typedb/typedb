@@ -31,7 +31,7 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, O
                            PacketMonitor monitor, String groupName) {
         super(monitor, groupName);
         this.transform = transform;
-        this.providerManager = new Provider.SingleManager<>(publisher, this);
+        this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
     }
 
     @Override

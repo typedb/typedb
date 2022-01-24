@@ -27,7 +27,7 @@ public class FindFirstReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
     FindFirstReactive(Publisher<PACKET> publisher, PacketMonitor monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new Provider.SingleManager<>(publisher, this);
+        this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
         this.packetFound = false;
     }
 

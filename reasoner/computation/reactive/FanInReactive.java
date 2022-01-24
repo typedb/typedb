@@ -37,6 +37,15 @@ public class FanInReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
     }
 
     @Override
+    public void pull(Receiver<PACKET> receiver) {
+        assert receiver.equals(subscriber);  // TODO: Make a proper exception for this
+        if (!isPulling()) {
+            setPulling();
+            providerManager().pullAll();
+        }
+    }
+
+    @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
         finishPulling();

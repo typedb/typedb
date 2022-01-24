@@ -144,7 +144,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
             protected ConclusionReactive(String groupName, PacketMonitor monitor) {
                 super(monitor, groupName);
-                this.providerManager = new Provider.SingleManager<>(this);
+                this.providerManager = new Provider.SingleManager<>(this, monitor());
             }
 
             @Override
@@ -176,7 +176,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             public MaterialiserReactive(ConclusionReactive parent, PacketMonitor monitor, String groupName) {
                 super(monitor, groupName);
                 this.parent = parent;
-                this.providerManager = new Provider.SingleManager<>(this);
+                this.providerManager = new Provider.SingleManager<>(this, monitor());
             }
 
             @Override

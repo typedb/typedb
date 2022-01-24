@@ -143,6 +143,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
                     InletEndpoint<Map<Variable, Concept>> endpoint = this.createReceivingEndpoint();
                     mayRequestConnection(new ConclusionRequest(driver(), endpoint.id(), conclusion, boundsAndRequirements.first()));
                     endpoint.flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
+                            .buffer() // TODO: Included to combat flatMap overproducing.
                             .publishTo(op);
                 }));
             });

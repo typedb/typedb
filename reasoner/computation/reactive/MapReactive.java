@@ -28,7 +28,7 @@ public class MapReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, OUTPUT> {
     protected MapReactive(Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, PacketMonitor monitor, String groupName) {
         super(monitor, groupName);
         this.mappingFunc = mappingFunc;
-        this.providerManager = new Provider.SingleManager<>(publisher, this);
+        this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
     }
 
     @Override

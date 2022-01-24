@@ -162,7 +162,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
         @Override
         public void receive(@Nullable Provider<ConceptMap> provider, ConceptMap packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().pathsCount()));
             isPulling = false;
             answerConsumer.accept(packet);
             monitor().onPathJoin();

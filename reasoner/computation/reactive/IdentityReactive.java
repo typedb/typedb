@@ -26,7 +26,7 @@ public class IdentityReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
 
     protected IdentityReactive(@Nullable Publisher<PACKET> publisher, PacketMonitor monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new Provider.SingleManager<>(publisher, this);
+        this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
     }
 
     @Override
