@@ -198,14 +198,14 @@ public class TypeQLSteps {
     @Then("answer size is: {number}")
     public void answer_quantity_assertion(int expectedAnswers) {
         assertEquals(String.format("Expected [%d] answers, but got [%d]", expectedAnswers, answers.size()),
-                     expectedAnswers, answers.size());
+                expectedAnswers, answers.size());
     }
 
     @Then("uniquely identify answer concepts")
     public void uniquely_identify_answer_concepts(List<Map<String, String>> answerConcepts) {
         assertEquals(
                 String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers.",
-                              answerConcepts.size(), answers.size()),
+                        answerConcepts.size(), answers.size()),
                 answerConcepts.size(), answers.size()
         );
 
@@ -220,7 +220,7 @@ public class TypeQLSteps {
             }
             assertEquals(
                     String.format("An identifier entry (row) should match 1-to-1 to an answer, but there were %d matching identifier entries for answer with variables %s.",
-                                  matchingIdentifiers.size(), answer.concepts().keySet().toString()),
+                            matchingIdentifiers.size(), answer.concepts().keySet().toString()),
                     1, matchingIdentifiers.size()
             );
         }
@@ -230,7 +230,7 @@ public class TypeQLSteps {
     public void order_of_answer_concepts_is(List<Map<String, String>> answersIdentifiers) {
         assertEquals(
                 String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers.",
-                              answersIdentifiers.size(), answers.size()),
+                        answersIdentifiers.size(), answers.size()),
                 answersIdentifiers.size(), answers.size()
         );
         for (int i = 0; i < answers.size(); i++) {
@@ -247,7 +247,7 @@ public class TypeQLSteps {
     public void aggregate_value_is(double expectedAnswer) {
         assertNotNull("The last executed query was not an aggregate query", numericAnswer);
         assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, numericAnswer.asNumber().doubleValue()),
-                     expectedAnswer, numericAnswer.asNumber().doubleValue(), 0.001);
+                expectedAnswer, numericAnswer.asNumber().doubleValue(), 0.001);
     }
 
     @Then("aggregate answer is not a number")
@@ -265,8 +265,8 @@ public class TypeQLSteps {
                 .collect(Collectors.toSet());
 
         assertEquals(String.format("Expected [%d] answer groups, but found [%d].",
-                                   answerIdentifierGroups.size(), answerGroups.size()),
-                     answerIdentifierGroups.size(), answerGroups.size()
+                answerIdentifierGroups.size(), answerGroups.size()),
+                answerIdentifierGroups.size(), answerGroups.size()
         );
 
         for (AnswerIdentifierGroup answerIdentifierGroup : answerIdentifierGroups) {
@@ -303,7 +303,7 @@ public class TypeQLSteps {
                 }
                 assertEquals(
                         String.format("An identifier entry (row) should match 1-to-1 to an answer, but there were [%d] matching identifier entries for answer with variables %s.",
-                                      matchingIdentifiers.size(), answer.concepts().keySet().toString()),
+                                matchingIdentifiers.size(), answer.concepts().keySet().toString()),
                         1, matchingIdentifiers.size()
                 );
             }
@@ -320,7 +320,7 @@ public class TypeQLSteps {
         }
 
         assertEquals(String.format("Expected [%d] answer groups, but found [%d].", expectations.size(), numericAnswerGroups.size()),
-                     expectations.size(), numericAnswerGroups.size()
+                expectations.size(), numericAnswerGroups.size()
         );
 
         for (Map.Entry<String, Double> expectation : expectations.entrySet()) {
@@ -349,7 +349,7 @@ public class TypeQLSteps {
             double actualAnswer = answerGroup.numeric().asNumber().doubleValue();
             assertEquals(
                     String.format("Expected answer [%f] for group [%s], but got [%f]",
-                                  expectedAnswer, expectation.getKey(), actualAnswer),
+                            expectedAnswer, expectation.getKey(), actualAnswer),
                     expectedAnswer, actualAnswer, 0.001
             );
         }
@@ -371,8 +371,8 @@ public class TypeQLSteps {
             answersIdentifiers = new ArrayList<>();
             for (Map<String, String> rawAnswerIdentifiers : answerIdentifierTable) {
                 answersIdentifiers.add(rawAnswerIdentifiers.entrySet().stream()
-                                               .filter(e -> !e.getKey().equals(GROUP_COLUMN_NAME))
-                                               .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+                        .filter(e -> !e.getKey().equals(GROUP_COLUMN_NAME))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
             }
         }
     }
@@ -501,6 +501,18 @@ public class TypeQLSteps {
             TypeQLMatch typeQLQuery = TypeQL.parseQuery(query).asMatch();
             long answerSize = tx().query().match(typeQLQuery).toList().size();
             assertEquals(1, answerSize);
+        }
+    }
+   
+    @Then("templated typeql match; throw exception")
+    public void get_answers_of_templated_typeql_match_throws_exception(String templatedTypeQLQuery) {
+        String templatedQuery = String.join("\n", templatedTypeQLQuery);
+        for (ConceptMap answer : answers) {
+            String queryString = applyQueryTemplate(templatedQuery, answer);
+            assertThrows(() -> {
+                TypeQLMatch query = TypeQL.parseQuery(queryString).asMatch();
+                tx().query().match(query).toList();
+            });
         }
     }
 
@@ -639,7 +651,9 @@ public class TypeQLSteps {
 
         @Override
         public boolean check(Concept concept) {
-            if (!concept.isThing()) { return false; }
+            if (!concept.isThing()) {
+                return false;
+            }
 
             Set<? extends Attribute> keys = concept.asThing().getHas(true).toSet();
 

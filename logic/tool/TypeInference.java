@@ -67,8 +67,11 @@ import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN_VARIABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_SUB_PATTERN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ATTRIBUTE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.THING;
@@ -155,7 +158,9 @@ public class TypeInference {
 
     private TraversalBuilder builder(Conjunction conjunction, List<Conjunction> scopingConjunctions, GraphManager graphMgr, boolean insertable) {
         TraversalBuilder currentBuilder = null;
-        if (!scopingConjunctions.isEmpty()) {
+        if (scopingConjunctions.isEmpty()) {
+            currentBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
+        } else {
             Set<Reference.Name> names = iterate(conjunction.variables()).filter(v -> v.reference().isName())
                     .map(v -> v.reference().asName()).toSet();
             for (Conjunction scoping : scopingConjunctions) {
@@ -166,14 +171,14 @@ public class TypeInference {
                 }
             }
             currentBuilder = new TraversalBuilder(conjunction, currentBuilder, insertable, graphMgr);
-        } else currentBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
+        }
         currentBuilder.traversal().filter(currentBuilder.retrievableInferenceIDs());
         return currentBuilder;
     }
 
     private Optional<Map<Identifier.Variable.Retrievable, Set<Label>>> executeTypeResolvers(TraversalBuilder traversalBuilder) {
         return logicCache.resolver().get(traversalBuilder.traversal().structure(), structure ->
-                traversalEng.combination(traversalBuilder.traversal(), thingVariableIds(traversalBuilder)).map(result -> {
+                traversalEng.combination(traversalBuilder.traversal(), requireConcreteTypes(traversalBuilder)).map(result -> {
                             Map<Identifier.Variable.Retrievable, Set<Label>> mapping = new HashMap<>();
                             result.forEach((id, types) -> {
                                 Optional<Variable> originalVar = traversalBuilder.getOriginalVariable(id);
@@ -188,7 +193,7 @@ public class TypeInference {
         );
     }
 
-    private Set<Identifier.Variable.Retrievable> thingVariableIds(TraversalBuilder traversalBuilder) {
+    private Set<Identifier.Variable.Retrievable> requireConcreteTypes(TraversalBuilder traversalBuilder) {
         return iterate(traversalBuilder.resolverToOriginal.values()).filter(Variable::isThing).map(var -> {
             assert var.id().isRetrievable();
             return var.id().asRetrievable();
@@ -307,6 +312,10 @@ public class TypeInference {
                 props.clearLabels();
                 props.labels(intersection);
             }
+            if (props.labels().isEmpty()) {
+                conjunction.setCoherent(false);
+                throw TypeDBException.of(UNSATISFIABLE_PATTERN_VARIABLE, conjunction, resolverToOriginal.get(id));
+            }
         }
 
         private void registerOwns(TypeVariable resolver, OwnsConstraint ownsConstraint) {
@@ -332,7 +341,7 @@ public class TypeInference {
             TypeVariable roleResolver = register(relatesConstraint.role());
             traversal.relates(resolver.id(), roleResolver.id());
             restrict(resolver.id(), graphMgr.schema().relationTypes());
-            restrict(resolver.id(), graphMgr.schema().roleTypes());
+            restrict(roleResolver.id(), graphMgr.schema().roleTypes());
         }
 
         private void registerSub(TypeVariable resolver, SubConstraint subConstraint) {
@@ -352,30 +361,35 @@ public class TypeInference {
 
         private void registerValueType(TypeVariable resolver, ValueTypeConstraint valueTypeConstraint) {
             traversal.valueType(resolver.id(), valueTypeConstraint.valueType());
-            inferTypesByValueType(resolver, valueTypeConstraint.valueType());
+            inferTypesByValueType(resolver, set(valueTypeConstraint.valueType()));
         }
 
-        private void inferTypesByValueType(TypeVariable resolver, ValueType valueType) {
-            switch (valueType) {
-                case STRING:
-                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.STRING));
-                    break;
-                case LONG:
-                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.LONG));
-                    break;
-                case DOUBLE:
-                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.DOUBLE));
-                    break;
-                case BOOLEAN:
-                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.BOOLEAN));
-                    break;
-                case DATETIME:
-                    restrict(resolver.id(), graphMgr.schema().attributeTypes(Encoding.ValueType.DATETIME));
-                    break;
-                default:
-                    throw TypeDBException.of(ILLEGAL_STATE);
+        private void inferTypesByValueType(TypeVariable resolver, Set<ValueType> valueTypes) {
+            FunctionalIterator<TypeVertex> attrTypes = empty();
+            for (ValueType valueType : valueTypes) {
+                switch (valueType) {
+                    case STRING:
+                        attrTypes = attrTypes.link(graphMgr.schema().attributeTypes(Encoding.ValueType.STRING));
+                        break;
+                    case LONG:
+                        attrTypes = attrTypes.link(graphMgr.schema().attributeTypes(Encoding.ValueType.LONG));
+                        break;
+                    case DOUBLE:
+                        attrTypes = attrTypes.link(graphMgr.schema().attributeTypes(Encoding.ValueType.DOUBLE));
+                        break;
+                    case BOOLEAN:
+                        attrTypes = attrTypes.link(graphMgr.schema().attributeTypes(Encoding.ValueType.BOOLEAN));
+                        break;
+                    case DATETIME:
+                        attrTypes = attrTypes.link(graphMgr.schema().attributeTypes(Encoding.ValueType.DATETIME));
+                        break;
+                    default:
+                        throw TypeDBException.of(ILLEGAL_STATE);
+                }
             }
+            restrict(resolver.id(), attrTypes);
         }
+
 
         private TypeVariable register(ThingVariable var) {
             if (originalToResolver.containsKey(var.id())) return originalToResolver.get(var.id());
@@ -430,7 +444,10 @@ public class TypeInference {
          */
         private void registerIID(TypeVariable resolver, IIDConstraint constraint) {
             TypeVertex type = graphMgr.schema().convert(VertexIID.Thing.of(constraint.iid()).type());
-            if (type == null) throw TypeDBException.of(UNSATISFIABLE_PATTERN, conjunction, constraint);
+            if (type == null) {
+                conjunction.setCoherent(false);
+                throw TypeDBException.of(UNSATISFIABLE_SUB_PATTERN, conjunction, constraint);
+            }
             restrict(resolver.id(), iterate(type));
         }
 
@@ -482,14 +499,13 @@ public class TypeInference {
                         .map(Encoding.ValueType::typeQLValueType).toSet();
             }
 
-            if (resolverValueTypes.get(resolver.id()).isEmpty()) {
-                valueTypes.forEach(valueType -> {
-                    traversal.valueType(resolver.id(), valueType);
-                    inferTypesByValueType(resolver, valueType);
-                });
+            if (!valueTypes.isEmpty() && resolverValueTypes.get(resolver.id()).isEmpty()) {
+                traversal.valueType(resolver.id(), valueTypes);
+                inferTypesByValueType(resolver, valueTypes);
                 resolverValueTypes.put(resolver.id(), valueTypes);
             } else if (!resolverValueTypes.get(resolver.id()).containsAll(valueTypes)) {
-                throw TypeDBException.of(UNSATISFIABLE_PATTERN, conjunction, constraint);
+                conjunction.setCoherent(false);
+                throw TypeDBException.of(UNSATISFIABLE_SUB_PATTERN, conjunction, constraint);
             }
             registerSubAttribute(resolver);
         }
