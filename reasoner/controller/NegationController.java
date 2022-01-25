@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 
 import java.util.function.Function;
 
-import static com.vaticle.typedb.core.reasoner.computation.reactive.IdentityReactive.noOp;
+import static com.vaticle.typedb.core.reasoner.computation.reactive.NoOpReactive.noOp;
 
 public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.NegationProcessor, NegationController> {
 
