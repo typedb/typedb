@@ -86,7 +86,7 @@ public class CombinationFinder {
 
     private void start(CombinationProcedure procedure) {
         ProcedureVertex.Type from = procedure.startVertex();
-        recordCombination(from.id(), vertexIter(from).toSet());
+        addOrIntersect(from.id(), vertexIter(from).toSet());
     }
 
     private State forward(CombinationProcedure procedure) {
@@ -98,7 +98,7 @@ public class CombinationFinder {
             from = toVisit.remove();
             for (ProcedureEdge<?, ?> procedureEdge : procedure.forwardEdges(from)) {
                 Set<TypeVertex> toCombination = toTypes(procedureEdge);
-                changed = recordCombination(procedureEdge.to().id(), toCombination) || changed;
+                changed = addOrIntersect(procedureEdge.to().id(), toCombination) || changed;
                 if (combination.get(procedureEdge.to().id()).isEmpty()) return State.EMPTY;
                 if (!procedure.isTerminal(procedureEdge.to().asType()) && !from.equals(procedureEdge.to())) {
                     toVisit.add(procedureEdge.to().asType());
@@ -116,7 +116,7 @@ public class CombinationFinder {
             from = toVisit.remove();
             for (ProcedureEdge<?, ?> procedureEdge : procedure.reverseEdges(from)) {
                 Set<TypeVertex> toTypes = toTypes(procedureEdge);
-                changed = recordCombination(procedureEdge.to().id(), toTypes) || changed;
+                changed = addOrIntersect(procedureEdge.to().id(), toTypes) || changed;
                 if (combination.get(procedureEdge.to().id()).isEmpty()) return State.EMPTY;
                 if (!procedureEdge.to().isStartingVertex()) toVisit.add(procedureEdge.to().asType());
             }
@@ -125,10 +125,14 @@ public class CombinationFinder {
     }
 
     private Set<TypeVertex> toTypes(ProcedureEdge<?, ?> edge) {
-        return iterate(combination.get(edge.from().id())).flatMap(type -> branchIter(edge, type)).toSet();
+        if (edge.from().id().equals(edge.to().id())) {
+            return iterate(combination.get(edge.from().id())).flatMap(type -> branchIter(edge, type).filter(to -> to.equals(type))).toSet();
+        } else {
+            return iterate(combination.get(edge.from().id())).flatMap(type -> branchIter(edge, type)).toSet();
+        }
     }
 
-    private boolean recordCombination(Identifier identifier, Set<TypeVertex> types) {
+    private boolean addOrIntersect(Identifier identifier, Set<TypeVertex> types) {
         Set<TypeVertex> vertices = combination.computeIfAbsent(identifier, (id) -> new HashSet<>());
         int sizeBefore = vertices.size();
         if (vertices.isEmpty()) vertices.addAll(types);

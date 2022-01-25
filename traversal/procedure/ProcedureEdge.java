@@ -1212,8 +1212,7 @@ public abstract class ProcedureEdge<
                                 filteredIID = true;
                                 ThingVertex player = graphMgr.data().getReadable(params.getIID(to.id().asVariable()));
                                 if (player == null) return empty();
-                                // TODO: the following code can be optimised if we have an API to directly get the
-                                //       roleplayer edge when we have the roleplayer vertex
+                                // TODO we should use the exact type of the current vertex to restrict the set of role types possible
                                 iter = resolveRoleTypesIter.mergeMap(
                                         ASC,
                                         rt -> rel.outs()

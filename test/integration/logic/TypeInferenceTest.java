@@ -1082,12 +1082,6 @@ public class TypeInferenceTest {
         String queryString = "match (partner: $x);";
         Disjunction disjunction = createDisjunction(queryString);
         Conjunction conjunction = disjunction.conjunctions().get(0);
-        typeInference.propagateLabels(conjunction);
-
-        Set<String> expectedLabels = set("partnership:partner", "business:partner");
-
-        assertEquals(expectedLabels, resolvedTypeMap(conjunction).get("$_relation:partner"));
-
         typeInference.infer(conjunction, false);
         Set<String> expectedResolvedTypes = set("partnership:partner");
 

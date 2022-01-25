@@ -281,7 +281,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Pattern(17, "The pattern '%s' can never be satisfied the current schema, due to '%s'.");
         public static final Pattern UNSATISFIABLE_PATTERN_VARIABLE =
                 new Pattern(18, "The pattern '%s' can never be satisfied the current schema, due to contradicting types for '%s'.");
-
+        public static final Pattern UNSATISFIABLE_PATTERN_VARIABLE_VALUE =
+                new Pattern(19, "The pattern '%s' can never be satisfied the current schema, due to contradicting attribute value types for '%s'.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";
