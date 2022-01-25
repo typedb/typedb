@@ -217,8 +217,16 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 return valueTypes;
             }
 
+            public void clearValueTypes() {
+                this.valueTypes.clear();
+            }
+
             public void valueType(Encoding.ValueType valueType) {
                 this.valueTypes.add(valueType);
+            }
+
+            public void valueTypes(Set<Encoding.ValueType> valueTypes) {
+                this.valueTypes.addAll(valueTypes);
             }
 
             public Optional<String> regex() {

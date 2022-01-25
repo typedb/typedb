@@ -402,11 +402,11 @@ public class Rule {
         }
 
         private void validateInsertable(LogicManager logicMgr) {
-            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeInference().typePermutations(rule.when, false);
-            Set<Map<Identifier.Variable.Name, Label>> allowedThenCombinations = logicMgr.typeInference().typePermutations(rule.then, true).toSet();
+            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenTypes = logicMgr.typeInference().typePermutations(rule.when, false);
+            Set<Map<Identifier.Variable.Name, Label>> allowedThenTypes = logicMgr.typeInference().typePermutations(rule.then, true).toSet();
 
-            whenCombinations.forEachRemaining(nameLabelMap -> {
-                if (allowedThenCombinations.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
+            whenTypes.forEachRemaining(nameLabelMap -> {
+                if (allowedThenTypes.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
                     throw TypeDBException.of(RULE_CAN_HAVE_INVALID_CONCLUSION, rule.structure.label(), nameLabelMap.toString());
             });
         }

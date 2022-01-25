@@ -18,7 +18,9 @@
 
 package com.vaticle.typedb.core.pattern.constraint.thing;
 
+import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
@@ -108,10 +110,14 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
     }
 
     @Override
-    public boolean isRelation() { return true; }
+    public boolean isRelation() {
+        return true;
+    }
 
     @Override
-    public RelationConstraint asRelation() { return this; }
+    public RelationConstraint asRelation() {
+        return this;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -157,13 +163,15 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         private final ThingVariable player;
         private final int repetition;
         private final int hash;
+        private Set<Label> inferredRoleTypes;
 
         public RolePlayer(@Nullable TypeVariable roleType, ThingVariable player, int repetition) {
-            assert roleType == null || roleType.reference().isName() ||
+            assert roleType == null || roleType.id().isName() ||
                     (roleType.label().isPresent() && roleType.label().get().scope().isPresent());
             if (player == null) throw new NullPointerException("Null player");
             this.roleType = roleType;
             this.player = player;
+            this.inferredRoleTypes = null;
             this.repetition = repetition;
             this.hash = Objects.hash(this.roleType, this.player, this.repetition);
         }
@@ -191,6 +199,17 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
         public Optional<TypeVariable> roleType() {
             return Optional.ofNullable(roleType);
+        }
+
+        public Set<Label> inferredRoleTypes() {
+            assert inferredRoleTypes != null ^ roleType != null;
+            if (inferredRoleTypes == null) return roleType.inferredTypes();
+            else return inferredRoleTypes;
+        }
+
+        public void setInferredRoleTypes(Set<Label> roleTypes) {
+            assert roleType == null;
+            this.inferredRoleTypes = roleTypes;
         }
 
         public ThingVariable player() {
