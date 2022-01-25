@@ -114,6 +114,14 @@ public class TypeInferenceTest {
         ));
     }
 
+    private Map<String, Set<String>> resolvedRoleTypeMap(Conjunction conjunction) {
+        return conjunction.variables().stream().filter(var -> var.isThing() && var.asThing().relation().isPresent())
+                .flatMap(var -> var.asThing().relation().get().players().stream()).collect(Collectors.toMap(
+                        rp -> rp.player().id().toString(),
+                        rp -> rp.inferredRoleTypes().stream().map(Label::scopedName).collect(Collectors.toSet())
+        ));
+    }
+
     private Disjunction createDisjunction(String matchString) {
         TypeQLMatch query = TypeQL.parseQuery(matchString);
         return Disjunction.create(query.conjunction().normalise());
@@ -508,6 +516,25 @@ public class TypeInferenceTest {
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
+    @Test
+    public void role_type() throws IOException {
+        define_standard_schema("basic-schema");
+        TypeInference typeInference = transaction.logic().typeInference();
+
+        String queryString = "match ($r: $yoko) isa marriage; marriage relates $r;";
+
+        Disjunction disjunction = createDisjunction(queryString);
+        typeInference.infer(disjunction);
+
+        Map<String, Set<String>> expected = new HashMap<>() {{
+            put("$yoko", set("man", "woman", "person"));
+            put("$_0", set("marriage"));
+            put("$_marriage", set("marriage"));
+            put("$r", set("marriage_spouse", "marriage:wife", "marriage:husband"));
+        }};
+
+        assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
+    }
 
     @Test
     public void no_role_type() throws IOException {
@@ -526,6 +553,11 @@ public class TypeInferenceTest {
         }};
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
+
+        Map<String, Set<String>> expectedRPTypes = new HashMap<>() {{
+            put("$yoko", set("marriage:spouse", "marriage:wife", "marriage:husband"));
+        }};
+        assertEquals(expectedRPTypes, resolvedRoleTypeMap(disjunction.conjunctions().get(0)));
     }
 
     @Test
