@@ -44,7 +44,6 @@ public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provi
     public void subscribeTo(Provider<PACKET> provider) {
         providerManager().add(provider);
         if (isPulling) {
-            monitor().onPathFork(1);  // This is the exception for where we add a fork when we initialise a new path
             providerManager().pull(provider);
         }
     }
@@ -52,10 +51,12 @@ public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provi
     @Override
     public void pull(@Nullable Receiver<PACKET> receiver) {
         assert receiver == null;
-        isPulling = true;
-        if (providerManager().size() > 0) {
-            // TODO: This condition isn't congruent with others, can we omit?
-            providerManager().pullAll();
+        if (!isPulling) {
+            isPulling = true;
+            if (providerManager().size() > 0) {
+                // TODO: This condition isn't congruent with others, can we omit?
+                providerManager().pullAll();
+            }
         }
     }
 

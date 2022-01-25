@@ -19,7 +19,6 @@ package com.vaticle.typedb.core.reasoner;
 
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
@@ -46,11 +45,9 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
     private final AtomicInteger required;
-    private final AtomicInteger processing;
     private final Options.Query options;
     private final Registry controllerRegistry;
     private final ExplainablesManager explainablesManager;
-    private final int computeSize;
     private final EntryPoint reasonerEntryPoint;
     private boolean done;
     private Queue<ConceptMap> queue;
@@ -64,12 +61,12 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.queue = null;
         this.done = false;
         this.required = new AtomicInteger();
-        this.processing = new AtomicInteger();
-        this.reasonerEntryPoint = new EntryPoint(this::receiveAnswer, this::exception, this::answersFinished, conjunction.toString());
+        this.reasonerEntryPoint = new EntryPoint(this::receiveAnswer, this::exception, this::answersFinished, conjunction.toString());  // TODO Try wrapping the root processor in an entrypoint object, which is still a reactive
         this.controllerRegistry.createRootConjunctionController(conjunction, reasonerEntryPoint);
-        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
-        assert computeSize > 0;
-        if (options.traceInference()) Tracer.initialise(options.logsDir());
+        if (options.traceInference()) {
+            Tracer.initialise(options.logsDir());
+            Tracer.get().startDefaultTrace();
+        }
     }
 
     public ReasonerProducer(Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
@@ -80,27 +77,19 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.queue = null;
         this.done = false;
         this.required = new AtomicInteger();
-        this.processing = new AtomicInteger();
         this.reasonerEntryPoint = new EntryPoint(this::receiveAnswer, this::exception, this::answersFinished, disjunction.toString());
         this.controllerRegistry.createRootDisjunctionController(disjunction, reasonerEntryPoint);
-        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
-        assert computeSize > 0;
-        if (options.traceInference()) Tracer.initialise(options.logsDir());
+        if (options.traceInference()) {
+            Tracer.initialise(options.logsDir());
+            Tracer.get().startDefaultTrace();
+        }
     }
 
     @Override
     public synchronized void produce(Queue<ConceptMap> queue, int request, Executor executor) {
         assert this.queue == null || this.queue == queue;
         this.queue = queue;
-        this.required.addAndGet(request);
-        int canRequest = computeSize - processing.get();
-        int toRequest = Math.min(canRequest, request);
-        pullAnswer();
-        processing.addAndGet(toRequest);
-    }
-
-    private void pullAnswer() {
-        Tracer.get().startDefaultTrace();
+        required.addAndGet(request);
         reasonerEntryPoint.pull();
     }
 
@@ -110,13 +99,12 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
             explainablesManager.setAndRecordExplainables(answer);
         }
         queue.put(answer);
-        if (required.decrementAndGet() > 0) pullAnswer();
-        else processing.decrementAndGet();
+        if (required.decrementAndGet() > 0) reasonerEntryPoint.pull();
     }
 
     // note: root resolver calls this single-threaded, so is threads safe
 
-    private void answersFinished(Boolean aVoid) {  // TODO: Is there a nicer way?
+    private void answersFinished(Boolean aVoid) {  // TODO: Is there a nicer way? Use a runnable
         // TODO: Call when the end of answers has been detected
         LOG.trace("All answers found.");
         if (options.traceInference()) Tracer.get().finishDefaultTrace();
@@ -165,7 +153,6 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().pathsCount()));
             isPulling = false;
             answerConsumer.accept(packet);
-            monitor().onPathJoin();
         }
 
         @Override
@@ -183,6 +170,10 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
         public void done() {
             onDone.accept(true);
+        }
+
+        public boolean isPulling() {
+            return isPulling;
         }
     }
 

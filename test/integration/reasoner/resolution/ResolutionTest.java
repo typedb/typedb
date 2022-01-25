@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -54,13 +55,14 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedConjunction;
 import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedDisjunction;
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
 public class ResolutionTest {
 
-    private static final Boolean tracing = true;
+    private static final Boolean tracing = false;
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
@@ -449,23 +451,28 @@ public class ResolutionTest {
 
         public LinkedBlockingQueue<ConceptMap> responses;
         public LinkedBlockingQueue<Throwable> exceptions;
-        public LinkedBlockingQueue<Boolean> doneReceived;
+        public AtomicBoolean doneReceived;
         public EntryPoint entryPoint;
 
         AnswerProducer() {
             responses = new LinkedBlockingQueue<>();
             exceptions = new LinkedBlockingQueue<>();
-            doneReceived = new LinkedBlockingQueue<>();
-            entryPoint = new EntryPoint(this::onAnswer, exceptions::add, doneReceived::add, "EntryPoint");
+            doneReceived = new AtomicBoolean(false);
+            entryPoint = new EntryPoint(this::onAnswer, exceptions::add, this::receivedDone, "EntryPoint");
         }
 
         void onAnswer(ConceptMap answer) {
+            assertFalse(doneReceived.get());
             responses.add(answer);
             getNextAnswer();
         }
 
         void getNextAnswer() {
             entryPoint.pull();
+        }
+
+        void receivedDone(Boolean bool) {
+            doneReceived.set(true);
         }
     }
 
@@ -510,7 +517,7 @@ public class ResolutionTest {
     }
 
     private void assertResponses(LinkedBlockingQueue<ConceptMap> responses, Set<Identifier.Variable.Retrievable> filter,
-                                 long answerCount, long explainableAnswers, LinkedBlockingQueue<Boolean> doneReceived) throws InterruptedException {
+                                 long answerCount, long explainableAnswers, AtomicBoolean doneReceived) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         int answersFound = 0;
@@ -528,14 +535,15 @@ public class ResolutionTest {
 //                }
             }
         }
-        if (tracing) Tracer.get().finishDefaultTrace();  // TODO: Not nice that we start tracing in a different method
+
         assertEquals(answerCount, answersFound);
         // assertEquals(explainableAnswers, explainableAnswersFound);  // TODO: Re-enable when explanation are back
 
-//         assertTrue(doneReceived.take());
-        assertNotNull(doneReceived.poll(500, TimeUnit.MILLISECONDS));
-
+        ConceptMap answer = responses.poll(500, TimeUnit.MILLISECONDS);  // Poll for one more answer, expecting failure
+        assertNull(answer);
+        assertTrue(doneReceived.get());
         assertTrue(responses.isEmpty());
+        if (tracing) Tracer.get().finishDefaultTrace();  // TODO: Not nice that we start tracing in a different method
         System.out.println("Time : " + (System.currentTimeMillis() - startTime));
     }
 }

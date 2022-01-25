@@ -169,9 +169,7 @@ public abstract class Processor<INPUT, OUTPUT,
     public void onPathJoin(Provider<?> joiner) {
         answerPathsCount -= 1;
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathJoin(joiner, driver(), -1));
-        monitors.forEach(monitor -> {
-            monitor.execute(actor -> actor.onPathJoin(joiner));
-        });
+        monitors.forEach(monitor -> monitor.execute(actor -> actor.onPathJoin(joiner)));
         checkTermination();
     }
 
@@ -192,9 +190,13 @@ public abstract class Processor<INPUT, OUTPUT,
 
     private void checkTermination() {
         if (isMonitor()) {
-            assert answerPathsCount >= 0;
-            if (answerPathsCount == 0) onDone();
+            assert answerPathsCount >= -1;
+            if (answerPathsCount == -1 && isPulling()) onDone();
         }
+    }
+
+    protected boolean isPulling() {
+        throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     protected void onDone() {

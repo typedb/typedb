@@ -88,6 +88,11 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         }
 
         @Override
+        protected boolean isPulling() {
+            return reasonerEndpoint.isPulling();
+        }
+
+        @Override
         protected boolean isMonitor() {
             return true;
         }

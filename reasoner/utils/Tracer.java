@@ -144,21 +144,25 @@ public final class Tracer {
         rootRequestTracers.get(trace).addNodeGroup(node, group);
     }
 
-    public void pathJoin(Provider<?> joiner, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numJoins) {
+    public synchronized void pathJoin(Provider<?> joiner, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numJoins) {
         pathCount(simpleClassId(joiner), monitor, "c" + numJoins);
     }
 
-    public void pathFork(Receiver<?> forker, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numForks) {
+    public synchronized void pathJoin(Receiver<?> joiner, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numJoins) {
+        pathCount(simpleClassId(joiner), monitor, "c" + numJoins);
+    }
+
+    public synchronized void pathFork(Receiver<?> forker, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numForks) {
         pathCount(simpleClassId(forker), monitor, "c" + numForks);
     }
 
-    public void pathCountFastForward(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?,?,?,?>> monitor, long answerPathsCount) {
+    public synchronized void pathCountFastForward(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?,?,?,?>> monitor, long answerPathsCount) {
         String senderName = sender.name() + "-actor";
         pathCount(senderName, monitor, "ff" + answerPathsCount);
         addNodeGroup(senderName, sender.name(), defaultTrace);
     }
 
-    public void pathCount(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
+    private void pathCount(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
         String monitorName = monitor.name() + "-actor";
         addMessage(sender, monitorName, defaultTrace, EdgeType.MONITOR, label);
         addNodeGroup(monitorName, monitor.name(), defaultTrace);

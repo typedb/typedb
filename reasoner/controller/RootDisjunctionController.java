@@ -73,6 +73,11 @@ public class RootDisjunctionController
         }
 
         @Override
+        protected boolean isPulling() {
+            return reasonerEndpoint.isPulling();
+        }
+
+        @Override
         protected boolean isMonitor() {
             return true;
         }
