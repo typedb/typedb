@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.pattern.constraint.thing;
 
-import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.pattern.Conjunction;
