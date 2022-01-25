@@ -18,11 +18,14 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
+
 public interface PacketMonitor {
 
-    void onPathFork(int numForks, Reactive forker);
+    void onPathFork(int numForks, Receiver<?> forker);
 
-    void onPathJoin(Reactive joiner);
+    void onPathJoin(Provider<?> joiner);
 
     long pathsCount();
 }

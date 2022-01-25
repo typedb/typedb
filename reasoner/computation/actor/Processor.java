@@ -150,13 +150,15 @@ public abstract class Processor<INPUT, OUTPUT,
 
     public void updatePathsCount(long pathCountDelta) {
         answerPathsCount += pathCountDelta;
+        assert answerPathsCount >= -1;
         checkTermination();
     }
 
     @Override
-    public void onPathFork(int numForks, Reactive forker) {
+    public void onPathFork(int numForks, Reactive.Receiver<?> forker) {
         assert numForks > 0;
         answerPathsCount += numForks;
+        assert answerPathsCount >= -1;
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathFork(forker, driver(), numForks));
         monitors.forEach(monitor -> {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathFork(forker, monitor, numForks));
@@ -166,8 +168,9 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     @Override
-    public void onPathJoin(Reactive joiner) {
+    public void onPathJoin(Provider<?> joiner) {
         answerPathsCount -= 1;
+        assert answerPathsCount >= -1;
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathJoin(joiner, driver(), -1));
         monitors.forEach(monitor -> monitor.execute(actor -> actor.onPathJoin(joiner)));
         checkTermination();
@@ -190,7 +193,6 @@ public abstract class Processor<INPUT, OUTPUT,
 
     private void checkTermination() {
         if (isMonitor()) {
-            assert answerPathsCount >= -1;
             if (answerPathsCount == -1 && isPulling()) onDone();
         }
     }
@@ -253,15 +255,16 @@ public abstract class Processor<INPUT, OUTPUT,
 
         void setReady(Connection<PACKET, ?, ?> connection) {
             this.connection = connection;
+            assert !ready;
             this.ready = true;
-            if (isPulling) pull(subscriber());
+            pull(subscriber());
         }
 
         @Override
         public void pull(Receiver<PACKET> receiver) {
             assert receiver.equals(subscriber);
-            isPulling = true;
-            if (ready) {
+            if (ready && !isPulling) {
+                isPulling = true;
                 connection.pull();
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, connection, monitor().pathsCount()));  // TODO: We do this here because we don't tell the connection who we are when we pull
             }

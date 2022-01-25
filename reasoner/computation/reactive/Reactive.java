@@ -45,7 +45,7 @@ public interface Reactive {
 
     interface Provider<R> extends Reactive {
 
-        void pull(Receiver<R> receiver);
+        void pull(Receiver<R> receiver);  // Should be idempotent if already pulling
 
         interface Publisher<T> extends Provider<T> {
 
@@ -132,14 +132,14 @@ public interface Reactive {
             private final Set<Provider<R>> forkedProviders;
             private final Receiver<R> receiver;
             private final PacketMonitor monitor;
-            private boolean hasForked;
+            private boolean firstFork;
 
             public MultiManager(Receiver.Subscriber<R> subscriber, @Nullable PacketMonitor monitor) {
                 this.providersPulling = new HashMap<>();
                 this.forkedProviders = new HashSet<>();
                 this.receiver = subscriber;
                 this.monitor = monitor;
-                this.hasForked = false;
+                this.firstFork = true;
             }
 
             @Override
@@ -169,16 +169,15 @@ public interface Reactive {
             public void pull(Provider<R> provider) {
                 assert providersPulling.containsKey(provider);
                 if (!providersPulling.get(provider)) {
-                    if (monitor != null && !forkedProviders.contains(provider)) monitor.onPathFork(1, receiver);
+                    if (monitor != null && !forkedProviders.contains(provider)) {
+                        if (!firstFork) monitor.onPathFork(1, receiver);
+                        else firstFork = false;
+                    }
                     forkedProviders.add(provider);
                     providersPulling.put(provider, true);
                     if (monitor == null) Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
                     else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.pathsCount()));
                     provider.pull(receiver);
-                    if (!hasForked && monitor != null) {
-                        monitor.onPathJoin(receiver);
-                    }
-                    hasForked = true;
                 }
             }
         }

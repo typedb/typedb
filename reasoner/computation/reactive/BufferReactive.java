@@ -51,12 +51,13 @@ public class BufferReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
     @Override
     public void pull(Receiver<PACKET> receiver) {
         assert receiver.equals(subscriber);  // TODO: Make a proper exception for this
-        if (stack.size() > 0) {
-            assert !isPulling();
-            receiver.receive(this, stack.pop());
-        } else if (!isPulling()) {
-            setPulling();
-            providerManager().pullAll();
+        if (!isPulling()) {
+            if (stack.size() > 0) {
+                receiver.receive(this, stack.pop());
+            } else {
+                setPulling();
+                providerManager().pullAll();
+            }
         }
     }
 }

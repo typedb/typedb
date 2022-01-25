@@ -32,7 +32,6 @@ import java.util.function.BiFunction;
 public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
 
     private final Publisher<PACKET> leadingPublisher;
-    private final Set<Provider<PACKET>> lastPublishers;
     private final List<PLAN_ID> remainingPlan;
     private final BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc;
     private final BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc;
@@ -53,7 +52,6 @@ public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveStreamBase<PACKET
         this.spawnLeaderFunc = spawnLeaderFunc;
         this.publisherPackets = new HashMap<>();
         this.leadingPublisher.publishTo(this);
-        this.lastPublishers = new HashSet<>();
     }
 
     @Override
@@ -73,7 +71,6 @@ public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveStreamBase<PACKET
                 Publisher<PACKET> follower;
                 if (remainingPlan.size() == 1) {
                     follower = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
-                    lastPublishers.add(follower);
                 } else {
                     follower = new CompoundReactive<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, monitor(), groupName()).buffer();
                 }
@@ -84,11 +81,9 @@ public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveStreamBase<PACKET
                 providerManager().pull(follower);
             }
         } else {
+            finishPulling();
             PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(provider));
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, mergedPacket,
-                                                                     monitor().pathsCount()));
             subscriber().receive(this, compoundedPacket);
-            if (lastPublishers.contains(provider)) finishPulling();
         }
     }
 }
