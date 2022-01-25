@@ -176,7 +176,7 @@ public interface Reactive {
                     else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.pathsCount()));
                     provider.pull(receiver);
                     if (!hasForked && monitor != null) {
-                        monitor.onPathJoin(provider);  // TODO: This misdirects the arrow in tracing which is very confusing
+                        monitor.onPathJoin(receiver);
                     }
                     hasForked = true;
                 }

@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
 import org.slf4j.Logger;
@@ -144,15 +145,11 @@ public final class Tracer {
         rootRequestTracers.get(trace).addNodeGroup(node, group);
     }
 
-    public synchronized void pathJoin(Provider<?> joiner, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numJoins) {
+    public synchronized void pathJoin(Reactive joiner, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numJoins) {
         pathCount(simpleClassId(joiner), monitor, "c" + numJoins);
     }
 
-    public synchronized void pathJoin(Receiver<?> joiner, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numJoins) {
-        pathCount(simpleClassId(joiner), monitor, "c" + numJoins);
-    }
-
-    public synchronized void pathFork(Receiver<?> forker, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numForks) {
+    public synchronized void pathFork(Reactive forker, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numForks) {
         pathCount(simpleClassId(forker), monitor, "c" + numForks);
     }
 
