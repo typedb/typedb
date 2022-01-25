@@ -22,8 +22,8 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

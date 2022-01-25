@@ -20,12 +20,12 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-public abstract class ReactiveBase<INPUT, OUTPUT> extends Reactive<INPUT, OUTPUT> {
+public abstract class ReactiveStreamBase<INPUT, OUTPUT> extends ReactiveStream<INPUT, OUTPUT> {
 
     protected Receiver<OUTPUT> subscriber;
     private boolean isPulling;
 
-    protected ReactiveBase(PacketMonitor monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
+    protected ReactiveStreamBase(PacketMonitor monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
         super(monitor, groupName);
         this.isPulling = false;
     }

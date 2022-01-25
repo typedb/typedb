@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import java.util.Stack;
 
-public class BufferReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
+public class BufferReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
 
     private final SingleManager<PACKET> providerManager;
     private final Stack<PACKET> stack;

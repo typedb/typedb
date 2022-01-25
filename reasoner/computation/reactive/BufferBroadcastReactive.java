@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 
-public class BufferBroadcastReactive<PACKET> extends Reactive<PACKET, PACKET> {
+public class BufferBroadcastReactive<PACKET> extends ReactiveStream<PACKET, PACKET> {
 
     final Map<Receiver<PACKET>, Integer> bufferPositions;  // Points to the next item needed
     final Set<PACKET> bufferSet;

@@ -30,10 +30,8 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PacketMonitor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBase;
-import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStreamBase;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashSet;
@@ -138,7 +136,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         }
 
-        private class ConclusionReactive extends ReactiveBase<ConceptMap, Map<Identifier.Variable, Concept>> {
+        private class ConclusionReactive extends ReactiveStreamBase<ConceptMap, Map<Variable, Concept>> {
 
             private final SingleManager<ConceptMap> providerManager;
 
@@ -160,7 +158,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                         driver(), materialiserEndpoint.id(), null,
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
-                Reactive<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
+                ReactiveStream<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
                 MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, monitor(), groupName());
                 op.publishTo(materialiserReactive);
                 materialiserReactive.sendTo(subscriber());
@@ -168,7 +166,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
         }
 
-        private class MaterialiserReactive extends ReactiveBase<Map<Variable, Concept>, Map<Variable, Concept>> {
+        private class MaterialiserReactive extends ReactiveStreamBase<Map<Variable, Concept>, Map<Variable, Concept>> {
 
             private final ConclusionReactive parent;
             private final SingleManager<Map<Variable, Concept>> providerManager;

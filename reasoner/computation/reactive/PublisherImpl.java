@@ -22,9 +22,9 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
 import java.util.function.Function;
 
-public abstract class PublisherImpl<OUTPUT> implements Provider.Publisher<OUTPUT> {
+public abstract class PublisherImpl<OUTPUT> implements Reactive.Provider.Publisher<OUTPUT> {
 
-    protected Receiver<OUTPUT> subscriber;
+    protected Reactive.Receiver<OUTPUT> subscriber;
     private final PacketMonitor monitor;
     private final String groupName;
 
@@ -43,28 +43,28 @@ public abstract class PublisherImpl<OUTPUT> implements Provider.Publisher<OUTPUT
     }
 
     @Override
-    public Reactive<OUTPUT, OUTPUT> findFirst() {
+    public ReactiveStream<OUTPUT, OUTPUT> findFirst() {
         FindFirstReactive<OUTPUT> findFirst = new FindFirstReactive<>(this, monitor, groupName());
         publishTo(findFirst);
         return findFirst;
     }
 
     @Override
-    public <R> Reactive<OUTPUT, R> map(Function<OUTPUT, R> function) {
+    public <R> ReactiveStream<OUTPUT, R> map(Function<OUTPUT, R> function) {
         MapReactive<OUTPUT, R> map = new MapReactive<>(this, function, monitor(), groupName());
         publishTo(map);
         return map;
     }
 
     @Override
-    public <R> Reactive<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
+    public <R> ReactiveStream<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
         FlatMapOrRetryReactive<OUTPUT, R> flatMap = new FlatMapOrRetryReactive<>(this, function, monitor(), groupName());
         publishTo(flatMap);
         return flatMap;
     }
 
     @Override
-    public Reactive<OUTPUT, OUTPUT> buffer() {
+    public ReactiveStream<OUTPUT, OUTPUT> buffer() {
         BufferReactive<OUTPUT> buffer = new BufferReactive<>(this, monitor(), groupName());
         publishTo(buffer);
         return buffer;

@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import java.util.function.Function;
 
-public class MapReactive<INPUT, OUTPUT> extends ReactiveBase<INPUT, OUTPUT> {
+public class MapReactive<INPUT, OUTPUT> extends ReactiveStreamBase<INPUT, OUTPUT> {
 
     private final Function<INPUT, OUTPUT> mappingFunc;
     private final SingleManager<INPUT> providerManager;

@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import javax.annotation.Nullable;
 
-public class IdentityReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
+public class IdentityReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
 
     private final SingleManager<PACKET> providerManager;
 

@@ -21,11 +21,11 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PacketMonitor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PublisherBase;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Receiver.Subscriber;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStream;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +53,7 @@ public abstract class Processor<INPUT, OUTPUT,
     private final Map<Long, InletEndpoint<INPUT>> receivingEndpoints;
     private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
     protected final Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors;
-    private Reactive<OUTPUT, OUTPUT> outlet;
+    private ReactiveStream<OUTPUT, OUTPUT> outlet;
     private long endpointId;
     private boolean terminated;
     private long answerPathsCount;
@@ -72,11 +72,11 @@ public abstract class Processor<INPUT, OUTPUT,
 
     public abstract void setUp();
 
-    protected void setOutlet(Reactive<OUTPUT, OUTPUT> outlet) {
+    protected void setOutlet(ReactiveStream<OUTPUT, OUTPUT> outlet) {
         this.outlet = outlet;
     }
 
-    public Reactive<OUTPUT, OUTPUT> outlet() {
+    public ReactiveStream<OUTPUT, OUTPUT> outlet() {
         return outlet;
     }
 
@@ -96,7 +96,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     public void applyConnectionTransforms(List<Function<OUTPUT, OUTPUT>> transformations,
-                                          Reactive<OUTPUT, OUTPUT> outlet, OutletEndpoint<OUTPUT> upstreamEndpoint) {
+                                          ReactiveStream<OUTPUT, OUTPUT> outlet, OutletEndpoint<OUTPUT> upstreamEndpoint) {
         Provider.Publisher<OUTPUT> op = outlet;
         for (Function<OUTPUT, OUTPUT> t : transformations) op = op.map(t);
         op.publishTo(upstreamEndpoint);
@@ -154,7 +154,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     @Override
-    public void onPathFork(int numForks, Receiver<?> forker) {
+    public void onPathFork(int numForks, Reactive.Receiver<?> forker) {
         assert numForks > 0;
         answerPathsCount += numForks;
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathFork(forker, driver(), numForks));
@@ -233,7 +233,7 @@ public abstract class Processor<INPUT, OUTPUT,
     /**
      * Governs an input to a processor
      */
-    public static class InletEndpoint<PACKET> extends PublisherBase<PACKET> implements Receiver<PACKET> {
+    public static class InletEndpoint<PACKET> extends PublisherBase<PACKET> implements Reactive.Receiver<PACKET> {
 
         private final long id;
         private boolean ready;

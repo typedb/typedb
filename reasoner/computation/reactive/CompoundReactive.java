@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveBase<PACKET, PACKET> {
+public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
 
     private final Publisher<PACKET> leadingPublisher;
     private final Set<Provider<PACKET>> lastPublishers;

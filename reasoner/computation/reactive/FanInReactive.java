@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-public class FanInReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
+public class FanInReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
 
     private final Provider.MultiManager<PACKET> providerManager;
 

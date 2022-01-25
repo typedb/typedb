@@ -18,15 +18,16 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-public interface Receiver<R> {
+public abstract class ReactiveStream<INPUT, OUTPUT> extends PublisherImpl<OUTPUT> implements Reactive.Receiver.Subscriber<INPUT>  {
 
-    void receive(Provider<R> provider, R packet);  // TODO: The provider argument is only needed by compound - can we do without it?
-
-    String groupName();
-
-    interface Subscriber<T> extends Receiver<T> {
-
-        void subscribeTo(Provider<T> publisher);
-
+    protected ReactiveStream(PacketMonitor monitor, String groupName) {
+        super(monitor, groupName);
     }
+
+    protected abstract boolean isPulling();
+
+    protected abstract void finishPulling();
+
+    protected abstract Manager<INPUT> providerManager();
+
 }

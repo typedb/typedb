@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-public class FindFirstReactive<PACKET> extends ReactiveBase<PACKET, PACKET> {
+public class FindFirstReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
 
     private final SingleManager<PACKET> providerManager;
     private boolean packetFound;

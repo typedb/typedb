@@ -18,9 +18,12 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
+
 import javax.annotation.Nullable;
 
-public abstract class Sink<PACKET> implements Receiver.Subscriber<PACKET>, Provider<PACKET>  {
+public abstract class Sink<PACKET> implements Subscriber<PACKET>, Provider<PACKET> {
 
     private SingleManager<PACKET> providerManager;
     private PacketMonitor monitor;
