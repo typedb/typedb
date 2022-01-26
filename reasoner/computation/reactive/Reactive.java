@@ -132,14 +132,14 @@ public interface Reactive {
             private final Set<Provider<R>> forkedProviders;
             private final Receiver<R> receiver;
             private final PacketMonitor monitor;
-            private boolean firstFork;
+            private boolean hasForked;
 
             public MultiManager(Receiver.Subscriber<R> subscriber, @Nullable PacketMonitor monitor) {
                 this.providersPulling = new HashMap<>();
                 this.forkedProviders = new HashSet<>();
                 this.receiver = subscriber;
                 this.monitor = monitor;
-                this.firstFork = true;
+                this.hasForked = false;
             }
 
             @Override
@@ -169,15 +169,19 @@ public interface Reactive {
             public void pull(Provider<R> provider) {
                 assert providersPulling.containsKey(provider);
                 if (!providersPulling.get(provider)) {
-                    if (monitor != null && !forkedProviders.contains(provider)) {
-                        if (!firstFork) monitor.onPathFork(1, receiver);
-                        else firstFork = false;
-                    }
+                    if (monitor != null && !forkedProviders.contains(provider)) monitor.onPathFork(1, receiver);
                     forkedProviders.add(provider);
                     providersPulling.put(provider, true);
                     if (monitor == null) Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
                     else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.pathsCount()));
                     provider.pull(receiver);
+                    if (!hasForked && monitor != null) {
+                        // We need to fork and then join because pulling on the first element of a set could immediately
+                        // cause an upstream join before the second element of the set has been declared as a fork.
+                        // TODO: To avoid this, in pullAll() we could fork by n-1 where n is the number of forks.
+                        monitor.onPathJoin(receiver);
+                    }
+                    hasForked = true;
                 }
             }
         }

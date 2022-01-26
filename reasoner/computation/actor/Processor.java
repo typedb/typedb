@@ -155,7 +155,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     @Override
-    public void onPathFork(int numForks, Reactive.Receiver<?> forker) {
+    public void onPathFork(int numForks, Reactive forker) {
         assert numForks > 0;
         answerPathsCount += numForks;
         assert answerPathsCount >= -1;
@@ -168,7 +168,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     @Override
-    public void onPathJoin(Provider<?> joiner) {
+    public void onPathJoin(Reactive joiner) {
         answerPathsCount -= 1;
         assert answerPathsCount >= -1;
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathJoin(joiner, driver(), -1));
