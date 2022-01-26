@@ -128,14 +128,14 @@ public interface Reactive {
 
         class MultiManager<R> implements Manager<R> {
 
-            private final Map<Provider<R>, Boolean> providersPulling;
+            private final Map<Provider<R>, Boolean> providers;
             private final Set<Provider<R>> forkedProviders;
             private final Receiver<R> receiver;
             private final PacketMonitor monitor;
             private boolean hasForked;
 
             public MultiManager(Receiver.Subscriber<R> subscriber, @Nullable PacketMonitor monitor) {
-                this.providersPulling = new HashMap<>();
+                this.providers = new HashMap<>();
                 this.forkedProviders = new HashSet<>();
                 this.receiver = subscriber;
                 this.monitor = monitor;
@@ -144,45 +144,83 @@ public interface Reactive {
 
             @Override
             public void add(Provider<R> provider) {
-                providersPulling.putIfAbsent(provider, false);
+                providers.putIfAbsent(provider, false);
             }
 
             @Override
             public int size() {
-                return providersPulling.size();
+                return providers.size();
             }
 
             @Override
             public void receivedFrom(Provider<R> provider) {
-                providersPulling.put(provider, false);
+                setPulling(provider, false);
                 // TODO: Put a path join here would be ideal except it might mean the path tally drops to zero right before it will go back up to 1.
             }
 
             @Override
             public void pullAll() {
-                providersPulling.forEach((provider, hasBeenPulled) -> {
-                    if (!hasBeenPulled) pull(provider);
+                doFork(providers.keySet());
+                providers.keySet().forEach(provider -> {
+                    if (!isPulling(provider)) {
+                        setPulling(provider, true);
+                        pullProvider(provider);
+                    }
                 });
+                doJoin();
             }
 
             @Override
             public void pull(Provider<R> provider) {
-                assert providersPulling.containsKey(provider);
-                if (!providersPulling.get(provider)) {
-                    if (monitor != null && !forkedProviders.contains(provider)) monitor.onPathFork(1, receiver);
-                    forkedProviders.add(provider);
-                    providersPulling.put(provider, true);
-                    if (monitor == null) Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
-                    else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.pathsCount()));
-                    provider.pull(receiver);
-                    if (!hasForked && monitor != null) {
-                        // We need to fork and then join because pulling on the first element of a set could immediately
-                        // cause an upstream join before the second element of the set has been declared as a fork.
-                        // TODO: To avoid this, in pullAll() we could fork by n-1 where n is the number of forks.
-                        monitor.onPathJoin(receiver);
-                    }
-                    hasForked = true;
+                doFork(provider);
+                if (!isPulling(provider)) {
+                    setPulling(provider, true);
+                    pullProvider(provider);
                 }
+                doJoin();  // TODO: Could this be wrong if we will do subsequent pulls with different providers?
+            }
+
+            private boolean isPulling(Provider<R> provider) {
+                assert providers.containsKey(provider);
+                return providers.get(provider);
+            }
+
+            private void setPulling(Provider<R> provider, boolean isPulling) {
+                providers.put(provider, isPulling);
+            }
+
+            private void doFork(Provider<R> provider) {
+                if (monitor != null && !forkedProviders.contains(provider)) monitor.onPathFork(1, receiver);
+                forkedProviders.add(provider);
+            }
+
+            private void doFork(Set<Provider<R>> providers) {
+                int count = 0;
+                if (monitor != null) {
+                    for (Provider<R> provider : providers) {
+                        if (!forkedProviders.contains(provider)) {
+                            forkedProviders.add(provider);
+                            count += 1;
+                        }
+                    }
+                    if (count > 0) monitor.onPathFork(count, receiver);
+                }
+            }
+
+            private void doJoin() {
+                if (!hasForked && monitor != null) {
+                    // We need to fork and then join because pulling on the first element of a set could immediately
+                    // cause an upstream join before the second element of the set has been declared as a fork.
+                    // TODO: To avoid this, in pullAll() we could fork by n-1 where n is the number of forks.
+                    monitor.onPathJoin(receiver);
+                }
+                hasForked = true;
+            }
+
+            private void pullProvider(Provider<R> provider) {
+                if (monitor == null) Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
+                else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.pathsCount()));
+                provider.pull(receiver);
             }
         }
     }

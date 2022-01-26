@@ -145,8 +145,8 @@ public final class Tracer {
         rootRequestTracers.get(trace).addNodeGroup(node, group);
     }
 
-    public synchronized void pathJoin(Reactive joiner, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numJoins) {
-        pathCount(simpleClassId(joiner), monitor, "c" + numJoins);
+    public synchronized void pathJoin(Reactive joiner, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor) {
+        pathCount(simpleClassId(joiner), monitor, "c-1");
     }
 
     public synchronized void pathFork(Reactive forker, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numForks) {

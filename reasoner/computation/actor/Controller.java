@@ -96,9 +96,11 @@ public abstract class Controller<
         if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent()) {
             String code = ((TypeDBException) e).code().get();
             if (code.equals(RESOURCE_CLOSED.code())) {
-                LOG.debug("Resolver interrupted by resource close: {}", e.getMessage());
+                LOG.debug("Controller interrupted by resource close: {}", e.getMessage());
                 registry.terminate(e);
                 return;
+            } else {
+                LOG.debug("Controller interrupted by TypeDB exception: {}", e.getMessage());
             }
         }
         LOG.error("Actor exception", e);

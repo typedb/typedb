@@ -149,6 +149,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     public void updatePathsCount(long pathCountDelta) {
+        assert isMonitor();
         answerPathsCount += pathCountDelta;
         assert answerPathsCount >= -1;
         checkTermination();
@@ -162,7 +163,19 @@ public abstract class Processor<INPUT, OUTPUT,
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathFork(forker, driver(), numForks));
         monitors.forEach(monitor -> {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathFork(forker, monitor, numForks));
-            monitor.execute(actor -> actor.onPathFork(numForks, forker));
+            monitor.execute(actor -> actor.reportPathFork(numForks, forker));
+        });
+    }
+
+    @Override
+    public void reportPathFork(int numForks, Reactive forker) {
+        assert isMonitor();
+        assert numForks > 0;
+        answerPathsCount += numForks;
+        assert answerPathsCount >= -1;
+        monitors.forEach(monitor -> {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathFork(forker, monitor, numForks));
+            monitor.execute(actor -> actor.reportPathFork(numForks, forker));
         });
         checkTermination();
     }
@@ -171,8 +184,22 @@ public abstract class Processor<INPUT, OUTPUT,
     public void onPathJoin(Reactive joiner) {
         answerPathsCount -= 1;
         assert answerPathsCount >= -1;
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathJoin(joiner, driver(), -1));
-        monitors.forEach(monitor -> monitor.execute(actor -> actor.onPathJoin(joiner)));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathJoin(joiner, driver()));
+        monitors.forEach(monitor -> {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathJoin(joiner, monitor));
+            monitor.execute(actor -> actor.reportPathJoin(joiner));
+        });
+    }
+
+    @Override
+    public void reportPathJoin(Reactive joiner) {
+        assert isMonitor();
+        answerPathsCount -= 1;
+        assert answerPathsCount >= -1;
+        monitors.forEach(monitor -> {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathJoin(joiner, monitor));
+            monitor.execute(actor -> actor.reportPathJoin(joiner));
+        });
         checkTermination();
     }
 
@@ -192,9 +219,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     private void checkTermination() {
-        if (isMonitor()) {
-            if (answerPathsCount == -1 && isPulling()) onDone();
-        }
+        if (answerPathsCount == -1 && isPulling()) onDone();
     }
 
     protected boolean isPulling() {
@@ -214,9 +239,11 @@ public abstract class Processor<INPUT, OUTPUT,
         if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent()) {
             String code = ((TypeDBException) e).code().get();
             if (code.equals(RESOURCE_CLOSED.code())) {
-                LOG.debug("Resolver interrupted by resource close: {}", e.getMessage());
+                LOG.debug("Processor interrupted by resource close: {}", e.getMessage());
                 controller.execute(actor -> actor.exception(e));
                 return;
+            } else {
+                LOG.debug("Processor interrupted by TypeDB exception: {}", e.getMessage());
             }
         }
         LOG.error("Actor exception", e);

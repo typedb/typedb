@@ -22,7 +22,11 @@ public interface PacketMonitor {
 
     void onPathFork(int numForks, Reactive forker);
 
+    void reportPathFork(int numForks, Reactive forker);
+
     void onPathJoin(Reactive joiner);
+
+    void reportPathJoin(Reactive joiner);
 
     long pathsCount();
 }
