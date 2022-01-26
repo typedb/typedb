@@ -103,8 +103,8 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     protected <PROV_PROCESSOR extends Processor<?, INPUT, ?, PROV_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PROV_PROCESSOR> connection) {
-        receivingEndpoints.get(connection.receiverEndpointId()).setReady(connection);
         connection.propagateMonitors(addSelfIfMonitor(monitors));
+        receivingEndpoints.get(connection.receiverEndpointId()).setReady(connection);
         upstreamConnections.add(connection);
     }
 
@@ -254,6 +254,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         void setReady(Connection<PACKET, ?, ?> connection) {
+            // TODO: Poorly named, it sets ready and pulls
             this.connection = connection;
             assert !ready;
             this.ready = true;
