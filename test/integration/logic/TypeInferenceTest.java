@@ -516,25 +516,6 @@ public class TypeInferenceTest {
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
-    @Test
-    public void role_type() throws IOException {
-        define_standard_schema("basic-schema");
-        TypeInference typeInference = transaction.logic().typeInference();
-
-        String queryString = "match ($r: $yoko) isa marriage; marriage relates $r;";
-
-        Disjunction disjunction = createDisjunction(queryString);
-        typeInference.infer(disjunction);
-
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$yoko", set("man", "woman", "person"));
-            put("$_0", set("marriage"));
-            put("$_marriage", set("marriage"));
-            put("$r", set("marriage_spouse", "marriage:wife", "marriage:husband"));
-        }};
-
-        assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
-    }
 
     @Test
     public void no_role_type() throws IOException {

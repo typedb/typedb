@@ -97,18 +97,13 @@ public class TypeInference {
 
     private void infer(Conjunction conjunction, Map<Identifier.Variable.Name, Set<Label>> bounds, boolean insertable) {
         propagateLabels(conjunction);
-        if (isSchemaQuery(conjunction)) return;
-        applyBounds(conjunction, bounds);
-        InferenceTraversal inferenceTraversal = new InferenceTraversal(conjunction, insertable, graphMgr, traversalEng);
-        // TODO this still needs work
-        Optional<Map<Retrievable, Set<Label>>> inferenceVarTypes = inferenceTraversal.typeCombination(logicCache);
-        inferenceTraversal.applyInferredTypes(inferenceVarTypes.orElse(null));
-
-        if (!conjunction.negations().isEmpty()) {
-            Map<Retrievable.Name, Set<Label>> inferredTypes = namedInferredTypes(conjunction);
-            inferredTypes.putAll(bounds);
-            conjunction.negations().forEach(negation -> infer(negation.disjunction(), inferredTypes));
+        if (!bounds.isEmpty()) applyBounds(conjunction, bounds);
+        Map<Retrievable.Name, Set<Label>> inferredTypes = new HashMap<>(bounds);
+        if (!isSchemaQuery(conjunction)) {
+            new InferenceTraversal(conjunction, insertable, graphMgr, traversalEng).applyCombination(logicCache);
+            inferredTypes.putAll(namedInferredTypes(conjunction));
         }
+        conjunction.negations().forEach(negation -> infer(negation.disjunction(), inferredTypes));
     }
 
     private void applyBounds(Conjunction conjunction, Map<Identifier.Variable.Name, Set<Label>> bounds) {
@@ -134,11 +129,9 @@ public class TypeInference {
 
     public FunctionalIterator<Map<Identifier.Variable.Name, Label>> typePermutations(Conjunction conjunction, boolean insertable) {
         propagateLabels(conjunction);
-        InferenceTraversal inferenceTraversal = new InferenceTraversal(
+        return new InferenceTraversal(
                 conjunction, insertable, graphMgr, traversalEng
-        );
-        // TODO this still needs work
-        return inferenceTraversal.typePermutations().map(inferenceTraversal::toOriginalVars);
+        ).typePermutations();
     }
 
     private void propagateLabels(Conjunction conj) {
@@ -166,9 +159,8 @@ public class TypeInference {
 
         private final GraphTraversal.Type traversal;
         private final Map<Identifier.Variable, TypeVariable> originalToInference;
-        private final Map<Identifier.Variable, Variable> inferenceToOriginal;
+        private final Map<Retrievable, Variable> inferenceToOriginal;
         private final Map<RelationConstraint.RolePlayer, TypeVariable> rolePlayerToInference;
-        private final Map<Identifier.Variable, RelationConstraint.RolePlayer> inferenceToRolePlayer;
         private int nextGeneratedID;
 
         private InferenceTraversal(Conjunction conjunction, boolean insertable, GraphManager graphMgr,
@@ -181,15 +173,27 @@ public class TypeInference {
             this.originalToInference = new HashMap<>();
             this.inferenceToOriginal = new HashMap<>();
             this.rolePlayerToInference = new HashMap<>();
-            this.inferenceToRolePlayer = new HashMap<>();
             this.nextGeneratedID = largestAnonymousVar(conjunction) + 1;
             conjunction.variables().forEach(this::register);
-            traversal.filter(iterate(inferenceToOriginal.keySet()).filter(Identifier::isRetrievable)
-                    .map(Identifier.Variable::asRetrievable).toSet());
+            traversal.filter(set(
+                    inferenceToOriginal.keySet(),
+                    iterate(rolePlayerToInference.values()).map(var -> var.id().asRetrievable()).toSet()
+            ));
         }
 
-        private Optional<Map<Retrievable, Set<Label>>> typeCombination(LogicCache logicCache) {
-            return logicCache.inference().get(
+        private FunctionalIterator<Map<Identifier.Variable.Name, Label>> typePermutations() {
+            return traversalEng.iterator(traversal).map(vertexMap -> {
+                Map<Retrievable.Name, Label> labels = new HashMap<>();
+                vertexMap.forEach((id, vertex) -> {
+                    Identifier.Variable originalID = inferenceToOriginal.get(id).id();
+                    if (originalID.isName()) labels.put(originalID.asName(), vertex.asType().properLabel());
+                });
+                return labels;
+            });
+        }
+
+        private void applyCombination(LogicCache logicCache) {
+            Optional<Map<Retrievable, Set<Label>>> inferredTypes = logicCache.inference().get(
                     traversal,
                     traversal -> traversalEng.combination(traversal, thingInferenceVars()).map(types -> {
                         HashMap<Retrievable, Set<Label>> labels = new HashMap<>();
@@ -197,23 +201,8 @@ public class TypeInference {
                         return labels;
                     })
             );
-        }
-
-        private FunctionalIterator<Map<Retrievable, Label>> typePermutations() {
-            return traversalEng.iterator(traversal).map(vertexMap -> {
-                Map<Retrievable, Label> labels = new HashMap<>();
-                vertexMap.forEach((id, vertex) -> labels.put(id, vertex.asType().properLabel()));
-                return labels;
-            });
-        }
-
-        public Map<Identifier.Variable.Name, Label> toOriginalVars(Map<Retrievable, Label> inferredLabels) {
-            Map<Retrievable.Name, Label> mapping = new HashMap<>();
-            inferredLabels.forEach((id, label) -> {
-                Identifier.Variable originalID = inferenceToOriginal.get(id).id();
-                if (originalID.isName()) mapping.put(originalID.asName(), label);
-            });
-            return mapping;
+            if (inferredTypes.isPresent()) applyTypes(inferredTypes.get());
+            else conjunction.setCoherent(false);
         }
 
         private Set<Identifier.Variable.Retrievable> thingInferenceVars() {
@@ -222,31 +211,16 @@ public class TypeInference {
             ).toSet();
         }
 
-
-        public Set<Identifier.Variable.Retrievable> toInferenceIDs(Set<Identifier.Variable.Retrievable> originalIDs) {
-            return iterate(originalIDs).map(id -> originalToResolver.get(id).id().asRetrievable()).toSet();
-        }
-
-        private void applyInferredTypes(Map<Retrievable, Set<Label>> inferredTypes) {
-            if (inferredTypes == null) {
-                conjunction.setCoherent(false);
-            } else {
-                conjunction.variables().forEach(var -> {
-                    Identifier.Variable inferenceID = originalToInference.get(var.id()).id();
-                    if (inferenceID != null && inferenceID.isRetrievable()) {
-                        var.setInferredTypes(inferredTypes.get(inferenceID.asRetrievable()));
-                    }
-                    if (var.isThing() && var.asThing().relation().isPresent()) {
-                        var.asThing().relation().get().players().forEach(rp -> {
-                            if (!rp.roleType().isPresent()){
-                                assert rolePlayerToInference.containsKey(rp);
-                                Identifier.Variable rpInferenceID = originalToInference.get(var.id()).id();
-                                rp.setInferredRoleTypes(inferredTypes.get(rpInferenceID.asRetrievable()));
-                            }
-                        });
-                    }
-                });
-            }
+        private void applyTypes(Map<Retrievable, Set<Label>> types) {
+            inferenceToOriginal.forEach((inferenceID, conjunctionVar) ->
+                    conjunctionVar.setInferredTypes(types.get(inferenceID))
+            );
+            iterate(conjunction.variables()).filter(var -> var.isThing() && var.asThing().relation().isPresent())
+                    .flatMap(var -> iterate(var.asThing().relation().get().players()).filter(rp -> rp.roleType().isEmpty()))
+                    .forEachRemaining(rp -> {
+                        assert rolePlayerToInference.containsKey(rp);
+                        rp.setInferredRoleTypes(types.get(rolePlayerToInference.get(rp).id().asRetrievable()));
+                    });
         }
 
         private static int largestAnonymousVar(Conjunction conjunction) {
@@ -263,9 +237,10 @@ public class TypeInference {
         private TypeVariable register(TypeVariable var) {
             if (originalToInference.containsKey(var.id())) return originalToInference.get(var.id());
 
-            TypeVariable inferenceVar = new TypeVariable(newID());
+            Retrievable inferenceID = newID();
+            TypeVariable inferenceVar = new TypeVariable(inferenceID);
             originalToInference.put(var.id(), inferenceVar);
-            inferenceToOriginal.putIfAbsent(inferenceVar.id(), var);
+            inferenceToOriginal.putIfAbsent(inferenceID, var);
             if (!var.inferredTypes().isEmpty()) restrictTypes(inferenceVar.id(), iterate(var.inferredTypes()));
 
             for (TypeConstraint constraint : var.constraints()) {
@@ -324,9 +299,10 @@ public class TypeInference {
         private TypeVariable register(ThingVariable var) {
             if (originalToInference.containsKey(var.id())) return originalToInference.get(var.id());
 
-            TypeVariable inferenceVar = new TypeVariable(var.id());
+            Retrievable inferenceID = var.id();
+            TypeVariable inferenceVar = new TypeVariable(inferenceID);
             originalToInference.put(var.id(), inferenceVar);
-            inferenceToOriginal.putIfAbsent(inferenceVar.id(), var);
+            inferenceToOriginal.putIfAbsent(inferenceID, var);
             if (!var.inferredTypes().isEmpty()) restrictTypes(inferenceVar.id(), iterate(var.inferredTypes()));
 
             var.value().forEach(constraint -> registerValue(inferenceVar, constraint));
@@ -345,7 +321,6 @@ public class TypeInference {
 
             TypeVariable inferenceVar = new TypeVariable(newID());
             rolePlayerToInference.put(rolePlayer, inferenceVar);
-            inferenceToRolePlayer.putIfAbsent(inferenceVar.id(), rolePlayer);
             return inferenceVar;
         }
 
@@ -491,7 +466,7 @@ public class TypeInference {
             restrictTypes(resolver.id(), attrTypes.map(TypeVertex::properLabel));
         }
 
-        private Identifier.Variable newID() {
+        private Retrievable newID() {
             return Identifier.Variable.anon(nextGeneratedID++);
         }
     }

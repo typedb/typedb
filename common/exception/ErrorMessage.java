@@ -276,7 +276,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_REGEX =
                 new Pattern(15, "The type variable '%s' has multiple 'regex' constraints.");
         public static final Pattern UNSATISFIABLE_PATTERN =
-                new Pattern(16, "The pattern '%s' can never be satisfied the current schema, specifically due to '%s'.");
+                new Pattern(16, "The pattern '%s' can never be satisfied the current schema.");
         public static final Pattern UNSATISFIABLE_SUB_PATTERN =
                 new Pattern(17, "The pattern '%s' can never be satisfied the current schema, due to '%s'.");
         public static final Pattern UNSATISFIABLE_PATTERN_VARIABLE =
