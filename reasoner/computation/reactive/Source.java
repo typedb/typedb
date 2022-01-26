@@ -42,6 +42,7 @@ public class Source<PACKET> extends PublisherBase<PACKET> {
         assert receiver.equals(subscriber);
         if (iterator == null) iterator = iteratorSupplier.get();
         if (iterator.hasNext()) {
+            monitor().onPathFork(1, this);
             receiver.receive(this, iterator.next());
         } else {
             monitor().onPathJoin(this);

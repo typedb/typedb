@@ -80,6 +80,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveStreamBase<PACKET
                 providerManager().pull(leadingPublisher);  // Pull again on the leader in case the follower never produces an answer
                 providerManager().pull(follower);
             }
+            monitor().onPathJoin(this);
         } else {
             finishPulling();
             PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(provider));
