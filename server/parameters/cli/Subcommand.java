@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.server.parameters.cli;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.common.parser.cli.Option;
+import com.vaticle.typedb.core.server.parameters.config.Config;
 
 import javax.annotation.Nullable;
 import java.nio.file.Path;
@@ -60,16 +61,13 @@ public abstract class Subcommand {
         private final boolean isDebug;
         private final boolean isHelp;
         private final boolean isVersion;
-        @Nullable
-        private final Path configPath;
-        private final Set<Option> configOptions;
+        private final Config config;
 
-        Server(boolean isDebug, boolean isHelp, boolean isVersion, @Nullable Path configPath, Set<Option> configOptions) {
+        Server(boolean isDebug, boolean isHelp, boolean isVersion, Config config) {
             this.isDebug = isDebug;
             this.isHelp = isHelp;
             this.isVersion = isVersion;
-            this.configPath = configPath;
-            this.configOptions = configOptions;
+            this.config = config;
         }
 
         @Override
@@ -94,12 +92,8 @@ public abstract class Subcommand {
             return isVersion;
         }
 
-        public Optional<Path> configPath() {
-            return Optional.ofNullable(configPath);
-        }
-
-        public Set<Option> configOptions() {
-            return configOptions;
+        public Config config() {
+            return config;
         }
     }
 

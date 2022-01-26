@@ -21,8 +21,13 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.common.parser.Describable;
 import com.vaticle.typedb.core.server.common.parser.cli.Option;
 import com.vaticle.typedb.core.server.common.parser.cli.OptionParser;
+import com.vaticle.typedb.core.server.parameters.config.Config;
+import com.vaticle.typedb.core.server.parameters.config.ConfigFactory;
+import com.vaticle.typedb.core.server.parameters.config.ConfigParser;
 
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
@@ -59,25 +64,30 @@ public class SubcommandParser {
         private static final String[] tokens = new String[]{};
         private static final String description = "Run TypeDB server";
 
-        public ServerParser() {
+        private final ConfigParser configParser;
+
+        public ServerParser(ConfigParser configParser) {
             super(tokens, description);
+            this.configParser = configParser;
         }
 
         @Override
         protected Subcommand.Server parse(Set<Option> options) {
-            Set<Option> optionAux = findAuxiliary(options);
-            Set<Option> optionsRemaining = excludeOptions(options, optionAux);
-
+            Set<Option> auxOptions = findAuxiliaryOptions(options);
+            Set<Option> configOptions = excludeOptions(options, auxOptions);
+            Optional<Path> configPath = configPathParser.parse(auxOptions);
+            Config config = configPath
+                    .map(path -> ConfigFactory.create(path, configOptions, configParser))
+                    .orElse(ConfigFactory.create(configOptions, configParser));
             return new Subcommand.Server(
-                    debugParser.parse(optionAux),
-                    helpParser.parse(optionAux),
-                    versionParser.parse(optionAux),
-                    configPathParser.parse(optionAux).orElse(null),
-                    optionsRemaining
+                    debugParser.parse(auxOptions),
+                    helpParser.parse(auxOptions),
+                    versionParser.parse(auxOptions),
+                    config
             );
         }
 
-        private Set<Option> findAuxiliary(Set<Option> options) {
+        private Set<Option> findAuxiliaryOptions(Set<Option> options) {
             return iterate(options).filter(arg -> iterate(auxiliaryParsers).anyMatch(opt -> opt.name.equals(arg.name()))).toSet();
         }
 
@@ -87,7 +97,8 @@ public class SubcommandParser {
 
         @Override
         public List<Describable.Description> helpMenu() {
-            return list(helpParser.help(), versionParser.help(), debugParser.help(), configPathParser.help());
+            List<Describable.Description> aux = list(helpParser.help(), versionParser.help(), debugParser.help(), configPathParser.help());
+            return list(aux, configParser.help());
         }
     }
 

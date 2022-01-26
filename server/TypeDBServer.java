@@ -127,14 +127,15 @@ public class TypeDBServer implements AutoCloseable {
 
     private void configureAndVerifyDataDir() {
         if (!Files.isDirectory(config.storage().dataDir())) {
-            if (config.storage().dataDir().equals(ConfigFactory.create(configParser).storage().dataDir())) {
+            Config defaultConfig = ConfigFactory.create(configParser);
+            if (this.config.storage().dataDir().equals(defaultConfig.storage().dataDir())) {
                 try {
-                    Files.createDirectory(config.storage().dataDir());
+                    Files.createDirectory(this.config.storage().dataDir());
                 } catch (IOException e) {
                     throw TypeDBException.of(e);
                 }
             } else {
-                throw TypeDBException.of(DATA_DIRECTORY_NOT_FOUND, config.storage().dataDir());
+                throw TypeDBException.of(DATA_DIRECTORY_NOT_FOUND, this.config.storage().dataDir());
             }
         }
 
@@ -238,8 +239,9 @@ public class TypeDBServer implements AutoCloseable {
         try {
             printASCIILogo();
 
+            ConfigParser configParser = new ConfigParser();
             CommandParser<Subcommand> commandParser = new CommandParser<Subcommand>()
-                    .with(new SubcommandParser.ServerParser())
+                    .with(new SubcommandParser.ServerParser(configParser))
                     .with(new SubcommandParser.ImportParser())
                     .with(new SubcommandParser.ExportParser());
             Optional<Subcommand> subcommandOpt = commandParser.parse(args);
@@ -251,11 +253,7 @@ public class TypeDBServer implements AutoCloseable {
                 Subcommand subcommand = subcommandOpt.get();
                 if (subcommand.isServer()) {
                     Subcommand.Server srvSubcommand = subcommand.asServer();
-                    ConfigParser configParser = new ConfigParser();
-                    if (srvSubcommand.isHelp()) {
-                        System.out.println(commandParser.help());
-                        System.out.println(configParser.help());
-                    }
+                    if (srvSubcommand.isHelp()) System.out.println(commandParser.help());
                     else if (srvSubcommand.isVersion()) System.out.println("Version: " + Version.VERSION);
                     else runServer(srvSubcommand, configParser);
                 } else if (subcommand.isImport()) {
@@ -279,10 +277,7 @@ public class TypeDBServer implements AutoCloseable {
 
     private static void runServer(Subcommand.Server srvSubcommand, ConfigParser configParser) {
         Instant start = Instant.now();
-        Config config = srvSubcommand.configPath()
-                .map(path -> ConfigFactory.create(path, srvSubcommand.configOptions(), configParser))
-                .orElse(ConfigFactory.create(srvSubcommand.configOptions(), configParser));
-        TypeDBServer server = new TypeDBServer(config, srvSubcommand.isDebug(), configParser);
+        TypeDBServer server = new TypeDBServer(srvSubcommand.config(), srvSubcommand.isDebug(), configParser);
         server.start();
         Instant end = Instant.now();
         server.logger().info("- version: {}", Version.VERSION);
