@@ -19,7 +19,7 @@ package com.vaticle.typedb.core.server.parameters.config;
 
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.parser.Describable;
+import com.vaticle.typedb.core.server.common.parser.Description;
 import com.vaticle.typedb.core.server.common.parser.yml.YamlParser;
 
 import java.net.InetSocketAddress;
@@ -62,12 +62,12 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, scope);
     }
 
-    public List<Describable.Description> help() {
-        return list(serverParser.help(), storageParser.help(), logParser.help(), vaticleFactoryParser.help());
+    public List<Description> help() {
+        return list(serverParser.getDescription(), storageParser.getDescription(), logParser.getDescription(), vaticleFactoryParser.getDescription());
     }
 
     @Override
-    public List<Describable.Description> help(String scope) {
+    public List<Description> help(String scope) {
         return null;
     }
 
@@ -88,8 +88,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         }
 
         @Override
-        public List<Describable.Description> help(String scope) {
-            return list(addressParser.help(scope));
+        public List<Description> help(String scope) {
+            return list(addressParser.getDescription(scope));
         }
     }
 
@@ -112,8 +112,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         }
 
         @Override
-        public List<Describable.Description> help(String scope) {
-            return list(dataParser.help(scope), databaseCacheParser.help(scope));
+        public List<Description> help(String scope) {
+            return list(dataParser.getDescription(scope), databaseCacheParser.getDescription(scope));
         }
 
         public static class DatabaseCacheParser extends Nested<Config.Storage.DatabaseCache> {
@@ -134,8 +134,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             }
 
             @Override
-            public List<Describable.Description> help(String scope) {
-                return list(dataParser.help(scope), indexParser.help(scope));
+            public List<Description> help(String scope) {
+                return list(dataParser.getDescription(scope), indexParser.getDescription(scope));
             }
         }
     }
@@ -164,8 +164,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         }
 
         @Override
-        public List<Describable.Description> help(String scope) {
-            return list(outputParser.help(scope), loggerParser.help(scope), debuggerParser.help(scope));
+        public List<Description> help(String scope) {
+            return list(outputParser.getDescription(scope), loggerParser.getDescription(scope), debuggerParser.getDescription(scope));
         }
 
         public static class OutputParser extends Nested<Config.Log.Output> {
@@ -182,8 +182,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             }
 
             @Override
-            public List<Describable.Description> help(String scope) {
-                return list(typeEntry.help(scope));
+            public List<Description> help(String scope) {
+                return list(typeEntry.getDescription(scope));
             }
 
             static class TypeParser extends Nested<Config.Log.Output.Type> {
@@ -209,9 +209,9 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                 }
 
                 @Override
-                public List<Describable.Description> help(String scope) {
-                    return list(new Describable.Description.Complex(scope, StdoutParser.description, stdoutParser.help(scope)),
-                            new Describable.Description.Complex(scope, description, fileParser.help(scope)));
+                public List<Description> help(String scope) {
+                    return list(new Description.Compound(scope, StdoutParser.description, stdoutParser.help(scope)),
+                            new Description.Compound(scope, description, fileParser.help(scope)));
                 }
 
                 public static class StdoutParser extends Nested<Config.Log.Output.Type.Stdout> {
@@ -232,8 +232,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                     }
 
                     @Override
-                    public List<Describable.Description> help(String scope) {
-                        return list(typeParser.help(scope));
+                    public List<Description> help(String scope) {
+                        return list(typeParser.getDescription(scope));
                     }
                 }
 
@@ -262,9 +262,9 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                     }
 
                     @Override
-                    public List<Describable.Description> help(String scope) {
-                        return list(typeParser.help(scope), pathParser.help(scope), fileSizeCapParser.help(scope),
-                                archivesSizeCapParser.help(scope));
+                    public List<Description> help(String scope) {
+                        return list(typeParser.getDescription(scope), pathParser.getDescription(scope), fileSizeCapParser.getDescription(scope),
+                                archivesSizeCapParser.getDescription(scope));
                     }
                 }
             }
@@ -290,8 +290,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             }
 
             @Override
-            public List<Describable.Description> help(String scope) {
-                return list(defaultParser.help(scope), filteredParsers.help(scope));
+            public List<Description> help(String scope) {
+                return list(defaultParser.getDescription(scope), filteredParsers.getDescription(scope));
             }
 
             static class UnfilteredParser extends Nested<Config.Log.Logger.Unfiltered> {
@@ -310,8 +310,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                 }
 
                 @Override
-                public List<Describable.Description> help(String scope) {
-                    return list(levelParser.help(scope), outputsParser.help(scope));
+                public List<Description> help(String scope) {
+                    return list(levelParser.getDescription(scope), outputsParser.getDescription(scope));
                 }
             }
 
@@ -332,8 +332,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                 }
 
                 @Override
-                public List<Describable.Description> help(String scope) {
-                    return list(filterParser.help(scope), levelParser.help(scope), outputsParser.help(scope));
+                public List<Description> help(String scope) {
+                    return list(filterParser.getDescription(scope), levelParser.getDescription(scope), outputsParser.getDescription(scope));
                 }
             }
         }
@@ -355,8 +355,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             }
 
             @Override
-            public List<Describable.Description> help(String scope) {
-                return list(reasonerParser.help(scope));
+            public List<Description> help(String scope) {
+                return list(reasonerParser.getDescription(scope));
             }
 
             static class ReasonerParser extends Nested<Config.Log.Debugger.Reasoner> {
@@ -377,8 +377,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                 }
 
                 @Override
-                public List<Describable.Description> help(String scope) {
-                    return list(typeParser.help(scope), outputParser.help(scope), enableParser.help(scope));
+                public List<Description> help(String scope) {
+                    return list(typeParser.getDescription(scope), outputParser.getDescription(scope), enableParser.getDescription(scope));
                 }
             }
         }
@@ -410,8 +410,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         }
 
         @Override
-        public List<Describable.Description> help(String scope) {
-            return list(enableParser.help(scope), uriParser.help(scope), usernameParser.help(scope), tokenParser.help(scope));
+        public List<Description> help(String scope) {
+            return list(enableParser.getDescription(scope), uriParser.getDescription(scope), usernameParser.getDescription(scope), tokenParser.getDescription(scope));
         }
     }
 

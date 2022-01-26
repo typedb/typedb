@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.server.common.parser.args;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.server.common.parser.Describable;
+import com.vaticle.typedb.core.server.common.parser.Description;
 
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -52,7 +53,7 @@ public abstract class OptionParser implements Describable {
     }
 
     @Override
-    public Description help(java.lang.String optionScope) {
+    public Description getDescription(java.lang.String optionScope) {
         return new Description.Simple(scopeKey(optionScope, name()), description(), typeDescription);
     }
 

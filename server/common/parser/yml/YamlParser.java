@@ -22,6 +22,7 @@ import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.common.parser.Describable;
+import com.vaticle.typedb.core.server.common.parser.Description;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -81,11 +82,11 @@ public abstract class YamlParser implements Describable {
         }
 
         @Override
-        public Description help(String optionScope) {
+        public Description getDescription(String optionScope) {
             if (valueParser.isLeaf()) {
                 return new Description.Simple(scopeKey(optionScope, "<name>"), description(), valueParser.asLeaf().help());
             } else {
-                return new Description.Complex(scopeKey(optionScope, "<name>"), description(), valueParser.asNested().help(scopeKey(optionScope, "<name>")));
+                return new Description.Compound(scopeKey(optionScope, "<name>"), description(), valueParser.asNested().help(scopeKey(optionScope, "<name>")));
             }
         }
     }
@@ -125,12 +126,12 @@ public abstract class YamlParser implements Describable {
             }
 
             @Override
-            public Description help(String optionScope) {
+            public Description getDescription(String optionScope) {
                 String scopedKey = scopeKey(optionScope, key());
                 if (valueParser.isLeaf()) {
                     return new Description.Simple(scopedKey, description(), valueParser.asLeaf().help());
                 } else {
-                    return new Description.Complex(scopedKey, description(), valueParser.asNested().help(scopedKey));
+                    return new Description.Compound(scopedKey, description(), valueParser.asNested().help(scopedKey));
                 }
             }
         }
@@ -160,13 +161,13 @@ public abstract class YamlParser implements Describable {
             }
 
             @Override
-            public Description help(String optionScope) {
+            public Description getDescription(String optionScope) {
                 String scopedKey = scopeKey(optionScope, key());
                 if (valueParser.isLeaf()) {
                     String values = String.join("|", iterate(this.values).map(Object::toString).toList());
                     return new Description.Simple(scopedKey, description(), values);
                 } else {
-                    return new Description.Complex(scopedKey, description(), valueParser.asNested().help(scopedKey));
+                    return new Description.Compound(scopedKey, description(), valueParser.asNested().help(scopedKey));
                 }
             }
         }

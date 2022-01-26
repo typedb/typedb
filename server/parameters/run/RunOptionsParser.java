@@ -18,7 +18,7 @@
 package com.vaticle.typedb.core.server.parameters.run;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.parser.Describable;
+import com.vaticle.typedb.core.server.common.parser.Description;
 import com.vaticle.typedb.core.server.common.parser.args.SubcommandParser;
 import com.vaticle.typedb.core.server.common.parser.args.Option;
 import com.vaticle.typedb.core.server.common.parser.args.OptionParser;
@@ -42,7 +42,7 @@ public class RunOptionsParser {
     private static void validateRequiredArgs(Set<OptionParser> requiredParsers, Set<Option> options) {
         requiredParsers.forEach(required -> {
             if (iterate(options).noneMatch(option -> option.name().equals(required.name()))) {
-                throw TypeDBException.of(CLI_OPTION_REQUIRED, required.help());
+                throw TypeDBException.of(CLI_OPTION_REQUIRED, required.getDescription());
             }
         });
     }
@@ -93,8 +93,8 @@ public class RunOptionsParser {
         }
 
         @Override
-        public List<Describable.Description> helpMenu() {
-            List<Describable.Description> aux = list(helpParser.help(), versionParser.help(), debugParser.help(), configPathParser.help());
+        public List<Description> helpMenu() {
+            List<Description> aux = list(helpParser.getDescription(), versionParser.getDescription(), debugParser.getDescription(), configPathParser.getDescription());
             return list(aux, configParser.help());
         }
     }
@@ -122,8 +122,8 @@ public class RunOptionsParser {
         }
 
         @Override
-        public List<Describable.Description> helpMenu() {
-            return list(databaseParser.help(), filePathParser.help(), portParser.help());
+        public List<Description> helpMenu() {
+            return list(databaseParser.getDescription(), filePathParser.getDescription(), portParser.getDescription());
         }
     }
 
@@ -150,8 +150,8 @@ public class RunOptionsParser {
         }
 
         @Override
-        public List<Describable.Description> helpMenu() {
-            return list(databaseParser.help(), filePathParser.help(), portParser.help());
+        public List<Description> helpMenu() {
+            return list(databaseParser.getDescription(), filePathParser.getDescription(), portParser.getDescription());
         }
     }
 }
