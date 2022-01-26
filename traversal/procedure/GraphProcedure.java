@@ -203,8 +203,8 @@ public class GraphProcedure implements PermutationProcedure {
                     sv -> new GraphIterator(graphMgr, sv, this, params, filter).distinct()
             );
         } else {
+            // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
             return startVertex().iterator(graphMgr, params).flatMap(
-                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
                     sv -> new GraphIterator(graphMgr, sv, this, params, filter)
             ).distinct();
         }
