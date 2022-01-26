@@ -176,10 +176,17 @@ public class GraphProcedure implements PermutationProcedure {
             LOG.trace(this.toString());
         }
         assertWithinFilterBounds(filter);
-        return async(startVertex().iterator(graphMgr, params).map(
-                // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                v -> new GraphIterator(graphMgr, v, this, params, filter).distinct()
-        ), parallelisation);
+        if (startVertex().id().isRetrievable() && filter.contains(startVertex().id().asVariable().asRetrievable())) {
+            return async(startVertex().iterator(graphMgr, params).map(
+                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
+                    v -> new GraphIterator(graphMgr, v, this, params, filter).distinct()
+            ), parallelisation);
+        } else {
+            // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
+            return async(startVertex().iterator(graphMgr, params).map(
+                    v -> new GraphIterator(graphMgr, v, this, params, filter)
+            ), parallelisation).distinct();
+        }
     }
 
     @Override
@@ -190,10 +197,17 @@ public class GraphProcedure implements PermutationProcedure {
             LOG.trace(this.toString());
         }
         assertWithinFilterBounds(filter);
-        return startVertex().iterator(graphMgr, params).flatMap(
-                // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                sv -> new GraphIterator(graphMgr, sv, this, params, filter).distinct()
-        );
+        if (startVertex().id().isRetrievable() && filter.contains(startVertex().id().asVariable().asRetrievable())) {
+            return startVertex().iterator(graphMgr, params).flatMap(
+                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
+                    sv -> new GraphIterator(graphMgr, sv, this, params, filter).distinct()
+            );
+        } else {
+            // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
+            return startVertex().iterator(graphMgr, params).flatMap(
+                    sv -> new GraphIterator(graphMgr, sv, this, params, filter)
+            ).distinct();
+        }
     }
 
     @Override
