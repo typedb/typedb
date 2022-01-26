@@ -53,7 +53,7 @@ public class SubcommandParser {
 
         private static final OptionParser.Flag debugParser = new OptionParser.Flag("debug", "Run server in debug mode.");
         private static final OptionParser.Flag helpParser = new OptionParser.Flag("help", "Print help menu.");
-        private static final OptionParser.Flag versionParser = new OptionParser.Flag("version", "Print version number");
+        private static final OptionParser.Flag versionParser = new OptionParser.Flag("version", "Print version number.");
         private static final OptionParser.Path configPathParser = new OptionParser.Path("config", "Path to TypeDB YAML configuration file.");
         private static final Set<OptionParser> auxiliaryParsers = set(debugParser, helpParser, versionParser, configPathParser);
         private static final String[] tokens = new String[]{};
