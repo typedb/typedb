@@ -294,11 +294,6 @@ public abstract class GraphTraversal extends Traversal {
             structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(role), PLAYING);
         }
 
-        public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, int repetition) {
-            assert modifiable;
-            structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player), repetition);
-        }
-
         public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, Set<Label> roleTypes, int repetition) {
             assert modifiable;
             structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player), roleTypes, repetition);
