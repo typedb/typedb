@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReac
 import com.vaticle.typedb.core.reasoner.computation.reactive.PacketMonitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStreamBase;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashSet;
@@ -162,7 +163,16 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, monitor(), groupName());
                 op.publishTo(materialiserReactive);
                 materialiserReactive.sendTo(subscriber());
-                materialiserReactive.pull();
+
+                // TODO: We would like to use a provider manager for this, but it's restricted to work to this reactive's input type.
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive));
+                materialiserReactive.pull(subscriber());
+            }
+
+            private void receiveMaterialisation(Provider<Map<Variable, Concept>> provider, Map<Variable, Concept> packet) {
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().pathsCount()));
+                finishPulling();
+                subscriber().receive(this, packet);
             }
         }
 
@@ -186,13 +196,9 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             public void receive(Provider<Map<Variable, Concept>> provider, Map<Variable, Concept> packet) {
                 super.receive(provider, packet);
                 finishPulling();
-                parent.finishPulling();
-                parent.subscriber().receive(parent, packet);
+                parent.receiveMaterialisation(this, packet);
             }
 
-            public void pull() {
-                pull(parent.subscriber());
-            }
         }
 
         private void mayRequestCondition(ConditionRequest conditionRequest) {

@@ -110,7 +110,7 @@ public final class Tracer {
         addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
     }
 
-    public synchronized <PACKET> void receive(Provider<PACKET> provider, Receiver<PACKET> receiver, PACKET packet,
+    public synchronized <INPUT, OUTPUT> void receive(Provider<OUTPUT> provider, Receiver<INPUT> receiver, OUTPUT packet,
                                               long pathsCount) {
         addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE,
                    packet.toString() + "c" + pathsCount);
@@ -198,6 +198,7 @@ public final class Tracer {
         public void start() {
             path.set(logDir.resolve(filename()));
             try {
+                LOG.debug("Writing resolution traces to {}", path.get().toAbsolutePath());
                 File file = path.get().toFile();
                 boolean ignore = file.getParentFile().mkdirs();
                 writer = new PrintWriter(file, "UTF-8");
