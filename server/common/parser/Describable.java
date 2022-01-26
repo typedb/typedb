@@ -17,7 +17,7 @@
 
 package com.vaticle.typedb.core.server.common.parser;
 
-import com.vaticle.typedb.core.server.common.parser.cli.Option;
+import com.vaticle.typedb.core.server.common.parser.args.Option;
 
 import javax.annotation.Nullable;
 import java.util.List;

@@ -15,12 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.vaticle.typedb.core.server.parameters.cli;
+package com.vaticle.typedb.core.server.parameters.run;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.common.parser.Describable;
-import com.vaticle.typedb.core.server.common.parser.cli.Option;
-import com.vaticle.typedb.core.server.common.parser.cli.OptionParser;
+import com.vaticle.typedb.core.server.common.parser.args.SubcommandParser;
+import com.vaticle.typedb.core.server.common.parser.args.Option;
+import com.vaticle.typedb.core.server.common.parser.args.OptionParser;
 import com.vaticle.typedb.core.server.parameters.config.Config;
 import com.vaticle.typedb.core.server.parameters.config.ConfigFactory;
 import com.vaticle.typedb.core.server.parameters.config.ConfigParser;
@@ -36,7 +37,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_O
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_OPTION_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class SubcommandParser {
+public class RunOptionsParser {
 
     private static void validateRequiredArgs(Set<OptionParser> requiredParsers, Set<Option> options) {
         requiredParsers.forEach(required -> {
@@ -54,7 +55,7 @@ public class SubcommandParser {
         });
     }
 
-    public static class ServerParser extends com.vaticle.typedb.core.server.common.parser.cli.SubcommandParser<Subcommand.Server> {
+    public static class ServerParser extends SubcommandParser<RunOptions.Server> {
 
         private static final OptionParser.Flag debugParser = new OptionParser.Flag("debug", "Run server in debug mode.");
         private static final OptionParser.Flag helpParser = new OptionParser.Flag("help", "Print help menu.");
@@ -72,27 +73,23 @@ public class SubcommandParser {
         }
 
         @Override
-        protected Subcommand.Server parse(Set<Option> options) {
+        protected RunOptions.Server parse(Set<Option> options) {
             Set<Option> auxOptions = findAuxiliaryOptions(options);
             Set<Option> configOptions = excludeOptions(options, auxOptions);
             Optional<Path> configPath = configPathParser.parse(auxOptions);
             Config config = configPath
                     .map(path -> ConfigFactory.create(path, configOptions, configParser))
                     .orElse(ConfigFactory.create(configOptions, configParser));
-            return new Subcommand.Server(
-                    debugParser.parse(auxOptions),
-                    helpParser.parse(auxOptions),
-                    versionParser.parse(auxOptions),
-                    config
-            );
+            return new RunOptions.Server(debugParser.parse(auxOptions), helpParser.parse(auxOptions),
+                    versionParser.parse(auxOptions), config);
         }
 
         private Set<Option> findAuxiliaryOptions(Set<Option> options) {
-            return iterate(options).filter(arg -> iterate(auxiliaryParsers).anyMatch(opt -> opt.name.equals(arg.name()))).toSet();
+            return iterate(options).filter(opt1 -> iterate(auxiliaryParsers).anyMatch(opt2 -> opt2.name.equals(opt1.name()))).toSet();
         }
 
         private Set<Option> excludeOptions(Set<Option> options, Set<Option> exclude) {
-            return iterate(options).filter(option -> !exclude.contains(option)).toSet();
+            return iterate(options).filter(opt -> !exclude.contains(opt)).toSet();
         }
 
         @Override
@@ -102,7 +99,7 @@ public class SubcommandParser {
         }
     }
 
-    public static class ImportParser extends com.vaticle.typedb.core.server.common.parser.cli.SubcommandParser<Subcommand.Import> {
+    public static class ServerImportParser extends SubcommandParser<RunOptions.Import> {
 
         public static final String[] tokens = new String[]{"import"};
         public static final String description = "Run TypeDB import.";
@@ -112,15 +109,15 @@ public class SubcommandParser {
         private static final OptionParser.Int portParser = new OptionParser.Int("port", "TypeDB's GRPC port.");
         private static final Set<OptionParser> parsers = set(databaseParser, filePathParser, portParser);
 
-        public ImportParser() {
+        public ServerImportParser() {
             super(tokens, description);
         }
 
         @Override
-        protected Subcommand.Import parse(Set<Option> options) {
+        protected RunOptions.Import parse(Set<Option> options) {
             validateRequiredArgs(parsers, options);
             validateUnrecognisedArgs(parsers, options);
-            return new Subcommand.Import(databaseParser.parse(options).get(), filePathParser.parse(options).get(),
+            return new RunOptions.Import(databaseParser.parse(options).get(), filePathParser.parse(options).get(),
                     portParser.parse(options).get());
         }
 
@@ -130,7 +127,7 @@ public class SubcommandParser {
         }
     }
 
-    public static class ExportParser extends com.vaticle.typedb.core.server.common.parser.cli.SubcommandParser<Subcommand.Export> {
+    public static class ServerExportParser extends SubcommandParser<RunOptions.Export> {
 
         public static final String[] tokens = new String[]{"export"};
         public static final String description = "Run TypeDB export.";
@@ -140,15 +137,15 @@ public class SubcommandParser {
         private static final OptionParser.Int portParser = new OptionParser.Int("port", "TypeDB's GRPC port.");
         private static final Set<OptionParser> parsers = set(databaseParser, filePathParser, portParser);
 
-        public ExportParser() {
+        public ServerExportParser() {
             super(tokens, description);
         }
 
         @Override
-        protected Subcommand.Export parse(Set<Option> options) {
+        protected RunOptions.Export parse(Set<Option> options) {
             validateRequiredArgs(parsers, options);
             validateUnrecognisedArgs(parsers, options);
-            return new Subcommand.Export(databaseParser.parse(options).get(), filePathParser.parse(options).get(),
+            return new RunOptions.Export(databaseParser.parse(options).get(), filePathParser.parse(options).get(),
                     portParser.parse(options).get());
         }
 

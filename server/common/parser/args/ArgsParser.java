@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.server.common.parser.cli;
+package com.vaticle.typedb.core.server.common.parser.args;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,29 +25,29 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class CommandParser<SUBCOMMAND> {
+public class ArgsParser<RESULT> {
 
-    private final ArrayList<SubcommandParser<? extends SUBCOMMAND>> parsers;
+    private final ArrayList<SubcommandParser<? extends RESULT>> parsers;
 
-    public CommandParser() {
+    public ArgsParser() {
         this.parsers = new ArrayList<>();
     }
 
-    public CommandParser<SUBCOMMAND> with(SubcommandParser<? extends SUBCOMMAND> parser) {
+    public ArgsParser<RESULT> subcommand(SubcommandParser<? extends RESULT> parser) {
         parsers.add(parser);
         return this;
     }
 
-    public Optional<SUBCOMMAND> parse(String[] args) {
-        Optional<SubcommandParser<? extends SUBCOMMAND>> subcommandParserOpt = findSubcommandParser(args);
-        return subcommandParserOpt.map(subcommandParser -> {
-            String[] options = Arrays.copyOfRange(args, subcommandParser.tokens().length, args.length);
-            return subcommandParser.parse(options);
+    public Optional<RESULT> parse(String[] args) {
+        Optional<SubcommandParser<? extends RESULT>> parserOpt = findParser(args);
+        return parserOpt.map(subcommandParser -> {
+            String[] subtracted = Arrays.copyOfRange(args, subcommandParser.tokens().length, args.length);
+            return subcommandParser.parse(subtracted);
         });
     }
 
-    private Optional<SubcommandParser<? extends SUBCOMMAND>> findSubcommandParser(String[] args) {
-        for (SubcommandParser<? extends SUBCOMMAND> parser : sortBySpecificity(parsers)) {
+    private Optional<SubcommandParser<? extends RESULT>> findParser(String[] args) {
+        for (SubcommandParser<? extends RESULT> parser : sortBySpecificity(parsers)) {
             String[] commandTokens = parser.tokens();
             if (args.length >= commandTokens.length) {
                 String[] tokens = Arrays.copyOfRange(args, 0, commandTokens.length);
@@ -59,13 +59,13 @@ public class CommandParser<SUBCOMMAND> {
         return Optional.empty();
     }
 
-    private List<SubcommandParser<? extends SUBCOMMAND>> sortBySpecificity(ArrayList<SubcommandParser<? extends SUBCOMMAND>> parsers) {
-        Comparator<SubcommandParser<? extends SUBCOMMAND>> comparator = Comparator.comparing(c -> c.tokens().length);
+    private List<SubcommandParser<? extends RESULT>> sortBySpecificity(ArrayList<SubcommandParser<? extends RESULT>> parsers) {
+        Comparator<SubcommandParser<? extends RESULT>> comparator = Comparator.comparing(c -> c.tokens().length);
         return parsers.stream().sorted(comparator.reversed()).collect(Collectors.toList());
     }
 
     public String usage() {
-        StringBuilder usage = new StringBuilder("Available commands: \n");
+        StringBuilder usage = new StringBuilder("Available subcommands: \n");
         parsers.forEach(parser -> {
             usage.append(parser.usage());
             usage.append("\n\n");

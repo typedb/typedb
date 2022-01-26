@@ -31,9 +31,9 @@ import com.vaticle.typedb.core.migrator.MigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
 import com.vaticle.typedb.core.database.Factory;
 import com.vaticle.typedb.core.database.CoreFactory;
-import com.vaticle.typedb.core.server.common.parser.cli.CommandParser;
-import com.vaticle.typedb.core.server.parameters.cli.Subcommand;
-import com.vaticle.typedb.core.server.parameters.cli.SubcommandParser;
+import com.vaticle.typedb.core.server.common.parser.args.ArgsParser;
+import com.vaticle.typedb.core.server.parameters.run.RunOptions;
+import com.vaticle.typedb.core.server.parameters.run.RunOptionsParser;
 import com.vaticle.typedb.core.server.parameters.config.Config;
 import com.vaticle.typedb.core.server.parameters.config.ConfigFactory;
 import com.vaticle.typedb.core.server.parameters.config.ConfigParser;
@@ -240,26 +240,25 @@ public class TypeDBServer implements AutoCloseable {
             printASCIILogo();
 
             ConfigParser configParser = new ConfigParser();
-            CommandParser<Subcommand> commandParser = new CommandParser<Subcommand>()
-                    .with(new SubcommandParser.ServerParser(configParser))
-                    .with(new SubcommandParser.ImportParser())
-                    .with(new SubcommandParser.ExportParser());
-            Optional<Subcommand> subcommandOpt = commandParser.parse(args);
-            if (subcommandOpt.isEmpty()) {
+            ArgsParser<RunOptions> argsParser = new ArgsParser<RunOptions>()
+                    .subcommand(new RunOptionsParser.ServerParser(configParser))
+                    .subcommand(new RunOptionsParser.ServerImportParser())
+                    .subcommand(new RunOptionsParser.ServerExportParser());
+            Optional<RunOptions> runOptions = argsParser.parse(args);
+            if (runOptions.isEmpty()) {
                 LOG.error(UNRECOGNISED_CLI_COMMAND.message(String.join(" ", args)));
-                LOG.error(commandParser.usage());
+                LOG.error(argsParser.usage());
                 System.exit(1);
             } else {
-                Subcommand subcommand = subcommandOpt.get();
-                if (subcommand.isServer()) {
-                    Subcommand.Server srvSubcommand = subcommand.asServer();
-                    if (srvSubcommand.isHelp()) System.out.println(commandParser.help());
+                if (runOptions.get().isServer()) {
+                    RunOptions.Server srvSubcommand = runOptions.get().asServer();
+                    if (srvSubcommand.isHelp()) System.out.println(argsParser.help());
                     else if (srvSubcommand.isVersion()) System.out.println("Version: " + Version.VERSION);
                     else runServer(srvSubcommand, configParser);
-                } else if (subcommand.isImport()) {
-                    importData(subcommand.asImport());
-                } else if (subcommand.isExport()) {
-                    exportData(subcommand.asExport());
+                } else if (runOptions.get().isImport()) {
+                    importData(runOptions.get().asImport());
+                } else if (runOptions.get().isExport()) {
+                    exportData(runOptions.get().asExport());
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             }
         } catch (Exception e) {
@@ -275,7 +274,7 @@ public class TypeDBServer implements AutoCloseable {
         System.exit(0);
     }
 
-    private static void runServer(Subcommand.Server srvSubcommand, ConfigParser configParser) {
+    private static void runServer(RunOptions.Server srvSubcommand, ConfigParser configParser) {
         Instant start = Instant.now();
         TypeDBServer server = new TypeDBServer(srvSubcommand.config(), srvSubcommand.isDebug(), configParser);
         server.start();
@@ -288,13 +287,13 @@ public class TypeDBServer implements AutoCloseable {
         server.serve();
     }
 
-    protected static void exportData(Subcommand.Export exportCommand) {
+    protected static void exportData(RunOptions.Export exportCommand) {
         MigratorClient migrator = new MigratorClient(exportCommand.port());
         boolean success = migrator.exportData(exportCommand.database(), exportCommand.file());
         System.exit(success ? 0 : 1);
     }
 
-    protected static void importData(Subcommand.Import importCommand) {
+    protected static void importData(RunOptions.Import importCommand) {
         MigratorClient migrator = new MigratorClient(importCommand.port());
         boolean success = migrator.importData(importCommand.database(), importCommand.file());
         System.exit(success ? 0 : 1);

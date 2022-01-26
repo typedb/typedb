@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.server.test;
 
 import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.parser.cli.Option;
+import com.vaticle.typedb.core.server.common.parser.args.Option;
 import com.vaticle.typedb.core.server.common.parser.yml.YamlParser;
 import com.vaticle.typedb.core.server.parameters.config.Config;
 import com.vaticle.typedb.core.server.common.Util;

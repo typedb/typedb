@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.vaticle.typedb.core.server.common.parser.cli;
+package com.vaticle.typedb.core.server.common.parser.args;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -57,7 +57,7 @@ public abstract class OptionParser implements Describable {
     }
 
     FunctionalIterator<Option> matchingOptions(Set<Option> options) {
-        return iterate(options).filter(a -> a.name().equals(name()));
+        return iterate(options).filter(opt -> opt.name().equals(name()));
     }
 
     public static class Flag extends OptionParser {

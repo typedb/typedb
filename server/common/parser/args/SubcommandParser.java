@@ -1,4 +1,4 @@
-package com.vaticle.typedb.core.server.common.parser.cli;
+package com.vaticle.typedb.core.server.common.parser.args;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.common.parser.Describable;
@@ -9,7 +9,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_OPTION_MISSING_PREFIX;
 
-public abstract class SubcommandParser<SUBCOMMAND> {
+public abstract class SubcommandParser<RESULT> {
 
     private static final String COMMAND_PREFIX = "typedb server";
     private final String[] tokens;
@@ -20,22 +20,22 @@ public abstract class SubcommandParser<SUBCOMMAND> {
         this.description = description;
     }
 
-    public SUBCOMMAND parse(String[] options) {
-        return parse(parseOptions(options));
+    public RESULT parse(String[] args) {
+        return parse(parseArgs(args));
     }
 
-    private Set<Option> parseOptions(String[] options) {
+    private Set<Option> parseArgs(String[] args) {
         Set<Option> parsed = new HashSet<>();
-        for (int i = 0; i < options.length; i++) {
-            String arg = options[i];
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
             if (arg.startsWith(Option.PREFIX)) {
                 int index = arg.indexOf("=");
                 if (index != -1) {
                     parsed.add(new Option(arg.substring(2, index), arg.substring(index + 1)));
-                } else if (i + 1 == options.length || options[i + 1].startsWith(Option.PREFIX)) {
+                } else if (i + 1 == args.length || args[i + 1].startsWith(Option.PREFIX)) {
                     parsed.add(new Option(arg.substring(2)));
                 } else {
-                    parsed.add(new Option(arg.substring(2), options[++i]));
+                    parsed.add(new Option(arg.substring(2), args[++i]));
                 }
             } else {
                 throw TypeDBException.of(CLI_OPTION_MISSING_PREFIX, Option.PREFIX, arg);
@@ -44,7 +44,7 @@ public abstract class SubcommandParser<SUBCOMMAND> {
         return parsed;
     }
 
-    protected abstract SUBCOMMAND parse(Set<Option> options);
+    protected abstract RESULT parse(Set<Option> options);
 
     public String[] tokens() {
         return tokens;
@@ -55,7 +55,7 @@ public abstract class SubcommandParser<SUBCOMMAND> {
     }
 
     public String help() {
-        StringBuilder builder = new StringBuilder(String.format("%-40s \t\t %s\n", "typedb server " +
+        StringBuilder builder = new StringBuilder(String.format("%-40s \t\t %s\n", COMMAND_PREFIX + " " +
                 String.join(" ", tokens), description));
         for (Describable.Description description : helpMenu()) {
             builder.append(description.toString());

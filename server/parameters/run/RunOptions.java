@@ -16,21 +16,17 @@
  *
  */
 
-package com.vaticle.typedb.core.server.parameters.cli;
+package com.vaticle.typedb.core.server.parameters.run;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.parser.cli.Option;
 import com.vaticle.typedb.core.server.parameters.config.Config;
 
-import javax.annotation.Nullable;
 import java.nio.file.Path;
-import java.util.Optional;
-import java.util.Set;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public abstract class Subcommand {
+public abstract class RunOptions {
 
     public boolean isServer() {
         return false;
@@ -56,7 +52,7 @@ public abstract class Subcommand {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Export.class));
     }
 
-    public static class Server extends Subcommand {
+    public static class Server extends RunOptions {
 
         private final boolean isDebug;
         private final boolean isHelp;
@@ -97,7 +93,7 @@ public abstract class Subcommand {
         }
     }
 
-    public static class Import extends Subcommand {
+    public static class Import extends RunOptions {
 
         private final String database;
         private final Path file;
@@ -132,7 +128,7 @@ public abstract class Subcommand {
         }
     }
 
-    public static class Export extends Subcommand {
+    public static class Export extends RunOptions {
 
         private final String database;
         private final Path file;

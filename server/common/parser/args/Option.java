@@ -1,4 +1,4 @@
-package com.vaticle.typedb.core.server.common.parser.cli;
+package com.vaticle.typedb.core.server.common.parser.args;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
