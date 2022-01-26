@@ -97,14 +97,13 @@ public class TypeInference {
 
     private void infer(Conjunction conjunction, Map<Identifier.Variable.Name, Set<Label>> bounds, boolean insertable) {
         propagateLabels(conjunction);
-        if (isSchemaQuery(conjunction)) return;
-        applyBounds(conjunction, bounds);
-        new InferenceTraversal(conjunction, insertable, graphMgr, traversalEng).setInferredTypes(logicCache);
-        if (!conjunction.negations().isEmpty()) {
-            Map<Retrievable.Name, Set<Label>> inferredTypes = namedInferredTypes(conjunction);
-            inferredTypes.putAll(bounds);
-            conjunction.negations().forEach(negation -> infer(negation.disjunction(), inferredTypes));
+        if (!bounds.isEmpty()) applyBounds(conjunction, bounds);
+        Map<Retrievable.Name, Set<Label>> inferredTypes = new HashMap<>(bounds);
+        if (!isSchemaQuery(conjunction)) {
+            new InferenceTraversal(conjunction, insertable, graphMgr, traversalEng).applyCombination(logicCache);
+            inferredTypes.putAll(namedInferredTypes(conjunction));
         }
+        conjunction.negations().forEach(negation -> infer(negation.disjunction(), inferredTypes));
     }
 
     private void applyBounds(Conjunction conjunction, Map<Identifier.Variable.Name, Set<Label>> bounds) {
@@ -193,7 +192,7 @@ public class TypeInference {
             });
         }
 
-        private void setInferredTypes(LogicCache logicCache) {
+        private void applyCombination(LogicCache logicCache) {
             Optional<Map<Retrievable, Set<Label>>> inferredTypes = logicCache.inference().get(
                     traversal,
                     traversal -> traversalEng.combination(traversal, thingInferenceVars()).map(types -> {
