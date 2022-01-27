@@ -45,7 +45,7 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveStreamBase<IN
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {
             finishPulling();
-            // TODO: This can actually create more receive() calls to downstream than the number of pull()s it receives. Should buffer instead.
+            // TODO: This can actually create more receive() calls to downstream than the number of pull()s it receives. Should buffer instead. Protected against by manually adding .buffer() after calls to flatMap
             transformed.forEachRemaining(t -> {
                 monitor().onPathFork(1, this);
                 subscriber().receive(this, t);

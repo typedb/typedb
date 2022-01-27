@@ -28,7 +28,7 @@ public class FanInReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
     }
 
     @Override
-    protected Manager<PACKET> providerManager() {
+    protected MultiManager<PACKET> providerManager() {
         return providerManager;
     }
 
@@ -50,5 +50,9 @@ public class FanInReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
         super.receive(provider, packet);
         finishPulling();
         subscriber().receive(this, packet);
+    }
+
+    public void finalise() {
+        providerManager().finaliseProviders();
     }
 }

@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.FanInReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -131,7 +131,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         public void setUp() {
             setOutlet(new BufferBroadcastReactive<>(this, name()));
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
-            ReactiveStream<ConceptMap, ConceptMap> op = fanIn(this, name());
+            FanInReactive<ConceptMap> op = fanIn(this, name());
             if (singleAnswerRequired) op.buffer().findFirst().publishTo(outlet());
             else op.buffer().publishTo(outlet());
 
@@ -146,6 +146,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
                             .publishTo(op);
                 }));
             });
+             op.finalise();
         }
 
         private void mayRequestConnection(ConclusionRequest conclusionRequest) {

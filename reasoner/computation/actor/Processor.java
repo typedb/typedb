@@ -60,6 +60,7 @@ public abstract class Processor<INPUT, OUTPUT,
     private long reportCount;
     private long updatesCount;
     private final Set<Connection<INPUT, ?, ?>> upstreamConnections;
+    private boolean done;
 
     protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, String name) {
         super(driver, name);
@@ -72,6 +73,7 @@ public abstract class Processor<INPUT, OUTPUT,
         this.reportCount = 0;
         this.updatesCount = 0;
         this.upstreamConnections = new HashSet<>();
+        this.done = false;
     }
 
     public abstract void setUp();
@@ -88,11 +90,13 @@ public abstract class Processor<INPUT, OUTPUT,
             REQ extends Request<PROV_CID, PROV_PROC_ID, PROV_C, INPUT, PROCESSOR, CONTROLLER, REQ>,
             PROV_C extends Controller<PROV_PROC_ID, ?, INPUT, ?, PROV_C>
             > void requestConnection(REQ req) {
+        assert !done;
         if (isTerminated()) return;
         controller.execute(actor -> actor.findProviderForConnection(req));
     }
 
     protected void acceptConnection(Controller.Builder<?, OUTPUT, ?, ?, ?> connectionBuilder) {
+        assert !done;
         Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
         applyConnectionTransforms(connection.transformations(), outlet(), createProvidingEndpoint(connection));
         if (isTerminated()) return;
@@ -107,6 +111,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     protected <PROV_PROCESSOR extends Processor<?, INPUT, ?, PROV_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PROV_PROCESSOR> connection) {
+        assert !done;
         connection.propagateMonitors(addSelfIfMonitor(monitors));
         receivingEndpoints.get(connection.receiverEndpointId()).setReady(connection);
         upstreamConnections.add(connection);
@@ -118,26 +123,31 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     protected OutletEndpoint<OUTPUT> createProvidingEndpoint(Connection<OUTPUT, ?, PROCESSOR> connection) {
+        assert !done;
         OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection, this, name());
         providingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
 
     protected InletEndpoint<INPUT> createReceivingEndpoint() {
+        assert !done;
         InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId(), this, name());
         receivingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
 
     protected void endpointPull(long pubEndpointId) {
+        assert !done;
         providingEndpoints.get(pubEndpointId).pull(null);
     }
 
     protected void endpointReceive(INPUT packet, long subEndpointId) {
+        assert !done;
         receivingEndpoints.get(subEndpointId).receive(null, packet);
     }
 
     protected void addMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
+        assert !done;
         Set<Driver<? extends Processor<?, ?, ?, ?>>> unseenMonitors = new HashSet<>(addSelfIfMonitor(monitors));
         unseenMonitors.removeAll(this.monitors);
         unseenMonitors.forEach(this::fastForwardAnswerPathsCount);
@@ -148,6 +158,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     private void fastForwardAnswerPathsCount(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
+        assert !done;
         final long update = answerPathsCount;
         if (update != 0) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.fastForwardPathsCount(driver(), monitor, update));
@@ -157,6 +168,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
     public void updatePathsCount(long pathCountDelta) {
         assert isMonitor();
+        assert !done;
         updatesCount += pathCountDelta;
         assert updatesCount >= -1;
         checkTermination();
@@ -165,8 +177,8 @@ public abstract class Processor<INPUT, OUTPUT,
     @Override
     public void onPathFork(int numForks, Reactive forker) {
         assert numForks > 0;
+        assert !done;
         answerPathsCount += numForks;
-        assert answerPathsCount >= -1;
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathFork(forker, driver(), numForks));
         monitors.forEach(monitor -> {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportPathFork(forker, monitor, numForks));
@@ -178,9 +190,9 @@ public abstract class Processor<INPUT, OUTPUT,
     @Override
     public void reportPathFork(int numForks, Reactive forker) {
         assert isMonitor();
+        assert !done;
         assert numForks > 0;
         reportCount += numForks;
-        assert reportCount >= -1;
         monitors.forEach(monitor -> {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportPathFork(forker, monitor, numForks));
             monitor.execute(actor -> actor.reportPathFork(numForks, forker));
@@ -191,7 +203,7 @@ public abstract class Processor<INPUT, OUTPUT,
     @Override
     public void onPathJoin(Reactive joiner) {
         answerPathsCount -= 1;
-        assert answerPathsCount >= -1;
+        assert !done;
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathJoin(joiner, driver()));
         monitors.forEach(monitor -> {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportPathJoin(joiner, monitor));
@@ -203,8 +215,8 @@ public abstract class Processor<INPUT, OUTPUT,
     @Override
     public void reportPathJoin(Reactive joiner) {
         assert isMonitor();
+        assert !done;
         reportCount -= 1;
-        assert reportCount >= -1;
         monitors.forEach(monitor -> {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportPathJoin(joiner, monitor));
             monitor.execute(actor -> actor.reportPathJoin(joiner));
@@ -229,7 +241,10 @@ public abstract class Processor<INPUT, OUTPUT,
 
     private void checkTermination() {
         assert pathsCount() >= -1;
-        if (pathsCount() == -1 && isPulling()) onDone();
+        if (pathsCount() == -1 && isPulling()) {
+            this.done = true;
+            onDone();
+        }
     }
 
     protected boolean isPulling() {

@@ -101,6 +101,7 @@ public abstract class DisjunctionController<
                         .map(Identifier.Variable::asRetrievable).toSet();
                 requestConnection(new NestedConjunctionRequest<>(driver(), endpoint.id(), conjunction, bounds.filter(retrievableConjunctionVars)));
             }
+            op.finalise();
         }
 
         private static class NestedConjunctionRequest<P extends DisjunctionProcessor<C, P>, C extends DisjunctionController<P, C>>

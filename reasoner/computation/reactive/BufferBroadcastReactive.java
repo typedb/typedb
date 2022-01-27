@@ -35,7 +35,7 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveStream<PACKET, PACK
     final List<PACKET> bufferList;
     final Set<Receiver<PACKET>> pullers;
     protected final Set<Receiver<PACKET>> subscribers;
-    private final MultiManager<PACKET> providerManager;
+    private final Manager<PACKET> providerManager;
 
     public BufferBroadcastReactive(PacketMonitor monitor, String groupName) {
         super(monitor, groupName);
@@ -44,7 +44,7 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveStream<PACKET, PACK
         this.bufferPositions = new HashMap<>();
         this.pullers = new HashSet<>();
         this.subscribers = new HashSet<>();
-        this.providerManager = new Provider.MultiManager<>(this, monitor());
+        this.providerManager = new Provider.SingleManager<>(this, monitor());
     }
 
     @Override
@@ -64,7 +64,7 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveStream<PACKET, PACK
             toSend.forEach(this::send);
         } else if (isPulling()) {
             providerManager().pull(provider);
-            monitor().onPathJoin(this);
+            monitor().onPathJoin(this);  // When an answer is a duplicate that path is done
         }
     }
 
