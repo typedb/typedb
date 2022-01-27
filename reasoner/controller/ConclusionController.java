@@ -173,6 +173,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().pathsCount()));
                 finishPulling();
                 subscriber().receive(this, packet);
+                monitor().onPathJoin(this);  // Since we received a materialisation but we're not going to pull
+                // again, so manually join the path created by the materialiser
             }
         }
 

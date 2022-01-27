@@ -57,6 +57,8 @@ public abstract class Processor<INPUT, OUTPUT,
     private long endpointId;
     private boolean terminated;
     private long answerPathsCount;
+    private long reportCount;
+    private long updatesCount;
     private final Set<Connection<INPUT, ?, ?>> upstreamConnections;
 
     protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, String name) {
@@ -67,6 +69,8 @@ public abstract class Processor<INPUT, OUTPUT,
         this.providingEndpoints = new HashMap<>();
         this.monitors = new HashSet<>();
         this.answerPathsCount = 0;
+        this.reportCount = 0;
+        this.updatesCount = 0;
         this.upstreamConnections = new HashSet<>();
     }
 
@@ -144,14 +148,16 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     private void fastForwardAnswerPathsCount(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathCountFastForward(driver(), monitor, answerPathsCount));
-        monitor.execute(actor -> actor.updatePathsCount(answerPathsCount));
+        if (answerPathsCount != 0) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.fastForwardPathsCount(driver(), monitor, answerPathsCount));
+            monitor.execute(actor -> actor.updatePathsCount(answerPathsCount));
+        }
     }
 
     public void updatePathsCount(long pathCountDelta) {
         assert isMonitor();
-        answerPathsCount += pathCountDelta;
-        assert answerPathsCount >= -1;
+        updatesCount += pathCountDelta;
+        assert updatesCount >= -1;
         checkTermination();
     }
 
@@ -162,19 +168,20 @@ public abstract class Processor<INPUT, OUTPUT,
         assert answerPathsCount >= -1;
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathFork(forker, driver(), numForks));
         monitors.forEach(monitor -> {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathFork(forker, monitor, numForks));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportPathFork(forker, monitor, numForks));
             monitor.execute(actor -> actor.reportPathFork(numForks, forker));
         });
+        if (isMonitor()) checkTermination();
     }
 
     @Override
     public void reportPathFork(int numForks, Reactive forker) {
         assert isMonitor();
         assert numForks > 0;
-        answerPathsCount += numForks;
-        assert answerPathsCount >= -1;
+        reportCount += numForks;
+        assert reportCount >= -1;
         monitors.forEach(monitor -> {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathFork(forker, monitor, numForks));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportPathFork(forker, monitor, numForks));
             monitor.execute(actor -> actor.reportPathFork(numForks, forker));
         });
         checkTermination();
@@ -186,18 +193,19 @@ public abstract class Processor<INPUT, OUTPUT,
         assert answerPathsCount >= -1;
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathJoin(joiner, driver()));
         monitors.forEach(monitor -> {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathJoin(joiner, monitor));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportPathJoin(joiner, monitor));
             monitor.execute(actor -> actor.reportPathJoin(joiner));
         });
+        if (isMonitor()) checkTermination();
     }
 
     @Override
     public void reportPathJoin(Reactive joiner) {
         assert isMonitor();
-        answerPathsCount -= 1;
-        assert answerPathsCount >= -1;
+        reportCount -= 1;
+        assert reportCount >= -1;
         monitors.forEach(monitor -> {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathJoin(joiner, monitor));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportPathJoin(joiner, monitor));
             monitor.execute(actor -> actor.reportPathJoin(joiner));
         });
         checkTermination();
@@ -205,7 +213,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
     @Override
     public long pathsCount() {
-        return answerPathsCount;
+        return answerPathsCount + reportCount + updatesCount;
     }
 
     private Set<Driver<? extends Processor<?, ?, ?, ?>>> addSelfIfMonitor(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
@@ -219,7 +227,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     private void checkTermination() {
-        if (answerPathsCount == -1 && isPulling()) onDone();
+        if (pathsCount() == -1 && isPulling()) onDone();
     }
 
     protected boolean isPulling() {

@@ -136,6 +136,46 @@ public final class Tracer {
         return obj.getClass().getSimpleName() + "@" + System.identityHashCode(obj);
     }
 
+    public synchronized void pathJoin(Reactive joiner, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor) {
+        pathCount(simpleClassId(joiner), monitor, "c-1");
+    }
+
+    public synchronized void reportPathJoin(Reactive joiner, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor) {
+        reportPathCount(simpleClassId(joiner), monitor, "c-1");
+    }
+
+    public synchronized void pathFork(Reactive forker, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numForks) {
+        pathCount(simpleClassId(forker), monitor, "c" + numForks);
+    }
+
+    public synchronized void reportPathFork(Reactive forker, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numForks) {
+        reportPathCount(simpleClassId(forker), monitor, "c" + numForks);
+    }
+
+    public synchronized void fastForwardPathsCount(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?,?,?,?>> monitor, long answerPathsCount) {
+        String senderName = sender.name() + "-actor";
+        pathUpdate(senderName, monitor, "ff" + answerPathsCount);
+        addNodeGroup(senderName, sender.name(), defaultTrace);
+    }
+
+    private void reportPathCount(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
+        String monitorName = monitor.name() + "-actor";
+        addMessage(sender, monitorName, defaultTrace, EdgeType.REPORT, label);
+        addNodeGroup(monitorName, monitor.name(), defaultTrace);
+    }
+
+    private void pathCount(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
+        String monitorName = monitor.name() + "-actor";
+        addMessage(sender, monitorName, defaultTrace, EdgeType.MONITOR, label);
+        addNodeGroup(monitorName, monitor.name(), defaultTrace);
+    }
+
+    private void pathUpdate(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
+        String monitorName = monitor.name() + "-actor";
+        addMessage(sender, monitorName, defaultTrace, EdgeType.UPDATE, label);
+        addNodeGroup(monitorName, monitor.name(), defaultTrace);
+    }
+
     private void addMessage(String sender, String receiver, Trace trace, EdgeType edgeType,
                             String conceptMap) {
         rootRequestTracers.get(trace).addMessage(sender, receiver, edgeType, conceptMap);
@@ -143,26 +183,6 @@ public final class Tracer {
 
     private void addNodeGroup(String node, String group, Trace trace) {
         rootRequestTracers.get(trace).addNodeGroup(node, group);
-    }
-
-    public synchronized void pathJoin(Reactive joiner, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor) {
-        pathCount(simpleClassId(joiner), monitor, "c-1");
-    }
-
-    public synchronized void pathFork(Reactive forker, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numForks) {
-        pathCount(simpleClassId(forker), monitor, "c" + numForks);
-    }
-
-    public synchronized void pathCountFastForward(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?,?,?,?>> monitor, long answerPathsCount) {
-        String senderName = sender.name() + "-actor";
-        pathCount(senderName, monitor, "ff" + answerPathsCount);
-        addNodeGroup(senderName, sender.name(), defaultTrace);
-    }
-
-    private void pathCount(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
-        String monitorName = monitor.name() + "-actor";
-        addMessage(sender, monitorName, defaultTrace, EdgeType.MONITOR, label);
-        addNodeGroup(monitorName, monitor.name(), defaultTrace);
     }
 
     public synchronized void startDefaultTrace() {
@@ -212,7 +232,7 @@ public final class Tracer {
         private void startFile() {
             write(String.format(
                     "digraph request_%s_%d {\n" +
-                            "graph [fontsize=10 fontname=arial width=0.5]\n" +
+                            "graph [fontsize=10 fontname=arial width=0.5 clusterrank=global]\n" +
                             "node [fontsize=12 fontname=arial width=0.5 shape=box style=filled]\n" +
                             "edge [fontsize=10 fontname=arial width=0.5]",
                     trace.scope().toString().replace('-', '_'), trace.root()));
@@ -289,7 +309,9 @@ public final class Tracer {
     enum EdgeType {
         PULL("blue"),
         RECEIVE("green"),
-        MONITOR("orange");
+        MONITOR("orange"),
+        REPORT("purple"),
+        UPDATE("orange");
 
         private final String colour;
 
