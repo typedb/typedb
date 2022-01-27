@@ -148,9 +148,10 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     private void fastForwardAnswerPathsCount(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
-        if (answerPathsCount != 0) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.fastForwardPathsCount(driver(), monitor, answerPathsCount));
-            monitor.execute(actor -> actor.updatePathsCount(answerPathsCount));
+        final long update = answerPathsCount;
+        if (update != 0) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.fastForwardPathsCount(driver(), monitor, update));
+            monitor.execute(actor -> actor.updatePathsCount(update));
         }
     }
 
