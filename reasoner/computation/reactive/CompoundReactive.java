@@ -79,8 +79,8 @@ public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveStreamBase<PACKET
                 monitor().onPathFork(1, this);  // We have created one new path to an answer by pulling again from the leader
                 providerManager().pull(leadingPublisher);  // Pull again on the leader in case the follower never produces an answer
                 providerManager().pull(follower);
+                monitor().onPathJoin(this);
             }
-            monitor().onPathJoin(this);
         } else {
             finishPulling();
             PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(provider));

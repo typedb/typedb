@@ -228,6 +228,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     private void checkTermination() {
+        assert pathsCount() >= -1;
         if (pathsCount() == -1 && isPulling()) onDone();
     }
 
