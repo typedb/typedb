@@ -28,21 +28,21 @@ def vaticle_typeql_lang_java():
     git_repository(
         name = "vaticle_typeql_lang_java",
         remote = "https://github.com/vaticle/typeql-lang-java",
-        commit = "bbd97cce100cb7299897e86d27a33dcc0ee5c139", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typeql_lang_java
+        tag = "2.6.1", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typeql_lang_java
     )
 
 def vaticle_typedb_common():
     git_repository(
         name = "vaticle_typedb_common",
         remote = "https://github.com/vaticle/typedb-common",
-        commit = "28369b0e10aa0b863402cc7ee5366c13e92ba326", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_common
+        tag = "2.6.1", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_common
     )
 
 def vaticle_typedb_protocol():
     git_repository(
         name = "vaticle_typedb_protocol",
         remote = "https://github.com/vaticle/typedb-protocol",
-        commit = "568e2ec7b5633247231a58a95869b23b56c48f98", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_protocol
+        tag = "2.6.1", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_protocol
     )
 
 def vaticle_typedb_behaviour():
@@ -56,5 +56,5 @@ def vaticle_factory_tracing():
     git_repository(
         name = "vaticle_factory_tracing",
         remote = "https://github.com/vaticle/factory-tracing",
-        commit = "f0f39ce9adca4aa8e4ddac73c023eb3b896272cc"  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_factory_tracing
+        tag = "2.1.1"  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_factory_tracing
     )
