@@ -19,8 +19,8 @@ package com.vaticle.typedb.core.server.common.parser.args;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.server.common.parser.Describable;
-import com.vaticle.typedb.core.server.common.parser.Description;
+import com.vaticle.typedb.core.server.common.parser.Helping;
+import com.vaticle.typedb.core.server.common.parser.Help;
 
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -32,7 +32,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLI
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.Util.scopeKey;
 
-public abstract class OptionParser implements Describable {
+public abstract class OptionParser implements Helping {
 
     public final java.lang.String name;
     private final java.lang.String description;
@@ -53,8 +53,8 @@ public abstract class OptionParser implements Describable {
     }
 
     @Override
-    public Description getDescription(java.lang.String optionScope) {
-        return new Description.Simple(scopeKey(optionScope, name()), description(), typeDescription);
+    public Help help(java.lang.String optionScope) {
+        return new Help.Yaml.Leaf2(scopeKey(optionScope, name()), description(), typeDescription);
     }
 
     FunctionalIterator<Option> matchingOptions(Set<Option> options) {

@@ -19,7 +19,7 @@ package com.vaticle.typedb.core.server.parameters.config;
 
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.parser.Description;
+import com.vaticle.typedb.core.server.common.parser.Help;
 import com.vaticle.typedb.core.server.common.parser.yml.YamlParser;
 
 import java.net.InetSocketAddress;
@@ -46,11 +46,11 @@ import static com.vaticle.typedb.core.server.common.Util.scopeKey;
 
 public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
 
-    private static final YamlParser.EntryParser<Config.Server> serverParser = YamlParser.EntryParser.Value.create(ServerParser.name, ServerParser.description, new ServerParser());
-    private static final YamlParser.EntryParser<Config.Storage> storageParser = YamlParser.EntryParser.Value.create(StorageParser.name, StorageParser.description, new StorageParser());
-    private static final YamlParser.EntryParser<Config.Log> logParser = YamlParser.EntryParser.Value.create(LogParser.name, LogParser.description, new LogParser());
-    private static final YamlParser.EntryParser<Config.VaticleFactory> vaticleFactoryParser = YamlParser.EntryParser.Value.create(VaticleFactoryParser.name, VaticleFactoryParser.description, new VaticleFactoryParser());
-    private static final Set<YamlParser.EntryParser<?>> entryParsers = set(serverParser, storageParser, logParser, vaticleFactoryParser);
+    private static final YamlParser.EntryParser.PredefinedParser<Config.Server> serverParser = YamlParser.EntryParser.PredefinedParser.Value.create(ServerParser.name, ServerParser.description, new ServerParser());
+    private static final YamlParser.EntryParser.PredefinedParser<Config.Storage> storageParser = YamlParser.EntryParser.PredefinedParser.Value.create(StorageParser.name, StorageParser.description, new StorageParser());
+    private static final YamlParser.EntryParser.PredefinedParser<Config.Log> logParser = YamlParser.EntryParser.PredefinedParser.Value.create(LogParser.name, LogParser.description, new LogParser());
+    private static final YamlParser.EntryParser.PredefinedParser<Config.VaticleFactory> vaticleFactoryParser = YamlParser.EntryParser.PredefinedParser.Value.create(VaticleFactoryParser.name, VaticleFactoryParser.description, new VaticleFactoryParser());
+    private static final Set<YamlParser.EntryParser.PredefinedParser<?>> entryParsers = set(serverParser, storageParser, logParser, vaticleFactoryParser);
 
     @Override
     public Config parse(Yaml yaml, String scope) {
@@ -62,12 +62,12 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, scope);
     }
 
-    public List<Description> help() {
-        return list(serverParser.getDescription(), storageParser.getDescription(), logParser.getDescription(), vaticleFactoryParser.getDescription());
+    public List<Help> help() {
+        return list(serverParser.help(), storageParser.help(), logParser.help(), vaticleFactoryParser.help());
     }
 
     @Override
-    public List<Description> help(String scope) {
+    public List<Help> help(String scope) {
         return null;
     }
 
@@ -76,8 +76,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         private static final String name = "server";
         private static final String description = "Server and networking configuration.";
 
-        private static final YamlParser.EntryParser<InetSocketAddress> addressParser = YamlParser.EntryParser.Value.create("address", "Address to listen for GRPC clients on.", INET_SOCKET_ADDRESS);
-        private static final Set<YamlParser.EntryParser<?>> entryParsers = set(addressParser);
+        private static final YamlParser.EntryParser.PredefinedParser<InetSocketAddress> addressParser = YamlParser.EntryParser.PredefinedParser.Value.create("address", "Address to listen for GRPC clients on.", INET_SOCKET_ADDRESS);
+        private static final Set<YamlParser.EntryParser.PredefinedParser<?>> entryParsers = set(addressParser);
 
         @Override
         public Config.Server parse(Yaml yaml, String scope) {
@@ -88,8 +88,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         }
 
         @Override
-        public List<Description> help(String scope) {
-            return list(addressParser.getDescription(scope));
+        public List<Help> help(String scope) {
+            return list(addressParser.help(scope));
         }
     }
 
@@ -98,9 +98,9 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         private static final String name = "storage";
         private static final String description = "Storage configuration.";
 
-        private static final YamlParser.EntryParser<Path> dataParser = YamlParser.EntryParser.Value.create("data", "Directory in which user databases will be stored.", PATH);
-        private static final YamlParser.EntryParser<Config.Storage.DatabaseCache> databaseCacheParser = YamlParser.EntryParser.Value.create(DatabaseCacheParser.name, DatabaseCacheParser.description, new DatabaseCacheParser());
-        private static final Set<YamlParser.EntryParser<?>> entryParsers = set(dataParser, databaseCacheParser);
+        private static final YamlParser.EntryParser.PredefinedParser<Path> dataParser = YamlParser.EntryParser.PredefinedParser.Value.create("data", "Directory in which user databases will be stored.", PATH);
+        private static final YamlParser.EntryParser.PredefinedParser<Config.Storage.DatabaseCache> databaseCacheParser = YamlParser.EntryParser.PredefinedParser.Value.create(DatabaseCacheParser.name, DatabaseCacheParser.description, new DatabaseCacheParser());
+        private static final Set<YamlParser.EntryParser.PredefinedParser<?>> entryParsers = set(dataParser, databaseCacheParser);
 
         @Override
         public Config.Storage parse(Yaml yaml, String scope) {
@@ -112,8 +112,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         }
 
         @Override
-        public List<Description> help(String scope) {
-            return list(dataParser.getDescription(scope), databaseCacheParser.getDescription(scope));
+        public List<Help> help(String scope) {
+            return list(dataParser.help(scope), databaseCacheParser.help(scope));
         }
 
         public static class DatabaseCacheParser extends Nested<Config.Storage.DatabaseCache> {
@@ -121,9 +121,9 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             public static final String name = "database-cache";
             public static final String description = "Per-database storage-layer cache configuration.";
 
-            private static final YamlParser.EntryParser<Long> dataParser = YamlParser.EntryParser.Value.create("data", "Size of storage-layer cache for data.", BYTES_SIZE);
-            private static final YamlParser.EntryParser<Long> indexParser = YamlParser.EntryParser.Value.create("index", "Size of storage-layer cache for index.", BYTES_SIZE);
-            private static final Set<YamlParser.EntryParser<?>> entryParsers = set(dataParser, indexParser);
+            private static final YamlParser.EntryParser.PredefinedParser<Long> dataParser = YamlParser.EntryParser.PredefinedParser.Value.create("data", "Size of storage-layer cache for data.", BYTES_SIZE);
+            private static final YamlParser.EntryParser.PredefinedParser<Long> indexParser = YamlParser.EntryParser.PredefinedParser.Value.create("index", "Size of storage-layer cache for index.", BYTES_SIZE);
+            private static final Set<YamlParser.EntryParser.PredefinedParser<?>> entryParsers = set(dataParser, indexParser);
 
             @Override
             public Config.Storage.DatabaseCache parse(Yaml yaml, String scope) {
@@ -134,8 +134,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             }
 
             @Override
-            public List<Description> help(String scope) {
-                return list(dataParser.getDescription(scope), indexParser.getDescription(scope));
+            public List<Help> help(String scope) {
+                return list(dataParser.help(scope), indexParser.help(scope));
             }
         }
     }
@@ -145,10 +145,10 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         public static final String name = "log";
         public static final String description = "Logging configuration.";
 
-        private static final YamlParser.EntryParser<Config.Log.Output> outputParser = YamlParser.EntryParser.Value.create(OutputParser.name, OutputParser.description, new OutputParser());
-        private static final YamlParser.EntryParser<Config.Log.Logger> loggerParser = YamlParser.EntryParser.Value.create(LoggerParser.name, LoggerParser.description, new LoggerParser());
-        private static final YamlParser.EntryParser<Config.Log.Debugger> debuggerParser = YamlParser.EntryParser.Value.create(DebuggerParser.name, DebuggerParser.description, new DebuggerParser());
-        private static final Set<YamlParser.EntryParser<?>> entryParsers = set(outputParser, loggerParser, debuggerParser);
+        private static final YamlParser.EntryParser.PredefinedParser<Config.Log.Output> outputParser = YamlParser.EntryParser.PredefinedParser.Value.create(OutputParser.name, OutputParser.description, new OutputParser());
+        private static final YamlParser.EntryParser.PredefinedParser<Config.Log.Logger> loggerParser = YamlParser.EntryParser.PredefinedParser.Value.create(LoggerParser.name, LoggerParser.description, new LoggerParser());
+        private static final YamlParser.EntryParser.PredefinedParser<Config.Log.Debugger> debuggerParser = YamlParser.EntryParser.PredefinedParser.Value.create(DebuggerParser.name, DebuggerParser.description, new DebuggerParser());
+        private static final Set<YamlParser.EntryParser.PredefinedParser<?>> entryParsers = set(outputParser, loggerParser, debuggerParser);
 
         @Override
         public Config.Log parse(Yaml yaml, String scope) {
@@ -164,8 +164,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         }
 
         @Override
-        public List<Description> help(String scope) {
-            return list(outputParser.getDescription(scope), loggerParser.getDescription(scope), debuggerParser.getDescription(scope));
+        public List<Help> help(String scope) {
+            return list(outputParser.help(scope), loggerParser.help(scope), debuggerParser.help(scope));
         }
 
         public static class OutputParser extends Nested<Config.Log.Output> {
@@ -173,7 +173,7 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             public static final String name = "output";
             public static final String description = "Log output definitions.";
 
-            private static final YamlParser.MapParser<Config.Log.Output.Type> typeEntry = YamlParser.MapParser.create(TypeParser.description, new TypeParser());
+            private static final YamlParser.EntryParser.DynamicParser<Config.Log.Output.Type> typeEntry = YamlParser.EntryParser.DynamicParser.create(TypeParser.description, new TypeParser());
 
             @Override
             public Config.Log.Output parse(Yaml yaml, String scope) {
@@ -182,14 +182,14 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             }
 
             @Override
-            public List<Description> help(String scope) {
-                return list(typeEntry.getDescription(scope));
+            public List<Help> help(String scope) {
+                return list(typeEntry.help(scope));
             }
 
             static class TypeParser extends Nested<Config.Log.Output.Type> {
 
                 public final static String description = "A named log output definition.";
-                private static final YamlParser.EntryParser<String> typeParser = YamlParser.EntryParser.EnumValue.create("type", "Type of output to define.", STRING, list(StdoutParser.type, FileParser.type));
+                private static final YamlParser.EntryParser.PredefinedParser<String> typeParser = YamlParser.EntryParser.PredefinedParser.EnumValue.create("type", "Type of output to define.", STRING, list(StdoutParser.type, FileParser.type));
                 private static final Nested<Config.Log.Output.Type.Stdout> stdoutParser = new StdoutParser();
                 private static final Nested<Config.Log.Output.Type.File> fileParser = new FileParser();
 
@@ -209,9 +209,9 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                 }
 
                 @Override
-                public List<Description> help(String scope) {
-                    return list(new Description.Compound(scope, StdoutParser.description, stdoutParser.help(scope)),
-                            new Description.Compound(scope, description, fileParser.help(scope)));
+                public List<Help> help(String scope) {
+                    return list(new Help.Yaml.Nested2(scope, StdoutParser.description, stdoutParser.help(scope)),
+                            new Help.Yaml.Nested2(scope, description, fileParser.help(scope)));
                 }
 
                 public static class StdoutParser extends Nested<Config.Log.Output.Type.Stdout> {
@@ -219,8 +219,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                     public static final String type = "stdout";
                     public static final String description = "Options to configure a log output to stdout.";
 
-                    private static final YamlParser.EntryParser<String> typeParser = YamlParser.EntryParser.EnumValue.create("type", "An output that writes to stdout.", STRING, list(type));
-                    private static final Set<YamlParser.EntryParser<?>> entryParsers = set(typeParser);
+                    private static final YamlParser.EntryParser.PredefinedParser<String> typeParser = YamlParser.EntryParser.PredefinedParser.EnumValue.create("type", "An output that writes to stdout.", STRING, list(type));
+                    private static final Set<YamlParser.EntryParser.PredefinedParser<?>> entryParsers = set(typeParser);
 
                     @Override
                     public Config.Log.Output.Type.Stdout parse(Yaml yaml, String scope) {
@@ -232,8 +232,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                     }
 
                     @Override
-                    public List<Description> help(String scope) {
-                        return list(typeParser.getDescription(scope));
+                    public List<Help> help(String scope) {
+                        return list(typeParser.help(scope));
                     }
                 }
 
@@ -242,11 +242,11 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                     public static final String type = "file";
                     public static final String description = "Options to configure a log output to files in a directory.";
 
-                    private static final YamlParser.EntryParser<String> typeParser = YamlParser.EntryParser.EnumValue.create("type", "An output that writes to a directory.", STRING, list(type));
-                    private static final YamlParser.EntryParser<Path> pathParser = YamlParser.EntryParser.Value.create("directory", "Directory to write to. Relative paths are relative to distribution path.", PATH);
-                    private static final YamlParser.EntryParser<Long> fileSizeCapParser = YamlParser.EntryParser.Value.create("file-size-cap", "Log file size cap before creating new file (eg. 50mb).", BYTES_SIZE);
-                    private static final YamlParser.EntryParser<Long> archivesSizeCapParser = YamlParser.EntryParser.Value.create("archives-size-cap", "Total size cap of all archived log files in directory (eg. 1gb).", BYTES_SIZE); // TODO reasoner needs to respect this
-                    private static final Set<YamlParser.EntryParser<?>> entryParsers = set(typeParser, pathParser, fileSizeCapParser, archivesSizeCapParser);
+                    private static final YamlParser.EntryParser.PredefinedParser<String> typeParser = YamlParser.EntryParser.PredefinedParser.EnumValue.create("type", "An output that writes to a directory.", STRING, list(type));
+                    private static final YamlParser.EntryParser.PredefinedParser<Path> pathParser = YamlParser.EntryParser.PredefinedParser.Value.create("directory", "Directory to write to. Relative paths are relative to distribution path.", PATH);
+                    private static final YamlParser.EntryParser.PredefinedParser<Long> fileSizeCapParser = YamlParser.EntryParser.PredefinedParser.Value.create("file-size-cap", "Log file size cap before creating new file (eg. 50mb).", BYTES_SIZE);
+                    private static final YamlParser.EntryParser.PredefinedParser<Long> archivesSizeCapParser = YamlParser.EntryParser.PredefinedParser.Value.create("archives-size-cap", "Total size cap of all archived log files in directory (eg. 1gb).", BYTES_SIZE); // TODO reasoner needs to respect this
+                    private static final Set<YamlParser.EntryParser.PredefinedParser<?>> entryParsers = set(typeParser, pathParser, fileSizeCapParser, archivesSizeCapParser);
 
                     @Override
                     public Config.Log.Output.Type.File parse(Yaml yaml, String scope) {
@@ -262,9 +262,9 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                     }
 
                     @Override
-                    public List<Description> help(String scope) {
-                        return list(typeParser.getDescription(scope), pathParser.getDescription(scope), fileSizeCapParser.getDescription(scope),
-                                archivesSizeCapParser.getDescription(scope));
+                    public List<Help> help(String scope) {
+                        return list(typeParser.help(scope), pathParser.help(scope), fileSizeCapParser.help(scope),
+                                archivesSizeCapParser.help(scope));
                     }
                 }
             }
@@ -278,8 +278,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             public static final String name = "logger";
             public static final String description = "Loggers to activate.";
 
-            private static final YamlParser.EntryParser<Config.Log.Logger.Unfiltered> defaultParser = YamlParser.EntryParser.Value.create("default", "The default logger.", new UnfilteredParser());
-            private static final YamlParser.MapParser<Config.Log.Logger.Filtered> filteredParsers = YamlParser.MapParser.create("Custom filtered loggers.", new FiltredParser());
+            private static final YamlParser.EntryParser.PredefinedParser<Config.Log.Logger.Unfiltered> defaultParser = YamlParser.EntryParser.PredefinedParser.Value.create("default", "The default logger.", new UnfilteredParser());
+            private static final YamlParser.EntryParser.DynamicParser<Config.Log.Logger.Filtered> filteredParsers = YamlParser.EntryParser.DynamicParser.create("Custom filtered loggers.", new FiltredParser());
 
             @Override
             public Config.Log.Logger parse(Yaml yaml, String scope) {
@@ -290,15 +290,15 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             }
 
             @Override
-            public List<Description> help(String scope) {
-                return list(defaultParser.getDescription(scope), filteredParsers.getDescription(scope));
+            public List<Help> help(String scope) {
+                return list(defaultParser.help(scope), filteredParsers.help(scope));
             }
 
             static class UnfilteredParser extends Nested<Config.Log.Logger.Unfiltered> {
 
-                private static final YamlParser.EntryParser<String> levelParser = YamlParser.EntryParser.EnumValue.create("level", "Output level.", STRING, LEVELS);
-                private static final YamlParser.EntryParser<List<String>> outputsParser = YamlParser.EntryParser.Value.create("output", "Outputs to log to by default.", LIST_STRING);
-                private static final Set<YamlParser.EntryParser<?>> entryParsers = set(levelParser, outputsParser);
+                private static final YamlParser.EntryParser.PredefinedParser<String> levelParser = YamlParser.EntryParser.PredefinedParser.EnumValue.create("level", "Output level.", STRING, LEVELS);
+                private static final YamlParser.EntryParser.PredefinedParser<List<String>> outputsParser = YamlParser.EntryParser.PredefinedParser.Value.create("output", "Outputs to log to by default.", LIST_STRING);
+                private static final Set<YamlParser.EntryParser.PredefinedParser<?>> entryParsers = set(levelParser, outputsParser);
 
                 @Override
                 public Config.Log.Logger.Unfiltered parse(Yaml yaml, String scope) {
@@ -310,17 +310,17 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                 }
 
                 @Override
-                public List<Description> help(String scope) {
-                    return list(levelParser.getDescription(scope), outputsParser.getDescription(scope));
+                public List<Help> help(String scope) {
+                    return list(levelParser.help(scope), outputsParser.help(scope));
                 }
             }
 
             static class FiltredParser extends Nested<Config.Log.Logger.Filtered> {
 
-                private static final YamlParser.EntryParser<String> filterParser = YamlParser.EntryParser.Value.create("filter", "Class filter (eg. com.vaticle.type).", STRING);
-                private static final YamlParser.EntryParser<String> levelParser = YamlParser.EntryParser.EnumValue.create("level", "Output level.", STRING, LEVELS);
-                private static final YamlParser.EntryParser<List<String>> outputsParser = YamlParser.EntryParser.Value.create("output", "Outputs to log to by default.", LIST_STRING);
-                private static final Set<YamlParser.EntryParser<?>> entryParsers = set(filterParser, levelParser, outputsParser);
+                private static final YamlParser.EntryParser.PredefinedParser<String> filterParser = YamlParser.EntryParser.PredefinedParser.Value.create("filter", "Class filter (eg. com.vaticle.type).", STRING);
+                private static final YamlParser.EntryParser.PredefinedParser<String> levelParser = YamlParser.EntryParser.PredefinedParser.EnumValue.create("level", "Output level.", STRING, LEVELS);
+                private static final YamlParser.EntryParser.PredefinedParser<List<String>> outputsParser = YamlParser.EntryParser.PredefinedParser.Value.create("output", "Outputs to log to by default.", LIST_STRING);
+                private static final Set<YamlParser.EntryParser.PredefinedParser<?>> entryParsers = set(filterParser, levelParser, outputsParser);
 
                 @Override
                 public Config.Log.Logger.Filtered parse(Yaml yaml, String scope) {
@@ -332,8 +332,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                 }
 
                 @Override
-                public List<Description> help(String scope) {
-                    return list(filterParser.getDescription(scope), levelParser.getDescription(scope), outputsParser.getDescription(scope));
+                public List<Help> help(String scope) {
+                    return list(filterParser.help(scope), levelParser.help(scope), outputsParser.help(scope));
                 }
             }
         }
@@ -343,8 +343,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             public static final String name = "debugger";
             public static final String description = "Debuggers that may be enabled at runtime.";
 
-            private static final YamlParser.EntryParser<Config.Log.Debugger.Reasoner> reasonerParser = YamlParser.EntryParser.Value.create("reasoner", "Configure reasoner debugger.", new ReasonerParser());
-            private static final Set<YamlParser.EntryParser<?>> entryParsers = set(reasonerParser);
+            private static final YamlParser.EntryParser.PredefinedParser<Config.Log.Debugger.Reasoner> reasonerParser = YamlParser.EntryParser.PredefinedParser.Value.create("reasoner", "Configure reasoner debugger.", new ReasonerParser());
+            private static final Set<YamlParser.EntryParser.PredefinedParser<?>> entryParsers = set(reasonerParser);
 
             @Override
             public Config.Log.Debugger parse(Yaml yaml, String scope) {
@@ -355,17 +355,17 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             }
 
             @Override
-            public List<Description> help(String scope) {
-                return list(reasonerParser.getDescription(scope));
+            public List<Help> help(String scope) {
+                return list(reasonerParser.help(scope));
             }
 
             static class ReasonerParser extends Nested<Config.Log.Debugger.Reasoner> {
 
                 static final String type = "reasoner";
-                private static final YamlParser.EntryParser<String> typeParser = YamlParser.EntryParser.EnumValue.create("type", "Type of this debugger.", STRING, list(type));
-                private static final YamlParser.EntryParser<String> outputParser = YamlParser.EntryParser.Value.create("output", "Name of output reasoner debugger should write to (must be directory).", STRING);
-                private static final YamlParser.EntryParser<Boolean> enableParser = YamlParser.EntryParser.Value.create("enable", "Enable to allow reasoner debugging to be enabled at runtime.", BOOLEAN);
-                private static final Set<YamlParser.EntryParser<?>> entryParsers = set(typeParser, outputParser, enableParser);
+                private static final YamlParser.EntryParser.PredefinedParser<String> typeParser = YamlParser.EntryParser.PredefinedParser.EnumValue.create("type", "Type of this debugger.", STRING, list(type));
+                private static final YamlParser.EntryParser.PredefinedParser<String> outputParser = YamlParser.EntryParser.PredefinedParser.Value.create("output", "Name of output reasoner debugger should write to (must be directory).", STRING);
+                private static final YamlParser.EntryParser.PredefinedParser<Boolean> enableParser = YamlParser.EntryParser.PredefinedParser.Value.create("enable", "Enable to allow reasoner debugging to be enabled at runtime.", BOOLEAN);
+                private static final Set<YamlParser.EntryParser.PredefinedParser<?>> entryParsers = set(typeParser, outputParser, enableParser);
 
                 @Override
                 public Config.Log.Debugger.Reasoner parse(Yaml yaml, String scope) {
@@ -377,8 +377,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                 }
 
                 @Override
-                public List<Description> help(String scope) {
-                    return list(typeParser.getDescription(scope), outputParser.getDescription(scope), enableParser.getDescription(scope));
+                public List<Help> help(String scope) {
+                    return list(typeParser.help(scope), outputParser.help(scope), enableParser.help(scope));
                 }
             }
         }
@@ -389,11 +389,11 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         public static final String name = "vaticle-factory";
         public static final String description = "Configure Vaticle Factory connection.";
 
-        private static final YamlParser.EntryParser<Boolean> enableParser = YamlParser.EntryParser.Value.create("enable", "Enable Vaticle Factory tracing.", BOOLEAN);
-        private static final YamlParser.EntryParser<String> uriParser = YamlParser.EntryParser.Value.create("uri", "URI of Vaticle Factory server.", STRING);
-        private static final YamlParser.EntryParser<String> usernameParser = YamlParser.EntryParser.Value.create("username", "Username for Vaticle Factory server.", STRING);
-        private static final YamlParser.EntryParser<String> tokenParser = YamlParser.EntryParser.Value.create("token", "Authentication token for Vaticle Factory server.", STRING);
-        private static final Set<YamlParser.EntryParser<?>> entryParsers = set(enableParser, uriParser, usernameParser, tokenParser);
+        private static final YamlParser.EntryParser.PredefinedParser<Boolean> enableParser = YamlParser.EntryParser.PredefinedParser.Value.create("enable", "Enable Vaticle Factory tracing.", BOOLEAN);
+        private static final YamlParser.EntryParser.PredefinedParser<String> uriParser = YamlParser.EntryParser.PredefinedParser.Value.create("uri", "URI of Vaticle Factory server.", STRING);
+        private static final YamlParser.EntryParser.PredefinedParser<String> usernameParser = YamlParser.EntryParser.PredefinedParser.Value.create("username", "Username for Vaticle Factory server.", STRING);
+        private static final YamlParser.EntryParser.PredefinedParser<String> tokenParser = YamlParser.EntryParser.PredefinedParser.Value.create("token", "Authentication token for Vaticle Factory server.", STRING);
+        private static final Set<YamlParser.EntryParser.PredefinedParser<?>> entryParsers = set(enableParser, uriParser, usernameParser, tokenParser);
 
         @Override
         public Config.VaticleFactory parse(Yaml yaml, String scope) {
@@ -410,12 +410,12 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         }
 
         @Override
-        public List<Description> help(String scope) {
-            return list(enableParser.getDescription(scope), uriParser.getDescription(scope), usernameParser.getDescription(scope), tokenParser.getDescription(scope));
+        public List<Help> help(String scope) {
+            return list(enableParser.help(scope), uriParser.help(scope), usernameParser.help(scope), tokenParser.help(scope));
         }
     }
 
-    private static void validatedRecognisedParsers(Set<YamlParser.EntryParser<?>> parsers, Set<String> keys, String scope) {
+    private static void validatedRecognisedParsers(Set<YamlParser.EntryParser.PredefinedParser<?>> parsers, Set<String> keys, String scope) {
         Set<String> unrecognisedKeys = new HashSet<>(keys);
         parsers.forEach(parser -> unrecognisedKeys.remove(parser.key()));
         if (!unrecognisedKeys.isEmpty()) {

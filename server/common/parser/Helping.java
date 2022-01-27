@@ -17,12 +17,12 @@
 
 package com.vaticle.typedb.core.server.common.parser;
 
-public interface Describable {
+public interface Helping {
 
-    default Description getDescription() {
-        return getDescription("");
+    default Help help() {
+        return help("");
     }
 
-    Description getDescription(String optionScope);
+    Help help(String optionScope);
 
 }

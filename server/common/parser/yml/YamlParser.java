@@ -21,8 +21,8 @@ package com.vaticle.typedb.core.server.common.parser.yml;
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.parser.Describable;
-import com.vaticle.typedb.core.server.common.parser.Description;
+import com.vaticle.typedb.core.server.common.parser.Helping;
+import com.vaticle.typedb.core.server.common.parser.Help;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -44,133 +44,137 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSI
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.Util.scopeKey;
 
-public abstract class YamlParser implements Describable {
+public class YamlParser {
 
-    private final String description;
+    public static abstract class EntryParser implements Helping {
 
-    YamlParser(String description) {
-        this.description = description;
-    }
+        private final String description;
 
-    String description() {
-        return description;
-    }
-
-    public static class MapParser<TYPE> extends YamlParser {
-
-        private final ValueParser<TYPE> valueParser;
-
-        private MapParser(String description, ValueParser<TYPE> valueParser) {
-            super(description);
-            this.valueParser = valueParser;
+        EntryParser(String description) {
+            this.description = description;
         }
 
-        public static <TYPE> MapParser<TYPE> create(String description, ValueParser<TYPE> valueParser) {
-            return new MapParser<>(description, valueParser);
+        String description() {
+            return description;
         }
 
-        public Map<String, TYPE> parseFrom(Yaml.Map yaml, String scope, EntryParser<?>... exclude) {
-            Set<String> excludeKeys = iterate(exclude).map(EntryParser::key).toSet();
-            Map<String, TYPE> read = new HashMap<>();
-            yaml.forEach((key, value) -> {
-                if (!excludeKeys.contains(key)) {
-                    String scopedKey = scopeKey(scope, key);
-                    read.put(key, valueParser.parse(value, scopedKey));
+        public static abstract class PredefinedParser<TYPE> extends EntryParser {
+
+            private final String key;
+            final ValueParser<TYPE> valueParser;
+
+            PredefinedParser(String key, String description, ValueParser<TYPE> valueParser) {
+                super(description);
+                this.key = key;
+                this.valueParser = valueParser;
+            }
+
+            public String key() {
+                return key;
+            }
+
+            public abstract TYPE parse(Yaml.Map yaml, String scope);
+
+            public static class Value<TYPE> extends PredefinedParser<TYPE> {
+
+                private Value(String key, String description, ValueParser<TYPE> valueParser) {
+                    super(key, description, valueParser);
                 }
-            });
-            return read;
-        }
 
-        @Override
-        public Description getDescription(String optionScope) {
-            if (valueParser.isLeaf()) {
-                return new Description.Simple(scopeKey(optionScope, "<name>"), description(), valueParser.asLeaf().help());
-            } else {
-                return new Description.Compound(scopeKey(optionScope, "<name>"), description(), valueParser.asNested().help(scopeKey(optionScope, "<name>")));
-            }
-        }
-    }
+                public static <TYPE> Value<TYPE> create(String key, String description, ValueParser<TYPE> valueType) {
+                    return new Value<>(key, description, valueType);
+                }
 
-    public static abstract class EntryParser<TYPE> extends YamlParser {
+                @Override
+                public TYPE parse(Yaml.Map yaml, String scope) {
+                    String scopedKey = scopeKey(scope, key());
+                    if (!yaml.containsKey(key())) throw TypeDBException.of(MISSING_CONFIG_OPTION, scopedKey);
+                    else return valueParser.parse(yaml.get(key()), scopedKey);
+                }
 
-        private final String key;
-        final ValueParser<TYPE> valueParser;
-
-        EntryParser(String key, String description, ValueParser<TYPE> valueParser) {
-            super(description);
-            this.key = key;
-            this.valueParser = valueParser;
-        }
-
-        public String key() {
-            return key;
-        }
-
-        public abstract TYPE parse(Yaml.Map yaml, String scope);
-
-        public static class Value<TYPE> extends EntryParser<TYPE> {
-
-            private Value(String key, String description, ValueParser<TYPE> valueParser) {
-                super(key, description, valueParser);
+                @Override
+                public Help help(String optionScope) {
+                    String scopedKey = scopeKey(optionScope, key());
+                    if (valueParser.isLeaf()) {
+                        return new Help.Leaf2(scopedKey, description(), valueParser.asLeaf().help());
+                    } else {
+                        return new Help.Yaml.Nested2(scopedKey, description(), valueParser.asNested().help(scopedKey));
+                    }
+                }
             }
 
-            public static <TYPE> Value<TYPE> create(String key, String description, ValueParser<TYPE> valueType) {
-                return new Value<>(key, description, valueType);
+            public static class EnumValue<TYPE> extends PredefinedParser<TYPE> {
+
+                private final List<TYPE> values;
+
+                private EnumValue(String key, List<TYPE> values, ValueParser<TYPE> valueParser, String description) {
+                    super(key, description, valueParser);
+                    this.values = values;
+                }
+
+                public static <T> EnumValue<T> create(String key, String description, ValueParser<T> valueParser, List<T> values) {
+                    return new EnumValue<>(key, values, valueParser, description);
+                }
+
+                @Override
+                public TYPE parse(Yaml.Map yaml, String scope) {
+                    String scopedKey = scopeKey(scope, key());
+                    if (!yaml.containsKey(key())) throw TypeDBException.of(MISSING_CONFIG_OPTION, scopedKey);
+                    else {
+                        TYPE value = valueParser.parse(yaml.get(key()), scopedKey);
+                        if (values.contains(value)) return value;
+                        else throw TypeDBException.of(CONFIG_ENUM_UNEXPECTED_VALUE, scopedKey, value, values);
+                    }
+                }
+
+                @Override
+                public Help help(String optionScope) {
+                    String scopedKey = scopeKey(optionScope, key());
+                    if (valueParser.isLeaf()) {
+                        String values = String.join("|", iterate(this.values).map(Object::toString).toList());
+                        return new Help.Leaf2(scopedKey, description(), values);
+                    } else {
+                        return new Help.Yaml.Nested2(scopedKey, description(), valueParser.asNested().help(scopedKey));
+                    }
+                }
+            }
+        }
+
+        public static class DynamicParser<TYPE> extends EntryParser {
+
+            private final ValueParser<TYPE> valueParser;
+
+            private DynamicParser(String description, ValueParser<TYPE> valueParser) {
+                super(description);
+                this.valueParser = valueParser;
+            }
+
+            public static <TYPE> DynamicParser<TYPE> create(String description, ValueParser<TYPE> valueParser) {
+                return new DynamicParser<>(description, valueParser);
+            }
+
+            public Map<String, TYPE> parseFrom(Yaml.Map yaml, String scope, PredefinedParser<?>... exclude) {
+                Set<String> excludeKeys = iterate(exclude).map(PredefinedParser::key).toSet();
+                Map<String, TYPE> read = new HashMap<>();
+                yaml.forEach((key, value) -> {
+                    if (!excludeKeys.contains(key)) {
+                        String scopedKey = scopeKey(scope, key);
+                        read.put(key, valueParser.parse(value, scopedKey));
+                    }
+                });
+                return read;
             }
 
             @Override
-            public TYPE parse(Yaml.Map yaml, String scope) {
-                String scopedKey = scopeKey(scope, key());
-                if (!yaml.containsKey(key())) throw TypeDBException.of(MISSING_CONFIG_OPTION, scopedKey);
-                else return valueParser.parse(yaml.get(key()), scopedKey);
-            }
-
-            @Override
-            public Description getDescription(String optionScope) {
-                String scopedKey = scopeKey(optionScope, key());
+            public Help help(String optionScope) {
                 if (valueParser.isLeaf()) {
-                    return new Description.Simple(scopedKey, description(), valueParser.asLeaf().help());
+                    return new Help.Leaf2(scopeKey(optionScope, "<name>"), description(), valueParser.asLeaf().help());
                 } else {
-                    return new Description.Compound(scopedKey, description(), valueParser.asNested().help(scopedKey));
+                    return new Help.Yaml.Nested2(scopeKey(optionScope, "<name>"), description(), valueParser.asNested().help(scopeKey(optionScope, "<name>")));
                 }
             }
         }
 
-        public static class EnumValue<TYPE> extends EntryParser<TYPE> {
-
-            private final List<TYPE> values;
-
-            private EnumValue(String key, List<TYPE> values, ValueParser<TYPE> valueParser, String description) {
-                super(key, description, valueParser);
-                this.values = values;
-            }
-
-            public static <T> EnumValue<T> create(String key, String description, ValueParser<T> valueParser, List<T> values) {
-                return new EnumValue<>(key, values, valueParser, description);
-            }
-
-            @Override
-            public TYPE parse(Yaml.Map yaml, String scope) {
-                String scopedKey = scopeKey(scope, key());
-                if (!yaml.containsKey(key())) throw TypeDBException.of(MISSING_CONFIG_OPTION, scopedKey);
-                else {
-                    TYPE value = valueParser.parse(yaml.get(key()), scopedKey);
-                    if (values.contains(value)) return value;
-                    else throw TypeDBException.of(CONFIG_ENUM_UNEXPECTED_VALUE, scopedKey, value, values);
-                }
-            }
-
-            @Override
-            public Description getDescription(String optionScope) {
-                String scopedKey = scopeKey(optionScope, key());
-                if (valueParser.isLeaf()) {
-                    String values = String.join("|", iterate(this.values).map(Object::toString).toList());
-                    return new Description.Simple(scopedKey, description(), values);
-                } else {
-                    return new Description.Compound(scopedKey, description(), valueParser.asNested().help(scopedKey));
-                }
-            }
-        }
     }
 
     public static abstract class ValueParser<TYPE> {
@@ -195,7 +199,7 @@ public abstract class YamlParser implements Describable {
 
         public static abstract class Nested<T> extends ValueParser<T> {
 
-            public abstract List<Description> help(String scope);
+            public abstract List<Help> help(String scope);
 
             @Override
             public boolean isNested() {
