@@ -69,4 +69,10 @@ public abstract class PublisherImpl<OUTPUT> implements Reactive.Provider.Publish
         publishTo(buffer);
         return buffer;
     }
+
+    public ReactiveStream<OUTPUT,OUTPUT> deduplicate() {
+        DeduplicationReactive<OUTPUT> dedup = new DeduplicationReactive<>(this, monitor(), groupName());
+        publishTo(dedup);
+        return dedup;
+    }
 }

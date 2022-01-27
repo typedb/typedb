@@ -90,18 +90,23 @@ public abstract class DisjunctionController<
 
         @Override
         public void setUp() {
-            FanInReactive<ConceptMap> op = fanIn(this, name());
-            ReactiveStream<ConceptMap, ConceptMap> outlet = op.buffer();
+            FanInReactive<ConceptMap> fanIn = fanIn(this, name());
+            ReactiveStream<ConceptMap, ConceptMap> outlet = getOutlet(fanIn);
             setOutlet(outlet);  // TODO: Needs separating to be able to add a buffer()
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
                 InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
-                endpoint.publishTo(op);
+                endpoint.publishTo(fanIn);
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();
                 requestConnection(new NestedConjunctionRequest<>(driver(), endpoint.id(), conjunction, bounds.filter(retrievableConjunctionVars)));
             }
-            op.finalise();
+            fanIn.finalise();
+        }
+
+        protected ReactiveStream<ConceptMap, ConceptMap> getOutlet(FanInReactive<ConceptMap> fanIn) {
+            // Simply here to be overridden by root disjuntion to avoid duplicating setUp
+            return fanIn.buffer();
         }
 
         private static class NestedConjunctionRequest<P extends DisjunctionProcessor<C, P>, C extends DisjunctionController<P, C>>

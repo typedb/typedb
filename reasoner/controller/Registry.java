@@ -114,10 +114,12 @@ public class Registry {
         }
     }
 
-    public Actor.Driver<RootConjunctionController> createRootConjunctionController(Conjunction conjunction, EntryPoint reasonerEntryPoint) {
+    public Actor.Driver<RootConjunctionController> createRootConjunctionController(Conjunction conjunction,
+                                                                                   Set<Variable.Retrievable> filter,
+                                                                                   EntryPoint reasonerEntryPoint) {
         LOG.debug("Creating Root Conjunction for: '{}'", conjunction);
         Actor.Driver<RootConjunctionController> controller =
-                Actor.driver(driver -> new RootConjunctionController(driver, conjunction, executorService, this,
+                Actor.driver(driver -> new RootConjunctionController(driver, conjunction, filter, executorService, this,
                                                                      reasonerEntryPoint), executorService);
         controller.execute(RootConjunctionController::setUpUpstreamProviders);
         controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));
@@ -127,10 +129,12 @@ public class Registry {
         return controller;
     }
 
-    public Actor.Driver<RootDisjunctionController> createRootDisjunctionController(Disjunction disjunction, EntryPoint reasonerEntryPoint) {
+    public Actor.Driver<RootDisjunctionController> createRootDisjunctionController(Disjunction disjunction,
+                                                                                   Set<Variable.Retrievable> filter,
+                                                                                   EntryPoint reasonerEntryPoint) {
         LOG.debug("Creating Root Disjunction for: '{}'", disjunction);
         Actor.Driver<RootDisjunctionController> controller =
-                Actor.driver(driver -> new RootDisjunctionController(driver, disjunction, executorService, this,
+                Actor.driver(driver -> new RootDisjunctionController(driver, disjunction, filter, executorService, this,
                                                                      reasonerEntryPoint), executorService);
         controller.execute(RootDisjunctionController::setUpUpstreamProviders);
         controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));

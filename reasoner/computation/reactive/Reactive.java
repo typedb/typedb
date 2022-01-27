@@ -23,9 +23,7 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 
 public interface Reactive {

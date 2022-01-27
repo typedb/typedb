@@ -22,24 +22,33 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
+import com.vaticle.typedb.core.reasoner.computation.reactive.FanInReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStream;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 
+import java.util.Set;
 import java.util.function.Function;
 
 public class RootDisjunctionController
         extends DisjunctionController<RootDisjunctionController.RootDisjunctionProcessor, RootDisjunctionController> {
+    private final Set<Identifier.Variable.Retrievable> filter;
     private final EntryPoint reasonerEndpoint;
 
     public RootDisjunctionController(Driver<RootDisjunctionController> driver, Disjunction disjunction,
-                                     ActorExecutorGroup executorService, Registry registry,
+                                     Set<Identifier.Variable.Retrievable> filter, ActorExecutorGroup executorService,
+                                     Registry registry,
                                      EntryPoint reasonerEndpoint) {
         super(driver, disjunction, executorService, registry);
+        this.filter = filter;
         this.reasonerEndpoint = reasonerEndpoint;
     }
 
     @Override
     protected Function<Driver<RootDisjunctionProcessor>, RootDisjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
-        return driver -> new RootDisjunctionProcessor(driver, driver(), disjunction, bounds, reasonerEndpoint,
-                                                      RootDisjunctionProcessor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")");
+        return driver -> new RootDisjunctionProcessor(
+                driver, driver(), disjunction, bounds, filter, reasonerEndpoint,
+                RootDisjunctionProcessor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
+        );
     }
 
     @Override
@@ -56,12 +65,15 @@ public class RootDisjunctionController
     protected static class RootDisjunctionProcessor
             extends DisjunctionController.DisjunctionProcessor<RootDisjunctionController, RootDisjunctionProcessor> {
 
+        private final Set<Identifier.Variable.Retrievable> filter;
         private final EntryPoint reasonerEndpoint;
 
         protected RootDisjunctionProcessor(Driver<RootDisjunctionProcessor> driver,
                                            Driver<RootDisjunctionController> controller, Disjunction disjunction,
-                                           ConceptMap bounds, EntryPoint reasonerEndpoint, String name) {
+                                           ConceptMap bounds, Set<Identifier.Variable.Retrievable> filter,
+                                           EntryPoint reasonerEndpoint, String name) {
             super(driver, controller, disjunction, bounds, name);
+            this.filter = filter;
             this.reasonerEndpoint = reasonerEndpoint;
             this.reasonerEndpoint.setMonitor(this);
         }
@@ -70,6 +82,12 @@ public class RootDisjunctionController
         public void setUp() {
             super.setUp();
             outlet().publishTo(reasonerEndpoint);
+        }
+
+        @Override
+        protected ReactiveStream<ConceptMap, ConceptMap> getOutlet(FanInReactive<ConceptMap> fanIn) {
+            // Simply here to be overridden by root disjuntion to avoid duplicating setUp
+            return fanIn.buffer().map(conceptMap -> conceptMap.filter(filter)).deduplicate();
         }
 
         @Override

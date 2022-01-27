@@ -61,7 +61,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.done = false;
         this.required = new AtomicInteger();
         this.reasonerEntryPoint = new EntryPoint(this::receiveAnswer, this::exception, this::answersFinished, conjunction.toString());  // TODO Try wrapping the root processor in an entrypoint object, which is still a reactive
-        this.controllerRegistry.createRootConjunctionController(conjunction, reasonerEntryPoint);
+        this.controllerRegistry.createRootConjunctionController(conjunction, filter, reasonerEntryPoint);
         if (options.traceInference()) {
             Tracer.initialise(options.logsDir());
             Tracer.get().startDefaultTrace();
@@ -77,7 +77,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.done = false;
         this.required = new AtomicInteger();
         this.reasonerEntryPoint = new EntryPoint(this::receiveAnswer, this::exception, this::answersFinished, disjunction.toString());
-        this.controllerRegistry.createRootDisjunctionController(disjunction, reasonerEntryPoint);
+        this.controllerRegistry.createRootDisjunctionController(disjunction, filter, reasonerEntryPoint);
         if (options.traceInference()) {
             Tracer.initialise(options.logsDir());
             Tracer.get().startDefaultTrace();

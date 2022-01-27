@@ -26,25 +26,28 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
 import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
 public class RootConjunctionController extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.RootConjunctionProcessor> {
+    private final Set<Identifier.Variable.Retrievable> filter;
     private final EntryPoint reasonerEndpoint;
 
     public RootConjunctionController(Driver<RootConjunctionController> driver, Conjunction conjunction,
-                                     ActorExecutorGroup executorService, Registry registry,
+                                     Set<Identifier.Variable.Retrievable> filter, ActorExecutorGroup executorService, Registry registry,
                                      EntryPoint reasonerEndpoint) {
         super(driver, conjunction, executorService, registry);
+        this.filter = filter;
         this.reasonerEndpoint = reasonerEndpoint;
     }
 
     @Override
     protected Function<Driver<RootConjunctionProcessor>, RootConjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new RootConjunctionProcessor(
-                driver, driver(), bounds, plan(), reasonerEndpoint,
+                driver, driver(), bounds, plan(), filter, reasonerEndpoint,
                 RootConjunctionProcessor.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
         );
     }
@@ -69,13 +72,15 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
 
     protected static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, RootConjunctionController, RootConjunctionProcessor> {
 
+        private final Set<Identifier.Variable.Retrievable> filter;
         private final EntryPoint reasonerEndpoint;
 
         protected RootConjunctionProcessor(Driver<RootConjunctionProcessor> driver,
-                                           Driver<RootConjunctionController> controller,
-                                           ConceptMap bounds, List<Resolvable<?>> plan,
+                                           Driver<RootConjunctionController> controller, ConceptMap bounds,
+                                           List<Resolvable<?>> plan, Set<Identifier.Variable.Retrievable> filter,
                                            EntryPoint reasonerEndpoint, String name) {
             super(driver, controller, bounds, plan, name);
+            this.filter = filter;
             this.reasonerEndpoint = reasonerEndpoint;
             this.reasonerEndpoint.setMonitor(this);
         }
@@ -84,7 +89,11 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         public void setUp() {
             super.setUp();
             outlet().publishTo(reasonerEndpoint);
-            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, this, name()).buffer().publishTo(outlet());
+            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, this, name())
+                    .buffer()
+                    .map(conceptMap -> conceptMap.filter(filter))
+                    .deduplicate()
+                    .publishTo(outlet());
         }
 
         @Override
