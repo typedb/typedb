@@ -62,8 +62,8 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveStream<PACKET, PACK
             Set<Receiver<PACKET>> toSend = new HashSet<>(pullers);
             finishPulling();
             toSend.forEach(this::send);
-        } else if (isPulling()) {
-            providerManager().pull(provider);
+        } else {
+            if (isPulling()) providerManager().pull(provider);
             monitor().onPathJoin(this);  // When an answer is a duplicate that path is done
         }
     }
