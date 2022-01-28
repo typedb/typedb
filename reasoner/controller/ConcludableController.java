@@ -131,11 +131,11 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         public void setUp() {
             setOutlet(new BufferBroadcastReactive<>(this, name()));
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
-            FanInReactive<ConceptMap> op = fanIn(this, name());
-            if (singleAnswerRequired) op.buffer().findFirst().publishTo(outlet());
-            else op.buffer().publishTo(outlet());
+            FanInReactive<ConceptMap> fanIn = fanIn(this, name());
+            if (singleAnswerRequired) fanIn.buffer().findFirst().publishTo(outlet());
+            else fanIn.buffer().publishTo(outlet());
 
-            Source.fromIteratorSupplier(traversalSuppplier, this, name()).publishTo(op);
+            Source.fromIteratorSupplier(traversalSuppplier, this, name()).publishTo(fanIn);
 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
@@ -143,10 +143,10 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
                     mayRequestConnection(new ConclusionRequest(driver(), endpoint.id(), conclusion, boundsAndRequirements.first()));
                     endpoint.flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .buffer() // TODO: Included to combat flatMap overproducing.
-                            .publishTo(op);
+                            .publishTo(fanIn);
                 }));
             });
-             op.finalise();
+            fanIn.finalise();
         }
 
         private void mayRequestConnection(ConclusionRequest conclusionRequest) {
