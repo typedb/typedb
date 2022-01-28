@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import javax.annotation.Nullable;
@@ -79,15 +80,15 @@ public interface Reactive {
             private @Nullable
             Provider<R> provider;
             private final Receiver<R> receiver;
-            private final PacketMonitor monitor;
+            private final Monitoring monitor;
 
-            public SingleManager(@Nullable Publisher<R> provider, Receiver.Subscriber<R> subscriber, PacketMonitor monitor) {
+            public SingleManager(@Nullable Publisher<R> provider, Receiver.Subscriber<R> subscriber, Monitoring monitor) {
                 this.provider = provider;
                 this.receiver = subscriber;
                 this.monitor = monitor;
             }
 
-            public SingleManager(Receiver.Subscriber<R> subscriber, PacketMonitor monitor) {
+            public SingleManager(Receiver.Subscriber<R> subscriber, Monitoring monitor) {
                 this.provider = null;
                 this.receiver = subscriber;
                 this.monitor = monitor;
@@ -104,7 +105,7 @@ public interface Reactive {
                 assert this.provider != null;
                 assert this.provider == provider;
                 if (monitor == null) Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
-                else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.pathsCount()));
+                else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.count()));
                 provider.pull(receiver);
             }
 
@@ -130,9 +131,9 @@ public interface Reactive {
 
             private final Map<Provider<R>, Boolean> providers;
             private final Receiver<R> receiver;
-            private final PacketMonitor monitor;
+            private final Monitoring monitor;
 
-            public MultiManager(Receiver.Subscriber<R> subscriber, @Nullable PacketMonitor monitor) {
+            public MultiManager(Receiver.Subscriber<R> subscriber, @Nullable Monitoring monitor) {
                 this.providers = new HashMap<>();
                 this.receiver = subscriber;
                 this.monitor = monitor;
@@ -141,7 +142,7 @@ public interface Reactive {
             @Override
             public void add(Provider<R> provider) {
                 providers.computeIfAbsent(provider, p -> {
-                    if (monitor != null) monitor.onPathFork(1, receiver);
+                    if (monitor != null) monitor.onPathFork(receiver);
                     return false;
                 });
             }
@@ -183,7 +184,7 @@ public interface Reactive {
             private void pullProvider(Provider<R> provider) {
                 assert providers.containsKey(provider);
                 if (monitor == null) Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
-                else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.pathsCount()));
+                else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.count()));
                 provider.pull(receiver);
             }
 

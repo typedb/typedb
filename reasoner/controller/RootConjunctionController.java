@@ -82,14 +82,14 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
             super(driver, controller, bounds, plan, name);
             this.filter = filter;
             this.reasonerEndpoint = reasonerEndpoint;
-            this.reasonerEndpoint.setMonitor(this);
+            this.reasonerEndpoint.setMonitor(monitoring());
         }
 
         @Override
         public void setUp() {
             super.setUp();
             outlet().publishTo(reasonerEndpoint);
-            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, this, name())
+            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, monitoring(), name())
                     .buffer()
                     .map(conceptMap -> conceptMap.filter(filter))
                     .deduplicate()

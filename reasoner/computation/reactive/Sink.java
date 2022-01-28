@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 
@@ -26,7 +27,7 @@ import javax.annotation.Nullable;
 public abstract class Sink<PACKET> implements Subscriber<PACKET>, Provider<PACKET> {
 
     private SingleManager<PACKET> providerManager;
-    private PacketMonitor monitor;
+    private Monitoring monitor;
     protected boolean isPulling;
 
     protected SingleManager<PACKET> providerManager() {
@@ -35,11 +36,11 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET>, Provider<PACKE
         return providerManager;
     }
 
-    protected PacketMonitor monitor() {
+    protected Monitoring monitor() {
         return monitor;
     }
 
-    public void setMonitor(PacketMonitor monitor) {
+    public void setMonitor(Monitoring monitor) {
         this.monitor = monitor;
     }
 

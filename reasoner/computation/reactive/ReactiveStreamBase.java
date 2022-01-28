@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public abstract class ReactiveStreamBase<INPUT, OUTPUT> extends ReactiveStream<INPUT, OUTPUT> {
@@ -25,7 +26,7 @@ public abstract class ReactiveStreamBase<INPUT, OUTPUT> extends ReactiveStream<I
     protected Receiver<OUTPUT> subscriber;
     private boolean isPulling;
 
-    protected ReactiveStreamBase(PacketMonitor monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
+    protected ReactiveStreamBase(Monitoring monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
         super(monitor, groupName);
         this.isPulling = false;
     }
@@ -35,7 +36,7 @@ public abstract class ReactiveStreamBase<INPUT, OUTPUT> extends ReactiveStream<I
 
     @Override
     public void receive(Provider<INPUT> provider, INPUT packet) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().pathsCount()));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
         providerManager().receivedFrom(provider);
     }
 

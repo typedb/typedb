@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+
 import java.util.function.Function;
 
 public class MapReactive<INPUT, OUTPUT> extends ReactiveStreamBase<INPUT, OUTPUT> {
@@ -25,7 +27,7 @@ public class MapReactive<INPUT, OUTPUT> extends ReactiveStreamBase<INPUT, OUTPUT
     private final Function<INPUT, OUTPUT> mappingFunc;
     private final SingleManager<INPUT> providerManager;
 
-    protected MapReactive(Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, PacketMonitor monitor, String groupName) {
+    protected MapReactive(Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.mappingFunc = mappingFunc;
         this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());

@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.PacketMonitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PublisherBase;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
@@ -45,21 +44,19 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 
 public abstract class Processor<INPUT, OUTPUT,
         CONTROLLER extends Controller<?, INPUT, OUTPUT, PROCESSOR, CONTROLLER>,
-        PROCESSOR extends Processor<INPUT, OUTPUT, ?, PROCESSOR>> extends Actor<PROCESSOR> implements PacketMonitor {
+        PROCESSOR extends Processor<INPUT, OUTPUT, ?, PROCESSOR>> extends Actor<PROCESSOR> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Processor.class);
 
     private final Driver<CONTROLLER> controller;
     private final Map<Long, InletEndpoint<INPUT>> receivingEndpoints;
     private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
-    protected final Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors;
+    private final Set<Connection<INPUT, ?, ?>> upstreamConnections;
+    private final Monitoring monitoring;
+    private final Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors;
     private ReactiveStream<OUTPUT, OUTPUT> outlet;
     private long endpointId;
     private boolean terminated;
-    private long answerPathsCount;
-    private long reportCount;
-    private long updatesCount;
-    private final Set<Connection<INPUT, ?, ?>> upstreamConnections;
     private boolean done;
 
     protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, String name) {
@@ -69,11 +66,9 @@ public abstract class Processor<INPUT, OUTPUT,
         this.receivingEndpoints = new HashMap<>();
         this.providingEndpoints = new HashMap<>();
         this.monitors = new HashSet<>();
-        this.answerPathsCount = 0;
-        this.reportCount = 0;
-        this.updatesCount = 0;
         this.upstreamConnections = new HashSet<>();
         this.done = false;
+        this.monitoring = new Monitoring(this);
     }
 
     public abstract void setUp();
@@ -124,14 +119,14 @@ public abstract class Processor<INPUT, OUTPUT,
 
     protected OutletEndpoint<OUTPUT> createProvidingEndpoint(Connection<OUTPUT, ?, PROCESSOR> connection) {
         assert !done;
-        OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection, this, name());
+        OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection, monitoring(), name());
         providingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
 
     protected InletEndpoint<INPUT> createReceivingEndpoint() {
         assert !done;
-        InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId(), this, name());
+        InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId(), monitoring(), name());
         receivingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
@@ -146,87 +141,23 @@ public abstract class Processor<INPUT, OUTPUT,
         receivingEndpoints.get(subEndpointId).receive(null, packet);
     }
 
+    public Monitoring monitoring() {
+        return monitoring;
+    }
+
+    protected Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors() {
+        return monitors;
+    }
+
     protected void addMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
         assert !done;
         Set<Driver<? extends Processor<?, ?, ?, ?>>> unseenMonitors = new HashSet<>(addSelfIfMonitor(monitors));
         unseenMonitors.removeAll(this.monitors);
-        unseenMonitors.forEach(this::fastForwardAnswerPathsCount);
+        unseenMonitors.forEach(monitor -> monitoring().fastForwardCounts(monitor));
         this.monitors.addAll(unseenMonitors);
         if (unseenMonitors.size() > 0) {
             upstreamConnections.forEach(e -> e.propagateMonitors(unseenMonitors));
         }
-    }
-
-    private void fastForwardAnswerPathsCount(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
-        assert !done;
-        final long update = answerPathsCount;
-        if (update != 0) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.fastForwardPathsCount(driver(), monitor, update));
-            monitor.execute(actor -> actor.updatePathsCount(update));
-        }
-    }
-
-    public void updatePathsCount(long pathCountDelta) {
-        assert isMonitor();
-        assert !done;
-        updatesCount += pathCountDelta;
-        assert updatesCount >= -1;
-        checkTermination();
-    }
-
-    @Override
-    public void onPathFork(int numForks, Reactive forker) {
-        assert numForks > 0;
-        assert !done;
-        answerPathsCount += numForks;
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathFork(forker, driver(), numForks));
-        monitors.forEach(monitor -> {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportPathFork(forker, monitor, numForks));
-            monitor.execute(actor -> actor.reportPathFork(numForks, forker));
-        });
-        if (isMonitor()) checkTermination();
-    }
-
-    @Override
-    public void reportPathFork(int numForks, Reactive forker) {
-        assert isMonitor();
-        assert !done;
-        assert numForks > 0;
-        reportCount += numForks;
-        monitors.forEach(monitor -> {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportPathFork(forker, monitor, numForks));
-            monitor.execute(actor -> actor.reportPathFork(numForks, forker));
-        });
-        checkTermination();
-    }
-
-    @Override
-    public void onPathJoin(Reactive joiner) {
-        answerPathsCount -= 1;
-        assert !done;
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pathJoin(joiner, driver()));
-        monitors.forEach(monitor -> {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportPathJoin(joiner, monitor));
-            monitor.execute(actor -> actor.reportPathJoin(joiner));
-        });
-        if (isMonitor()) checkTermination();
-    }
-
-    @Override
-    public void reportPathJoin(Reactive joiner) {
-        assert isMonitor();
-        assert !done;
-        reportCount -= 1;
-        monitors.forEach(monitor -> {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportPathJoin(joiner, monitor));
-            monitor.execute(actor -> actor.reportPathJoin(joiner));
-        });
-        checkTermination();
-    }
-
-    @Override
-    public long pathsCount() {
-        return answerPathsCount + reportCount + updatesCount;
     }
 
     private Set<Driver<? extends Processor<?, ?, ?, ?>>> addSelfIfMonitor(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
@@ -236,14 +167,6 @@ public abstract class Processor<INPUT, OUTPUT,
             return newMonitorSet;
         } else {
             return monitors;
-        }
-    }
-
-    private void checkTermination() {
-        assert pathsCount() >= -1;
-        if (pathsCount() == -1 && isPulling()) {
-            this.done = true;
-            onDone();
         }
     }
 
@@ -294,7 +217,7 @@ public abstract class Processor<INPUT, OUTPUT,
         private Connection<PACKET, ?, ?> connection;
         protected boolean isPulling;
 
-        public InletEndpoint(long id, PacketMonitor monitor, String groupName) {
+        public InletEndpoint(long id, Monitoring monitor, String groupName) {
             super(monitor, groupName);
             this.id = id;
             this.ready = false;
@@ -319,13 +242,13 @@ public abstract class Processor<INPUT, OUTPUT,
             if (ready && !isPulling) {
                 isPulling = true;
                 connection.pull();
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, connection, monitor().pathsCount()));  // TODO: We do this here because we don't tell the connection who we are when we pull
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, connection, monitor().count()));  // TODO: We do this here because we don't tell the connection who we are when we pull
             }
         }
 
         @Override
         public void receive(@Nullable Provider<PACKET> provider, PACKET packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(connection, this, packet, monitor().pathsCount()));  // TODO: Highlights a smell that the connection is receiving and so provider is null
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(connection, this, packet, monitor().count()));  // TODO: Highlights a smell that the connection is receiving and so provider is null
             assert provider == null;
             isPulling = false;
             subscriber().receive(this, packet);
@@ -340,10 +263,10 @@ public abstract class Processor<INPUT, OUTPUT,
         private final Connection<PACKET, ?, ?> connection;
         private final SingleManager<PACKET> providerManager;
         protected boolean isPulling;
-        private final PacketMonitor monitor;
+        private final Monitoring monitor;
         private final String groupName;
 
-        public OutletEndpoint(Connection<PACKET, ?, ?> connection, PacketMonitor monitor, String groupName) {
+        public OutletEndpoint(Connection<PACKET, ?, ?> connection, Monitoring monitor, String groupName) {
             this.monitor = monitor;
             this.groupName = groupName;
             this.connection = connection;
@@ -351,7 +274,7 @@ public abstract class Processor<INPUT, OUTPUT,
             this.providerManager = new Provider.SingleManager<>(this, monitor());
         }
 
-        protected PacketMonitor monitor() {
+        protected Monitoring monitor() {
             return monitor;
         }
 
@@ -366,9 +289,9 @@ public abstract class Processor<INPUT, OUTPUT,
 
         @Override
         public void receive(@Nullable Provider<PACKET> provider, PACKET packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().pathsCount()));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
             isPulling = false;
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(this, connection, packet, monitor().pathsCount()));  // TODO: We do this here because we don't tell the connection who we are when it receives
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(this, connection, packet, monitor().count()));  // TODO: We do this here because we don't tell the connection who we are when it receives
             connection.receive(packet);
             providerManager.receivedFrom(provider);
         }
@@ -376,7 +299,7 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void pull(@Nullable Receiver<PACKET> receiver) {
             assert receiver == null;
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(connection, this, monitor().pathsCount()));  // TODO: Highlights a smell that the connection is pulling and so receiver is null
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(connection, this, monitor().count()));  // TODO: Highlights a smell that the connection is pulling and so receiver is null
             if (!isPulling) {
                 isPulling = true;
                 providerManager.pullAll();
@@ -452,4 +375,122 @@ public abstract class Processor<INPUT, OUTPUT,
             return Objects.hash(provControllerId, recProcessor, recEndpointId, connectionTransforms, provProcessorId);
         }
     }
+
+    public static class Monitoring {
+
+        private long pathsCount;
+        private long answersCount;
+        private final Processor<?, ?, ?, ?> processor;
+
+        Monitoring(Processor<?, ?, ?, ?> processor) {
+            this.processor = processor;
+            this.pathsCount = 0;
+            this.answersCount = 0;
+        }
+
+        Processor<?, ?, ?, ?> processor() {
+            return processor;
+        }
+
+        public enum CountChange {
+            PathFork,
+            PathJoin,
+            AnswerCreate,
+            AnswerDestroy
+        }
+
+        private void fastForwardCounts(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
+            final long pathsCountUpdate = pathsCount;
+            if (pathsCountUpdate != 0) {
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.fastForwardPathsCount(processor().driver(), monitor, pathsCountUpdate));
+                monitor.execute(actor -> actor.monitoring().updatePathsCount(pathsCountUpdate));
+            }
+            final long answersCountUpdate = answersCount;
+            if (answersCountUpdate != 0) {
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.fastForwardAnswersCount(processor().driver(), monitor, answersCountUpdate));
+                monitor.execute(actor -> actor.monitoring().updateAnswersCount(answersCountUpdate));
+            }
+        }
+
+        public void updatePathsCount(long pathCountDelta) {
+            assert processor().isMonitor();
+            pathsCount += pathCountDelta;
+            assert pathsCount >= -1;
+            checkTermination();
+        }
+
+        public void updateAnswersCount(long answersCountDelta) {
+            assert processor().isMonitor();
+            answersCount += answersCountDelta;
+            assert answersCount >= 0;
+            checkTermination();
+        }
+
+        public void onChange(int num, CountChange countChange, Reactive reactive) {
+            updateCount(countChange, num);
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.onCountChange(reactive, countChange, processor().driver(), num));
+            reportToMonitors(countChange, num, reactive);
+            if (processor().isMonitor()) checkTermination();
+        }
+
+        private void updateCount(CountChange countChange, int num) {
+            switch (countChange) {
+                case PathFork:
+                    pathsCount += num;
+                    break;
+                case PathJoin:
+                    pathsCount -= num;
+                    break;
+                case AnswerCreate:
+                    answersCount += num;
+                    break;
+                case AnswerDestroy:
+                    answersCount -= num;
+                    break;
+            }
+        }
+
+        private void reportToMonitors(CountChange countChange, int num, Reactive reactive) {
+            processor().monitors().forEach(monitor -> {
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportCountChange(reactive, countChange, monitor, num));
+                monitor.execute(actor -> actor.monitoring().reportCountChange(num, countChange, reactive));
+            });
+        }
+
+        public void reportCountChange(int num, CountChange countChange, Reactive reactive) {
+            assert processor().isMonitor();
+            updateCount(countChange, num);
+            reportToMonitors(countChange, num, reactive);
+            checkTermination();
+        }
+
+        public void onPathFork(Reactive forker) {
+            onChange(1, CountChange.PathFork, forker);
+        }
+
+        public void onPathJoin(Reactive joiner) {
+            onChange(1, CountChange.PathJoin, joiner);
+        }
+
+        public void onAnswerCreate(Reactive creator) {
+            onChange(1, CountChange.AnswerCreate, creator);
+        }
+
+        public void onAnswerDestroy(Reactive destroyer) {
+            onChange(1, CountChange.AnswerDestroy, destroyer);
+        }
+
+        public long count() {
+            return pathsCount + answersCount;
+        }
+
+        private void checkTermination() {
+            assert count() >= -1;
+            if (count() == -1 && processor().isPulling()) {
+                processor().onDone();
+            }
+        }
+
+    }
+
 }

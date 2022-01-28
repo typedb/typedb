@@ -18,11 +18,13 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+
 public class FanInReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
 
     private final Provider.MultiManager<PACKET> providerManager;
 
-    protected FanInReactive(PacketMonitor monitor, String groupName) {
+    protected FanInReactive(Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new Provider.MultiManager<>(this, monitor);
     }
@@ -32,7 +34,7 @@ public class FanInReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
         return providerManager;
     }
 
-    public static <T> FanInReactive<T> fanIn(PacketMonitor monitor, String groupName) {
+    public static <T> FanInReactive<T> fanIn(Monitoring monitor, String groupName) {
         return new FanInReactive<>(monitor, groupName);
     }
 

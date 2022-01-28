@@ -18,12 +18,14 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+
 public class FindFirstReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
 
     private final SingleManager<PACKET> providerManager;
     private boolean packetFound;
 
-    FindFirstReactive(Publisher<PACKET> publisher, PacketMonitor monitor, String groupName) {
+    FindFirstReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
         this.packetFound = false;
@@ -42,7 +44,7 @@ public class FindFirstReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET
             finishPulling();
             subscriber().receive(this, packet);
         } else {
-            monitor().onPathJoin(this);
+            monitor().onAnswerDestroy(this);
         }
     }
 

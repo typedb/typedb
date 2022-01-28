@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,7 +28,7 @@ public class DeduplicationReactive<PACKET> extends ReactiveStreamBase<PACKET, PA
     private final SingleManager<PACKET> providerManager;
     private final Set<PACKET> deduplicationSet;
 
-    protected DeduplicationReactive(Publisher<PACKET> publisher, PacketMonitor monitor, String groupName) {
+    protected DeduplicationReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
         this.deduplicationSet = new HashSet<>();
@@ -45,7 +47,7 @@ public class DeduplicationReactive<PACKET> extends ReactiveStreamBase<PACKET, PA
             subscriber().receive(this, packet);
         } else {
             if (isPulling()) providerManager.pull(provider);  // Automatic retry
-            monitor().onPathJoin(this);  // Already seen this answer, so join this path
+            monitor().onAnswerDestroy(this);  // Already seen this answer, so join this path
         }
     }
 }

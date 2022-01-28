@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferedFanOutReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.PacketMonitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStreamBase;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
@@ -101,10 +100,10 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         @Override
         public void setUp() {
-            setOutlet(new BufferedFanOutReactive<>(this, name()));
+            setOutlet(new BufferedFanOutReactive<>(monitoring(), name()));
             InletEndpoint<Either<ConceptMap, Materialisation>> conditionEndpoint = createReceivingEndpoint();
             mayRequestCondition(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
-            ConclusionReactive conclusionReactive = new ConclusionReactive(name(), this);
+            ConclusionReactive conclusionReactive = new ConclusionReactive(name(), monitoring());
             conditionEndpoint.map(a -> a.first()).publishTo(conclusionReactive);
             conclusionReactive.publishTo(outlet());
         }
@@ -141,7 +140,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
             private final SingleManager<ConceptMap> providerManager;
 
-            protected ConclusionReactive(String groupName, PacketMonitor monitor) {
+            protected ConclusionReactive(String groupName, Monitoring monitor) {
                 super(monitor, groupName);
                 this.providerManager = new Provider.SingleManager<>(this, monitor());
             }
@@ -170,7 +169,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             private void receiveMaterialisation(Provider<Map<Variable, Concept>> provider, Map<Variable, Concept> packet) {
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().pathsCount()));
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
                 finishPulling();
                 subscriber().receive(this, packet);
                 monitor().onPathJoin(this);  // Since we received a materialisation but we're not going to pull
@@ -183,7 +182,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             private final ConclusionReactive parent;
             private final SingleManager<Map<Variable, Concept>> providerManager;
 
-            public MaterialiserReactive(ConclusionReactive parent, PacketMonitor monitor, String groupName) {
+            public MaterialiserReactive(ConclusionReactive parent, Monitoring monitor, String groupName) {
                 super(monitor, groupName);
                 this.parent = parent;
                 this.providerManager = new Provider.SingleManager<>(this, monitor());

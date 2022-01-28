@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring.CountChange;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
@@ -136,25 +137,44 @@ public final class Tracer {
         return obj.getClass().getSimpleName() + "@" + System.identityHashCode(obj);
     }
 
-    public synchronized void pathJoin(Reactive joiner, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor) {
-        pathCount(simpleClassId(joiner), monitor, "c-1");
+    private String countLabel(CountChange countChange, int num) {
+        String label = "";
+        switch (countChange) {
+            case PathFork:
+                label += "fork" + num;
+                break;
+            case PathJoin:
+                label += "join" + num;
+                break;
+            case AnswerCreate:
+                label += "create" + num;
+                break;
+            case AnswerDestroy:
+                label += "destroy" + num;
+                break;
+        }
+        return label;
     }
 
-    public synchronized void reportPathJoin(Reactive joiner, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor) {
-        reportPathCount(simpleClassId(joiner), monitor, "c-1");
+    public synchronized void onCountChange(Reactive reactive, CountChange countChange,
+                                           Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int num) {
+        pathCount(simpleClassId(reactive), monitor, countLabel(countChange, num));
     }
 
-    public synchronized void pathFork(Reactive forker, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numForks) {
-        pathCount(simpleClassId(forker), monitor, "c" + numForks);
+    public void reportCountChange(Reactive reactive, CountChange countChange,
+                                  Actor.Driver<? extends Processor<?,?,?,?>> monitor, int num) {
+        reportPathCount(simpleClassId(reactive), monitor, countLabel(countChange, num));
     }
 
-    public synchronized void reportPathFork(Reactive forker, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int numForks) {
-        reportPathCount(simpleClassId(forker), monitor, "c" + numForks);
-    }
-
-    public synchronized void fastForwardPathsCount(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?,?,?,?>> monitor, long answerPathsCount) {
+    public synchronized void fastForwardPathsCount(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?,?,?,?>> monitor, long pathsCount) {
         String senderName = sender.name() + "-actor";
-        pathUpdate(senderName, monitor, "ff" + answerPathsCount);
+        pathUpdate(senderName, monitor, "ff" + pathsCount);
+        addNodeGroup(senderName, sender.name(), defaultTrace);
+    }
+
+    public synchronized void fastForwardAnswersCount(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?,?,?,?>> monitor, long answersCount) {
+        String senderName = sender.name() + "-actor";
+        pathUpdate(senderName, monitor, "ff" + answersCount);
         addNodeGroup(senderName, sender.name(), defaultTrace);
     }
 
@@ -310,8 +330,8 @@ public final class Tracer {
         PULL("blue"),
         RECEIVE("green"),
         MONITOR("orange"),
-        REPORT("purple"),
-        UPDATE("orange");
+        REPORT("orange3"),
+        UPDATE("orangered");
 
         private final String colour;
 

@@ -143,7 +143,7 @@ public abstract class ConjunctionController<OUTPUT,
 
         @Override
         public void setUp() {
-            setOutlet(noOp(this, name()));
+            setOutlet(noOp(monitoring(), name()));
         }
 
         protected InletEndpoint<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {

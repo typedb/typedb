@@ -19,14 +19,12 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiFunction;
 
 public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
@@ -41,7 +39,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveStreamBase<PACKET
 
     public CompoundReactive(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
                             BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
-                            PacketMonitor monitor, String groupName) {
+                            Monitoring monitor, String groupName) {
         super(monitor, groupName);
         assert plan.size() > 0;
         this.providerManager = new MultiManager<>(this, null);

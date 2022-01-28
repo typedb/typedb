@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
 import java.util.function.Function;
 
@@ -28,7 +29,7 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveStreamBase<IN
     private final SingleManager<INPUT> providerManager;
 
     FlatMapOrRetryReactive(Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
-                           PacketMonitor monitor, String groupName) {
+                           Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.transform = transform;
         this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
@@ -47,12 +48,12 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveStreamBase<IN
             finishPulling();
             // TODO: This can actually create more receive() calls to downstream than the number of pull()s it receives. Should buffer instead. Protected against by manually adding .buffer() after calls to flatMap
             transformed.forEachRemaining(t -> {
-                monitor().onPathFork(1, this);
+                monitor().onAnswerCreate(this);
                 subscriber().receive(this, t);
             });
         } else if (isPulling()) {
             providerManager.pull(provider);  // Automatic retry
         }
-        monitor().onPathJoin(this);  // Because we discarded the original packet and gained as many as are in the iterator
+        monitor().onAnswerDestroy(this);  // Because we discarded the original packet and gained as many as are in the iterator
     }
 }

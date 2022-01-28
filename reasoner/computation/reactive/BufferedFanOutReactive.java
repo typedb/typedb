@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.ArrayList;
@@ -34,16 +35,16 @@ public class BufferedFanOutReactive<PACKET> extends ReactiveStream<PACKET, PACKE
     final Set<PACKET> bufferSet;
     final List<PACKET> bufferList;
     final Set<Receiver<PACKET>> pullers;
-    protected final Set<Receiver<PACKET>> subscribers;
+    protected final Set<Receiver<PACKET>> receivers;
     private final Manager<PACKET> providerManager;
 
-    public BufferedFanOutReactive(PacketMonitor monitor, String groupName) {
+    public BufferedFanOutReactive(Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.bufferSet = new HashSet<>();
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
         this.pullers = new HashSet<>();
-        this.subscribers = new HashSet<>();
+        this.receivers = new HashSet<>();
         this.providerManager = new Provider.SingleManager<>(this, monitor());
     }
 
@@ -54,9 +55,9 @@ public class BufferedFanOutReactive<PACKET> extends ReactiveStream<PACKET, PACKE
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().pathsCount()));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
         providerManager().receivedFrom(provider);
-        assert subscribers.size() > 0;
+        assert receivers.size() > 0;
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
             Set<Receiver<PACKET>> toSend = new HashSet<>(pullers);
@@ -64,14 +65,14 @@ public class BufferedFanOutReactive<PACKET> extends ReactiveStream<PACKET, PACKE
             toSend.forEach(this::send);
         } else {
             if (isPulling()) providerManager().pull(provider);
-            monitor().onPathJoin(this);  // When an answer is a duplicate that path is done
+            monitor().onAnswerDestroy(this);  // When an answer is a duplicate that path is done
         }
     }
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
         bufferPositions.putIfAbsent(receiver, 0);
-        subscribers.add(receiver);
+        addReceiver(receiver);
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
             setPulling(receiver);
@@ -105,8 +106,14 @@ public class BufferedFanOutReactive<PACKET> extends ReactiveStream<PACKET, PACKE
     @Override
     public void publishTo(Subscriber<PACKET> subscriber) {
         bufferPositions.putIfAbsent(subscriber, 0);
-        subscribers.add(subscriber);
+        addReceiver(subscriber);
         subscriber.subscribeTo(this);
+    }
+
+    private void addReceiver(Receiver<PACKET> receiver) {
+        if (receivers.add(receiver) && receivers.size() > 1) {
+            monitor().onPathJoin(this);
+        }
     }
 
     @Override

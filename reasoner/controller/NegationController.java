@@ -78,7 +78,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
         @Override
         public void setUp() {
-            setOutlet(noOp(this, name()));
+            setOutlet(noOp(monitoring(), name()));
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             requestConnection(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
             endpoint.publishTo(outlet());

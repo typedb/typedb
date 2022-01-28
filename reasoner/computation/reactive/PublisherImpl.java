@@ -19,21 +19,22 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
 import java.util.function.Function;
 
 public abstract class PublisherImpl<OUTPUT> implements Reactive.Provider.Publisher<OUTPUT> {
 
     protected Reactive.Receiver<OUTPUT> subscriber;
-    private final PacketMonitor monitor;
+    private final Monitoring monitor;
     private final String groupName;
 
-    protected PublisherImpl(PacketMonitor monitor, String groupName) {
+    protected PublisherImpl(Monitoring monitor, String groupName) {
         this.monitor = monitor;
         this.groupName = groupName;
     }
 
-    protected PacketMonitor monitor() {
+    protected Monitoring monitor() {
         return monitor;
     }
 

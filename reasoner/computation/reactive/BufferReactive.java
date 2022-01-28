@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+
 import java.util.Stack;
 
 public class BufferReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
@@ -25,7 +27,7 @@ public class BufferReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
     private final SingleManager<PACKET> providerManager;
     private final Stack<PACKET> stack;
 
-    protected BufferReactive(Publisher<PACKET> publisher, PacketMonitor monitor, String groupName) {
+    protected BufferReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
         this.stack = new Stack<>();

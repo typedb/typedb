@@ -18,13 +18,15 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+
 import javax.annotation.Nullable;
 
 public class NoOpReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
 
     private final SingleManager<PACKET> providerManager;
 
-    protected NoOpReactive(@Nullable Publisher<PACKET> publisher, PacketMonitor monitor, String groupName) {
+    protected NoOpReactive(@Nullable Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
     }
@@ -34,7 +36,7 @@ public class NoOpReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
         return providerManager;
     }
 
-    public static <T> NoOpReactive<T> noOp(PacketMonitor monitor, String groupName) {
+    public static <T> NoOpReactive<T> noOp(Monitoring monitor, String groupName) {
         return new NoOpReactive<>(null, monitor, groupName);
     }
 

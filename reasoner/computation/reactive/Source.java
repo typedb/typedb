@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
 import java.util.function.Supplier;
 
@@ -27,13 +28,13 @@ public class Source<PACKET> extends PublisherBase<PACKET> {
     private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
     private FunctionalIterator<PACKET> iterator;
 
-    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, PacketMonitor monitor, String groupName) {
+    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.iteratorSupplier = iteratorSupplier;
     }
 
     public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier,
-                                                             PacketMonitor monitor, String groupName) {
+                                                             Monitoring monitor, String groupName) {
         return new Source<>(iteratorSupplier, monitor, groupName);
     }
 
@@ -42,7 +43,7 @@ public class Source<PACKET> extends PublisherBase<PACKET> {
         assert receiver.equals(subscriber);
         if (iterator == null) iterator = iteratorSupplier.get();
         if (iterator.hasNext()) {
-            monitor().onPathFork(1, this);
+            monitor().onAnswerCreate(this);
             receiver.receive(this, iterator.next());
         } else {
             monitor().onPathJoin(this);

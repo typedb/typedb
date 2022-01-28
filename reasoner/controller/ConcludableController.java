@@ -129,13 +129,13 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 
         @Override
         public void setUp() {
-            setOutlet(new BufferedFanOutReactive<>(this, name()));
+            setOutlet(new BufferedFanOutReactive<>(monitoring(), name()));
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
-            FanInReactive<ConceptMap> fanIn = fanIn(this, name());
+            FanInReactive<ConceptMap> fanIn = fanIn(monitoring(), name());
             if (singleAnswerRequired) fanIn.buffer().findFirst().publishTo(outlet());
             else fanIn.buffer().publishTo(outlet());
 
-            Source.fromIteratorSupplier(traversalSuppplier, this, name()).publishTo(fanIn);
+            Source.fromIteratorSupplier(traversalSuppplier, monitoring(), name()).publishTo(fanIn);
 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {

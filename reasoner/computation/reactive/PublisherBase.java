@@ -18,13 +18,14 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 
 public abstract class PublisherBase<OUTPUT> extends PublisherImpl<OUTPUT> {
 
     protected Receiver<OUTPUT> subscriber;
 
-    protected PublisherBase(PacketMonitor monitor, String groupName) {
+    protected PublisherBase(Monitoring monitor, String groupName) {
         super(monitor, groupName);
     }
 
