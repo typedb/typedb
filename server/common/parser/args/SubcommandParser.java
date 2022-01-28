@@ -1,7 +1,7 @@
 package com.vaticle.typedb.core.server.common.parser.args;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.parser.Help;
+import com.vaticle.typedb.core.server.common.parser.HelpMenu;
 
 import java.util.HashSet;
 import java.util.List;
@@ -57,12 +57,12 @@ public abstract class SubcommandParser<RESULT> {
     public String help() {
         StringBuilder builder = new StringBuilder(String.format("%-40s \t\t %s\n", COMMAND_PREFIX + " " +
                 String.join(" ", tokens), description));
-        for (Help help : helpMenu()) {
-            builder.append(help.toString());
+        for (HelpMenu helpMenu : helpMenu()) {
+            builder.append(helpMenu.toString());
         }
         return builder.toString();
     }
 
-    public abstract List<Help> helpMenu();
+    public abstract List<HelpMenu> helpMenu();
 
 }
