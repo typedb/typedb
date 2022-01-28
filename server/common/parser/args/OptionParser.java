@@ -19,7 +19,6 @@ package com.vaticle.typedb.core.server.common.parser.args;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.server.common.parser.Helping;
 import com.vaticle.typedb.core.server.common.parser.Help;
 
 import java.nio.file.Paths;
@@ -32,7 +31,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLI
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.Util.scopeKey;
 
-public abstract class OptionParser implements Helping {
+public abstract class OptionParser {
 
     public final java.lang.String name;
     private final java.lang.String description;
@@ -52,7 +51,6 @@ public abstract class OptionParser implements Helping {
         return description;
     }
 
-    @Override
     public Help help(java.lang.String optionScope) {
         return new Help.Yaml.Leaf2(scopeKey(optionScope, name()), description(), typeDescription);
     }

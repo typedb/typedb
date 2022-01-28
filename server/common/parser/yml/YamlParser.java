@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.server.common.parser.yml;
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.parser.Helping;
 import com.vaticle.typedb.core.server.common.parser.Help;
 
 import java.net.InetSocketAddress;
@@ -46,7 +45,7 @@ import static com.vaticle.typedb.core.server.common.Util.scopeKey;
 
 public class YamlParser {
 
-    public static abstract class EntryParser implements Helping {
+    public static abstract class EntryParser {
 
         private final String description;
 
@@ -57,6 +56,8 @@ public class YamlParser {
         String description() {
             return description;
         }
+
+        public abstract Help help(String optionScope);
 
         public static abstract class PredefinedParser<TYPE> extends EntryParser {
 
@@ -92,7 +93,6 @@ public class YamlParser {
                     else return valueParser.parse(yaml.get(key()), scopedKey);
                 }
 
-                @Override
                 public Help help(String optionScope) {
                     String scopedKey = scopeKey(optionScope, key());
                     if (valueParser.isLeaf()) {

@@ -42,7 +42,7 @@ public class RunOptionsParser {
     private static void validateRequiredArgs(Set<OptionParser> requiredParsers, Set<Option> options) {
         requiredParsers.forEach(required -> {
             if (iterate(options).noneMatch(option -> option.name().equals(required.name()))) {
-                throw TypeDBException.of(CLI_OPTION_REQUIRED, required.help());
+                throw TypeDBException.of(CLI_OPTION_REQUIRED, required.help(""));
             }
         });
     }
@@ -94,8 +94,8 @@ public class RunOptionsParser {
 
         @Override
         public List<Help> helpMenu() {
-            List<Help> aux = list(helpParser.help(), versionParser.help(), debugParser.help(), configPathParser.help());
-            return list(aux, configParser.help());
+            List<Help> aux = list(helpParser.help(""), versionParser.help(""), debugParser.help(""), configPathParser.help(""));
+            return list(aux, configParser.help(""));
         }
     }
 
@@ -123,7 +123,7 @@ public class RunOptionsParser {
 
         @Override
         public List<Help> helpMenu() {
-            return list(databaseParser.help(), filePathParser.help(), portParser.help());
+            return list(databaseParser.help(""), filePathParser.help(""), portParser.help(""));
         }
     }
 
@@ -151,7 +151,7 @@ public class RunOptionsParser {
 
         @Override
         public List<Help> helpMenu() {
-            return list(databaseParser.help(), filePathParser.help(), portParser.help());
+            return list(databaseParser.help(""), filePathParser.help(""), portParser.help(""));
         }
     }
 }

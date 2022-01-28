@@ -62,13 +62,9 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, scope);
     }
 
-    public List<Help> help() {
-        return list(serverParser.help(), storageParser.help(), logParser.help(), vaticleFactoryParser.help());
-    }
-
     @Override
     public List<Help> help(String scope) {
-        return null;
+        return list(serverParser.help(scope), storageParser.help(scope), logParser.help(scope), vaticleFactoryParser.help(scope));
     }
 
     public static class ServerParser extends YamlParser.ValueParser.Nested<Config.Server> {
@@ -317,7 +313,7 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
 
             static class FiltredParser extends Nested<Config.Log.Logger.Filtered> {
 
-                private static final YamlParser.EntryParser.PredefinedParser<String> filterParser = YamlParser.EntryParser.PredefinedParser.Value.create("filter", "Class filter (eg. com.vaticle.type).", STRING);
+                private static final YamlParser.EntryParser.PredefinedParser<String> filterParser = YamlParser.EntryParser.PredefinedParser.Value.create("filter", "Package/class filter (eg. 'com.vaticle.typedb').", STRING);
                 private static final YamlParser.EntryParser.PredefinedParser<String> levelParser = YamlParser.EntryParser.PredefinedParser.EnumValue.create("level", "Output level.", STRING, LEVELS);
                 private static final YamlParser.EntryParser.PredefinedParser<List<String>> outputsParser = YamlParser.EntryParser.PredefinedParser.Value.create("output", "Outputs to log to by default.", LIST_STRING);
                 private static final Set<YamlParser.EntryParser.PredefinedParser<?>> entryParsers = set(filterParser, levelParser, outputsParser);
