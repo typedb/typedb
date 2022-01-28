@@ -426,7 +426,28 @@ public abstract class Processor<INPUT, OUTPUT,
             checkTermination();
         }
 
-        public void onChange(int num, CountChange countChange, Reactive reactive) {
+        public void onPathFork(Reactive forker) {
+            onChange(1, CountChange.PathFork, forker);
+        }
+
+        public void onPathJoin(Reactive joiner) {
+            onChange(1, CountChange.PathJoin, joiner);
+        }
+
+        public void onAnswerCreate(Reactive creator) {
+            onChange(1, CountChange.AnswerCreate, creator);
+        }
+
+        public void onAnswerCreate(int num, Reactive creator) {
+            assert num >= 0;
+            onChange(num, CountChange.AnswerCreate, creator);
+        }
+
+        public void onAnswerDestroy(Reactive destroyer) {
+            onChange(1, CountChange.AnswerDestroy, destroyer);
+        }
+
+        private void onChange(int num, CountChange countChange, Reactive reactive) {
             updateCount(countChange, num);
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.onCountChange(reactive, countChange, processor().driver(), num));
             reportToMonitors(countChange, num, reactive);
@@ -451,33 +472,18 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         private void reportToMonitors(CountChange countChange, int num, Reactive reactive) {
+            final int update = num;
             processor().monitors().forEach(monitor -> {
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportCountChange(reactive, countChange, monitor, num));
-                monitor.execute(actor -> actor.monitoring().reportCountChange(num, countChange, reactive));
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportCountChange(reactive, countChange, monitor, update));
+                monitor.execute(actor -> actor.monitoring().reportCountChange(update, countChange, reactive));
             });
         }
 
-        public void reportCountChange(int num, CountChange countChange, Reactive reactive) {
+        private void reportCountChange(int num, CountChange countChange, Reactive reactive) {
             assert processor().isMonitor();
             updateCount(countChange, num);
             reportToMonitors(countChange, num, reactive);
             checkTermination();
-        }
-
-        public void onPathFork(Reactive forker) {
-            onChange(1, CountChange.PathFork, forker);
-        }
-
-        public void onPathJoin(Reactive joiner) {
-            onChange(1, CountChange.PathJoin, joiner);
-        }
-
-        public void onAnswerCreate(Reactive creator) {
-            onChange(1, CountChange.AnswerCreate, creator);
-        }
-
-        public void onAnswerDestroy(Reactive destroyer) {
-            onChange(1, CountChange.AnswerDestroy, destroyer);
         }
 
         public long count() {

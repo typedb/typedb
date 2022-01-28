@@ -60,6 +60,8 @@ public class BufferedFanOutReactive<PACKET> extends ReactiveStream<PACKET, PACKE
         assert receivers.size() > 0;
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
+            monitor().onAnswerCreate(receivers.size() - 1, this);  // We need to account for sending an answer to all
+            // receivers (-1 for the one we received), either now or when they next pull.
             Set<Receiver<PACKET>> toSend = new HashSet<>(pullers);
             finishPulling();
             toSend.forEach(this::send);
@@ -71,6 +73,10 @@ public class BufferedFanOutReactive<PACKET> extends ReactiveStream<PACKET, PACKE
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
+        if (!bufferPositions.containsKey(receiver)) {
+            // New receiver, so there are new answers to account for
+            monitor().onAnswerCreate(bufferSet.size(), this);
+        }
         bufferPositions.putIfAbsent(receiver, 0);
         addReceiver(receiver);
         if (bufferList.size() == bufferPositions.get(receiver)) {
@@ -82,7 +88,7 @@ public class BufferedFanOutReactive<PACKET> extends ReactiveStream<PACKET, PACKE
         }
     }
 
-    private void send(Receiver<PACKET> receiver) {
+    private void send(Receiver<PACKET> receiver) {  // TODO: Naming should show this updates the buffer position
         Integer pos = bufferPositions.get(receiver);
         bufferPositions.put(receiver, pos + 1);
         receiver.receive(this, bufferList.get(pos));

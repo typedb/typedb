@@ -147,6 +147,11 @@ public interface Reactive {
                 });
             }
 
+            public void finaliseProviders() {
+                assert monitor != null;
+                monitor.onPathJoin(receiver);
+            }
+
             @Override
             public int size() {
                 return providers.size();
@@ -186,11 +191,6 @@ public interface Reactive {
                 if (monitor == null) Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
                 else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.count()));
                 provider.pull(receiver);
-            }
-
-            public void finaliseProviders() {
-                assert monitor != null;
-                monitor.onPathJoin(receiver);
             }
         }
     }
