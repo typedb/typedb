@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.BufferedFanOutReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PacketMonitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStreamBase;
@@ -101,7 +101,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         @Override
         public void setUp() {
-            setOutlet(new BufferBroadcastReactive<>(this, name()));
+            setOutlet(new BufferedFanOutReactive<>(this, name()));
             InletEndpoint<Either<ConceptMap, Materialisation>> conditionEndpoint = createReceivingEndpoint();
             mayRequestCondition(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
             ConclusionReactive conclusionReactive = new ConclusionReactive(name(), this);

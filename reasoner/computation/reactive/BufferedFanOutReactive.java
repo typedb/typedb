@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 
-public class BufferBroadcastReactive<PACKET> extends ReactiveStream<PACKET, PACKET> {
+public class BufferedFanOutReactive<PACKET> extends ReactiveStream<PACKET, PACKET> {
 
     final Map<Receiver<PACKET>, Integer> bufferPositions;  // Points to the next item needed
     final Set<PACKET> bufferSet;
@@ -37,7 +37,7 @@ public class BufferBroadcastReactive<PACKET> extends ReactiveStream<PACKET, PACK
     protected final Set<Receiver<PACKET>> subscribers;
     private final Manager<PACKET> providerManager;
 
-    public BufferBroadcastReactive(PacketMonitor monitor, String groupName) {
+    public BufferedFanOutReactive(PacketMonitor monitor, String groupName) {
         super(monitor, groupName);
         this.bufferSet = new HashSet<>();
         this.bufferList = new ArrayList<>();

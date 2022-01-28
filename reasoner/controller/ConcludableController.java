@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.BufferedFanOutReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.FanInReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
@@ -129,7 +129,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 
         @Override
         public void setUp() {
-            setOutlet(new BufferBroadcastReactive<>(this, name()));
+            setOutlet(new BufferedFanOutReactive<>(this, name()));
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
             FanInReactive<ConceptMap> fanIn = fanIn(this, name());
             if (singleAnswerRequired) fanIn.buffer().findFirst().publishTo(outlet());

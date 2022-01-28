@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.BufferedFanOutReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
 
@@ -74,7 +74,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
 
         @Override
         public void setUp() {
-            setOutlet(new BufferBroadcastReactive<>(this, name()));
+            setOutlet(new BufferedFanOutReactive<>(this, name()));
             new Source<>(traversalSupplier, this, name()).publishTo(outlet());
         }
     }

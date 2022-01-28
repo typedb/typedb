@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.BufferBroadcastReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.BufferedFanOutReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
@@ -85,7 +85,7 @@ public class MaterialiserController extends Controller<Materialisable, Void, Eit
 
         @Override
         public void setUp() {
-            setOutlet(new BufferBroadcastReactive<>(this, name()));
+            setOutlet(new BufferedFanOutReactive<>(this, name()));
             new Source<>(
                     () -> materialise(materialisable, traversalEng, conceptMgr)
                             .map(Iterators::single)
