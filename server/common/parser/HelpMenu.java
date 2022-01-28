@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.server.common.parser;
 
 import com.vaticle.typedb.core.server.common.parser.args.Option;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -71,17 +72,21 @@ public abstract class HelpMenu {
 
     public static class Simple extends HelpMenu {
 
-        private static final String VALUE_SEPARATOR = "=";
+        @Nullable
         private final String valueHelp;
 
-        public Simple(String scopedName, String description, String valueHelp) {
+        public Simple(String scopedName, String description, @Nullable String valueHelp) {
             super(scopedName, description);
             this.valueHelp = valueHelp;
         }
 
         @Override
         public String toString() {
-            return String.format("\t%-60s \t%s\n", (Option.PREFIX + scopedName + VALUE_SEPARATOR + valueHelp), description);
+            if (valueHelp == null) {
+                return String.format("\t%-60s \t%s\n", (Option.PREFIX + scopedName), description);
+            } else {
+                return String.format("\t%-60s \t%s\n", (Option.PREFIX + scopedName + "=" + valueHelp), description);
+            }
         }
     }
 }
