@@ -19,7 +19,7 @@ package com.vaticle.typedb.core.server.parameters.config;
 
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.parser.HelpMenu;
+import com.vaticle.typedb.core.server.common.parser.HelpEntry;
 import com.vaticle.typedb.core.server.common.parser.yml.YamlParser;
 
 import java.net.InetSocketAddress;
@@ -63,8 +63,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
     }
 
     @Override
-    public List<HelpMenu> helpMenu(String scope) {
-        return list(serverParser.helpMenu(scope), storageParser.helpMenu(scope), logParser.helpMenu(scope), vaticleFactoryParser.helpMenu(scope));
+    public List<HelpEntry> helpEntries(String scope) {
+        return list(serverParser.helpEntry(scope), storageParser.helpEntry(scope), logParser.helpEntry(scope), vaticleFactoryParser.helpEntry(scope));
     }
 
     public static class ServerParser extends YamlParser.ValueParser.Nested<Config.Server> {
@@ -84,8 +84,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         }
 
         @Override
-        public List<HelpMenu> helpMenu(String scope) {
-            return list(addressParser.helpMenu(scope));
+        public List<HelpEntry> helpEntries(String scope) {
+            return list(addressParser.helpEntry(scope));
         }
     }
 
@@ -108,8 +108,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         }
 
         @Override
-        public List<HelpMenu> helpMenu(String scope) {
-            return list(dataParser.helpMenu(scope), databaseCacheParser.helpMenu(scope));
+        public List<HelpEntry> helpEntries(String scope) {
+            return list(dataParser.helpEntry(scope), databaseCacheParser.helpEntry(scope));
         }
 
         public static class DatabaseCacheParser extends Nested<Config.Storage.DatabaseCache> {
@@ -130,8 +130,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             }
 
             @Override
-            public List<HelpMenu> helpMenu(String scope) {
-                return list(dataParser.helpMenu(scope), indexParser.helpMenu(scope));
+            public List<HelpEntry> helpEntries(String scope) {
+                return list(dataParser.helpEntry(scope), indexParser.helpEntry(scope));
             }
         }
     }
@@ -160,8 +160,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         }
 
         @Override
-        public List<HelpMenu> helpMenu(String scope) {
-            return list(outputParser.helpMenu(scope), loggerParser.helpMenu(scope), debuggerParser.helpMenu(scope));
+        public List<HelpEntry> helpEntries(String scope) {
+            return list(outputParser.helpEntry(scope), loggerParser.helpEntry(scope), debuggerParser.helpEntry(scope));
         }
 
         public static class OutputParser extends Nested<Config.Log.Output> {
@@ -178,8 +178,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             }
 
             @Override
-            public List<HelpMenu> helpMenu(String scope) {
-                return list(typeEntry.helpMenu(scope));
+            public List<HelpEntry> helpEntries(String scope) {
+                return list(typeEntry.helpEntry(scope));
             }
 
             static class TypeParser extends Nested<Config.Log.Output.Type> {
@@ -205,9 +205,9 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                 }
 
                 @Override
-                public List<HelpMenu> helpMenu(String scope) {
-                    return list(new HelpMenu.Yaml.Grouped(scope, StdoutParser.description, stdoutParser.helpMenu(scope)),
-                            new HelpMenu.Yaml.Grouped(scope, description, fileParser.helpMenu(scope)));
+                public List<HelpEntry> helpEntries(String scope) {
+                    return list(new HelpEntry.Yaml.Grouped(scope, StdoutParser.description, stdoutParser.helpEntries(scope)),
+                            new HelpEntry.Yaml.Grouped(scope, description, fileParser.helpEntries(scope)));
                 }
 
                 public static class StdoutParser extends Nested<Config.Log.Output.Type.Stdout> {
@@ -228,8 +228,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                     }
 
                     @Override
-                    public List<HelpMenu> helpMenu(String scope) {
-                        return list(typeParser.helpMenu(scope));
+                    public List<HelpEntry> helpEntries(String scope) {
+                        return list(typeParser.helpEntry(scope));
                     }
                 }
 
@@ -258,9 +258,9 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                     }
 
                     @Override
-                    public List<HelpMenu> helpMenu(String scope) {
-                        return list(typeParser.helpMenu(scope), pathParser.helpMenu(scope), fileSizeCapParser.helpMenu(scope),
-                                archivesSizeCapParser.helpMenu(scope));
+                    public List<HelpEntry> helpEntries(String scope) {
+                        return list(typeParser.helpEntry(scope), pathParser.helpEntry(scope), fileSizeCapParser.helpEntry(scope),
+                                archivesSizeCapParser.helpEntry(scope));
                     }
                 }
             }
@@ -286,8 +286,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             }
 
             @Override
-            public List<HelpMenu> helpMenu(String scope) {
-                return list(defaultParser.helpMenu(scope), filteredParsers.helpMenu(scope));
+            public List<HelpEntry> helpEntries(String scope) {
+                return list(defaultParser.helpEntry(scope), filteredParsers.helpEntry(scope));
             }
 
             static class UnfilteredParser extends Nested<Config.Log.Logger.Unfiltered> {
@@ -306,8 +306,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                 }
 
                 @Override
-                public List<HelpMenu> helpMenu(String scope) {
-                    return list(levelParser.helpMenu(scope), outputsParser.helpMenu(scope));
+                public List<HelpEntry> helpEntries(String scope) {
+                    return list(levelParser.helpEntry(scope), outputsParser.helpEntry(scope));
                 }
             }
 
@@ -328,8 +328,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                 }
 
                 @Override
-                public List<HelpMenu> helpMenu(String scope) {
-                    return list(filterParser.helpMenu(scope), levelParser.helpMenu(scope), outputsParser.helpMenu(scope));
+                public List<HelpEntry> helpEntries(String scope) {
+                    return list(filterParser.helpEntry(scope), levelParser.helpEntry(scope), outputsParser.helpEntry(scope));
                 }
             }
         }
@@ -351,8 +351,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
             }
 
             @Override
-            public List<HelpMenu> helpMenu(String scope) {
-                return list(reasonerParser.helpMenu(scope));
+            public List<HelpEntry> helpEntries(String scope) {
+                return list(reasonerParser.helpEntry(scope));
             }
 
             static class ReasonerParser extends Nested<Config.Log.Debugger.Reasoner> {
@@ -373,8 +373,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
                 }
 
                 @Override
-                public List<HelpMenu> helpMenu(String scope) {
-                    return list(typeParser.helpMenu(scope), outputParser.helpMenu(scope), enableParser.helpMenu(scope));
+                public List<HelpEntry> helpEntries(String scope) {
+                    return list(typeParser.helpEntry(scope), outputParser.helpEntry(scope), enableParser.helpEntry(scope));
                 }
             }
         }
@@ -406,8 +406,8 @@ public class ConfigParser extends YamlParser.ValueParser.Nested<Config> {
         }
 
         @Override
-        public List<HelpMenu> helpMenu(String scope) {
-            return list(enableParser.helpMenu(scope), uriParser.helpMenu(scope), usernameParser.helpMenu(scope), tokenParser.helpMenu(scope));
+        public List<HelpEntry> helpEntries(String scope) {
+            return list(enableParser.helpEntry(scope), uriParser.helpEntry(scope), usernameParser.helpEntry(scope), tokenParser.helpEntry(scope));
         }
     }
 

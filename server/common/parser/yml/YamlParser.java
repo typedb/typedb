@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.server.common.parser.yml;
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.parser.HelpMenu;
+import com.vaticle.typedb.core.server.common.parser.HelpEntry;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -57,7 +57,7 @@ public class YamlParser {
             return description;
         }
 
-        public abstract HelpMenu helpMenu(String optionScope);
+        public abstract HelpEntry helpEntry(String optionScope);
 
         public static abstract class PredefinedParser<TYPE> extends EntryParser {
 
@@ -93,12 +93,12 @@ public class YamlParser {
                     else return valueParser.parse(yaml.get(key()), scopedKey);
                 }
 
-                public HelpMenu helpMenu(String optionScope) {
+                public HelpEntry helpEntry(String optionScope) {
                     String scopedKey = scopeKey(optionScope, key());
                     if (valueParser.isLeaf()) {
-                        return new HelpMenu.Simple(scopedKey, description(), valueParser.asLeaf().help());
+                        return new HelpEntry.Simple(scopedKey, description(), valueParser.asLeaf().help());
                     } else {
-                        return new HelpMenu.Yaml.Grouped(scopedKey, description(), valueParser.asNested().helpMenu(scopedKey));
+                        return new HelpEntry.Yaml.Grouped(scopedKey, description(), valueParser.asNested().helpEntries(scopedKey));
                     }
                 }
             }
@@ -128,13 +128,13 @@ public class YamlParser {
                 }
 
                 @Override
-                public HelpMenu helpMenu(String optionScope) {
+                public HelpEntry helpEntry(String optionScope) {
                     String scopedKey = scopeKey(optionScope, key());
                     if (valueParser.isLeaf()) {
                         String values = String.join("|", iterate(this.values).map(Object::toString).toList());
-                        return new HelpMenu.Simple(scopedKey, description(), values);
+                        return new HelpEntry.Simple(scopedKey, description(), values);
                     } else {
-                        return new HelpMenu.Yaml.Grouped(scopedKey, description(), valueParser.asNested().helpMenu(scopedKey));
+                        return new HelpEntry.Yaml.Grouped(scopedKey, description(), valueParser.asNested().helpEntries(scopedKey));
                     }
                 }
             }
@@ -166,11 +166,11 @@ public class YamlParser {
             }
 
             @Override
-            public HelpMenu helpMenu(String optionScope) {
+            public HelpEntry helpEntry(String optionScope) {
                 if (valueParser.isLeaf()) {
-                    return new HelpMenu.Simple(scopeKey(optionScope, "<name>"), description(), valueParser.asLeaf().help());
+                    return new HelpEntry.Simple(scopeKey(optionScope, "<name>"), description(), valueParser.asLeaf().help());
                 } else {
-                    return new HelpMenu.Yaml.Grouped(scopeKey(optionScope, "<name>"), description(), valueParser.asNested().helpMenu(scopeKey(optionScope, "<name>")));
+                    return new HelpEntry.Yaml.Grouped(scopeKey(optionScope, "<name>"), description(), valueParser.asNested().helpEntries(scopeKey(optionScope, "<name>")));
                 }
             }
         }
@@ -199,7 +199,7 @@ public class YamlParser {
 
         public static abstract class Nested<T> extends ValueParser<T> {
 
-            public abstract List<HelpMenu> helpMenu(String scope);
+            public abstract List<HelpEntry> helpEntries(String scope);
 
             @Override
             public boolean isNested() {

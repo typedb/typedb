@@ -25,17 +25,17 @@ import java.util.List;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public abstract class HelpMenu {
+public abstract class HelpEntry {
 
     final String scopedName;
     final String description;
 
-    private HelpMenu(String scopedName, String description) {
+    private HelpEntry(String scopedName, String description) {
         this.scopedName = scopedName;
         this.description = description;
     }
 
-    public static abstract class Yaml extends HelpMenu {
+    public static abstract class Yaml extends HelpEntry {
 
         private Yaml(String scopedName, String description) {
             super(scopedName, description);
@@ -43,11 +43,11 @@ public abstract class HelpMenu {
 
         public static class Grouped extends Yaml {
 
-            private final List<HelpMenu> menus;
+            private final List<HelpEntry> entries;
 
-            public Grouped(String scopedName, String description, List<HelpMenu> menus) {
+            public Grouped(String scopedName, String description, List<HelpEntry> entries) {
                 super(scopedName, description);
-                this.menus = menus;
+                this.entries = entries;
             }
 
             @Override
@@ -57,20 +57,20 @@ public abstract class HelpMenu {
                     // only print section headers that have a leaf option in them
                     builder.append(String.format("\n\t### %-50s %s\n", (Option.PREFIX + scopedName + "."), description));
                 }
-                for (HelpMenu menu : menus) {
+                for (HelpEntry menu : entries) {
                     builder.append(menu.toString());
                 }
                 return builder.toString();
             }
 
             private boolean anyLeafContents() {
-                return iterate(menus).anyMatch(content -> content instanceof Simple);
+                return iterate(entries).anyMatch(content -> content instanceof Simple);
             }
         }
 
     }
 
-    public static class Simple extends HelpMenu {
+    public static class Simple extends HelpEntry {
 
         @Nullable
         private final String valueHelp;

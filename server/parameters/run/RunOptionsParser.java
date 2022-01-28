@@ -18,7 +18,7 @@
 package com.vaticle.typedb.core.server.parameters.run;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.parser.HelpMenu;
+import com.vaticle.typedb.core.server.common.parser.HelpEntry;
 import com.vaticle.typedb.core.server.common.parser.args.SubcommandParser;
 import com.vaticle.typedb.core.server.common.parser.args.Option;
 import com.vaticle.typedb.core.server.common.parser.args.OptionParser;
@@ -42,7 +42,7 @@ public class RunOptionsParser {
     private static void validateRequiredArgs(Set<OptionParser> requiredParsers, Set<Option> options) {
         requiredParsers.forEach(required -> {
             if (iterate(options).noneMatch(option -> option.name().equals(required.name()))) {
-                throw TypeDBException.of(CLI_OPTION_REQUIRED, required.helpMenu(""));
+                throw TypeDBException.of(CLI_OPTION_REQUIRED, required.helpEntry(""));
             }
         });
     }
@@ -93,9 +93,9 @@ public class RunOptionsParser {
         }
 
         @Override
-        public List<HelpMenu> helpMenu() {
-            List<HelpMenu> aux = list(helpParser.helpMenu(""), versionParser.helpMenu(""), debugParser.helpMenu(""), configPathParser.helpMenu(""));
-            return list(aux, configParser.helpMenu(""));
+        public List<HelpEntry> helpEntries() {
+            List<HelpEntry> aux = list(helpParser.helpEntry(""), versionParser.helpEntry(""), debugParser.helpEntry(""), configPathParser.helpEntry(""));
+            return list(aux, configParser.helpEntries(""));
         }
     }
 
@@ -122,8 +122,8 @@ public class RunOptionsParser {
         }
 
         @Override
-        public List<HelpMenu> helpMenu() {
-            return list(databaseParser.helpMenu(""), filePathParser.helpMenu(""), portParser.helpMenu(""));
+        public List<HelpEntry> helpEntries() {
+            return list(databaseParser.helpEntry(""), filePathParser.helpEntry(""), portParser.helpEntry(""));
         }
     }
 
@@ -150,8 +150,8 @@ public class RunOptionsParser {
         }
 
         @Override
-        public List<HelpMenu> helpMenu() {
-            return list(databaseParser.helpMenu(""), filePathParser.helpMenu(""), portParser.helpMenu(""));
+        public List<HelpEntry> helpEntries() {
+            return list(databaseParser.helpEntry(""), filePathParser.helpEntry(""), portParser.helpEntry(""));
         }
     }
 }

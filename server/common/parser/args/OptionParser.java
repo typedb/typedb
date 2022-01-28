@@ -19,7 +19,7 @@ package com.vaticle.typedb.core.server.common.parser.args;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.server.common.parser.HelpMenu;
+import com.vaticle.typedb.core.server.common.parser.HelpEntry;
 
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -51,8 +51,8 @@ public abstract class OptionParser {
         return description;
     }
 
-    public HelpMenu helpMenu(java.lang.String optionScope) {
-        return new HelpMenu.Simple(scopeKey(optionScope, name()), description(), typeDescription);
+    public HelpEntry helpEntry(java.lang.String optionScope) {
+        return new HelpEntry.Simple(scopeKey(optionScope, name()), description(), typeDescription);
     }
 
     FunctionalIterator<Option> matchingOptions(Set<Option> options) {
