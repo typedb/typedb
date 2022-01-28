@@ -29,13 +29,13 @@ public class ConfigFactory {
     }
 
     public static Config create(Path configFile, Set<Option> configOverrides, ConfigParser parser) {
-        Yaml.Map config = mergeConfig(configFile, configOverrides);
+        Yaml.Map config = mergeYaml(configFile, configOverrides);
         return parser.parse(config, "");
     }
 
-    private static Yaml.Map mergeConfig(Path configFile, Set<Option> configOverrides) {
-        Yaml.Map config = readConfigFile(configFile);
-        Yaml.Map overrides = readConfigOverrides(configOverrides);
+    private static Yaml.Map mergeYaml(Path yamlFile, Set<Option> yamlOverrides) {
+        Yaml.Map config = readYamlFile(yamlFile);
+        Yaml.Map overrides = readYamlOverrides(yamlOverrides);
         for (String key: overrides.keys()) {
             set(config, key, overrides.get(key));
         }
@@ -43,7 +43,7 @@ public class ConfigFactory {
         return config;
     }
 
-    private static Yaml.Map readConfigFile(Path location) {
+    private static Yaml.Map readYamlFile(Path location) {
         try {
             Yaml config = Yaml.load(location);
             if (!config.isMap()) throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP);
@@ -53,23 +53,7 @@ public class ConfigFactory {
         }
     }
 
-    private static void substituteEnvVars(Yaml.Map config) {
-        for (String key : config.keys()) {
-            Yaml value = config.get(key);
-            if (value.isString()) {
-                String valueStr = value.asString().value();
-                if (valueStr.startsWith("$")) {
-                    String envVarName = valueStr.substring(1);
-                    if (System.getenv(envVarName) == null) throw TypeDBException.of(ENV_VAR_NOT_FOUND, valueStr);
-                    else config.put(key, Yaml.load(System.getenv(envVarName)));
-                }
-            } else if (value.isMap()) {
-                substituteEnvVars(value.asMap());
-            }
-        }
-    }
-
-    private static Yaml.Map readConfigOverrides(Set<Option> options) {
+    private static Yaml.Map readYamlOverrides(Set<Option> options) {
         Set<String> keys = new HashSet<>();
         for (Option option : options) {
             if (!option.hasValue()) throw TypeDBException.of(CLI_OPTION_REQUIRES_VALUE, option);
@@ -82,21 +66,37 @@ public class ConfigFactory {
         return new Yaml.Map(yaml);
     }
 
-    private static String get(Set<Option> overrides, String key) {
-        Set<String> values = iterate(overrides).filter(opt -> opt.name().equals(key))
+    private static String get(Set<Option> source, String key) {
+        Set<String> values = iterate(source).filter(opt -> opt.name().equals(key))
                 .map(opt -> opt.stringValue().get()).toSet();
         if (values.size() == 1) return values.iterator().next();
         else return "[" + String.join(", ", values) + "]";
     }
 
-    public static void set(Yaml.Map config, String key, Yaml value) {
+    public static void set(Yaml.Map destination, String key, Yaml value) {
         String[] split = key.split("\\.");
-        Yaml.Map nested = config.asMap();
+        Yaml.Map nested = destination.asMap();
         for (int i = 0; i < split.length - 1; i++) {
             String keyScoped = split[i];
             if (!nested.containsKey(keyScoped)) nested.put(keyScoped, new Yaml.Map(new HashMap<>()));
             nested = nested.get(keyScoped).asMap();
         }
         nested.put(split[split.length - 1], value);
+    }
+
+    private static void substituteEnvVars(Yaml.Map yaml) {
+        for (String key : yaml.keys()) {
+            Yaml value = yaml.get(key);
+            if (value.isString()) {
+                String valueStr = value.asString().value();
+                if (valueStr.startsWith("$")) {
+                    String envVarName = valueStr.substring(1);
+                    if (System.getenv(envVarName) == null) throw TypeDBException.of(ENV_VAR_NOT_FOUND, valueStr);
+                    else yaml.put(key, Yaml.load(System.getenv(envVarName)));
+                }
+            } else if (value.isMap()) {
+                substituteEnvVars(value.asMap());
+            }
+        }
     }
 }
