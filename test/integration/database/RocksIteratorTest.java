@@ -16,13 +16,18 @@
  *
  */
 
-package com.vaticle.typedb.core.rocks;
+package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.impl.AttributeTypeImpl;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreFactory;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
+import com.vaticle.typedb.core.database.Factory;
 import com.vaticle.typedb.core.graph.common.Storage;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -55,15 +60,16 @@ public class RocksIteratorTest {
             .storageIndexCacheSize(MB).storageDataCacheSize(MB);
     private static final String database = "iterator-test";
 
-    private static RocksTypeDB typedb;
-    private RocksSession session;
+    private static final Factory factory = new CoreFactory();
+    private static final CoreDatabaseManager dbMgr = factory.databaseManager(options);
+
+    private CoreSession session;
 
     @BeforeClass
     public static void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
-        RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA);
+        dbMgr.create(database);
+        TypeDB.Session session = dbMgr.session(database, Arguments.Session.Type.SCHEMA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             transaction.concepts().putAttributeType("string-value", AttributeType.ValueType.STRING);
             transaction.commit();
@@ -73,12 +79,12 @@ public class RocksIteratorTest {
 
     @AfterClass
     public static void tearDown() {
-        typedb.close();
+        dbMgr.close();
     }
 
     @Before
     public void before() {
-        session = typedb.session(database, Arguments.Session.Type.DATA);
+        session = dbMgr.session(database, Arguments.Session.Type.DATA);
     }
 
     @After
@@ -103,7 +109,7 @@ public class RocksIteratorTest {
 
         // test ascending order
         strings.sort(Comparator.naturalOrder());
-        try (RocksTransaction transaction = session.transaction(READ)) {
+        try (CoreTransaction transaction = session.transaction(READ)) {
             Storage.Data storage = transaction.graphMgr.data().storage();
             AttributeType.String stringValueType = transaction.concepts().getAttributeType("string-value").asString();
             VertexIID.Type iid = ((AttributeTypeImpl) stringValueType).vertex.iid();
@@ -115,7 +121,7 @@ public class RocksIteratorTest {
 
         // test descending order
         strings.sort(Comparator.reverseOrder());
-        try (RocksTransaction transaction = session.transaction(READ)) {
+        try (CoreTransaction transaction = session.transaction(READ)) {
             Storage.Data storage = transaction.graphMgr.data().storage();
             AttributeType.String stringValueType = transaction.concepts().getAttributeType("string-value").asString();
             VertexIID.Type iid = ((AttributeTypeImpl) stringValueType).vertex.iid();
