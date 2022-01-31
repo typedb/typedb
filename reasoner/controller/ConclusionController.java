@@ -163,6 +163,9 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 op.publishTo(materialiserReactive);
                 materialiserReactive.sendTo(subscriber());
 
+                monitor().onPathFork(1, this);
+                monitor().onAnswerDestroy(this);
+
                 // TODO: We would like to use a provider manager for this, but it's restricted to work to this reactive's input type.
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive));
                 materialiserReactive.pull(subscriber());
@@ -172,7 +175,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
                 finishPulling();
                 subscriber().receive(this, packet);
-                monitor().onPathJoin(this);  // Since we received a materialisation but we're not going to pull
+                monitor().onPathJoin(this);  // Since we received a materialisation but we're not going to pull  // TODO: Actually, we never forked to create the materialisation path. TODO: Actually, we need to in case the materialisation never responds.
                 // again, so manually join the path created by the materialiser
             }
         }

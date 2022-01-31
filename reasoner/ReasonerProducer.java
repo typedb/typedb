@@ -106,7 +106,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     private void answersFinished(Boolean aVoid) {  // TODO: Is there a nicer way? Use a runnable
         // TODO: Call when the end of answers has been detected
         LOG.trace("All answers found.");
-        if (options.traceInference()) Tracer.get().finishDefaultTrace();
+//        if (options.traceInference()) Tracer.get().finishDefaultTrace();
         finish();
     }
 

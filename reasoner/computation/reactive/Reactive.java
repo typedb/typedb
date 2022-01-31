@@ -141,15 +141,13 @@ public interface Reactive {
 
             @Override
             public void add(Provider<R> provider) {
-                providers.computeIfAbsent(provider, p -> {
-                    if (monitor != null) monitor.onPathFork(receiver);
-                    return false;
-                });
+                providers.putIfAbsent(provider, false);
             }
 
             public void finaliseProviders() {
                 assert monitor != null;
-                monitor.onPathJoin(receiver);
+                final int numForks = providers.size() - 1;
+                if (numForks > 0) monitor.onPathFork(numForks, receiver);
             }
 
             @Override

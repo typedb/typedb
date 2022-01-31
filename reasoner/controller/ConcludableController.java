@@ -132,8 +132,8 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
             setOutlet(new BufferedFanOutReactive<>(monitoring(), name()));
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
             FanInReactive<ConceptMap> fanIn = fanIn(monitoring(), name());
-            if (singleAnswerRequired) fanIn.buffer().findFirst().publishTo(outlet());
-            else fanIn.buffer().publishTo(outlet());
+            if (singleAnswerRequired) fanIn.buffer().findFirst().publishTo(outlet());  // TODO: Buffer not needed as we're feeding a BufferedFanOut as the outlet
+            else fanIn.buffer().publishTo(outlet());  // TODO: Buffer not needed as we're feeding a BufferedFanOut as the outlet
 
             Source.fromIteratorSupplier(traversalSuppplier, monitoring(), name()).publishTo(fanIn);
 

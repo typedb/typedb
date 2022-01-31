@@ -401,33 +401,25 @@ public abstract class Processor<INPUT, OUTPUT,
 
         private void fastForwardCounts(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
             final long pathsCountUpdate = pathsCount;
-            if (pathsCountUpdate != 0) {
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.fastForwardPathsCount(processor().driver(), monitor, pathsCountUpdate));
-                monitor.execute(actor -> actor.monitoring().updatePathsCount(pathsCountUpdate));
-            }
             final long answersCountUpdate = answersCount;
-            if (answersCountUpdate != 0) {
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.fastForwardAnswersCount(processor().driver(), monitor, answersCountUpdate));
-                monitor.execute(actor -> actor.monitoring().updateAnswersCount(answersCountUpdate));
+            if (pathsCountUpdate != 0 || answersCountUpdate != 0) {
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.fastForwardCounts(processor().driver(), monitor, pathsCountUpdate, answersCountUpdate));
+                monitor.execute(actor -> actor.monitoring().fastForwardCounts(pathsCountUpdate, answersCountUpdate));
             }
         }
 
-        public void updatePathsCount(long pathCountDelta) {
+        public void fastForwardCounts(long pathCountDelta, long answersCountDelta) {
             assert processor().isMonitor();
-            pathsCount += pathCountDelta;
             assert pathsCount >= -1;
-            checkTermination();
-        }
-
-        public void updateAnswersCount(long answersCountDelta) {
-            assert processor().isMonitor();
+            pathsCount += pathCountDelta;
+//            assert answersCount >= 0;  // TODO: Conclusions destroy an answer before sending to the materialiser, so essentially we briefly swap an answer for a path
             answersCount += answersCountDelta;
-            assert answersCount >= 0;
             checkTermination();
         }
 
-        public void onPathFork(Reactive forker) {
-            onChange(1, CountChange.PathFork, forker);
+        public void onPathFork(int numForks, Reactive forker) {
+            assert numForks > 0;
+            onChange(numForks, CountChange.PathFork, forker);
         }
 
         public void onPathJoin(Reactive joiner) {
@@ -469,6 +461,11 @@ public abstract class Processor<INPUT, OUTPUT,
                     answersCount -= num;
                     break;
             }
+            if (processor().isMonitor()) {
+                assert pathsCount >= -1;
+                assert count() >= -1;
+                // assert answersCount >= 0;  // TODO: Conclusions destroy an answer before sending to the materialiser, so essentially we briefly swap an answer for a path
+            }
         }
 
         private void reportToMonitors(CountChange countChange, int num, Reactive reactive) {
@@ -492,7 +489,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
         private void checkTermination() {
             assert count() >= -1;
-            if (count() == -1 && processor().isPulling()) {
+            if (count() <= -1 && processor().isPulling()) {
                 processor().onDone();
             }
         }

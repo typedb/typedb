@@ -166,15 +166,9 @@ public final class Tracer {
         reportPathCount(simpleClassId(reactive), monitor, countLabel(countChange, num));
     }
 
-    public synchronized void fastForwardPathsCount(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?,?,?,?>> monitor, long pathsCount) {
+    public synchronized void fastForwardCounts(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, long pathsCount, long answersCountUpdate) {
         String senderName = sender.name() + "-actor";
-        pathUpdate(senderName, monitor, "ff" + pathsCount);
-        addNodeGroup(senderName, sender.name(), defaultTrace);
-    }
-
-    public synchronized void fastForwardAnswersCount(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?,?,?,?>> monitor, long answersCount) {
-        String senderName = sender.name() + "-actor";
-        pathUpdate(senderName, monitor, "ff" + answersCount);
+        pathUpdate(senderName, monitor, "ff-p" + pathsCount + "-a" + answersCountUpdate);
         addNodeGroup(senderName, sender.name(), defaultTrace);
     }
 

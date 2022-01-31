@@ -60,23 +60,20 @@ public class BufferedFanOutReactive<PACKET> extends ReactiveStream<PACKET, PACKE
         assert receivers.size() > 0;
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
-            monitor().onAnswerCreate(receivers.size() - 1, this);  // We need to account for sending an answer to all
+            final int numCreated = receivers.size() - 1;
+            if (numCreated > 0) monitor().onAnswerCreate(numCreated, this);  // We need to account for sending an answer to all
             // receivers (-1 for the one we received), either now or when they next pull.
             Set<Receiver<PACKET>> toSend = new HashSet<>(pullers);
             finishPulling();
             toSend.forEach(this::send);
         } else {
             if (isPulling()) providerManager().pull(provider);
-            monitor().onAnswerDestroy(this);  // When an answer is a duplicate that path is done
+            monitor().onAnswerDestroy(this);  // When an answer is a duplicate then destroy it
         }
     }
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
-        if (!bufferPositions.containsKey(receiver)) {
-            // New receiver, so there are new answers to account for
-            monitor().onAnswerCreate(bufferSet.size(), this);
-        }
         bufferPositions.putIfAbsent(receiver, 0);
         addReceiver(receiver);
         if (bufferList.size() == bufferPositions.get(receiver)) {
@@ -117,8 +114,9 @@ public class BufferedFanOutReactive<PACKET> extends ReactiveStream<PACKET, PACKE
     }
 
     private void addReceiver(Receiver<PACKET> receiver) {
-        if (receivers.add(receiver) && receivers.size() > 1) {
-            monitor().onPathJoin(this);
+        if (receivers.add(receiver)) {
+            if (bufferSet.size() > 0) monitor().onAnswerCreate(bufferSet.size(), this);  // New receiver, so any answer in the buffer will be dispatched there at some point
+            if (receivers.size() > 1) monitor().onPathJoin(this);
         }
     }
 

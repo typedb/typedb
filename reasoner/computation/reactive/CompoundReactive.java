@@ -73,6 +73,8 @@ public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveStreamBase<PACKET
                     follower = new CompoundReactive<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, monitor(), groupName()).buffer();
                 }
                 publisherPackets.put(follower, mergedPacket);
+                monitor().onPathFork(1, this);
+                monitor().onAnswerDestroy(this);
                 follower.publishTo(this);
                 providerManager().pull(leadingPublisher);  // Pull again on the leader in case the follower never produces an answer
                 providerManager().pull(follower);
