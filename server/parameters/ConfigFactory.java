@@ -42,22 +42,22 @@ public class ConfigFactory {
         return create(new HashSet<>(), parser);
     }
 
-    public static Config create(Set<Option> configFile, ConfigParser parser) {
-        return create(CONFIG_PATH, configFile, parser);
+    public static Config create(Set<Option> overrides, ConfigParser parser) {
+        return create(CONFIG_PATH, overrides, parser);
     }
 
-    public static Config create(Path configFile, Set<Option> configOverrides, ConfigParser parser) {
-        Yaml.Map config = mergeYaml(configFile, configOverrides);
+    public static Config create(Path file, Set<Option> overrides, ConfigParser parser) {
+        Yaml.Map config = mergeYaml(file, overrides);
+        substituteEnvVars(config);
         return parser.parse(config, "");
     }
 
-    private static Yaml.Map mergeYaml(Path yamlFile, Set<Option> yamlOverrides) {
-        Yaml.Map config = readYamlFile(yamlFile);
-        Yaml.Map overrides = readYamlOverrides(yamlOverrides);
-        for (String key: overrides.keys()) {
-            set(config, key, overrides.get(key));
+    private static Yaml.Map mergeYaml(Path file, Set<Option> overrides) {
+        Yaml.Map config = readYamlFile(file);
+        Yaml.Map configOverrides = readYamlOverrides(overrides);
+        for (String key: configOverrides.keys()) {
+            set(config, key, configOverrides.get(key));
         }
-        substituteEnvVars(config);
         return config;
     }
 
