@@ -16,11 +16,11 @@
  *
  */
 
-package com.vaticle.typedb.core.server.parameters.config;
+package com.vaticle.typedb.core.server.parameters;
 
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.parser.args.Option;
+import com.vaticle.typedb.core.server.parameters.parser.args.Option;
 
 import java.io.FileNotFoundException;
 import java.nio.file.Path;

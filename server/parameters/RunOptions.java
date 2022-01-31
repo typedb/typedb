@@ -16,10 +16,9 @@
  *
  */
 
-package com.vaticle.typedb.core.server.parameters.run;
+package com.vaticle.typedb.core.server.parameters;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.parameters.config.Config;
 
 import java.nio.file.Path;
 

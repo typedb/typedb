@@ -15,12 +15,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.vaticle.typedb.core.server.parameters.config;
+package com.vaticle.typedb.core.server.parameters;
 
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.parser.HelpEntry;
-import com.vaticle.typedb.core.server.common.parser.yml.YamlParser;
+import com.vaticle.typedb.core.server.parameters.parser.HelpEntry;
+import com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
@@ -35,12 +35,12 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_YAML_MUST_BE_MAP;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CONFIGURATION_OPTIONS;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.server.common.parser.yml.YamlParser.ValueParser.Leaf.BOOLEAN;
-import static com.vaticle.typedb.core.server.common.parser.yml.YamlParser.ValueParser.Leaf.BYTES_SIZE;
-import static com.vaticle.typedb.core.server.common.parser.yml.YamlParser.ValueParser.Leaf.INET_SOCKET_ADDRESS;
-import static com.vaticle.typedb.core.server.common.parser.yml.YamlParser.ValueParser.Leaf.LIST_STRING;
-import static com.vaticle.typedb.core.server.common.parser.yml.YamlParser.ValueParser.Leaf.PATH;
-import static com.vaticle.typedb.core.server.common.parser.yml.YamlParser.ValueParser.Leaf.STRING;
+import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.ValueParser.Leaf.BOOLEAN;
+import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.ValueParser.Leaf.BYTES_SIZE;
+import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.ValueParser.Leaf.INET_SOCKET_ADDRESS;
+import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.ValueParser.Leaf.LIST_STRING;
+import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.ValueParser.Leaf.PATH;
+import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.ValueParser.Leaf.STRING;
 import static com.vaticle.typedb.core.server.common.Util.configPathAbsolute;
 import static com.vaticle.typedb.core.server.common.Util.scopeKey;
 

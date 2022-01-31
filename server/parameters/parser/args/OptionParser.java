@@ -15,11 +15,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.vaticle.typedb.core.server.common.parser.args;
+package com.vaticle.typedb.core.server.parameters.parser.args;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.server.common.parser.HelpEntry;
+import com.vaticle.typedb.core.server.parameters.parser.HelpEntry;
 
 import java.nio.file.Paths;
 import java.util.Optional;

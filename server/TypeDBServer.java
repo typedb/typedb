@@ -31,12 +31,12 @@ import com.vaticle.typedb.core.migrator.MigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
 import com.vaticle.typedb.core.database.Factory;
 import com.vaticle.typedb.core.database.CoreFactory;
-import com.vaticle.typedb.core.server.common.parser.args.ArgsParser;
-import com.vaticle.typedb.core.server.parameters.run.RunOptions;
-import com.vaticle.typedb.core.server.parameters.run.RunOptionsParser;
-import com.vaticle.typedb.core.server.parameters.config.Config;
-import com.vaticle.typedb.core.server.parameters.config.ConfigFactory;
-import com.vaticle.typedb.core.server.parameters.config.ConfigParser;
+import com.vaticle.typedb.core.server.parameters.parser.args.ArgsParser;
+import com.vaticle.typedb.core.server.parameters.RunOptions;
+import com.vaticle.typedb.core.server.parameters.RunOptionsParser;
+import com.vaticle.typedb.core.server.parameters.Config;
+import com.vaticle.typedb.core.server.parameters.ConfigFactory;
+import com.vaticle.typedb.core.server.parameters.ConfigParser;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
@@ -62,7 +62,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILE
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
-import static com.vaticle.typedb.core.server.common.Logback.configure;
+import static com.vaticle.typedb.core.server.logging.Logback.configure;
 import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
 

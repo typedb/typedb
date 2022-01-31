@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.vaticle.typedb.core.server.common;
+package com.vaticle.typedb.core.server.logging;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -29,7 +29,7 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
 import ch.qos.logback.core.util.FileSize;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.parameters.config.Config;
+import com.vaticle.typedb.core.server.parameters.Config;
 
 import java.util.HashMap;
 import java.util.Map;

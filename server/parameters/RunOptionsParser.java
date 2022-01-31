@@ -15,16 +15,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.vaticle.typedb.core.server.parameters.run;
+package com.vaticle.typedb.core.server.parameters;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.parser.HelpEntry;
-import com.vaticle.typedb.core.server.common.parser.args.SubcommandParser;
-import com.vaticle.typedb.core.server.common.parser.args.Option;
-import com.vaticle.typedb.core.server.common.parser.args.OptionParser;
-import com.vaticle.typedb.core.server.parameters.config.Config;
-import com.vaticle.typedb.core.server.parameters.config.ConfigFactory;
-import com.vaticle.typedb.core.server.parameters.config.ConfigParser;
+import com.vaticle.typedb.core.server.parameters.parser.HelpEntry;
+import com.vaticle.typedb.core.server.parameters.parser.args.SubcommandParser;
+import com.vaticle.typedb.core.server.parameters.parser.args.Option;
+import com.vaticle.typedb.core.server.parameters.parser.args.OptionParser;
 
 import java.nio.file.Path;
 import java.util.List;
