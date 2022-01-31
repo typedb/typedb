@@ -241,9 +241,9 @@ public class TypeDBServer implements AutoCloseable {
 
             ConfigParser configParser = new ConfigParser();
             ArgsParser<RunOptions> argsParser = new ArgsParser<RunOptions>()
-                    .subcommand(new RunOptionsParser.ServerParser(configParser))
-                    .subcommand(new RunOptionsParser.ServerImportParser())
-                    .subcommand(new RunOptionsParser.ServerExportParser());
+                    .subcommand(new RunOptionsParser.Server(configParser))
+                    .subcommand(new RunOptionsParser.Import())
+                    .subcommand(new RunOptionsParser.Export());
             Optional<RunOptions> runOptions = argsParser.parse(args);
             if (runOptions.isEmpty()) {
                 LOG.error(UNRECOGNISED_CLI_COMMAND.message(String.join(" ", args)));

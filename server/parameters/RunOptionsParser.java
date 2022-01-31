@@ -52,7 +52,7 @@ public class RunOptionsParser {
         });
     }
 
-    public static class ServerParser extends SubcommandParser<RunOptions.Server> {
+    public static class Server extends SubcommandParser<RunOptions.Server> {
 
         private static final OptionParser.Flag debugParser = new OptionParser.Flag("debug", "Run server in debug mode.");
         private static final OptionParser.Flag helpParser = new OptionParser.Flag("help", "Print help menu.");
@@ -64,7 +64,7 @@ public class RunOptionsParser {
 
         private final ConfigParser configParser;
 
-        public ServerParser(ConfigParser configParser) {
+        public Server(ConfigParser configParser) {
             super(tokens, description);
             this.configParser = configParser;
         }
@@ -96,7 +96,7 @@ public class RunOptionsParser {
         }
     }
 
-    public static class ServerImportParser extends SubcommandParser<RunOptions.Import> {
+    public static class Import extends SubcommandParser<RunOptions.Import> {
 
         public static final String[] tokens = new String[]{"import"};
         public static final String description = "Run TypeDB import.";
@@ -106,7 +106,7 @@ public class RunOptionsParser {
         private static final OptionParser.Int portParser = new OptionParser.Int("port", "TypeDB's GRPC port.");
         private static final Set<OptionParser> parsers = set(databaseParser, filePathParser, portParser);
 
-        public ServerImportParser() {
+        public Import() {
             super(tokens, description);
         }
 
@@ -124,7 +124,7 @@ public class RunOptionsParser {
         }
     }
 
-    public static class ServerExportParser extends SubcommandParser<RunOptions.Export> {
+    public static class Export extends SubcommandParser<RunOptions.Export> {
 
         public static final String[] tokens = new String[]{"export"};
         public static final String description = "Run TypeDB export.";
@@ -134,7 +134,7 @@ public class RunOptionsParser {
         private static final OptionParser.Int portParser = new OptionParser.Int("port", "TypeDB's GRPC port.");
         private static final Set<OptionParser> parsers = set(databaseParser, filePathParser, portParser);
 
-        public ServerExportParser() {
+        public Export() {
             super(tokens, description);
         }
 
