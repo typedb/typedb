@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.server.parameters.parser.yml;
 
 import com.vaticle.typedb.common.yaml.Yaml;
-import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.parameters.parser.HelpEntry;
 
@@ -45,11 +44,11 @@ import static com.vaticle.typedb.core.server.common.Util.scopeKey;
 
 public class YamlParser {
 
-    public static abstract class EntryParser {
+    public static abstract class KeyValue {
 
         private final String description;
 
-        EntryParser(String description) {
+        KeyValue(String description) {
             this.description = description;
         }
 
@@ -59,12 +58,12 @@ public class YamlParser {
 
         public abstract HelpEntry helpEntry(String optionScope);
 
-        public static abstract class PredefinedParser<TYPE> extends EntryParser {
+        public static abstract class Predefined<TYPE> extends KeyValue {
 
             private final String key;
             final ValueParser<TYPE> valueParser;
 
-            PredefinedParser(String key, String description, ValueParser<TYPE> valueParser) {
+            Predefined(String key, String description, ValueParser<TYPE> valueParser) {
                 super(description);
                 this.key = key;
                 this.valueParser = valueParser;
@@ -76,14 +75,14 @@ public class YamlParser {
 
             public abstract TYPE parse(Yaml.Map yaml, String scope);
 
-            public static class Value<TYPE> extends PredefinedParser<TYPE> {
+            public static class Value<TYPE> extends Predefined<TYPE> {
 
                 private Value(String key, String description, ValueParser<TYPE> valueParser) {
                     super(key, description, valueParser);
                 }
 
-                public static <TYPE> Value<TYPE> create(String key, String description, ValueParser<TYPE> valueType) {
-                    return new Value<>(key, description, valueType);
+                public static <TYPE> Value<TYPE> create(String key, String description, ValueParser<TYPE> valueParser) {
+                    return new Value<>(key, description, valueParser);
                 }
 
                 @Override
@@ -96,14 +95,14 @@ public class YamlParser {
                 public HelpEntry helpEntry(String optionScope) {
                     String scopedKey = scopeKey(optionScope, key());
                     if (valueParser.isLeaf()) {
-                        return new HelpEntry.Simple(scopedKey, description(), valueParser.asLeaf().help());
+                        return new HelpEntry.Simple(scopedKey, description(), valueParser.asPrimitive().help());
                     } else {
-                        return new HelpEntry.Yaml.Grouped(scopedKey, description(), valueParser.asNested().helpEntries(scopedKey));
+                        return new HelpEntry.Yaml.Grouped(scopedKey, description(), valueParser.asCompound().helpEntries(scopedKey));
                     }
                 }
             }
 
-            public static class EnumValue<TYPE> extends PredefinedParser<TYPE> {
+            public static class EnumValue<TYPE> extends Predefined<TYPE> {
 
                 private final List<TYPE> values;
 
@@ -112,7 +111,7 @@ public class YamlParser {
                     this.values = values;
                 }
 
-                public static <T> EnumValue<T> create(String key, String description, ValueParser<T> valueParser, List<T> values) {
+                public static <TYPE> EnumValue<TYPE> create(String key, String description, ValueParser<TYPE> valueParser, List<TYPE> values) {
                     return new EnumValue<>(key, values, valueParser, description);
                 }
 
@@ -134,27 +133,27 @@ public class YamlParser {
                         String values = String.join("|", iterate(this.values).map(Object::toString).toList());
                         return new HelpEntry.Simple(scopedKey, description(), values);
                     } else {
-                        return new HelpEntry.Yaml.Grouped(scopedKey, description(), valueParser.asNested().helpEntries(scopedKey));
+                        return new HelpEntry.Yaml.Grouped(scopedKey, description(), valueParser.asCompound().helpEntries(scopedKey));
                     }
                 }
             }
         }
 
-        public static class DynamicParser<TYPE> extends EntryParser {
+        public static class Dynamic<TYPE> extends KeyValue {
 
             private final ValueParser<TYPE> valueParser;
 
-            private DynamicParser(String description, ValueParser<TYPE> valueParser) {
+            private Dynamic(String description, ValueParser<TYPE> valueParser) {
                 super(description);
                 this.valueParser = valueParser;
             }
 
-            public static <TYPE> DynamicParser<TYPE> create(String description, ValueParser<TYPE> valueParser) {
-                return new DynamicParser<>(description, valueParser);
+            public static <TYPE> Dynamic<TYPE> create(String description, ValueParser<TYPE> valueParser) {
+                return new Dynamic<>(description, valueParser);
             }
 
-            public Map<String, TYPE> parseFrom(Yaml.Map yaml, String scope, PredefinedParser<?>... exclude) {
-                Set<String> excludeKeys = iterate(exclude).map(PredefinedParser::key).toSet();
+            public Map<String, TYPE> parseFrom(Yaml.Map yaml, String scope, Predefined<?>... exclude) {
+                Set<String> excludeKeys = iterate(exclude).map(Predefined::key).toSet();
                 Map<String, TYPE> read = new HashMap<>();
                 yaml.forEach((key, value) -> {
                     if (!excludeKeys.contains(key)) {
@@ -168,9 +167,9 @@ public class YamlParser {
             @Override
             public HelpEntry helpEntry(String optionScope) {
                 if (valueParser.isLeaf()) {
-                    return new HelpEntry.Simple(scopeKey(optionScope, "<name>"), description(), valueParser.asLeaf().help());
+                    return new HelpEntry.Simple(scopeKey(optionScope, "<name>"), description(), valueParser.asPrimitive().help());
                 } else {
-                    return new HelpEntry.Yaml.Grouped(scopeKey(optionScope, "<name>"), description(), valueParser.asNested().helpEntries(scopeKey(optionScope, "<name>")));
+                    return new HelpEntry.Yaml.Grouped(scopeKey(optionScope, "<name>"), description(), valueParser.asCompound().helpEntries(scopeKey(optionScope, "<name>")));
                 }
             }
         }
@@ -185,19 +184,19 @@ public class YamlParser {
             return false;
         }
 
-        Leaf<TYPE> asLeaf() {
-            throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Leaf.class));
+        Primitive<TYPE> asPrimitive() {
+            throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Primitive.class));
         }
 
         boolean isNested() {
             return false;
         }
 
-        Nested<TYPE> asNested() {
-            throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Nested.class));
+        Compound<TYPE> asCompound() {
+            throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Compound.class));
         }
 
-        public static abstract class Nested<T> extends ValueParser<T> {
+        public static abstract class Compound<T> extends ValueParser<T> {
 
             public abstract List<HelpEntry> helpEntries(String scope);
 
@@ -207,43 +206,43 @@ public class YamlParser {
             }
 
             @Override
-            public Nested<T> asNested() {
+            public Compound<T> asCompound() {
                 return this;
             }
         }
 
-        public static class Leaf<T> extends ValueParser<T> {
-            public static final Leaf<String> STRING = new Leaf<>(
+        public static class Primitive<T> extends ValueParser<T> {
+            public static final Primitive<String> STRING = new Primitive<>(
                     (yaml) -> yaml.isString(),
                     (yaml) -> yaml.asString().value(),
                     "<string>"
             );
-            public static final Leaf<Integer> INTEGER = new Leaf<>(
+            public static final Primitive<Integer> INTEGER = new Primitive<>(
                     (yaml) -> yaml.isInt(),
                     (yaml) -> yaml.asInt().value(),
                     "<int>"
             );
-            public static final Leaf<Float> FLOAT = new Leaf<>(
+            public static final Primitive<Float> FLOAT = new Primitive<>(
                     (yaml) -> yaml.isFloat(),
                     (yaml) -> yaml.asFloat().value(),
                     "<float>"
             );
-            public static final Leaf<Boolean> BOOLEAN = new Leaf<>(
+            public static final Primitive<Boolean> BOOLEAN = new Primitive<>(
                     (yaml) -> yaml.isBoolean(),
                     (yaml) -> yaml.asBoolean().value(),
                     "<boolean>"
             );
-            public static final Leaf<Path> PATH = new Leaf<>(
+            public static final Primitive<Path> PATH = new Primitive<>(
                     (yaml) -> yaml.isString(),
                     (yaml) -> Paths.get(yaml.asString().value()),
                     "<relative or absolute path>"
             );
-            public static final Leaf<Long> BYTES_SIZE = new Leaf<>(
-                    (yaml) -> yaml.isString() && BytesParser.isValidSizeString(yaml.asString().value()),
-                    (yaml) -> BytesParser.parse(yaml.asString().value()),
+            public static final Primitive<Long> BYTES_SIZE = new Primitive<>(
+                    (yaml) -> yaml.isString() && Bytes.isValidSizeString(yaml.asString().value()),
+                    (yaml) -> Bytes.parse(yaml.asString().value()),
                     "<size>"
             );
-            public static final Leaf<InetSocketAddress> INET_SOCKET_ADDRESS = new Leaf<>(
+            public static final Primitive<InetSocketAddress> INET_SOCKET_ADDRESS = new Primitive<>(
                     (yaml) -> {
                         if (!yaml.isString()) return false;
                         // use URI to parse IPV4, IVP4 and host names - however, we must add a dummy scheme to use it
@@ -256,7 +255,7 @@ public class YamlParser {
                     },
                     "<address:port>"
             );
-            public static final Leaf<List<String>> LIST_STRING = new Leaf<>(
+            public static final Primitive<List<String>> LIST_STRING = new Primitive<>(
                     (yaml) -> yaml.isList() && iterate(yaml.asList().iterator()).allMatch(Yaml::isString),
                     (yaml) -> iterate(yaml.asList().iterator()).map(elem -> elem.asString().value()).toList(),
                     "<[string, ...]>");
@@ -265,7 +264,7 @@ public class YamlParser {
             private final Function<Yaml, T> converter;
             private final String help;
 
-            private Leaf(Function<Yaml, Boolean> validator, Function<Yaml, T> converter, String help) {
+            private Primitive(Function<Yaml, Boolean> validator, Function<Yaml, T> converter, String help) {
                 this.validator = validator;
                 this.converter = converter;
                 this.help = help;
@@ -286,7 +285,7 @@ public class YamlParser {
             }
 
             @Override
-            Leaf<T> asLeaf() {
+            Primitive<T> asPrimitive() {
                 return this;
             }
 
@@ -298,7 +297,7 @@ public class YamlParser {
         /**
          * Derived from logback FileSize implementation
          */
-        private static class BytesParser {
+        private static class Bytes {
 
             private final static String LENGTH_PART = "([0-9]+)";
             private final static int LENGTH_GROUP = 1;
@@ -314,9 +313,9 @@ public class YamlParser {
                     String unitStr = matcher.group(UNIT_GROUP);
                     long lenValue = Long.parseLong(lenStr);
                     if (unitStr.equalsIgnoreCase("")) coefficient = 1;
-                    else if (unitStr.equalsIgnoreCase("kb")) coefficient = Bytes.KB;
-                    else if (unitStr.equalsIgnoreCase("mb")) coefficient = Bytes.MB;
-                    else if (unitStr.equalsIgnoreCase("gb")) coefficient = Bytes.GB;
+                    else if (unitStr.equalsIgnoreCase("kb")) coefficient = com.vaticle.typedb.core.common.collection.Bytes.KB;
+                    else if (unitStr.equalsIgnoreCase("mb")) coefficient = com.vaticle.typedb.core.common.collection.Bytes.MB;
+                    else if (unitStr.equalsIgnoreCase("gb")) coefficient = com.vaticle.typedb.core.common.collection.Bytes.GB;
                     else throw new IllegalStateException("Unexpected size unit: " + unitStr);
                     return lenValue * coefficient;
                 } else {
