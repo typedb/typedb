@@ -46,10 +46,10 @@ import static com.vaticle.typedb.core.server.common.Util.scopeKey;
 
 public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
 
-    private static final YamlParser.KeyValue.Predefined<Config.Server> serverParser = YamlParser.KeyValue.Predefined.Value.create(ServerParser.name, ServerParser.description, new ServerParser());
-    private static final YamlParser.KeyValue.Predefined<Config.Storage> storageParser = YamlParser.KeyValue.Predefined.Value.create(StorageParser.name, StorageParser.description, new StorageParser());
-    private static final YamlParser.KeyValue.Predefined<Config.Log> logParser = YamlParser.KeyValue.Predefined.Value.create(LogParser.name, LogParser.description, new LogParser());
-    private static final YamlParser.KeyValue.Predefined<Config.VaticleFactory> vaticleFactoryParser = YamlParser.KeyValue.Predefined.Value.create(VaticleFactoryParser.name, VaticleFactoryParser.description, new VaticleFactoryParser());
+    private static final YamlParser.KeyValue.Predefined<Config.Server> serverParser = YamlParser.KeyValue.Predefined.create(ServerParser.name, ServerParser.description, new ServerParser());
+    private static final YamlParser.KeyValue.Predefined<Config.Storage> storageParser = YamlParser.KeyValue.Predefined.create(StorageParser.name, StorageParser.description, new StorageParser());
+    private static final YamlParser.KeyValue.Predefined<Config.Log> logParser = YamlParser.KeyValue.Predefined.create(LogParser.name, LogParser.description, new LogParser());
+    private static final YamlParser.KeyValue.Predefined<Config.VaticleFactory> vaticleFactoryParser = YamlParser.KeyValue.Predefined.create(VaticleFactoryParser.name, VaticleFactoryParser.description, new VaticleFactoryParser());
     private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(serverParser, storageParser, logParser, vaticleFactoryParser);
 
     @Override
@@ -72,7 +72,7 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
         private static final String name = "server";
         private static final String description = "Server and networking configuration.";
 
-        private static final YamlParser.KeyValue.Predefined<InetSocketAddress> addressParser = YamlParser.KeyValue.Predefined.Value.create("address", "Address to listen for GRPC clients on.", INET_SOCKET_ADDRESS);
+        private static final YamlParser.KeyValue.Predefined<InetSocketAddress> addressParser = YamlParser.KeyValue.Predefined.create("address", "Address to listen for GRPC clients on.", INET_SOCKET_ADDRESS);
         private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(addressParser);
 
         @Override
@@ -94,8 +94,8 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
         private static final String name = "storage";
         private static final String description = "Storage configuration.";
 
-        private static final YamlParser.KeyValue.Predefined<Path> dataParser = YamlParser.KeyValue.Predefined.Value.create("data", "Directory in which user databases will be stored.", PATH);
-        private static final YamlParser.KeyValue.Predefined<Config.Storage.DatabaseCache> databaseCacheParser = YamlParser.KeyValue.Predefined.Value.create(DatabaseCacheParser.name, DatabaseCacheParser.description, new DatabaseCacheParser());
+        private static final YamlParser.KeyValue.Predefined<Path> dataParser = YamlParser.KeyValue.Predefined.create("data", "Directory in which user databases will be stored.", PATH);
+        private static final YamlParser.KeyValue.Predefined<Config.Storage.DatabaseCache> databaseCacheParser = YamlParser.KeyValue.Predefined.create(DatabaseCacheParser.name, DatabaseCacheParser.description, new DatabaseCacheParser());
         private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(dataParser, databaseCacheParser);
 
         @Override
@@ -117,8 +117,8 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
             public static final String name = "database-cache";
             public static final String description = "Per-database storage-layer cache configuration.";
 
-            private static final YamlParser.KeyValue.Predefined<Long> dataParser = YamlParser.KeyValue.Predefined.Value.create("data", "Size of storage-layer cache for data.", BYTES_SIZE);
-            private static final YamlParser.KeyValue.Predefined<Long> indexParser = YamlParser.KeyValue.Predefined.Value.create("index", "Size of storage-layer cache for index.", BYTES_SIZE);
+            private static final YamlParser.KeyValue.Predefined<Long> dataParser = YamlParser.KeyValue.Predefined.create("data", "Size of storage-layer cache for data.", BYTES_SIZE);
+            private static final YamlParser.KeyValue.Predefined<Long> indexParser = YamlParser.KeyValue.Predefined.create("index", "Size of storage-layer cache for index.", BYTES_SIZE);
             private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(dataParser, indexParser);
 
             @Override
@@ -141,9 +141,9 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
         public static final String name = "log";
         public static final String description = "Logging configuration.";
 
-        private static final YamlParser.KeyValue.Predefined<Config.Log.Output> outputParser = YamlParser.KeyValue.Predefined.Value.create(OutputParser.name, OutputParser.description, new OutputParser());
-        private static final YamlParser.KeyValue.Predefined<Config.Log.Logger> loggerParser = YamlParser.KeyValue.Predefined.Value.create(LoggerParser.name, LoggerParser.description, new LoggerParser());
-        private static final YamlParser.KeyValue.Predefined<Config.Log.Debugger> debuggerParser = YamlParser.KeyValue.Predefined.Value.create(DebuggerParser.name, DebuggerParser.description, new DebuggerParser());
+        private static final YamlParser.KeyValue.Predefined<Config.Log.Output> outputParser = YamlParser.KeyValue.Predefined.create(OutputParser.name, OutputParser.description, new OutputParser());
+        private static final YamlParser.KeyValue.Predefined<Config.Log.Logger> loggerParser = YamlParser.KeyValue.Predefined.create(LoggerParser.name, LoggerParser.description, new LoggerParser());
+        private static final YamlParser.KeyValue.Predefined<Config.Log.Debugger> debuggerParser = YamlParser.KeyValue.Predefined.create(DebuggerParser.name, DebuggerParser.description, new DebuggerParser());
         private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(outputParser, loggerParser, debuggerParser);
 
         @Override
@@ -185,7 +185,9 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
             static class TypeParser extends Compound<Config.Log.Output.Type> {
 
                 public final static String description = "A named log output definition.";
-                private static final YamlParser.KeyValue.Predefined<String> typeParser = YamlParser.KeyValue.Predefined.EnumValue.create("type", "Type of output to define.", STRING, list(StdoutParser.type, FileParser.type));
+                private static final YamlParser.KeyValue.Predefined<String> typeParser = YamlParser.KeyValue.Predefined.create(
+                        "type", "Type of output to define.", new Restricted<>(STRING, list(StdoutParser.type, FileParser.type))
+                );
                 private static final Compound<Config.Log.Output.Type.Stdout> stdoutParser = new StdoutParser();
                 private static final Compound<Config.Log.Output.Type.File> fileParser = new FileParser();
 
@@ -215,7 +217,9 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
                     public static final String type = "stdout";
                     public static final String description = "Options to configure a log output to stdout.";
 
-                    private static final YamlParser.KeyValue.Predefined<String> typeParser = YamlParser.KeyValue.Predefined.EnumValue.create("type", "An output that writes to stdout.", STRING, list(type));
+                    private static final YamlParser.KeyValue.Predefined<String> typeParser = YamlParser.KeyValue.Predefined.create(
+                            "type", "An output that writes to stdout.", new Restricted<>(STRING, list(type))
+                    );
                     private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(typeParser);
 
                     @Override
@@ -238,10 +242,10 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
                     public static final String type = "file";
                     public static final String description = "Options to configure a log output to files in a directory.";
 
-                    private static final YamlParser.KeyValue.Predefined<String> typeParser = YamlParser.KeyValue.Predefined.EnumValue.create("type", "An output that writes to a directory.", STRING, list(type));
-                    private static final YamlParser.KeyValue.Predefined<Path> pathParser = YamlParser.KeyValue.Predefined.Value.create("directory", "Directory to write to. Relative paths are relative to distribution path.", PATH);
-                    private static final YamlParser.KeyValue.Predefined<Long> fileSizeCapParser = YamlParser.KeyValue.Predefined.Value.create("file-size-cap", "Log file size cap before creating new file (eg. 50mb).", BYTES_SIZE);
-                    private static final YamlParser.KeyValue.Predefined<Long> archivesSizeCapParser = YamlParser.KeyValue.Predefined.Value.create("archives-size-cap", "Total size cap of all archived log files in directory (eg. 1gb).", BYTES_SIZE); // TODO reasoner needs to respect this
+                    private static final YamlParser.KeyValue.Predefined<String> typeParser = YamlParser.KeyValue.Predefined.create("type", "An output that writes to a directory.", new Restricted<>(STRING, list(type)));
+                    private static final YamlParser.KeyValue.Predefined<Path> pathParser = YamlParser.KeyValue.Predefined.create("directory", "Directory to write to. Relative paths are relative to distribution path.", PATH);
+                    private static final YamlParser.KeyValue.Predefined<Long> fileSizeCapParser = YamlParser.KeyValue.Predefined.create("file-size-cap", "Log file size cap before creating new file (eg. 50mb).", BYTES_SIZE);
+                    private static final YamlParser.KeyValue.Predefined<Long> archivesSizeCapParser = YamlParser.KeyValue.Predefined.create("archives-size-cap", "Total size cap of all archived log files in directory (eg. 1gb).", BYTES_SIZE); // TODO reasoner needs to respect this
                     private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(typeParser, pathParser, fileSizeCapParser, archivesSizeCapParser);
 
                     @Override
@@ -274,7 +278,7 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
             public static final String name = "logger";
             public static final String description = "Loggers to activate.";
 
-            private static final YamlParser.KeyValue.Predefined<Config.Log.Logger.Unfiltered> defaultParser = YamlParser.KeyValue.Predefined.Value.create("default", "The default logger.", new UnfilteredParser());
+            private static final YamlParser.KeyValue.Predefined<Config.Log.Logger.Unfiltered> defaultParser = YamlParser.KeyValue.Predefined.create("default", "The default logger.", new UnfilteredParser());
             private static final YamlParser.KeyValue.Dynamic<Config.Log.Logger.Filtered> filteredParsers = YamlParser.KeyValue.Dynamic.create("Custom filtered loggers.", new FiltredParser());
 
             @Override
@@ -292,8 +296,8 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
 
             static class UnfilteredParser extends Compound<Config.Log.Logger.Unfiltered> {
 
-                private static final YamlParser.KeyValue.Predefined<String> levelParser = YamlParser.KeyValue.Predefined.EnumValue.create("level", "Output level.", STRING, LEVELS);
-                private static final YamlParser.KeyValue.Predefined<List<String>> outputsParser = YamlParser.KeyValue.Predefined.Value.create("output", "Outputs to log to by default.", LIST_STRING);
+                private static final YamlParser.KeyValue.Predefined<String> levelParser = YamlParser.KeyValue.Predefined.create("level", "Output level.", new Restricted<>(STRING, LEVELS));
+                private static final YamlParser.KeyValue.Predefined<List<String>> outputsParser = YamlParser.KeyValue.Predefined.create("output", "Outputs to log to by default.", LIST_STRING);
                 private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(levelParser, outputsParser);
 
                 @Override
@@ -313,9 +317,9 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
 
             static class FiltredParser extends Compound<Config.Log.Logger.Filtered> {
 
-                private static final YamlParser.KeyValue.Predefined<String> filterParser = YamlParser.KeyValue.Predefined.Value.create("filter", "Package/class filter (eg. 'com.vaticle.typedb').", STRING);
-                private static final YamlParser.KeyValue.Predefined<String> levelParser = YamlParser.KeyValue.Predefined.EnumValue.create("level", "Output level.", STRING, LEVELS);
-                private static final YamlParser.KeyValue.Predefined<List<String>> outputsParser = YamlParser.KeyValue.Predefined.Value.create("output", "Outputs to log to by default.", LIST_STRING);
+                private static final YamlParser.KeyValue.Predefined<String> filterParser = YamlParser.KeyValue.Predefined.create("filter", "Package/class filter (eg. 'com.vaticle.typedb').", STRING);
+                private static final YamlParser.KeyValue.Predefined<String> levelParser = YamlParser.KeyValue.Predefined.create("level", "Output level.", new Restricted<>(STRING, LEVELS));
+                private static final YamlParser.KeyValue.Predefined<List<String>> outputsParser = YamlParser.KeyValue.Predefined.create("output", "Outputs to log to by default.", LIST_STRING);
                 private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(filterParser, levelParser, outputsParser);
 
                 @Override
@@ -339,7 +343,7 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
             public static final String name = "debugger";
             public static final String description = "Debuggers that may be enabled at runtime.";
 
-            private static final YamlParser.KeyValue.Predefined<Config.Log.Debugger.Reasoner> reasonerParser = YamlParser.KeyValue.Predefined.Value.create("reasoner", "Configure reasoner debugger.", new ReasonerParser());
+            private static final YamlParser.KeyValue.Predefined<Config.Log.Debugger.Reasoner> reasonerParser = YamlParser.KeyValue.Predefined.create("reasoner", "Configure reasoner debugger.", new ReasonerParser());
             private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(reasonerParser);
 
             @Override
@@ -358,9 +362,9 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
             static class ReasonerParser extends Compound<Config.Log.Debugger.Reasoner> {
 
                 static final String type = "reasoner";
-                private static final YamlParser.KeyValue.Predefined<String> typeParser = YamlParser.KeyValue.Predefined.EnumValue.create("type", "Type of this debugger.", STRING, list(type));
-                private static final YamlParser.KeyValue.Predefined<String> outputParser = YamlParser.KeyValue.Predefined.Value.create("output", "Name of output reasoner debugger should write to (must be directory).", STRING);
-                private static final YamlParser.KeyValue.Predefined<Boolean> enableParser = YamlParser.KeyValue.Predefined.Value.create("enable", "Enable to allow reasoner debugging to be enabled at runtime.", BOOLEAN);
+                private static final YamlParser.KeyValue.Predefined<String> typeParser = YamlParser.KeyValue.Predefined.create("type", "Type of this debugger.", new Restricted<>(STRING, list(type)));
+                private static final YamlParser.KeyValue.Predefined<String> outputParser = YamlParser.KeyValue.Predefined.create("output", "Name of output reasoner debugger should write to (must be directory).", STRING);
+                private static final YamlParser.KeyValue.Predefined<Boolean> enableParser = YamlParser.KeyValue.Predefined.create("enable", "Enable to allow reasoner debugging to be enabled at runtime.", BOOLEAN);
                 private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(typeParser, outputParser, enableParser);
 
                 @Override
@@ -385,10 +389,10 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
         public static final String name = "vaticle-factory";
         public static final String description = "Configure Vaticle Factory connection.";
 
-        private static final YamlParser.KeyValue.Predefined<Boolean> enableParser = YamlParser.KeyValue.Predefined.Value.create("enable", "Enable Vaticle Factory tracing.", BOOLEAN);
-        private static final YamlParser.KeyValue.Predefined<String> uriParser = YamlParser.KeyValue.Predefined.Value.create("uri", "URI of Vaticle Factory server.", STRING);
-        private static final YamlParser.KeyValue.Predefined<String> usernameParser = YamlParser.KeyValue.Predefined.Value.create("username", "Username for Vaticle Factory server.", STRING);
-        private static final YamlParser.KeyValue.Predefined<String> tokenParser = YamlParser.KeyValue.Predefined.Value.create("token", "Authentication token for Vaticle Factory server.", STRING);
+        private static final YamlParser.KeyValue.Predefined<Boolean> enableParser = YamlParser.KeyValue.Predefined.create("enable", "Enable Vaticle Factory tracing.", BOOLEAN);
+        private static final YamlParser.KeyValue.Predefined<String> uriParser = YamlParser.KeyValue.Predefined.create("uri", "URI of Vaticle Factory server.", STRING);
+        private static final YamlParser.KeyValue.Predefined<String> usernameParser = YamlParser.KeyValue.Predefined.create("username", "Username for Vaticle Factory server.", STRING);
+        private static final YamlParser.KeyValue.Predefined<String> tokenParser = YamlParser.KeyValue.Predefined.create("token", "Authentication token for Vaticle Factory server.", STRING);
         private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(enableParser, uriParser, usernameParser, tokenParser);
 
         @Override

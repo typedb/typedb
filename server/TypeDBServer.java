@@ -263,7 +263,7 @@ public class TypeDBServer implements AutoCloseable {
             }
         } catch (Exception e) {
             if (e instanceof TypeDBException) {
-                LOG.error(e.getMessage());
+                LOG.error("", e);
             } else {
                 LOG.error(e.getMessage(), e);
                 LOG.error(EXITED_WITH_ERROR.message());

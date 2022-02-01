@@ -58,83 +58,39 @@ public class YamlParser {
 
         public abstract HelpEntry helpEntry(String optionScope);
 
-        public static abstract class Predefined<TYPE> extends KeyValue {
+        public static class Predefined<TYPE> extends KeyValue {
 
             private final String key;
             final ValueParser<TYPE> valueParser;
 
-            Predefined(String key, String description, ValueParser<TYPE> valueParser) {
+            private Predefined(String key, String description, ValueParser<TYPE> valueParser) {
                 super(description);
                 this.key = key;
                 this.valueParser = valueParser;
+            }
+
+            public static <TYPE> Predefined<TYPE> create(String key, String description, ValueParser<TYPE> valueParser) {
+                return new Predefined<>(key, description, valueParser);
             }
 
             public String key() {
                 return key;
             }
 
-            public abstract TYPE parse(Yaml.Map yaml, String scope);
-
-            public static class Value<TYPE> extends Predefined<TYPE> {
-
-                private Value(String key, String description, ValueParser<TYPE> valueParser) {
-                    super(key, description, valueParser);
-                }
-
-                public static <TYPE> Value<TYPE> create(String key, String description, ValueParser<TYPE> valueParser) {
-                    return new Value<>(key, description, valueParser);
-                }
-
-                @Override
-                public TYPE parse(Yaml.Map yaml, String scope) {
-                    String scopedKey = scopeKey(scope, key());
-                    if (!yaml.containsKey(key())) throw TypeDBException.of(MISSING_CONFIG_OPTION, scopedKey);
-                    else return valueParser.parse(yaml.get(key()), scopedKey);
-                }
-
-                public HelpEntry helpEntry(String optionScope) {
-                    String scopedKey = scopeKey(optionScope, key());
-                    if (valueParser.isLeaf()) {
-                        return new HelpEntry.Simple(scopedKey, description(), valueParser.asPrimitive().help());
-                    } else {
-                        return new HelpEntry.Yaml.Grouped(scopedKey, description(), valueParser.asCompound().helpEntries(scopedKey));
-                    }
-                }
+            public TYPE parse(Yaml.Map yaml, String scope) {
+                String scopedKey = scopeKey(scope, key());
+                if (!yaml.containsKey(key())) throw TypeDBException.of(MISSING_CONFIG_OPTION, scopedKey);
+                else return valueParser.parse(yaml.get(key()), scopedKey);
             }
 
-            public static class EnumValue<TYPE> extends Predefined<TYPE> {
-
-                private final List<TYPE> values;
-
-                private EnumValue(String key, List<TYPE> values, ValueParser<TYPE> valueParser, String description) {
-                    super(key, description, valueParser);
-                    this.values = values;
-                }
-
-                public static <TYPE> EnumValue<TYPE> create(String key, String description, ValueParser<TYPE> valueParser, List<TYPE> values) {
-                    return new EnumValue<>(key, values, valueParser, description);
-                }
-
-                @Override
-                public TYPE parse(Yaml.Map yaml, String scope) {
-                    String scopedKey = scopeKey(scope, key());
-                    if (!yaml.containsKey(key())) throw TypeDBException.of(MISSING_CONFIG_OPTION, scopedKey);
-                    else {
-                        TYPE value = valueParser.parse(yaml.get(key()), scopedKey);
-                        if (values.contains(value)) return value;
-                        else throw TypeDBException.of(CONFIG_ENUM_UNEXPECTED_VALUE, scopedKey, value, values);
-                    }
-                }
-
-                @Override
-                public HelpEntry helpEntry(String optionScope) {
-                    String scopedKey = scopeKey(optionScope, key());
-                    if (valueParser.isLeaf()) {
-                        String values = String.join("|", iterate(this.values).map(Object::toString).toList());
-                        return new HelpEntry.Simple(scopedKey, description(), values);
-                    } else {
-                        return new HelpEntry.Yaml.Grouped(scopedKey, description(), valueParser.asCompound().helpEntries(scopedKey));
-                    }
+            public HelpEntry helpEntry(String optionScope) {
+                String scopedKey = scopeKey(optionScope, key());
+                if (valueParser.isPrimitive()) {
+                    return new HelpEntry.Simple(scopedKey, description(), valueParser.asPrimitive().help());
+                } else if (valueParser.isRestricted()) {
+                    return new HelpEntry.Simple(scopedKey, description(), valueParser.asRestricted().help());
+                } else {
+                    return new HelpEntry.Yaml.Grouped(scopedKey, description(), valueParser.asCompound().helpEntries(scopedKey));
                 }
             }
         }
@@ -166,21 +122,22 @@ public class YamlParser {
 
             @Override
             public HelpEntry helpEntry(String optionScope) {
-                if (valueParser.isLeaf()) {
+                if (valueParser.isPrimitive()) {
                     return new HelpEntry.Simple(scopeKey(optionScope, "<name>"), description(), valueParser.asPrimitive().help());
+                } else if (valueParser.isRestricted()) {
+                    return new HelpEntry.Simple(scopeKey(optionScope, "<name>"), description(), valueParser.asRestricted().help());
                 } else {
                     return new HelpEntry.Yaml.Grouped(scopeKey(optionScope, "<name>"), description(), valueParser.asCompound().helpEntries(scopeKey(optionScope, "<name>")));
                 }
             }
         }
-
     }
 
     public static abstract class ValueParser<TYPE> {
 
         public abstract TYPE parse(Yaml yaml, String scope);
 
-        boolean isLeaf() {
+        boolean isPrimitive() {
             return false;
         }
 
@@ -188,7 +145,15 @@ public class YamlParser {
             throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Primitive.class));
         }
 
-        boolean isNested() {
+        public boolean isRestricted() {
+            return false;
+        }
+
+        Restricted<TYPE> asRestricted() {
+            throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Restricted.class));
+        }
+
+        boolean isCompound() {
             return false;
         }
 
@@ -201,7 +166,7 @@ public class YamlParser {
             public abstract List<HelpEntry> helpEntries(String scope);
 
             @Override
-            public boolean isNested() {
+            public boolean isCompound() {
                 return true;
             }
 
@@ -209,6 +174,38 @@ public class YamlParser {
             public Compound<T> asCompound() {
                 return this;
             }
+        }
+
+        public static class Restricted<T> extends ValueParser<T> {
+            private final Primitive<T> valueParser;
+            private final List<T> allowed;
+
+            public Restricted(Primitive<T> valueParser, List<T> allowed) {
+                this.valueParser = valueParser;
+                this.allowed = allowed;
+            }
+
+            @Override
+            public T parse(Yaml yaml, String scope) {
+                T value = valueParser.parse(yaml, scope);
+                if (allowed.contains(value)) return value;
+                else throw TypeDBException.of(CONFIG_ENUM_UNEXPECTED_VALUE, scope, value, allowed);
+            }
+
+            public String help() {
+                return "<" + String.join("+", iterate(this.allowed).map(Object::toString).toList()) + ">";
+            }
+
+            @Override
+            public boolean isRestricted() {
+                return true;
+            }
+
+            @Override
+            Restricted<T> asRestricted() {
+                return this;
+            }
+
         }
 
         public static class Primitive<T> extends ValueParser<T> {
@@ -280,7 +277,7 @@ public class YamlParser {
             }
 
             @Override
-            boolean isLeaf() {
+            boolean isPrimitive() {
                 return true;
             }
 
