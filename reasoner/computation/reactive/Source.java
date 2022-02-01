@@ -26,11 +26,13 @@ import java.util.function.Supplier;
 public class Source<PACKET> extends PublisherBase<PACKET> {
 
     private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
+    private boolean exhausted;
     private FunctionalIterator<PACKET> iterator;
 
     public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.iteratorSupplier = iteratorSupplier;
+        this.exhausted = false;
     }
 
     public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier,
@@ -41,11 +43,13 @@ public class Source<PACKET> extends PublisherBase<PACKET> {
     @Override
     public void pull(Receiver<PACKET> receiver) {
         assert receiver.equals(subscriber);
+        assert !exhausted;
         if (iterator == null) iterator = iteratorSupplier.get();
         if (iterator.hasNext()) {
             monitor().onAnswerCreate(this);
             receiver.receive(this, iterator.next());
         } else {
+            exhausted = true;
             monitor().onPathJoin(this);
         }
     }

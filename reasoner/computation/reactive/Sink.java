@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import javax.annotation.Nullable;
 
@@ -50,6 +51,12 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET>, Provider<PACKE
         if (isPulling) {
             providerManager().pull(provider);
         }
+    }
+
+    @Override
+    public void receive(Provider<PACKET> provider, PACKET packet) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
+        providerManager().receivedFrom(provider);
     }
 
     @Override

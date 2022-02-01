@@ -149,7 +149,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
         @Override
         public void receive(@Nullable Provider<ConceptMap> provider, ConceptMap packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
+            super.receive(provider, packet);
             isPulling = false;
             answerConsumer.accept(packet);
             monitor().onAnswerDestroy(this);

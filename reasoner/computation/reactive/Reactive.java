@@ -81,17 +81,20 @@ public interface Reactive {
             Provider<R> provider;
             private final Receiver<R> receiver;
             private final Monitoring monitor;
+            private boolean isPulling;
 
             public SingleManager(@Nullable Publisher<R> provider, Receiver.Subscriber<R> subscriber, Monitoring monitor) {
                 this.provider = provider;
                 this.receiver = subscriber;
                 this.monitor = monitor;
+                this.isPulling = false;
             }
 
             public SingleManager(Receiver.Subscriber<R> subscriber, Monitoring monitor) {
                 this.provider = null;
                 this.receiver = subscriber;
                 this.monitor = monitor;
+                this.isPulling = false;
             }
 
             @Override
@@ -104,8 +107,24 @@ public interface Reactive {
             public void pull(Provider<R> provider) {
                 assert this.provider != null;
                 assert this.provider == provider;
+                if (!isPulling()) {  // TODO: In most reactives we already do this defence, now we can do it once here abstractly.
+                    setPulling(true);
+                    pullProvider();
+                }
+            }
+
+            private boolean isPulling() {
+                return isPulling;
+            }
+
+            private void setPulling(boolean pulling) {
+                isPulling = pulling;
+            }
+
+            private void pullProvider() {
                 if (monitor == null) Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
                 else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.count()));
+                assert this.provider != null;
                 provider.pull(receiver);
             }
 
@@ -123,7 +142,7 @@ public interface Reactive {
             @Override
             public void receivedFrom(Provider<R> provider) {
                 assert this.provider == provider;
-                // TODO: Record for the purpose of isPulling and setPulling
+                setPulling(false);
             }
         }
 
