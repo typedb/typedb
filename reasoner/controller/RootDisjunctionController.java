@@ -79,6 +79,11 @@ public class RootDisjunctionController
         }
 
         @Override
+        protected Monitoring createMonitoring() {
+            return new Monitor(this);
+        }
+
+        @Override
         public void setUp() {
             super.setUp();
             outlet().publishTo(reasonerEndpoint);
@@ -93,11 +98,6 @@ public class RootDisjunctionController
         @Override
         protected boolean isPulling() {
             return reasonerEndpoint.isPulling();
-        }
-
-        @Override
-        protected boolean isMonitor() {
-            return true;
         }
 
         @Override

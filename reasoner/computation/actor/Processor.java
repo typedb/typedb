@@ -68,7 +68,11 @@ public abstract class Processor<INPUT, OUTPUT,
         this.monitors = new HashSet<>();
         this.upstreamConnections = new HashSet<>();
         this.done = false;
-        this.monitoring = new Monitoring(this);
+        this.monitoring = createMonitoring();
+    }
+
+    protected Monitoring createMonitoring() {
+        return new Monitoring(this);
     }
 
     public abstract void setUp();
@@ -107,7 +111,9 @@ public abstract class Processor<INPUT, OUTPUT,
 
     protected <PROV_PROCESSOR extends Processor<?, INPUT, ?, PROV_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PROV_PROCESSOR> connection) {
         assert !done;
-        connection.propagateMonitors(addSelfIfMonitor(monitors));
+        Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors = addSelfIfMonitor(this.monitors);
+        monitors.forEach(connection::registerWithMonitor);
+        if (monitors.size() > 0) connection.propagateMonitors(monitors);
         receivingEndpoints.get(connection.receiverEndpointId()).setReady(connection);
         upstreamConnections.add(connection);
     }
@@ -149,19 +155,22 @@ public abstract class Processor<INPUT, OUTPUT,
         return monitors;
     }
 
-    protected void addMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
+    protected void setMonitorReporting(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
         assert !done;
         Set<Driver<? extends Processor<?, ?, ?, ?>>> unseenMonitors = new HashSet<>(addSelfIfMonitor(monitors));
         unseenMonitors.removeAll(this.monitors);
-        unseenMonitors.forEach(monitor -> monitoring().fastForwardCounts(monitor));
         this.monitors.addAll(unseenMonitors);
+        unseenMonitors.forEach(monitor -> monitoring().sendInitialReport(monitor));
         if (unseenMonitors.size() > 0) {
-            upstreamConnections.forEach(e -> e.propagateMonitors(unseenMonitors));
+            upstreamConnections.forEach(connection -> {
+                unseenMonitors.forEach(connection::registerWithMonitor);
+                connection.propagateMonitors(unseenMonitors);
+            });
         }
     }
 
     private Set<Driver<? extends Processor<?, ?, ?, ?>>> addSelfIfMonitor(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
-        if (isMonitor()) {
+        if (monitoring().isMonitor()) {
             Set<Driver<? extends Processor<?, ?, ?, ?>>> newMonitorSet = new HashSet<>(monitors);
             newMonitorSet.add(driver());
             return newMonitorSet;
@@ -176,10 +185,6 @@ public abstract class Processor<INPUT, OUTPUT,
 
     protected void onDone() {
         throw TypeDBException.of(ILLEGAL_STATE);
-    }
-
-    protected boolean isMonitor() {
-        return false;
     }
 
     @Override
@@ -378,8 +383,8 @@ public abstract class Processor<INPUT, OUTPUT,
 
     public static class Monitoring {
 
-        private long pathsCount;
-        private long answersCount;
+        protected long pathsCount;
+        protected long answersCount;
         private final Processor<?, ?, ?, ?> processor;
 
         Monitoring(Processor<?, ?, ?, ?> processor) {
@@ -388,8 +393,16 @@ public abstract class Processor<INPUT, OUTPUT,
             this.answersCount = 0;
         }
 
+        protected Monitor asMonitor() {
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
         Processor<?, ?, ?, ?> processor() {
             return processor;
+        }
+
+        public boolean isMonitor() {
+            return false;
         }
 
         public enum CountChange {
@@ -397,24 +410,6 @@ public abstract class Processor<INPUT, OUTPUT,
             PathJoin,
             AnswerCreate,
             AnswerDestroy
-        }
-
-        private void fastForwardCounts(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
-            final long pathsCountUpdate = pathsCount;
-            final long answersCountUpdate = answersCount;
-            if (pathsCountUpdate != 0 || answersCountUpdate != 0) {
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.fastForwardCounts(processor().driver(), monitor, pathsCountUpdate, answersCountUpdate));
-                monitor.execute(actor -> actor.monitoring().fastForwardCounts(pathsCountUpdate, answersCountUpdate));
-            }
-        }
-
-        public void fastForwardCounts(long pathCountDelta, long answersCountDelta) {
-            assert processor().isMonitor();
-            assert pathsCount >= -1;
-            pathsCount += pathCountDelta;
-//            assert answersCount >= 0;  // TODO: Conclusions destroy an answer before sending to the materialiser, so essentially we briefly swap an answer for a path
-            answersCount += answersCountDelta;
-            checkTermination();
         }
 
         public void onPathFork(int numForks, Reactive forker) {
@@ -439,14 +434,13 @@ public abstract class Processor<INPUT, OUTPUT,
             onChange(1, CountChange.AnswerDestroy, destroyer);
         }
 
-        private void onChange(int num, CountChange countChange, Reactive reactive) {
+        protected void onChange(int num, CountChange countChange, Reactive reactive) {
             updateCount(countChange, num);
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.onCountChange(reactive, countChange, processor().driver(), num));
             reportToMonitors(countChange, num, reactive);
-            if (processor().isMonitor()) checkTermination();
         }
 
-        private void updateCount(CountChange countChange, int num) {
+        protected void updateCount(CountChange countChange, int num) {
             switch (countChange) {
                 case PathFork:
                     pathsCount += num;
@@ -461,39 +455,90 @@ public abstract class Processor<INPUT, OUTPUT,
                     answersCount -= num;
                     break;
             }
-            if (processor().isMonitor()) {
-                assert pathsCount >= -1;
-                assert count() >= -1;
-                // assert answersCount >= 0;  // TODO: Conclusions destroy an answer before sending to the materialiser, so essentially we briefly swap an answer for a path
-            }
         }
 
-        private void reportToMonitors(CountChange countChange, int num, Reactive reactive) {
+        protected void reportToMonitors(CountChange countChange, int num, Reactive reactive) {
             final int update = num;
             processor().monitors().forEach(monitor -> {
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportCountChange(reactive, countChange, monitor, update));
-                monitor.execute(actor -> actor.monitoring().reportCountChange(update, countChange, reactive));
+                monitor.execute(actor -> actor.monitoring().asMonitor().receiveReport(update, countChange, reactive));
             });
         }
 
-        private void reportCountChange(int num, CountChange countChange, Reactive reactive) {
-            assert processor().isMonitor();
-            updateCount(countChange, num);
-            reportToMonitors(countChange, num, reactive);
-            checkTermination();
+        protected void sendInitialReport(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
+            final long pathsCountUpdate = pathsCount;
+            final long answersCountUpdate = answersCount;
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.initialReport(processor().driver(), monitor, pathsCountUpdate, answersCountUpdate));
+            monitor.execute(actor -> actor.monitoring().asMonitor().receiveInitialReport(processor().driver(), pathsCountUpdate, answersCountUpdate));
         }
 
         public long count() {
             return pathsCount + answersCount;
         }
 
-        private void checkTermination() {
-            assert count() >= -1;
-            if (count() <= -1 && processor().isPulling()) {
-                processor().onDone();
+    }
+
+    public static class Monitor extends Monitoring {
+
+        private final Set<Driver<? extends Processor<?, ?, ?, ?>>> registered;
+        private final Set<Driver<? extends Processor<?, ?, ?, ?>>> countSenders;
+
+        public Monitor(Processor<?, ?, ?, ?> processor) {
+            super(processor);
+            this.registered = new HashSet<>();
+            this.countSenders = new HashSet<>();
+        }
+
+        @Override
+        public boolean isMonitor() {
+            return true;
+        }
+
+        @Override
+        protected Monitor asMonitor() {
+            return this;
+        }
+
+        public void register(Driver<? extends Processor<?, ?, ?, ?>> registree) {
+            registered.add(registree);
+        }
+
+        public void receiveInitialReport(Driver<? extends Processor<?, ?, ?, ?>> sender, long pathCountDelta, long answersCountDelta) {
+            assert registered.contains(sender);
+            pathsCount += pathCountDelta;
+            answersCount += answersCountDelta;
+            countSenders.add(sender);
+            checkTermination();
+        }
+
+        private void receiveReport(int num, CountChange countChange, Reactive reactive) {
+            updateCount(countChange, num);
+            reportToMonitors(countChange, num, reactive);
+            checkTermination();
+        }
+
+        @Override
+        protected void updateCount(CountChange countChange, int num) {
+            super.updateCount(countChange, num);
+            if (registered.equals(countSenders)) {
+                // assert pathsCount >= -1;
+                assert answersCount >= 0;  // TODO: Conclusions destroy an answer before sending to the materialiser, so essentially we briefly swap an answer for a path
+                assert count() >= -1;
             }
         }
 
+        @Override
+        protected void onChange(int num, CountChange countChange, Reactive reactive) {
+            super.onChange(num, countChange, reactive);
+            checkTermination();
+        }
+
+        private void checkTermination() {
+            assert count() >= -1;
+            if (count() <= -1 && processor().isPulling() && registered.equals(countSenders)) {
+                processor().onDone();
+            }
+        }
     }
 
 }

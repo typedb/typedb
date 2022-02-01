@@ -166,9 +166,9 @@ public final class Tracer {
         reportPathCount(simpleClassId(reactive), monitor, countLabel(countChange, num));
     }
 
-    public synchronized void fastForwardCounts(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, long pathsCount, long answersCountUpdate) {
+    public synchronized void initialReport(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, long pathsCount, long answersCountUpdate) {
         String senderName = sender.name() + "-actor";
-        pathUpdate(senderName, monitor, "ff-p" + pathsCount + "-a" + answersCountUpdate);
+        pathUpdate(senderName, monitor, "init-p" + pathsCount + "-a" + answersCountUpdate);
         addNodeGroup(senderName, sender.name(), defaultTrace);
     }
 
@@ -188,6 +188,11 @@ public final class Tracer {
         String monitorName = monitor.name() + "-actor";
         addMessage(sender, monitorName, defaultTrace, EdgeType.UPDATE, label);
         addNodeGroup(monitorName, monitor.name(), defaultTrace);
+    }
+
+    public void registerWithMonitor(Connection<?, ?, ?> connection, Actor.Driver<? extends Processor<?,?,?,?>> monitor) {
+        String monitorName = monitor.name() + "-actor";
+        addMessage(simpleClassId(connection), monitorName, defaultTrace, EdgeType.REGISTER, "register");
     }
 
     private void addMessage(String sender, String receiver, Trace trace, EdgeType edgeType,
@@ -325,7 +330,8 @@ public final class Tracer {
         RECEIVE("green"),
         MONITOR("orange"),
         REPORT("orange3"),
-        UPDATE("orangered");
+        UPDATE("orangered"),
+        REGISTER("cyan4");
 
         private final String colour;
 

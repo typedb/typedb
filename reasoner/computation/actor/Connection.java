@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.actor;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.List;
 import java.util.Set;
@@ -36,8 +37,7 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
      * Connects a processor outlet (upstream, publishing) to another processor's inlet (downstream, subscribing)
      */
     Connection(Actor.Driver<PROCESSOR> recProcessor, Actor.Driver<PROV_PROCESSOR> provProcessor, long recEndpointId,
-               long provEndpointId,
-               List<Function<PACKET, PACKET>> transforms) {
+               long provEndpointId, List<Function<PACKET, PACKET>> transforms) {
         this.recProcessor = recProcessor;
         this.provProcessor = provProcessor;
         this.recEndpointId = recEndpointId;
@@ -54,7 +54,12 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
     }
 
     protected void propagateMonitors(Set<Actor.Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
-        provProcessor.execute(actor -> actor.addMonitors(monitors));
+        provProcessor.execute(actor -> actor.setMonitorReporting(monitors));
+    }
+
+    protected void registerWithMonitor(Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerWithMonitor(this, monitor));
+        monitor.execute(actor -> actor.monitoring().asMonitor().register(provProcessor));
     }
 
     protected long receiverEndpointId() {
