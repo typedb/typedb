@@ -84,7 +84,7 @@ public class DataImporter {
     private final int parallelisation;
 
     private final Path dataFile;
-    private final IDMapper IDMapper;
+    private final IDMapper idMapper;
     private final String version;
     private final Status status;
     private final ConcurrentSet<DataProto.Item.Relation> skippedRelations;
@@ -99,7 +99,7 @@ public class DataImporter {
         this.parallelisation = com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
         this.importExecutor = Executors.newFixedThreadPool(parallelisation);
         this.readerExecutor = Executors.newSingleThreadExecutor();
-        this.IDMapper = new IDMapper(database);
+        this.idMapper = new IDMapper(database);
         this.skippedRelations = new ConcurrentSet<>();
         this.status = new Status();
     }
@@ -119,7 +119,7 @@ public class DataImporter {
 
     public void close() {
         session.close();
-        IDMapper.close();
+        idMapper.close();
     }
 
     private void validateHeader() {
@@ -229,25 +229,25 @@ public class DataImporter {
         private void commitBatch() {
             transaction.commit();
             transaction.committedIIDs().forEachRemaining(pair ->
-                    IDMapper.put(bufferedToOriginalIds.get(pair.first()), pair.second())
+                    idMapper.put(bufferedToOriginalIds.get(pair.first()), pair.second())
             );
             bufferedToOriginalIds.clear();
             originalToBufferedIds.clear();
         }
 
         void recordCreated(ByteArray newIID, String originalID) {
-            assert !originalToBufferedIds.containsKey(originalID) && !IDMapper.contains(originalID);
+            assert !originalToBufferedIds.containsKey(originalID) && !idMapper.contains(originalID);
             bufferedToOriginalIds.put(newIID, originalID);
             originalToBufferedIds.put(originalID, newIID);
         }
 
         protected void recordAttributeCreated(ByteArray iid, String originalID) {
-            IDMapper.put(originalID, iid);
+            idMapper.put(originalID, iid);
         }
 
         Thing getImportedThing(String originalID) {
             ByteArray newIID;
-            if ((newIID = originalToBufferedIds.get(originalID)) == null && (newIID = IDMapper.get(originalID)) == null) {
+            if ((newIID = originalToBufferedIds.get(originalID)) == null && (newIID = idMapper.get(originalID)) == null) {
                 throw TypeDBException.of(ILLEGAL_STATE);
             } else {
                 Thing thing = transaction.concepts().getThing(newIID);
@@ -257,7 +257,7 @@ public class DataImporter {
         }
 
         boolean isImported(String originalID) {
-            return originalToBufferedIds.containsKey(originalID) || IDMapper.contains(originalID);
+            return originalToBufferedIds.containsKey(originalID) || idMapper.contains(originalID);
         }
 
         int insertOwnerships(String originalId, List<DataProto.Item.OwnedAttribute> ownerships) {
@@ -410,16 +410,26 @@ public class DataImporter {
             skippedRelations.forEach(msg -> {
                 RelationType relType = transaction.concepts().getRelationType(msg.getLabel());
                 if (relType == null) throw TypeDBException.of(TYPE_NOT_FOUND, msg.getLabel());
-                IDMapper.put(msg.getId(), relType.create().getIID());
+                Relation importedRelation = relType.create();
+                idMapper.put(msg.getId(), importedRelation.getIID());
+
+                int ownershipCount = 0;
+                for (DataProto.Item.OwnedAttribute ownership : msg.getAttributeList()) {
+                    Thing attribute = transaction.concepts().getThing(idMapper.get(ownership.getId()));
+                    assert attribute != null;
+                    importedRelation.setHas(attribute.asAttribute());
+                    ownershipCount++;
+                }
+                status.ownershipCount.addAndGet(ownershipCount);
             });
 
             skippedRelations.forEach(msg -> {
                 RelationType relType = transaction.concepts().getRelationType(msg.getLabel());
-                Relation relation = transaction.concepts().getThing(IDMapper.get(msg.getId())).asRelation();
+                Relation relation = transaction.concepts().getThing(idMapper.get(msg.getId())).asRelation();
                 msg.getRoleList().forEach(roleMsg -> {
                     RoleType roleType = getRoleType(relType, roleMsg);
                     for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
-                        Thing player = transaction.concepts().getThing(IDMapper.get(playerMessage.getId()));
+                        Thing player = transaction.concepts().getThing(idMapper.get(playerMessage.getId()));
                         if (player == null) throw TypeDBException.of(PLAYER_NOT_FOUND, relType.getLabel());
                         else relation.addPlayer(roleType, player);
                     }
@@ -534,6 +544,27 @@ public class DataImporter {
             return attributes == status.attributeCount.get() && entities == status.entityCount.get() &&
                     relations == status.relationCount.get() && ownerships == status.ownershipCount.get() &&
                     roles == status.roleCount.get();
+        }
+
+        public String getMismatch(Status status) {
+            assert !verify(status);
+            String mismatch = "";
+            if (attributes != status.attributeCount.get()) {
+                mismatch += "\nAttribute count mismatch: expected" + attributes + ", but imported " + status.attributeCount.get();
+            }
+            if (entities != status.entityCount.get()) {
+                mismatch += "\nEntity count mismatch: expected" + entities + ", but imported " + status.entityCount.get();
+            }
+            if (relations != status.relationCount.get()) {
+                mismatch += "\nRelation count mismatch: expected" + relations + ", but imported " + status.relationCount.get();
+            }
+            if (roles != status.roleCount.get()) {
+                mismatch += "\nRole count mismatch: expected" + roles + ", but imported " + status.roleCount.get();
+            }
+            if (ownerships != status.ownershipCount.get()) {
+                mismatch += "\nOwnership count mismatch: expected" + ownerships + ", but imported " + status.ownershipCount.get();
+            }
+            return mismatch;
         }
     }
 }
