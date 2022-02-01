@@ -352,7 +352,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     @Override
     public void recycle() {
         iterators.values().forEach(FunctionalIterator::recycle);
-        iterators.clear();
     }
 
     public static class Scopes {
