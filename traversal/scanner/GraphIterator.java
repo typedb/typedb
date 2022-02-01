@@ -86,6 +86,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
     }
 
+    private void setCompleted() {
+        state = State.COMPLETED;
+        recycle();
+    }
+
     @Override
     public boolean hasNext() {
         try {
@@ -93,11 +98,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             else if (state == State.FETCHED) return true;
             else if (state == State.INIT) {
                 if (computeFirst(1)) state = State.FETCHED;
-                else state = State.COMPLETED;
+                else  setCompleted();
             } else if (state == State.EMPTY) {
                 computeNextSeekPos = edgeCount;
                 if (computeNext(edgeCount)) state = State.FETCHED;
-                else state = State.COMPLETED;
+                else setCompleted();
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
@@ -344,6 +349,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     @Override
     public void recycle() {
+        iterators.values().forEach(FunctionalIterator::recycle);
+        iterators.clear();
     }
 
     public static class Scopes {
