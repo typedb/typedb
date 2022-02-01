@@ -111,7 +111,7 @@ public class DataImporter {
             new ParallelImport(EntitiesAndOwnerships::new).execute();
             new ParallelImport(CompleteRelations::new).execute();
             importSkippedRelations();
-            if (!checksum.verify(status)) throw TypeDBException.of(IMPORT_CHECKSUM_MISMATCH);
+            if (!checksum.verify(status)) throw TypeDBException.of(IMPORT_CHECKSUM_MISMATCH, checksum.mismatch(status));
         } finally {
             LOG.info("Imported " + status.toString());
         }
@@ -546,7 +546,7 @@ public class DataImporter {
                     roles == status.roleCount.get();
         }
 
-        public String getMismatch(Status status) {
+        public String mismatch(Status status) {
             assert !verify(status);
             String mismatch = "";
             if (attributes != status.attributeCount.get()) {
