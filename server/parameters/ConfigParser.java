@@ -35,16 +35,16 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_YAML_MUST_BE_MAP;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CONFIGURATION_OPTIONS;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.ValueParser.Primitive.BOOLEAN;
-import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.ValueParser.Primitive.BYTES_SIZE;
-import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.ValueParser.Primitive.INET_SOCKET_ADDRESS;
-import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.ValueParser.Primitive.LIST_STRING;
-import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.ValueParser.Primitive.PATH;
-import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.ValueParser.Primitive.STRING;
+import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.Value.Primitive.BOOLEAN;
+import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.Value.Primitive.BYTES_SIZE;
+import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.Value.Primitive.INET_SOCKET_ADDRESS;
+import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.Value.Primitive.LIST_STRING;
+import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.Value.Primitive.PATH;
+import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.Value.Primitive.STRING;
 import static com.vaticle.typedb.core.server.common.Util.configPathAbsolute;
 import static com.vaticle.typedb.core.server.common.Util.scopeKey;
 
-public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
+public class ConfigParser extends YamlParser.Value.Compound<Config> {
 
     private static final YamlParser.KeyValue.Predefined<Config.Server> serverParser = YamlParser.KeyValue.Predefined.create(ServerParser.name, ServerParser.description, new ServerParser());
     private static final YamlParser.KeyValue.Predefined<Config.Storage> storageParser = YamlParser.KeyValue.Predefined.create(StorageParser.name, StorageParser.description, new StorageParser());
@@ -279,7 +279,7 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
             public static final String description = "Loggers to activate.";
 
             private static final YamlParser.KeyValue.Predefined<Config.Log.Logger.Unfiltered> defaultParser = YamlParser.KeyValue.Predefined.create("default", "The default logger.", new UnfilteredParser());
-            private static final YamlParser.KeyValue.Dynamic<Config.Log.Logger.Filtered> filteredParsers = YamlParser.KeyValue.Dynamic.create("Custom filtered loggers.", new FiltredParser());
+            private static final YamlParser.KeyValue.Dynamic<Config.Log.Logger.Filtered> filteredParsers = YamlParser.KeyValue.Dynamic.create("Custom filtered loggers.", new FilteredParser());
 
             @Override
             public Config.Log.Logger parse(Yaml yaml, String scope) {
@@ -315,7 +315,7 @@ public class ConfigParser extends YamlParser.ValueParser.Compound<Config> {
                 }
             }
 
-            static class FiltredParser extends Compound<Config.Log.Logger.Filtered> {
+            static class FilteredParser extends Compound<Config.Log.Logger.Filtered> {
 
                 private static final YamlParser.KeyValue.Predefined<String> filterParser = YamlParser.KeyValue.Predefined.create("filter", "Package/class filter (eg. 'com.vaticle.typedb').", STRING);
                 private static final YamlParser.KeyValue.Predefined<String> levelParser = YamlParser.KeyValue.Predefined.create("level", "Output level.", new Restricted<>(STRING, LEVELS));

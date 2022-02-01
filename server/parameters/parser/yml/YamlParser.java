@@ -61,15 +61,15 @@ public class YamlParser {
         public static class Predefined<TYPE> extends KeyValue {
 
             private final String key;
-            final ValueParser<TYPE> valueParser;
+            final Value<TYPE> valueParser;
 
-            private Predefined(String key, String description, ValueParser<TYPE> valueParser) {
+            private Predefined(String key, String description, Value<TYPE> valueParser) {
                 super(description);
                 this.key = key;
                 this.valueParser = valueParser;
             }
 
-            public static <TYPE> Predefined<TYPE> create(String key, String description, ValueParser<TYPE> valueParser) {
+            public static <TYPE> Predefined<TYPE> create(String key, String description, Value<TYPE> valueParser) {
                 return new Predefined<>(key, description, valueParser);
             }
 
@@ -97,14 +97,14 @@ public class YamlParser {
 
         public static class Dynamic<TYPE> extends KeyValue {
 
-            private final ValueParser<TYPE> valueParser;
+            private final Value<TYPE> valueParser;
 
-            private Dynamic(String description, ValueParser<TYPE> valueParser) {
+            private Dynamic(String description, Value<TYPE> valueParser) {
                 super(description);
                 this.valueParser = valueParser;
             }
 
-            public static <TYPE> Dynamic<TYPE> create(String description, ValueParser<TYPE> valueParser) {
+            public static <TYPE> Dynamic<TYPE> create(String description, Value<TYPE> valueParser) {
                 return new Dynamic<>(description, valueParser);
             }
 
@@ -133,7 +133,7 @@ public class YamlParser {
         }
     }
 
-    public static abstract class ValueParser<TYPE> {
+    public static abstract class Value<TYPE> {
 
         public abstract TYPE parse(Yaml yaml, String scope);
 
@@ -161,7 +161,7 @@ public class YamlParser {
             throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Compound.class));
         }
 
-        public static abstract class Compound<T> extends ValueParser<T> {
+        public static abstract class Compound<T> extends Value<T> {
 
             public abstract List<HelpEntry> helpEntries(String scope);
 
@@ -176,7 +176,7 @@ public class YamlParser {
             }
         }
 
-        public static class Restricted<T> extends ValueParser<T> {
+        public static class Restricted<T> extends Value<T> {
             private final Primitive<T> valueParser;
             private final List<T> allowed;
 
@@ -208,7 +208,7 @@ public class YamlParser {
 
         }
 
-        public static class Primitive<T> extends ValueParser<T> {
+        public static class Primitive<T> extends Value<T> {
             public static final Primitive<String> STRING = new Primitive<>(
                     (yaml) -> yaml.isString(),
                     (yaml) -> yaml.asString().value(),

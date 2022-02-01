@@ -146,7 +146,7 @@ public class ConfigTest {
         } catch (TypeDBException e) {
             assert e.code().isPresent();
             assertEquals(CONFIG_UNEXPECTED_VALUE.code(), e.code().get());
-            assertEquals(CONFIG_UNEXPECTED_VALUE.message("storage.data", "123456[int]", YamlParser.ValueParser.Primitive.PATH.help()), e.getMessage());
+            assertEquals(CONFIG_UNEXPECTED_VALUE.message("storage.data", "123456[int]", YamlParser.Value.Primitive.PATH.help()), e.getMessage());
         }
     }
 
