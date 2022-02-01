@@ -550,19 +550,19 @@ public class DataImporter {
             assert !verify(status);
             String mismatch = "";
             if (attributes != status.attributeCount.get()) {
-                mismatch += "\nAttribute count mismatch: expected" + attributes + ", but imported " + status.attributeCount.get();
+                mismatch += "\nAttribute count mismatch: expected " + attributes + ", but imported " + status.attributeCount.get();
             }
             if (entities != status.entityCount.get()) {
-                mismatch += "\nEntity count mismatch: expected" + entities + ", but imported " + status.entityCount.get();
+                mismatch += "\nEntity count mismatch: expected " + entities + ", but imported " + status.entityCount.get();
             }
             if (relations != status.relationCount.get()) {
-                mismatch += "\nRelation count mismatch: expected" + relations + ", but imported " + status.relationCount.get();
+                mismatch += "\nRelation count mismatch: expected " + relations + ", but imported " + status.relationCount.get();
             }
             if (roles != status.roleCount.get()) {
-                mismatch += "\nRole count mismatch: expected" + roles + ", but imported " + status.roleCount.get();
+                mismatch += "\nRole count mismatch: expected " + roles + ", but imported " + status.roleCount.get();
             }
             if (ownerships != status.ownershipCount.get()) {
-                mismatch += "\nOwnership count mismatch: expected" + ownerships + ", but imported " + status.ownershipCount.get();
+                mismatch += "\nOwnership count mismatch: expected " + ownerships + ", but imported " + status.ownershipCount.get();
             }
             return mismatch;
         }
