@@ -33,6 +33,7 @@ import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,6 +46,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static java.util.stream.Collectors.toMap;
 
+@NotThreadSafe
 public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphIterator.class);
@@ -86,11 +88,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
     }
 
-    private void setCompleted() {
-        state = State.COMPLETED;
-        recycle();
-    }
-
     @Override
     public boolean hasNext() {
         try {
@@ -98,7 +95,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             else if (state == State.FETCHED) return true;
             else if (state == State.INIT) {
                 if (computeFirst(1)) state = State.FETCHED;
-                else  setCompleted();
+                else setCompleted();
             } else if (state == State.EMPTY) {
                 computeNextSeekPos = edgeCount;
                 if (computeNext(edgeCount)) state = State.FETCHED;
@@ -118,6 +115,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
             throw e;
         }
+    }
+
+    private void setCompleted() {
+        state = State.COMPLETED;
+        recycle();
     }
 
     private boolean computeFirst(int pos) {
