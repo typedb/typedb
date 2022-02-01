@@ -520,11 +520,8 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         protected void updateCount(CountChange countChange, int num) {
             super.updateCount(countChange, num);
-            if (registered.equals(countSenders)) {
-                // assert pathsCount >= -1;
-                assert answersCount >= 0;  // TODO: Conclusions destroy an answer before sending to the materialiser, so essentially we briefly swap an answer for a path
-                assert count() >= -1;
-            }
+            assert answersCount >= 0 || !registered.equals(countSenders);
+            assert count() >= -1 || !registered.equals(countSenders);
         }
 
         @Override
@@ -534,7 +531,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         private void checkTermination() {
-            assert count() >= -1;
+            assert count() >= -1 || !registered.equals(countSenders);
             if (count() <= -1 && processor().isPulling() && registered.equals(countSenders)) {
                 processor().onDone();
             }
