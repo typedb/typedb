@@ -160,12 +160,12 @@ public abstract class Processor<INPUT, OUTPUT,
         Set<Driver<? extends Processor<?, ?, ?, ?>>> unseenMonitors = new HashSet<>(addSelfIfMonitor(monitors));
         unseenMonitors.removeAll(this.monitors);
         this.monitors.addAll(unseenMonitors);
-        unseenMonitors.forEach(monitor -> monitoring().sendInitialReport(monitor));
         if (unseenMonitors.size() > 0) {
             upstreamConnections.forEach(connection -> {
                 unseenMonitors.forEach(connection::registerWithMonitor);
                 connection.propagateMonitors(unseenMonitors);
             });
+            unseenMonitors.forEach(monitor -> monitoring().sendInitialReport(monitor));
         }
     }
 
