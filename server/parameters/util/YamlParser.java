@@ -39,10 +39,13 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_UNEXPECTED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONFIG_OPTION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.server.parameters.ConfigParser.append;
 
 public class YamlParser {
-    
+
+    public static String append(String parent, String key) {
+        return parent.isEmpty() ? key : parent + "." + key;
+    }
+
     public static abstract class KeyValue {
 
         private final String description;

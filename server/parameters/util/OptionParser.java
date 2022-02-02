@@ -28,7 +28,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_F
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_OPTION_REQUIRES_TYPED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLICATE_CLI_OPTION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.server.parameters.ConfigParser.append;
+import static com.vaticle.typedb.core.server.parameters.util.YamlParser.append;
 
 public abstract class OptionParser {
 
