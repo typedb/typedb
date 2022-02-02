@@ -169,6 +169,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 // TODO: We would like to use a provider manager for this, but it's restricted to work to this reactive's input type.
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive));
                 materialiserReactive.pull(subscriber());
+                providerManager().pull(provider);  // We need to pull on the condition again in case materialisation fails
             }
 
             private void receiveMaterialisation(MaterialiserReactive provider, Map<Variable, Concept> packet) {
