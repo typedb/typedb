@@ -19,18 +19,16 @@
 package com.vaticle.typedb.core.graph.edge;
 
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.EdgeViewIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
 import java.util.Optional;
 
 /**
- * An edge between two {@code ThingVertex}.
- *
- * This edge can only have a encoding of type {@code Encoding.Edge.Thing}.
+ * An directed edge between two {@code ThingVertex}.
  */
-public interface ThingEdge extends Edge<Encoding.Edge.Thing, EdgeIID.Thing, ThingVertex> {
+public interface ThingEdge extends Edge<Encoding.Edge.Thing, ThingVertex> {
 
     ThingVertex from();
 
@@ -45,4 +43,27 @@ public interface ThingEdge extends Edge<Encoding.Edge.Thing, EdgeIID.Thing, Thin
     void isInferred(boolean isInferred);
 
     boolean isInferred();
+
+    View.Forward getForward();
+
+    View.Backward getBackward();
+
+    interface View<T extends View<T>> extends Comparable<T> {
+
+        EdgeViewIID.Thing iid();
+
+        ThingEdge edge();
+
+        interface Forward extends View<Forward> {
+
+            @Override
+            int compareTo(Forward other);
+        }
+
+        interface Backward extends View<Backward> {
+
+            @Override
+            int compareTo(Backward other);
+        }
+    }
 }

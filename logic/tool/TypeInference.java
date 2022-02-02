@@ -185,6 +185,7 @@ public class TypeInference {
             return traversalEng.iterator(traversal).map(vertexMap -> {
                 Map<Retrievable.Name, Label> labels = new HashMap<>();
                 vertexMap.forEach((id, vertex) -> {
+                    if (!originalToInference.containsKey(id)) return;
                     Identifier.Variable originalID = inferenceToOriginal.get(id).id();
                     if (originalID.isName()) labels.put(originalID.asName(), vertex.asType().properLabel());
                 });

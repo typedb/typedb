@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.graph.edge.impl;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
-import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.EdgeViewIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
@@ -76,14 +76,14 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             return encoding;
         }
 
-        @Override
-        public EdgeIID.Type outIID() {
-            return EdgeIID.Type.of(from().iid(), encoding.out(), to().iid());
+//        @Override
+        public EdgeViewIID.Type outIID() {
+            return EdgeViewIID.Type.of(from().iid(), encoding.forward(), to().iid());
         }
 
-        @Override
-        public EdgeIID.Type inIID() {
-            return EdgeIID.Type.of(to().iid(), encoding.in(), from().iid());
+//        @Override
+        public EdgeViewIID.Type inIID() {
+            return EdgeViewIID.Type.of(to().iid(), encoding.backward(), from().iid());
         }
 
         @Override
@@ -135,11 +135,11 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         @Override
         public void commit() {
             if (committed.compareAndSet(false, true)) {
-                if (encoding.out() != null) {
+                if (encoding.forward() != null) {
                     if (overridden != null) graph.storage().putUntracked(outIID(), overridden.iid().bytes());
                     else graph.storage().putUntracked(outIID());
                 }
-                if (encoding.in() != null) {
+                if (encoding.backward() != null) {
                     if (overridden != null) graph.storage().putUntracked(inIID(), overridden.iid().bytes());
                     else graph.storage().putUntracked(inIID());
                 }
@@ -189,8 +189,8 @@ public abstract class TypeEdgeImpl implements TypeEdge {
      */
     public static class Persisted extends TypeEdgeImpl implements TypeEdge {
 
-        private final EdgeIID.Type outIID;
-        private final EdgeIID.Type inIID;
+        private final EdgeViewIID.Type outIID;
+        private final EdgeViewIID.Type inIID;
         private final VertexIID.Type fromIID;
         private final VertexIID.Type toIID;
         private final AtomicBoolean deleted;
@@ -215,19 +215,19 @@ public abstract class TypeEdgeImpl implements TypeEdge {
          * @param graph the graph comprised of all the vertices
          * @param iid   the {@code iid} of a persisted edge
          */
-        public Persisted(TypeGraph graph, EdgeIID.Type iid, @Nullable VertexIID.Type overriddenIID) {
+        public Persisted(TypeGraph graph, EdgeViewIID.Type iid, @Nullable VertexIID.Type overriddenIID) {
             super(graph, iid.encoding());
 
-            if (iid.isOutwards()) {
+            if (iid.isForward()) {
                 fromIID = iid.start();
                 toIID = iid.end();
                 outIID = iid;
-                inIID = EdgeIID.Type.of(iid.end(), iid.encoding().in(), iid.start());
+                inIID = EdgeViewIID.Type.of(iid.end(), iid.encoding().backward(), iid.start());
             } else {
                 fromIID = iid.end();
                 toIID = iid.start();
                 inIID = iid;
-                outIID = EdgeIID.Type.of(iid.end(), iid.encoding().out(), iid.start());
+                outIID = EdgeViewIID.Type.of(iid.end(), iid.encoding().forward(), iid.start());
             }
 
             deleted = new AtomicBoolean(false);
@@ -239,16 +239,14 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         public Encoding.Edge.Type encoding() {
             return encoding;
         }
-
-        @Override
-        public EdgeIID.Type outIID() {
-            return outIID;
-        }
-
-        @Override
-        public EdgeIID.Type inIID() {
-            return inIID;
-        }
+//
+//        public EdgeViewIID.Type outIID() {
+//            return outIID;
+//        }
+//
+//        public EdgeViewIID.Type inIID() {
+//            return inIID;
+//        }
 
         @Override
         public TypeVertex from() {

@@ -40,6 +40,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COLON;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COMMA;
@@ -179,11 +180,13 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         }
 
         public static RolePlayer of(RolePlayer clone, VariableCloner cloner) {
-            return new RolePlayer(
+            RolePlayer rolePlayer = new RolePlayer(
                     clone.roleType().map(cloner::clone).orElse(null),
                     cloner.clone(clone.player()),
                     clone.repetition()
             );
+            if (clone.roleType().isEmpty()) rolePlayer.setInferredRoleTypes(clone.inferredRoleTypes);
+            return rolePlayer;
         }
 
         public int repetition() {
@@ -202,7 +205,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
         public void setInferredRoleTypes(Set<Label> roleTypes) {
             assert roleType == null;
-            this.inferredRoleTypes = roleTypes;
+            this.inferredRoleTypes = set(roleTypes);
         }
 
         public ThingVariable player() {
@@ -237,9 +240,12 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         }
 
         public RolePlayer clone(Conjunction.Cloner cloner) {
+            assert roleType != null ^ inferredRoleTypes != null;
             TypeVariable roleTypeClone = roleType == null ? null : cloner.cloneVariable(roleType);
             ThingVariable playerClone = cloner.cloneVariable(player);
-            return new RelationConstraint.RolePlayer(roleTypeClone, playerClone, repetition);
+            RolePlayer rpClone = new RolePlayer(roleTypeClone, playerClone, repetition);
+            if (roleType().isEmpty()) rpClone.setInferredRoleTypes(this.inferredRoleTypes);
+            return rpClone;
         }
     }
 

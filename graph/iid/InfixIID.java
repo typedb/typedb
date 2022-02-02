@@ -34,8 +34,8 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
     public abstract EDGE_ENCODING encoding();
 
-    public boolean isOutwards() {
-        return Encoding.Edge.isOut(bytes.get(0));
+    public boolean isForward() {
+        return Encoding.Edge.isForward(bytes.get(0));
     }
 
     public int length() {
@@ -117,16 +117,16 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         public InfixIID.Thing outwards() {
-            if (isOutwards()) return this;
+            if (isForward()) return this;
             byte[] bytesClone = bytes.cloneBytes();
-            bytesClone[0] = encoding().out().key();
+            bytesClone[0] = encoding().forward().key();
             return new InfixIID.Thing(ByteArray.of(bytesClone));
         }
 
         public InfixIID.Thing inwards() {
-            if (!isOutwards()) return this;
+            if (!isForward()) return this;
             byte[] bytesClone = bytes.cloneBytes();
-            bytesClone[0] = encoding().in().key();
+            bytesClone[0] = encoding().backward().key();
             return new InfixIID.Thing(ByteArray.of(bytesClone));
         }
 

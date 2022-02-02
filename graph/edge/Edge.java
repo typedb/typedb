@@ -19,13 +19,9 @@
 package com.vaticle.typedb.core.graph.edge;
 
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.iid.EdgeIID;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
 
-public interface Edge<
-        EDGE_ENCODING extends Encoding.Edge,
-        EDGE_IID extends EdgeIID<EDGE_ENCODING, ?, ?, ?>,
-        VERTEX extends Vertex<?, ?>> {
+public interface Edge<EDGE_ENCODING extends Encoding.Edge, VERTEX extends Vertex<?, ?>> {
 
     /**
      * Returns the encoding of this edge.
@@ -33,20 +29,6 @@ public interface Edge<
      * @return the encoding of this edge
      */
     EDGE_ENCODING encoding();
-
-    /**
-     * Returns the {@code iid} of this edge pointing outwards.
-     *
-     * @return the {@code iid} of this edge pointing outwards
-     */
-    EDGE_IID outIID();
-
-    /**
-     * Returns the {@code iid} of this edge pointing inwards.
-     *
-     * @return the {@code iid} of this edge pointing inwards
-     */
-    EDGE_IID inIID();
 
     /**
      * Returns the tail vertex of this edge.

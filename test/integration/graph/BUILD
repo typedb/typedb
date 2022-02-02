@@ -19,43 +19,30 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 host_compatible_java_test(
-    name = "test-database",
+    name = "test-encoding",
     size = "small",
-    srcs = ["DatabaseTest.java"],
-    test_class = "com.vaticle.typedb.core.database.DatabaseTest",
+    srcs = ["EncodingTest.java"],
+    test_class = "com.vaticle.typedb.core.graph.EncodingTest",
     data = glob(["data/**"]),
     native_libraries_deps = [
         "//:typedb",
         "//common:common",
         "//graph:graph",
-        "//database:database",
-        "//common/test:util",
-    ],
-)
-
-host_compatible_java_test(
-    name = "test-rocks-iterator",
-    srcs = ["RocksIteratorTest.java"],
-    test_class = "com.vaticle.typedb.core.database.RocksIteratorTest",
-    native_libraries_deps = [
-        "//:typedb",
-        "//common:common",
-        "//graph:graph",
-        "//concept:concept",
         "//database:database",
 
         "//common/test:util",
     ],
     deps = [
         "//test/integration/util:util",
-    ],
-    data = glob(["data/**"]),
-    size = "small",
+
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql_lang_java//:typeql-lang",
+    ]
 )
 
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
-    exclude = glob(["data/**"]),
     license_type = "agpl",
 )
