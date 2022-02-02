@@ -257,25 +257,25 @@ public class Encoding {
         PROPERTY_THEN(6),
         PROPERTY_VALUE(7),
         PROPERTY_VALUE_REF(8),
-        EDGE_ISA_IN(-40), // EDGE_ISA_OUT does not exist by design
-        EDGE_SUB_OUT(50),
-        EDGE_SUB_IN(-50),
-        EDGE_OWNS_OUT(51),
-        EDGE_OWNS_IN(-51),
-        EDGE_OWNS_KEY_OUT(52),
-        EDGE_OWNS_KEY_IN(-52),
-        EDGE_PLAYS_OUT(53),
-        EDGE_PLAYS_IN(-53),
-        EDGE_RELATES_OUT(54),
-        EDGE_RELATES_IN(-54),
-        EDGE_HAS_OUT(70),
-        EDGE_HAS_IN(-70),
-        EDGE_PLAYING_OUT(71),
-        EDGE_PLAYING_IN(-71),
-        EDGE_RELATING_OUT(72),
-        EDGE_RELATING_IN(-72),
-        EDGE_ROLEPLAYER_OUT(73, true),
-        EDGE_ROLEPLAYER_IN(-73, true);
+        EDGE_ISA_BACKWARD(-40), // EDGE_ISA_FORWARD does not exist by design
+        EDGE_SUB_FORWARD(50),
+        EDGE_SUB_BACKWARD(-50),
+        EDGE_OWNS_FORWARD(51),
+        EDGE_OWNS_BACKWARD(-51),
+        EDGE_OWNS_KEY_FORWARD(52),
+        EDGE_OWNS_KEY_BACKWARD(-52),
+        EDGE_PLAYS_FORWARD(53),
+        EDGE_PLAYS_BACKWARD(-53),
+        EDGE_RELATES_FORWARD(54),
+        EDGE_RELATES_BACKWARD(-54),
+        EDGE_HAS_FORWARD(70),
+        EDGE_HAS_BACKWARD(-70),
+        EDGE_PLAYING_FORWARD(71),
+        EDGE_PLAYING_BACKWARD(-71),
+        EDGE_RELATING_FORWARD(72),
+        EDGE_RELATING_BACKWARD(-72),
+        EDGE_ROLEPLAYER_FORWARD(73, true),
+        EDGE_ROLEPLAYER_BACKWARD(-73, true);
 
         private static final ByteMap<Infix> infixByKey = ByteMap.create(
                 pair(PROPERTY_LABEL.key, PROPERTY_LABEL),
@@ -287,25 +287,25 @@ public class Encoding {
                 pair(PROPERTY_THEN.key, PROPERTY_THEN),
                 pair(PROPERTY_VALUE.key, PROPERTY_VALUE),
                 pair(PROPERTY_VALUE_REF.key, PROPERTY_VALUE_REF),
-                pair(EDGE_ISA_IN.key, EDGE_ISA_IN),
-                pair(EDGE_SUB_OUT.key, EDGE_SUB_OUT),
-                pair(EDGE_SUB_IN.key, EDGE_SUB_IN),
-                pair(EDGE_OWNS_OUT.key, EDGE_OWNS_OUT),
-                pair(EDGE_OWNS_IN.key, EDGE_OWNS_IN),
-                pair(EDGE_OWNS_KEY_OUT.key, EDGE_OWNS_KEY_OUT),
-                pair(EDGE_OWNS_KEY_IN.key, EDGE_OWNS_KEY_IN),
-                pair(EDGE_PLAYS_OUT.key, EDGE_PLAYS_OUT),
-                pair(EDGE_PLAYS_IN.key, EDGE_PLAYS_IN),
-                pair(EDGE_RELATES_OUT.key, EDGE_RELATES_OUT),
-                pair(EDGE_RELATES_IN.key, EDGE_RELATES_IN),
-                pair(EDGE_HAS_OUT.key, EDGE_HAS_OUT),
-                pair(EDGE_HAS_IN.key, EDGE_HAS_IN),
-                pair(EDGE_PLAYING_OUT.key, EDGE_PLAYING_OUT),
-                pair(EDGE_PLAYING_IN.key, EDGE_PLAYING_IN),
-                pair(EDGE_RELATING_OUT.key, EDGE_RELATING_OUT),
-                pair(EDGE_RELATING_IN.key, EDGE_RELATING_IN),
-                pair(EDGE_ROLEPLAYER_OUT.key, EDGE_ROLEPLAYER_OUT),
-                pair(EDGE_ROLEPLAYER_IN.key, EDGE_ROLEPLAYER_IN)
+                pair(EDGE_ISA_BACKWARD.key, EDGE_ISA_BACKWARD),
+                pair(EDGE_SUB_FORWARD.key, EDGE_SUB_FORWARD),
+                pair(EDGE_SUB_BACKWARD.key, EDGE_SUB_BACKWARD),
+                pair(EDGE_OWNS_FORWARD.key, EDGE_OWNS_FORWARD),
+                pair(EDGE_OWNS_BACKWARD.key, EDGE_OWNS_BACKWARD),
+                pair(EDGE_OWNS_KEY_FORWARD.key, EDGE_OWNS_KEY_FORWARD),
+                pair(EDGE_OWNS_KEY_BACKWARD.key, EDGE_OWNS_KEY_BACKWARD),
+                pair(EDGE_PLAYS_FORWARD.key, EDGE_PLAYS_FORWARD),
+                pair(EDGE_PLAYS_BACKWARD.key, EDGE_PLAYS_BACKWARD),
+                pair(EDGE_RELATES_FORWARD.key, EDGE_RELATES_FORWARD),
+                pair(EDGE_RELATES_BACKWARD.key, EDGE_RELATES_BACKWARD),
+                pair(EDGE_HAS_FORWARD.key, EDGE_HAS_FORWARD),
+                pair(EDGE_HAS_BACKWARD.key, EDGE_HAS_BACKWARD),
+                pair(EDGE_PLAYING_FORWARD.key, EDGE_PLAYING_FORWARD),
+                pair(EDGE_PLAYING_BACKWARD.key, EDGE_PLAYING_BACKWARD),
+                pair(EDGE_RELATING_FORWARD.key, EDGE_RELATING_FORWARD),
+                pair(EDGE_RELATING_BACKWARD.key, EDGE_RELATING_BACKWARD),
+                pair(EDGE_ROLEPLAYER_FORWARD.key, EDGE_ROLEPLAYER_FORWARD),
+                pair(EDGE_ROLEPLAYER_BACKWARD.key, EDGE_ROLEPLAYER_BACKWARD)
         );
 
         public static final int LENGTH = 1;
@@ -645,13 +645,13 @@ public class Encoding {
 
     public interface Edge {
 
-        static boolean isOut(byte infix) {
+        static boolean isForward(byte infix) {
             return infix > 0;
         }
 
-        Infix out();
+        Infix forward();
 
-        Infix in();
+        Infix backward();
 
         String name();
 
@@ -678,13 +678,13 @@ public class Encoding {
         Edge ISA = new Edge() {
 
             @Override
-            public Infix out() {
+            public Infix forward() {
                 return null;
             }
 
             @Override
-            public Infix in() {
-                return Infix.EDGE_ISA_IN;
+            public Infix backward() {
+                return Infix.EDGE_ISA_BACKWARD;
             }
 
             @Override
@@ -699,37 +699,37 @@ public class Encoding {
         };
 
         enum Type implements Edge {
-            SUB(Infix.EDGE_SUB_OUT, Infix.EDGE_SUB_IN),
-            OWNS(Infix.EDGE_OWNS_OUT, Infix.EDGE_OWNS_IN),
-            OWNS_KEY(Infix.EDGE_OWNS_KEY_OUT, Infix.EDGE_OWNS_KEY_IN),
-            PLAYS(Infix.EDGE_PLAYS_OUT, Infix.EDGE_PLAYS_IN),
-            RELATES(Infix.EDGE_RELATES_OUT, Infix.EDGE_RELATES_IN);
+            SUB(Infix.EDGE_SUB_FORWARD, Infix.EDGE_SUB_BACKWARD),
+            OWNS(Infix.EDGE_OWNS_FORWARD, Infix.EDGE_OWNS_BACKWARD),
+            OWNS_KEY(Infix.EDGE_OWNS_KEY_FORWARD, Infix.EDGE_OWNS_KEY_BACKWARD),
+            PLAYS(Infix.EDGE_PLAYS_FORWARD, Infix.EDGE_PLAYS_BACKWARD),
+            RELATES(Infix.EDGE_RELATES_FORWARD, Infix.EDGE_RELATES_BACKWARD);
 
-            private final Infix out;
-            private final Infix in;
+            private final Infix forward;
+            private final Infix backward;
 
-            Type(Infix out, Infix in) {
-                this.out = out;
-                this.in = in;
+            Type(Infix forward, Infix backward) {
+                this.forward = forward;
+                this.backward = backward;
             }
 
             public static Type of(byte infix) {
-                if (infix == SUB.in.key || infix == SUB.out.key) return SUB;
-                else if (infix == OWNS.in.key || infix == OWNS.out.key) return OWNS;
-                else if (infix == OWNS_KEY.in.key || infix == OWNS_KEY.out.key) return OWNS_KEY;
-                else if (infix == PLAYS.in.key || infix == PLAYS.out.key) return PLAYS;
-                else if (infix == RELATES.in.key || infix == RELATES.out.key) return RELATES;
+                if (infix == SUB.backward.key || infix == SUB.forward.key) return SUB;
+                else if (infix == OWNS.backward.key || infix == OWNS.forward.key) return OWNS;
+                else if (infix == OWNS_KEY.backward.key || infix == OWNS_KEY.forward.key) return OWNS_KEY;
+                else if (infix == PLAYS.backward.key || infix == PLAYS.forward.key) return PLAYS;
+                else if (infix == RELATES.backward.key || infix == RELATES.forward.key) return RELATES;
                 else throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
 
             @Override
-            public Infix out() {
-                return out;
+            public Infix forward() {
+                return forward;
             }
 
             @Override
-            public Infix in() {
-                return in;
+            public Infix backward() {
+                return backward;
             }
 
             @Override
@@ -750,13 +750,13 @@ public class Encoding {
             }
 
             static Thing of(byte infix) {
-                if (Base.HAS.out.key == infix || Base.HAS.in.key == infix) {
+                if (Base.HAS.forward.key == infix || Base.HAS.backward.key == infix) {
                     return Base.HAS;
-                } else if (Base.PLAYING.out.key == infix || Base.PLAYING.in.key == infix) {
+                } else if (Base.PLAYING.forward.key == infix || Base.PLAYING.backward.key == infix) {
                     return Base.PLAYING;
-                } else if (Base.RELATING.out.key == infix || Base.RELATING.in.key == infix) {
+                } else if (Base.RELATING.forward.key == infix || Base.RELATING.backward.key == infix) {
                     return Base.RELATING;
-                } else if (Optimised.ROLEPLAYER.out.key == infix || Optimised.ROLEPLAYER.in.key == infix) {
+                } else if (Optimised.ROLEPLAYER.forward.key == infix || Optimised.ROLEPLAYER.backward.key == infix) {
                     return Optimised.ROLEPLAYER;
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
@@ -765,9 +765,9 @@ public class Encoding {
 
             String name();
 
-            Infix in();
+            Infix backward();
 
-            Infix out();
+            Infix forward();
 
             boolean isOptimisation();
 
@@ -788,26 +788,26 @@ public class Encoding {
             }
 
             enum Base implements Thing { // TODO: name could be improved
-                HAS(Infix.EDGE_HAS_OUT, Infix.EDGE_HAS_IN),
-                PLAYING(Infix.EDGE_PLAYING_OUT, Infix.EDGE_PLAYING_IN),
-                RELATING(Infix.EDGE_RELATING_OUT, Infix.EDGE_RELATING_IN);
+                HAS(Infix.EDGE_HAS_FORWARD, Infix.EDGE_HAS_BACKWARD),
+                PLAYING(Infix.EDGE_PLAYING_FORWARD, Infix.EDGE_PLAYING_BACKWARD),
+                RELATING(Infix.EDGE_RELATING_FORWARD, Infix.EDGE_RELATING_BACKWARD);
 
-                private final Infix out;
-                private final Infix in;
+                private final Infix forward;
+                private final Infix backward;
 
-                Base(Infix out, Infix in) {
-                    this.out = out;
-                    this.in = in;
+                Base(Infix forward, Infix backward) {
+                    this.forward = forward;
+                    this.backward = backward;
                 }
 
                 @Override
-                public Infix in() {
-                    return in;
+                public Infix backward() {
+                    return backward;
                 }
 
                 @Override
-                public Infix out() {
-                    return out;
+                public Infix forward() {
+                    return forward;
                 }
 
                 @Override
@@ -822,26 +822,26 @@ public class Encoding {
             }
 
             enum Optimised implements Thing {
-                ROLEPLAYER(Infix.EDGE_ROLEPLAYER_OUT, Infix.EDGE_ROLEPLAYER_IN, 1);
+                ROLEPLAYER(Infix.EDGE_ROLEPLAYER_FORWARD, Infix.EDGE_ROLEPLAYER_BACKWARD, 1);
 
-                private final Infix out;
-                private final Infix in;
+                private final Infix forward;
+                private final Infix backward;
                 private final int tailSize;
 
-                Optimised(Infix out, Infix in, int tailSize) {
-                    this.out = out;
-                    this.in = in;
+                Optimised(Infix forward, Infix backward, int tailSize) {
+                    this.forward = forward;
+                    this.backward = backward;
                     this.tailSize = tailSize;
                 }
 
                 @Override
-                public Infix in() {
-                    return in;
+                public Infix backward() {
+                    return backward;
                 }
 
                 @Override
-                public Infix out() {
-                    return out;
+                public Infix forward() {
+                    return forward;
                 }
 
                 @Override

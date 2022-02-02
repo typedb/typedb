@@ -308,7 +308,7 @@ public abstract class RocksStorage implements Storage {
         public <T extends Key, ORDER extends Order>
         SortedIterator.Seekable<KeyValue<T, ByteArray>, ORDER> iterate(Key.Prefix<T> prefix, ORDER order) {
             RocksIterator<T, ORDER> iterator;
-            // TODO how else can we convert an enumerated data tag ('order') into the type without casting
+            // TODO: how else can we convert an enumerated data tag ('order') into the type without casting?
             if (order == ASC) iterator = (RocksIterator<T, ORDER>) new RocksIterator.Ascending<>(this, prefix);
             else iterator = (RocksIterator<T, ORDER>) new RocksIterator.Descending<>(this, prefix);
             iterators.add(iterator);

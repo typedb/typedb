@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.graph.common.Storage.Key;
 import com.vaticle.typedb.core.graph.edge.Edge;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.edge.impl.TypeEdgeImpl;
-import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.EdgeViewIID;
 import com.vaticle.typedb.core.graph.iid.InfixIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -137,11 +137,11 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
             isReadOnly = owner.graph().isReadOnly();
         }
 
-        private EdgeIID.Type edgeIID(Encoding.Edge.Type encoding, TypeVertex adjacent) {
-            return EdgeIID.Type.of(owner.iid(), direction.isOut() ? encoding.out() : encoding.in(), adjacent.iid());
+        private EdgeViewIID.Type edgeIID(Encoding.Edge.Type encoding, TypeVertex adjacent) {
+            return EdgeViewIID.Type.of(owner.iid(), direction.isOut() ? encoding.forward() : encoding.backward(), adjacent.iid());
         }
 
-        private TypeEdge newPersistedEdge(EdgeIID.Type edge, ByteArray value) {
+        private TypeEdge newPersistedEdge(EdgeViewIID.Type edge, ByteArray value) {
             VertexIID.Type overridden = ((value.isEmpty()) ? null : VertexIID.Type.of(value));
             return new TypeEdgeImpl.Persisted(owner.graph(), edge, overridden);
         }
@@ -152,11 +152,11 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
                 return (bufferedEdges = edges.get(encoding)) != null ? iterate(bufferedEdges) : empty();
             }
 
-            Key.Prefix<EdgeIID.Type> prefix = EdgeIID.Type.prefix(
-                    owner.iid(), InfixIID.Type.of(direction.isOut() ? encoding.out() : encoding.in())
+            Key.Prefix<EdgeViewIID.Type> prefix = EdgeViewIID.Type.prefix(
+                    owner.iid(), InfixIID.Type.of(direction.isOut() ? encoding.forward() : encoding.backward())
             );
             FunctionalIterator<TypeEdge> storageIterator = owner.graph().storage().iterate(prefix)
-                    .map(kv -> cache(newPersistedEdge(EdgeIID.Type.of(kv.key().bytes()), kv.value())));
+                    .map(kv -> cache(newPersistedEdge(EdgeViewIID.Type.of(kv.key().bytes()), kv.value())));
             if (isReadOnly) storageIterator = storageIterator.onConsumed(() -> fetched.add(encoding));
             if ((bufferedEdges = edges.get(encoding)) == null) return storageIterator;
             else return link(bufferedEdges.iterator(), storageIterator).distinct();
@@ -178,7 +178,7 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
                     (container = edges.get(encoding).stream().filter(predicate).findAny()).isPresent()) {
                 return container.get();
             } else {
-                EdgeIID.Type edgeIID = edgeIID(encoding, adjacent);
+                EdgeViewIID.Type edgeIID = edgeIID(encoding, adjacent);
                 ByteArray overriddenIID;
                 if ((overriddenIID = owner.graph().storage().get(edgeIID)) != null) {
                     return cache(newPersistedEdge(edgeIID, overriddenIID));

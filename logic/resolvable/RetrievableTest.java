@@ -126,8 +126,8 @@ public class RetrievableTest {
 
     @Test
     public void test_termination_building_retrievable_with_a_relation_cycle() {
-        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a($b); $b($a); }"), set());
-        assertEquals(set(parse("{ $a($b); $b($a); }")),
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a($role1: $b); $b($role2: $a); }"), set());
+        assertEquals(set(parse("{ $a($role1: $b); $b($role2: $a); }")),
                      iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 

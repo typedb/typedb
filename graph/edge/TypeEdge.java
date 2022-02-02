@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.graph.edge;
 
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.EdgeViewIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 /**
@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.graph.vertex.TypeVertex;
  *
  * This edge can only have a encoding of type {@code Encoding.Edge.Type}.
  */
-public interface TypeEdge extends Edge<Encoding.Edge.Type, EdgeIID.Type, TypeVertex> {
+public interface TypeEdge extends Edge<Encoding.Edge.Type, TypeVertex> {
 
     @Override
     TypeVertex from();

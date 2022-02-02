@@ -105,7 +105,7 @@ public class ConcludableTest {
 
     @Test
     public void test_conjunction_only_relation_is_built() {
-        String conjunction = "{ $a($x, $y); }";
+        String conjunction = "{ $a($role1: $x, $role2: $y); }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(0, hasConcludablesCount(concludables));
@@ -115,7 +115,7 @@ public class ConcludableTest {
 
     @Test
     public void test_conjunction_only_relation_is_built_when_type_is_given() {
-        String conjunction = "{ $a($x, $y) isa siblingship; }";
+        String conjunction = "{ $a($role1: $x, $role2: $y) isa siblingship; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(0, hasConcludablesCount(concludables));
@@ -125,7 +125,7 @@ public class ConcludableTest {
 
     @Test
     public void test_conjunction_has_and_relation_are_built_from_same_owner() {
-        String conjunction = "{ $a($x, $y) isa siblingship, has number 2; }";
+        String conjunction = "{ $a($role1: $x, $role2: $y) isa siblingship, has number 2; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(1, hasConcludablesCount(concludables));
@@ -155,7 +155,7 @@ public class ConcludableTest {
 
     @Test
     public void test_conjunction_multiple_has_and_relation_are_built() {
-        String conjunction = "{ $a($x, $y, $z) isa transaction, has currency \"GBP\", has value 45; " +
+        String conjunction = "{ $a($role1: $x, $role2: $y, $role3: $z) isa transaction, has currency \"GBP\", has value 45; " +
                 "$b(locates: $a); $b has $c; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(0, isaConcludablesCount(concludables));
