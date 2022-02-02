@@ -42,13 +42,4 @@ public class Util {
         return Paths.get(homeDir);
     }
 
-    public static Path configPathAbsolute(Path configPath) {
-        if (configPath.isAbsolute()) return configPath;
-        else return getTypedbDir().resolve(configPath);
-    }
-
-    public static String scopeKey(String scope, String key) {
-        return scope.isEmpty() ? key : scope + "." + key;
-    }
-
 }

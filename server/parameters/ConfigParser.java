@@ -19,6 +19,7 @@ package com.vaticle.typedb.core.server.parameters;
 
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.server.common.Util;
 import com.vaticle.typedb.core.server.parameters.util.HelpEntry;
 import com.vaticle.typedb.core.server.parameters.util.YamlParser;
 
@@ -41,8 +42,6 @@ import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Pr
 import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.LIST_STRING;
 import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.PATH;
 import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.STRING;
-import static com.vaticle.typedb.core.server.common.Util.configPathAbsolute;
-import static com.vaticle.typedb.core.server.common.Util.scopeKey;
 
 public class ConfigParser extends YamlParser.Value.Compound<Config> {
 
@@ -53,18 +52,27 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
     private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(serverParser, storageParser, logParser, vaticleFactoryParser);
 
     @Override
-    public Config parse(Yaml yaml, String scope) {
+    public Config parse(Yaml yaml, String path) {
         if (yaml.isMap()) {
             validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), "");
             return new Config(serverParser.parse(yaml.asMap(), ""), storageParser.parse(yaml.asMap(), ""),
                     logParser.parse(yaml.asMap(), ""), vaticleFactoryParser.parse(yaml.asMap(), "")
             );
-        } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, scope);
+        } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, path);
     }
 
     @Override
-    public List<HelpEntry> helpEntries(String scope) {
-        return list(serverParser.helpEntry(scope), storageParser.helpEntry(scope), logParser.helpEntry(scope), vaticleFactoryParser.helpEntry(scope));
+    public List<HelpEntry> helpEntries(String path) {
+        return list(serverParser.helpEntry(path), storageParser.helpEntry(path), logParser.helpEntry(path), vaticleFactoryParser.helpEntry(path));
+    }
+
+    public static String append(String parent, String key) {
+        return parent.isEmpty() ? key : parent + "." + key;
+    }
+
+    private static Path configPathAbsolute(Path path) {
+        if (path.isAbsolute()) return path;
+        else return Util.getTypedbDir().resolve(path);
     }
 
     public static class ServerParser extends Compound<Config.Server> {
@@ -76,16 +84,16 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(addressParser);
 
         @Override
-        public Config.Server parse(Yaml yaml, String scope) {
+        public Config.Server parse(Yaml yaml, String path) {
             if (yaml.isMap()) {
-                validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
-                return new Config.Server(addressParser.parse(yaml.asMap(), scope));
-            } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, scope);
+                validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), path);
+                return new Config.Server(addressParser.parse(yaml.asMap(), path));
+            } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, path);
         }
 
         @Override
-        public List<HelpEntry> helpEntries(String scope) {
-            return list(addressParser.helpEntry(scope));
+        public List<HelpEntry> helpEntries(String path) {
+            return list(addressParser.helpEntry(path));
         }
     }
 
@@ -99,17 +107,17 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(dataParser, databaseCacheParser);
 
         @Override
-        public Config.Storage parse(Yaml yaml, String scope) {
+        public Config.Storage parse(Yaml yaml, String path) {
             if (yaml.isMap()) {
-                validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
-                return new Config.Storage(configPathAbsolute(dataParser.parse(yaml.asMap(), scope)),
-                        databaseCacheParser.parse(yaml.asMap(), scope));
-            } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, scope);
+                validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), path);
+                return new Config.Storage(configPathAbsolute(dataParser.parse(yaml.asMap(), path)),
+                        databaseCacheParser.parse(yaml.asMap(), path));
+            } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, path);
         }
 
         @Override
-        public List<HelpEntry> helpEntries(String scope) {
-            return list(dataParser.helpEntry(scope), databaseCacheParser.helpEntry(scope));
+        public List<HelpEntry> helpEntries(String path) {
+            return list(dataParser.helpEntry(path), databaseCacheParser.helpEntry(path));
         }
 
         public static class DatabaseCacheParser extends Compound<Config.Storage.DatabaseCache> {
@@ -122,16 +130,16 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(dataParser, indexParser);
 
             @Override
-            public Config.Storage.DatabaseCache parse(Yaml yaml, String scope) {
+            public Config.Storage.DatabaseCache parse(Yaml yaml, String path) {
                 if (yaml.isMap()) {
-                    validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
-                    return new Config.Storage.DatabaseCache(dataParser.parse(yaml.asMap(), scope), indexParser.parse(yaml.asMap(), scope));
-                } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, scope);
+                    validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), path);
+                    return new Config.Storage.DatabaseCache(dataParser.parse(yaml.asMap(), path), indexParser.parse(yaml.asMap(), path));
+                } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, path);
             }
 
             @Override
-            public List<HelpEntry> helpEntries(String scope) {
-                return list(dataParser.helpEntry(scope), indexParser.helpEntry(scope));
+            public List<HelpEntry> helpEntries(String path) {
+                return list(dataParser.helpEntry(path), indexParser.helpEntry(path));
             }
         }
     }
@@ -147,21 +155,21 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(outputParser, loggerParser, debuggerParser);
 
         @Override
-        public Config.Log parse(Yaml yaml, String scope) {
+        public Config.Log parse(Yaml yaml, String path) {
             if (yaml.isMap()) {
-                validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
-                Config.Log.Output output = outputParser.parse(yaml.asMap(), scope);
-                Config.Log.Logger logger = loggerParser.parse(yaml.asMap(), scope);
+                validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), path);
+                Config.Log.Output output = outputParser.parse(yaml.asMap(), path);
+                Config.Log.Logger logger = loggerParser.parse(yaml.asMap(), path);
                 logger.validateOutputs(output.outputs());
-                Config.Log.Debugger debugger = debuggerParser.parse(yaml.asMap(), scope);
+                Config.Log.Debugger debugger = debuggerParser.parse(yaml.asMap(), path);
                 debugger.validateAndSetOutputs(output.outputs());
                 return new Config.Log(output, logger, debugger);
-            } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, scope);
+            } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, path);
         }
 
         @Override
-        public List<HelpEntry> helpEntries(String scope) {
-            return list(outputParser.helpEntry(scope), loggerParser.helpEntry(scope), debuggerParser.helpEntry(scope));
+        public List<HelpEntry> helpEntries(String path) {
+            return list(outputParser.helpEntry(path), loggerParser.helpEntry(path), debuggerParser.helpEntry(path));
         }
 
         public static class OutputParser extends Compound<Config.Log.Output> {
@@ -172,14 +180,14 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             private static final YamlParser.KeyValue.Dynamic<Config.Log.Output.Type> typeEntry = YamlParser.KeyValue.Dynamic.create(TypeParser.description, new TypeParser());
 
             @Override
-            public Config.Log.Output parse(Yaml yaml, String scope) {
-                if (yaml.isMap()) return new Config.Log.Output(typeEntry.parseFrom(yaml.asMap(), scope));
-                else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
+            public Config.Log.Output parse(Yaml yaml, String path) {
+                if (yaml.isMap()) return new Config.Log.Output(typeEntry.parseFrom(yaml.asMap(), path));
+                else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
             }
 
             @Override
-            public List<HelpEntry> helpEntries(String scope) {
-                return list(typeEntry.helpEntry(scope));
+            public List<HelpEntry> helpEntries(String path) {
+                return list(typeEntry.helpEntry(path));
             }
 
             static class TypeParser extends Compound<Config.Log.Output.Type> {
@@ -192,24 +200,24 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 private static final Compound<Config.Log.Output.Type.File> fileParser = new FileParser();
 
                 @Override
-                public Config.Log.Output.Type parse(Yaml yaml, String scope) {
+                public Config.Log.Output.Type parse(Yaml yaml, String path) {
                     if (yaml.isMap()) {
-                        String type = typeParser.parse(yaml.asMap(), scope);
+                        String type = typeParser.parse(yaml.asMap(), path);
                         switch (type) {
                             case StdoutParser.type:
-                                return stdoutParser.parse(yaml.asMap(), scope);
+                                return stdoutParser.parse(yaml.asMap(), path);
                             case FileParser.type:
-                                return fileParser.parse(yaml.asMap(), scope);
+                                return fileParser.parse(yaml.asMap(), path);
                             default:
                                 throw TypeDBException.of(ILLEGAL_STATE);
                         }
-                    } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
+                    } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
                 }
 
                 @Override
-                public List<HelpEntry> helpEntries(String scope) {
-                    return list(new HelpEntry.Yaml.Grouped(scope, StdoutParser.description, stdoutParser.helpEntries(scope)),
-                            new HelpEntry.Yaml.Grouped(scope, description, fileParser.helpEntries(scope)));
+                public List<HelpEntry> helpEntries(String path) {
+                    return list(new HelpEntry.Yaml.Grouped(path, StdoutParser.description, stdoutParser.helpEntries(path)),
+                            new HelpEntry.Yaml.Grouped(path, description, fileParser.helpEntries(path)));
                 }
 
                 public static class StdoutParser extends Compound<Config.Log.Output.Type.Stdout> {
@@ -223,17 +231,17 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                     private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(typeParser);
 
                     @Override
-                    public Config.Log.Output.Type.Stdout parse(Yaml yaml, String scope) {
+                    public Config.Log.Output.Type.Stdout parse(Yaml yaml, String path) {
                         if (yaml.isMap()) {
-                            validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
-                            String type = typeParser.parse(yaml.asMap(), scope);
+                            validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), path);
+                            String type = typeParser.parse(yaml.asMap(), path);
                             return new Config.Log.Output.Type.Stdout(type);
-                        } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
+                        } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
                     }
 
                     @Override
-                    public List<HelpEntry> helpEntries(String scope) {
-                        return list(typeParser.helpEntry(scope));
+                    public List<HelpEntry> helpEntries(String path) {
+                        return list(typeParser.helpEntry(path));
                     }
                 }
 
@@ -249,22 +257,22 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                     private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(typeParser, pathParser, fileSizeCapParser, archivesSizeCapParser);
 
                     @Override
-                    public Config.Log.Output.Type.File parse(Yaml yaml, String scope) {
+                    public Config.Log.Output.Type.File parse(Yaml yaml, String path) {
                         if (yaml.isMap()) {
-                            validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
+                            validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), path);
                             return new Config.Log.Output.Type.File(
-                                    typeParser.parse(yaml.asMap(), scope),
-                                    configPathAbsolute(pathParser.parse(yaml.asMap(), scope)),
-                                    fileSizeCapParser.parse(yaml.asMap(), scope),
-                                    archivesSizeCapParser.parse(yaml.asMap(), scope)
+                                    typeParser.parse(yaml.asMap(), path),
+                                    configPathAbsolute(pathParser.parse(yaml.asMap(), path)),
+                                    fileSizeCapParser.parse(yaml.asMap(), path),
+                                    archivesSizeCapParser.parse(yaml.asMap(), path)
                             );
-                        } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
+                        } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
                     }
 
                     @Override
-                    public List<HelpEntry> helpEntries(String scope) {
-                        return list(typeParser.helpEntry(scope), pathParser.helpEntry(scope), fileSizeCapParser.helpEntry(scope),
-                                archivesSizeCapParser.helpEntry(scope));
+                    public List<HelpEntry> helpEntries(String path) {
+                        return list(typeParser.helpEntry(path), pathParser.helpEntry(path), fileSizeCapParser.helpEntry(path),
+                                archivesSizeCapParser.helpEntry(path));
                     }
                 }
             }
@@ -282,16 +290,16 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             private static final YamlParser.KeyValue.Dynamic<Config.Log.Logger.Filtered> filteredParsers = YamlParser.KeyValue.Dynamic.create("Custom filtered loggers.", new FilteredParser());
 
             @Override
-            public Config.Log.Logger parse(Yaml yaml, String scope) {
+            public Config.Log.Logger parse(Yaml yaml, String path) {
                 if (yaml.isMap()) {
-                    return new Config.Log.Logger(defaultParser.parse(yaml.asMap(), scope),
-                            filteredParsers.parseFrom(yaml.asMap(), scope, defaultParser));
-                } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
+                    return new Config.Log.Logger(defaultParser.parse(yaml.asMap(), path),
+                            filteredParsers.parseFrom(yaml.asMap(), path, defaultParser));
+                } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
             }
 
             @Override
-            public List<HelpEntry> helpEntries(String scope) {
-                return list(defaultParser.helpEntry(scope), filteredParsers.helpEntry(scope));
+            public List<HelpEntry> helpEntries(String path) {
+                return list(defaultParser.helpEntry(path), filteredParsers.helpEntry(path));
             }
 
             static class UnfilteredParser extends Compound<Config.Log.Logger.Unfiltered> {
@@ -301,17 +309,17 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(levelParser, outputsParser);
 
                 @Override
-                public Config.Log.Logger.Unfiltered parse(Yaml yaml, String scope) {
+                public Config.Log.Logger.Unfiltered parse(Yaml yaml, String path) {
                     if (yaml.isMap()) {
-                        validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
-                        return new Config.Log.Logger.Unfiltered(levelParser.parse(yaml.asMap(), scope),
-                                outputsParser.parse(yaml.asMap(), scope));
-                    } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
+                        validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), path);
+                        return new Config.Log.Logger.Unfiltered(levelParser.parse(yaml.asMap(), path),
+                                outputsParser.parse(yaml.asMap(), path));
+                    } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
                 }
 
                 @Override
-                public List<HelpEntry> helpEntries(String scope) {
-                    return list(levelParser.helpEntry(scope), outputsParser.helpEntry(scope));
+                public List<HelpEntry> helpEntries(String path) {
+                    return list(levelParser.helpEntry(path), outputsParser.helpEntry(path));
                 }
             }
 
@@ -323,17 +331,17 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(filterParser, levelParser, outputsParser);
 
                 @Override
-                public Config.Log.Logger.Filtered parse(Yaml yaml, String scope) {
+                public Config.Log.Logger.Filtered parse(Yaml yaml, String path) {
                     if (yaml.isMap()) {
-                        validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
-                        return new Config.Log.Logger.Filtered(levelParser.parse(yaml.asMap(), scope),
-                                outputsParser.parse(yaml.asMap(), scope), filterParser.parse(yaml.asMap(), scope));
-                    } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
+                        validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), path);
+                        return new Config.Log.Logger.Filtered(levelParser.parse(yaml.asMap(), path),
+                                outputsParser.parse(yaml.asMap(), path), filterParser.parse(yaml.asMap(), path));
+                    } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
                 }
 
                 @Override
-                public List<HelpEntry> helpEntries(String scope) {
-                    return list(filterParser.helpEntry(scope), levelParser.helpEntry(scope), outputsParser.helpEntry(scope));
+                public List<HelpEntry> helpEntries(String path) {
+                    return list(filterParser.helpEntry(path), levelParser.helpEntry(path), outputsParser.helpEntry(path));
                 }
             }
         }
@@ -347,16 +355,16 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(reasonerParser);
 
             @Override
-            public Config.Log.Debugger parse(Yaml yaml, String scope) {
+            public Config.Log.Debugger parse(Yaml yaml, String path) {
                 if (yaml.isMap()) {
-                    validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
-                    return new Config.Log.Debugger(reasonerParser.parse(yaml.asMap(), scope));
-                } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
+                    validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), path);
+                    return new Config.Log.Debugger(reasonerParser.parse(yaml.asMap(), path));
+                } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
             }
 
             @Override
-            public List<HelpEntry> helpEntries(String scope) {
-                return list(reasonerParser.helpEntry(scope));
+            public List<HelpEntry> helpEntries(String path) {
+                return list(reasonerParser.helpEntry(path));
             }
 
             static class ReasonerParser extends Compound<Config.Log.Debugger.Reasoner> {
@@ -368,17 +376,17 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(typeParser, outputParser, enableParser);
 
                 @Override
-                public Config.Log.Debugger.Reasoner parse(Yaml yaml, String scope) {
+                public Config.Log.Debugger.Reasoner parse(Yaml yaml, String path) {
                     if (yaml.isMap()) {
-                        validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
-                        return new Config.Log.Debugger.Reasoner(typeParser.parse(yaml.asMap(), scope), outputParser.parse(yaml.asMap(), scope),
-                                enableParser.parse(yaml.asMap(), scope));
-                    } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
+                        validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), path);
+                        return new Config.Log.Debugger.Reasoner(typeParser.parse(yaml.asMap(), path), outputParser.parse(yaml.asMap(), path),
+                                enableParser.parse(yaml.asMap(), path));
+                    } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
                 }
 
                 @Override
-                public List<HelpEntry> helpEntries(String scope) {
-                    return list(typeParser.helpEntry(scope), outputParser.helpEntry(scope), enableParser.helpEntry(scope));
+                public List<HelpEntry> helpEntries(String path) {
+                    return list(typeParser.helpEntry(path), outputParser.helpEntry(path), enableParser.helpEntry(path));
                 }
             }
         }
@@ -396,31 +404,31 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         private static final Set<YamlParser.KeyValue.Predefined<?>> entryParsers = set(enableParser, uriParser, usernameParser, tokenParser);
 
         @Override
-        public Config.VaticleFactory parse(Yaml yaml, String scope) {
+        public Config.VaticleFactory parse(Yaml yaml, String path) {
             if (yaml.isMap()) {
-                boolean trace = enableParser.parse(yaml.asMap(), scope);
-                validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), scope);
+                boolean trace = enableParser.parse(yaml.asMap(), path);
+                validatedRecognisedParsers(entryParsers, yaml.asMap().keys(), path);
                 if (trace) {
-                    return new Config.VaticleFactory(true, uriParser.parse(yaml.asMap(), scope),
-                            usernameParser.parse(yaml.asMap(), scope), tokenParser.parse(yaml.asMap(), scope));
+                    return new Config.VaticleFactory(true, uriParser.parse(yaml.asMap(), path),
+                            usernameParser.parse(yaml.asMap(), path), tokenParser.parse(yaml.asMap(), path));
                 } else {
                     return new Config.VaticleFactory(false, null, null, null);
                 }
-            } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, scope);
+            } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
         }
 
         @Override
-        public List<HelpEntry> helpEntries(String scope) {
-            return list(enableParser.helpEntry(scope), uriParser.helpEntry(scope), usernameParser.helpEntry(scope), tokenParser.helpEntry(scope));
+        public List<HelpEntry> helpEntries(String path) {
+            return list(enableParser.helpEntry(path), uriParser.helpEntry(path), usernameParser.helpEntry(path), tokenParser.helpEntry(path));
         }
     }
 
-    private static void validatedRecognisedParsers(Set<YamlParser.KeyValue.Predefined<?>> parsers, Set<String> keys, String scope) {
+    private static void validatedRecognisedParsers(Set<YamlParser.KeyValue.Predefined<?>> parsers, Set<String> keys, String path) {
         Set<String> unrecognisedKeys = new HashSet<>(keys);
         parsers.forEach(parser -> unrecognisedKeys.remove(parser.key()));
         if (!unrecognisedKeys.isEmpty()) {
-            Set<String> scopedKeys = iterate(unrecognisedKeys).map(key -> scopeKey(scope, key)).toSet();
-            throw TypeDBException.of(UNRECOGNISED_CONFIGURATION_OPTIONS, scopedKeys);
+            Set<String> childPaths = iterate(unrecognisedKeys).map(key -> append(path, key)).toSet();
+            throw TypeDBException.of(UNRECOGNISED_CONFIGURATION_OPTIONS, childPaths);
         }
     }
 

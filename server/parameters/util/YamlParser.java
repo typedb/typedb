@@ -39,7 +39,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_UNEXPECTED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONFIG_OPTION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.server.common.Util.scopeKey;
+import static com.vaticle.typedb.core.server.parameters.ConfigParser.append;
 
 public class YamlParser {
     
@@ -55,7 +55,7 @@ public class YamlParser {
             return description;
         }
 
-        public abstract HelpEntry helpEntry(String optionScope);
+        public abstract HelpEntry helpEntry(String path);
 
         public static class Predefined<TYPE> extends KeyValue {
 
@@ -76,20 +76,20 @@ public class YamlParser {
                 return key;
             }
 
-            public TYPE parse(Yaml.Map yaml, String scope) {
-                String scopedKey = scopeKey(scope, key());
-                if (!yaml.containsKey(key())) throw TypeDBException.of(MISSING_CONFIG_OPTION, scopedKey);
-                else return valueParser.parse(yaml.get(key()), scopedKey);
+            public TYPE parse(Yaml.Map yaml, String path) {
+                String childPath = append(path, key());
+                if (!yaml.containsKey(key())) throw TypeDBException.of(MISSING_CONFIG_OPTION, childPath);
+                else return valueParser.parse(yaml.get(key()), childPath);
             }
 
-            public HelpEntry helpEntry(String optionScope) {
-                String scopedKey = scopeKey(optionScope, key());
+            public HelpEntry helpEntry(String path) {
+                String childPath = append(path, key());
                 if (valueParser.isPrimitive()) {
-                    return new HelpEntry.Simple(scopedKey, description(), valueParser.asPrimitive().help());
+                    return new HelpEntry.Simple(childPath, description(), valueParser.asPrimitive().help());
                 } else if (valueParser.isRestricted()) {
-                    return new HelpEntry.Simple(scopedKey, description(), valueParser.asRestricted().help());
+                    return new HelpEntry.Simple(childPath, description(), valueParser.asRestricted().help());
                 } else {
-                    return new HelpEntry.Yaml.Grouped(scopedKey, description(), valueParser.asCompound().helpEntries(scopedKey));
+                    return new HelpEntry.Yaml.Grouped(childPath, description(), valueParser.asCompound().helpEntries(childPath));
                 }
             }
         }
@@ -107,26 +107,26 @@ public class YamlParser {
                 return new Dynamic<>(description, valueParser);
             }
 
-            public Map<String, TYPE> parseFrom(Yaml.Map yaml, String scope, Predefined<?>... exclude) {
+            public Map<String, TYPE> parseFrom(Yaml.Map yaml, String path, Predefined<?>... exclude) {
                 Set<String> excludeKeys = iterate(exclude).map(Predefined::key).toSet();
                 Map<String, TYPE> read = new HashMap<>();
                 yaml.forEach((key, value) -> {
                     if (!excludeKeys.contains(key)) {
-                        String scopedKey = scopeKey(scope, key);
-                        read.put(key, valueParser.parse(value, scopedKey));
+                        String childPath = append(path, key);
+                        read.put(key, valueParser.parse(value, childPath));
                     }
                 });
                 return read;
             }
 
             @Override
-            public HelpEntry helpEntry(String optionScope) {
+            public HelpEntry helpEntry(String path) {
                 if (valueParser.isPrimitive()) {
-                    return new HelpEntry.Simple(scopeKey(optionScope, "<name>"), description(), valueParser.asPrimitive().help());
+                    return new HelpEntry.Simple(append(path, "<name>"), description(), valueParser.asPrimitive().help());
                 } else if (valueParser.isRestricted()) {
-                    return new HelpEntry.Simple(scopeKey(optionScope, "<name>"), description(), valueParser.asRestricted().help());
+                    return new HelpEntry.Simple(append(path, "<name>"), description(), valueParser.asRestricted().help());
                 } else {
-                    return new HelpEntry.Yaml.Grouped(scopeKey(optionScope, "<name>"), description(), valueParser.asCompound().helpEntries(scopeKey(optionScope, "<name>")));
+                    return new HelpEntry.Yaml.Grouped(append(path, "<name>"), description(), valueParser.asCompound().helpEntries(append(path, "<name>")));
                 }
             }
         }
@@ -134,7 +134,7 @@ public class YamlParser {
 
     public static abstract class Value<TYPE> {
 
-        public abstract TYPE parse(Yaml yaml, String scope);
+        public abstract TYPE parse(Yaml yaml, String path);
 
         boolean isPrimitive() {
             return false;
@@ -162,7 +162,7 @@ public class YamlParser {
 
         public static abstract class Compound<T> extends Value<T> {
 
-            public abstract List<HelpEntry> helpEntries(String scope);
+            public abstract List<HelpEntry> helpEntries(String path);
 
             @Override
             public boolean isCompound() {
@@ -185,10 +185,10 @@ public class YamlParser {
             }
 
             @Override
-            public T parse(Yaml yaml, String scope) {
-                T value = valueParser.parse(yaml, scope);
+            public T parse(Yaml yaml, String path) {
+                T value = valueParser.parse(yaml, path);
                 if (allowed.contains(value)) return value;
-                else throw TypeDBException.of(CONFIG_ENUM_UNEXPECTED_VALUE, scope, value, allowed);
+                else throw TypeDBException.of(CONFIG_ENUM_UNEXPECTED_VALUE, path, value, allowed);
             }
 
             public String help() {
@@ -267,9 +267,9 @@ public class YamlParser {
             }
 
             @Override
-            public T parse(Yaml yaml, String scope) {
+            public T parse(Yaml yaml, String path) {
                 if (!validator.apply(yaml)) {
-                    throw TypeDBException.of(CONFIG_UNEXPECTED_VALUE, scope, yaml, help);
+                    throw TypeDBException.of(CONFIG_UNEXPECTED_VALUE, path, yaml, help);
                 } else {
                     return converter.apply(yaml);
                 }
