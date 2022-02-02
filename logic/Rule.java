@@ -551,8 +551,9 @@ public class Rule {
                 Identifier.Variable.Retrievable relationId = anon(i.get());
                 RelationTraversal traversal = new RelationTraversal(relationId, set(materialisable.relationType().getLabel())); // TODO include inheritance
                 materialisable.players().forEach((rp, numOccurrences) -> {
+                    Identifier.Variable.Anonymous anonVar = anon(i.addAndGet(1));
                     for (int j = 1; j <= numOccurrences; j++) {
-                        traversal.player(anon(i.addAndGet(1)), rp.second().asThing().getIID(), set(rp.first().getLabel())); // TODO include inheritance
+                        traversal.player(anonVar, rp.second().asThing().getIID(), set(rp.first().getLabel())); // TODO include inheritance
                     }
                 });
                 return traversalEng.iterator(traversal).map(conceptMgr::conceptMap)
@@ -583,7 +584,7 @@ public class Rule {
             private static com.vaticle.typedb.core.concept.thing.Relation insert(Materialisable.Relation materialisable) {
                 com.vaticle.typedb.core.concept.thing.Relation relation = materialisable.relationType().create(true);
                 materialisable.players().forEach((rp, numOccurrences) -> {
-                    for (int i = 0; i <= numOccurrences; i++) {
+                    for (int i = 1; i <= numOccurrences; i++) {
                         relation.addPlayer(rp.first(), rp.second(), true);
                     }
                 });
