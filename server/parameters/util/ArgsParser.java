@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.server.parameters.parser.args;
+package com.vaticle.typedb.core.server.parameters.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;

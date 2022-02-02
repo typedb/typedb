@@ -31,7 +31,7 @@ import com.vaticle.typedb.core.migrator.MigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
 import com.vaticle.typedb.core.database.Factory;
 import com.vaticle.typedb.core.database.CoreFactory;
-import com.vaticle.typedb.core.server.parameters.parser.args.ArgsParser;
+import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
 import com.vaticle.typedb.core.server.parameters.RunOptions;
 import com.vaticle.typedb.core.server.parameters.RunOptionsParser;
 import com.vaticle.typedb.core.server.parameters.Config;

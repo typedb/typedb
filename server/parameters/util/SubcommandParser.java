@@ -16,10 +16,9 @@
  *
  */
 
-package com.vaticle.typedb.core.server.parameters.parser.args;
+package com.vaticle.typedb.core.server.parameters.util;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.parameters.parser.HelpEntry;
 
 import java.util.HashSet;
 import java.util.List;

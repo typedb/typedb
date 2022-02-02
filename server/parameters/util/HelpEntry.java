@@ -16,9 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.server.parameters.parser;
-
-import com.vaticle.typedb.core.server.parameters.parser.args.Option;
+package com.vaticle.typedb.core.server.parameters.util;
 
 import javax.annotation.Nullable;
 import java.util.List;

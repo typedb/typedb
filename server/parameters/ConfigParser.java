@@ -19,8 +19,8 @@ package com.vaticle.typedb.core.server.parameters;
 
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.parameters.parser.HelpEntry;
-import com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser;
+import com.vaticle.typedb.core.server.parameters.util.HelpEntry;
+import com.vaticle.typedb.core.server.parameters.util.YamlParser;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
@@ -35,12 +35,12 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_YAML_MUST_BE_MAP;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CONFIGURATION_OPTIONS;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.Value.Primitive.BOOLEAN;
-import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.Value.Primitive.BYTES_SIZE;
-import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.Value.Primitive.INET_SOCKET_ADDRESS;
-import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.Value.Primitive.LIST_STRING;
-import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.Value.Primitive.PATH;
-import static com.vaticle.typedb.core.server.parameters.parser.yml.YamlParser.Value.Primitive.STRING;
+import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.BOOLEAN;
+import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.BYTES_SIZE;
+import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.INET_SOCKET_ADDRESS;
+import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.LIST_STRING;
+import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.PATH;
+import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.STRING;
 import static com.vaticle.typedb.core.server.common.Util.configPathAbsolute;
 import static com.vaticle.typedb.core.server.common.Util.scopeKey;
 

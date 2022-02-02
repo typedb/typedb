@@ -16,11 +16,10 @@
  *
  */
 
-package com.vaticle.typedb.core.server.parameters.parser.yml;
+package com.vaticle.typedb.core.server.parameters.util;
 
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.parameters.parser.HelpEntry;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -43,7 +42,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.Util.scopeKey;
 
 public class YamlParser {
-
+    
     public static abstract class KeyValue {
 
         private final String description;
