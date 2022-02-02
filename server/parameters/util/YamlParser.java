@@ -42,6 +42,18 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class YamlParser {
 
+    public static <TYPE> KeyValue.Predefined<TYPE> predefined(String key, String description, Value<TYPE> valueParser) {
+        return new KeyValue.Predefined<>(key, description, valueParser);
+    }
+
+    public static <TYPE> KeyValue.Dynamic<TYPE> dynamic(String description, Value<TYPE> valueParser) {
+        return new KeyValue.Dynamic<>(description, valueParser);
+    }
+
+    public static <TYPE> Value.Restricted<TYPE> restricted(Value.Primitive<TYPE> valueParser, List<TYPE> allowed) {
+        return new Value.Restricted<>(valueParser, allowed);
+    }
+
     public static String concatenate(String path, String key) {
         return path.isEmpty() ? key : path + "." + key;
     }
@@ -69,10 +81,6 @@ public class YamlParser {
                 super(description);
                 this.key = key;
                 this.valueParser = valueParser;
-            }
-
-            public static <TYPE> Predefined<TYPE> create(String key, String description, Value<TYPE> valueParser) {
-                return new Predefined<>(key, description, valueParser);
             }
 
             public String key() {
@@ -104,10 +112,6 @@ public class YamlParser {
             private Dynamic(String description, Value<TYPE> valueParser) {
                 super(description);
                 this.valueParser = valueParser;
-            }
-
-            public static <TYPE> Dynamic<TYPE> create(String description, Value<TYPE> valueParser) {
-                return new Dynamic<>(description, valueParser);
             }
 
             public Map<String, TYPE> parseFrom(Yaml.Map yaml, String path, Predefined<?>... exclude) {
@@ -182,7 +186,7 @@ public class YamlParser {
             private final Primitive<T> valueParser;
             private final List<T> allowed;
 
-            public Restricted(Primitive<T> valueParser, List<T> allowed) {
+            private Restricted(Primitive<T> valueParser, List<T> allowed) {
                 this.valueParser = valueParser;
                 this.allowed = allowed;
             }

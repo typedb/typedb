@@ -44,14 +44,17 @@ import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Pr
 import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.LIST_STRING;
 import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.PATH;
 import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.STRING;
+import static com.vaticle.typedb.core.server.parameters.util.YamlParser.dynamic;
+import static com.vaticle.typedb.core.server.parameters.util.YamlParser.predefined;
+import static com.vaticle.typedb.core.server.parameters.util.YamlParser.restricted;
 
 public class ConfigParser extends YamlParser.Value.Compound<Config> {
 
-    private static final Predefined<Config.Server> server = Predefined.create(Server.name, Server.description, new Server());
-    private static final Predefined<Config.Storage> storage = Predefined.create(Storage.name, Storage.description, new Storage());
-    private static final Predefined<Config.Log> log = Predefined.create(Log.name, Log.description, new Log());
+    private static final Predefined<Config.Server> server = predefined(Server.name, Server.description, new Server());
+    private static final Predefined<Config.Storage> storage = predefined(Storage.name, Storage.description, new Storage());
+    private static final Predefined<Config.Log> log = predefined(Log.name, Log.description, new Log());
     private static final Predefined<Config.VaticleFactory> vaticleFactory =
-            Predefined.create(VaticleFactory.name, VaticleFactory.description, new VaticleFactory());
+            predefined(VaticleFactory.name, VaticleFactory.description, new VaticleFactory());
     private static final Set<Predefined<?>> parsers = set(server, storage, log, vaticleFactory);
 
     @Override
@@ -80,7 +83,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         private static final String description = "Server and networking configuration.";
 
         private static final Predefined<InetSocketAddress> address =
-                Predefined.create("address", "Address to listen for GRPC clients on.", INET_SOCKET_ADDRESS);
+                predefined("address", "Address to listen for GRPC clients on.", INET_SOCKET_ADDRESS);
         private static final Set<Predefined<?>> parsers = set(address);
 
         @Override
@@ -103,9 +106,9 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         private static final String description = "Storage configuration.";
 
         private static final Predefined<Path> data =
-                Predefined.create("data", "Directory in which user databases will be stored.", PATH);
+                predefined("data", "Directory in which user databases will be stored.", PATH);
         private static final Predefined<Config.Storage.DatabaseCache> dbCache =
-                Predefined.create(DatabaseCache.name, DatabaseCache.description, new DatabaseCache());
+                predefined(DatabaseCache.name, DatabaseCache.description, new DatabaseCache());
         private static final Set<Predefined<?>> parsers = set(data, dbCache);
 
         @Override
@@ -128,9 +131,9 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             private static final String description = "Per-database storage-layer cache configuration.";
 
             private static final Predefined<Long> data =
-                    Predefined.create("data", "Size of storage-layer cache for data.", BYTES_SIZE);
+                    predefined("data", "Size of storage-layer cache for data.", BYTES_SIZE);
             private static final Predefined<Long> index =
-                    Predefined.create("index", "Size of storage-layer cache for index.", BYTES_SIZE);
+                    predefined("index", "Size of storage-layer cache for index.", BYTES_SIZE);
             private static final Set<Predefined<?>> parsers = set(data, index);
 
             @Override
@@ -154,11 +157,11 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         private static final String description = "Logging configuration.";
 
         private static final Predefined<Config.Log.Output> output =
-                Predefined.create(Output.name, Output.description, new Output());
+                predefined(Output.name, Output.description, new Output());
         private static final Predefined<Config.Log.Logger> logger =
-                Predefined.create(Logger.name, Logger.description, new Logger());
+                predefined(Logger.name, Logger.description, new Logger());
         private static final Predefined<Config.Log.Debugger> debugger =
-                Predefined.create(Debugger.name, Debugger.description, new Debugger());
+                predefined(Debugger.name, Debugger.description, new Debugger());
         private static final Set<Predefined<?>> parsers = set(output, logger, debugger);
 
         @Override
@@ -184,7 +187,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             private static final String name = "output";
             private static final String description = "Log output definitions.";
 
-            private static final Dynamic<Config.Log.Output.Type> type = Dynamic.create(Type.description, new Type());
+            private static final Dynamic<Config.Log.Output.Type> type = dynamic(Type.description, new Type());
 
             @Override
             public Config.Log.Output parse(Yaml yaml, String path) {
@@ -200,8 +203,8 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             static class Type extends Compound<Config.Log.Output.Type> {
 
                 private static final String description = "A named log output definition.";
-                private static final Predefined<String> type = Predefined.create(
-                        "type", "Type of output to define.", new Restricted<>(STRING, list(Stdout.type, File.type))
+                private static final Predefined<String> type = predefined(
+                        "type", "Type of output to define.", restricted(STRING, list(Stdout.type, File.type))
                 );
                 private static final Compound<Config.Log.Output.Type.Stdout> stdout = new Stdout();
                 private static final Compound<Config.Log.Output.Type.File> file = new File();
@@ -232,8 +235,8 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                     private static final String type = "stdout";
                     private static final String description = "Options to configure a log output to stdout.";
 
-                    private static final Predefined<String> typeParser = Predefined.create(
-                            "type", "An output that writes to stdout.", new Restricted<>(STRING, list(type))
+                    private static final Predefined<String> typeParser = predefined(
+                            "type", "An output that writes to stdout.", restricted(STRING, list(type))
                     );
                     private static final Set<Predefined<?>> parsers = set(typeParser);
 
@@ -259,13 +262,13 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                     private static final String description = "Options to configure a log output to files in a directory.";
 
                     private static final Predefined<String> typeParser =
-                            Predefined.create("type", "An output that writes to a directory.", new Restricted<>(STRING, list(type)));
+                            predefined("type", "An output that writes to a directory.", restricted(STRING, list(type)));
                     private static final Predefined<Path> path =
-                            Predefined.create("directory", "Directory to write to. Relative paths are relative to distribution path.", PATH);
+                            predefined("directory", "Directory to write to. Relative paths are relative to distribution path.", PATH);
                     private static final Predefined<Long> fileSizeCap =
-                            Predefined.create("file-size-cap", "Log file size cap before creating new file (eg. 50mb).", BYTES_SIZE);
+                            predefined("file-size-cap", "Log file size cap before creating new file (eg. 50mb).", BYTES_SIZE);
                     private static final Predefined<Long> archivesSizeCap =
-                            Predefined.create(
+                            predefined(
                                     "archives-size-cap",
                                     "Total size cap of all archived log files in directory (eg. 1gb).",
                                     BYTES_SIZE
@@ -304,9 +307,9 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             private static final String description = "Loggers to activate.";
 
             private static final Predefined<Config.Log.Logger.Unfiltered> defaultLogger =
-                    Predefined.create("default", "The default logger.", new Unfiltered());
+                    predefined("default", "The default logger.", new Unfiltered());
             private static final Dynamic<Config.Log.Logger.Filtered> filteredLogger =
-                    Dynamic.create("Custom filtered loggers.", new Filtered());
+                    dynamic("Custom filtered loggers.", new Filtered());
 
             @Override
             public Config.Log.Logger parse(Yaml yaml, String path) {
@@ -324,9 +327,9 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             private static class Unfiltered extends Compound<Config.Log.Logger.Unfiltered> {
 
                 private static final Predefined<String> level =
-                        Predefined.create("level", "Output level.", new Restricted<>(STRING, LEVELS));
+                        predefined("level", "Output level.", restricted(STRING, LEVELS));
                 private static final Predefined<List<String>> output =
-                        Predefined.create("output", "Outputs to log to by default.", LIST_STRING);
+                        predefined("output", "Outputs to log to by default.", LIST_STRING);
                 private static final Set<Predefined<?>> parsers = set(level, output);
 
                 @Override
@@ -347,11 +350,11 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             private static class Filtered extends Compound<Config.Log.Logger.Filtered> {
 
                 private static final Predefined<String> filter =
-                        Predefined.create("filter", "Package/class filter (eg. 'com.vaticle.typedb').", STRING);
+                        predefined("filter", "Package/class filter (eg. 'com.vaticle.typedb').", STRING);
                 private static final Predefined<String> level =
-                        Predefined.create("level", "Output level.", new Restricted<>(STRING, LEVELS));
+                        predefined("level", "Output level.", restricted(STRING, LEVELS));
                 private static final Predefined<List<String>> output =
-                        Predefined.create("output", "Outputs to log to by default.", LIST_STRING);
+                        predefined("output", "Outputs to log to by default.", LIST_STRING);
                 private static final Set<Predefined<?>> parsers = set(filter, level, output);
 
                 @Override
@@ -376,7 +379,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             private static final String description = "Debuggers that may be enabled at runtime.";
 
             private static final Predefined<Config.Log.Debugger.Reasoner> reasoner =
-                    Predefined.create("reasoner", "Configure reasoner debugger.", new Reasoner());
+                    predefined("reasoner", "Configure reasoner debugger.", new Reasoner());
             private static final Set<Predefined<?>> parsers = set(reasoner);
 
             @Override
@@ -396,11 +399,11 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
 
                 private static final String type = "reasoner";
                 private static final Predefined<String> typeParser =
-                        Predefined.create("type", "Type of this debugger.", new Restricted<>(STRING, list(type)));
+                        predefined("type", "Type of this debugger.", restricted(STRING, list(type)));
                 private static final Predefined<String> output =
-                        Predefined.create("output", "Name of output reasoner debugger should write to (must be directory).", STRING);
+                        predefined("output", "Name of output reasoner debugger should write to (must be directory).", STRING);
                 private static final Predefined<Boolean> enable =
-                        Predefined.create("enable", "Enable to allow reasoner debugging to be enabled at runtime.", BOOLEAN);
+                        predefined("enable", "Enable to allow reasoner debugging to be enabled at runtime.", BOOLEAN);
                 private static final Set<Predefined<?>> parsers = set(typeParser, output, enable);
 
                 @Override
@@ -428,13 +431,13 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         private static final String description = "Configure Vaticle Factory connection.";
 
         private static final Predefined<Boolean> enable =
-                Predefined.create("enable", "Enable Vaticle Factory tracing.", BOOLEAN);
+                predefined("enable", "Enable Vaticle Factory tracing.", BOOLEAN);
         private static final Predefined<String> uri =
-                Predefined.create("uri", "URI of Vaticle Factory server.", STRING);
+                predefined("uri", "URI of Vaticle Factory server.", STRING);
         private static final Predefined<String> username =
-                Predefined.create("username", "Username for Vaticle Factory server.", STRING);
+                predefined("username", "Username for Vaticle Factory server.", STRING);
         private static final Predefined<String> token =
-                Predefined.create("token", "Authentication token for Vaticle Factory server.", STRING);
+                predefined("token", "Authentication token for Vaticle Factory server.", STRING);
         private static final Set<Predefined<?>> parsers = set(enable, uri, username, token);
 
         @Override
