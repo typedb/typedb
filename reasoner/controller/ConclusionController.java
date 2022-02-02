@@ -171,12 +171,11 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 materialiserReactive.pull(subscriber());
             }
 
-            private void receiveMaterialisation(Provider<Map<Variable, Concept>> provider, Map<Variable, Concept> packet) {
+            private void receiveMaterialisation(MaterialiserReactive provider, Map<Variable, Concept> packet) {
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
                 finishPulling();
                 subscriber().receive(this, packet);
-                monitor().onPathJoin(this);  // Since we received a materialisation but we're not going to pull  // TODO: Actually, we never forked to create the materialisation path. TODO: Actually, we need to in case the materialisation never responds.
-                // again, so manually join the path created by the materialiser
+                provider.pull(subscriber());  // We need to pull again so that the materialiser processor does a join of its own accord
             }
         }
 
