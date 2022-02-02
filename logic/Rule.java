@@ -551,7 +551,7 @@ public class Rule {
                 Identifier.Variable.Retrievable relationId = anon(i.get());
                 RelationTraversal traversal = new RelationTraversal(relationId, set(materialisable.relationType().getLabel())); // TODO include inheritance
                 materialisable.players().forEach((rp, numOccurrences) -> {
-                    for (int j = 0; j <= numOccurrences; j++) {
+                    for (int j = 1; j <= numOccurrences; j++) {
                         traversal.player(anon(i.addAndGet(1)), rp.second().asThing().getIID(), set(rp.first().getLabel())); // TODO include inheritance
                     }
                 });
