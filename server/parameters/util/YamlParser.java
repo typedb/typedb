@@ -42,8 +42,8 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class YamlParser {
 
-    public static String append(String parent, String key) {
-        return parent.isEmpty() ? key : parent + "." + key;
+    public static String concatenate(String path, String key) {
+        return path.isEmpty() ? key : path + "." + key;
     }
 
     public static abstract class KeyValue {
@@ -80,13 +80,13 @@ public class YamlParser {
             }
 
             public TYPE parse(Yaml.Map yaml, String path) {
-                String childPath = append(path, key());
+                String childPath = concatenate(path, key());
                 if (!yaml.containsKey(key())) throw TypeDBException.of(MISSING_CONFIG_OPTION, childPath);
                 else return valueParser.parse(yaml.get(key()), childPath);
             }
 
             public HelpEntry helpEntry(String path) {
-                String childPath = append(path, key());
+                String childPath = concatenate(path, key());
                 if (valueParser.isPrimitive()) {
                     return new HelpEntry.Simple(childPath, description(), valueParser.asPrimitive().help());
                 } else if (valueParser.isRestricted()) {
@@ -115,7 +115,7 @@ public class YamlParser {
                 Map<String, TYPE> read = new HashMap<>();
                 yaml.forEach((key, value) -> {
                     if (!excludeKeys.contains(key)) {
-                        String childPath = append(path, key);
+                        String childPath = concatenate(path, key);
                         read.put(key, valueParser.parse(value, childPath));
                     }
                 });
@@ -125,11 +125,11 @@ public class YamlParser {
             @Override
             public HelpEntry helpEntry(String path) {
                 if (valueParser.isPrimitive()) {
-                    return new HelpEntry.Simple(append(path, "<name>"), description(), valueParser.asPrimitive().help());
+                    return new HelpEntry.Simple(concatenate(path, "<name>"), description(), valueParser.asPrimitive().help());
                 } else if (valueParser.isRestricted()) {
-                    return new HelpEntry.Simple(append(path, "<name>"), description(), valueParser.asRestricted().help());
+                    return new HelpEntry.Simple(concatenate(path, "<name>"), description(), valueParser.asRestricted().help());
                 } else {
-                    return new HelpEntry.Yaml.Grouped(append(path, "<name>"), description(), valueParser.asCompound().helpEntries(append(path, "<name>")));
+                    return new HelpEntry.Yaml.Grouped(concatenate(path, "<name>"), description(), valueParser.asCompound().helpEntries(concatenate(path, "<name>")));
                 }
             }
         }

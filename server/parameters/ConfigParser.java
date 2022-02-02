@@ -461,7 +461,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         Set<String> unrecognisedKeys = new HashSet<>(keys);
         parsers.forEach(parser -> unrecognisedKeys.remove(parser.key()));
         if (!unrecognisedKeys.isEmpty()) {
-            Set<String> childPaths = iterate(unrecognisedKeys).map(key -> YamlParser.append(path, key)).toSet();
+            Set<String> childPaths = iterate(unrecognisedKeys).map(key -> YamlParser.concatenate(path, key)).toSet();
             throw TypeDBException.of(UNRECOGNISED_CONFIGURATION_OPTIONS, childPaths);
         }
     }
