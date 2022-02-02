@@ -74,7 +74,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         else return Util.getTypedbDir().resolve(path);
     }
 
-    public static class Server extends Compound<Config.Server> {
+    private static class Server extends Compound<Config.Server> {
 
         private static final String name = "server";
         private static final String description = "Server and networking configuration.";
@@ -122,7 +122,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             return list(data.helpEntry(path), dbCache.helpEntry(path));
         }
 
-        public static class DatabaseCache extends Compound<Config.Storage.DatabaseCache> {
+        private static class DatabaseCache extends Compound<Config.Storage.DatabaseCache> {
 
             private static final String name = "database-cache";
             private static final String description = "Per-database storage-layer cache configuration.";
@@ -179,7 +179,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             return list(output.helpEntry(path), logger.helpEntry(path), debugger.helpEntry(path));
         }
 
-        public static class Output extends Compound<Config.Log.Output> {
+        private static class Output extends Compound<Config.Log.Output> {
 
             private static final String name = "output";
             private static final String description = "Log output definitions.";
@@ -227,9 +227,9 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                             new HelpEntry.Yaml.Grouped(path, File.description, file.helpEntries(path)));
                 }
 
-                public static class Stdout extends Compound<Config.Log.Output.Type.Stdout> {
+                private static class Stdout extends Compound<Config.Log.Output.Type.Stdout> {
 
-                    static final String type = "stdout";
+                    private static final String type = "stdout";
                     private static final String description = "Options to configure a log output to stdout.";
 
                     private static final Predefined<String> typeParser = Predefined.create(
@@ -241,8 +241,9 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                     public Config.Log.Output.Type.Stdout parse(Yaml yaml, String path) {
                         if (yaml.isMap()) {
                             validatedRecognisedParsers(parsers, yaml.asMap().keys(), path);
-                            String value = typeParser.parse(yaml.asMap(), path);
-                            return new Config.Log.Output.Type.Stdout(value);
+                            String type = typeParser.parse(yaml.asMap(), path);
+                            assert Stdout.type.equals(type);
+                            return new Config.Log.Output.Type.Stdout();
                         } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
                     }
 
@@ -252,9 +253,9 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                     }
                 }
 
-                public static class File extends Compound<Config.Log.Output.Type.File> {
+                private static class File extends Compound<Config.Log.Output.Type.File> {
 
-                    static final String type = "file";
+                    private static final String type = "file";
                     private static final String description = "Options to configure a log output to files in a directory.";
 
                     private static final Predefined<String> typeParser =
@@ -275,8 +276,9 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                     public Config.Log.Output.Type.File parse(Yaml yaml, String path) {
                         if (yaml.isMap()) {
                             validatedRecognisedParsers(parsers, yaml.asMap().keys(), path);
+                            String type = typeParser.parse(yaml.asMap(), path);
+                            assert File.type.equals(type);
                             return new Config.Log.Output.Type.File(
-                                    typeParser.parse(yaml.asMap(), path),
                                     configPathAbsolute(File.path.parse(yaml.asMap(), path)),
                                     fileSizeCap.parse(yaml.asMap(), path),
                                     archivesSizeCap.parse(yaml.asMap(), path)
@@ -294,7 +296,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
 
         }
 
-        public static class Logger extends Compound<Config.Log.Logger> {
+        private static class Logger extends Compound<Config.Log.Logger> {
 
             private static final List<String> LEVELS = list("trace", "debug", "info", "warn", "error");
 
@@ -319,7 +321,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 return list(defaultLogger.helpEntry(path), filteredLogger.helpEntry(path));
             }
 
-            static class Unfiltered extends Compound<Config.Log.Logger.Unfiltered> {
+            private static class Unfiltered extends Compound<Config.Log.Logger.Unfiltered> {
 
                 private static final Predefined<String> level =
                         Predefined.create("level", "Output level.", new Restricted<>(STRING, LEVELS));
@@ -342,7 +344,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 }
             }
 
-            static class Filtered extends Compound<Config.Log.Logger.Filtered> {
+            private static class Filtered extends Compound<Config.Log.Logger.Filtered> {
 
                 private static final Predefined<String> filter =
                         Predefined.create("filter", "Package/class filter (eg. 'com.vaticle.typedb').", STRING);
@@ -368,7 +370,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             }
         }
 
-        public static class Debugger extends Compound<Config.Log.Debugger> {
+        private static class Debugger extends Compound<Config.Log.Debugger> {
 
             private static final String name = "debugger";
             private static final String description = "Debuggers that may be enabled at runtime.";
@@ -390,9 +392,9 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 return list(reasoner.helpEntry(path));
             }
 
-            static class Reasoner extends Compound<Config.Log.Debugger.Reasoner> {
+            private static class Reasoner extends Compound<Config.Log.Debugger.Reasoner> {
 
-                static final String type = "reasoner";
+                private static final String type = "reasoner";
                 private static final Predefined<String> typeParser =
                         Predefined.create("type", "Type of this debugger.", new Restricted<>(STRING, list(type)));
                 private static final Predefined<String> output =
@@ -405,8 +407,10 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 public Config.Log.Debugger.Reasoner parse(Yaml yaml, String path) {
                     if (yaml.isMap()) {
                         validatedRecognisedParsers(parsers, yaml.asMap().keys(), path);
-                        return new Config.Log.Debugger.Reasoner(typeParser.parse(yaml.asMap(), path), output.parse(yaml.asMap(), path),
-                                enable.parse(yaml.asMap(), path));
+                        String type = typeParser.parse(yaml.asMap(), path);
+                        assert Reasoner.type.equals(type);
+                        return new Config.Log.Debugger.Reasoner(
+                                output.parse(yaml.asMap(), path), enable.parse(yaml.asMap(), path));
                     } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
                 }
 
@@ -418,7 +422,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         }
     }
 
-    public static class VaticleFactory extends Compound<Config.VaticleFactory> {
+    private static class VaticleFactory extends Compound<Config.VaticleFactory> {
 
         private static final String name = "vaticle-factory";
         private static final String description = "Configure Vaticle Factory connection.";

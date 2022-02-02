@@ -169,9 +169,7 @@ public class Config {
 
                 public static class Stdout extends Type {
 
-                    Stdout(String type) {
-                        assert type.equals(ConfigParser.Log.Output.Type.Stdout.type);
-                    }
+                    Stdout() {}
 
                     @Override
                     public boolean isStdout() {
@@ -191,8 +189,7 @@ public class Config {
                     private final long fileSizeCap;
                     private final long archivesSizeCap;
 
-                    File(String type, Path path, long fileSizeCap, long archivesSizeCap) {
-                        assert type.equals(ConfigParser.Log.Output.Type.File.type);
+                    File(Path path, long fileSizeCap, long archivesSizeCap) {
                         this.path = path;
                         this.fileSizeCap = fileSizeCap;
                         this.archivesSizeCap = archivesSizeCap;
@@ -311,8 +308,7 @@ public class Config {
                 private final boolean enable;
                 private Output.Type.File output;
 
-                Reasoner(String type, String outputName, boolean enable) {
-                    assert type.equals(ConfigParser.Log.Debugger.Reasoner.type);
+                Reasoner(String outputName, boolean enable) {
                     this.outputName = outputName;
                     this.enable = enable;
                 }
