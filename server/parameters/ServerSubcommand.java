@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public abstract class RunOptions {
+public abstract class ServerSubcommand {
 
     public boolean isServer() {
         return false;
@@ -51,7 +51,7 @@ public abstract class RunOptions {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Export.class));
     }
 
-    public static class Server extends RunOptions {
+    public static class Server extends ServerSubcommand {
 
         private final boolean isDebug;
         private final boolean isHelp;
@@ -92,7 +92,7 @@ public abstract class RunOptions {
         }
     }
 
-    public static class Import extends RunOptions {
+    public static class Import extends ServerSubcommand {
 
         private final String database;
         private final Path file;
@@ -127,7 +127,7 @@ public abstract class RunOptions {
         }
     }
 
-    public static class Export extends RunOptions {
+    public static class Export extends ServerSubcommand {
 
         private final String database;
         private final Path file;

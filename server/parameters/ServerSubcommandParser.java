@@ -34,7 +34,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_O
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_OPTION_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class RunOptionsParser {
+public class ServerSubcommandParser {
 
     private static void validateRequiredArgs(Set<OptionParser> requiredParsers, Set<Option> options) {
         requiredParsers.forEach(required -> {
@@ -52,7 +52,7 @@ public class RunOptionsParser {
         });
     }
 
-    public static class Server extends SubcommandParser<RunOptions.Server> {
+    public static class Server extends SubcommandParser<ServerSubcommand.Server> {
 
         private static final OptionParser.Flag debugParser = new OptionParser.Flag("debug", "Run server in debug mode.");
         private static final OptionParser.Flag helpParser = new OptionParser.Flag("help", "Print help menu.");
@@ -70,14 +70,14 @@ public class RunOptionsParser {
         }
 
         @Override
-        protected RunOptions.Server parse(Set<Option> options) {
+        protected ServerSubcommand.Server parse(Set<Option> options) {
             Set<Option> auxOptions = findAuxiliaryOptions(options);
             Set<Option> configOptions = excludeOptions(options, auxOptions);
             Optional<Path> configPath = configPathParser.parse(auxOptions);
             Config config = configPath
                     .map(path -> ConfigFactory.create(path, configOptions, configParser))
                     .orElse(ConfigFactory.create(configOptions, configParser));
-            return new RunOptions.Server(debugParser.parse(auxOptions), helpParser.parse(auxOptions),
+            return new ServerSubcommand.Server(debugParser.parse(auxOptions), helpParser.parse(auxOptions),
                     versionParser.parse(auxOptions), config);
         }
 
@@ -96,7 +96,7 @@ public class RunOptionsParser {
         }
     }
 
-    public static class Import extends SubcommandParser<RunOptions.Import> {
+    public static class Import extends SubcommandParser<ServerSubcommand.Import> {
 
         public static final String[] tokens = new String[]{"import"};
         public static final String description = "Run TypeDB import.";
@@ -111,10 +111,10 @@ public class RunOptionsParser {
         }
 
         @Override
-        protected RunOptions.Import parse(Set<Option> options) {
+        protected ServerSubcommand.Import parse(Set<Option> options) {
             validateRequiredArgs(parsers, options);
             validateUnrecognisedArgs(parsers, options);
-            return new RunOptions.Import(databaseParser.parse(options).get(), filePathParser.parse(options).get(),
+            return new ServerSubcommand.Import(databaseParser.parse(options).get(), filePathParser.parse(options).get(),
                     portParser.parse(options).get());
         }
 
@@ -124,7 +124,7 @@ public class RunOptionsParser {
         }
     }
 
-    public static class Export extends SubcommandParser<RunOptions.Export> {
+    public static class Export extends SubcommandParser<ServerSubcommand.Export> {
 
         public static final String[] tokens = new String[]{"export"};
         public static final String description = "Run TypeDB export.";
@@ -139,10 +139,10 @@ public class RunOptionsParser {
         }
 
         @Override
-        protected RunOptions.Export parse(Set<Option> options) {
+        protected ServerSubcommand.Export parse(Set<Option> options) {
             validateRequiredArgs(parsers, options);
             validateUnrecognisedArgs(parsers, options);
-            return new RunOptions.Export(databaseParser.parse(options).get(), filePathParser.parse(options).get(),
+            return new ServerSubcommand.Export(databaseParser.parse(options).get(), filePathParser.parse(options).get(),
                     portParser.parse(options).get());
         }
 
