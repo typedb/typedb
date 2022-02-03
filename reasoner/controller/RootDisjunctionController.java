@@ -22,12 +22,15 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.FanInReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Set;
 import java.util.function.Function;
+
+import static com.vaticle.typedb.common.collection.Collections.set;
 
 public class RootDisjunctionController
         extends DisjunctionController<RootDisjunctionController.RootDisjunctionProcessor, RootDisjunctionController> {
@@ -84,6 +87,16 @@ public class RootDisjunctionController
         }
 
         @Override
+        protected Set<Driver<? extends Processor<?, ?, ?, ?>>> upstreamMonitors() {
+            return set(driver());
+        }
+
+        @Override
+        protected Set<Driver<? extends Processor<?, ?, ?, ?>>> newUpstreamMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
+            return set(driver());
+        }
+
+        @Override
         public void setUp() {
             super.setUp();
             outlet().publishTo(reasonerEndpoint);
@@ -102,6 +115,8 @@ public class RootDisjunctionController
 
         @Override
         protected void onDone() {
+            assert !done;
+//            done = true;
             reasonerEndpoint.done();
         }
     }

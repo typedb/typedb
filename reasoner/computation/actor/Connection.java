@@ -54,7 +54,7 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
     }
 
     protected void propagateMonitors(Set<Actor.Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
-        provProcessor.execute(actor -> actor.setMonitorReporting(monitors));
+        provProcessor.execute(actor -> actor.addAndPropagateMonitors(monitors));
     }
 
     protected void registerWithMonitor(Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor) {

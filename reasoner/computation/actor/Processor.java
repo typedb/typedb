@@ -51,13 +51,13 @@ public abstract class Processor<INPUT, OUTPUT,
     private final Driver<CONTROLLER> controller;
     private final Map<Long, InletEndpoint<INPUT>> receivingEndpoints;
     private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
-    private final Set<Connection<INPUT, ?, ?>> upstreamConnections;
+    protected final Set<Connection<INPUT, ?, ?>> upstreamConnections;
     private final Monitoring monitoring;
-    private final Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors;
+    protected final Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors;
     private ReactiveStream<OUTPUT, OUTPUT> outlet;
     private long endpointId;
     private boolean terminated;
-    private boolean done;
+    protected boolean done;
 
     protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, String name) {
         super(driver, name);
@@ -111,11 +111,15 @@ public abstract class Processor<INPUT, OUTPUT,
 
     protected <PROV_PROCESSOR extends Processor<?, INPUT, ?, PROV_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PROV_PROCESSOR> connection) {
         assert !done;
-        Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors = addSelfIfMonitor(this.monitors);
+        Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors = upstreamMonitors();
         monitors.forEach(connection::registerWithMonitor);
         if (monitors.size() > 0) connection.propagateMonitors(monitors);
         receivingEndpoints.get(connection.receiverEndpointId()).setReady(connection);
         upstreamConnections.add(connection);
+    }
+
+    protected Set<Driver<? extends Processor<?, ?, ?, ?>>> upstreamMonitors() {
+        return this.monitors;
     }
 
     private long nextEndpointId() {
@@ -155,28 +159,30 @@ public abstract class Processor<INPUT, OUTPUT,
         return monitors;
     }
 
-    protected void setMonitorReporting(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
+    protected void addAndPropagateMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
         assert !done;
-        Set<Driver<? extends Processor<?, ?, ?, ?>>> unseenMonitors = new HashSet<>(addSelfIfMonitor(monitors));
-        unseenMonitors.removeAll(this.monitors);
-        this.monitors.addAll(unseenMonitors);
-        if (unseenMonitors.size() > 0) {
+        Set<Driver<? extends Processor<?, ?, ?, ?>>> newMonitors = newMonitors(monitors);
+        Set<Driver<? extends Processor<?, ?, ?, ?>>> newUpstreamMonitors = newUpstreamMonitors(monitors);
+        this.monitors.addAll(newMonitors);
+        if (newUpstreamMonitors.size() > 0) {
             upstreamConnections.forEach(connection -> {
-                unseenMonitors.forEach(connection::registerWithMonitor);
-                connection.propagateMonitors(unseenMonitors);
+                newUpstreamMonitors.forEach(connection::registerWithMonitor);
+                connection.propagateMonitors(newUpstreamMonitors);
             });
-            unseenMonitors.forEach(monitor -> monitoring().sendInitialReport(monitor));
+            newMonitors.forEach(monitor -> monitoring().sendInitialReport(monitor));
         }
     }
 
-    private Set<Driver<? extends Processor<?, ?, ?, ?>>> addSelfIfMonitor(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
-        if (monitoring().isMonitor()) {
-            Set<Driver<? extends Processor<?, ?, ?, ?>>> newMonitorSet = new HashSet<>(monitors);
-            newMonitorSet.add(driver());
-            return newMonitorSet;
-        } else {
-            return monitors;
-        }
+    protected Set<Driver<? extends Processor<?, ?, ?, ?>>> newUpstreamMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
+        Set<Driver<? extends Processor<?, ?, ?, ?>>> newMonitors = new HashSet<>(monitors);
+        newMonitors.removeAll(this.monitors);
+        return newMonitors;
+    }
+
+    protected Set<Driver<? extends Processor<?, ?, ?, ?>>> newMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
+        Set<Driver<? extends Processor<?, ?, ?, ?>>> newMonitors = new HashSet<>(monitors);
+        newMonitors.removeAll(this.monitors);
+        return newMonitors;
     }
 
     protected boolean isPulling() {
@@ -414,27 +420,27 @@ public abstract class Processor<INPUT, OUTPUT,
 
         public void onPathFork(int numForks, Reactive forker) {
             assert numForks > 0;
-            onChange(numForks, CountChange.PathFork, forker);
+            onChange(CountChange.PathFork, numForks, forker);
         }
 
         public void onPathJoin(Reactive joiner) {
-            onChange(1, CountChange.PathJoin, joiner);
+            onChange(CountChange.PathJoin, 1, joiner);
         }
 
         public void onAnswerCreate(Reactive creator) {
-            onChange(1, CountChange.AnswerCreate, creator);
+            onChange(CountChange.AnswerCreate, 1, creator);
         }
 
         public void onAnswerCreate(int num, Reactive creator) {
             assert num >= 0;
-            onChange(num, CountChange.AnswerCreate, creator);
+            onChange(CountChange.AnswerCreate, num, creator);
         }
 
         public void onAnswerDestroy(Reactive destroyer) {
-            onChange(1, CountChange.AnswerDestroy, destroyer);
+            onChange(CountChange.AnswerDestroy, 1, destroyer);
         }
 
-        protected void onChange(int num, CountChange countChange, Reactive reactive) {
+        protected void onChange(CountChange countChange, int num, Reactive reactive) {
             updateCount(countChange, num);
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.onCountChange(reactive, countChange, processor().driver(), num));
             reportToMonitors(countChange, num, reactive);
@@ -461,8 +467,17 @@ public abstract class Processor<INPUT, OUTPUT,
             final int update = num;
             processor().monitors().forEach(monitor -> {
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportCountChange(reactive, countChange, monitor, update));
-                monitor.execute(actor -> actor.monitoring().asMonitor().receiveReport(update, countChange, reactive));
+                monitor.execute(actor -> actor.monitoring().asMonitor().receiveReport(update, countChange));
             });
+        }
+
+        // Methods to report to downstream monitors without changing the status of this monitoring
+        public void reportPathJoin(Reactive joiner) {
+            reportToMonitors(CountChange.PathJoin, 1, joiner);
+        }
+
+        public void reportAnswerCreate(Reactive creator) {
+            reportToMonitors(CountChange.AnswerCreate, 1, creator);
         }
 
         protected void sendInitialReport(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
@@ -511,9 +526,8 @@ public abstract class Processor<INPUT, OUTPUT,
             checkTermination();
         }
 
-        private void receiveReport(int num, CountChange countChange, Reactive reactive) {
+        private void receiveReport(int num, CountChange countChange) {
             updateCount(countChange, num);
-            reportToMonitors(countChange, num, reactive);
             checkTermination();
         }
 
@@ -525,8 +539,8 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        protected void onChange(int num, CountChange countChange, Reactive reactive) {
-            super.onChange(num, countChange, reactive);
+        protected void onChange(CountChange countChange, int num, Reactive reactive) {
+            super.onChange(countChange, num, reactive);
             checkTermination();
         }
 

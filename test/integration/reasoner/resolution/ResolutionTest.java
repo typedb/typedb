@@ -136,7 +136,7 @@ public class ResolutionTest {
 
                 EntryPoint reasonerEntryPoint = new EntryPoint(responses::add, exceptions::add, l -> {}, "EntryPoint");
                 try {
-                    registry.createRootConjunctionController(conjunctionPattern, reasonerEntryPoint);
+                    registry.createRootConjunctionController(conjunctionPattern, new HashSet<>(), reasonerEntryPoint);
                 } catch (TypeDBException e) {
                     fail();
                 }
@@ -270,6 +270,35 @@ public class ResolutionTest {
         try (RocksSession session = dataSession()) {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $p isa person; not { { $p has age 24; } or { $p has age 42; }; }; }", transaction.logic());
+                createRootAndAssertResponses(transaction, conjunctionPattern, 1L, 0L);
+            }
+        }
+    }
+
+    @Test
+    public void test_negation() throws InterruptedException {
+        try (RocksSession session = schemaSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                transaction.query().define(TypeQL.parseQuery(
+                        "define person sub entity, owns age, owns name;" +
+                                "age sub attribute, value long;" +
+                                "name sub attribute, value string;" +
+                                "rule susans-are-24: when { $p1 has name \"Susan\"; } then { $p1 has age 24; };"
+                ));
+                transaction.commit();
+            }
+        }
+
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has name \"Bob\";"));
+                transaction.commit();
+            }
+        }
+
+        try (RocksSession session = dataSession()) {
+            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+                Conjunction conjunctionPattern = resolvedConjunction("{ $p isa person; not { $p has age 24; }; }", transaction.logic());
                 createRootAndAssertResponses(transaction, conjunctionPattern, 1L, 0L);
             }
         }
@@ -487,7 +516,7 @@ public class ResolutionTest {
         AnswerProducer ans = new AnswerProducer();
         ans.getNextAnswer();
         try {
-             registry.createRootDisjunctionController(disjunction, ans.entryPoint);
+             registry.createRootDisjunctionController(disjunction, filter, ans.entryPoint);
         } catch (TypeDBException e) {
             fail();
             return;
@@ -508,7 +537,7 @@ public class ResolutionTest {
         AnswerProducer ans = new AnswerProducer();
         ans.getNextAnswer();
         try {
-            registry.createRootConjunctionController(conjunction, ans.entryPoint);
+            registry.createRootConjunctionController(conjunction, filter, ans.entryPoint);
         } catch (TypeDBException e) {
             fail();
             return;

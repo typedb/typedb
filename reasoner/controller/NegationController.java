@@ -24,9 +24,12 @@ import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStreamBase;
 
+import java.util.Set;
 import java.util.function.Function;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.reasoner.computation.reactive.NoOpReactive.noOp;
 
 public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.NegationProcessor, NegationController> {
@@ -68,6 +71,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
         private final Negated negated;
         private final ConceptMap bounds;
+        private NegationReactive negation;
 
         protected NegationProcessor(Driver<NegationProcessor> driver, Driver<NegationController> controller,
                                     Negated negated, ConceptMap bounds, String name) {
@@ -77,13 +81,70 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         }
 
         @Override
+        protected Monitoring createMonitoring() {
+            return new Monitor(this);
+        }
+
+        @Override
+        protected boolean isPulling() {
+            return true;  // TODO: Check this
+        }
+
+        @Override
+        protected Set<Driver<? extends Processor<?, ?, ?, ?>>> upstreamMonitors() {
+            return set(driver());
+        }
+
+        @Override
+        protected Set<Driver<? extends Processor<?, ?, ?, ?>>> newUpstreamMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
+            return set(driver());
+        }
+
+        @Override
         public void setUp() {
             setOutlet(noOp(monitoring(), name()));
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             requestConnection(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
-            endpoint.publishTo(outlet());
-            // TODO: This processor needs to be aware of when there are no possible answers to be found, and then it
-            //  can return the bounds it was given as its answer
+            negation = new NegationReactive(monitoring(), name());
+            endpoint.publishTo(negation);
+            negation.publishTo(outlet());
+        }
+
+        @Override
+        protected void onDone() {
+            assert !done;
+//            done = true;
+            negation.receiveDone(bounds);
+            monitoring().reportPathJoin(negation);
+        }
+
+        private static class NegationReactive extends ReactiveStreamBase<ConceptMap, ConceptMap> {
+
+            private boolean answerFound;
+
+            protected NegationReactive(Monitoring monitor, String groupName) {
+                super(monitor, groupName);
+                answerFound = false;
+            }
+
+            @Override
+            protected Manager<ConceptMap> providerManager() {
+                return new SingleManager<>(this, monitor());
+            }
+
+            @Override
+            public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
+                super.receive(provider, packet);
+                answerFound = true;
+                monitor().onAnswerDestroy(this);
+            }
+
+            public void receiveDone(ConceptMap packet) {
+                if (!answerFound) {
+                    monitor().reportAnswerCreate(this);  // TODO: This increases the local count of answers as well as the desired effect of informing the root. Consider manually terminating the monitor? Not good for using assertions to ensure answers weren't missed though
+                    subscriber().receive(this, packet);
+                }
+            }
         }
 
         protected static class DisjunctionRequest extends Request<Disjunction, ConceptMap, NestedDisjunctionController,

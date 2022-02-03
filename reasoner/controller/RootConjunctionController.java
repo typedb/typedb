@@ -25,12 +25,15 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+
+import static com.vaticle.typedb.common.collection.Collections.set;
 
 public class RootConjunctionController extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.RootConjunctionProcessor> {
     private final Set<Identifier.Variable.Retrievable> filter;
@@ -91,6 +94,16 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         }
 
         @Override
+        protected Set<Driver<? extends Processor<?, ?, ?, ?>>> upstreamMonitors() {
+            return set(driver());
+        }
+
+        @Override
+        protected Set<Driver<? extends Processor<?, ?, ?, ?>>> newUpstreamMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
+            return set(driver());
+        }
+
+        @Override
         public void setUp() {
             super.setUp();
             outlet().publishTo(reasonerEndpoint);
@@ -108,6 +121,8 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
 
         @Override
         protected void onDone() {
+            assert ! done;
+//            done = true;
             reasonerEndpoint.done();
         }
     }
