@@ -47,31 +47,31 @@ public class ConfigFactory {
     }
 
     public static Config create(Path file, Set<Option> overrides, ConfigParser parser) {
-        Yaml.Map config = mergeYaml(file, overrides);
-        substituteEnvVars(config);
-        return parser.parse(config, "");
+        Yaml.Map yaml = merge(file, overrides);
+        substituteEnvVars(yaml);
+        return parser.parse(yaml, "");
     }
 
-    private static Yaml.Map mergeYaml(Path file, Set<Option> overrides) {
-        Yaml.Map config = readYamlFile(file);
-        Yaml.Map configOverrides = readYamlOverrides(overrides);
-        for (String key: configOverrides.keys()) {
-            set(config, key, configOverrides.get(key));
+    private static Yaml.Map merge(Path file, Set<Option> overrides) {
+        Yaml.Map yaml = readFile(file);
+        Yaml.Map yamlOverrides = convertOverrides(overrides);
+        for (String key: yamlOverrides.keys()) {
+            set(yaml, key, yamlOverrides.get(key));
         }
-        return config;
+        return yaml;
     }
 
-    private static Yaml.Map readYamlFile(Path location) {
+    private static Yaml.Map readFile(Path file) {
         try {
-            Yaml config = Yaml.load(location);
+            Yaml config = Yaml.load(file);
             if (!config.isMap()) throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP);
             return config.asMap();
         } catch (FileNotFoundException e) {
-            throw TypeDBException.of(CONFIG_FILE_NOT_FOUND, location);
+            throw TypeDBException.of(CONFIG_FILE_NOT_FOUND, file);
         }
     }
 
-    private static Yaml.Map readYamlOverrides(Set<Option> options) {
+    private static Yaml.Map convertOverrides(Set<Option> options) {
         Set<String> keys = new HashSet<>();
         for (Option option : options) {
             if (!option.hasValue()) throw TypeDBException.of(CLI_OPTION_REQUIRES_VALUE, option);
