@@ -51,7 +51,7 @@ java_library(
 
 native_java_libraries(
     name = "server",
-    srcs = glob(["*.java", "*/*.java", "*/*/*.java", "*/*/*/*.java"], exclude=["templates/**", "test/**"]),
+    srcs = glob(["*.java", "*/*.java", "*/*/*.java"], exclude=["templates/**", "test/**"]),
     native_libraries_deps = [
         # Internal dependencies
         "//:typedb",
@@ -284,7 +284,7 @@ deploy_apt(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*", "*/*/*", "*/*/*/*"]),
+    include = glob(["*", "*/*", "*/*/*"]),
     license_type = "agpl",
 )
 
