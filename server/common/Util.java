@@ -41,5 +41,4 @@ public class Util {
         }
         return Paths.get(homeDir);
     }
-
 }

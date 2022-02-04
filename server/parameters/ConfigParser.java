@@ -296,7 +296,6 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                     }
                 }
             }
-
         }
 
         private static class Logger extends Compound<Config.Log.Logger> {
@@ -468,5 +467,4 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             throw TypeDBException.of(UNRECOGNISED_CONFIGURATION_OPTIONS, childPaths);
         }
     }
-
 }

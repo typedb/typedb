@@ -211,7 +211,6 @@ public class YamlParser {
             Restricted<T> asRestricted() {
                 return this;
             }
-
         }
 
         public static class Primitive<T> extends Value<T> {

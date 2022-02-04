@@ -65,7 +65,6 @@ public abstract class HelpEntry {
                 return iterate(entries).anyMatch(content -> content instanceof Simple);
             }
         }
-
     }
 
     public static class Simple extends HelpEntry {

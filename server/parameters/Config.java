@@ -180,7 +180,6 @@ public class Config {
                     public Stdout asStdout() {
                         return this;
                     }
-
                 }
 
                 public static class File extends Type {
@@ -282,7 +281,6 @@ public class Config {
                 public String filter() {
                     return filter;
                 }
-
             }
         }
 
@@ -331,7 +329,6 @@ public class Config {
                     assert output != null;
                     return output;
                 }
-
             }
         }
     }
@@ -369,5 +366,4 @@ public class Config {
             return Optional.ofNullable(token);
         }
     }
-
 }
