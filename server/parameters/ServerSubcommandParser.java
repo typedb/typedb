@@ -36,15 +36,15 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class ServerSubcommandParser {
 
-    private static void validateRequiredArgs(Set<OptionParser> requiredParsers, Set<Option> options) {
-        requiredParsers.forEach(required -> {
-            if (iterate(options).noneMatch(option -> option.name().equals(required.name()))) {
-                throw TypeDBException.of(CLI_OPTION_REQUIRED, required.helpEntry(""));
+    private static void validateRequiredOptions(Set<OptionParser> requiredParsers, Set<Option> options) {
+        requiredParsers.forEach(parser -> {
+            if (iterate(options).noneMatch(option -> option.name().equals(parser.name()))) {
+                throw TypeDBException.of(CLI_OPTION_REQUIRED, parser.helpEntry(""));
             }
         });
     }
 
-    private static void validateUnrecognisedArgs(Set<OptionParser> recognisedParsers, Set<Option> options) {
+    private static void validateUnrecognisedOptions(Set<OptionParser> recognisedParsers, Set<Option> options) {
         recognisedParsers.forEach(parser -> {
             if (iterate(options).noneMatch(option -> option.name().equals(parser.name()))) {
                 throw TypeDBException.of(CLI_OPTION_UNRECOGNISED, parser);
@@ -82,7 +82,9 @@ public class ServerSubcommandParser {
         }
 
         private Set<Option> findAuxiliaryOptions(Set<Option> options) {
-            return iterate(options).filter(opt1 -> iterate(auxiliaryParsers).anyMatch(opt2 -> opt2.name.equals(opt1.name()))).toSet();
+            return iterate(options)
+                    .filter(opt -> iterate(auxiliaryParsers).anyMatch(auxParser -> auxParser.name.equals(opt.name())))
+                    .toSet();
         }
 
         private Set<Option> excludeOptions(Set<Option> options, Set<Option> exclude) {
@@ -112,8 +114,8 @@ public class ServerSubcommandParser {
 
         @Override
         protected ServerSubcommand.Import parse(Set<Option> options) {
-            validateRequiredArgs(parsers, options);
-            validateUnrecognisedArgs(parsers, options);
+            validateRequiredOptions(parsers, options);
+            validateUnrecognisedOptions(parsers, options);
             return new ServerSubcommand.Import(databaseParser.parse(options).get(), filePathParser.parse(options).get(),
                     portParser.parse(options).get());
         }
@@ -140,8 +142,8 @@ public class ServerSubcommandParser {
 
         @Override
         protected ServerSubcommand.Export parse(Set<Option> options) {
-            validateRequiredArgs(parsers, options);
-            validateUnrecognisedArgs(parsers, options);
+            validateRequiredOptions(parsers, options);
+            validateUnrecognisedOptions(parsers, options);
             return new ServerSubcommand.Export(databaseParser.parse(options).get(), filePathParser.parse(options).get(),
                     portParser.parse(options).get());
         }

@@ -60,7 +60,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
     @Override
     public Config parse(Yaml yaml, String path) {
         if (yaml.isMap()) {
-            validatedRecognisedParsers(parsers, yaml.asMap().keys(), "");
+            validatePredefinedKeys(parsers, yaml.asMap().keys(), "");
             return new Config(server.parse(yaml.asMap(), ""), storage.parse(yaml.asMap(), ""),
                     log.parse(yaml.asMap(), ""), vaticleFactory.parse(yaml.asMap(), "")
             );
@@ -89,7 +89,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         @Override
         public Config.Server parse(Yaml yaml, String path) {
             if (yaml.isMap()) {
-                validatedRecognisedParsers(parsers, yaml.asMap().keys(), path);
+                validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                 return new Config.Server(address.parse(yaml.asMap(), path));
             } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, path);
         }
@@ -114,7 +114,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         @Override
         public Config.Storage parse(Yaml yaml, String path) {
             if (yaml.isMap()) {
-                validatedRecognisedParsers(parsers, yaml.asMap().keys(), path);
+                validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                 return new Config.Storage(configPathAbsolute(data.parse(yaml.asMap(), path)),
                         dbCache.parse(yaml.asMap(), path));
             } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, path);
@@ -139,7 +139,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             @Override
             public Config.Storage.DatabaseCache parse(Yaml yaml, String path) {
                 if (yaml.isMap()) {
-                    validatedRecognisedParsers(parsers, yaml.asMap().keys(), path);
+                    validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                     return new Config.Storage.DatabaseCache(data.parse(yaml.asMap(), path), index.parse(yaml.asMap(), path));
                 } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, path);
             }
@@ -167,7 +167,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         @Override
         public Config.Log parse(Yaml yaml, String path) {
             if (yaml.isMap()) {
-                validatedRecognisedParsers(parsers, yaml.asMap().keys(), path);
+                validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                 Config.Log.Output output = Log.output.parse(yaml.asMap(), path);
                 Config.Log.Logger logger = Log.logger.parse(yaml.asMap(), path);
                 logger.validateOutputs(output.outputs());
@@ -243,7 +243,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                     @Override
                     public Config.Log.Output.Type.Stdout parse(Yaml yaml, String path) {
                         if (yaml.isMap()) {
-                            validatedRecognisedParsers(parsers, yaml.asMap().keys(), path);
+                            validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                             String type = typeParser.parse(yaml.asMap(), path);
                             assert Stdout.type.equals(type);
                             return new Config.Log.Output.Type.Stdout();
@@ -278,7 +278,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                     @Override
                     public Config.Log.Output.Type.File parse(Yaml yaml, String path) {
                         if (yaml.isMap()) {
-                            validatedRecognisedParsers(parsers, yaml.asMap().keys(), path);
+                            validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                             String type = typeParser.parse(yaml.asMap(), path);
                             assert File.type.equals(type);
                             return new Config.Log.Output.Type.File(
@@ -334,7 +334,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 @Override
                 public Config.Log.Logger.Unfiltered parse(Yaml yaml, String path) {
                     if (yaml.isMap()) {
-                        validatedRecognisedParsers(parsers, yaml.asMap().keys(), path);
+                        validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                         return new Config.Log.Logger.Unfiltered(level.parse(yaml.asMap(), path),
                                 output.parse(yaml.asMap(), path));
                     } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
@@ -359,7 +359,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 @Override
                 public Config.Log.Logger.Filtered parse(Yaml yaml, String path) {
                     if (yaml.isMap()) {
-                        validatedRecognisedParsers(parsers, yaml.asMap().keys(), path);
+                        validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                         return new Config.Log.Logger.Filtered(level.parse(yaml.asMap(), path),
                                 output.parse(yaml.asMap(), path), filter.parse(yaml.asMap(), path));
                     } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
@@ -384,7 +384,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             @Override
             public Config.Log.Debugger parse(Yaml yaml, String path) {
                 if (yaml.isMap()) {
-                    validatedRecognisedParsers(parsers, yaml.asMap().keys(), path);
+                    validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                     return new Config.Log.Debugger(reasoner.parse(yaml.asMap(), path));
                 } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
             }
@@ -408,7 +408,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 @Override
                 public Config.Log.Debugger.Reasoner parse(Yaml yaml, String path) {
                     if (yaml.isMap()) {
-                        validatedRecognisedParsers(parsers, yaml.asMap().keys(), path);
+                        validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                         String type = typeParser.parse(yaml.asMap(), path);
                         assert Reasoner.type.equals(type);
                         return new Config.Log.Debugger.Reasoner(
@@ -443,7 +443,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         public Config.VaticleFactory parse(Yaml yaml, String path) {
             if (yaml.isMap()) {
                 boolean trace = enable.parse(yaml.asMap(), path);
-                validatedRecognisedParsers(parsers, yaml.asMap().keys(), path);
+                validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                 if (trace) {
                     return new Config.VaticleFactory(true, uri.parse(yaml.asMap(), path),
                             username.parse(yaml.asMap(), path), token.parse(yaml.asMap(), path));
@@ -459,9 +459,9 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         }
     }
 
-    private static void validatedRecognisedParsers(Set<Predefined<?>> parsers, Set<String> keys, String path) {
+    private static void validatePredefinedKeys(Set<Predefined<?>> predefinedParsers, Set<String> keys, String path) {
         Set<String> unrecognisedKeys = new HashSet<>(keys);
-        parsers.forEach(parser -> unrecognisedKeys.remove(parser.key()));
+        predefinedParsers.forEach(parser -> unrecognisedKeys.remove(parser.key()));
         if (!unrecognisedKeys.isEmpty()) {
             Set<String> childPaths = iterate(unrecognisedKeys).map(key -> YamlParser.concatenate(path, key)).toSet();
             throw TypeDBException.of(UNRECOGNISED_CONFIGURATION_OPTIONS, childPaths);
