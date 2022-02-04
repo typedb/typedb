@@ -18,7 +18,7 @@
 package com.vaticle.typedb.core.server.parameters;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.parameters.util.HelpEntry;
+import com.vaticle.typedb.core.server.parameters.util.Help;
 import com.vaticle.typedb.core.server.parameters.util.SubcommandParser;
 import com.vaticle.typedb.core.server.parameters.util.Option;
 import com.vaticle.typedb.core.server.parameters.util.OptionParser;
@@ -92,8 +92,8 @@ public class ServerSubcommandParser {
         }
 
         @Override
-        public List<HelpEntry> helpList() {
-            List<HelpEntry> aux = list(helpParser.help(), versionParser.help(), debugParser.help(), configPathParser.help());
+        public List<Help> helpList() {
+            List<Help> aux = list(helpParser.help(), versionParser.help(), debugParser.help(), configPathParser.help());
             return list(aux, configParser.helpList(""));
         }
     }
@@ -121,7 +121,7 @@ public class ServerSubcommandParser {
         }
 
         @Override
-        public List<HelpEntry> helpList() {
+        public List<Help> helpList() {
             return list(databaseParser.help(), filePathParser.help(), portParser.help());
         }
     }
@@ -149,7 +149,7 @@ public class ServerSubcommandParser {
         }
 
         @Override
-        public List<HelpEntry> helpList() {
+        public List<Help> helpList() {
             return list(databaseParser.help(), filePathParser.help(), portParser.help());
         }
     }

@@ -50,8 +50,8 @@ public abstract class OptionParser {
         return description;
     }
 
-    public HelpEntry help() {
-        return new HelpEntry(name, description(), valueDescription);
+    public Help help() {
+        return new Help(name, description(), valueDescription);
     }
 
     FunctionalIterator<Option> matchingOptions(Set<Option> options) {
@@ -137,14 +137,14 @@ public abstract class OptionParser {
         }
     }
 
-    public static class HelpEntry implements com.vaticle.typedb.core.server.parameters.util.HelpEntry {
+    public static class Help implements com.vaticle.typedb.core.server.parameters.util.Help {
 
         private final java.lang.String path;
         private final java.lang.String description;
         @Nullable
         private final java.lang.String valueHelp;
 
-        public HelpEntry(java.lang.String path, java.lang.String description, @Nullable java.lang.String valueHelp) {
+        public Help(java.lang.String path, java.lang.String description, @Nullable java.lang.String valueHelp) {
             this.path = path;
             this.description = description;
             this.valueHelp = valueHelp;

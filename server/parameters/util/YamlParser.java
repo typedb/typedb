@@ -70,7 +70,7 @@ public class YamlParser {
             return description;
         }
 
-        public abstract HelpEntry help(String path);
+        public abstract Help help(String path);
 
         public static class Predefined<TYPE> extends KeyValue {
 
@@ -93,14 +93,14 @@ public class YamlParser {
                 else return valueParser.parse(yaml.get(key()), childPath);
             }
 
-            public HelpEntry help(String path) {
+            public Help help(String path) {
                 String childPath = concatenate(path, key());
                 if (valueParser.isPrimitive()) {
-                    return new Value.Primitive.HelpEntry(childPath, description(), valueParser.asPrimitive().help());
+                    return new Value.Primitive.Help(childPath, description(), valueParser.asPrimitive().help());
                 } else if (valueParser.isRestricted()) {
-                    return new Value.Primitive.HelpEntry(childPath, description(), valueParser.asRestricted().help());
+                    return new Value.Primitive.Help(childPath, description(), valueParser.asRestricted().help());
                 } else {
-                    return new Value.Compound.HelpEntry(childPath, description(), valueParser.asCompound().helpList(childPath));
+                    return new Value.Compound.Help(childPath, description(), valueParser.asCompound().helpList(childPath));
                 }
             }
         }
@@ -127,13 +127,13 @@ public class YamlParser {
             }
 
             @Override
-            public HelpEntry help(String path) {
+            public Help help(String path) {
                 if (valueParser.isPrimitive()) {
-                    return new Value.Primitive.HelpEntry(concatenate(path, "<name>"), description(), valueParser.asPrimitive().help());
+                    return new Value.Primitive.Help(concatenate(path, "<name>"), description(), valueParser.asPrimitive().help());
                 } else if (valueParser.isRestricted()) {
-                    return new Value.Primitive.HelpEntry(concatenate(path, "<name>"), description(), valueParser.asRestricted().help());
+                    return new Value.Primitive.Help(concatenate(path, "<name>"), description(), valueParser.asRestricted().help());
                 } else {
-                    return new Value.Compound.HelpEntry(concatenate(path, "<name>"), description(), valueParser.asCompound().helpList(concatenate(path, "<name>")));
+                    return new Value.Compound.Help(concatenate(path, "<name>"), description(), valueParser.asCompound().helpList(concatenate(path, "<name>")));
                 }
             }
         }
@@ -169,7 +169,7 @@ public class YamlParser {
 
         public static abstract class Compound<T> extends Value<T> {
 
-            public abstract List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path);
+            public abstract List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path);
 
             @Override
             public boolean isCompound() {
@@ -181,13 +181,13 @@ public class YamlParser {
                 return this;
             }
 
-            public static class HelpEntry implements com.vaticle.typedb.core.server.parameters.util.HelpEntry {
+            public static class Help implements com.vaticle.typedb.core.server.parameters.util.Help {
 
                 private final String name;
                 private final String description;
-                private final List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> entries;
+                private final List<com.vaticle.typedb.core.server.parameters.util.Help> entries;
 
-                public HelpEntry(String name, String description, List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> entries) {
+                public Help(String name, String description, List<com.vaticle.typedb.core.server.parameters.util.Help> entries) {
                     this.name = name;
                     this.description = description;
                     this.entries = entries;
@@ -210,14 +210,14 @@ public class YamlParser {
                         // only print section headers that have a leaf option in them
                         builder.append(String.format("\n\t### %-50s %s\n", (Option.PREFIX + name + "."), description));
                     }
-                    for (com.vaticle.typedb.core.server.parameters.util.HelpEntry menu : entries) {
+                    for (com.vaticle.typedb.core.server.parameters.util.Help menu : entries) {
                         builder.append(menu.toString());
                     }
                     return builder.toString();
                 }
 
                 private boolean hasPrimitiveEntries() {
-                    return iterate(entries).anyMatch(entry -> entry instanceof Primitive.HelpEntry);
+                    return iterate(entries).anyMatch(entry -> entry instanceof Primitive.Help);
                 }
             }
         }
@@ -335,13 +335,13 @@ public class YamlParser {
                 return help;
             }
 
-            public static class HelpEntry implements com.vaticle.typedb.core.server.parameters.util.HelpEntry {
+            public static class Help implements com.vaticle.typedb.core.server.parameters.util.Help {
 
                 private final String path;
                 private final String description;
                 private final String valueHelp;
 
-                public HelpEntry(String path, String description, String valueHelp) {
+                public Help(String path, String description, String valueHelp) {
                     this.path = path;
                     this.description = description;
                     this.valueHelp = valueHelp;

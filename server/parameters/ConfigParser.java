@@ -67,7 +67,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
     }
 
     @Override
-    public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
+    public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
         return list(server.help(path), storage.help(path), log.help(path), vaticleFactory.help(path));
     }
 
@@ -94,7 +94,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         }
 
         @Override
-        public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
+        public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
             return list(address.help(path));
         }
     }
@@ -120,7 +120,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         }
 
         @Override
-        public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
+        public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
             return list(data.help(path), dbCache.help(path));
         }
 
@@ -144,7 +144,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             }
 
             @Override
-            public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
+            public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
                 return list(data.help(path), index.help(path));
             }
         }
@@ -177,7 +177,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         }
 
         @Override
-        public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
+        public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
             return list(output.help(path), logger.help(path), debugger.help(path));
         }
 
@@ -195,7 +195,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             }
 
             @Override
-            public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
+            public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
                 return list(type.help(path));
             }
 
@@ -224,9 +224,9 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 }
 
                 @Override
-                public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
-                    return list(new HelpEntry(path, Stdout.description, stdout.helpList(path)),
-                            new HelpEntry(path, File.description, file.helpList(path)));
+                public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
+                    return list(new Help(path, Stdout.description, stdout.helpList(path)),
+                            new Help(path, File.description, file.helpList(path)));
                 }
 
                 private static class Stdout extends Compound<Config.Log.Output.Type.Stdout> {
@@ -250,7 +250,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                     }
 
                     @Override
-                    public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
+                    public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
                         return list(typeParser.help(path));
                     }
                 }
@@ -289,7 +289,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                     }
 
                     @Override
-                    public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
+                    public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
                         return list(typeParser.help(path), File.path.help(path),
                                 fileSizeCap.help(path), archivesSizeCap.help(path));
                     }
@@ -318,7 +318,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             }
 
             @Override
-            public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
+            public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
                 return list(defaultLogger.help(path), filteredLogger.help(path));
             }
 
@@ -340,7 +340,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 }
 
                 @Override
-                public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
+                public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
                     return list(level.help(path), output.help(path));
                 }
             }
@@ -365,7 +365,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 }
 
                 @Override
-                public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
+                public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
                     return list(filter.help(path), level.help(path), output.help(path));
                 }
             }
@@ -389,7 +389,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
             }
 
             @Override
-            public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
+            public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
                 return list(reasoner.help(path));
             }
 
@@ -416,7 +416,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
                 }
 
                 @Override
-                public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
+                public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
                     return list(typeParser.help(path), output.help(path), enable.help(path));
                 }
             }
@@ -453,7 +453,7 @@ public class ConfigParser extends YamlParser.Value.Compound<Config> {
         }
 
         @Override
-        public List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path) {
+        public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
             return list(enable.help(path), uri.help(path), username.help(path), token.help(path));
         }
     }

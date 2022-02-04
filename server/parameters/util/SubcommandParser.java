@@ -74,12 +74,12 @@ public abstract class SubcommandParser<RESULT> {
     public String help() {
         StringBuilder builder = new StringBuilder(String.format("%-40s \t\t %s\n", COMMAND_PREFIX + " " +
                 String.join(" ", tokens), description));
-        for (HelpEntry help : helpList()) {
+        for (Help help : helpList()) {
             builder.append(help.toString());
         }
         return builder.toString();
     }
 
-    public abstract List<HelpEntry> helpList();
+    public abstract List<Help> helpList();
 
 }

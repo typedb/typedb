@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.server.parameters.util;
 
-public interface HelpEntry {
+public interface Help {
 
     String name();
     String description();
