@@ -53,13 +53,18 @@ native_java_libraries(
 )
 
 assemble_files = {
-    "//server/conf:typedb": "server/conf/typedb.yml",
+    "//server:config": "server/conf/config.yml",
     "//server/resources:logo": "server/resources/typedb-ascii.txt",
     "//:LICENSE": "LICENSE",
 }
 
+empty_directories = [
+    "server/data"
+]
+
 permissions = {
-    "server/conf/typedb.yml" : "0755",
+    "server/conf/config.yml" : "0755",
+    "server/data" : "0755",
 }
 
 artifact_repackage(
@@ -73,6 +78,7 @@ assemble_targz(
     name = "assemble-linux-targz",
     targets = ["//server:server-deps-linux", ":console-artifact-jars", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
+    empty_directories = empty_directories,
     permissions = permissions,
     output_filename = "typedb-all-linux",
 )
@@ -81,6 +87,7 @@ assemble_zip(
     name = "assemble-mac-zip",
     targets = ["//server:server-deps-mac", "//server:server-deps-prod", ":console-artifact-jars", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
+    empty_directories = empty_directories,
     permissions = permissions,
     output_filename = "typedb-all-mac",
 )
@@ -89,6 +96,7 @@ assemble_zip(
     name = "assemble-windows-zip",
     targets = ["//server:server-deps-windows", ":console-artifact-jars", "@vaticle_typedb_common//binary:assemble-bat-targz"],
     additional_files = assemble_files,
+    empty_directories = empty_directories,
     permissions = permissions,
     output_filename = "typedb-all-windows",
 )
