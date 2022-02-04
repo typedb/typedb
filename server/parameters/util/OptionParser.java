@@ -34,12 +34,12 @@ public abstract class OptionParser {
 
     public final java.lang.String name;
     private final java.lang.String description;
-    private final java.lang.String typeDescription;
+    private final java.lang.String valueDescription;
 
-    public OptionParser(java.lang.String name, java.lang.String description, java.lang.String typeDescription) {
+    public OptionParser(java.lang.String name, java.lang.String description, java.lang.String valueDescription) {
         this.name = name;
         this.description = description;
-        this.typeDescription = typeDescription;
+        this.valueDescription = valueDescription;
     }
 
     public java.lang.String name() {
@@ -51,7 +51,7 @@ public abstract class OptionParser {
     }
 
     public HelpEntry helpEntry(java.lang.String optionScope) {
-        return new HelpEntry.Simple(concatenate(optionScope, name()), description(), typeDescription);
+        return new HelpEntry.Simple(concatenate(optionScope, name()), description(), valueDescription);
     }
 
     FunctionalIterator<Option> matchingOptions(Set<Option> options) {
@@ -75,10 +75,10 @@ public abstract class OptionParser {
 
     public static class String extends OptionParser {
 
-        private static final java.lang.String typeDescription = "<string>";
+        private static final java.lang.String valueDescription = "<string>";
 
         public String(java.lang.String name, java.lang.String description) {
-            super(name, description, typeDescription);
+            super(name, description, valueDescription);
         }
 
         public Optional<java.lang.String> parse(Set<Option> options) {
@@ -86,7 +86,7 @@ public abstract class OptionParser {
             Optional<Option> option = matchingOptions(options).first();
             if (option.isEmpty()) return Optional.empty();
             else if (!option.get().hasValue()) {
-                throw TypeDBException.of(CLI_OPTION_REQUIRES_TYPED_VALUE, option.get(), typeDescription);
+                throw TypeDBException.of(CLI_OPTION_REQUIRES_TYPED_VALUE, option.get(), valueDescription);
             } else {
                 return option.get().stringValue();
             }
@@ -95,10 +95,10 @@ public abstract class OptionParser {
 
     public static class Path extends OptionParser {
 
-        private static final java.lang.String typeDescription = "<path>";
+        private static final java.lang.String valueDescription = "<path>";
 
         public Path(java.lang.String name, java.lang.String description) {
-            super(name, description, typeDescription);
+            super(name, description, valueDescription);
         }
 
         public Optional<java.nio.file.Path> parse(Set<Option> options) {
@@ -106,7 +106,7 @@ public abstract class OptionParser {
             Optional<Option> option = matchingOptions(options).first();
             if (option.isEmpty()) return Optional.empty();
             else if (!option.get().hasValue()) {
-                throw TypeDBException.of(CLI_OPTION_REQUIRES_TYPED_VALUE, option.get(), typeDescription);
+                throw TypeDBException.of(CLI_OPTION_REQUIRES_TYPED_VALUE, option.get(), valueDescription);
             } else {
                 return option.get().stringValue().map(Paths::get);
             }
@@ -115,10 +115,10 @@ public abstract class OptionParser {
 
     public static class Int extends OptionParser {
 
-        private static final java.lang.String typeDescription = "<int>";
+        private static final java.lang.String valueDescription = "<int>";
 
         public Int(java.lang.String name, java.lang.String description) {
-            super(name, description, typeDescription);
+            super(name, description, valueDescription);
         }
 
         public Optional<Integer> parse(Set<Option> options) {
@@ -131,7 +131,7 @@ public abstract class OptionParser {
                 try {
                     return Optional.of(Integer.parseInt(option.get().stringValue().get()));
                 } catch (NumberFormatException e) {
-                    throw TypeDBException.of(CLI_OPTION_REQUIRES_TYPED_VALUE, option.get(), typeDescription);
+                    throw TypeDBException.of(CLI_OPTION_REQUIRES_TYPED_VALUE, option.get(), valueDescription);
                 }
             }
         }
