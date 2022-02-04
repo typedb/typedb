@@ -101,6 +101,12 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
 
     <U extends Comparable<? super U>, ORD extends Order> SortedIterator<U, ORD> mapSorted(ORD order, Function<T, U> mappingFn);
 
+    @Override
+    SortedIterator<T, ORDER> onConsumed(Runnable function);
+
+    @Override
+    SortedIterator<T, ORDER> onFinalised(Runnable function);
+
     interface Seekable<T extends Comparable<? super T>, ORDER extends Order> extends SortedIterator<T, ORDER> {
 
         void seek(T target);
@@ -116,5 +122,11 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
         <U extends Comparable<? super U>, ORD extends Order> Seekable<U, ORD> mapSorted(ORD order,
                                                                                         Function<T, U> mappingFn,
                                                                                         Function<U, T> reverseMappingFn);
+
+        @Override
+        Seekable<T, ORDER> onConsumed(Runnable function);
+
+        @Override
+        Seekable<T, ORDER> onFinalised(Runnable function);
     }
 }

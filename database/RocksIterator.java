@@ -151,28 +151,33 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     @Override
     public final Seekable<KeyValue<T, ByteArray>, ORDER> merge(
             Seekable<KeyValue<T, ByteArray>, ORDER> iterator) {
-        return Iterators.Sorted.merge(this, iterator);
+        return Iterators.Sorted.Seekable.merge(this, iterator);
     }
 
     @Override
     public <V extends Comparable<? super V>, ORD extends Order> Seekable<V, ORD> mapSorted(
             ORD order, Function<KeyValue<T, ByteArray>, V> mappingFn, Function<V, KeyValue<T, ByteArray>> reverseMappingFn) {
-        return Iterators.Sorted.mapSorted(order, this, mappingFn, reverseMappingFn);
+        return Iterators.Sorted.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
     }
 
     @Override
     public Seekable<KeyValue<T, ByteArray>, ORDER> distinct() {
-        return Iterators.Sorted.distinct(this);
+        return Iterators.Sorted.Seekable.distinct(this);
     }
 
     @Override
     public Seekable<KeyValue<T, ByteArray>, ORDER> filter(Predicate<KeyValue<T, ByteArray>> predicate) {
-        return Iterators.Sorted.filter(this, predicate);
+        return Iterators.Sorted.Seekable.filter(this, predicate);
     }
 
     @Override
-    public Seekable<KeyValue<T, ByteArray>, ORDER> onFinalise(Runnable finalise) {
-        return Iterators.Sorted.onFinalise(this, finalise);
+    public Seekable<KeyValue<T, ByteArray>, ORDER> onConsumed(Runnable function) {
+        return Iterators.Sorted.Seekable.onConsume(this, function);
+    }
+
+    @Override
+    public Seekable<KeyValue<T, ByteArray>, ORDER> onFinalised(Runnable finalise) {
+        return Iterators.Sorted.Seekable.onFinalise(this, finalise);
     }
 
     static class Ascending<T extends Key> extends RocksIterator<T, Order.Asc> {

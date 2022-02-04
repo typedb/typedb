@@ -53,9 +53,9 @@ public interface TypeVertex extends Vertex<VertexIID.Type, Encoding.Vertex.Type>
 
     void scope(String scope);
 
-    TypeAdjacency outs();
+    TypeAdjacency.Out outs();
 
-    TypeAdjacency ins();
+    TypeAdjacency.In ins();
 
     boolean isAbstract();
 

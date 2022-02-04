@@ -20,11 +20,14 @@ package com.vaticle.typedb.core.graph.adjacency.impl;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.collection.ByteArray;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.collection.KeyValue;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
 import com.vaticle.typedb.core.graph.adjacency.TypeAdjacency;
+import com.vaticle.typedb.core.graph.adjacency.impl.TypeEdgeIterator.InEdgeIteratorImpl;
+import com.vaticle.typedb.core.graph.adjacency.impl.TypeEdgeIterator.OutEdgeIteratorImpl;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.Storage.Key;
-import com.vaticle.typedb.core.graph.edge.Edge;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.edge.impl.TypeEdgeImpl;
 import com.vaticle.typedb.core.graph.iid.EdgeViewIID;
@@ -35,23 +38,26 @@ import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Predicate;
 
-import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
+import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 
-public abstract class TypeAdjacencyImpl implements TypeAdjacency {
+public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIEW>> implements TypeAdjacency {
 
     final TypeVertex owner;
-    final Encoding.Direction.Adjacency direction;
-    final ConcurrentMap<Encoding.Edge.Type, ConcurrentSet<TypeEdge>> edges;
+    final ConcurrentMap<Encoding.Edge.Type, ConcurrentSkipListSet<EDGE_VIEW>> edges;
 
-    TypeAdjacencyImpl(TypeVertex owner, Encoding.Direction.Adjacency direction) {
+    TypeAdjacencyImpl(TypeVertex owner) {
         this.owner = owner;
-        this.direction = direction;
         this.edges = new ConcurrentHashMap<>();
     }
+
+    abstract EDGE_VIEW getView(TypeEdge edge);
 
     private void putNonRecursive(TypeEdge edge) {
         assert !owner.isDeleted();
@@ -62,26 +68,26 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
     @Override
     public TypeEdge put(Encoding.Edge.Type encoding, TypeVertex adjacent) {
         assert !owner.isDeleted();
-        TypeVertex from = direction.isOut() ? owner : adjacent;
-        TypeVertex to = direction.isOut() ? adjacent : owner;
+        TypeVertex from = isOut() ? owner : adjacent;
+        TypeVertex to = isOut() ? adjacent : owner;
         TypeEdgeImpl edge = new TypeEdgeImpl.Buffered(encoding, from, to);
-        edges.computeIfAbsent(encoding, e -> new ConcurrentSet<>()).add(edge);
-        if (direction.isOut()) ((TypeAdjacencyImpl) to.ins()).putNonRecursive(edge);
-        else ((TypeAdjacencyImpl) from.outs()).putNonRecursive(edge);
+        edges.computeIfAbsent(encoding, e -> new ConcurrentSkipListSet<>()).add(getView(edge));
+        if (isOut()) ((TypeAdjacencyImpl<?>) to.ins()).putNonRecursive(edge);
+        else ((TypeAdjacencyImpl<?>) from.outs()).putNonRecursive(edge);
         owner.setModified();
         return edge;
     }
 
     @Override
     public TypeEdge cache(TypeEdge edge) {
-        edges.computeIfAbsent(edge.encoding(), e -> new ConcurrentSet<>()).add(edge);
+        edges.computeIfAbsent(edge.encoding(), e -> new ConcurrentSkipListSet<>()).add(getView(edge));
         return edge;
     }
 
     @Override
     public void remove(TypeEdge edge) {
         if (edges.containsKey(edge.encoding())) {
-            edges.get(edge.encoding()).remove(edge);
+            edges.get(edge.encoding()).remove(getView(edge));
             owner.setModified();
         }
     }
@@ -93,89 +99,162 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
 
     @Override
     public void commit() {
-        edges.values().forEach(set -> set.forEach(Edge::commit));
+        edges.values().forEach(set -> set.forEach(view -> view.edge().commit()));
     }
 
-    public static class Buffered extends TypeAdjacencyImpl implements TypeAdjacency {
+    public static abstract class Buffered<EDGE_VIEW extends TypeEdge.View<EDGE_VIEW>>
+            extends TypeAdjacencyImpl<EDGE_VIEW> implements TypeAdjacency {
 
-        public Buffered(TypeVertex owner, Encoding.Direction.Adjacency direction) {
-            super(owner, direction);
+        Buffered(TypeVertex owner) {
+            super(owner);
         }
 
-        @Override
-        public TypeIteratorBuilder edge(Encoding.Edge.Type encoding) {
-            ConcurrentSet<TypeEdge> t = edges.get(encoding);
-            if (t != null) return new TypeIteratorBuilder(iterate(t.iterator()));
-            return new TypeIteratorBuilder(empty());
-        }
+        public static class In extends Buffered<TypeEdge.View.Backward> implements TypeAdjacency.In {
 
-        @Override
-        public TypeEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent) {
-            if (edges.containsKey(encoding)) {
-                Predicate<TypeEdge> predicate = direction.isOut()
-                        ? e -> e.to().equals(adjacent)
-                        : e -> e.from().equals(adjacent);
-                return edges.get(encoding).stream().filter(predicate).findAny().orElse(null);
+            public In(TypeVertex owner) {
+                super(owner);
             }
-            return null;
+
+            @Override
+            public InEdgeIterator edge(Encoding.Edge.Type encoding) {
+                ConcurrentSkipListSet<TypeEdge.View.Backward> t = edges.get(encoding);
+                if (t != null) return new InEdgeIteratorImpl(iterateSorted(ASC, t), owner, encoding);
+                return new InEdgeIteratorImpl(emptySorted(), owner, encoding);
+            }
+
+            @Override
+            public TypeEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent) {
+                if (edges.containsKey(encoding)) {
+                    return edges.get(encoding).stream().filter(view -> view.edge().from().equals(adjacent))
+                            .findAny().map(TypeEdge.View::edge).orElse(null);
+                }
+                return null;
+            }
+
+            @Override
+            TypeEdge.View.Backward getView(TypeEdge edge) {
+                return edge.getBackward();
+            }
+        }
+
+        public static class Out extends Buffered<TypeEdge.View.Forward> implements TypeAdjacency.Out {
+
+            public Out(TypeVertex owner) {
+                super(owner);
+            }
+
+            @Override
+            public OutEdgeIterator edge(Encoding.Edge.Type encoding) {
+                ConcurrentSkipListSet<TypeEdge.View.Forward> t = edges.get(encoding);
+                if (t != null) return new OutEdgeIteratorImpl(iterateSorted(ASC, t), owner, encoding);
+                return new OutEdgeIteratorImpl(emptySorted(), owner, encoding);
+            }
+
+            @Override
+            TypeEdge.View.Forward getView(TypeEdge edge) {
+                return edge.getForward();
+            }
+
+            @Override
+            public TypeEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent) {
+                if (edges.containsKey(encoding)) {
+                    return edges.get(encoding).stream().filter(view -> view.edge().to().equals(adjacent))
+                            .findAny().map(TypeEdge.View::edge).orElse(null);
+                }
+                return null;
+            }
         }
 
         @Override
         public void delete(Encoding.Edge.Type encoding) {
-            if (edges.containsKey(encoding)) edges.get(encoding).forEach(Edge::delete);
+            if (edges.containsKey(encoding)) edges.get(encoding).forEach(view -> view.edge().delete());
         }
     }
 
-    public static class Persisted extends TypeAdjacencyImpl implements TypeAdjacency {
+    public static abstract class Persisted<EDGE_VIEW extends TypeEdge.View<EDGE_VIEW>>
+            extends TypeAdjacencyImpl<EDGE_VIEW> implements TypeAdjacency {
 
         private final ConcurrentSet<Encoding.Edge.Type> fetched;
         private final boolean isReadOnly;
 
-        public Persisted(TypeVertex owner, Encoding.Direction.Adjacency direction) {
-            super(owner, direction);
+        Persisted(TypeVertex owner) {
+            super(owner);
             fetched = new ConcurrentSet<>();
             isReadOnly = owner.graph().isReadOnly();
         }
 
-        private EdgeViewIID.Type edgeIID(Encoding.Edge.Type encoding, TypeVertex adjacent) {
-            return EdgeViewIID.Type.of(owner.iid(), direction.isOut() ? encoding.forward() : encoding.backward(), adjacent.iid());
+        public static class In extends Persisted<TypeEdge.View.Backward> implements TypeAdjacency.In {
+
+            public In(TypeVertex owner) {
+                super(owner);
+            }
+
+            @Override
+            TypeEdge.View.Backward getView(TypeEdge edge) {
+                return edge.getBackward();
+            }
+
+            @Override
+            public InEdgeIterator edge(Encoding.Edge.Type encoding) {
+                return new InEdgeIteratorImpl(iterateViews(encoding), owner, encoding);
+            }
         }
 
-        private TypeEdge newPersistedEdge(EdgeViewIID.Type edge, ByteArray value) {
-            VertexIID.Type overridden = ((value.isEmpty()) ? null : VertexIID.Type.of(value));
+        public static class Out extends Persisted<TypeEdge.View.Forward> implements TypeAdjacency.Out {
+
+            public Out(TypeVertex owner) {
+                super(owner);
+            }
+
+            @Override
+            TypeEdge.View.Forward getView(TypeEdge edge) {
+                return edge.getForward();
+            }
+
+            @Override
+            public OutEdgeIterator edge(Encoding.Edge.Type encoding) {
+                return new OutEdgeIteratorImpl(iterateViews(encoding), owner, encoding);
+            }
+        }
+
+        private EdgeViewIID.Type edgeIID(Encoding.Edge.Type encoding, TypeVertex adjacent) {
+            return EdgeViewIID.Type.of(owner.iid(), isOut() ? encoding.forward() : encoding.backward(), adjacent.iid());
+        }
+
+        private TypeEdge newPersistedEdge(EdgeViewIID.Type edge, ByteArray overriddenBytes) {
+            VertexIID.Type overridden = ((overriddenBytes.isEmpty()) ? null : VertexIID.Type.of(overriddenBytes));
             return new TypeEdgeImpl.Persisted(owner.graph(), edge, overridden);
         }
 
-        private FunctionalIterator<TypeEdge> edgeIterator(Encoding.Edge.Type encoding) {
-            ConcurrentSet<TypeEdge> bufferedEdges;
+        Seekable<EDGE_VIEW, Order.Asc> iterateViews(Encoding.Edge.Type encoding) {
+            ConcurrentSkipListSet<EDGE_VIEW> bufferedEdges;
             if (isReadOnly && fetched.contains(encoding)) {
-                return (bufferedEdges = edges.get(encoding)) != null ? iterate(bufferedEdges) : empty();
+                return (bufferedEdges = edges.get(encoding)) != null ? iterateSorted(ASC, bufferedEdges) : emptySorted();
             }
 
             Key.Prefix<EdgeViewIID.Type> prefix = EdgeViewIID.Type.prefix(
-                    owner.iid(), InfixIID.Type.of(direction.isOut() ? encoding.forward() : encoding.backward())
+                    owner.iid(), InfixIID.Type.of(isOut() ? encoding.forward() : encoding.backward())
             );
-            FunctionalIterator<TypeEdge> storageIterator = owner.graph().storage().iterate(prefix)
-                    .map(kv -> cache(newPersistedEdge(EdgeViewIID.Type.of(kv.key().bytes()), kv.value())));
+            Seekable<EDGE_VIEW, Order.Asc> storageIterator = owner.graph().storage().iterate(prefix, ASC)
+                    .mapSorted(
+                            ASC,
+                            kv -> getView(cache(newPersistedEdge(EdgeViewIID.Type.of(kv.key().bytes()), kv.value()))),
+                            edgeView -> KeyValue.of(edgeView.iid(), ByteArray.empty())
+                    );
             if (isReadOnly) storageIterator = storageIterator.onConsumed(() -> fetched.add(encoding));
             if ((bufferedEdges = edges.get(encoding)) == null) return storageIterator;
-            else return link(bufferedEdges.iterator(), storageIterator).distinct();
-        }
-
-        @Override
-        public TypeIteratorBuilder edge(Encoding.Edge.Type encoding) {
-            return new TypeIteratorBuilder(edgeIterator(encoding));
+            else return iterateSorted(ASC, bufferedEdges).merge(storageIterator).distinct();
         }
 
         @Override
         public TypeEdge edge(Encoding.Edge.Type encoding, TypeVertex adjacent) {
-            Optional<TypeEdge> container;
-            Predicate<TypeEdge> predicate = direction.isOut()
+            Predicate<TypeEdge> predicate = isOut()
                     ? e -> e.to().equals(adjacent)
                     : e -> e.from().equals(adjacent);
 
-            if (edges.containsKey(encoding) &&
-                    (container = edges.get(encoding).stream().filter(predicate).findAny()).isPresent()) {
+            Optional<TypeEdge> container;
+            if (edges.containsKey(encoding) && (container = edges.get(encoding).stream().filter(view -> predicate.test(view.edge()))
+                    .findAny().map(TypeEdge.View::edge)).isPresent()) {
                 return container.get();
             } else {
                 EdgeViewIID.Type edgeIID = edgeIID(encoding, adjacent);
@@ -184,18 +263,12 @@ public abstract class TypeAdjacencyImpl implements TypeAdjacency {
                     return cache(newPersistedEdge(edgeIID, overriddenIID));
                 }
             }
-
             return null;
         }
 
         @Override
         public void delete(Encoding.Edge.Type encoding) {
-            edgeIterator(encoding).forEachRemaining(Edge::delete);
-        }
-
-        @Override
-        public void deleteAll() {
-            for (Encoding.Edge.Type type : Encoding.Edge.Type.values()) delete(type);
+            iterateViews(encoding).forEachRemaining(view -> view.edge().delete());
         }
     }
 }

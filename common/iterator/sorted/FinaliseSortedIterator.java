@@ -34,7 +34,7 @@ public class FinaliseSortedIterator<T extends Comparable<? super T>, ORDER exten
     final ITER iterator;
     T last;
 
-    FinaliseSortedIterator(ITER iterator, Runnable function) {
+    public FinaliseSortedIterator(ITER iterator, Runnable function) {
         super(iterator.order());
         this.iterator = iterator;
         this.function = function;
@@ -83,23 +83,33 @@ public class FinaliseSortedIterator<T extends Comparable<? super T>, ORDER exten
 
         @Override
         public final SortedIterator.Seekable<T, ORDER> merge(SortedIterator.Seekable<T, ORDER> iterator) {
-            return Iterators.Sorted.merge(this, iterator);
+            return Iterators.Sorted.Seekable.merge(this, iterator);
         }
 
         @Override
         public <U extends Comparable<? super U>, ORD extends Order> SortedIterator.Seekable<U, ORD> mapSorted(
                 ORD order, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
-            return Iterators.Sorted.mapSorted(order, this, mappingFn, reverseMappingFn);
+            return Iterators.Sorted.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
         }
 
         @Override
         public SortedIterator.Seekable<T, ORDER> distinct() {
-            return Iterators.Sorted.distinct(this);
+            return Iterators.Sorted.Seekable.distinct(this);
         }
 
         @Override
         public SortedIterator.Seekable<T, ORDER> filter(Predicate<T> predicate) {
-            return Iterators.Sorted.filter(this, predicate);
+            return Iterators.Sorted.Seekable.filter(this, predicate);
+        }
+
+        @Override
+        public SortedIterator.Seekable<T, ORDER> onConsumed(Runnable function) {
+            return Iterators.Sorted.Seekable.onConsume(this, function);
+        }
+
+        @Override
+        public SortedIterator.Seekable<T, ORDER> onFinalised(Runnable function) {
+            return Iterators.Sorted.Seekable.onFinalise(this, function);
         }
     }
 }

@@ -107,11 +107,6 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
     }
 
     @Override
-    public SortedIterator<T, ORDER> onFinalise(Runnable function) {
-        return new FinaliseSortedIterator<>(this, function);
-    }
-
-    @Override
     public FunctionalIterator<T> offset(long offset) {
         return new OffsetIterator<>(this, offset);
     }
@@ -256,8 +251,13 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
     }
 
     @Override
-    public FunctionalIterator<T> onConsumed(Runnable function) {
-        return new ConsumeHandledIterator<>(this, function);
+    public SortedIterator<T, ORDER> onConsumed(Runnable function) {
+        return new ConsumeHandledSortedIterator<>(this, function);
+    }
+
+    @Override
+    public SortedIterator<T, ORDER> onFinalised(Runnable function) {
+        return new FinaliseSortedIterator<>(this, function);
     }
 
     @Override

@@ -78,12 +78,12 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
     abstract EdgeViewIID.Thing computeBackwardIID();
 
-    public static abstract class View<T extends ThingEdge.View<T>> implements ThingEdge.View<T> {
+    private static abstract class View<T extends ThingEdge.View<T>> implements ThingEdge.View<T> {
 
         final ThingEdgeImpl edge;
         EdgeViewIID.Thing iidCache = null;
 
-        View(ThingEdgeImpl edge) {
+        private View(ThingEdgeImpl edge) {
             this.edge = edge;
         }
 
@@ -104,9 +104,9 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             return edge.hashCode();
         }
 
-        public static class Forward extends ThingEdgeImpl.View<ThingEdge.View.Forward> implements ThingEdge.View.Forward {
+        private static class Forward extends ThingEdgeImpl.View<ThingEdge.View.Forward> implements ThingEdge.View.Forward {
 
-            Forward(ThingEdgeImpl edge) {
+            private Forward(ThingEdgeImpl edge) {
                 super(edge);
             }
 
@@ -122,9 +122,9 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             }
         }
 
-        public static class Backward extends ThingEdgeImpl.View<ThingEdge.View.Backward> implements ThingEdge.View.Backward {
+        private static class Backward extends ThingEdgeImpl.View<ThingEdge.View.Backward> implements ThingEdge.View.Backward {
 
-            Backward(ThingEdgeImpl edge) {
+            private Backward(ThingEdgeImpl edge) {
                 super(edge);
             }
 
@@ -169,7 +169,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param to        the head vertex
          * @param optimised vertex that this optimised edge is compressing
          */
-        public Buffered(Encoding.Edge.Thing encoding, ThingVertex.Write from, ThingVertex.Write to, @Nullable ThingVertex.Write optimised, boolean isInferred) {
+        public Buffered(Encoding.Edge.Thing encoding, ThingVertex.Write from, ThingVertex.Write to,
+                        @Nullable ThingVertex.Write optimised, boolean isInferred) {
             super(from.graph(), encoding, isInferred);
             assert this.graph == to.graph();
             assert encoding.isOptimisation() || optimised == null;
@@ -312,13 +313,15 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         private final ThingVertex from;
         private final ThingVertex to;
         private final TypeVertex optimisedType;
+        private final int hash;
 
         public Target(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, @Nullable TypeVertex optimisedType) {
             super(from.graph(), encoding, false);
             assert !encoding.isOptimisation() || optimisedType != null;
-            this.optimisedType = optimisedType;
             this.from = from;
             this.to = to;
+            this.optimisedType = optimisedType;
+            this.hash = hash(Target.class, encoding, from, to, optimisedType);
         }
 
         @Override
@@ -386,6 +389,22 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public void isInferred(boolean isInferred) {
             throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public final boolean equals(Object object) {
+            if (this == object) return true;
+            if (object == null || getClass() != object.getClass()) return false;
+            ThingEdgeImpl.Target that = (ThingEdgeImpl.Target) object;
+            return this.encoding.equals(that.encoding) &&
+                    this.from.equals(that.from) &&
+                    this.to.equals(that.to) &&
+                    Objects.equals(this.optimisedType, that.optimisedType);
+        }
+
+        @Override
+        public final int hashCode() {
+            return hash;
         }
     }
 
