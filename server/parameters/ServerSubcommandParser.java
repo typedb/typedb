@@ -39,7 +39,7 @@ public class ServerSubcommandParser {
     private static void validateRequiredOptions(Set<OptionParser> requiredParsers, Set<Option> options) {
         requiredParsers.forEach(parser -> {
             if (iterate(options).noneMatch(option -> option.name().equals(parser.name()))) {
-                throw TypeDBException.of(CLI_OPTION_REQUIRED, parser.helpEntry(""));
+                throw TypeDBException.of(CLI_OPTION_REQUIRED, parser.help());
             }
         });
     }
@@ -92,9 +92,9 @@ public class ServerSubcommandParser {
         }
 
         @Override
-        public List<HelpEntry> helpEntries() {
-            List<HelpEntry> aux = list(helpParser.helpEntry(""), versionParser.helpEntry(""), debugParser.helpEntry(""), configPathParser.helpEntry(""));
-            return list(aux, configParser.helpEntries(""));
+        public List<HelpEntry> helpList() {
+            List<HelpEntry> aux = list(helpParser.help(), versionParser.help(), debugParser.help(), configPathParser.help());
+            return list(aux, configParser.helpList(""));
         }
     }
 
@@ -121,8 +121,8 @@ public class ServerSubcommandParser {
         }
 
         @Override
-        public List<HelpEntry> helpEntries() {
-            return list(databaseParser.helpEntry(""), filePathParser.helpEntry(""), portParser.helpEntry(""));
+        public List<HelpEntry> helpList() {
+            return list(databaseParser.help(), filePathParser.help(), portParser.help());
         }
     }
 
@@ -149,8 +149,8 @@ public class ServerSubcommandParser {
         }
 
         @Override
-        public List<HelpEntry> helpEntries() {
-            return list(databaseParser.helpEntry(""), filePathParser.helpEntry(""), portParser.helpEntry(""));
+        public List<HelpEntry> helpList() {
+            return list(databaseParser.help(), filePathParser.help(), portParser.help());
         }
     }
 }

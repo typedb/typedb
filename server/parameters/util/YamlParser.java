@@ -70,7 +70,7 @@ public class YamlParser {
             return description;
         }
 
-        public abstract HelpEntry helpEntry(String path);
+        public abstract HelpEntry help(String path);
 
         public static class Predefined<TYPE> extends KeyValue {
 
@@ -93,14 +93,14 @@ public class YamlParser {
                 else return valueParser.parse(yaml.get(key()), childPath);
             }
 
-            public HelpEntry helpEntry(String path) {
+            public HelpEntry help(String path) {
                 String childPath = concatenate(path, key());
                 if (valueParser.isPrimitive()) {
                     return new Value.Primitive.HelpEntry(childPath, description(), valueParser.asPrimitive().help());
                 } else if (valueParser.isRestricted()) {
                     return new Value.Primitive.HelpEntry(childPath, description(), valueParser.asRestricted().help());
                 } else {
-                    return new Value.Compound.HelpEntry(childPath, description(), valueParser.asCompound().helpEntries(childPath));
+                    return new Value.Compound.HelpEntry(childPath, description(), valueParser.asCompound().helpList(childPath));
                 }
             }
         }
@@ -127,13 +127,13 @@ public class YamlParser {
             }
 
             @Override
-            public HelpEntry helpEntry(String path) {
+            public HelpEntry help(String path) {
                 if (valueParser.isPrimitive()) {
                     return new Value.Primitive.HelpEntry(concatenate(path, "<name>"), description(), valueParser.asPrimitive().help());
                 } else if (valueParser.isRestricted()) {
                     return new Value.Primitive.HelpEntry(concatenate(path, "<name>"), description(), valueParser.asRestricted().help());
                 } else {
-                    return new Value.Compound.HelpEntry(concatenate(path, "<name>"), description(), valueParser.asCompound().helpEntries(concatenate(path, "<name>")));
+                    return new Value.Compound.HelpEntry(concatenate(path, "<name>"), description(), valueParser.asCompound().helpList(concatenate(path, "<name>")));
                 }
             }
         }
@@ -169,7 +169,7 @@ public class YamlParser {
 
         public static abstract class Compound<T> extends Value<T> {
 
-            public abstract List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpEntries(String path);
+            public abstract List<com.vaticle.typedb.core.server.parameters.util.HelpEntry> helpList(String path);
 
             @Override
             public boolean isCompound() {

@@ -29,7 +29,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_F
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_OPTION_REQUIRES_TYPED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLICATE_CLI_OPTION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.server.parameters.util.YamlParser.concatenate;
 
 public abstract class OptionParser {
 
@@ -51,8 +50,8 @@ public abstract class OptionParser {
         return description;
     }
 
-    public HelpEntry helpEntry(java.lang.String optionScope) {
-        return new HelpEntry(concatenate(optionScope, name()), description(), valueDescription);
+    public HelpEntry help() {
+        return new HelpEntry(name, description(), valueDescription);
     }
 
     FunctionalIterator<Option> matchingOptions(Set<Option> options) {
