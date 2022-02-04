@@ -35,7 +35,6 @@ import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
 import com.vaticle.typedb.core.server.parameters.ServerSubcommand;
 import com.vaticle.typedb.core.server.parameters.ServerSubcommandParser;
 import com.vaticle.typedb.core.server.parameters.Config;
-import com.vaticle.typedb.core.server.parameters.ConfigFactory;
 import com.vaticle.typedb.core.server.parameters.ConfigParser;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -74,21 +73,19 @@ public class TypeDBServer implements AutoCloseable {
     protected final io.grpc.Server server;
     protected final Config config;
     protected final boolean debug;
-    private final ConfigParser configParser;
     protected TypeDBService typeDBService;
 
-    private TypeDBServer(Config config, boolean debug, ConfigParser configParser) {
-        this(config, debug, configParser, new CoreFactory());
+    private TypeDBServer(Config config, boolean debug) {
+        this(config, debug, new CoreFactory());
     }
 
-    protected TypeDBServer(Config config, boolean debug, ConfigParser configParser, Factory factory) {
+    protected TypeDBServer(Config config, boolean debug, Factory factory) {
         this.config = config;
         this.debug = debug;
-        this.configParser = configParser;
 
-        configureAndVerifyJavaVersion();
+        verifyJavaVersion();
+        verifyDataDir();
         configureLogging();
-        configureAndVerifyDataDir();
         configureTracing();
 
         if (debug) logger().info("Running {} in debug mode.", name());
@@ -111,12 +108,7 @@ public class TypeDBServer implements AutoCloseable {
         );
     }
 
-    private void configureLogging() {
-        configure((LoggerContext) LoggerFactory.getILoggerFactory(), config);
-        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
-    }
-
-    private void configureAndVerifyJavaVersion() {
+    private void verifyJavaVersion() {
         int majorVersion = Java.getMajorVersion();
         if (majorVersion == Java.UNKNOWN_VERSION) {
             logger().warn("Could not detect Java version from version string '{}'. Will start {} anyway.", System.getProperty("java.version"), name());
@@ -125,23 +117,19 @@ public class TypeDBServer implements AutoCloseable {
         }
     }
 
-    private void configureAndVerifyDataDir() {
+    private void verifyDataDir() {
         if (!Files.isDirectory(config.storage().dataDir())) {
-            Config defaultConfig = ConfigFactory.create(configParser);
-            if (this.config.storage().dataDir().equals(defaultConfig.storage().dataDir())) {
-                try {
-                    Files.createDirectory(this.config.storage().dataDir());
-                } catch (IOException e) {
-                    throw TypeDBException.of(e);
-                }
-            } else {
-                throw TypeDBException.of(DATA_DIRECTORY_NOT_FOUND, this.config.storage().dataDir());
-            }
+            throw TypeDBException.of(DATA_DIRECTORY_NOT_FOUND, this.config.storage().dataDir());
         }
 
         if (!Files.isWritable(config.storage().dataDir())) {
             throw TypeDBException.of(DATA_DIRECTORY_NOT_WRITABLE, config.storage().dataDir());
         }
+    }
+
+    private void configureLogging() {
+        configure((LoggerContext) LoggerFactory.getILoggerFactory(), config);
+        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
     private void configureTracing() {
@@ -254,7 +242,7 @@ public class TypeDBServer implements AutoCloseable {
                     ServerSubcommand.Server srvSubcommand = serverSubcommand.get().asServer();
                     if (srvSubcommand.isHelp()) System.out.println(argsParser.help());
                     else if (srvSubcommand.isVersion()) System.out.println("Version: " + Version.VERSION);
-                    else runServer(srvSubcommand, configParser);
+                    else runServer(srvSubcommand);
                 } else if (serverSubcommand.get().isImport()) {
                     importData(serverSubcommand.get().asImport());
                 } else if (serverSubcommand.get().isExport()) {
@@ -274,9 +262,9 @@ public class TypeDBServer implements AutoCloseable {
         System.exit(0);
     }
 
-    private static void runServer(ServerSubcommand.Server srvSubcommand, ConfigParser configParser) {
+    private static void runServer(ServerSubcommand.Server srvSubcommand) {
         Instant start = Instant.now();
-        TypeDBServer server = new TypeDBServer(srvSubcommand.config(), srvSubcommand.isDebug(), configParser);
+        TypeDBServer server = new TypeDBServer(srvSubcommand.config(), srvSubcommand.isDebug());
         server.start();
         Instant end = Instant.now();
         server.logger().info("- version: {}", Version.VERSION);

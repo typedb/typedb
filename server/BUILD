@@ -190,14 +190,20 @@ assemble_files = {
     "//:LICENSE": "LICENSE",
 }
 
+empty_directories = [
+    "server/data"
+]
+
 permissions = {
     "server/conf/config.yml" : "0755",
+    "server/data" : "0755",
 }
 
 assemble_targz(
     name = "assemble-linux-targz",
     targets = ["server-deps-linux", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
+    empty_directories = empty_directories,
     permissions = permissions,
     output_filename = "typedb-server-linux",
     visibility = ["//:__pkg__", "//test:__subpackages__"]
@@ -207,6 +213,7 @@ assemble_zip(
     name = "assemble-mac-zip",
     targets = assemble_deps_common + ["server-deps-mac", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
+    empty_directories = empty_directories,
     permissions = permissions,
     output_filename = "typedb-server-mac",
     visibility = ["//:__pkg__", "//test:__subpackages__"]
@@ -216,6 +223,7 @@ assemble_zip(
     name = "assemble-windows-zip",
     targets = ["server-deps-windows", "@vaticle_typedb_common//binary:assemble-bat-targz"],
     additional_files = assemble_files,
+    empty_directories = empty_directories,
     permissions = permissions,
     output_filename = "typedb-server-windows",
     visibility = ["//:__pkg__", "//test:__subpackages__"]
