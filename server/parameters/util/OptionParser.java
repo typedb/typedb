@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.server.parameters.util;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
+import javax.annotation.Nullable;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.Set;
@@ -51,7 +52,7 @@ public abstract class OptionParser {
     }
 
     public HelpEntry helpEntry(java.lang.String optionScope) {
-        return new HelpEntry.Simple(concatenate(optionScope, name()), description(), valueDescription);
+        return new HelpEntry(concatenate(optionScope, name()), description(), valueDescription);
     }
 
     FunctionalIterator<Option> matchingOptions(Set<Option> options) {
@@ -133,6 +134,40 @@ public abstract class OptionParser {
                 } catch (NumberFormatException e) {
                     throw TypeDBException.of(CLI_OPTION_REQUIRES_TYPED_VALUE, option.get(), valueDescription);
                 }
+            }
+        }
+    }
+
+    public static class HelpEntry implements com.vaticle.typedb.core.server.parameters.util.HelpEntry {
+
+        private final java.lang.String path;
+        private final java.lang.String description;
+        @Nullable
+        private final java.lang.String valueHelp;
+
+        public HelpEntry(java.lang.String path, java.lang.String description, @Nullable java.lang.String valueHelp) {
+            this.path = path;
+            this.description = description;
+            this.valueHelp = valueHelp;
+        }
+
+        @Override
+        public java.lang.String name() {
+            return path;
+        }
+
+        @Override
+        public java.lang.String description() {
+            return description;
+        }
+
+
+        @Override
+        public java.lang.String toString() {
+            if (valueHelp == null) {
+                return java.lang.String.format("\t%-60s \t%s\n", (Option.PREFIX + path), description);
+            } else {
+                return java.lang.String.format("\t%-60s \t%s\n", (Option.PREFIX + path + "=" + valueHelp), description);
             }
         }
     }

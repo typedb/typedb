@@ -18,72 +18,8 @@
 
 package com.vaticle.typedb.core.server.parameters.util;
 
-import javax.annotation.Nullable;
-import java.util.List;
+public interface HelpEntry {
 
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-
-public abstract class HelpEntry {
-
-    final String scopedName;
-    final String description;
-
-    private HelpEntry(String scopedName, String description) {
-        this.scopedName = scopedName;
-        this.description = description;
-    }
-
-    public static abstract class Yaml extends HelpEntry {
-
-        private Yaml(String scopedName, String description) {
-            super(scopedName, description);
-        }
-
-        public static class Grouped extends Yaml {
-
-            private final List<HelpEntry> entries;
-
-            public Grouped(String scopedName, String description, List<HelpEntry> entries) {
-                super(scopedName, description);
-                this.entries = entries;
-            }
-
-            @Override
-            public String toString() {
-                StringBuilder builder = new StringBuilder();
-                if (anyLeafContents()) {
-                    // only print section headers that have a leaf option in them
-                    builder.append(String.format("\n\t### %-50s %s\n", (Option.PREFIX + scopedName + "."), description));
-                }
-                for (HelpEntry menu : entries) {
-                    builder.append(menu.toString());
-                }
-                return builder.toString();
-            }
-
-            private boolean anyLeafContents() {
-                return iterate(entries).anyMatch(content -> content instanceof Simple);
-            }
-        }
-    }
-
-    public static class Simple extends HelpEntry {
-
-        @Nullable
-        private final String valueHelp;
-
-        public Simple(String scopedName, String description, @Nullable String valueHelp) {
-            super(scopedName, description);
-            this.valueHelp = valueHelp;
-        }
-
-        @Override
-        public String toString() {
-            if (valueHelp == null) {
-                return String.format("\t%-60s \t%s\n", (Option.PREFIX + scopedName), description);
-            } else {
-                return String.format("\t%-60s \t%s\n", (Option.PREFIX + scopedName + "=" + valueHelp), description);
-            }
-        }
-    }
+    String name();
+    String description();
 }
