@@ -232,21 +232,21 @@ public class TypeDBServer implements AutoCloseable {
                     .subcommand(new ServerSubcommandParser.Server(configParser))
                     .subcommand(new ServerSubcommandParser.Import())
                     .subcommand(new ServerSubcommandParser.Export());
-            Optional<ServerSubcommand> serverSubcommand = argsParser.parse(args);
-            if (serverSubcommand.isEmpty()) {
+            Optional<ServerSubcommand> subcmd = argsParser.parse(args);
+            if (subcmd.isEmpty()) {
                 LOG.error(UNRECOGNISED_CLI_COMMAND.message(String.join(" ", args)));
                 LOG.error(argsParser.usage());
                 System.exit(1);
             } else {
-                if (serverSubcommand.get().isServer()) {
-                    ServerSubcommand.Server srvSubcommand = serverSubcommand.get().asServer();
-                    if (srvSubcommand.isHelp()) System.out.println(argsParser.help());
-                    else if (srvSubcommand.isVersion()) System.out.println("Version: " + Version.VERSION);
-                    else runServer(srvSubcommand);
-                } else if (serverSubcommand.get().isImport()) {
-                    importData(serverSubcommand.get().asImport());
-                } else if (serverSubcommand.get().isExport()) {
-                    exportData(serverSubcommand.get().asExport());
+                if (subcmd.get().isServer()) {
+                    ServerSubcommand.Server subcmdServer = subcmd.get().asServer();
+                    if (subcmdServer.isHelp()) System.out.println(argsParser.help());
+                    else if (subcmdServer.isVersion()) System.out.println("Version: " + Version.VERSION);
+                    else runServer(subcmdServer);
+                } else if (subcmd.get().isImport()) {
+                    importData(subcmd.get().asImport());
+                } else if (subcmd.get().isExport()) {
+                    exportData(subcmd.get().asExport());
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             }
         } catch (Exception e) {
@@ -262,9 +262,9 @@ public class TypeDBServer implements AutoCloseable {
         System.exit(0);
     }
 
-    private static void runServer(ServerSubcommand.Server srvSubcommand) {
+    private static void runServer(ServerSubcommand.Server subcmdServer) {
         Instant start = Instant.now();
-        TypeDBServer server = new TypeDBServer(srvSubcommand.config(), srvSubcommand.isDebug());
+        TypeDBServer server = new TypeDBServer(subcmdServer.config(), subcmdServer.isDebug());
         server.start();
         Instant end = Instant.now();
         server.logger().info("- version: {}", Version.VERSION);
@@ -275,15 +275,15 @@ public class TypeDBServer implements AutoCloseable {
         server.serve();
     }
 
-    protected static void exportData(ServerSubcommand.Export exportCommand) {
-        MigratorClient migrator = new MigratorClient(exportCommand.port());
-        boolean success = migrator.exportData(exportCommand.database(), exportCommand.file());
+    protected static void exportData(ServerSubcommand.Export subcmdExport) {
+        MigratorClient migrator = new MigratorClient(subcmdExport.port());
+        boolean success = migrator.exportData(subcmdExport.database(), subcmdExport.file());
         System.exit(success ? 0 : 1);
     }
 
-    protected static void importData(ServerSubcommand.Import importCommand) {
-        MigratorClient migrator = new MigratorClient(importCommand.port());
-        boolean success = migrator.importData(importCommand.database(), importCommand.file());
+    protected static void importData(ServerSubcommand.Import subcmdImport) {
+        MigratorClient migrator = new MigratorClient(subcmdImport.port());
+        boolean success = migrator.importData(subcmdImport.database(), subcmdImport.file());
         System.exit(success ? 0 : 1);
     }
 }
