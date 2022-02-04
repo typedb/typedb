@@ -40,26 +40,26 @@ import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_AR
 
 public class Logback {
 
-    public static void configure(LoggerContext context, Config config) {
+    public static void configure(LoggerContext logContext, Config.Log logConfig) {
         // all appenders use the same layout
         LayoutWrappingEncoder<ILoggingEvent> encoder = new LayoutWrappingEncoder<>();
-        encoder.setContext(context);
+        encoder.setContext(logContext);
         TTLLLayout layout = new TTLLLayout(); // "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-        layout.setContext(context);
+        layout.setContext(logContext);
         layout.start();
         encoder.setLayout(layout);
 
         Map<String, Appender<ILoggingEvent>> appenders = new HashMap<>();
-        config.log().output().outputs().forEach((name, outputType) -> {
+        logConfig.output().outputs().forEach((name, outputType) -> {
             if (outputType.isStdout()) {
-                appenders.put(name, consoleAppender(name, context, encoder, layout));
+                appenders.put(name, consoleAppender(name, logContext, encoder, layout));
             } else if (outputType.isFile()) {
-                appenders.put(name, fileAppender(name, context, encoder, layout, outputType.asFile()));
+                appenders.put(name, fileAppender(name, logContext, encoder, layout, outputType.asFile()));
             } else throw TypeDBException.of(ILLEGAL_STATE);
         });
 
-        configureRootLogger(config.log().logger().defaultLogger(), context, appenders);
-        config.log().logger().filteredLoggers().values().forEach(l -> configureLogger(l, context, appenders));
+        configureRootLogger(logConfig.logger().defaultLogger(), logContext, appenders);
+        logConfig.logger().filteredLoggers().values().forEach(l -> configureLogger(l, logContext, appenders));
     }
 
     private static void configureLogger(Config.Log.Logger.Filtered logger, LoggerContext context,

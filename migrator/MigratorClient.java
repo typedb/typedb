@@ -41,10 +41,10 @@ public class MigratorClient {
         stub = MigratorGrpc.newStub(channel);
     }
 
-    public boolean importData(String database, Path filename) {
+    public boolean importData(String database, Path file) {
         MigratorProto.Import.Req req = MigratorProto.Import.Req.newBuilder()
                 .setDatabase(database)
-                .setFilename(filename.toAbsolutePath().toString())
+                .setFilename(file.toAbsolutePath().toString())
                 .build();
         ResponseObserver.Import streamObserver = new ResponseObserver.Import(new ProgressPrinter.Import());
         stub.importData(req, streamObserver);
@@ -52,10 +52,10 @@ public class MigratorClient {
         return streamObserver.success();
     }
 
-    public boolean exportData(String database, Path filename) {
+    public boolean exportData(String database, Path file) {
         MigratorProto.Export.Req req = MigratorProto.Export.Req.newBuilder()
                 .setDatabase(database)
-                .setFilename(filename.toAbsolutePath().toString())
+                .setFilename(file.toAbsolutePath().toString())
                 .build();
         ResponseObserver.Export streamObserver = new ResponseObserver.Export(new ProgressPrinter.Export());
         stub.exportData(req, streamObserver);

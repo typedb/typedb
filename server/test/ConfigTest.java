@@ -39,7 +39,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_UNEXPECTED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONFIG_OPTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CONFIGURATION_OPTIONS;
-import static com.vaticle.typedb.core.server.parameters.ConfigFactory.create;
+import static com.vaticle.typedb.core.server.parameters.ConfigFactory.config;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -50,7 +50,7 @@ public class ConfigTest {
 
     @Test
     public void config_file_is_read() {
-        Config config = ConfigFactory.create(new ConfigParser());
+        Config config = ConfigFactory.config(new ConfigParser());
         assertTrue(config.storage().dataDir().toString().endsWith("server/data"));
         assertEquals(new InetSocketAddress("0.0.0.0", 1729), config.server().address());
         assertEquals(500 * Bytes.MB, config.storage().databaseCache().dataSize());
@@ -70,7 +70,7 @@ public class ConfigTest {
     @Test
     public void minimal_config_with_absolute_paths_is_read() {
         Path configMinimalAbsPaths = Util.getTypedbDir().resolve("server/test/config/config-minimal-abs-path.yml");
-        Config config = ConfigFactory.create(configMinimalAbsPaths, new HashSet<>(), new ConfigParser());
+        Config config = ConfigFactory.config(configMinimalAbsPaths, new HashSet<>(), new ConfigParser());
         assertTrue(config.storage().dataDir().isAbsolute());
         assertEquals(new InetSocketAddress("0.0.0.0", 1730), config.server().address());
         assertEquals(200 * Bytes.MB, config.storage().databaseCache().dataSize());
@@ -91,7 +91,7 @@ public class ConfigTest {
     public void config_invalid_path_throws() {
         Path configMissing = Util.getTypedbDir().resolve("server/test/missing.yml");
         try {
-            ConfigFactory.create(configMissing, new HashSet<>(), new ConfigParser());
+            ConfigFactory.config(configMissing, new HashSet<>(), new ConfigParser());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -103,7 +103,7 @@ public class ConfigTest {
     public void config_file_missing_data_throws() {
         Path configMissingLog = Util.getTypedbDir().resolve("server/test/config/config-missing-data.yml");
         try {
-            ConfigFactory.create(configMissingLog, new HashSet<>(), new ConfigParser());
+            ConfigFactory.config(configMissingLog, new HashSet<>(), new ConfigParser());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -116,7 +116,7 @@ public class ConfigTest {
     public void config_file_missing_debugger_throws() {
         Path configMissingLogDebugger = Util.getTypedbDir().resolve("server/test/config/config-missing-debugger.yml");
         try {
-            ConfigFactory.create(configMissingLogDebugger, new HashSet<>(), new ConfigParser());
+            ConfigFactory.config(configMissingLogDebugger, new HashSet<>(), new ConfigParser());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -129,7 +129,7 @@ public class ConfigTest {
     public void config_file_invalid_output_reference_throws() {
         Path configInvalidOutput = Util.getTypedbDir().resolve("server/test/config/config-invalid-logger-output.yml");
         try {
-            ConfigFactory.create(configInvalidOutput, new HashSet<>(), new ConfigParser());
+            ConfigFactory.config(configInvalidOutput, new HashSet<>(), new ConfigParser());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -141,7 +141,7 @@ public class ConfigTest {
     public void config_file_wrong_path_type_throws() {
         Path configInvalidPathType = Util.getTypedbDir().resolve("server/test/config/config-wrong-path-type.yml");
         try {
-            ConfigFactory.create(configInvalidPathType, new HashSet<>(), new ConfigParser());
+            ConfigFactory.config(configInvalidPathType, new HashSet<>(), new ConfigParser());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -154,7 +154,7 @@ public class ConfigTest {
     public void config_file_unrecognised_option() {
         Path configUnrecognisedOption = Util.getTypedbDir().resolve("server/test/config/config-unrecognised-option.yml");
         try {
-            ConfigFactory.create(configUnrecognisedOption, new HashSet<>(), new ConfigParser());
+            ConfigFactory.config(configUnrecognisedOption, new HashSet<>(), new ConfigParser());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -165,7 +165,7 @@ public class ConfigTest {
 
     @Test
     public void config_file_accepts_overrides() {
-        Config config = ConfigFactory.create(
+        Config config = ConfigFactory.config(
                 set(
                     new Option("storage.data", "server/alt-data"),
                     new Option("server.address", "0.0.0.0:1730"),
@@ -192,13 +192,13 @@ public class ConfigTest {
 
     @Test
     public void overrides_list_can_be_yaml_or_repeated() {
-        Config config = ConfigFactory.create(
+        Config config = ConfigFactory.config(
                 set(new Option("log.logger.typedb.output", "[file]")),
                 new ConfigParser()
         );
         assertEquals(set("file"), set(config.log().logger().filteredLoggers().get("typedb").outputs()));
 
-        Config configWithRepeatedArgs = ConfigFactory.create(
+        Config configWithRepeatedArgs = ConfigFactory.config(
                 set(
                     new Option("log.logger.typedb.output", "file"),
                     new Option("log.logger.typedb.output", "stdout")

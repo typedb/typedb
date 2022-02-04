@@ -128,7 +128,7 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     private void configureLogging() {
-        configure((LoggerContext) LoggerFactory.getILoggerFactory(), config);
+        configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log());
         java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
@@ -251,7 +251,7 @@ public class TypeDBServer implements AutoCloseable {
             }
         } catch (Exception e) {
             if (e instanceof TypeDBException) {
-                LOG.error("", e);
+                LOG.error(e.getMessage());
             } else {
                 LOG.error(e.getMessage(), e);
                 LOG.error(EXITED_WITH_ERROR.message());

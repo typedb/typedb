@@ -38,15 +38,15 @@ import static com.vaticle.typedb.core.server.common.Constants.CONFIG_PATH;
 
 public class ConfigFactory {
 
-    public static Config create(ConfigParser parser) {
-        return create(new HashSet<>(), parser);
+    public static Config config(ConfigParser parser) {
+        return config(new HashSet<>(), parser);
     }
 
-    public static Config create(Set<Option> overrides, ConfigParser parser) {
-        return create(CONFIG_PATH, overrides, parser);
+    public static Config config(Set<Option> overrides, ConfigParser parser) {
+        return config(CONFIG_PATH, overrides, parser);
     }
 
-    public static Config create(Path file, Set<Option> overrides, ConfigParser parser) {
+    public static Config config(Path file, Set<Option> overrides, ConfigParser parser) {
         Yaml.Map yaml = merge(file, overrides);
         substituteEnvVars(yaml);
         return parser.parse(yaml, "");
