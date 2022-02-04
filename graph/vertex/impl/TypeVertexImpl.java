@@ -61,8 +61,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     final TypeGraph graph;
     final AtomicBoolean isDeleted;
-    final TypeAdjacency outs;
-    final TypeAdjacency ins;
+    final TypeAdjacency.Out outs;
+    final TypeAdjacency.In ins;
     boolean isModified;
     String label;
     String scope;
@@ -83,8 +83,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         this.label = label;
         this.scope = scope;
         this.isDeleted = new AtomicBoolean(false);
-        this.outs = newAdjacency(Encoding.Direction.Adjacency.OUT);
-        this.ins = newAdjacency(Encoding.Direction.Adjacency.IN);
+        this.outs = newOutAdjacency();
+        this.ins = newInAdjacency();
         outOwnsCount = UNSET_COUNT;
         outPlaysCount = UNSET_COUNT;
         outRelatesCount = UNSET_COUNT;
@@ -116,12 +116,12 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     }
 
     @Override
-    public TypeAdjacency outs() {
+    public TypeAdjacency.Out outs() {
         return outs;
     }
 
     @Override
-    public TypeAdjacency ins() {
+    public TypeAdjacency.In ins() {
         return ins;
     }
 
@@ -160,13 +160,9 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         return Label.of(label, scope);
     }
 
-    /**
-     * Instantiates a new {@code TypeAdjacency} class
-     *
-     * @param direction the direction of the edges held in {@code TypeAdjacency}
-     * @return the new {@code TypeAdjacency} class
-     */
-    protected abstract TypeAdjacency newAdjacency(Encoding.Direction.Adjacency direction);
+    protected abstract TypeAdjacency.In newInAdjacency();
+
+    protected abstract TypeAdjacency.Out newOutAdjacency();
 
     @Override
     public boolean isEntityType() {
@@ -279,8 +275,13 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        protected TypeAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
-            return new TypeAdjacencyImpl.Buffered(this, direction);
+        protected TypeAdjacency.In newInAdjacency() {
+            return new TypeAdjacencyImpl.Buffered.In(this);
+        }
+
+        @Override
+        protected TypeAdjacency.Out newOutAdjacency() {
+            return new TypeAdjacencyImpl.Buffered.Out(this);
         }
 
         @Override
@@ -415,8 +416,13 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        protected TypeAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
-            return new TypeAdjacencyImpl.Persisted(this, direction);
+        protected TypeAdjacency.In newInAdjacency(){
+            return new TypeAdjacencyImpl.Persisted.In(this);
+        }
+
+        @Override
+        protected TypeAdjacency.Out newOutAdjacency(){
+            return new TypeAdjacencyImpl.Persisted.Out(this);
         }
 
         @Override

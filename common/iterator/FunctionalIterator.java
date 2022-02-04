@@ -91,7 +91,7 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
     FunctionalIterator<T> onError(Function<Exception, TypeDBException> exceptionFn);
 
-    FunctionalIterator<T> onFinalise(Runnable function);
+    FunctionalIterator<T> onFinalised(Runnable function);
 
     void recycle();
 

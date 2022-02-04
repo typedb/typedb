@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.common.iterator.sorted;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.Iterators;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
 import java.util.NoSuchElementException;
 import java.util.function.Function;
@@ -28,31 +27,42 @@ import java.util.function.Predicate;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 
-public class DistinctSortedIterator<T extends Comparable<? super T>, ORDER extends Order, ITER extends SortedIterator<T, ORDER>>
+public class ConsumeHandledSortedIterator<T extends Comparable<? super T>, ORDER extends SortedIterator.Order, ITER extends SortedIterator<T, ORDER>>
         extends AbstractSortedIterator<T, ORDER> {
 
+    private final Runnable function;
+    private boolean isConsumed;
     final ITER iterator;
     T last;
 
-    public DistinctSortedIterator(ITER iterator) {
+    public ConsumeHandledSortedIterator(ITER iterator, Runnable function) {
         super(iterator.order());
         this.iterator = iterator;
-        last = null;
+        this.function = function;
+        this.isConsumed = false;
+        this.last = null;
+    }
+
+    private void mayHandleConsume(boolean hasNext) {
+        if (!hasNext && !isConsumed) {
+            isConsumed = true;
+            function.run();
+        }
     }
 
     @Override
     public boolean hasNext() {
-        while (iterator.hasNext()) {
-            if (iterator.peek().equals(last)) iterator.next();
-            else return true;
-        }
-        return false;
+        boolean hasNext;
+        hasNext = iterator.hasNext();
+        mayHandleConsume(hasNext);
+        return hasNext;
     }
 
     @Override
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
         last = iterator.next();
+        mayHandleConsume(iterator.hasNext());
         return last;
     }
 
@@ -68,11 +78,11 @@ public class DistinctSortedIterator<T extends Comparable<? super T>, ORDER exten
     }
 
     public static class Seekable<T extends Comparable<? super T>, ORDER extends Order>
-            extends DistinctSortedIterator<T, ORDER, SortedIterator.Seekable<T, ORDER>>
+            extends ConsumeHandledSortedIterator<T, ORDER, SortedIterator.Seekable<T, ORDER>>
             implements SortedIterator.Seekable<T, ORDER> {
 
-        public Seekable(SortedIterator.Seekable<T, ORDER> source) {
-            super(source);
+        public Seekable(SortedIterator.Seekable<T, ORDER> iterator, Runnable function) {
+            super(iterator, function);
         }
 
         @Override
@@ -83,7 +93,7 @@ public class DistinctSortedIterator<T extends Comparable<? super T>, ORDER exten
 
         @Override
         public final SortedIterator.Seekable<T, ORDER> merge(SortedIterator.Seekable<T, ORDER> iterator) {
-            return Iterators.Sorted.Seekable.merge( this, iterator);
+            return Iterators.Sorted.Seekable.merge(this, iterator);
         }
 
         @Override

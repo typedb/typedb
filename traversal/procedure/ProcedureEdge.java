@@ -27,7 +27,6 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
@@ -549,9 +548,9 @@ public abstract class ProcedureEdge<
                         super(from, to, order, FORWARD, isKey);
                     }
 
-                    private FunctionalIterator<TypeEdge> ownsEdges(TypeVertex owner) {
-                        if (isKey) return owner.outs().edge(OWNS_KEY).edge();
-                        else return link(owner.outs().edge(OWNS).edge(), owner.outs().edge(OWNS_KEY).edge());
+                    private FunctionalIterator<KeyValue<TypeVertex, TypeVertex>> ownsAndOverridden(TypeVertex owner) {
+                        if (isKey) return owner.outs().edge(OWNS_KEY).toAndOverridden();
+                        else return link(owner.outs().edge(OWNS).toAndOverridden(), owner.outs().edge(OWNS_KEY).toAndOverridden());
                     }
 
                     private FunctionalIterator<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
@@ -559,9 +558,9 @@ public abstract class ProcedureEdge<
                         FunctionalIterator<TypeVertex> supertypes, iterator;
 
                         supertypes = loop(owner, Objects::nonNull, o -> o.outs().edge(SUB).to().firstOrNull());
-                        iterator = supertypes.flatMap(o -> ownsEdges(o).map(e -> {
-                            if (e.overridden() != null) overriddens.add(e.overridden());
-                            if (!overriddens.contains(e.to())) return e.to();
+                        iterator = supertypes.flatMap(o -> ownsAndOverridden(o).map(e -> {
+                            if (e.value() != null) overriddens.add(e.value());
+                            if (!overriddens.contains(e.key())) return e.key();
                             else return null;
                         }).noNulls());
                         return iterator;
@@ -657,9 +656,9 @@ public abstract class ProcedureEdge<
                         FunctionalIterator<TypeVertex> supertypes, iterator;
 
                         supertypes = loop(player, Objects::nonNull, p -> p.outs().edge(SUB).to().firstOrNull());
-                        iterator = supertypes.flatMap(s -> s.outs().edge(PLAYS).edge().map(e -> {
-                            if (e.overridden() != null) overriddens.add(e.overridden());
-                            if (!overriddens.contains(e.to())) return e.to();
+                        iterator = supertypes.flatMap(s -> s.outs().edge(PLAYS).toAndOverridden().map(e -> {
+                            if (e.value() != null) overriddens.add(e.value());
+                            if (!overriddens.contains(e.key())) return e.key();
                             else return null;
                         }).noNulls());
                         return iterator;
@@ -744,9 +743,9 @@ public abstract class ProcedureEdge<
                         FunctionalIterator<TypeVertex> supertypes, iterator;
 
                         supertypes = loop(relation, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull());
-                        iterator = supertypes.flatMap(s -> s.outs().edge(RELATES).edge().map(e -> {
-                            if (e.overridden() != null) overriddens.add(e.overridden());
-                            if (!overriddens.contains(e.to())) return e.to();
+                        iterator = supertypes.flatMap(s -> s.outs().edge(RELATES).toAndOverridden().map(e -> {
+                            if (e.value() != null) overriddens.add(e.value());
+                            if (!overriddens.contains(e.key())) return e.key();
                             else return null;
                         }).noNulls());
                         return iterator;
@@ -1236,8 +1235,7 @@ public abstract class ProcedureEdge<
                                 iter = resolveRoleTypesIter.mergeMap(ASC, rt -> rel.outs().edge(ROLEPLAYER, rt).toAndOptimised());
                             }
                         } else {
-                            throw TypeDBException.of(ILLEGAL_STATE); // TODO disallow
-//                            iter = rel.outs().edge(ROLEPLAYER).get();
+                            throw TypeDBException.of(ILLEGAL_STATE);
                         }
 
                         if (!filteredIID && to.props().hasIID()) iter = to.filterIIDOnPlayerAndRole(iter, params);
@@ -1261,9 +1259,6 @@ public abstract class ProcedureEdge<
                             ).first();
                         } else {
                             throw TypeDBException.of(ILLEGAL_STATE);
-//                            valid = rel.outs().edge(ROLEPLAYER).get().filter(
-//                                    e -> e.to().equals(player) && !scoped.contains(e.optimised().get())
-//                            ).first();
                         }
                         valid.ifPresent(kv -> scoped.push(kv.value(), order()));
                         return valid.isPresent();

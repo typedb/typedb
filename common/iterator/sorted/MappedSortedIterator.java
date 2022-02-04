@@ -135,23 +135,33 @@ public class MappedSortedIterator<
 
         @Override
         public final SortedIterator.Seekable<U, ORDER> merge(SortedIterator.Seekable<U, ORDER> iterator) {
-            return Iterators.Sorted.merge(this, iterator);
+            return Iterators.Sorted.Seekable.merge(this, iterator);
         }
 
         @Override
         public <V extends Comparable<? super V>, ORD extends Order> SortedIterator.Seekable<V, ORD> mapSorted(
                 ORD order, Function<U, V> mappingFn, Function<V, U> reverseMappingFn) {
-            return Iterators.Sorted.mapSorted(order, this, mappingFn, reverseMappingFn);
+            return Iterators.Sorted.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
         }
 
         @Override
         public SortedIterator.Seekable<U, ORDER> distinct() {
-            return Iterators.Sorted.distinct(this);
+            return Iterators.Sorted.Seekable.distinct(this);
         }
 
         @Override
         public SortedIterator.Seekable<U, ORDER> filter(Predicate<U> predicate) {
-            return Iterators.Sorted.filter(this, predicate);
+            return Iterators.Sorted.Seekable.filter(this, predicate);
+        }
+
+        @Override
+        public SortedIterator.Seekable<U, ORDER> onConsumed(Runnable function) {
+            return Iterators.Sorted.Seekable.onConsume(this, function);
+        }
+
+        @Override
+        public SortedIterator.Seekable<U, ORDER> onFinalised(Runnable function) {
+            return Iterators.Sorted.Seekable.onFinalise(this, function);
         }
     }
 }

@@ -19,15 +19,15 @@
 package com.vaticle.typedb.core.common.iterator;
 
 import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.iterator.sorted.BaseSeekableIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.BaseSortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.BasedSeekableIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.ConsumeHandledSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.DistinctSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.FilteredSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.FinaliseSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.MappedSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.MergeMappedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
 import java.util.ArrayList;
@@ -113,7 +113,6 @@ public class Iterators {
         return StreamSupport.stream(spliteratorUnknownSize(iterator, ORDERED | IMMUTABLE), false);
     }
 
-
     public static int compareSize(Iterator<?> iterator, int size) {
         long count = 0L;
         while (iterator.hasNext()) {
@@ -126,16 +125,8 @@ public class Iterators {
 
     public static class Sorted {
 
-        public static <T extends Comparable<T>> Seekable<T, Order.Asc> emptySorted() {
-            return iterateSorted(SortedIterator.ASC, new ConcurrentSkipListSet<T>());
-        }
-
         public static <T extends Comparable<T>, ORDER extends Order> SortedIterator<T, ORDER> iterateSorted(ORDER order, List<T> list) {
             return new BaseSortedIterator<>(order, list);
-        }
-
-        public static <T extends Comparable<? super T>, ORDER extends Order> Seekable<T, ORDER> iterateSorted(ORDER order, NavigableSet<T> set) {
-            return new BasedSeekableIterator<>(order, set);
         }
 
         public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator<T, ORDER> distinct(
@@ -143,18 +134,9 @@ public class Iterators {
             return new DistinctSortedIterator<>(iterator);
         }
 
-        public static <T extends Comparable<? super T>, ORDER extends Order> Seekable<T, ORDER> distinct(Seekable<T, ORDER> iterator) {
-            return new DistinctSortedIterator.Seekable<>(iterator);
-        }
-
         public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator<T, ORDER> filter(
                 SortedIterator<T, ORDER> iterator, Predicate<T> predicate) {
             return new FilteredSortedIterator<>(iterator, predicate);
-        }
-
-        public static <T extends Comparable<? super T>, ORDER extends Order> Seekable<T, ORDER> filter(Seekable<T, ORDER> iterator,
-                                                                                                       Predicate<T> predicate) {
-            return new FilteredSortedIterator.Seekable<>(iterator, predicate);
         }
 
         public static <T extends Comparable<? super T>, U extends Comparable<? super U>, ORDER extends Order>
@@ -162,23 +144,66 @@ public class Iterators {
             return new MappedSortedIterator<>(order, iterator, mappingFn);
         }
 
-        public static <T extends Comparable<? super T>, U extends Comparable<? super U>, ORDER extends Order>
-        Seekable<U, ORDER> mapSorted(ORDER order, Seekable<T, ?> iterator, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
-            return new MappedSortedIterator.Seekable<>(order, iterator, mappingFn, reverseMappingFn);
-        }
-
         @SafeVarargs
-        public static <T extends Comparable<? super T>, ORDER extends Order> Seekable<T, ORDER> merge(Seekable<T, ORDER> iterator, Seekable<T, ORDER>... iterators) {
-            return new MergeMappedIterator.Seekable<>(iterator.order(), iterate(list(list(iterators), iterator)), e -> e);
+        public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator<T, ORDER> merge(SortedIterator<T, ORDER> iterator, SortedIterator<T, ORDER>... iterators) {
+            return new MergeMappedIterator<>(iterator.order(), iterate(list(list(iterators), iterator)), e -> e);
         }
 
-        public static <T extends Comparable<? super T>, ORDER extends Order> Seekable<T, ORDER> merge(ORDER order, FunctionalIterator<Seekable<T, ORDER>> iterators) {
-            return new MergeMappedIterator.Seekable<>(order, iterators, e -> e);
+        public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator<T, ORDER> merge(ORDER order, FunctionalIterator<SortedIterator<T, ORDER>> iterators) {
+            return new MergeMappedIterator<>(order, iterators, e -> e);
         }
 
-        public static <T extends Comparable<? super T>, ORDER extends Order> Seekable<T, ORDER> onFinalise(Seekable<T, ORDER> iterator,
-                                                                                                           Runnable finalise) {
-            return new FinaliseSortedIterator.Seekable<>(iterator, finalise);
+        public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator<T, ORDER> onConsume(SortedIterator<T, ORDER> iterator, Runnable onConsume) {
+            return new ConsumeHandledSortedIterator<>(iterator, onConsume);
+        }
+
+        public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator<T, ORDER> onFinalise(SortedIterator<T, ORDER> iterator,
+                                                                                                                 Runnable finalise) {
+            return new FinaliseSortedIterator<>(iterator, finalise);
+        }
+
+        public static class Seekable {
+
+            public static <T extends Comparable<T>> SortedIterator.Seekable<T, Order.Asc> emptySorted() {
+                return iterateSorted(SortedIterator.ASC, new ConcurrentSkipListSet<T>());
+            }
+
+            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> iterateSorted(ORDER order, NavigableSet<T> set) {
+                return new BaseSeekableIterator<>(order, set);
+            }
+
+            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> distinct(SortedIterator.Seekable<T, ORDER> iterator) {
+                return new DistinctSortedIterator.Seekable<>(iterator);
+            }
+
+            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> filter(SortedIterator.Seekable<T, ORDER> iterator,
+                                                                                                                          Predicate<T> predicate) {
+                return new FilteredSortedIterator.Seekable<>(iterator, predicate);
+            }
+
+            @SafeVarargs
+            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> merge(SortedIterator.Seekable<T, ORDER> iterator, SortedIterator.Seekable<T, ORDER>... iterators) {
+                return new MergeMappedIterator.Seekable<>(iterator.order(), iterate(list(list(iterators), iterator)), e -> e);
+            }
+
+            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> merge(ORDER order, FunctionalIterator<SortedIterator.Seekable<T, ORDER>> iterators) {
+                return new MergeMappedIterator.Seekable<>(order, iterators, e -> e);
+            }
+
+            public static <T extends Comparable<? super T>, U extends Comparable<? super U>, ORDER extends Order>
+            SortedIterator.Seekable<U, ORDER> mapSorted(ORDER order, SortedIterator.Seekable<T, ?> iterator, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
+                return new MappedSortedIterator.Seekable<>(order, iterator, mappingFn, reverseMappingFn);
+            }
+
+            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> onConsume(SortedIterator.Seekable<T, ORDER> iterator,
+                                                                                                                             Runnable onConsume) {
+                return new ConsumeHandledSortedIterator.Seekable<>(iterator, onConsume);
+            }
+
+            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> onFinalise(SortedIterator.Seekable<T, ORDER> iterator,
+                                                                                                                              Runnable finalise) {
+                return new FinaliseSortedIterator.Seekable<>(iterator, finalise);
+            }
         }
     }
 }
