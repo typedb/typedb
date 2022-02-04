@@ -54,11 +54,12 @@ public class ServerSubcommandParser {
 
     public static class Server extends SubcommandParser<ServerSubcommand.Server> {
 
-        private static final OptionParser.Flag debugParser = new OptionParser.Flag("debug", "Run server in debug mode.");
-        private static final OptionParser.Flag helpParser = new OptionParser.Flag("help", "Print help menu.");
-        private static final OptionParser.Flag versionParser = new OptionParser.Flag("version", "Print version number.");
-        private static final OptionParser.Path configPathParser = new OptionParser.Path("config", "Path to TypeDB YAML configuration file.");
-        private static final Set<OptionParser> auxiliaryParsers = set(debugParser, helpParser, versionParser, configPathParser);
+        private static final OptionParser.Flag debug = new OptionParser.Flag("debug", "Run server in debug mode.");
+        private static final OptionParser.Flag help = new OptionParser.Flag("help", "Print help menu.");
+        private static final OptionParser.Flag version = new OptionParser.Flag("version", "Print version number.");
+        private static final OptionParser.Path configPath =
+                new OptionParser.Path("config", "Path to TypeDB YAML configuration file.");
+        private static final Set<OptionParser> auxiliaryParsers = set(debug, help, version, configPath);
         private static final String[] tokens = new String[]{};
         private static final String description = "Run TypeDB server";
 
@@ -73,12 +74,12 @@ public class ServerSubcommandParser {
         protected ServerSubcommand.Server parse(Set<Option> options) {
             Set<Option> auxOptions = findAuxiliaryOptions(options);
             Set<Option> configOptions = excludeOptions(options, auxOptions);
-            Optional<Path> configPath = configPathParser.parse(auxOptions);
+            Optional<Path> configPath = Server.configPath.parse(auxOptions);
             Config config = configPath
                     .map(path -> ConfigFactory.config(path, configOptions, configParser))
                     .orElse(ConfigFactory.config(configOptions, configParser));
-            return new ServerSubcommand.Server(debugParser.parse(auxOptions), helpParser.parse(auxOptions),
-                    versionParser.parse(auxOptions), config);
+            return new ServerSubcommand.Server(debug.parse(auxOptions), help.parse(auxOptions),
+                    version.parse(auxOptions), config);
         }
 
         private Set<Option> findAuxiliaryOptions(Set<Option> options) {
@@ -93,7 +94,7 @@ public class ServerSubcommandParser {
 
         @Override
         public List<Help> helpList() {
-            List<Help> aux = list(helpParser.help(), versionParser.help(), debugParser.help(), configPathParser.help());
+            List<Help> aux = list(help.help(), version.help(), debug.help(), configPath.help());
             return list(aux, configParser.helpList(""));
         }
     }
@@ -103,10 +104,12 @@ public class ServerSubcommandParser {
         public static final String[] tokens = new String[]{"import"};
         public static final String description = "Run TypeDB import.";
 
-        private static final OptionParser.String databaseParser = new OptionParser.String("database", "Database to import into.");
-        private static final OptionParser.Path filePathParser = new OptionParser.Path("file", "Path to data file to import (.typedb format).");
-        private static final OptionParser.Int portParser = new OptionParser.Int("port", "TypeDB's GRPC port.");
-        private static final Set<OptionParser> parsers = set(databaseParser, filePathParser, portParser);
+        private static final OptionParser.String database =
+                new OptionParser.String("database", "Database to import into.");
+        private static final OptionParser.Path filePath =
+                new OptionParser.Path("file", "Path to data file to import (.typedb format).");
+        private static final OptionParser.Int port = new OptionParser.Int("port", "TypeDB's GRPC port.");
+        private static final Set<OptionParser> parsers = set(database, filePath, port);
 
         public Import() {
             super(tokens, description);
@@ -116,13 +119,13 @@ public class ServerSubcommandParser {
         protected ServerSubcommand.Import parse(Set<Option> options) {
             validateRequiredOptions(parsers, options);
             validateUnrecognisedOptions(parsers, options);
-            return new ServerSubcommand.Import(databaseParser.parse(options).get(), filePathParser.parse(options).get(),
-                    portParser.parse(options).get());
+            return new ServerSubcommand.Import(database.parse(options).get(), filePath.parse(options).get(),
+                    port.parse(options).get());
         }
 
         @Override
         public List<Help> helpList() {
-            return list(databaseParser.help(), filePathParser.help(), portParser.help());
+            return list(database.help(), filePath.help(), port.help());
         }
     }
 
@@ -131,10 +134,12 @@ public class ServerSubcommandParser {
         public static final String[] tokens = new String[]{"export"};
         public static final String description = "Run TypeDB export.";
 
-        private static final OptionParser.String databaseParser = new OptionParser.String("database", "Database to export.");
-        private static final OptionParser.Path filePathParser = new OptionParser.Path("file", "Path to data file to export to.");
-        private static final OptionParser.Int portParser = new OptionParser.Int("port", "TypeDB's GRPC port.");
-        private static final Set<OptionParser> parsers = set(databaseParser, filePathParser, portParser);
+        private static final OptionParser.String database =
+                new OptionParser.String("database", "Database to export.");
+        private static final OptionParser.Path filePath =
+                new OptionParser.Path("file", "Path to data file to export to.");
+        private static final OptionParser.Int port = new OptionParser.Int("port", "TypeDB's GRPC port.");
+        private static final Set<OptionParser> parsers = set(database, filePath, port);
 
         public Export() {
             super(tokens, description);
@@ -144,13 +149,13 @@ public class ServerSubcommandParser {
         protected ServerSubcommand.Export parse(Set<Option> options) {
             validateRequiredOptions(parsers, options);
             validateUnrecognisedOptions(parsers, options);
-            return new ServerSubcommand.Export(databaseParser.parse(options).get(), filePathParser.parse(options).get(),
-                    portParser.parse(options).get());
+            return new ServerSubcommand.Export(database.parse(options).get(), filePath.parse(options).get(),
+                    port.parse(options).get());
         }
 
         @Override
         public List<Help> helpList() {
-            return list(databaseParser.help(), filePathParser.help(), portParser.help());
+            return list(database.help(), filePath.help(), port.help());
         }
     }
 }
