@@ -56,9 +56,9 @@ public abstract class ServerSubcommand {
         private final boolean isDebug;
         private final boolean isHelp;
         private final boolean isVersion;
-        private final Config config;
+        private final CoreConfig config;
 
-        Server(boolean isDebug, boolean isHelp, boolean isVersion, Config config) {
+        Server(boolean isDebug, boolean isHelp, boolean isVersion, CoreConfig config) {
             this.isDebug = isDebug;
             this.isHelp = isHelp;
             this.isVersion = isVersion;
@@ -87,7 +87,7 @@ public abstract class ServerSubcommand {
             return isVersion;
         }
 
-        public Config config() {
+        public CoreConfig config() {
             return config;
         }
     }

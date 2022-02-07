@@ -32,14 +32,14 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_OUTPUT_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_REASONER_REQUIRES_DIR_OUTPUT;
 
-public class Config {
+public class CoreConfig {
 
     protected final Server server;
     protected final Storage storage;
     protected final Log log;
     protected final VaticleFactory vaticleFactory;
 
-    protected Config(Server server, Storage storage, Log log, @Nullable VaticleFactory vaticleFactory) {
+    protected CoreConfig(Server server, Storage storage, Log log, @Nullable VaticleFactory vaticleFactory) {
         this.server = server;
         this.storage = storage;
         this.log = log;

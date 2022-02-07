@@ -29,7 +29,7 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
 import ch.qos.logback.core.util.FileSize;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.parameters.Config;
+import com.vaticle.typedb.core.server.parameters.CoreConfig;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,7 +40,7 @@ import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_AR
 
 public class Logback {
 
-    public static void configure(LoggerContext logContext, Config.Log logConfig) {
+    public static void configure(LoggerContext logContext, CoreConfig.Log logConfig) {
         // all appenders use the same layout
         LayoutWrappingEncoder<ILoggingEvent> encoder = new LayoutWrappingEncoder<>();
         encoder.setContext(logContext);
@@ -62,7 +62,7 @@ public class Logback {
         logConfig.logger().filteredLoggers().values().forEach(l -> configureLogger(l, logContext, appenders));
     }
 
-    private static void configureLogger(Config.Log.Logger.Filtered logger, LoggerContext context,
+    private static void configureLogger(CoreConfig.Log.Logger.Filtered logger, LoggerContext context,
                                         Map<String, Appender<ILoggingEvent>> appenders) {
         Logger log = context.getLogger(logger.filter());
         log.setAdditive(false);
@@ -73,7 +73,7 @@ public class Logback {
         });
     }
 
-    private static void configureRootLogger(Config.Log.Logger.Unfiltered defaultLogger, LoggerContext context,
+    private static void configureRootLogger(CoreConfig.Log.Logger.Unfiltered defaultLogger, LoggerContext context,
                                             Map<String, Appender<ILoggingEvent>> appenders) {
         Logger root = context.getLogger(Logger.ROOT_LOGGER_NAME);
         root.detachAndStopAllAppenders();
@@ -87,7 +87,7 @@ public class Logback {
 
     private static RollingFileAppender<ILoggingEvent> fileAppender(String name, LoggerContext context,
                                                                    LayoutWrappingEncoder<ILoggingEvent> encoder,
-                                                                   TTLLLayout layout, Config.Log.Output.Type.File outputType) {
+                                                                   TTLLLayout layout, CoreConfig.Log.Output.Type.File outputType) {
         RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
         appender.setContext(context);
         appender.setName(name);

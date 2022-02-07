@@ -34,8 +34,8 @@ import com.vaticle.typedb.core.database.CoreFactory;
 import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
 import com.vaticle.typedb.core.server.parameters.ServerSubcommand;
 import com.vaticle.typedb.core.server.parameters.ServerSubcommandParser;
-import com.vaticle.typedb.core.server.parameters.Config;
-import com.vaticle.typedb.core.server.parameters.ConfigParser;
+import com.vaticle.typedb.core.server.parameters.CoreConfig;
+import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
@@ -71,15 +71,15 @@ public class TypeDBServer implements AutoCloseable {
     protected final Factory factory;
     protected final TypeDB.DatabaseManager databaseMgr;
     protected final io.grpc.Server server;
-    protected final Config config;
+    protected final CoreConfig config;
     protected final boolean debug;
     protected TypeDBService typeDBService;
 
-    private TypeDBServer(Config config, boolean debug) {
+    private TypeDBServer(CoreConfig config, boolean debug) {
         this(config, debug, new CoreFactory());
     }
 
-    protected TypeDBServer(Config config, boolean debug, Factory factory) {
+    protected TypeDBServer(CoreConfig config, boolean debug, Factory factory) {
         this.config = config;
         this.debug = debug;
 
@@ -227,7 +227,7 @@ public class TypeDBServer implements AutoCloseable {
         try {
             printASCIILogo();
 
-            ConfigParser configParser = new ConfigParser();
+            CoreConfigParser configParser = new CoreConfigParser();
             ArgsParser<ServerSubcommand> argsParser = new ArgsParser<ServerSubcommand>()
                     .subcommand(new ServerSubcommandParser.Server(configParser))
                     .subcommand(new ServerSubcommandParser.Import())

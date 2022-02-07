@@ -36,17 +36,17 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ENV_V
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.Constants.CONFIG_PATH;
 
-public class ConfigFactory {
+public class CoreConfigFactory {
 
-    public static Config config(ConfigParser parser) {
+    public static CoreConfig config(CoreConfigParser parser) {
         return config(new HashSet<>(), parser);
     }
 
-    public static Config config(Set<Option> overrides, ConfigParser parser) {
+    public static CoreConfig config(Set<Option> overrides, CoreConfigParser parser) {
         return config(CONFIG_PATH, overrides, parser);
     }
 
-    public static Config config(Path file, Set<Option> overrides, ConfigParser parser) {
+    public static CoreConfig config(Path file, Set<Option> overrides, CoreConfigParser parser) {
         Yaml.Map yaml = merge(file, overrides);
         substituteEnvVars(yaml);
         return parser.parse(yaml, "");
