@@ -59,9 +59,9 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
     @Override
     public CoreConfig parse(Yaml yaml, String path) {
         if (yaml.isMap()) {
-            validatePredefinedKeys(parsers, yaml.asMap().keys(), "");
-            return new CoreConfig(server.parse(yaml.asMap(), ""), storage.parse(yaml.asMap(), ""),
-                    log.parse(yaml.asMap(), ""), vaticleFactory.parse(yaml.asMap(), "")
+            validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
+            return new CoreConfig(server.parse(yaml.asMap(), path), storage.parse(yaml.asMap(), path),
+                    log.parse(yaml.asMap(), path), vaticleFactory.parse(yaml.asMap(), path)
             );
         } else throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP, path);
     }
