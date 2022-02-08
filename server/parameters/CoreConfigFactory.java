@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.server.parameters;
 import com.vaticle.typedb.common.yaml.Yaml;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.parameters.util.Option;
+import com.vaticle.typedb.core.server.parameters.util.YamlParser;
 
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
@@ -38,15 +39,17 @@ import static com.vaticle.typedb.core.server.common.Constants.CONFIG_PATH;
 
 public class CoreConfigFactory {
 
-    public static CoreConfig config(CoreConfigParser parser) {
+    public static <T extends CoreConfig, U extends YamlParser.Value.Compound<T>> T config(U parser) {
         return config(new HashSet<>(), parser);
     }
 
-    public static CoreConfig config(Set<Option> overrides, CoreConfigParser parser) {
+    public static <T extends CoreConfig, U extends YamlParser.Value.Compound<T>>
+        T config(Set<Option> overrides, U parser) {
         return config(CONFIG_PATH, overrides, parser);
     }
 
-    public static CoreConfig config(Path file, Set<Option> overrides, CoreConfigParser parser) {
+    public static <T extends CoreConfig, U extends YamlParser.Value.Compound<T>>
+        T config(Path file, Set<Option> overrides, U parser) {
         Yaml.Map yaml = merge(file, overrides);
         substituteEnvVars(yaml);
         return parser.parse(yaml, "");
