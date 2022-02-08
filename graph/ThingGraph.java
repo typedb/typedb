@@ -20,11 +20,12 @@ package com.vaticle.typedb.core.graph;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
@@ -54,6 +55,7 @@ import java.util.stream.Stream;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.collection.ByteArray.empty;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
@@ -214,14 +216,14 @@ public class ThingGraph {
         else return vertex;
     }
 
-    public SortedIterator<ThingVertex, Order.Asc> getReadable(TypeVertex typeVertex) {
-        SortedIterator<ThingVertex, Order.Asc> vertices = storage.iterate(
-                VertexIID.Thing.prefix(typeVertex.iid())
-//                ASC
-        ).mapSorted(ASC, kv -> convertToReadable(kv.key()));
+    public Seekable<ThingVertex, Order.Asc> getReadable(TypeVertex typeVertex) {
+        Seekable<ThingVertex, Order.Asc> vertices = storage.iterate(
+                VertexIID.Thing.prefix(typeVertex.iid()),
+                ASC
+        ).mapSorted(ASC, kv -> convertToReadable(kv.key()), vertex -> KeyValue.of(vertex.iid(), empty()));
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return vertices;
         else {
-            SortedIterator<ThingVertex, Order.Asc> buffered = iterateSorted(ASC, thingsByTypeIID.get(typeVertex.iid()))
+            Seekable<ThingVertex, Order.Asc> buffered = iterateSorted(ASC, thingsByTypeIID.get(typeVertex.iid()))
                     .mapSorted(ASC, e -> e, ThingVertex::toWrite);
             return vertices.merge(buffered).distinct();
         }

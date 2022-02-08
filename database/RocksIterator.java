@@ -171,6 +171,11 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     }
 
     @Override
+    public Seekable<KeyValue<T, ByteArray>, ORDER> limit(long limit) {
+        return Iterators.Sorted.Seekable.limit(this, limit);
+    }
+
+    @Override
     public Seekable<KeyValue<T, ByteArray>, ORDER> onConsumed(Runnable function) {
         return Iterators.Sorted.Seekable.onConsume(this, function);
     }

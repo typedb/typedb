@@ -134,7 +134,7 @@ public class CombinationFinder {
         }
     }
 
-    private boolean addOrIntersect(Identifier identifier, Set<TypeVertex> types) {
+    private boolean addOrIntersect(Identifier identifier, Set<? extends TypeVertex> types) {
         Set<TypeVertex> vertices = combination.computeIfAbsent(identifier, (id) -> new HashSet<>());
         int sizeBefore = vertices.size();
         if (vertices.isEmpty()) vertices.addAll(types);
@@ -142,8 +142,8 @@ public class CombinationFinder {
         return vertices.size() != sizeBefore;
     }
 
-    private FunctionalIterator<TypeVertex> vertexIter(ProcedureVertex.Type vertex) {
-        FunctionalIterator<TypeVertex> iterator = vertex.iterator(graphMgr, params);
+    private FunctionalIterator<? extends TypeVertex> vertexIter(ProcedureVertex.Type vertex) {
+        FunctionalIterator<? extends TypeVertex> iterator = vertex.iterator(graphMgr, params);
         if (vertex.id().isRetrievable() && concreteVarIds.contains(vertex.id().asVariable().asRetrievable())) {
             iterator = iterator.filter(type -> !type.isAbstract());
         }

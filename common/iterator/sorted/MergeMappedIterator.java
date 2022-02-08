@@ -180,6 +180,11 @@ public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER exten
         }
 
         @Override
+        public SortedIterator.Seekable<U, ORDER> limit(long limit) {
+            return Iterators.Sorted.Seekable.limit(this, limit);
+        }
+
+        @Override
         public SortedIterator.Seekable<U, ORDER> onConsumed(Runnable function) {
             return Iterators.Sorted.Seekable.onConsume(this, function);
         }

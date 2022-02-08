@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.traversal.predicate;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
+import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.Map;
@@ -191,7 +192,7 @@ public abstract class PredicateOperator {
             super(token);
         }
 
-        abstract boolean apply(String vertexValue, GraphTraversal.Thing.Parameters.Value predicateValue);
+        abstract boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue);
 
         @Override
         boolean isSubString() {
@@ -205,7 +206,7 @@ public abstract class PredicateOperator {
 
         private static final SubString CONTAINS = new SubString(TypeQLToken.Predicate.SubString.CONTAINS) {
             @Override
-            boolean apply(String vertexValue, GraphTraversal.Thing.Parameters.Value predicateValue) {
+            boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue) {
                 assert predicateValue.isString();
                 return containsIgnoreCase(vertexValue, predicateValue.getString());
             }
@@ -229,7 +230,7 @@ public abstract class PredicateOperator {
 
         private static final SubString LIKE = new SubString(TypeQLToken.Predicate.SubString.LIKE) {
             @Override
-            boolean apply(String vertexValue, GraphTraversal.Thing.Parameters.Value predicateValue) {
+            boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue) {
                 assert predicateValue.isRegex();
                 return predicateValue.getRegex().matcher(vertexValue).matches();
             }

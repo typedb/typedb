@@ -113,6 +113,11 @@ public class ConsumeHandledSortedIterator<T extends Comparable<? super T>, ORDER
         }
 
         @Override
+        public SortedIterator.Seekable<T, ORDER> limit(long limit) {
+            return Iterators.Sorted.Seekable.limit(this, limit);
+        }
+
+        @Override
         public SortedIterator.Seekable<T, ORDER> onConsumed(Runnable function) {
             return Iterators.Sorted.Seekable.onConsume(this, function);
         }

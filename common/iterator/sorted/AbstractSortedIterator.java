@@ -20,13 +20,11 @@ package com.vaticle.typedb.core.common.iterator.sorted;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.ConsumeHandledIterator;
 import com.vaticle.typedb.core.common.iterator.DistinctIterator;
 import com.vaticle.typedb.core.common.iterator.ErrorHandledIterator;
 import com.vaticle.typedb.core.common.iterator.FlatMappedIterator;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
-import com.vaticle.typedb.core.common.iterator.LimitedIterator;
 import com.vaticle.typedb.core.common.iterator.LinkedIterators;
 import com.vaticle.typedb.core.common.iterator.MappedIterator;
 import com.vaticle.typedb.core.common.iterator.OffsetIterator;
@@ -37,9 +35,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -71,7 +71,7 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
     }
 
     @Override
-    public <U extends Comparable<U>, ORD extends Order> Seekable<U, ORD> mergeMap(ORD order, Function<T, Seekable<U, ORD>> mappingFn) {
+    public <U extends Comparable<? super U>, ORD extends Order> Seekable<U, ORD> mergeMap(ORD order, Function<T, Seekable<U, ORD>> mappingFn) {
         return new MergeMappedIterator.Seekable<>(order, this, mappingFn);
     }
 
@@ -112,8 +112,8 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
     }
 
     @Override
-    public FunctionalIterator<T> limit(long limit) {
-        return new LimitedIterator<>(this, limit);
+    public SortedIterator<T, ORDER> limit(long limit) {
+        return new LimitedSortedIterator<>(this, limit);
     }
 
     @Override
@@ -128,7 +128,7 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
     }
 
     @Override
-    public FunctionalIterator<T> noNulls() {
+    public SortedIterator<T, ORDER> noNulls() {
         return this.filter(Objects::nonNull);
     }
 
@@ -240,6 +240,13 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
         forEachRemaining(linkedSet::add);
         recycle();
         return linkedSet;
+    }
+
+    @Override
+    public NavigableSet<T> toNavigableSet() {
+        NavigableSet<T> set = new TreeSet<>();
+        this.forEachRemaining(set::add);
+        return set;
     }
 
     @Override

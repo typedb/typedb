@@ -22,6 +22,9 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
@@ -43,8 +46,10 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -58,10 +63,12 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeGraph.INVALID_SCHEMA_WRITE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
@@ -113,18 +120,18 @@ public class TypeGraph {
 
     static class Cache {
 
-        private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownedAttributeTypes;
-        private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownersOfAttributeTypes;
+        private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> ownedAttributeTypes;
+        private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> ownersOfAttributeTypes;
         private final ConcurrentMap<Label, Set<Label>> resolvedRoleTypeLabels;
-        private final ConcurrentMap<Encoding.ValueType, Set<TypeVertex>> valueAttributeTypes;
-        private Set<TypeVertex> entityTypes;
-        private Set<TypeVertex> relationTypes;
-        private Set<TypeVertex> roleTypes;
-        private Set<TypeVertex> playerTypes;
-        private Set<TypeVertex> roleTypesPlayed;
-        private Set<TypeVertex> attributeTypes;
-        private Set<TypeVertex> attributeTypesOwned;
-        private Set<TypeVertex> attributeOwnerTypes;
+        private final ConcurrentMap<Encoding.ValueType, NavigableSet<TypeVertex>> valueAttributeTypes;
+        private NavigableSet<TypeVertex> entityTypes;
+        private NavigableSet<TypeVertex> relationTypes;
+        private NavigableSet<TypeVertex> roleTypes;
+        private NavigableSet<TypeVertex> playerTypes;
+        private NavigableSet<TypeVertex> roleTypesPlayed;
+        private NavigableSet<TypeVertex> attributeTypes;
+        private NavigableSet<TypeVertex> attributeTypesOwned;
+        private NavigableSet<TypeVertex> attributeOwnerTypes;
 
         Cache() {
             ownedAttributeTypes = new ConcurrentHashMap<>();
@@ -206,88 +213,98 @@ public class TypeGraph {
         return getType(ROLE.label(), ROLE.scope());
     }
 
-    public FunctionalIterator<TypeVertex> thingTypes() {
-        return tree(rootThingType(), v -> v.ins().edge(SUB).from());
+    public Seekable<TypeVertex, Order.Asc> thingTypes() {
+        // TODO: we can't make a seekable tree iterator without consuming the entire iterator?
+        // TODO: this should cache
+        TreeSet<TypeVertex> thingTypes = new TreeSet<>();
+        tree(rootThingType(), v -> v.ins().edge(SUB).from()).forEachRemaining(thingTypes::add);
+        return iterateSorted(ASC, thingTypes);
     }
 
-    public FunctionalIterator<TypeVertex> getSubtypes(TypeVertex type) {
-        return tree(type, v -> v.ins().edge(SUB).from());
+    public Seekable<TypeVertex, Order.Asc> getSubtypes(TypeVertex type) {
+        // TODO: we can't make a seekable tree iterator without consuming the entire iterator?
+        // TODO: this should cache
+        TreeSet<TypeVertex> subtypes = new TreeSet<>();
+        tree(type, v -> v.ins().edge(SUB).from()).forEachRemaining(subtypes::add);
+        return iterateSorted(ASC, subtypes);
     }
 
-    public FunctionalIterator<TypeVertex> entityTypes() {
-        if (cache.entityTypes == null) cache.entityTypes = getSubtypes(rootEntityType()).toSet();
-        return iterate(cache.entityTypes);
+    public Seekable<TypeVertex, Order.Asc> entityTypes() {
+        if (cache.entityTypes == null) cache.entityTypes = getSubtypes(rootEntityType()).toNavigableSet();
+        return iterateSorted(ASC, cache.entityTypes);
     }
 
-    public FunctionalIterator<TypeVertex> attributeTypes() {
-        if (cache.attributeTypes == null) cache.attributeTypes = getSubtypes(rootAttributeType()).toSet();
-        return iterate(cache.attributeTypes);
+    public Seekable<TypeVertex, Order.Asc> attributeTypes() {
+        if (cache.attributeTypes == null) cache.attributeTypes = getSubtypes(rootAttributeType()).toNavigableSet();
+        return iterateSorted(ASC, cache.attributeTypes);
     }
 
-    public FunctionalIterator<TypeVertex> attributeTypes(Encoding.ValueType valueType) {
-        return iterate(cache.valueAttributeTypes.computeIfAbsent(valueType,
-                vt -> attributeTypes().filter(at -> at.valueType().equals(valueType)).toSet()));
+    public Seekable<TypeVertex, Order.Asc> attributeTypes(Encoding.ValueType valueType) {
+        return iterateSorted(ASC, cache.valueAttributeTypes.computeIfAbsent(valueType,
+                vt -> attributeTypes().filter(at -> at.valueType().equals(valueType)).toNavigableSet()));
     }
 
-    public FunctionalIterator<TypeVertex> relationTypes() {
-        if (cache.relationTypes == null) cache.relationTypes = getSubtypes(rootRelationType()).toSet();
-        return iterate(cache.relationTypes);
+    public Seekable<TypeVertex, Order.Asc> relationTypes() {
+        if (cache.relationTypes == null) cache.relationTypes = getSubtypes(rootRelationType()).toNavigableSet();
+        return iterateSorted(ASC, cache.relationTypes);
     }
 
-    public FunctionalIterator<TypeVertex> roleTypes() {
-        if (cache.roleTypes == null) cache.roleTypes = getSubtypes(rootRoleType()).toSet();
-        return iterate(cache.roleTypes);
+    public Seekable<TypeVertex, Order.Asc> roleTypes() {
+        if (cache.roleTypes == null) cache.roleTypes = getSubtypes(rootRoleType()).toNavigableSet();
+        return iterateSorted(ASC, cache.roleTypes);
     }
 
-    public FunctionalIterator<TypeVertex> playerTypes() {
+    public Seekable<TypeVertex, Order.Asc> playerTypes() {
         if (cache.playerTypes == null) {
-            cache.playerTypes = getSubtypes(rootThingType())
+            TreeSet<TypeVertex> playerTypes = new TreeSet<>();
+            getSubtypes(rootThingType())
                     .filter(type -> type.outs().edge(Encoding.Edge.Type.PLAYS).to().first().isPresent())
-                    .flatMap(this::getSubtypes).toSet();
+                    .flatMap(this::getSubtypes).forEachRemaining(playerTypes::add);
+            cache.playerTypes = playerTypes;
         }
-        return iterate(cache.playerTypes);
+        return iterateSorted(ASC, cache.playerTypes);
     }
 
-    public FunctionalIterator<TypeVertex> roleTypesPlayed() {
+    public Seekable<TypeVertex, Order.Asc> roleTypesPlayed() {
         if (cache.roleTypesPlayed == null) {
             cache.roleTypesPlayed = getSubtypes(rootRoleType())
                     .filter(roleType -> roleType.ins().edge(Encoding.Edge.Type.PLAYS).from().first().isPresent())
-                    .toSet();
+                    .toNavigableSet();
         }
-        return iterate(cache.roleTypesPlayed);
+        return iterateSorted(ASC, cache.roleTypesPlayed);
     }
 
-    public FunctionalIterator<TypeVertex> attributeOwnerTypes() {
+    public Seekable<TypeVertex, Order.Asc> attributeOwnerTypes() {
         if (cache.attributeOwnerTypes == null) {
-            cache.attributeOwnerTypes = getSubtypes(rootThingType())
+            TreeSet<TypeVertex> ownerTypes = new TreeSet<>();
+            getSubtypes(rootThingType())
                     .filter(type -> type.outs().edge(OWNS).to().first().isPresent() ||
                             type.outs().edge(OWNS_KEY).to().first().isPresent())
-                    .flatMap(this::getSubtypes).toSet();
+                    .flatMap(this::getSubtypes).forEachRemaining(ownerTypes::add);
+            cache.attributeOwnerTypes = ownerTypes;
         }
-        return iterate(cache.attributeOwnerTypes);
+        return iterateSorted(ASC, cache.attributeOwnerTypes);
     }
 
-    public FunctionalIterator<TypeVertex> attributeTypesOwned() {
+    public Seekable<TypeVertex, Order.Asc> attributeTypesOwned() {
         if (cache.attributeTypesOwned == null) {
             cache.attributeTypesOwned = getSubtypes(rootAttributeType())
                     .filter(attrType -> attrType.ins().edge(OWNS).from().first().isPresent() ||
-                            attrType.ins().edge(OWNS_KEY).from().first().isPresent()).toSet();
+                            attrType.ins().edge(OWNS_KEY).from().first().isPresent()).toNavigableSet();
         }
-        return iterate(cache.attributeTypesOwned);
+        return iterateSorted(ASC, cache.attributeTypesOwned);
     }
 
-    public Set<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
-        Supplier<Set<TypeVertex>> fn = () -> link(
-                list(owner.outs().edge(OWNS).to(), owner.outs().edge(OWNS_KEY).to())
-        ).toSet();
+    public NavigableSet<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
+        Supplier<NavigableSet<TypeVertex>> fn = () -> owner.outs().edge(OWNS).to()
+                .merge(owner.outs().edge(OWNS_KEY).to()).toNavigableSet();
         if (isReadOnly) return cache.ownedAttributeTypes.computeIfAbsent(owner, o -> fn.get());
         else return fn.get();
     }
 
-    public Set<TypeVertex> ownersOfAttributeType(TypeVertex attType) {
-        Supplier<Set<TypeVertex>> fn = () -> link(
-                attType.ins().edge(OWNS).from(), attType.ins().edge(OWNS_KEY).from()
-        ).toSet();
+    public NavigableSet<TypeVertex> ownersOfAttributeType(TypeVertex attType) {
+        Supplier<NavigableSet<TypeVertex>> fn = () -> attType.ins().edge(OWNS).from()
+                .merge(attType.ins().edge(OWNS_KEY).from()).toNavigableSet();
         if (isReadOnly) return cache.ownersOfAttributeTypes.computeIfAbsent(attType, a -> fn.get());
         else return fn.get();
     }

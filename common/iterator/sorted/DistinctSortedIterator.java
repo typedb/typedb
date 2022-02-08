@@ -83,7 +83,7 @@ public class DistinctSortedIterator<T extends Comparable<? super T>, ORDER exten
 
         @Override
         public final SortedIterator.Seekable<T, ORDER> merge(SortedIterator.Seekable<T, ORDER> iterator) {
-            return Iterators.Sorted.Seekable.merge( this, iterator);
+            return Iterators.Sorted.Seekable.merge(this, iterator);
         }
 
         @Override
@@ -100,6 +100,11 @@ public class DistinctSortedIterator<T extends Comparable<? super T>, ORDER exten
         @Override
         public SortedIterator.Seekable<T, ORDER> filter(Predicate<T> predicate) {
             return Iterators.Sorted.Seekable.filter(this, predicate);
+        }
+
+        @Override
+        public SortedIterator.Seekable<T, ORDER> limit(long limit) {
+            return Iterators.Sorted.Seekable.limit(this, limit);
         }
 
         @Override
