@@ -82,7 +82,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
         private static final String description = "Server and networking configuration.";
 
         private static final Predefined<InetSocketAddress> address =
-                predefined("address", "Address to listen for GRPC clients on.", INET_SOCKET_ADDRESS);
+                predefined("address", "Address to listen for TypeDB Clients on.", INET_SOCKET_ADDRESS);
         private static final Set<Predefined<?>> parsers = set(address);
 
         @Override
