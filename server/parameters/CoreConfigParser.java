@@ -423,10 +423,10 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
         }
     }
 
-    private static class VaticleFactory extends Compound<CoreConfig.VaticleFactory> {
+    public static class VaticleFactory extends Compound<CoreConfig.VaticleFactory> {
 
-        private static final String name = "vaticle-factory";
-        private static final String description = "Configure Vaticle Factory connection.";
+        public static final String name = "vaticle-factory";
+        public static final String description = "Configure Vaticle Factory connection.";
 
         private static final Predefined<Boolean> enable =
                 predefined("enable", "Enable Vaticle Factory tracing.", BOOLEAN);
@@ -458,7 +458,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
         }
     }
 
-    private static void validatePredefinedKeys(Set<Predefined<?>> predefinedParsers, Set<String> keys, String path) {
+    public static void validatePredefinedKeys(Set<Predefined<?>> predefinedParsers, Set<String> keys, String path) {
         Set<String> unrecognisedKeys = new HashSet<>(keys);
         predefinedParsers.forEach(parser -> unrecognisedKeys.remove(parser.key()));
         if (!unrecognisedKeys.isEmpty()) {
