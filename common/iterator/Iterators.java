@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.common.iterator.sorted.ConsumeHandledSortedIterat
 import com.vaticle.typedb.core.common.iterator.sorted.DistinctSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.FilteredSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.FinaliseSortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.LimitedSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.MappedSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.MergeMappedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
@@ -35,6 +36,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -139,6 +141,11 @@ public class Iterators {
             return new FilteredSortedIterator<>(iterator, predicate);
         }
 
+        public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator<T, ORDER> limit(SortedIterator<T, ORDER> iterator,
+                                                                                                            long limit) {
+            return new LimitedSortedIterator<>(iterator, limit);
+        }
+
         public static <T extends Comparable<? super T>, U extends Comparable<? super U>, ORDER extends Order>
         SortedIterator<U, ORDER> mapSorted(ORDER order, SortedIterator<T, ?> iterator, Function<T, U> mappingFn) {
             return new MappedSortedIterator<>(order, iterator, mappingFn);
@@ -164,8 +171,17 @@ public class Iterators {
 
         public static class Seekable {
 
-            public static <T extends Comparable<T>> SortedIterator.Seekable<T, Order.Asc> emptySorted() {
-                return iterateSorted(SortedIterator.ASC, new ConcurrentSkipListSet<T>());
+            public static <T extends Comparable<? super T>> SortedIterator.Seekable<T, Order.Asc> emptySorted() {
+                return iterateSorted(SortedIterator.ASC, new TreeSet<T>());
+            }
+
+            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> iterateSorted(ORDER order, Collection<T> elements) {
+                return new BaseSeekableIterator<>(order, new TreeSet<>(elements));
+            }
+
+            @SafeVarargs
+            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> iterateSorted(ORDER order, T... elements) {
+                return new BaseSeekableIterator<>(order, new TreeSet<>(list(elements)));
             }
 
             public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> iterateSorted(ORDER order, NavigableSet<T> set) {
@@ -179,6 +195,11 @@ public class Iterators {
             public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> filter(SortedIterator.Seekable<T, ORDER> iterator,
                                                                                                                           Predicate<T> predicate) {
                 return new FilteredSortedIterator.Seekable<>(iterator, predicate);
+            }
+
+            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> limit(SortedIterator.Seekable<T, ORDER> iterator,
+                                                                                                                         long limit) {
+                return new LimitedSortedIterator.Seekable<>(iterator, limit);
             }
 
             @SafeVarargs

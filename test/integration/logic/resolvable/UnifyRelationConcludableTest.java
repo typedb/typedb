@@ -1206,6 +1206,13 @@ public class UnifyRelationConcludableTest {
         Iterator<? extends Thing> instances = iterate(conceptMgr.getRootThingType().getInstances());
         return unifier.reverseUnifier().keySet().stream()
                 .filter(var -> !ans.contains(var.asRetrievable()))
-                .collect(Collectors.toMap(var -> var, var -> instances.next()));
+                .collect(Collectors.toMap(var -> var, var -> {
+                    if (unifier.unifiedRequirements().isaExplicit().containsKey(var.asRetrievable())) {
+                        return conceptMgr.getThingType(unifier.unifiedRequirements().isaExplicit().get(var.asRetrievable()).iterator().next().name())
+                                .getInstances().first().get();
+                    } else {
+                        return instances.next();
+                    }
+                }));
     }
 }

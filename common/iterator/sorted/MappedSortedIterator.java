@@ -155,6 +155,11 @@ public class MappedSortedIterator<
         }
 
         @Override
+        public SortedIterator.Seekable<U, ORDER> limit(long limit) {
+            return Iterators.Sorted.Seekable.limit(this, limit);
+        }
+
+        @Override
         public SortedIterator.Seekable<U, ORDER> onConsumed(Runnable function) {
             return Iterators.Sorted.Seekable.onConsume(this, function);
         }

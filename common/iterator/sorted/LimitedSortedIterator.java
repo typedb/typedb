@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.common.iterator.sorted;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.Iterators;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
 import java.util.NoSuchElementException;
 import java.util.function.Function;
@@ -28,42 +27,44 @@ import java.util.function.Predicate;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 
-public class FilteredSortedIterator<T extends Comparable<? super T>, ORDER extends Order, ITER extends SortedIterator<T, ORDER>>
+public class LimitedSortedIterator<T extends Comparable<? super T>, ORDER extends SortedIterator.Order, ITER extends SortedIterator<T, ORDER>>
         extends AbstractSortedIterator<T, ORDER> {
 
-    private final Predicate<T> predicate;
+    private final long limit;
+    private long counter;
     final ITER iterator;
-    T next;
     T last;
 
-    public FilteredSortedIterator(ITER iterator, Predicate<T> predicate) {
+
+    public LimitedSortedIterator(ITER iterator, long limit) {
         super(iterator.order());
         this.iterator = iterator;
-        this.predicate = predicate;
+        this.limit = limit;
+        this.counter = 0L;
     }
 
     @Override
     public boolean hasNext() {
-        return (next != null) || fetchAndCheck();
-    }
-
-    private boolean fetchAndCheck() {
-        while (iterator.hasNext() && !predicate.test(next = iterator.next())) next = null;
-        return next != null;
+        if (counter < limit && iterator.hasNext()) {
+            return true;
+        } else {
+            recycle();
+            return false;
+        }
     }
 
     @Override
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
-        last = next;
-        next = null;
+        counter++;
+        last = iterator.next();
         return last;
     }
 
     @Override
     public T peek() {
         if (!hasNext()) throw new NoSuchElementException();
-        return next;
+        return iterator.peek();
     }
 
     @Override
@@ -71,19 +72,19 @@ public class FilteredSortedIterator<T extends Comparable<? super T>, ORDER exten
         iterator.recycle();
     }
 
+
     public static class Seekable<T extends Comparable<? super T>, ORDER extends Order>
-            extends FilteredSortedIterator<T, ORDER, SortedIterator.Seekable<T, ORDER>>
+            extends LimitedSortedIterator<T, ORDER, SortedIterator.Seekable<T, ORDER>>
             implements SortedIterator.Seekable<T, ORDER> {
 
-        public Seekable(SortedIterator.Seekable<T, ORDER> source, Predicate<T> predicate) {
-            super(source, predicate);
+        public Seekable(SortedIterator.Seekable<T, ORDER> source, long limit) {
+            super(source, limit);
         }
 
         @Override
         public void seek(T target) {
             if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
             iterator.seek(target);
-            next = null;
         }
 
         @Override
