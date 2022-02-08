@@ -97,6 +97,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
                 traversal.relating(owner.id(), role);
                 traversal.playing(player.id(), role);
                 traversal.isa(role, rolePlayer.roleType().get().id());
+                traversal.types(role, rolePlayer.inferredRoleTypes());
             } else {
                 traversal.rolePlayer(owner.id(), player.id(), rolePlayer.inferredRoleTypes(), rep);
             }
