@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.common.optimiser.OptimiserConstraint;
 import com.vaticle.typedb.core.common.optimiser.OptimiserVariable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
@@ -31,21 +30,15 @@ import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.vaticle.typedb.common.collection.Collections.pair;
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
 import static com.vaticle.typedb.core.graph.common.Encoding.Direction.Edge.BACKWARD;
 import static com.vaticle.typedb.core.graph.common.Encoding.Direction.Edge.FORWARD;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.ISA;
@@ -59,7 +52,6 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.traversal.planner.GraphPlanner.INIT_ZERO;
-import static java.util.stream.Collectors.toSet;
 
 public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_TO extends PlannerVertex<?>>
         extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {
@@ -399,25 +391,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 if (isSelfClosure() || to().props().hasIID()) {
                     cost = 1;
                 } else if (predicate.operator().equals(PredicateOperator.Equality.EQ)) {
-                    if (!to.props().types().isEmpty()) {
-                        cost = to.props().types().size();
-                    } else if (!from.props().types().isEmpty()) {
-                        cost = graphMgr.schema().stats().attTypesWithValTypeComparableTo(from.props().types());
-                    } else {
-                        cost = graphMgr.schema().stats().attributeTypeCount();
-                    }
+                    cost = to.props().types().size();
                 } else {
-                    if (!to.props().types().isEmpty()) {
-                        cost = graphMgr.data().stats().thingVertexSum(to.props().types());
-                    } else if (!from.props().types().isEmpty()) {
-                        Stream<TypeVertex> types = iterate(from.props().types())
-                                .map(l -> graphMgr.schema().getType(l)).filter(TypeVertex::isAttributeType)
-                                .flatMap(at -> iterate(at.valueType().comparables()))
-                                .flatMap(vt -> graphMgr.schema().attributeTypes(vt)).stream();
-                        cost = graphMgr.data().stats().thingVertexSum(types);
-                    } else {
-                        cost = graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootAttributeType());
-                    }
+                    cost = graphMgr.data().stats().thingVertexSum(to.props().types());
                 }
                 assert !Double.isNaN(cost);
                 setObjectiveCoefficient(cost);
@@ -536,13 +512,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 @Override
                 void updateObjective(GraphManager graphMgr) {
                     long cost;
-                    if (!isTransitive) {
-                        cost = 1;
-                    } else if (!to.props().labels().isEmpty()) {
-                        cost = graphMgr.schema().stats().subTypesDepth(to.props().labels());
-                    } else {
-                        cost = graphMgr.schema().stats().subTypesDepth(graphMgr.schema().rootThingType());
-                    }
+                    if (!isTransitive) cost = 1;
+                    else cost = graphMgr.schema().stats().subTypesDepth(to.props().labels());
                     assert !Double.isNaN(cost);
                     setObjectiveCoefficient(cost);
                 }
@@ -557,19 +528,12 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 @Override
                 void updateObjective(GraphManager graphMgr) {
                     long cost;
-                    Set<Label> fromLabels = from.props().labels(), toTypes = to.props().types();
                     if (to().props().hasIID()) {
                         cost = 1;
-                    } else if (!toTypes.isEmpty()) {
-                        if (!isTransitive) cost = graphMgr.data().stats().thingVertexMax(toTypes);
-                        else cost = graphMgr.data().stats().thingVertexTransitiveMax(toTypes, toTypes);
-                    } else if (!fromLabels.isEmpty()) {
-                        if (!isTransitive) cost = graphMgr.data().stats().thingVertexMax(fromLabels);
-                        else cost = graphMgr.data().stats().thingVertexTransitiveMax(fromLabels, toTypes);
                     } else {
-                        Stream<TypeVertex> types = graphMgr.schema().thingTypes().stream();
-                        if (!isTransitive) cost = graphMgr.data().stats().thingVertexMax(types);
-                        else cost = graphMgr.data().stats().thingVertexTransitiveMax(types, set());
+                        Set<Label> toTypes = to.props().types();
+                        if (!isTransitive) cost = graphMgr.data().stats().thingVertexMax(toTypes);
+                        else cost = graphMgr.data().stats().thingVertexTransitiveMax(toTypes);
                     }
                     assert !Double.isNaN(cost);
                     setObjectiveCoefficient(cost);
@@ -1092,49 +1056,23 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                     @Override
                     void updateObjective(GraphManager graphMgr) {
-                        Set<TypeVertex> ownerTypes = null;
-                        Set<TypeVertex> attTypes = null;
-                        Map<TypeVertex, Set<TypeVertex>> ownerToAttributeTypes = new HashMap<>();
-
                         if (isSelfClosure() || to().props().hasIID()) {
                             setObjectiveCoefficient(1);
                             return;
                         }
 
-                        if (!from.props().types().isEmpty()) {
-                            ownerTypes = from.props().types().stream()
-                                    .map(l -> graphMgr.schema().getType(l)).collect(toSet());
-                        }
-                        if (!to.props().types().isEmpty()) {
-                            attTypes = to.props().types().stream()
-                                    .map(l -> graphMgr.schema().getType(l)).collect(toSet());
-                        }
-
-                        if (ownerTypes != null && attTypes != null) {
-                            for (TypeVertex ownerType : ownerTypes)
-                                ownerToAttributeTypes.put(ownerType, attTypes);
-                        } else if (ownerTypes != null) {
-                            ownerTypes.stream().map(o -> pair(o, graphMgr.schema().ownedAttributeTypes(o))).forEach(
-                                    pair -> ownerToAttributeTypes.put(pair.first(), pair.second())
-                            );
-                        } else if (attTypes != null) {
-                            attTypes.stream().flatMap(a -> graphMgr.schema().ownersOfAttributeType(a).stream().map(o -> pair(o, a)))
-                                    .forEach(pair -> ownerToAttributeTypes.computeIfAbsent(pair.first(), o -> new HashSet<>())
-                                            .add(pair.second()));
-                        } else { // ownerTypes == null && attTypes == null;
-                            // TODO: We can refine this by not strictly considering entities being the only divisor
-                            ownerToAttributeTypes.put(graphMgr.schema().rootEntityType(), set(graphMgr.schema().rootAttributeType()));
-                        }
+                        Set<TypeVertex> ownerTypes = iterate(from.props().types()).map(l -> graphMgr.schema().getType(l)).toSet();
+                        Set<TypeVertex> attTypes = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).toSet();
 
                         double cost = 0.0;
-                        for (TypeVertex owner : ownerToAttributeTypes.keySet()) {
+                        for (TypeVertex owner : ownerTypes) {
                             double div = graphMgr.data().stats().thingVertexCount(owner);
                             if (div > 0) {
-                                cost += graphMgr.data().stats().hasEdgeSum(owner, ownerToAttributeTypes.get(owner)) / div;
+                                cost += graphMgr.data().stats().hasEdgeSum(owner, attTypes) / div;
                             }
                         }
-                        assert !ownerToAttributeTypes.isEmpty();
-                        cost /= ownerToAttributeTypes.size();
+                        assert !ownerTypes.isEmpty();
+                        cost /= ownerTypes.size();
                         assert !Double.isNaN(cost);
                         setObjectiveCoefficient(cost);
                     }
@@ -1148,46 +1086,23 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                     @Override
                     void updateObjective(GraphManager graphMgr) {
-                        Set<TypeVertex> ownerTypes = null;
-                        Set<TypeVertex> attTypes = null;
-                        Map<TypeVertex, Set<TypeVertex>> attributeTypesToOwners = new HashMap<>();
-
                         if (isSelfClosure() || to().props().hasIID()) {
                             setObjectiveCoefficient(1);
                             return;
                         }
-                        if (!from.props().types().isEmpty()) {
-                            attTypes = from.props().types().stream()
-                                    .map(l -> graphMgr.schema().getType(l)).collect(toSet());
-                        }
-                        if (!to.props().types().isEmpty()) {
-                            ownerTypes = to.props().types().stream()
-                                    .map(l -> graphMgr.schema().getType(l)).collect(toSet());
-                        }
 
-                        if (ownerTypes != null && attTypes != null) {
-                            for (TypeVertex attType : attTypes) attributeTypesToOwners.put(attType, ownerTypes);
-                        } else if (attTypes != null) {
-                            attTypes.stream().map(a -> pair(a, graphMgr.schema().ownersOfAttributeType(a))).forEach(
-                                    pair -> attributeTypesToOwners.put(pair.first(), pair.second())
-                            );
-                        } else if (ownerTypes != null) {
-                            ownerTypes.stream().flatMap(o -> graphMgr.schema().ownedAttributeTypes(o).stream().map(a -> pair(a, o)))
-                                    .forEach(pair -> attributeTypesToOwners.computeIfAbsent(pair.first(), a -> new HashSet<>())
-                                            .add(pair.second()));
-                        } else { // ownerTypes == null && attTypes == null;
-                            attributeTypesToOwners.put(graphMgr.schema().rootAttributeType(), set(graphMgr.schema().rootThingType()));
-                        }
+                        Set<TypeVertex> attTypes = iterate(from.props().types()).map(l -> graphMgr.schema().getType(l)).toSet();
+                        Set<TypeVertex> ownerTypes = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).toSet();
 
                         double cost = 0.0;
-                        for (TypeVertex owner : attributeTypesToOwners.keySet()) {
-                            double div = graphMgr.data().stats().thingVertexCount(owner);
+                        for (TypeVertex attr : attTypes) {
+                            double div = graphMgr.data().stats().thingVertexCount(attr);
                             if (div > 0) {
-                                cost += graphMgr.data().stats().hasEdgeSum(attributeTypesToOwners.get(owner), owner) / div;
+                                cost += graphMgr.data().stats().hasEdgeSum(ownerTypes, attr) / div;
                             }
                         }
-                        assert !attributeTypesToOwners.isEmpty();
-                        cost /= attributeTypesToOwners.size();
+                        assert !attTypes.isEmpty();
+                        cost /= attTypes.size();
                         assert !Double.isNaN(cost);
                         setObjectiveCoefficient(cost);
                     }
@@ -1233,16 +1148,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     void updateObjective(GraphManager graphMgr) {
                         assert !to.props().hasIID();
                         double cost = 0.0;
-                        if (!to.props().types().isEmpty() && !from.props().types().isEmpty()) {
-                            double div = graphMgr.data().stats().thingVertexSum(from.props().types());
-                            if (div > 0) cost = graphMgr.data().stats().thingVertexSum(to.props().types()) / div;
-                        } else {
-                            // TODO: We can refine this by not strictly considering entities being the only divisor
-                            double div = graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootEntityType());
-                            if (div > 0) {
-                                cost = graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootRoleType()) / div;
-                            }
-                        }
+                        double div = graphMgr.data().stats().thingVertexSum(from.props().types());
+                        if (div > 0) cost = graphMgr.data().stats().thingVertexSum(to.props().types()) / div;
                         assert !Double.isNaN(cost);
                         setObjectiveCoefficient(cost);
                     }
@@ -1300,21 +1207,13 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     void updateObjective(GraphManager graphMgr) {
                         assert !to.props().hasIID();
                         double cost = 0;
-                        if (!to.props().types().isEmpty()) {
-                            cost = 0;
-                            for (Label roleType : to.props().types()) {
-                                assert roleType.scope().isPresent();
-                                double div = graphMgr.data().stats().thingVertexCount(Label.of(roleType.scope().get()));
-                                if (div > 0) cost += graphMgr.data().stats().thingVertexCount(roleType) / div;
-                            }
-                            assert !to.props().types().isEmpty();
-                            cost /= to.props().types().size();
-                        } else {
-                            double div = graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootRelationType());
-                            if (div > 0) {
-                                cost = graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootRoleType()) / div;
-                            }
+                        for (Label roleType : to.props().types()) {
+                            assert roleType.scope().isPresent();
+                            double div = graphMgr.data().stats().thingVertexCount(Label.of(roleType.scope().get()));
+                            if (div > 0) cost += graphMgr.data().stats().thingVertexCount(roleType) / div;
                         }
+                        assert !to.props().types().isEmpty();
+                        cost /= to.props().types().size();
                         assert !Double.isNaN(cost);
                         setObjectiveCoefficient(cost);
                     }
@@ -1336,10 +1235,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             public static class RolePlayer extends Thing {
 
                 private final Set<Label> roleTypes;
-                private Set<TypeVertex> resolvedRoleTypes;
 
                 RolePlayer(PlannerVertex.Thing from, PlannerVertex.Thing to, Set<Label> roleTypes) {
                     super(from, to, ROLEPLAYER);
+                    assert !roleTypes.isEmpty();
                     this.roleTypes = roleTypes;
                 }
 
@@ -1347,14 +1246,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 protected void initialiseDirectionalEdges() {
                     forward = new Forward(from.asThing(), to.asThing());
                     backward = new Backward(to.asThing(), from.asThing());
-                }
-
-                Set<TypeVertex> resolvedRoleTypes(TypeGraph graph) {
-                    if (resolvedRoleTypes == null) {
-                        resolvedRoleTypes = iterate(roleTypes).map(graph::getType)
-                                .flatMap(rt -> tree(rt, r -> r.ins().edge(SUB).from())).toSet();
-                    }
-                    return resolvedRoleTypes;
                 }
 
                 public abstract class Directional extends Thing.Directional {
@@ -1386,25 +1277,20 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                     @Override
                     void updateObjective(GraphManager graphMgr) {
-                        double cost = 0;
                         if (isSelfClosure() || to.props().hasIID()) {
-                            cost = 1;
-                        } else if (!roleTypes.isEmpty()) {
-                            cost = 0;
-                            for (TypeVertex roleType : resolvedRoleTypes(graphMgr.schema())) {
-                                // TODO: roleType.scope() could be made to return the relation type vertex (optionally)
-                                assert roleType.isRoleType() && roleType.properLabel().scope().isPresent();
-                                double div = graphMgr.data().stats().thingVertexCount(Label.of(roleType.properLabel().scope().get()));
-                                if (div > 0) cost += graphMgr.data().stats().thingVertexCount(roleType) / div;
-                            }
-                            assert !roleTypes.isEmpty();
-                            cost = cost / roleTypes.size();
-                        } else {
-                            double div = graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootRelationType());
-                            if (div > 0) {
-                                cost = graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootRoleType()) / div;
-                            }
+                            setObjectiveCoefficient(1);
+                            return;
                         }
+
+                        double cost = 0;
+                        Set<TypeVertex> roleTypeVertices = iterate(this.roleTypes()).map(graphMgr.schema()::getType).toSet();
+                        for (TypeVertex roleType : roleTypeVertices) {
+                            assert roleType.isRoleType() && roleType.properLabel().scope().isPresent();
+                            double div = graphMgr.data().stats().thingVertexCount(Label.of(roleType.properLabel().scope().get()));
+                            if (div > 0) cost += graphMgr.data().stats().thingVertexCount(roleType) / div;
+                        }
+                        assert !roleTypeVertices.isEmpty();
+                        cost = cost / roleTypeVertices.size();
                         assert !Double.isNaN(cost);
                         setObjectiveCoefficient(cost);
                     }
@@ -1418,19 +1304,13 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                     @Override
                     void updateObjective(GraphManager graphMgr) {
-                        double cost = 0;
                         if (isSelfClosure() || to.props().hasIID()) {
-                            cost = 1;
-                        } else if (!roleTypes.isEmpty() && !from.props().types().isEmpty()) {
-                            double div = graphMgr.data().stats().thingVertexSum(from.props().types());
-                            if (div > 0) cost = graphMgr.data().stats().thingVertexSum(roleTypes) / div;
-                        } else {
-                            // TODO: We can refine this by not strictly considering entities being the only divisor
-                            double div = graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootEntityType());
-                            if (div > 0) {
-                                cost = graphMgr.data().stats().thingVertexTransitiveCount(graphMgr.schema().rootRoleType()) / div;
-                            }
+                            setObjectiveCoefficient(1);
+                            return;
                         }
+                        double cost = 0;
+                        double div = graphMgr.data().stats().thingVertexSum(from.props().types());
+                        if (div > 0) cost = graphMgr.data().stats().thingVertexSum(roleTypes) / div;
                         assert !Double.isNaN(cost);
                         setObjectiveCoefficient(cost);
                     }
