@@ -179,7 +179,6 @@ public class TraversalTest {
             TypeQLDefine query = TypeQL.parseQuery("define " +
                     "lastname sub attribute, value string; " +
                     "person sub entity, owns lastname; "
-
             );
             transaction.query().define(query);
             transaction.commit();
@@ -221,9 +220,11 @@ public class TraversalTest {
 
             ProcedureVertex.Thing _0 = proc.anonymousThing(0);
             _0.props().predicate(Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ));
+            _0.props().types(set(Label.of("name")));
 
             ProcedureVertex.Thing _1 = proc.anonymousThing(1);
             _1.props().predicate(Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ));
+            _1.props().types(set(Label.of("name")));
 
             ProcedureVertex.Thing f1 = proc.namedThing("f1");
             f1.props().types(set(Label.of("friendship")));
@@ -236,9 +237,11 @@ public class TraversalTest {
 
             ProcedureVertex.Thing r1 = proc.namedThing("r1");
             r1.props().predicate(Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG));
+            r1.props().types(set(Label.of("ref")));
 
             ProcedureVertex.Thing r2 = proc.namedThing("r2");
             r2.props().predicate(Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG));
+            r2.props().types(set(Label.of("ref")));
 
             ProcedureVertex.Thing x = proc.namedThing("x");
             x.props().types(set(Label.of("person")));

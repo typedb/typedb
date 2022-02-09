@@ -298,13 +298,13 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         public static Relation of(RelationConstraint relation, @Nullable IsaConstraint isa, Set<LabelConstraint> labels) {
-            Conjunction.Cloner cloner;
+            Conjunction.ConstraintCloner cloner;
             IsaConstraint clonedIsa;
             if (isa == null) {
-                cloner = Conjunction.Cloner.cloneExactly(labels, relation);
+                cloner = Conjunction.ConstraintCloner.cloneExactly(labels, relation);
                 clonedIsa = null;
             } else {
-                cloner = Conjunction.Cloner.cloneExactly(labels, isa, relation);
+                cloner = Conjunction.ConstraintCloner.cloneExactly(labels, isa, relation);
                 clonedIsa = cloner.getClone(isa).asThing().asIsa();
             }
             return new Relation(cloner.conjunction(), cloner.getClone(relation).asThing().asRelation(), clonedIsa,
@@ -479,13 +479,13 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         public static Has of(HasConstraint has, @Nullable IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labels) {
-            Conjunction.Cloner cloner;
+            Conjunction.ConstraintCloner cloner;
             IsaConstraint clonedIsa;
             if (isa == null) {
-                cloner = Conjunction.Cloner.cloneExactly(values, has);
+                cloner = Conjunction.ConstraintCloner.cloneExactly(values, has);
                 clonedIsa = null;
             } else {
-                cloner = Conjunction.Cloner.cloneExactly(labels, values, isa, has);
+                cloner = Conjunction.ConstraintCloner.cloneExactly(labels, values, isa, has);
                 clonedIsa = cloner.getClone(isa).asThing().asIsa();
             }
             FunctionalIterator<ValueConstraint<?>> valueIt = iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue());
@@ -610,7 +610,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         public static Isa of(IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labelConstraints) {
-            Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(labelConstraints, values, isa);
+            Conjunction.ConstraintCloner cloner = Conjunction.ConstraintCloner.cloneExactly(labelConstraints, values, isa);
             FunctionalIterator<ValueConstraint<?>> valueIt = iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue());
             return new Isa(cloner.conjunction(), cloner.getClone(isa).asThing().asIsa(), valueIt.toSet());
         }
@@ -737,7 +737,7 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         public static Attribute of(ThingVariable attribute, Set<ValueConstraint<?>> values) {
             assert iterate(values).map(ThingConstraint::owner).toSet().equals(set(attribute));
-            Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(values);
+            Conjunction.ConstraintCloner cloner = Conjunction.ConstraintCloner.cloneExactly(values);
             assert cloner.conjunction().variables().size() == 1;
             FunctionalIterator<ValueConstraint<?>> valueIt = iterate(values).map(v -> cloner.getClone(v).asThing().asValue());
             return new Attribute(cloner.conjunction().variables().iterator().next().asThing(), valueIt.toSet());

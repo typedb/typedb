@@ -30,7 +30,7 @@ public class BaseSortedIterator<T extends Comparable<? super T>, ORDER extends O
     private final Iterator<T> iterator;
     private T next;
 
-    public BaseSortedIterator(ORDER order, List<T> source) {
+    public BaseSortedIterator(List<T> source, ORDER order) {
         super(order);
         assert isSorted(order, source);
         this.iterator = source.iterator();

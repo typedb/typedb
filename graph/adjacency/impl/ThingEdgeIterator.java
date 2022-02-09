@@ -49,7 +49,7 @@ public abstract class ThingEdgeIterator {
 
         @Override
         public Seekable<ThingVertex, Order.Asc> from() {
-            return edges.mapSorted(ASC, view -> view.edge().from(), this::targetEdge);
+            return edges.mapSorted(view -> view.edge().from(), this::targetEdge, ASC);
         }
 
         @Override
@@ -74,9 +74,9 @@ public abstract class ThingEdgeIterator {
             @Override
             public Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> fromAndOptimised() {
                 return edges.mapSorted(
-                        ASC,
                         edgeView -> KeyValue.of(edgeView.edge().from(), edgeView.edge().optimised().get()),
-                        fromAndOptimised -> targetEdge(fromAndOptimised.key())
+                        fromAndOptimised -> targetEdge(fromAndOptimised.key()),
+                        ASC
                 );
             }
 
@@ -106,7 +106,7 @@ public abstract class ThingEdgeIterator {
 
         @Override
         public Seekable<ThingVertex, Order.Asc> to() {
-            return edges.mapSorted(ASC, view -> view.edge().to(), this::targetEdge);
+            return edges.mapSorted(view -> view.edge().to(), this::targetEdge, ASC);
         }
 
         ThingEdge.View.Forward targetEdge(ThingVertex targetTo) {
@@ -127,9 +127,9 @@ public abstract class ThingEdgeIterator {
             @Override
             public Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> toAndOptimised() {
                 return edges.mapSorted(
-                        ASC,
                         edgeView -> KeyValue.of(edgeView.edge().to(), edgeView.edge().optimised().get()),
-                        toAndOptimised -> targetEdge(toAndOptimised.key())
+                        toAndOptimised -> targetEdge(toAndOptimised.key()),
+                        ASC
                 );
             }
 

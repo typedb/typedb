@@ -104,7 +104,7 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
     @Override
     SortedIterator<T, ORDER> limit(long limit);
 
-    <U extends Comparable<? super U>, ORD extends Order> SortedIterator<U, ORD> mapSorted(ORD order, Function<T, U> mappingFn);
+    <U extends Comparable<? super U>, ORD extends Order> SortedIterator<U, ORD> mapSorted(Function<T, U> mappingFn, ORD order);
 
     NavigableSet<T> toNavigableSet();
 
@@ -128,9 +128,7 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
 
         Seekable<T, ORDER> limit(long limit);
 
-        <U extends Comparable<? super U>, ORD extends Order> Seekable<U, ORD> mapSorted(ORD order,
-                                                                                        Function<T, U> mappingFn,
-                                                                                        Function<U, T> reverseMappingFn);
+        <U extends Comparable<? super U>, ORD extends Order> Seekable<U, ORD> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn, ORD order);
 
         @Override
         Seekable<T, ORDER> onConsumed(Runnable function);

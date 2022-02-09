@@ -49,7 +49,7 @@ public abstract class TypeEdgeIterator {
 
         @Override
         public Seekable<TypeVertex, Order.Asc> from() {
-            return edges.mapSorted(ASC, edgeView -> edgeView.edge().from(), this::targetEdge);
+            return edges.mapSorted(edgeView -> edgeView.edge().from(), this::targetEdge, ASC);
         }
 
         @Override
@@ -65,9 +65,9 @@ public abstract class TypeEdgeIterator {
         @Override
         public Seekable<KeyValue<TypeVertex, TypeVertex>, Order.Asc> fromAndOverridden() {
             return edges.mapSorted(
-                    ASC,
                     edgeView -> KeyValue.of(edgeView.edge().from(), edgeView.edge().overridden()),
-                    fromAndOverridden -> targetEdge(fromAndOverridden.key())
+                    fromAndOverridden -> targetEdge(fromAndOverridden.key()),
+                    ASC
             );
         }
 
@@ -95,7 +95,7 @@ public abstract class TypeEdgeIterator {
 
         @Override
         public Seekable<TypeVertex, Order.Asc> to() {
-            return edges.mapSorted(ASC, edgeView -> edgeView.edge().to(), this::targetEdge);
+            return edges.mapSorted(edgeView -> edgeView.edge().to(), this::targetEdge, ASC);
         }
 
         @Override
@@ -106,9 +106,9 @@ public abstract class TypeEdgeIterator {
         @Override
         public Seekable<KeyValue<TypeVertex, TypeVertex>, Order.Asc> toAndOverridden() {
             return edges.mapSorted(
-                    ASC,
                     edgeView -> KeyValue.of(edgeView.edge().to(), edgeView.edge().overridden()),
-                    toAndOverridden -> targetEdge(toAndOverridden.key())
+                    toAndOverridden -> targetEdge(toAndOverridden.key()),
+                    ASC
             );
         }
 

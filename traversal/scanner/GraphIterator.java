@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
-import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
@@ -310,7 +309,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                     else scoped.push(thingAndRole.value(), edge.order());
                     return true;
                 }
-            }).mapSorted(ASC, KeyValue::key, key -> KeyValue.of(key, null));
+            }).mapSorted(KeyValue::key, key -> KeyValue.of(key, null), ASC);
         } else {
             toIter = edge.branch(graphMgr, fromVertex, params);
         }

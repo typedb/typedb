@@ -37,7 +37,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -128,7 +127,7 @@ public class Iterators {
     public static class Sorted {
 
         public static <T extends Comparable<T>, ORDER extends Order> SortedIterator<T, ORDER> iterateSorted(ORDER order, List<T> list) {
-            return new BaseSortedIterator<>(order, list);
+            return new BaseSortedIterator<>(list, order);
         }
 
         public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator<T, ORDER> distinct(
@@ -148,16 +147,16 @@ public class Iterators {
 
         public static <T extends Comparable<? super T>, U extends Comparable<? super U>, ORDER extends Order>
         SortedIterator<U, ORDER> mapSorted(ORDER order, SortedIterator<T, ?> iterator, Function<T, U> mappingFn) {
-            return new MappedSortedIterator<>(order, iterator, mappingFn);
+            return new MappedSortedIterator<>(iterator, mappingFn, order);
         }
 
         @SafeVarargs
         public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator<T, ORDER> merge(SortedIterator<T, ORDER> iterator, SortedIterator<T, ORDER>... iterators) {
-            return new MergeMappedIterator<>(iterator.order(), iterate(list(list(iterators), iterator)), e -> e);
+            return new MergeMappedIterator<>(iterate(list(list(iterators), iterator)), e -> e, iterator.order());
         }
 
         public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator<T, ORDER> merge(ORDER order, FunctionalIterator<SortedIterator<T, ORDER>> iterators) {
-            return new MergeMappedIterator<>(order, iterators, e -> e);
+            return new MergeMappedIterator<>(iterators, e -> e, order);
         }
 
         public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator<T, ORDER> onConsume(SortedIterator<T, ORDER> iterator, Runnable onConsume) {
@@ -176,16 +175,16 @@ public class Iterators {
             }
 
             public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> iterateSorted(ORDER order, Collection<T> elements) {
-                return new BaseSeekableIterator<>(order, new TreeSet<>(elements));
+                return new BaseSeekableIterator<>(new TreeSet<>(elements), order);
             }
 
             @SafeVarargs
             public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> iterateSorted(ORDER order, T... elements) {
-                return new BaseSeekableIterator<>(order, new TreeSet<>(list(elements)));
+                return new BaseSeekableIterator<>(new TreeSet<>(list(elements)), order);
             }
 
             public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> iterateSorted(ORDER order, NavigableSet<T> set) {
-                return new BaseSeekableIterator<>(order, set);
+                return new BaseSeekableIterator<>(set, order);
             }
 
             public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> distinct(SortedIterator.Seekable<T, ORDER> iterator) {
@@ -204,16 +203,16 @@ public class Iterators {
 
             @SafeVarargs
             public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> merge(SortedIterator.Seekable<T, ORDER> iterator, SortedIterator.Seekable<T, ORDER>... iterators) {
-                return new MergeMappedIterator.Seekable<>(iterator.order(), iterate(list(list(iterators), iterator)), e -> e);
+                return new MergeMappedIterator.Seekable<>(iterate(list(list(iterators), iterator)), e -> e, iterator.order());
             }
 
             public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> merge(ORDER order, FunctionalIterator<SortedIterator.Seekable<T, ORDER>> iterators) {
-                return new MergeMappedIterator.Seekable<>(order, iterators, e -> e);
+                return new MergeMappedIterator.Seekable<>(iterators, e -> e, order);
             }
 
             public static <T extends Comparable<? super T>, U extends Comparable<? super U>, ORDER extends Order>
             SortedIterator.Seekable<U, ORDER> mapSorted(ORDER order, SortedIterator.Seekable<T, ?> iterator, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
-                return new MappedSortedIterator.Seekable<>(order, iterator, mappingFn, reverseMappingFn);
+                return new MappedSortedIterator.Seekable<>(iterator, mappingFn, reverseMappingFn, order);
             }
 
             public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> onConsume(SortedIterator.Seekable<T, ORDER> iterator,

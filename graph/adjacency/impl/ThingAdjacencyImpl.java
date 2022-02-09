@@ -97,9 +97,9 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
         assert encoding != ROLEPLAYER || lookahead.length >= 1;
         Key.Prefix<EdgeViewIID.Thing> prefix = edgeIIDPrefix(encoding, lookahead);
         return owner().graph().storage().iterate(prefix, ASC).mapSorted(
-                ASC,
                 kv -> getView(newPersistedEdge(EdgeViewIID.Thing.of(kv.key().bytes()))),
-                edgeView -> KeyValue.of(edgeView.iid(), ByteArray.empty())
+                edgeView -> KeyValue.of(edgeView.iid(), ByteArray.empty()),
+                ASC
         );
     }
 

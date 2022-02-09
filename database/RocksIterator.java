@@ -46,7 +46,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
     private enum State {INIT, OPENED, UNFETCHED, FORWARDED, FETCHED, COMPLETED;}
 
-    private RocksIterator(RocksStorage storage, ORDER order, Key.Prefix<T> prefix) {
+    private RocksIterator(RocksStorage storage, Key.Prefix<T> prefix, ORDER order) {
         super(order);
         this.storage = storage;
         this.prefix = prefix;
@@ -156,7 +156,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
     @Override
     public <V extends Comparable<? super V>, ORD extends Order> Seekable<V, ORD> mapSorted(
-            ORD order, Function<KeyValue<T, ByteArray>, V> mappingFn, Function<V, KeyValue<T, ByteArray>> reverseMappingFn) {
+            Function<KeyValue<T, ByteArray>, V> mappingFn, Function<V, KeyValue<T, ByteArray>> reverseMappingFn, ORD order) {
         return Iterators.Sorted.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
     }
 
@@ -188,7 +188,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     static class Ascending<T extends Key> extends RocksIterator<T, Order.Asc> {
 
         Ascending(RocksStorage storage, Key.Prefix<T> prefix) {
-            super(storage, ASC, prefix);
+            super(storage, prefix, ASC);
         }
 
         synchronized void seekToFirst() {
@@ -219,7 +219,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     static class Descending<T extends Key> extends RocksIterator<T, Order.Desc> {
 
         Descending(RocksStorage storage, Key.Prefix<T> prefix) {
-            super(storage, DESC, prefix);
+            super(storage, prefix, DESC);
         }
 
         synchronized void seekToFirst() {

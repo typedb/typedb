@@ -94,7 +94,7 @@ public class ValueTypeConstraint extends TypeConstraint implements AlphaEquivale
     }
 
     @Override
-    public ValueTypeConstraint clone(Conjunction.Cloner cloner) {
+    public ValueTypeConstraint clone(Conjunction.ConstraintCloner cloner) {
         return cloner.cloneVariable(owner).valueType(valueType);
     }
 }

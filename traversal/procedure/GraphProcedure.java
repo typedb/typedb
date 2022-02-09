@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -77,14 +76,14 @@ public class GraphProcedure implements PermutationProcedure {
         return procedure.new Builder();
     }
 
-    public Stream<ProcedureVertex<?, ?>> vertices() {
-        return vertices.values().stream();
+    public FunctionalIterator<ProcedureVertex<?, ?>> vertices() {
+        return iterate(vertices.values());
     }
 
     public ProcedureVertex<?, ?> startVertex() {
         if (startVertex == null) {
             startVertex = this.vertices().filter(ProcedureVertex::isStartingVertex)
-                    .findAny().orElseThrow(() -> TypeDBException.of(ILLEGAL_STATE));
+                    .first().orElseThrow(() -> TypeDBException.of(ILLEGAL_STATE));
         }
         return startVertex;
     }

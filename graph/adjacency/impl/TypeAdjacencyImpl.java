@@ -235,9 +235,9 @@ public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIE
             );
             Seekable<EDGE_VIEW, Order.Asc> storageIterator = owner.graph().storage().iterate(prefix, ASC)
                     .mapSorted(
-                            ASC,
                             kv -> getView(cache(newPersistedEdge(EdgeViewIID.Type.of(kv.key().bytes()), kv.value()))),
-                            edgeView -> KeyValue.of(edgeView.iid(), ByteArray.empty())
+                            edgeView -> KeyValue.of(edgeView.iid(), ByteArray.empty()),
+                            ASC
                     );
             if (isReadOnly) storageIterator = storageIterator.onConsumed(() -> fetched.add(encoding));
             if ((bufferedEdges = edges.get(encoding)) == null) return storageIterator;

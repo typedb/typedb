@@ -43,6 +43,7 @@ import com.vaticle.typedb.core.graph.vertex.impl.AttributeVertexImpl;
 import com.vaticle.typedb.core.graph.vertex.impl.ThingVertexImpl;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -220,11 +221,11 @@ public class ThingGraph {
         Seekable<ThingVertex, Order.Asc> vertices = storage.iterate(
                 VertexIID.Thing.prefix(typeVertex.iid()),
                 ASC
-        ).mapSorted(ASC, kv -> convertToReadable(kv.key()), vertex -> KeyValue.of(vertex.iid(), empty()));
+        ).mapSorted(kv -> convertToReadable(kv.key()), vertex -> KeyValue.of(vertex.iid(), empty()), ASC);
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return vertices;
         else {
             Seekable<ThingVertex, Order.Asc> buffered = iterateSorted(ASC, thingsByTypeIID.get(typeVertex.iid()))
-                    .mapSorted(ASC, e -> e, ThingVertex::toWrite);
+                    .mapSorted(e -> e, ThingVertex::toWrite, ASC);
             return vertices.merge(buffered).distinct();
         }
     }
@@ -621,15 +622,14 @@ public class ThingGraph {
             return vertexCount(type.iid(), true);
         }
 
-        public long thingVertexTransitiveMax(Set<Label> labels, Set<Label> filter) {
-            return thingVertexTransitiveMax(labels.stream().map(typeGraph::getType), filter);
+        public long thingVertexTransitiveMax(Set<Label> labels) {
+            return thingVertexTransitiveMax(iterate(labels).map(typeGraph::getType));
         }
 
-        public long thingVertexTransitiveMax(Stream<TypeVertex> types, Set<Label> filter) {
-            return types.mapToLong(t -> tree(t, v -> v.ins().edge(SUB).from()
-                    .filter(tf -> !filter.contains(tf.properLabel())))
+        public long thingVertexTransitiveMax(FunctionalIterator<TypeVertex> types) {
+            return types.map(t -> tree(t, v -> v.ins().edge(SUB).from())
                     .stream().mapToLong(this::thingVertexCount).sum()
-            ).max().orElse(0);
+            ).stream().max(Comparator.naturalOrder()).orElse(0L);
         }
 
         public boolean needsBackgroundCounting() {

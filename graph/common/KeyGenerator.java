@@ -234,7 +234,7 @@ public class KeyGenerator {
                 for (Encoding.Vertex.Thing thingEncoding : thingsWithGeneratedIID) {
                     FunctionalIterator<VertexIID.Type> typeIterator = schemaStorage.iterate(
                             VertexIID.Type.prefix(Encoding.Vertex.Type.of(thingEncoding))
-                    ).mapSorted(ASC, KeyValue::key).distinct();
+                    ).mapSorted(KeyValue::key, ASC).distinct();
                     while (typeIterator.hasNext()) {
                         VertexIID.Type typeIID = typeIterator.next();
                         VertexIID.Thing lastIID = dataStorage.getLastKey(VertexIID.Thing.prefix(typeIID));

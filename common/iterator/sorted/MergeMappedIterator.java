@@ -45,7 +45,7 @@ public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER exten
 
     enum State {INIT, NOT_READY, FETCHED, COMPLETED}
 
-    public MergeMappedIterator(ORDER order, FunctionalIterator<T> iterator, Function<T, ITER> mappingFn) {
+    public MergeMappedIterator(FunctionalIterator<T> iterator, Function<T, ITER> mappingFn, ORDER order) {
         super(order);
         this.iterator = iterator;
         this.mappingFn = mappingFn;
@@ -141,8 +141,8 @@ public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER exten
             extends MergeMappedIterator<T, U, ORDER, SortedIterator.Seekable<U, ORDER>>
             implements SortedIterator.Seekable<U, ORDER> {
 
-        public Seekable(ORDER order, FunctionalIterator<T> source, Function<T, SortedIterator.Seekable<U, ORDER>> mappingFn) {
-            super(order, source, mappingFn);
+        public Seekable(FunctionalIterator<T> source, Function<T, SortedIterator.Seekable<U, ORDER>> mappingFn, ORDER order) {
+            super(source, mappingFn, order);
         }
 
         @Override
@@ -165,7 +165,7 @@ public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER exten
 
         @Override
         public <V extends Comparable<? super V>, ORD extends Order> SortedIterator.Seekable<V, ORD> mapSorted(
-                ORD order, Function<U, V> mappingFn, Function<V, U> reverseMappingFn) {
+                Function<U, V> mappingFn, Function<V, U> reverseMappingFn, ORD order) {
             return Iterators.Sorted.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
         }
 

@@ -113,7 +113,7 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
     }
 
     @Override
-    public IsaConstraint clone(Conjunction.Cloner cloner) {
+    public IsaConstraint clone(Conjunction.ConstraintCloner cloner) {
         return cloner.cloneVariable(owner).isa(cloner.cloneVariable(type), isExplicit);
     }
 }

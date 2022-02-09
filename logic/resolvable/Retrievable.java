@@ -107,7 +107,7 @@ public class Retrievable extends Resolvable<Conjunction> {
                         .filter(Constraint::isType).map(Constraint::asType).filter(TypeConstraint::isLabel).toSet();
                 Set<? extends Constraint> otherConstraints = new HashSet<>(subgraph.registeredConstraints);
                 otherConstraints.removeAll(labelConstraints);
-                Conjunction.Cloner cloner = Conjunction.Cloner.cloneExactly(labelConstraints, otherConstraints);
+                Conjunction.ConstraintCloner cloner = Conjunction.ConstraintCloner.cloneExactly(labelConstraints, otherConstraints);
                 return new Retrievable(cloner.conjunction());
             }).toSet();
         }

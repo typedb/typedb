@@ -97,7 +97,7 @@ public class HasConstraint extends ThingConstraint implements AlphaEquivalent<Ha
     }
 
     @Override
-    public HasConstraint clone(Conjunction.Cloner cloner) {
+    public HasConstraint clone(Conjunction.ConstraintCloner cloner) {
         return cloner.cloneVariable(owner).has(cloner.cloneVariable(attribute));
     }
 }

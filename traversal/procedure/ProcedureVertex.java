@@ -54,9 +54,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYP
 import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
@@ -151,78 +149,23 @@ public abstract class ProcedureVertex<
         public Seekable<? extends ThingVertex, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters) {
             assert isStartingVertex();
             if (props().hasIID()) return iterateAndFilterFromIID(graphMgr, parameters);
-            else if (!props().types().isEmpty()) return iterateAndFilterFromTypes(graphMgr, parameters);
-            else if (mustBeAttribute()) return iterateAndFilterFromAttributes(graphMgr, parameters);
-            else if (mustBeRelation()) return iterateFromAll(graphMgr, graphMgr.schema().rootRelationType());
-            else if (mustBeRole()) return iterateFromAll(graphMgr, graphMgr.schema().rootRoleType());
-            else if (mustBeThing()) return iterateFromAll(graphMgr, graphMgr.schema().rootThingType());
-            else throw TypeDBException.of(ILLEGAL_STATE);
+            else return iterateAndFilterFromTypes(graphMgr, parameters);
         }
 
         Seekable<? extends ThingVertex, Order.Asc> filter(Seekable<? extends ThingVertex, Order.Asc> iterator,
                                                           Traversal.Parameters params) {
+            iterator = filterTypes(iterator);
             if (props().hasIID()) iterator = filterIID(iterator, params);
-            if (!props().types().isEmpty()) iterator = filterTypes(iterator);
             if (!props().predicates().isEmpty()) iterator = filterPredicates(filterAttributes(iterator), params);
             return iterator;
         }
 
-        private boolean mustBeAttribute() {
-            return !props().predicates().isEmpty() || iterate(outs()).anyMatch(ProcedureEdge::onlyStartsFromAttribute);
-        }
-
-        private boolean mustBeRelation() {
-            return iterate(outs()).anyMatch(ProcedureEdge::onlyStartsFromRelation);
-        }
-
-        private boolean mustBeRole() {
-            return id().isScoped();
-        }
-
-        private boolean mustBeThing() {
-            return id().isVariable();
-        }
-
-        private Seekable<? extends ThingVertex, Order.Asc> iterateAndFilterFromAttributes(
-                GraphManager graph, Traversal.Parameters parameters) {
-            Seekable<? extends AttributeVertex<?>, Order.Asc> iter;
-            FunctionalIterator<TypeVertex> attTypes;
-
-            Optional<Predicate.Value<?>> eq = iterate(props().predicates()).filter(p -> p.operator().equals(EQ)).first();
-
-            if (eq.isPresent()) {
-                attTypes = iterate(eq.get().valueType().assignables())
-                        .flatMap(vt -> graph.schema().attributeTypes(vt));
-                iter = iteratorOfAttributes(graph, attTypes, parameters, eq.get());
-            } else {
-                if (!props().predicates().isEmpty()) {
-                    attTypes = iterate(props().predicates())
-                            .flatMap(p -> iterate(p.valueType().comparables()))
-                            .flatMap(vt -> graph.schema().attributeTypes(vt));
-                } else {
-                    // TODO should read from cache
-                    attTypes = tree(graph.schema().rootAttributeType(), a -> a.ins().edge(SUB).from());
-                }
-                iter = attTypes.mergeMap(ASC, t -> graph.data().getReadable(t))
-                        .mapSorted(ASC, ThingVertex::asAttribute, v -> v);
-            }
-
-            if (props().predicates().isEmpty()) return iter;
-            else return filterPredicates(iter, parameters, eq.orElse(null));
-        }
-
-        private Seekable<ThingVertex, Order.Asc> iterateFromAll(GraphManager graphMgr, TypeVertex rootType) {
-            // TODO should read from cache
-            return iterate(tree(rootType, t -> t.ins().edge(SUB).from())).mergeMap(ASC, t -> graphMgr.data().getReadable(t));
-        }
-
         Seekable<? extends ThingVertex, Order.Asc> iterateAndFilterFromIID(GraphManager graphMgr, Traversal.Parameters parameters) {
-            assert props().hasIID() && id().isVariable();
+            assert props().hasIID() && id().isVariable() && !props().types().isEmpty();
             Identifier.Variable id = id().asVariable();
             ThingVertex vertex = graphMgr.data().getReadable(parameters.getIID(id));
             if (vertex == null) return emptySorted();
-            Seekable<? extends ThingVertex, Order.Asc> iter = iterateSorted(ASC, vertex);
-            if (!props().types().isEmpty()) iter = filterTypes(iter);
+            Seekable<? extends ThingVertex, Order.Asc> iter = filterTypes(iterateSorted(ASC, vertex));
             if (!props().predicates().isEmpty()) iter = filterPredicates(filterAttributes(iter), parameters);
             return iter;
         }
@@ -241,7 +184,10 @@ public abstract class ProcedureVertex<
             }
 
             if (props().predicates().isEmpty()) return iter;
-            else return filterPredicates(filterAttributes(iter), parameters, eq.orElse(null));
+            else {
+                // TODO we shouldn't need to filter attributes since the type iterator should already filter in attribute types only to start with.
+                return filterPredicates(filterAttributes(iter), parameters, eq.orElse(null));
+            }
         }
 
         Seekable<? extends ThingVertex, Order.Asc> filterIID(Seekable<? extends ThingVertex, Order.Asc> iterator,
@@ -344,7 +290,7 @@ public abstract class ProcedureVertex<
         static Seekable<AttributeVertex<?>, Order.Asc> filterAttributes(Seekable<? extends ThingVertex, Order.Asc> iterator) {
             // TODO: trying to achieve this without casting seems impossible due to the reverse mapping required by mapSorted?
             return ((Seekable<ThingVertex, Order.Asc>) iterator).filter(ThingVertex::isAttribute)
-                    .mapSorted(ASC, ThingVertex::asAttribute, v -> v);
+                    .mapSorted(ThingVertex::asAttribute, v -> v, ASC);
         }
     }
 

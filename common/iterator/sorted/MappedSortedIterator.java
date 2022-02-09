@@ -43,7 +43,7 @@ public class MappedSortedIterator<
 
     enum State {EMPTY, FETCHED, COMPLETED}
 
-    public MappedSortedIterator(ORDER order, ITER source, Function<T, U> mappingFn) {
+    public MappedSortedIterator(ITER source, Function<T, U> mappingFn, ORDER order) {
         super(order);
         this.source = source;
         this.mappingFn = mappingFn;
@@ -111,18 +111,14 @@ public class MappedSortedIterator<
          * @param mappingFn        - The forward mapping function must return a new iterator that is sorted with respect to U's comparator.
          * @param reverseMappingFn - The reverse mapping function must be the able to invert the forward mapping function
          */
-        public Seekable(ORDER order, SortedIterator.Seekable<T, ?> source,
-                        Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
-            super(order, source, mappingFn);
+        public Seekable(SortedIterator.Seekable<T, ?> source, Function<T, U> mappingFn, Function<U, T> reverseMappingFn, ORDER order) {
+            super(source, mappingFn, order);
             this.reverseMappingFn = reverseMappingFn;
         }
 
         @Override
         U mappedNext() {
-            T value = source.next();
-            U next = mappingFn.apply(value);
-//                assert reverseMappingFn.apply(next).equals(value);
-            return next;
+            return mappingFn.apply(source.next());
         }
 
         @Override
@@ -140,7 +136,7 @@ public class MappedSortedIterator<
 
         @Override
         public <V extends Comparable<? super V>, ORD extends Order> SortedIterator.Seekable<V, ORD> mapSorted(
-                ORD order, Function<U, V> mappingFn, Function<V, U> reverseMappingFn) {
+                Function<U, V> mappingFn, Function<V, U> reverseMappingFn, ORD order) {
             return Iterators.Sorted.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
         }
 

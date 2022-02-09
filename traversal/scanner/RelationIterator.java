@@ -209,12 +209,12 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
                     .fromAndOptimised()
                     .filter(relRole -> relationTypes.contains(relRole.key().type().properLabel()));
         })).filter(relRole -> !scoped.contains(relRole.value())).mapSorted(
-                ASC,
                 relRole -> {
                     scoped.record(pos, relRole.value());
                     return relRole.key();
                 },
-                relation -> new KeyValue<>(relation, null)
+                relation -> new KeyValue<>(relation, null),
+                ASC
         );
     }
 

@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.logic.tool;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
@@ -160,7 +161,7 @@ public class TypeInference {
         private final GraphTraversal.Type traversal;
         private final Map<Identifier.Variable, TypeVariable> originalToInference;
         private final Map<Retrievable, Variable> inferenceToOriginal;
-        private final Map<RelationConstraint.RolePlayer, TypeVariable> rolePlayerToInference;
+        private final Map<Pair<Identifier.Variable, RelationConstraint.RolePlayer>, TypeVariable> rolePlayerToInference;
         private int nextGeneratedID;
 
         private InferenceTraversal(Conjunction conjunction, boolean insertable, GraphManager graphMgr,
@@ -217,10 +218,10 @@ public class TypeInference {
                     conjunctionVar.setInferredTypes(types.get(inferenceID))
             );
             iterate(conjunction.variables()).filter(var -> var.isThing() && var.asThing().relation().isPresent())
-                    .flatMap(var -> iterate(var.asThing().relation().get().players()).filter(rp -> rp.roleType().isEmpty()))
-                    .forEachRemaining(rp -> {
-                        assert rolePlayerToInference.containsKey(rp);
-                        rp.setInferredRoleTypes(types.get(rolePlayerToInference.get(rp).id().asRetrievable()));
+                    .flatMap(var -> iterate(var.asThing().relation().get().players()).map(rp -> new Pair<>(var.id(), rp)))
+                    .forEachRemaining(ownerAndRP -> {
+                        assert rolePlayerToInference.containsKey(ownerAndRP);
+                        ownerAndRP.second().setInferredRoleTypes(types.get(rolePlayerToInference.get(ownerAndRP).id().asRetrievable()));
                     });
         }
 
@@ -317,14 +318,6 @@ public class TypeInference {
             return inferenceVar;
         }
 
-        private TypeVariable registerRolePlayer(RelationConstraint.RolePlayer rolePlayer) {
-            if (rolePlayerToInference.containsKey(rolePlayer)) return rolePlayerToInference.get(rolePlayer);
-
-            TypeVariable inferenceVar = new TypeVariable(newID());
-            rolePlayerToInference.put(rolePlayer, inferenceVar);
-            return inferenceVar;
-        }
-
         private void registerValue(TypeVariable inferenceVar, ValueConstraint<?> constraint) {
             Set<Encoding.ValueType> predicateValueTypes;
             if (constraint.isVariable()) {
@@ -380,17 +373,14 @@ public class TypeInference {
         private void registerRelation(TypeVariable inferenceVar, RelationConstraint constraint) {
             for (RelationConstraint.RolePlayer rolePlayer : constraint.players()) {
                 TypeVariable playerVar = register(rolePlayer.player());
-                TypeVariable roleInstanceVar;
+                TypeVariable roleVar = registerRolePlayer(constraint.owner().id(), rolePlayer);
                 if (rolePlayer.roleType().isPresent()) {
                     TypeVariable roleTypeVar;
-                    roleInstanceVar = new TypeVariable(newID());
                     roleTypeVar = register(rolePlayer.roleType().get());
-                    traversal.sub(roleInstanceVar.id(), roleTypeVar.id(), true);
-                } else {
-                    roleInstanceVar = registerRolePlayer(rolePlayer);
+                    traversal.sub(roleVar.id(), roleTypeVar.id(), true);
                 }
-                traversal.relates(inferenceVar.id(), roleInstanceVar.id());
-                traversal.plays(playerVar.id(), roleInstanceVar.id());
+                traversal.relates(inferenceVar.id(), roleVar.id());
+                traversal.plays(playerVar.id(), roleVar.id());
             }
         }
 
@@ -398,14 +388,24 @@ public class TypeInference {
             for (RelationConstraint.RolePlayer rolePlayer : constraint.players()) {
                 TypeVariable playerVar = register(rolePlayer.player());
                 TypeVariable roleTypeVar;
+                TypeVariable roleVar = registerRolePlayer(constraint.owner().id(), rolePlayer);
                 if (rolePlayer.roleType().isPresent()) {
                     roleTypeVar = register(rolePlayer.roleType().get());
                 } else {
                     roleTypeVar = new TypeVariable(newID());
                 }
+                traversal.equalTypes(roleVar.id(), roleTypeVar.id());
                 traversal.relates(inferenceVar.id(), roleTypeVar.id());
                 traversal.plays(playerVar.id(), roleTypeVar.id());
             }
+        }
+
+        private TypeVariable registerRolePlayer(Retrievable ownerID, RelationConstraint.RolePlayer rolePlayer) {
+            Pair<Identifier.Variable, RelationConstraint.RolePlayer> ownerAndPlayer = new Pair<>(ownerID, rolePlayer);
+            if (rolePlayerToInference.containsKey(ownerAndPlayer)) return rolePlayerToInference.get(ownerAndPlayer);
+            TypeVariable inferenceVar = new TypeVariable(newID());
+            rolePlayerToInference.put(ownerAndPlayer, inferenceVar);
+            return inferenceVar;
         }
 
         private void registerSubAttribute(Variable inferenceVar) {
@@ -423,7 +423,7 @@ public class TypeInference {
             }
             if (props.labels().isEmpty()) {
                 conjunction.setCoherent(false);
-                throw TypeDBException.of(UNSATISFIABLE_PATTERN_VARIABLE, conjunction, inferenceToOriginal.get(id));
+                throw TypeDBException.of(UNSATISFIABLE_PATTERN_VARIABLE, conjunction, inferenceToOriginal.get(id.asRetrievable()));
             }
         }
 
@@ -437,7 +437,7 @@ public class TypeInference {
             }
             if (props.valueTypes().isEmpty()) {
                 conjunction.setCoherent(false);
-                throw TypeDBException.of(UNSATISFIABLE_PATTERN_VARIABLE_VALUE, conjunction, inferenceToOriginal.get(id));
+                throw TypeDBException.of(UNSATISFIABLE_PATTERN_VARIABLE_VALUE, conjunction, inferenceToOriginal.get(id.asRetrievable()));
             }
         }
 

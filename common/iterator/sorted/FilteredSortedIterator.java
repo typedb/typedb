@@ -93,7 +93,7 @@ public class FilteredSortedIterator<T extends Comparable<? super T>, ORDER exten
 
         @Override
         public <U extends Comparable<? super U>, ORD extends Order> SortedIterator.Seekable<U, ORD> mapSorted(
-                ORD order, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
+                Function<T, U> mappingFn, Function<U, T> reverseMappingFn, ORD order) {
             return Iterators.Sorted.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
         }
 

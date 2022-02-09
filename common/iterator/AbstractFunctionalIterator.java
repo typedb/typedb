@@ -68,7 +68,7 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     public <U extends Comparable<? super U>, ORDER extends Order> Seekable<U, ORDER> mergeMap(
             ORDER order, Function<T, Seekable<U, ORDER>> mappingFn
     ) {
-        return new MergeMappedIterator.Seekable<>(order, this, mappingFn);
+        return new MergeMappedIterator.Seekable<>(this, mappingFn, order);
     }
 
     @Override

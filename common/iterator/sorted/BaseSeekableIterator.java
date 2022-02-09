@@ -39,7 +39,7 @@ public class BaseSeekableIterator<T extends Comparable<? super T>, ORDER extends
     private T next;
     private T last;
 
-    public BaseSeekableIterator(ORDER order, NavigableSet<T> source) {
+    public BaseSeekableIterator(NavigableSet<T> source, ORDER order) {
         super(order);
         this.source = source;
         this.iterator = order.iterateOrdered(source);
@@ -86,7 +86,7 @@ public class BaseSeekableIterator<T extends Comparable<? super T>, ORDER extends
 
     @Override
     public <U extends Comparable<? super U>, ORD extends Order> Seekable<U, ORD> mapSorted(
-            ORD order, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
+            Function<T, U> mappingFn, Function<U, T> reverseMappingFn, ORD order) {
         return Iterators.Sorted.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
     }
 
