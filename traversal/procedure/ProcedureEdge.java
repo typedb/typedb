@@ -353,7 +353,7 @@ public abstract class ProcedureEdge<
                 public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                          Traversal.Parameters params) {
                     assert fromVertex.isThing() && toVertex.isType();
-                    return isaTypes(fromVertex.asThing()).anyMatch(s -> s.equals(toVertex));
+                    return isaTypes(fromVertex.asThing()).matchFirst(toVertex.asType()).isPresent();
                 }
             }
 
@@ -389,7 +389,7 @@ public abstract class ProcedureEdge<
                 public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                          Traversal.Parameters params) {
                     assert fromVertex.isType() && toVertex.isThing();
-                    return isaTypes(toVertex.asThing()).anyMatch(s -> s.equals(fromVertex));
+                    return isaTypes(toVertex.asThing()).matchFirst(fromVertex.asType()).isPresent();
                 }
             }
         }
@@ -487,7 +487,7 @@ public abstract class ProcedureEdge<
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return superTypes(fromVertex.asType()).anyMatch(v -> v.equals(toVertex.asType()));
+                        return superTypes(fromVertex.asType()).matchFirst(toVertex.asType()).isPresent();
                     }
 
                     @Override
@@ -520,7 +520,7 @@ public abstract class ProcedureEdge<
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return superTypes(toVertex.asType()).anyMatch(v -> v.equals(fromVertex.asType()));
+                        return superTypes(toVertex.asType()).matchFirst(fromVertex.asType()).isPresent();
                     }
 
                     @Override
@@ -589,7 +589,7 @@ public abstract class ProcedureEdge<
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
-                        return ownedAttributeTypes(fromVertex.asType()).anyMatch(at -> at.equals(toVertex.asType()));
+                        return ownedAttributeTypes(fromVertex.asType()).matchFirst(toVertex.asType()).isPresent();
                     }
 
                     @Override
@@ -639,6 +639,7 @@ public abstract class ProcedureEdge<
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
+                        // TODO when this reads from a cached seekable set, we should optimise with matchFirst
                         return ownersOfAttType(fromVertex.asType()).anyMatch(o -> o.equals(toVertex.asType()));
                     }
 
@@ -693,6 +694,7 @@ public abstract class ProcedureEdge<
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
+                        // TODO when this reads from a cached seekable set, we should optimise with matchFirst
                         return playedRoleTypes(fromVertex.asType()).anyMatch(rt -> rt.equals(toVertex.asType()));
                     }
 
@@ -732,6 +734,7 @@ public abstract class ProcedureEdge<
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
+                        // TODO when this reads from a cached seekable set, we should optimise with matchFirst
                         return playersOfRoleType(fromVertex.asType()).anyMatch(p -> p.equals(toVertex.asType()));
                     }
 
@@ -786,6 +789,7 @@ public abstract class ProcedureEdge<
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
+                        // TODO when this reads from a cached seekable set, we should optimise with matchFirst
                         return relatedRoleTypes(fromVertex.asType()).anyMatch(rt -> rt.equals(toVertex.asType()));
                     }
 
@@ -825,6 +829,7 @@ public abstract class ProcedureEdge<
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
+                        // TODO when this reads from a cached seekable set, we should optimise with matchFirst
                         return relationsOfRoleType(fromVertex.asType()).anyMatch(rel -> rel.equals(toVertex.asType()));
                     }
 

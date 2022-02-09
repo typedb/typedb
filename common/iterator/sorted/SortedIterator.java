@@ -22,6 +22,8 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
 import java.util.Iterator;
 import java.util.NavigableSet;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -127,6 +129,15 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
         Seekable<T, ORDER> filter(Predicate<T> predicate);
 
         Seekable<T, ORDER> limit(long limit);
+
+        default Optional<T> matchFirst(T value) {
+            seek(value);
+            Optional<T> found;
+            if (hasNext() && peek().equals(value)) found = Optional.of(next());
+            else found = Optional.empty();
+            recycle();
+            return found;
+        }
 
         <U extends Comparable<? super U>, ORD extends Order> Seekable<U, ORD> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn, ORD order);
 
