@@ -52,7 +52,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
     private static final Predefined<CoreConfig.Server> server = predefined(Server.name, Server.description, new Server());
     private static final Predefined<CoreConfig.Storage> storage = predefined(Storage.name, Storage.description, new Storage());
     private static final Predefined<CoreConfig.Log> log = predefined(Log.name, Log.description, new Log());
-    private static final Predefined<CoreConfig.VaticleFactory> vaticleFactory =
+    public static final Predefined<CoreConfig.VaticleFactory> vaticleFactory =
             predefined(VaticleFactory.name, VaticleFactory.description, new VaticleFactory());
     private static final Set<Predefined<?>> parsers = set(server, storage, log, vaticleFactory);
 
@@ -76,12 +76,12 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
         else return Util.getTypedbDir().resolve(path);
     }
 
-    private static class Server extends Compound<CoreConfig.Server> {
+    public static class Server extends Compound<CoreConfig.Server> {
 
-        private static final String name = "server";
-        private static final String description = "Server and networking configuration.";
+        public static final String name = "server";
+        public static final String description = "Server and networking configuration.";
 
-        private static final Predefined<InetSocketAddress> address =
+        public static final Predefined<InetSocketAddress> address =
                 predefined("address", "Address to listen for TypeDB Clients on.", INET_SOCKET_ADDRESS);
         private static final Set<Predefined<?>> parsers = set(address);
 
@@ -99,14 +99,14 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
         }
     }
 
-    static class Storage extends Compound<CoreConfig.Storage> {
+    public static class Storage extends Compound<CoreConfig.Storage> {
 
-        private static final String name = "storage";
-        private static final String description = "Storage configuration.";
+        public static final String name = "storage";
+        public static final String description = "Storage configuration.";
 
-        private static final Predefined<Path> data =
+        public static final Predefined<Path> data =
                 predefined("data", "Directory in which user databases will be stored.", PATH);
-        private static final Predefined<CoreConfig.Storage.DatabaseCache> dbCache =
+        public static final Predefined<CoreConfig.Storage.DatabaseCache> dbCache =
                 predefined(DatabaseCache.name, DatabaseCache.description, new DatabaseCache());
         private static final Set<Predefined<?>> parsers = set(data, dbCache);
 
@@ -150,16 +150,16 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
         }
     }
 
-    static class Log extends Compound<CoreConfig.Log> {
+    public static class Log extends Compound<CoreConfig.Log> {
 
-        private static final String name = "log";
-        private static final String description = "Logging configuration.";
+        public static final String name = "log";
+        public static final String description = "Logging configuration.";
 
         private static final Predefined<CoreConfig.Log.Output> output =
                 predefined(Output.name, Output.description, new Output());
-        private static final Predefined<CoreConfig.Log.Logger> logger =
+        public static final Predefined<CoreConfig.Log.Logger> logger =
                 predefined(Logger.name, Logger.description, new Logger());
-        private static final Predefined<CoreConfig.Log.Debugger> debugger =
+        public static final Predefined<CoreConfig.Log.Debugger> debugger =
                 predefined(Debugger.name, Debugger.description, new Debugger());
         private static final Set<Predefined<?>> parsers = set(output, logger, debugger);
 
@@ -181,10 +181,10 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
             return list(output.help(path), logger.help(path), debugger.help(path));
         }
 
-        private static class Output extends Compound<CoreConfig.Log.Output> {
+        public static class Output extends Compound<CoreConfig.Log.Output> {
 
-            private static final String name = "output";
-            private static final String description = "Log output definitions.";
+            public static final String name = "output";
+            public static final String description = "Log output definitions.";
 
             private static final Dynamic<CoreConfig.Log.Output.Type> type = dynamic(Type.description, new Type());
 
@@ -199,14 +199,14 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
                 return list(type.help(path));
             }
 
-            static class Type extends Compound<CoreConfig.Log.Output.Type> {
+            public static class Type extends Compound<CoreConfig.Log.Output.Type> {
 
                 private static final String description = "A named log output definition.";
                 private static final Predefined<String> type = predefined(
                         "type", "Type of output to define.", restricted(STRING, list(Stdout.type, File.type))
                 );
-                private static final Compound<CoreConfig.Log.Output.Type.Stdout> stdout = new Stdout();
-                private static final Compound<CoreConfig.Log.Output.Type.File> file = new File();
+                public static final Compound<CoreConfig.Log.Output.Type.Stdout> stdout = new Stdout();
+                public static final Compound<CoreConfig.Log.Output.Type.File> file = new File();
 
                 @Override
                 public CoreConfig.Log.Output.Type parse(Yaml yaml, String path) {
@@ -229,10 +229,10 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
                             new Help(path, File.description, file.helpList(path)));
                 }
 
-                private static class Stdout extends Compound<CoreConfig.Log.Output.Type.Stdout> {
+                public static class Stdout extends Compound<CoreConfig.Log.Output.Type.Stdout> {
 
-                    private static final String type = "stdout";
-                    private static final String description = "Options to configure a log output to stdout.";
+                    public static final String type = "stdout";
+                    public static final String description = "Options to configure a log output to stdout.";
 
                     private static final Predefined<String> typeParser = predefined(
                             "type", "An output that writes to stdout.", restricted(STRING, list(type))
@@ -255,10 +255,10 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
                     }
                 }
 
-                private static class File extends Compound<CoreConfig.Log.Output.Type.File> {
+                public static class File extends Compound<CoreConfig.Log.Output.Type.File> {
 
-                    private static final String type = "file";
-                    private static final String description = "Options to configure a log output to files in a directory.";
+                    public static final String type = "file";
+                    public static final String description = "Options to configure a log output to files in a directory.";
 
                     private static final Predefined<String> typeParser =
                             predefined("type", "An output that writes to a directory.", restricted(STRING, list(type)));

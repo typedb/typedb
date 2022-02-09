@@ -19,20 +19,19 @@
 package com.vaticle.typedb.core.server.parameters;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.parameters.util.YamlParser;
 
 import java.nio.file.Path;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public abstract class ServerSubcommand {
+public abstract class ServerSubcommand<CONFIG extends CoreConfig> {
 
     public boolean isServer() {
         return false;
     }
 
-    public Server asServer() {
+    public Server<CONFIG> asServer() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Server.class));
     }
 
@@ -40,7 +39,7 @@ public abstract class ServerSubcommand {
         return false;
     }
 
-    public Import asImport() {
+    public Import<?> asImport() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Import.class));
     }
 
@@ -48,18 +47,18 @@ public abstract class ServerSubcommand {
         return false;
     }
 
-    public Export asExport() {
+    public Export<?> asExport() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Export.class));
     }
 
-    public static class Server<T extends CoreConfig> extends ServerSubcommand {
+    public static class Server<C extends CoreConfig> extends ServerSubcommand<C> {
 
         private final boolean isDebug;
         private final boolean isHelp;
         private final boolean isVersion;
-        private final T config;
+        private final C config;
 
-        Server(boolean isDebug, boolean isHelp, boolean isVersion, T config) {
+        Server(boolean isDebug, boolean isHelp, boolean isVersion, C config) {
             this.isDebug = isDebug;
             this.isHelp = isHelp;
             this.isVersion = isVersion;
@@ -72,7 +71,7 @@ public abstract class ServerSubcommand {
         }
 
         @Override
-        public Server asServer() {
+        public Server<C> asServer() {
             return this;
         }
 
@@ -88,12 +87,12 @@ public abstract class ServerSubcommand {
             return isVersion;
         }
 
-        public T config() {
+        public C config() {
             return config;
         }
     }
 
-    public static class Import extends ServerSubcommand {
+    public static class Import<C extends CoreConfig> extends ServerSubcommand<C> {
 
         private final String database;
         private final Path file;
@@ -123,12 +122,12 @@ public abstract class ServerSubcommand {
         }
 
         @Override
-        public Import asImport() {
+        public Import<?> asImport() {
             return this;
         }
     }
 
-    public static class Export extends ServerSubcommand {
+    public static class Export<C extends CoreConfig> extends ServerSubcommand<C> {
 
         private final String database;
         private final Path file;
@@ -158,7 +157,7 @@ public abstract class ServerSubcommand {
         }
 
         @Override
-        public Export asExport() {
+        public Export<?> asExport() {
             return this;
         }
     }

@@ -228,18 +228,18 @@ public class TypeDBServer implements AutoCloseable {
             printASCIILogo();
 
             CoreConfigParser configParser = new CoreConfigParser();
-            ArgsParser<ServerSubcommand> argsParser = new ArgsParser<ServerSubcommand>()
-                    .subcommand(new ServerSubcommandParser.Server(configParser))
-                    .subcommand(new ServerSubcommandParser.Import())
-                    .subcommand(new ServerSubcommandParser.Export());
-            Optional<ServerSubcommand> subcmd = argsParser.parse(args);
+            ArgsParser<ServerSubcommand<CoreConfig>> argsParser = new ArgsParser<ServerSubcommand<CoreConfig>>()
+                    .subcommand(new ServerSubcommandParser.Server<>(configParser))
+                    .subcommand(new ServerSubcommandParser.Import<>())
+                    .subcommand(new ServerSubcommandParser.Export<>());
+            Optional<ServerSubcommand<CoreConfig>> subcmd = argsParser.parse(args);
             if (subcmd.isEmpty()) {
                 LOG.error(UNRECOGNISED_CLI_COMMAND.message(String.join(" ", args)));
                 LOG.error(argsParser.usage());
                 System.exit(1);
             } else {
                 if (subcmd.get().isServer()) {
-                    ServerSubcommand.Server subcmdServer = subcmd.get().asServer();
+                    ServerSubcommand.Server<CoreConfig> subcmdServer = subcmd.get().asServer();
                     if (subcmdServer.isHelp()) System.out.println(argsParser.help());
                     else if (subcmdServer.isVersion()) System.out.println("Version: " + Version.VERSION);
                     else runServer(subcmdServer);
@@ -262,7 +262,7 @@ public class TypeDBServer implements AutoCloseable {
         System.exit(0);
     }
 
-    private static void runServer(ServerSubcommand.Server subcmdServer) {
+    private static void runServer(ServerSubcommand.Server<CoreConfig> subcmdServer) {
         Instant start = Instant.now();
         TypeDBServer server = new TypeDBServer(subcmdServer.config(), subcmdServer.isDebug());
         server.start();
@@ -275,13 +275,13 @@ public class TypeDBServer implements AutoCloseable {
         server.serve();
     }
 
-    protected static void exportData(ServerSubcommand.Export subcmdExport) {
+    protected static void exportData(ServerSubcommand.Export<?> subcmdExport) {
         MigratorClient migrator = new MigratorClient(subcmdExport.port());
         boolean success = migrator.exportData(subcmdExport.database(), subcmdExport.file());
         System.exit(success ? 0 : 1);
     }
 
-    protected static void importData(ServerSubcommand.Import subcmdImport) {
+    protected static void importData(ServerSubcommand.Import<?> subcmdImport) {
         MigratorClient migrator = new MigratorClient(subcmdImport.port());
         boolean success = migrator.importData(subcmdImport.database(), subcmdImport.file());
         System.exit(success ? 0 : 1);
