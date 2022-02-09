@@ -124,6 +124,7 @@ public class MappedSortedIterator<
         @Override
         public void seek(U target) {
             if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+            if (hasNext() && order.isValidNext(target, peek())) return;
             T reverseMapped = reverseMappingFn.apply(target);
             source.seek(reverseMapped);
             state = State.EMPTY;

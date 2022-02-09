@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
@@ -38,8 +39,8 @@ public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER exten
 
     private final Function<T, ITER> mappingFn;
     final FunctionalIterator<T> iterator;
-    final PriorityQueue<ComparableSortedIterator> queue;
-    final List<ITER> notInQueue;
+    final PriorityQueue<ComparableSortedIterator> fetched;
+    final List<ITER> unfetched;
     State state;
     U last;
 
@@ -49,9 +50,9 @@ public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER exten
         super(order);
         this.iterator = iterator;
         this.mappingFn = mappingFn;
-        this.queue = new PriorityQueue<>();
+        this.fetched = new PriorityQueue<>();
         this.state = State.INIT;
-        this.notInQueue = new ArrayList<>();
+        this.unfetched = new ArrayList<>();
         this.last = null;
     }
 
@@ -89,51 +90,50 @@ public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER exten
     }
 
     private void tryFetch() {
-        if (!notInQueue.isEmpty()) {
-            notInQueue.forEach(sortedIterator -> {
-                if (sortedIterator.hasNext()) queue.add(new ComparableSortedIterator(sortedIterator));
+        if (!unfetched.isEmpty()) {
+            unfetched.forEach(sortedIterator -> {
+                if (sortedIterator.hasNext()) fetched.add(new ComparableSortedIterator(sortedIterator));
             });
-            notInQueue.clear();
+            unfetched.clear();
         }
-        if (queue.isEmpty()) state = State.COMPLETED;
+        if (fetched.isEmpty()) state = State.COMPLETED;
         else state = State.FETCHED;
     }
 
-    private void initialise() {
+    void initialise() {
         iterator.forEachRemaining(value -> {
             ITER sortedIterator = mappingFn.apply(value);
-            if (sortedIterator.hasNext()) queue.add(new ComparableSortedIterator(sortedIterator));
+            if (sortedIterator.hasNext()) fetched.add(new ComparableSortedIterator(sortedIterator));
         });
-        if (queue.isEmpty()) state = State.COMPLETED;
+        if (fetched.isEmpty()) state = State.COMPLETED;
         else state = State.FETCHED;
     }
 
     @Override
     public U next() {
         if (!hasNext()) throw new NoSuchElementException();
-        ComparableSortedIterator nextIter = this.queue.poll();
+        ComparableSortedIterator nextIter = this.fetched.poll();
         assert nextIter != null;
         ITER sortedIterator = nextIter.iter;
         last = sortedIterator.next();
         state = State.NOT_READY;
-        notInQueue.add(sortedIterator);
+        unfetched.add(sortedIterator);
         return last;
     }
 
     @Override
     public U peek() {
         if (!hasNext()) throw new NoSuchElementException();
-        assert !queue.isEmpty();
-        return queue.peek().iter.peek();
+        assert !fetched.isEmpty();
+        return fetched.peek().iter.peek();
     }
-
 
     @Override
     public void recycle() {
-        queue.forEach(queueNode -> queueNode.iter.recycle());
-        queue.clear();
-        notInQueue.forEach(FunctionalIterator::recycle);
-        notInQueue.clear();
+        fetched.forEach(queueNode -> queueNode.iter.recycle());
+        fetched.clear();
+        unfetched.forEach(FunctionalIterator::recycle);
+        unfetched.clear();
         iterator.recycle();
     }
 
@@ -148,14 +148,35 @@ public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER exten
         @Override
         public void seek(U target) {
             if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
-            notInQueue.forEach(iter -> iter.seek(target));
-            queue.forEach(queueNode -> {
-                SortedIterator.Seekable<U, ORDER> iter = queueNode.iter;
-                iter.seek(target);
-                notInQueue.add(iter);
-            });
-            queue.clear();
+            if (state == State.INIT) initialise();
+            if (hasNext() && order.isValidNext(target, peek())) return;
+
+            seekUnfetched(target);
+            seekFetched(target);
             state = State.NOT_READY;
+        }
+
+        private void seekUnfetched(U target) {
+            Iterator<SortedIterator.Seekable<U, ORDER>> unfetchedIterators = unfetched.iterator();
+            while (unfetchedIterators.hasNext()) {
+                SortedIterator.Seekable<U, ORDER> iter = unfetchedIterators.next();
+                if (iter.hasNext() && order.isValidNext(iter.peek(), target)) iter.seek(target);
+                else {
+                    iter.recycle();
+                    unfetchedIterators.remove();
+                }
+            }
+        }
+
+        private void seekFetched(U target) {
+            fetched.forEach(queueNode -> {
+                SortedIterator.Seekable<U, ORDER> iter = queueNode.iter;
+                if (order.isValidNext(iter.peek(), target)) {
+                    iter.seek(target);
+                    unfetched.add(iter);
+                }
+            });
+            fetched.clear();
         }
 
         @Override
