@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.server.parameters.util.Help;
 import com.vaticle.typedb.core.server.parameters.util.SubcommandParser;
 import com.vaticle.typedb.core.server.parameters.util.Option;
 import com.vaticle.typedb.core.server.parameters.util.OptionParser;
+import com.vaticle.typedb.core.server.parameters.util.YamlParser;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -52,7 +53,7 @@ public class ServerSubcommandParser {
         });
     }
 
-    public static class Server extends SubcommandParser<ServerSubcommand.Server> {
+    public static class Server<T extends CoreConfig, U extends YamlParser.Value.Compound<T>> extends SubcommandParser<ServerSubcommand.Server<T>> {
 
         private static final OptionParser.Flag debug = new OptionParser.Flag("debug", "Run server in debug mode.");
         private static final OptionParser.Flag help = new OptionParser.Flag("help", "Print help menu.");
@@ -63,22 +64,22 @@ public class ServerSubcommandParser {
         private static final String[] tokens = new String[]{};
         private static final String description = "Run TypeDB server";
 
-        private final CoreConfigParser configParser;
+        private final U configParser;
 
-        public Server(CoreConfigParser configParser) {
+        public Server(U configParser) {
             super(tokens, description);
             this.configParser = configParser;
         }
 
         @Override
-        protected ServerSubcommand.Server parse(Set<Option> options) {
+        protected ServerSubcommand.Server<T> parse(Set<Option> options) {
             Set<Option> auxOptions = findAuxiliaryOptions(options);
             Set<Option> configOptions = excludeOptions(options, auxOptions);
             Optional<Path> configPath = Server.configPath.parse(auxOptions);
-            CoreConfig config = configPath
+            T config = configPath
                     .map(path -> CoreConfigFactory.config(path, configOptions, configParser))
                     .orElseGet(() -> CoreConfigFactory.config(configOptions, configParser));
-            return new ServerSubcommand.Server(debug.parse(auxOptions), help.parse(auxOptions),
+            return new ServerSubcommand.Server<T>(debug.parse(auxOptions), help.parse(auxOptions),
                     version.parse(auxOptions), config);
         }
 

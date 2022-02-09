@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.server.parameters;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.server.parameters.util.YamlParser;
 
 import java.nio.file.Path;
 
@@ -51,14 +52,14 @@ public abstract class ServerSubcommand {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Export.class));
     }
 
-    public static class Server extends ServerSubcommand {
+    public static class Server<T extends CoreConfig> extends ServerSubcommand {
 
         private final boolean isDebug;
         private final boolean isHelp;
         private final boolean isVersion;
-        private final CoreConfig config;
+        private final T config;
 
-        Server(boolean isDebug, boolean isHelp, boolean isVersion, CoreConfig config) {
+        Server(boolean isDebug, boolean isHelp, boolean isVersion, T config) {
             this.isDebug = isDebug;
             this.isHelp = isHelp;
             this.isVersion = isVersion;
@@ -87,7 +88,7 @@ public abstract class ServerSubcommand {
             return isVersion;
         }
 
-        public CoreConfig config() {
+        public T config() {
             return config;
         }
     }
