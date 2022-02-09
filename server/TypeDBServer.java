@@ -23,19 +23,20 @@ import com.vaticle.factory.tracing.client.FactoryTracing;
 import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.common.util.Java;
-import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreFactory;
+import com.vaticle.typedb.core.database.Factory;
 import com.vaticle.typedb.core.migrator.MigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
-import com.vaticle.typedb.core.database.Factory;
-import com.vaticle.typedb.core.database.CoreFactory;
-import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
-import com.vaticle.typedb.core.server.parameters.ServerSubcommand;
-import com.vaticle.typedb.core.server.parameters.ServerSubcommandParser;
+import com.vaticle.typedb.core.server.logging.CoreLogback;
 import com.vaticle.typedb.core.server.parameters.CoreConfig;
 import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
+import com.vaticle.typedb.core.server.parameters.ServerSubcommand;
+import com.vaticle.typedb.core.server.parameters.ServerSubcommandParser;
+import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
@@ -61,7 +62,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILE
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
-import static com.vaticle.typedb.core.server.logging.Logback.configure;
 import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
 
@@ -69,19 +69,21 @@ public class TypeDBServer implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBServer.class);
 
     protected final Factory factory;
-    protected final TypeDB.DatabaseManager databaseMgr;
+    protected final CoreDatabaseManager databaseMgr;
     protected final io.grpc.Server server;
     protected final CoreConfig config;
     protected final boolean debug;
     protected TypeDBService typeDBService;
+    protected final CoreLogback logback;
 
     private TypeDBServer(CoreConfig config, boolean debug) {
-        this(config, debug, new CoreFactory());
+        this(config, debug, new CoreFactory(), new CoreLogback());
     }
 
-    protected TypeDBServer(CoreConfig config, boolean debug, Factory factory) {
+    protected TypeDBServer(CoreConfig config, boolean debug, Factory factory, CoreLogback logback) {
         this.config = config;
         this.debug = debug;
+        this.logback = logback;
 
         verifyJavaVersion();
         verifyDataDir();
@@ -128,7 +130,7 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     private void configureLogging() {
-        configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log());
+        logback.configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log());
         java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 

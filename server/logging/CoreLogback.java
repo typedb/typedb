@@ -38,9 +38,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_ARCHIVE_SUFFIX;
 
-public class Logback {
+public class CoreLogback {
 
-    public static void configure(LoggerContext logContext, CoreConfig.Log logConfig) {
+    public void configure(LoggerContext logContext, CoreConfig.Log logConfig) {
         // all appenders use the same layout
         LayoutWrappingEncoder<ILoggingEvent> encoder = new LayoutWrappingEncoder<>();
         encoder.setContext(logContext);
@@ -50,16 +50,23 @@ public class Logback {
         encoder.setLayout(layout);
 
         Map<String, Appender<ILoggingEvent>> appenders = new HashMap<>();
-        logConfig.output().outputs().forEach((name, outputType) -> {
-            if (outputType.isStdout()) {
-                appenders.put(name, consoleAppender(name, logContext, encoder, layout));
-            } else if (outputType.isFile()) {
-                appenders.put(name, fileAppender(name, logContext, encoder, layout, outputType.asFile()));
-            } else throw TypeDBException.of(ILLEGAL_STATE);
-        });
+        logConfig.output().outputs().forEach((name, outputType) ->
+                appenders.put(name, appender(name, logContext, encoder, layout, outputType)));
 
         configureRootLogger(logConfig.logger().defaultLogger(), logContext, appenders);
         logConfig.logger().filteredLoggers().values().forEach(l -> configureLogger(l, logContext, appenders));
+    }
+
+    protected Appender<ILoggingEvent> appender(String name,
+                                               LoggerContext logContext,
+                                               LayoutWrappingEncoder<ILoggingEvent> encoder,
+                                               TTLLLayout layout,
+                                               CoreConfig.Log.Output.Type outputType) {
+        if (outputType.isStdout()) {
+            return consoleAppender(name, logContext, encoder, layout);
+        } else if (outputType.isFile()) {
+            return fileAppender(name, logContext, encoder, layout, outputType.asFile());
+        } else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     private static void configureLogger(CoreConfig.Log.Logger.Filtered logger, LoggerContext context,
@@ -85,7 +92,19 @@ public class Logback {
         });
     }
 
-    private static RollingFileAppender<ILoggingEvent> fileAppender(String name, LoggerContext context,
+    protected static ConsoleAppender<ILoggingEvent> consoleAppender(String name, LoggerContext context,
+                                                                    LayoutWrappingEncoder<ILoggingEvent> encoder,
+                                                                    TTLLLayout layout) {
+        ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>();
+        appender.setContext(context);
+        appender.setName(name);
+        appender.setEncoder(encoder);
+        appender.setLayout(layout);
+        appender.start();
+        return appender;
+    }
+
+    protected static RollingFileAppender<ILoggingEvent> fileAppender(String name, LoggerContext context,
                                                                    LayoutWrappingEncoder<ILoggingEvent> encoder,
                                                                    TTLLLayout layout, CoreConfig.Log.Output.Type.File outputType) {
         RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
@@ -105,18 +124,6 @@ public class Logback {
         policy.setParent(appender);
         policy.start();
         appender.setRollingPolicy(policy);
-        appender.start();
-        return appender;
-    }
-
-    private static ConsoleAppender<ILoggingEvent> consoleAppender(String name, LoggerContext context,
-                                                                  LayoutWrappingEncoder<ILoggingEvent> encoder,
-                                                                  TTLLLayout layout) {
-        ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>();
-        appender.setContext(context);
-        appender.setName(name);
-        appender.setEncoder(encoder);
-        appender.setLayout(layout);
         appender.start();
         return appender;
     }

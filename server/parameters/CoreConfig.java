@@ -229,7 +229,7 @@ public class CoreConfig {
                 this.filteredLoggers = filteredLoggers;
             }
 
-            void validateOutputs(Map<String, Output.Type> outputs) {
+            public void validateOutputs(Map<String, Output.Type> outputs) {
                 defaultLogger.validateOutputs(outputs);
                 filteredLoggers.values().forEach(logger -> logger.validateOutputs(outputs));
             }
@@ -296,7 +296,7 @@ public class CoreConfig {
                 return reasoner;
             }
 
-            void validateAndSetOutputs(Map<String, Output.Type> outputs) {
+            public void validateAndSetOutputs(Map<String, Output.Type> outputs) {
                 reasoner.validateAndSetOutputs(outputs);
             }
 
