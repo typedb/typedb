@@ -73,5 +73,6 @@ class FlatMappedIterator<T, U> extends AbstractFunctionalIterator<U> {
     @Override
     public void recycle() {
         sourceIterator.recycle();
+        if (currentIterator != null) currentIterator.recycle();
     }
 }
