@@ -620,7 +620,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Migrator MISSING_HEADER =
                 new Migrator(9, "The data being imported is invalid - the header is missing.");
         public static final Migrator IMPORT_CHECKSUM_MISMATCH =
-                new Migrator(10, "The import has finished but mismatches the required checksums.");
+                new Migrator(10, "The import has finished but mismatches the required checksums: '%s");
 
         private static final String codePrefix = "MIG";
         private static final String messagePrefix = "Migrator failure";
