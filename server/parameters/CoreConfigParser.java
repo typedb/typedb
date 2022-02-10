@@ -71,7 +71,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
         return list(server.help(path), storage.help(path), log.help(path), vaticleFactory.help(path));
     }
 
-    private static Path configPathAbsolute(Path path) {
+    public static Path configPathAbsolute(Path path) {
         if (path.isAbsolute()) return path;
         else return Util.getTypedbDir().resolve(path);
     }
