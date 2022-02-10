@@ -173,6 +173,7 @@ public class RocksConfiguration {
          */
         org.rocksdb.ColumnFamilyOptions defaultCFOptions() {
             org.rocksdb.ColumnFamilyOptions options = new org.rocksdb.ColumnFamilyOptions();
+            Data.configureMergeOperator(options);
             writeOptimisedWriteBuffers(options);
             configureSST(options);
             configureCompression(options);
@@ -342,7 +343,7 @@ public class RocksConfiguration {
         /**
          * Statistics requires a merge operator
          */
-        private void configureMergeOperator(ColumnFamilyOptions options) {
+        private static void configureMergeOperator(ColumnFamilyOptions options) {
             options.setMergeOperator(new UInt64AddOperator());
         }
 

@@ -32,11 +32,22 @@ def vaticle_typeql_lang_java():
     )
 
 def vaticle_typedb_common():
-    git_repository(
+#    git_repository(
+#        name = "vaticle_typedb_common",
+#        remote = "https://github.com/vaticle/typedb-common",
+#        tag = "2.6.1", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_common
+#    )
+
+    native.local_repository(
         name = "vaticle_typedb_common",
-        remote = "https://github.com/vaticle/typedb-common",
-        tag = "2.6.1", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_common
+        path = "../typedb-common"
     )
+
+#    git_repository(
+#        name = "vaticle_typedb_common",
+#        remote = "https://github.com/lolski/typedb-common",
+#        commit = "c2739c3a26fcbcc7335ab0f6bbec051e754aaed6", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_common
+#    )
 
 def vaticle_typedb_protocol():
     git_repository(
