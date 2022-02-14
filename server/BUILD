@@ -94,12 +94,19 @@ native_java_libraries(
     visibility = ["//visibility:public"],
 )
 
+genrule(
+    name = "create-config-and-data-dir",
+    srcs = [":config"],
+    cmd = "cp $(location :config) $(@D)/conf/ && touch $(@D)/data/empty",
+    outs = ["conf/config.yml", "data/empty"]
+)
+
 java_binary(
     name = "server-bin-mac",
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-mac"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    data = ["//server:config"],
+    data = [":create-config-and-data-dir"]
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-mac can depend directly on :server-mac (lib)
