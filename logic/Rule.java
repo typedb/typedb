@@ -402,12 +402,16 @@ public class Rule {
         }
 
         private void validateInsertable(LogicManager logicMgr) {
-            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeInference().typePermutations(rule.when, false);
-            Set<Map<Identifier.Variable.Name, Label>> allowedThenCombinations = logicMgr.typeInference().typePermutations(rule.then, true).toSet();
+            Set<Identifier.Variable.Retrievable> sharedIDs = iterate(rule.then.identifiers())
+                    .filter(thenID -> thenID.isName() && rule.when.identifiers().contains(thenID))
+                    .map(Identifier.Variable::asRetrievable).toSet();
+            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeInference().typePermutations(rule.when, false, sharedIDs);
+            Set<Map<Identifier.Variable.Name, Label>> insertableThenCombinations = logicMgr.typeInference().typePermutations(rule.then, true, sharedIDs).toSet();
 
             whenCombinations.forEachRemaining(nameLabelMap -> {
-                if (allowedThenCombinations.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
+                if (!insertableThenCombinations.contains(nameLabelMap)) {
                     throw TypeDBException.of(RULE_CAN_HAVE_INVALID_CONCLUSION, rule.structure.label(), nameLabelMap.toString());
+                }
             });
         }
 

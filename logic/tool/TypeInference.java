@@ -85,10 +85,11 @@ public class TypeInference {
         this.graphMgr = graphMgr;
     }
 
-    public FunctionalIterator<Map<Name, Label>> typePermutations(Conjunction conjunction, boolean insertable) {
+    public FunctionalIterator<Map<Name, Label>> typePermutations(Conjunction conjunction, boolean insertable,
+                                                                 Set<Identifier.Variable.Retrievable> filter) {
         TraversalBuilder traversalBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
         GraphTraversal.Type traversal = traversalBuilder.traversal();
-        traversal.filter(traversalBuilder.retrievedResolvers());
+        traversal.filter(traversalBuilder.toInferenceIDs(filter));
         return traversalEng.iterator(traversal).map(vertexMap -> {
             Map<Name, Label> mapping = new HashMap<>();
             vertexMap.forEach((id, vertex) -> {
@@ -166,7 +167,7 @@ public class TypeInference {
             }
             currentBuilder = new TraversalBuilder(conjunction, currentBuilder, insertable, graphMgr);
         } else currentBuilder = new TraversalBuilder(conjunction, insertable, graphMgr);
-        currentBuilder.traversal().filter(currentBuilder.retrievedResolvers());
+        currentBuilder.traversal().filter(currentBuilder.retrievableInferenceIDs());
         return currentBuilder;
     }
 
@@ -234,8 +235,12 @@ public class TypeInference {
             conjunction.variables().forEach(this::register);
         }
 
-        public Set<Identifier.Variable.Retrievable> retrievedResolvers() {
+        public Set<Identifier.Variable.Retrievable> retrievableInferenceIDs() {
             return iterate(resolverToOriginal.keySet()).filter(Identifier::isRetrievable).map(Identifier.Variable::asRetrievable).toSet();
+        }
+
+        public Set<Identifier.Variable.Retrievable> toInferenceIDs(Set<Identifier.Variable.Retrievable> originalIDs) {
+            return iterate(originalIDs).map(id -> originalToResolver.get(id).id().asRetrievable()).toSet();
         }
 
         public int sysVarCounter() {
