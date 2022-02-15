@@ -120,16 +120,18 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
         private static class NegationReactive extends ReactiveStreamBase<ConceptMap, ConceptMap> {
 
+            private final SingleManager<ConceptMap> providerManager;
             private boolean answerFound;
 
             protected NegationReactive(Monitoring monitor, String groupName) {
                 super(monitor, groupName);
-                answerFound = false;
+                this.providerManager = new SingleManager<>(this, monitor());
+                this.answerFound = false;
             }
 
             @Override
             protected Manager<ConceptMap> providerManager() {
-                return new SingleManager<>(this, monitor());
+                return providerManager;
             }
 
             @Override

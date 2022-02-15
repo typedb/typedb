@@ -108,6 +108,20 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             conclusionReactive.publishTo(outlet());
         }
 
+        private void mayRequestCondition(ConditionRequest conditionRequest) {
+            if (!conditionRequests.contains(conditionRequest)) {
+                conditionRequests.add(conditionRequest);
+                requestConnection(conditionRequest);
+            }
+        }
+
+        private void mayRequestMaterialiser(MaterialiserRequest materialiserRequest) {
+            if (!materialiserRequests.contains(materialiserRequest)) {
+                materialiserRequests.add(materialiserRequest);
+                requestConnection(materialiserRequest);
+            }
+        }
+
         protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap, ConditionController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController, ConditionRequest> {
 
             public ConditionRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
@@ -205,19 +219,6 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         }
 
-        private void mayRequestCondition(ConditionRequest conditionRequest) {
-            if (!conditionRequests.contains(conditionRequest)) {
-                conditionRequests.add(conditionRequest);
-                requestConnection(conditionRequest);
-            }
-        }
-
-        private void mayRequestMaterialiser(MaterialiserRequest materialiserRequest) {
-            if (!materialiserRequests.contains(materialiserRequest)) {
-                materialiserRequests.add(materialiserRequest);
-                requestConnection(materialiserRequest);
-            }
-        }
     }
 
 }

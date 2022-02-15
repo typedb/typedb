@@ -38,6 +38,7 @@ public abstract class PublisherBase<OUTPUT> extends PublisherImpl<OUTPUT> {
     protected void setSubscriber(Receiver<OUTPUT> subscriber) {
         // TODO: This is duplicated in the ReactiveStream class hierarchy
         assert this.subscriber == null;
+        assert subscriber != null;
         this.subscriber = subscriber;
     }
 
