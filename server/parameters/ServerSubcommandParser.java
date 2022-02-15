@@ -77,7 +77,7 @@ public class ServerSubcommandParser {
             Optional<Path> configPath = Server.configPath.parse(auxOptions);
             Config config = configPath
                     .map(path -> ConfigFactory.config(path, configOptions, configParser))
-                    .orElse(ConfigFactory.config(configOptions, configParser));
+                    .orElseGet(() -> ConfigFactory.config(configOptions, configParser));
             return new ServerSubcommand.Server(debug.parse(auxOptions), help.parse(auxOptions),
                     version.parse(auxOptions), config);
         }
