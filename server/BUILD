@@ -95,8 +95,9 @@ native_java_libraries(
 )
 
 genrule(
-    name = "create-config-and-data-dir",
+    name = "prepare-binary-directories",
     srcs = [":config"],
+    # TODO: can we find a way to create a directory without including an empty file in the outs?
     cmd = "cp $(location :config) $(@D)/conf/ && touch $(@D)/data/empty",
     outs = ["conf/config.yml", "data/empty"]
 )
@@ -106,7 +107,7 @@ java_binary(
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-mac"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    data = [":create-config-and-data-dir"]
+    data = [":prepare-binary-directories"]
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-mac can depend directly on :server-mac (lib)
@@ -121,7 +122,7 @@ java_binary(
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-linux"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    data = ["//server:config"],
+    data = [":prepare-binary-directories"]
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-linux can depend directly on :server-linux (lib)
@@ -136,7 +137,7 @@ java_binary(
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-windows"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    data = ["//server:config"],
+    data = [":prepare-binary-directories"]
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-windows can depend directly on :server-windows (lib)
