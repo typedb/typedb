@@ -411,9 +411,13 @@ public class Rule {
                         rule.structure.label(), ambiguousVar.get().id(), ambiguousVar.get().inferredTypes());
             }
 
-            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenPermutations = logicMgr.typeInference().typePermutations(rule.when, false, sharedIDs);
-            Set<Map<Identifier.Variable.Name, Label>> insertableThenPermutations = logicMgr.typeInference().typePermutations(rule.then, true, sharedIDs).toSet();
-
+            Set<Identifier.Variable.Name> sharedIDs = iterate(rule.then.retrieves())
+                    .filter(id -> id.isName() && rule.when.retrieves().contains(id))
+                    .map(Identifier.Variable::asName).toSet();
+            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenPermutations = logicMgr.typeInference()
+                    .inferPermutations(rule.when, false, sharedIDs);
+            Set<Map<Identifier.Variable.Name, Label>> insertableThenPermutations = logicMgr.typeInference()
+                    .inferPermutations(rule.then, true, sharedIDs).toSet();
             whenPermutations.forEachRemaining(nameLabelMap -> {
                 if (!insertableThenPermutations.contains(nameLabelMap)) {
                     throw TypeDBException.of(RULE_CONCLUSION_ILLEGAL_INSERT, rule.structure.label(), nameLabelMap.toString());

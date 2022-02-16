@@ -107,6 +107,13 @@ public class TypeInference {
         conjunction.negations().forEach(negation -> infer(negation.disjunction(), inferredTypes));
     }
 
+    public FunctionalIterator<Map<Identifier.Variable.Name, Label>> inferPermutations(Conjunction conjunction,
+                                                                                      boolean insertable,
+                                                                                      Set<Identifier.Variable.Name> filter) {
+        propagateLabels(conjunction);
+        return new InferenceTraversal(conjunction, insertable, graphMgr, traversalEng).typePermutations(filter);
+    }
+
     private void applyBounds(Conjunction conjunction, Map<Identifier.Variable.Name, Set<Label>> bounds) {
         conjunction.variables().forEach(var -> {
             if (var.id().isName() && bounds.containsKey(var.id().asName())) {
@@ -126,13 +133,6 @@ public class TypeInference {
                 namedInferences.put(var.id().asName(), var.inferredTypes())
         );
         return namedInferences;
-    }
-
-    public FunctionalIterator<Map<Identifier.Variable.Name, Label>> typePermutations(Conjunction conjunction, boolean insertable) {
-        propagateLabels(conjunction);
-        return new InferenceTraversal(
-                conjunction, insertable, graphMgr, traversalEng
-        ).typePermutations();
     }
 
     private void propagateLabels(Conjunction conj) {
@@ -182,7 +182,9 @@ public class TypeInference {
             ));
         }
 
-        private FunctionalIterator<Map<Identifier.Variable.Name, Label>> typePermutations() {
+        private FunctionalIterator<Map<Identifier.Variable.Name, Label>> typePermutations(Set<Identifier.Variable.Name> filter) {
+            Set<Retrievable> inferenceFilter = iterate(filter).map(id -> originalToInference.get(id).id().asRetrievable()).toSet();
+            traversal.filter().retainAll(inferenceFilter);
             return traversalEng.iterator(traversal).map(vertexMap -> {
                 Map<Retrievable.Name, Label> labels = new HashMap<>();
                 vertexMap.forEach((id, vertex) -> {
