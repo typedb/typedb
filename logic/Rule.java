@@ -405,11 +405,11 @@ public class Rule {
             Set<Identifier.Variable.Retrievable> sharedIDs = iterate(rule.then.identifiers())
                     .filter(thenID -> thenID.isName() && rule.when.identifiers().contains(thenID))
                     .map(Identifier.Variable::asRetrievable).toSet();
-            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeInference().typePermutations(rule.when, false, sharedIDs);
-            Set<Map<Identifier.Variable.Name, Label>> insertableThenCombinations = logicMgr.typeInference().typePermutations(rule.then, true, sharedIDs).toSet();
+            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenPermutations = logicMgr.typeInference().typePermutations(rule.when, false, sharedIDs);
+            Set<Map<Identifier.Variable.Name, Label>> insertableThenPermutations = logicMgr.typeInference().typePermutations(rule.then, true, sharedIDs).toSet();
 
-            whenCombinations.forEachRemaining(nameLabelMap -> {
-                if (!insertableThenCombinations.contains(nameLabelMap)) {
+            whenPermutations.forEachRemaining(nameLabelMap -> {
+                if (!insertableThenPermutations.contains(nameLabelMap)) {
                     throw TypeDBException.of(RULE_CAN_HAVE_INVALID_CONCLUSION, rule.structure.label(), nameLabelMap.toString());
                 }
             });
