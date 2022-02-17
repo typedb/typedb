@@ -421,29 +421,33 @@ public abstract class Processor<INPUT, OUTPUT,
         public void onPathFork(int numForks, Reactive forker) {
             assert numForks > 0;
             onChange(CountChange.PathFork, numForks, forker);
+            reportToMonitors(CountChange.PathFork, numForks, forker);
         }
 
         public void onPathJoin(Reactive joiner) {
             onChange(CountChange.PathJoin, 1, joiner);
+            reportToMonitors(CountChange.PathJoin, 1, joiner);
         }
 
         public void onAnswerCreate(Reactive creator) {
             onChange(CountChange.AnswerCreate, 1, creator);
+            reportToMonitors(CountChange.AnswerCreate, 1, creator);
         }
 
         public void onAnswerCreate(int num, Reactive creator) {
             assert num >= 0;
             onChange(CountChange.AnswerCreate, num, creator);
+            reportToMonitors(CountChange.AnswerCreate, num, creator);
         }
 
         public void onAnswerDestroy(Reactive destroyer) {
             onChange(CountChange.AnswerDestroy, 1, destroyer);
+            reportToMonitors(CountChange.AnswerDestroy, 1, destroyer);
         }
 
         protected void onChange(CountChange countChange, int num, Reactive reactive) {
             updateCount(countChange, num);
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.onCountChange(reactive, countChange, processor().driver(), num));
-            reportToMonitors(countChange, num, reactive);
         }
 
         protected void updateCount(CountChange countChange, int num) {
@@ -478,6 +482,21 @@ public abstract class Processor<INPUT, OUTPUT,
 
         public void reportAnswerCreate(Reactive creator) {
             reportToMonitors(CountChange.AnswerCreate, 1, creator);
+        }
+
+        public void onAnswerDestroyLocalUpdate(Reactive destroyer) {
+            updateCount(CountChange.AnswerDestroy, 1);
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.onCountChange(destroyer, CountChange.AnswerDestroy, processor().driver(), 1));
+        }
+
+        public void onPathJoinLocalUpdate(Reactive joiner) {
+            updateCount(CountChange.PathJoin, 1);
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.onCountChange(joiner, CountChange.PathJoin, processor().driver(), 1));
+        }
+
+        public void onAnswerCreateLocalUpdate(Reactive creator) {
+            onChange(CountChange.AnswerCreate, 1, creator);
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.onCountChange(creator, CountChange.AnswerCreate, processor().driver(), 1));
         }
 
         protected void sendInitialReport(Driver<? extends Processor<?, ?, ?, ?>> monitor) {

@@ -134,6 +134,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
             FanInReactive<ConceptMap> fanIn = fanIn(monitoring(), name());
             if (singleAnswerRequired) fanIn.buffer().findFirst().publishTo(outlet());  // TODO: Buffer not needed as we're feeding a BufferedFanOut as the outlet
             else fanIn.buffer().publishTo(outlet());  // TODO: Buffer not needed as we're feeding a BufferedFanOut as the outlet
+            // TODO: Could findFirst cause termination problems when multiple upstream paths are never joined?
 
             Source.fromIteratorSupplier(traversalSuppplier, monitoring(), name()).publishTo(fanIn);
 

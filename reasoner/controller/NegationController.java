@@ -105,7 +105,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             setOutlet(noOp(monitoring(), name()));
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             requestConnection(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
-            negation = new NegationReactive(monitoring(), name());
+            negation = new NegationReactive(monitoring(), name(), this::onDone);
             endpoint.publishTo(negation);
             negation.publishTo(outlet());
         }
@@ -121,10 +121,12 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         private static class NegationReactive extends ReactiveStreamBase<ConceptMap, ConceptMap> {
 
             private final SingleManager<ConceptMap> providerManager;
+            private final Runnable onEarlyDone;
             private boolean answerFound;
 
-            protected NegationReactive(Monitoring monitor, String groupName) {
+            protected NegationReactive(Monitoring monitor, String groupName, Runnable onEarlyDone) {
                 super(monitor, groupName);
+                this.onEarlyDone = onEarlyDone;
                 this.providerManager = new SingleManager<>(this, monitor());
                 this.answerFound = false;
             }
@@ -135,15 +137,22 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             }
 
             @Override
+            public void pull(Receiver<ConceptMap> receiver) {
+                super.pull(receiver);
+            }
+
+            @Override
             public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
                 super.receive(provider, packet);
                 answerFound = true;
-                monitor().onAnswerDestroy(this);
+                monitor().onAnswerDestroyLocalUpdate(this);
+                onEarlyDone.run();
+//                monitor().onPathJoinLocalUpdate(this);  // TODO: We should do this, but this sends paths to -2 somehow, when answer count is still 1. Seems like we have 1 too many answers, and one too few paths.
             }
 
             public void receiveDone(ConceptMap packet) {
                 if (!answerFound) {
-                    monitor().reportAnswerCreate(this);  // TODO: This increases the local count of answers as well as the desired effect of informing the root. Consider manually terminating the monitor? Not good for using assertions to ensure answers weren't missed though
+                    monitor().reportAnswerCreate(this);
                     subscriber().receive(this, packet);
                 }
             }
