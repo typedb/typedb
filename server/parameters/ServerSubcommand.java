@@ -25,13 +25,13 @@ import java.nio.file.Path;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public abstract class ServerSubcommand<CONFIG extends CoreConfig> {
+public abstract class ServerSubcommand {
 
     public boolean isServer() {
         return false;
     }
 
-    public Server<CONFIG> asServer() {
+    public Server asServer() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Server.class));
     }
 
@@ -39,7 +39,7 @@ public abstract class ServerSubcommand<CONFIG extends CoreConfig> {
         return false;
     }
 
-    public Import<?> asImport() {
+    public Import asImport() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Import.class));
     }
 
@@ -47,18 +47,18 @@ public abstract class ServerSubcommand<CONFIG extends CoreConfig> {
         return false;
     }
 
-    public Export<?> asExport() {
+    public Export asExport() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Export.class));
     }
 
-    public static class Server<C extends CoreConfig> extends ServerSubcommand<C> {
+    public static class Server extends ServerSubcommand {
 
         private final boolean isDebug;
         private final boolean isHelp;
         private final boolean isVersion;
-        private final C config;
+        private final CoreConfig config;
 
-        Server(boolean isDebug, boolean isHelp, boolean isVersion, C config) {
+        Server(boolean isDebug, boolean isHelp, boolean isVersion, CoreConfig config) {
             this.isDebug = isDebug;
             this.isHelp = isHelp;
             this.isVersion = isVersion;
@@ -71,7 +71,7 @@ public abstract class ServerSubcommand<CONFIG extends CoreConfig> {
         }
 
         @Override
-        public Server<C> asServer() {
+        public Server asServer() {
             return this;
         }
 
@@ -87,12 +87,12 @@ public abstract class ServerSubcommand<CONFIG extends CoreConfig> {
             return isVersion;
         }
 
-        public C config() {
+        public CoreConfig config() {
             return config;
         }
     }
 
-    public static class Import<C extends CoreConfig> extends ServerSubcommand<C> {
+    public static class Import extends ServerSubcommand {
 
         private final String database;
         private final Path file;
@@ -122,12 +122,12 @@ public abstract class ServerSubcommand<CONFIG extends CoreConfig> {
         }
 
         @Override
-        public Import<?> asImport() {
+        public Import asImport() {
             return this;
         }
     }
 
-    public static class Export<C extends CoreConfig> extends ServerSubcommand<C> {
+    public static class Export extends ServerSubcommand {
 
         private final String database;
         private final Path file;
@@ -157,7 +157,7 @@ public abstract class ServerSubcommand<CONFIG extends CoreConfig> {
         }
 
         @Override
-        public Export<?> asExport() {
+        public Export asExport() {
             return this;
         }
     }

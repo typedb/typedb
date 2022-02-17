@@ -53,8 +53,7 @@ public class ServerSubcommandParser {
         });
     }
 
-    public static class Server<CONFIG extends CoreConfig, PARSER extends YamlParser.Value.Compound<CONFIG>>
-            extends SubcommandParser<ServerSubcommand.Server<CONFIG>> {
+    public static class Server extends SubcommandParser<ServerSubcommand.Server> {
 
         private static final OptionParser.Flag debug = new OptionParser.Flag("debug", "Run server in debug mode.");
         private static final OptionParser.Flag help = new OptionParser.Flag("help", "Print help menu.");
@@ -65,22 +64,22 @@ public class ServerSubcommandParser {
         private static final String[] tokens = new String[]{};
         private static final String description = "Run TypeDB server";
 
-        private final PARSER configParser;
+        private final CoreConfigParser configParser;
 
-        public Server(PARSER configParser) {
+        public Server(CoreConfigParser configParser) {
             super(tokens, description);
             this.configParser = configParser;
         }
 
         @Override
-        protected ServerSubcommand.Server<CONFIG> parse(Set<Option> options) {
+        protected ServerSubcommand.Server parse(Set<Option> options) {
             Set<Option> auxOptions = findAuxiliaryOptions(options);
             Set<Option> configOptions = excludeOptions(options, auxOptions);
             Optional<Path> configPath = Server.configPath.parse(auxOptions);
-            CONFIG config = configPath
+            CoreConfig config = configPath
                     .map(path -> CoreConfigFactory.config(path, configOptions, configParser))
                     .orElseGet(() -> CoreConfigFactory.config(configOptions, configParser));
-            return new ServerSubcommand.Server<>(debug.parse(auxOptions), help.parse(auxOptions),
+            return new ServerSubcommand.Server(debug.parse(auxOptions), help.parse(auxOptions),
                     version.parse(auxOptions), config);
         }
 
@@ -101,7 +100,7 @@ public class ServerSubcommandParser {
         }
     }
 
-    public static class Import<CONFIG extends CoreConfig> extends SubcommandParser<ServerSubcommand.Import<CONFIG>> {
+    public static class Import extends SubcommandParser<ServerSubcommand.Import> {
 
         public static final String[] tokens = new String[]{"import"};
         public static final String description = "Run TypeDB import.";
@@ -118,10 +117,10 @@ public class ServerSubcommandParser {
         }
 
         @Override
-        protected ServerSubcommand.Import<CONFIG> parse(Set<Option> options) {
+        protected ServerSubcommand.Import parse(Set<Option> options) {
             validateRequiredOptions(parsers, options);
             validateUnrecognisedOptions(parsers, options);
-            return new ServerSubcommand.Import<>(database.parse(options).get(), filePath.parse(options).get(),
+            return new ServerSubcommand.Import(database.parse(options).get(), filePath.parse(options).get(),
                     port.parse(options).get());
         }
 
@@ -131,7 +130,7 @@ public class ServerSubcommandParser {
         }
     }
 
-    public static class Export<CONFIG extends CoreConfig> extends SubcommandParser<ServerSubcommand.Export<CONFIG>> {
+    public static class Export extends SubcommandParser<ServerSubcommand.Export> {
 
         public static final String[] tokens = new String[]{"export"};
         public static final String description = "Run TypeDB export.";
@@ -148,10 +147,10 @@ public class ServerSubcommandParser {
         }
 
         @Override
-        protected ServerSubcommand.Export<CONFIG> parse(Set<Option> options) {
+        protected ServerSubcommand.Export parse(Set<Option> options) {
             validateRequiredOptions(parsers, options);
             validateUnrecognisedOptions(parsers, options);
-            return new ServerSubcommand.Export<>(database.parse(options).get(), filePath.parse(options).get(),
+            return new ServerSubcommand.Export(database.parse(options).get(), filePath.parse(options).get(),
                     port.parse(options).get());
         }
 
