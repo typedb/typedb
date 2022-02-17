@@ -39,17 +39,15 @@ import static com.vaticle.typedb.core.server.common.Constants.CONFIG_PATH;
 
 public class CoreConfigFactory {
 
-    public static <CONFIG extends CoreConfig, PARSER extends YamlParser.Value.Compound<CONFIG>> CONFIG config(PARSER parser) {
+    public static CoreConfig config(CoreConfigParser parser) {
         return config(new HashSet<>(), parser);
     }
 
-    public static <CONFIG extends CoreConfig, PARSER extends YamlParser.Value.Compound<CONFIG>>
-    CONFIG config(Set<Option> overrides, PARSER parser) {
+    public static CoreConfig config(Set<Option> overrides, CoreConfigParser parser) {
         return config(CONFIG_PATH, overrides, parser);
     }
 
-    public static <CONFIG extends CoreConfig, PARSER extends YamlParser.Value.Compound<CONFIG>>
-    CONFIG config(Path file, Set<Option> overrides, PARSER parser) {
+    public static CoreConfig config(Path file, Set<Option> overrides, CoreConfigParser parser) {
         Yaml.Map yaml = merge(file, overrides);
         substituteEnvVars(yaml);
         return parser.parse(yaml, "");
