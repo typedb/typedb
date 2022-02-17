@@ -30,7 +30,7 @@ public class FanInReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, P
     }
 
     @Override
-    protected MultiProviderRegistry<PACKET> providerManager() {
+    protected MultiProviderRegistry<PACKET> providerRegistry() {
         return providerManager;
     }
 
@@ -41,11 +41,11 @@ public class FanInReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, P
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
-        finishPulling();
-        subscriber().receive(this, packet);
+        receiverRegistry().finishPulling();
+        receiverRegistry().receiver().receive(this, packet);
     }
 
     public void finalise() {
-        providerManager().finaliseProviders();
+        providerRegistry().finaliseProviders();
     }
 }

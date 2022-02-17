@@ -34,14 +34,14 @@ public class MapReactive<INPUT, OUTPUT> extends AbstractUnaryReactiveStream<INPU
     }
 
     @Override
-    protected ProviderRegistry<INPUT> providerManager() {
+    protected ProviderRegistry<INPUT> providerRegistry() {
         return providerManager;
     }
 
     @Override
     public void receive(Provider<INPUT> provider, INPUT packet) {
         super.receive(provider, packet);
-        finishPulling();
-        subscriber().receive(this, mappingFunc.apply(packet));
+        receiverRegistry().finishPulling();
+        receiverRegistry().receiver().receive(this, mappingFunc.apply(packet));
     }
 }

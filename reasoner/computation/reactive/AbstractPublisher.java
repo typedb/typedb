@@ -34,6 +34,8 @@ public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Pub
         this.groupName = groupName;
     }
 
+    protected abstract ReceiverRegistry<OUTPUT> receiverRegistry();
+
     protected Monitoring monitor() {
         return monitor;
     }

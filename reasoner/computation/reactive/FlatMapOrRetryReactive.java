@@ -36,7 +36,7 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends AbstractUnaryReactive
     }
 
     @Override
-    protected ProviderRegistry<INPUT> providerManager() {
+    protected ProviderRegistry<INPUT> providerRegistry() {
         return providerManager;
     }
 
@@ -45,13 +45,13 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends AbstractUnaryReactive
         super.receive(provider, packet);
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {
-            finishPulling();
+            receiverRegistry().finishPulling();
             // TODO: This can actually create more receive() calls to downstream than the number of pull()s it receives. Should buffer instead. Protected against by manually adding .buffer() after calls to flatMap
             transformed.forEachRemaining(t -> {
                 monitor().onAnswerCreate(this);
-                subscriber().receive(this, t);
+                receiverRegistry().receiver().receive(this, t);
             });
-        } else if (isPulling()) {
+        } else if (receiverRegistry().isPulling()) {
             providerManager.pull(provider);  // Automatic retry
         }
         monitor().onAnswerDestroy(this);  // Because we discarded the original packet and gained as many as are in the iterator

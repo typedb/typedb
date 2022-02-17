@@ -35,7 +35,7 @@ public class DeduplicationReactive<PACKET> extends AbstractUnaryReactiveStream<P
     }
 
     @Override
-    protected ProviderRegistry<PACKET> providerManager() {
+    protected ProviderRegistry<PACKET> providerRegistry() {
         return providerManager;
     }
 
@@ -43,10 +43,10 @@ public class DeduplicationReactive<PACKET> extends AbstractUnaryReactiveStream<P
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
         if (deduplicationSet.add(packet)) {
-            finishPulling();
-            subscriber().receive(this, packet);
+            receiverRegistry().finishPulling();
+            receiverRegistry().receiver().receive(this, packet);
         } else {
-            if (isPulling()) providerManager.pull(provider);  // Automatic retry
+            if (receiverRegistry().isPulling()) providerManager.pull(provider);  // Automatic retry
             monitor().onAnswerDestroy(this);  // Already seen this answer, so join this path
         }
     }

@@ -32,7 +32,7 @@ public class NoOpReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PA
     }
 
     @Override
-    protected ProviderRegistry<PACKET> providerManager() {
+    protected ProviderRegistry<PACKET> providerRegistry() {
         return providerManager;
     }
 
@@ -43,7 +43,7 @@ public class NoOpReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PA
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
-        finishPulling();
-        subscriber().receive(this, packet);
+        receiverRegistry().finishPulling();
+        receiverRegistry().receiver().receive(this, packet);
     }
 }

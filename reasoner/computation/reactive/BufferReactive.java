@@ -34,16 +34,16 @@ public class BufferReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, 
     }
 
     @Override
-    protected ProviderRegistry<PACKET> providerManager() {
+    protected ProviderRegistry<PACKET> providerRegistry() {
         return providerManager;
     }
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
-        if (isPulling()) {
-            finishPulling();
-            subscriber().receive(this, packet);
+        if (receiverRegistry().isPulling()) {
+            receiverRegistry().finishPulling();
+            receiverRegistry().receiver().receive(this, packet);
         } else {
             // TODO: Could add an answer deduplication optimisation here, but means holding an extra set of all answers seen
             stack.add(packet);
@@ -53,12 +53,12 @@ public class BufferReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, 
     @Override
     public void pull(Receiver<PACKET> receiver) {
         assert receiver.equals(subscriber);  // TODO: Make a proper exception for this
-        if (!isPulling()) {
+        if (!receiverRegistry().isPulling()) {
             if (stack.size() > 0) {
                 receiver.receive(this, stack.pop());
             } else {
-                setPulling();
-                providerManager().pullAll();
+                receiverRegistry().setPulling();
+                providerRegistry().pullAll();
             }
         }
     }

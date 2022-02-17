@@ -32,7 +32,7 @@ public class FindFirstReactive<PACKET> extends AbstractUnaryReactiveStream<PACKE
     }
 
     @Override
-    protected ProviderRegistry<PACKET> providerManager() {
+    protected ProviderRegistry<PACKET> providerRegistry() {
         return providerManager;
     }
 
@@ -41,8 +41,8 @@ public class FindFirstReactive<PACKET> extends AbstractUnaryReactiveStream<PACKE
         super.receive(provider, packet);
         if (!packetFound) {
             packetFound = true;
-            finishPulling();
-            subscriber().receive(this, packet);
+            receiverRegistry().finishPulling();
+            receiverRegistry().receiver().receive(this, packet);
         } else {
             monitor().onAnswerDestroy(this);
         }

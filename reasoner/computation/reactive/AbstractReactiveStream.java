@@ -26,10 +26,6 @@ public abstract class AbstractReactiveStream<INPUT, OUTPUT> extends AbstractPubl
         super(monitor, groupName);
     }
 
-    protected abstract boolean isPulling();
-
-    protected abstract void finishPulling();
-
-    protected abstract ProviderRegistry<INPUT> providerManager();
+    protected abstract ProviderRegistry<INPUT> providerRegistry();
 
 }

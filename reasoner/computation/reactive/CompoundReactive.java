@@ -53,7 +53,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends AbstractUnaryReactiveStre
     }
 
     @Override
-    protected ProviderRegistry<PACKET> providerManager() {
+    protected ProviderRegistry<PACKET> providerRegistry() {
         return providerManager;
     }
 
@@ -63,8 +63,8 @@ public class CompoundReactive<PLAN_ID, PACKET> extends AbstractUnaryReactiveStre
         PACKET mergedPacket = compoundPacketsFunc.apply(initialPacket, packet);
         if (leadingPublisher.equals(provider)) {
             if (remainingPlan.size() == 0) {  // For a single item plan
-                finishPulling();
-                subscriber().receive(this, mergedPacket);
+                receiverRegistry().finishPulling();
+                receiverRegistry().receiver().receive(this, mergedPacket);
             } else {
                 Publisher<PACKET> follower;
                 if (remainingPlan.size() == 1) {
@@ -76,13 +76,13 @@ public class CompoundReactive<PLAN_ID, PACKET> extends AbstractUnaryReactiveStre
                 monitor().onPathFork(1, this);
                 monitor().onAnswerDestroy(this);
                 follower.publishTo(this);
-                providerManager().pull(leadingPublisher);  // Pull again on the leader in case the follower never produces an answer
-                providerManager().pull(follower);
+                providerRegistry().pull(leadingPublisher);  // Pull again on the leader in case the follower never produces an answer
+                providerRegistry().pull(follower);
             }
         } else {
-            finishPulling();
+            receiverRegistry().finishPulling();
             PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(provider));
-            subscriber().receive(this, compoundedPacket);
+            receiverRegistry().receiver().receive(this, compoundedPacket);
         }
     }
 }

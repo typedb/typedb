@@ -34,40 +34,43 @@ public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKE
     final Map<Receiver<PACKET>, Integer> bufferPositions;  // Points to the next item needed
     final Set<PACKET> bufferSet;
     final List<PACKET> bufferList;
-    final Set<Receiver<PACKET>> pullers;
-    protected final Set<Receiver<PACKET>> receivers;
     private final ProviderRegistry<PACKET> providerManager;
+    private final MultiReceiverRegistry<PACKET> receiverRegistry;
 
     public BufferedFanOutReactive(Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.bufferSet = new HashSet<>();
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
-        this.pullers = new HashSet<>();
-        this.receivers = new HashSet<>();
         this.providerManager = new SingleProviderRegistry<>(this, monitor());
+        this.receiverRegistry = new MultiReceiverRegistry<>();
     }
 
     @Override
-    protected ProviderRegistry<PACKET> providerManager() {
+    protected MultiReceiverRegistry<PACKET> receiverRegistry() {
+        return receiverRegistry;
+    }
+
+    @Override
+    protected ProviderRegistry<PACKET> providerRegistry() {
         return providerManager;
     }
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
-        providerManager().receivedFrom(provider);
-        assert receivers.size() > 0;
+        providerRegistry().receivedFrom(provider);
+        assert receiverRegistry().size() > 0;
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
-            final int numCreated = receivers.size() - 1;
+            final int numCreated = receiverRegistry().size() - 1;
             if (numCreated > 0) monitor().onAnswerCreate(numCreated, this);  // We need to account for sending an answer to all
             // receivers (-1 for the one we received), either now or when they next pull.
-            Set<Receiver<PACKET>> toSend = new HashSet<>(pullers);
-            finishPulling();
+            Set<Receiver<PACKET>> toSend = receiverRegistry().pullingReceivers();
+            receiverRegistry().finishPulling();
             toSend.forEach(this::send);
         } else {
-            if (isPulling()) providerManager().pull(provider);
+            if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
             monitor().onAnswerDestroy(this);  // When an answer is a duplicate then destroy it
         }
     }
@@ -78,8 +81,8 @@ public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKE
         addReceiver(receiver);
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
-            setPulling(receiver);
-            providerManager().pullAll();
+            receiverRegistry().setPulling(receiver);
+            providerRegistry().pullAll();
         } else {
             send(receiver);
         }
@@ -91,19 +94,11 @@ public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKE
         receiver.receive(this, bufferList.get(pos));
     }
 
-    // TODO: Should pulling methods be abstracted into a reactive interface? These calls are only used internally
-    @Override
-    protected void finishPulling() {
-        pullers.clear();
-    }
-
-    protected void setPulling(Receiver<PACKET> receiver) {
-        pullers.add(receiver);
-    }
-
-    @Override
-    protected boolean isPulling() {
-        return pullers.size() > 0;
+    private void addReceiver(Receiver<PACKET> receiver) {
+        if (receiverRegistry().addReceiver(receiver)) {
+            if (bufferSet.size() > 0) monitor().onAnswerCreate(bufferSet.size(), this);  // New receiver, so any answer in the buffer will be dispatched there at some point
+            if (receiverRegistry().size() > 1) monitor().onPathJoin(this);
+        }
     }
 
     @Override
@@ -113,17 +108,10 @@ public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKE
         subscriber.subscribeTo(this);
     }
 
-    private void addReceiver(Receiver<PACKET> receiver) {
-        if (receivers.add(receiver)) {
-            if (bufferSet.size() > 0) monitor().onAnswerCreate(bufferSet.size(), this);  // New receiver, so any answer in the buffer will be dispatched there at some point
-            if (receivers.size() > 1) monitor().onPathJoin(this);
-        }
-    }
-
     @Override
     public void subscribeTo(Provider<PACKET> provider) {
-        providerManager().add(provider);
-        if (isPulling()) providerManager().pull(provider);
+        providerRegistry().add(provider);
+        if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
     }
 
 }

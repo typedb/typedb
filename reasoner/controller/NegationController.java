@@ -132,7 +132,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             }
 
             @Override
-            protected ProviderRegistry<ConceptMap> providerManager() {
+            protected ProviderRegistry<ConceptMap> providerRegistry() {
                 return providerManager;
             }
 
@@ -148,7 +148,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             public void receiveDone(ConceptMap packet) {
                 if (!answerFound) {
                     monitor().reportAnswerCreate(this);
-                    subscriber().receive(this, packet);
+                    receiverRegistry().receiver().receive(this, packet);
                 }
             }
         }

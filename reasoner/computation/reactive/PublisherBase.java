@@ -24,9 +24,16 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.S
 public abstract class PublisherBase<OUTPUT> extends AbstractPublisher<OUTPUT> {
 
     protected Receiver<OUTPUT> subscriber;
+    protected SingleReceiverRegistry<OUTPUT> receiverRegistry;
 
     protected PublisherBase(Monitoring monitor, String groupName) {
         super(monitor, groupName);
+        this.receiverRegistry = new SingleReceiverRegistry<>(null);
+    }
+
+    @Override
+    protected SingleReceiverRegistry<OUTPUT> receiverRegistry() {
+        return receiverRegistry;
     }
 
     @Override

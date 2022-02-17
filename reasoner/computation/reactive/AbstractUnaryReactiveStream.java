@@ -24,70 +24,52 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 public abstract class AbstractUnaryReactiveStream<INPUT, OUTPUT> extends AbstractReactiveStream<INPUT, OUTPUT> {
 
     protected Receiver<OUTPUT> subscriber;
-    private boolean isPulling;
+    private final SingleReceiverRegistry<OUTPUT> receiverRegistry;
 
     protected AbstractUnaryReactiveStream(Monitoring monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
         super(monitor, groupName);
-        this.isPulling = false;
+        this.receiverRegistry = new SingleReceiverRegistry<>(null);
     }
 
     @Override
-    protected abstract ProviderRegistry<INPUT> providerManager();
+    protected abstract ProviderRegistry<INPUT> providerRegistry();
+
+    @Override
+    protected SingleReceiverRegistry<OUTPUT> receiverRegistry() {
+        return receiverRegistry;
+    }
 
     @Override
     public void receive(Provider<INPUT> provider, INPUT packet) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
-        providerManager().receivedFrom(provider);
+        providerRegistry().receivedFrom(provider);
     }
 
     @Override
     public void pull(Receiver<OUTPUT> receiver) {
         assert receiver.equals(subscriber);  // TODO: Make a proper exception for this
-        if (!isPulling()) {
-            setPulling();
-            providerManager().pullAll();
+        if (!receiverRegistry().isPulling()) {
+            receiverRegistry().setPulling();
+            providerRegistry().pullAll();
         }
     }
 
     @Override
     public void subscribeTo(Provider<INPUT> provider) {
-        providerManager().add(provider);
-        if (isPulling()) providerManager().pull(provider);
+        providerRegistry().add(provider);
+        if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
     }
 
-    @Override
-    public void finishPulling() {
-        isPulling = false;
-    }
-
-    void setPulling() {
-        isPulling = true;
-    }
-
-    @Override
-    protected boolean isPulling() {
-        return isPulling;
-    }
-
-    private void setSubscriber(Receiver<OUTPUT> subscriber) {
-        assert this.subscriber == null;
-        this.subscriber = subscriber;
-    }
 
     @Override
     public void publishTo(Subscriber<OUTPUT> subscriber) {
-        setSubscriber(subscriber);
+        receiverRegistry().addReceiver(subscriber);
         subscriber.subscribeTo(this);
     }
 
     public void sendTo(Receiver<OUTPUT> receiver) {
         // Allows sending of data without the downstream being able to pull from here
-        setSubscriber(receiver);
-    }
-
-    public Receiver<OUTPUT> subscriber() {
-        assert this.subscriber != null;
-        return subscriber;
+        receiverRegistry().addReceiver(receiver);
     }
 
 }
