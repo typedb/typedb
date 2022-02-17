@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.server.parameters;
 
-import com.vaticle.typedb.common.yaml.Yaml;
+import com.vaticle.typedb.common.yaml.YAML;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.parameters.util.Option;
 import com.vaticle.typedb.core.server.parameters.util.YamlParser;
@@ -48,23 +48,23 @@ public class CoreConfigFactory {
     }
 
     public static CoreConfig config(Path file, Set<Option> overrides, CoreConfigParser parser) {
-        Yaml.Map yaml = merge(file, overrides);
+        YAML.Map yaml = merge(file, overrides);
         substituteEnvVars(yaml);
         return parser.parse(yaml, "");
     }
 
-    private static Yaml.Map merge(Path file, Set<Option> overrides) {
-        Yaml.Map yaml = readFile(file);
-        Yaml.Map yamlOverrides = convertOverrides(overrides);
+    private static YAML.Map merge(Path file, Set<Option> overrides) {
+        YAML.Map yaml = readFile(file);
+        YAML.Map yamlOverrides = convertOverrides(overrides);
         for (String key: yamlOverrides.keys()) {
             set(yaml, key, yamlOverrides.get(key));
         }
         return yaml;
     }
 
-    private static Yaml.Map readFile(Path file) {
+    private static YAML.Map readFile(Path file) {
         try {
-            Yaml config = Yaml.load(file);
+            YAML config = YAML.load(file);
             if (!config.isMap()) throw TypeDBException.of(CONFIG_YAML_MUST_BE_MAP);
             return config.asMap();
         } catch (FileNotFoundException e) {
@@ -72,17 +72,17 @@ public class CoreConfigFactory {
         }
     }
 
-    private static Yaml.Map convertOverrides(Set<Option> options) {
+    private static YAML.Map convertOverrides(Set<Option> options) {
         Set<String> keys = new HashSet<>();
         for (Option option : options) {
             if (!option.hasValue()) throw TypeDBException.of(CLI_OPTION_REQUIRES_VALUE, option);
             keys.add(option.name());
         }
-        Map<String, Yaml> yaml = new HashMap<>();
+        Map<String, YAML> yaml = new HashMap<>();
         for (String key : keys) {
-            yaml.put(key, Yaml.load(get(options, key)));
+            yaml.put(key, YAML.load(get(options, key)));
         }
-        return new Yaml.Map(yaml);
+        return new YAML.Map(yaml);
     }
 
     private static String get(Set<Option> source, String key) {
@@ -92,26 +92,26 @@ public class CoreConfigFactory {
         else return "[" + String.join(", ", values) + "]";
     }
 
-    public static void set(Yaml.Map destination, String key, Yaml value) {
+    public static void set(YAML.Map destination, String key, YAML value) {
         String[] split = key.split("\\.");
-        Yaml.Map nested = destination.asMap();
+        YAML.Map nested = destination.asMap();
         for (int i = 0; i < split.length - 1; i++) {
             String keyScoped = split[i];
-            if (!nested.containsKey(keyScoped)) nested.put(keyScoped, new Yaml.Map(new HashMap<>()));
+            if (!nested.containsKey(keyScoped)) nested.put(keyScoped, new YAML.Map(new HashMap<>()));
             nested = nested.get(keyScoped).asMap();
         }
         nested.put(split[split.length - 1], value);
     }
 
-    private static void substituteEnvVars(Yaml.Map yaml) {
+    private static void substituteEnvVars(YAML.Map yaml) {
         for (String key : yaml.keys()) {
-            Yaml value = yaml.get(key);
+            YAML value = yaml.get(key);
             if (value.isString()) {
                 String valueStr = value.asString().value();
                 if (valueStr.startsWith("$")) {
                     String envVarName = valueStr.substring(1);
                     if (System.getenv(envVarName) == null) throw TypeDBException.of(ENV_VAR_NOT_FOUND, valueStr);
-                    else yaml.put(key, Yaml.load(System.getenv(envVarName)));
+                    else yaml.put(key, YAML.load(System.getenv(envVarName)));
                 }
             } else if (value.isMap()) {
                 substituteEnvVars(value.asMap());

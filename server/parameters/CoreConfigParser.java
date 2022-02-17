@@ -17,7 +17,7 @@
 
 package com.vaticle.typedb.core.server.parameters;
 
-import com.vaticle.typedb.common.yaml.Yaml;
+import com.vaticle.typedb.common.yaml.YAML;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.common.Util;
 import com.vaticle.typedb.core.server.parameters.util.YamlParser;
@@ -57,7 +57,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
     private static final Set<Predefined<?>> parsers = set(server, storage, log, vaticleFactory);
 
     @Override
-    public CoreConfig parse(Yaml yaml, String path) {
+    public CoreConfig parse(YAML yaml, String path) {
         if (yaml.isMap()) {
             validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
             return new CoreConfig(server.parse(yaml.asMap(), path), storage.parse(yaml.asMap(), path),
@@ -86,7 +86,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
         private static final Set<Predefined<?>> parsers = set(address);
 
         @Override
-        public CoreConfig.Server parse(Yaml yaml, String path) {
+        public CoreConfig.Server parse(YAML yaml, String path) {
             if (yaml.isMap()) {
                 validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                 return new CoreConfig.Server(address.parse(yaml.asMap(), path));
@@ -111,7 +111,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
         private static final Set<Predefined<?>> parsers = set(data, dbCache);
 
         @Override
-        public CoreConfig.Storage parse(Yaml yaml, String path) {
+        public CoreConfig.Storage parse(YAML yaml, String path) {
             if (yaml.isMap()) {
                 validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                 return new CoreConfig.Storage(configPathAbsolute(data.parse(yaml.asMap(), path)),
@@ -136,7 +136,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
             private static final Set<Predefined<?>> parsers = set(data, index);
 
             @Override
-            public CoreConfig.Storage.DatabaseCache parse(Yaml yaml, String path) {
+            public CoreConfig.Storage.DatabaseCache parse(YAML yaml, String path) {
                 if (yaml.isMap()) {
                     validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                     return new CoreConfig.Storage.DatabaseCache(data.parse(yaml.asMap(), path), index.parse(yaml.asMap(), path));
@@ -164,7 +164,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
         private static final Set<Predefined<?>> parsers = set(output, logger, debugger);
 
         @Override
-        public CoreConfig.Log parse(Yaml yaml, String path) {
+        public CoreConfig.Log parse(YAML yaml, String path) {
             if (yaml.isMap()) {
                 validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                 CoreConfig.Log.Output output = Log.output.parse(yaml.asMap(), path);
@@ -189,7 +189,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
             private static final Dynamic<CoreConfig.Log.Output.Type> type = dynamic(Type.description, new Type());
 
             @Override
-            public CoreConfig.Log.Output parse(Yaml yaml, String path) {
+            public CoreConfig.Log.Output parse(YAML yaml, String path) {
                 if (yaml.isMap()) return new CoreConfig.Log.Output(type.parseFrom(yaml.asMap(), path));
                 else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
             }
@@ -209,7 +209,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
                 protected static final Compound<CoreConfig.Log.Output.Type.File> file = new File();
 
                 @Override
-                public CoreConfig.Log.Output.Type parse(Yaml yaml, String path) {
+                public CoreConfig.Log.Output.Type parse(YAML yaml, String path) {
                     if (yaml.isMap()) {
                         String value = type.parse(yaml.asMap(), path);
                         switch (value) {
@@ -240,7 +240,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
                     private static final Set<Predefined<?>> parsers = set(typeParser);
 
                     @Override
-                    public CoreConfig.Log.Output.Type.Stdout parse(Yaml yaml, String path) {
+                    public CoreConfig.Log.Output.Type.Stdout parse(YAML yaml, String path) {
                         if (yaml.isMap()) {
                             validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                             String type = typeParser.parse(yaml.asMap(), path);
@@ -275,7 +275,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
                     private static final Set<Predefined<?>> parsers = set(typeParser, path, fileSizeCap, archivesSizeCap);
 
                     @Override
-                    public CoreConfig.Log.Output.Type.File parse(Yaml yaml, String path) {
+                    public CoreConfig.Log.Output.Type.File parse(YAML yaml, String path) {
                         if (yaml.isMap()) {
                             validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                             String type = typeParser.parse(yaml.asMap(), path);
@@ -310,7 +310,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
                     dynamic("Custom filtered loggers.", new Filtered());
 
             @Override
-            public CoreConfig.Log.Logger parse(Yaml yaml, String path) {
+            public CoreConfig.Log.Logger parse(YAML yaml, String path) {
                 if (yaml.isMap()) {
                     return new CoreConfig.Log.Logger(defaultLogger.parse(yaml.asMap(), path),
                             filteredLogger.parseFrom(yaml.asMap(), path, defaultLogger));
@@ -331,7 +331,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
                 private static final Set<Predefined<?>> parsers = set(level, output);
 
                 @Override
-                public CoreConfig.Log.Logger.Unfiltered parse(Yaml yaml, String path) {
+                public CoreConfig.Log.Logger.Unfiltered parse(YAML yaml, String path) {
                     if (yaml.isMap()) {
                         validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                         return new CoreConfig.Log.Logger.Unfiltered(level.parse(yaml.asMap(), path),
@@ -356,7 +356,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
                 private static final Set<Predefined<?>> parsers = set(filter, level, output);
 
                 @Override
-                public CoreConfig.Log.Logger.Filtered parse(Yaml yaml, String path) {
+                public CoreConfig.Log.Logger.Filtered parse(YAML yaml, String path) {
                     if (yaml.isMap()) {
                         validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                         return new CoreConfig.Log.Logger.Filtered(level.parse(yaml.asMap(), path),
@@ -381,7 +381,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
             private static final Set<Predefined<?>> parsers = set(reasoner);
 
             @Override
-            public CoreConfig.Log.Debugger parse(Yaml yaml, String path) {
+            public CoreConfig.Log.Debugger parse(YAML yaml, String path) {
                 if (yaml.isMap()) {
                     validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                     return new CoreConfig.Log.Debugger(reasoner.parse(yaml.asMap(), path));
@@ -405,7 +405,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
                 private static final Set<Predefined<?>> parsers = set(typeParser, output, enable);
 
                 @Override
-                public CoreConfig.Log.Debugger.Reasoner parse(Yaml yaml, String path) {
+                public CoreConfig.Log.Debugger.Reasoner parse(YAML yaml, String path) {
                     if (yaml.isMap()) {
                         validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                         String type = typeParser.parse(yaml.asMap(), path);
@@ -439,7 +439,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
         private static final Set<Predefined<?>> parsers = set(enable, uri, username, token);
 
         @Override
-        public CoreConfig.VaticleFactory parse(Yaml yaml, String path) {
+        public CoreConfig.VaticleFactory parse(YAML yaml, String path) {
             if (yaml.isMap()) {
                 boolean trace = enable.parse(yaml.asMap(), path);
                 validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
