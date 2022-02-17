@@ -27,12 +27,15 @@ import com.vaticle.typedb.core.graph.iid.InfixIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 
 public interface Storage {
 

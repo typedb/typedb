@@ -28,6 +28,7 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +39,7 @@ import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.DEFAULT;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.FIXED_START_EDGE;

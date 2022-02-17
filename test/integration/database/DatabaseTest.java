@@ -19,6 +19,9 @@
 package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.Factory;
+import com.vaticle.typedb.core.database.CoreFactory;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import org.junit.Test;
 

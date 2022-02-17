@@ -20,12 +20,12 @@ package com.vaticle.typedb.core.server.test;
 
 import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.Util;
-import com.vaticle.typedb.core.server.parameters.CoreConfig;
-import com.vaticle.typedb.core.server.parameters.CoreConfigFactory;
-import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
 import com.vaticle.typedb.core.server.parameters.util.Option;
 import com.vaticle.typedb.core.server.parameters.util.YamlParser;
+import com.vaticle.typedb.core.server.parameters.CoreConfig;
+import com.vaticle.typedb.core.server.common.Util;
+import com.vaticle.typedb.core.server.parameters.CoreConfigFactory;
+import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
@@ -39,6 +39,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_UNEXPECTED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONFIG_OPTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CONFIGURATION_OPTIONS;
+import static com.vaticle.typedb.core.server.parameters.CoreConfigFactory.config;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;

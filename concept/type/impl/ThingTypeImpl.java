@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
 import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
