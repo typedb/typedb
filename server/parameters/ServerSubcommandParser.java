@@ -19,9 +19,9 @@ package com.vaticle.typedb.core.server.parameters;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.parameters.util.Help;
-import com.vaticle.typedb.core.server.parameters.util.SubcommandParser;
 import com.vaticle.typedb.core.server.parameters.util.Option;
 import com.vaticle.typedb.core.server.parameters.util.OptionParser;
+import com.vaticle.typedb.core.server.parameters.util.SubcommandParser;
 
 import java.nio.file.Path;
 import java.util.List;
