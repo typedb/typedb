@@ -102,8 +102,8 @@ public class CoreDatabase implements TypeDB.Database {
     private final Factory.Session sessionFactory;
     protected OptimisticTransactionDB rocksSchema;
     protected OptimisticTransactionDB rocksData;
-    protected RocksPartitionManager.Schema rocksSchemaPartitionMgr;
-    protected RocksPartitionManager.Data rocksDataPartitionMgr;
+    protected CorePartitionManager.Schema rocksSchemaPartitionMgr;
+    protected CorePartitionManager.Data rocksDataPartitionMgr;
     protected CoreSession.Data statisticsBackgroundCounterSession;
     protected StatisticsBackgroundCounter statisticsBackgroundCounter;
     protected ScheduledExecutorService scheduledPropertiesLogger;
@@ -160,7 +160,7 @@ public class CoreDatabase implements TypeDB.Database {
 
     private void openSchema() {
         try {
-            List<ColumnFamilyDescriptor> schemaDescriptors = RocksPartitionManager.Schema.descriptors(rocksConfiguration.schema());
+            List<ColumnFamilyDescriptor> schemaDescriptors = CorePartitionManager.Schema.descriptors(rocksConfiguration.schema());
             List<ColumnFamilyHandle> schemaHandles = new ArrayList<>();
             rocksSchema = OptimisticTransactionDB.open(
                     rocksConfiguration.schema().dbOptions(),
@@ -168,15 +168,19 @@ public class CoreDatabase implements TypeDB.Database {
                     schemaDescriptors,
                     schemaHandles
             );
-            rocksSchemaPartitionMgr = new RocksPartitionManager.Schema(schemaDescriptors, schemaHandles);
+            rocksSchemaPartitionMgr = partitionManagerSchema(schemaDescriptors, schemaHandles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
     }
 
+    protected CorePartitionManager.Schema partitionManagerSchema(List<ColumnFamilyDescriptor> schemaDescriptors, List<ColumnFamilyHandle> schemaHandles) {
+        return new CorePartitionManager.Schema(schemaDescriptors, schemaHandles);
+    }
+
     private void openAndInitialiseData() {
         try {
-            List<ColumnFamilyDescriptor> dataDescriptors = RocksPartitionManager.Data.descriptors(rocksConfiguration.data());
+            List<ColumnFamilyDescriptor> dataDescriptors = CorePartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
             rocksData = OptimisticTransactionDB.open(
                     rocksConfiguration.data().dbOptions(),
@@ -186,11 +190,15 @@ public class CoreDatabase implements TypeDB.Database {
             );
             assert dataHandles.size() == 1;
             dataHandles.addAll(rocksData.createColumnFamilies(dataDescriptors.subList(1, dataDescriptors.size())));
-            rocksDataPartitionMgr = new RocksPartitionManager.Data(dataDescriptors, dataHandles);
+            rocksDataPartitionMgr = partitionManagerData(dataDescriptors, dataHandles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
         mayInitRocksDataLogger();
+    }
+
+    protected CorePartitionManager.Data partitionManagerData(List<ColumnFamilyDescriptor> dataDescriptors, List<ColumnFamilyHandle> dataHandles) {
+        return new CorePartitionManager.Data(dataDescriptors, dataHandles);
     }
 
     protected void load() {
@@ -208,7 +216,7 @@ public class CoreDatabase implements TypeDB.Database {
 
     private void openData() {
         try {
-            List<ColumnFamilyDescriptor> dataDescriptors = RocksPartitionManager.Data.descriptors(rocksConfiguration.data());
+            List<ColumnFamilyDescriptor> dataDescriptors = CorePartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
             rocksData = OptimisticTransactionDB.open(
                     rocksConfiguration.data().dbOptions(),
@@ -217,7 +225,7 @@ public class CoreDatabase implements TypeDB.Database {
                     dataHandles
             );
             assert dataDescriptors.size() == dataHandles.size();
-            rocksDataPartitionMgr = new RocksPartitionManager.Data(dataDescriptors, dataHandles);
+            rocksDataPartitionMgr = partitionManagerData(dataDescriptors, dataHandles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }

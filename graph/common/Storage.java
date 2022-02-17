@@ -27,11 +27,15 @@ import com.vaticle.typedb.core.graph.iid.InfixIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 
 public interface Storage {
 
@@ -108,6 +112,15 @@ public interface Storage {
             STATISTICS(null);
 
             private final Integer fixedStartBytes;
+
+            public static Partition fromName(String name) {
+                if (name.equals(DEFAULT.name())) return DEFAULT;
+                else if (name.equals(VARIABLE_START_EDGE.name())) return VARIABLE_START_EDGE;
+                else if (name.equals(FIXED_START_EDGE.name())) return FIXED_START_EDGE;
+                else if (name.equals(OPTIMISATION_EDGE.name())) return OPTIMISATION_EDGE;
+                else if (name.equals(STATISTICS.name())) return STATISTICS;
+                else throw TypeDBException.of(UNRECOGNISED_VALUE);
+            }
 
             Partition(@Nullable Integer fixedStartBytes) {
                 this.fixedStartBytes = fixedStartBytes;
