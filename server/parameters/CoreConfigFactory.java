@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.server.parameters;
 import com.vaticle.typedb.common.yaml.YAML;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.parameters.util.Option;
-import com.vaticle.typedb.core.server.parameters.util.YamlParser;
 
 import java.io.FileNotFoundException;
 import java.nio.file.Path;

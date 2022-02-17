@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.server.parameters;
 import com.vaticle.typedb.common.yaml.YAML;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.common.Util;
-import com.vaticle.typedb.core.server.parameters.util.YamlParser;
+import com.vaticle.typedb.core.server.parameters.util.YAMLParser;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
@@ -35,19 +35,19 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_YAML_MUST_BE_MAP;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CONFIGURATION_OPTIONS;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.server.parameters.util.YamlParser.KeyValue.Dynamic;
-import static com.vaticle.typedb.core.server.parameters.util.YamlParser.KeyValue.Predefined;
-import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.BOOLEAN;
-import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.BYTES_SIZE;
-import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.INET_SOCKET_ADDRESS;
-import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.LIST_STRING;
-import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.PATH;
-import static com.vaticle.typedb.core.server.parameters.util.YamlParser.Value.Primitive.STRING;
-import static com.vaticle.typedb.core.server.parameters.util.YamlParser.dynamic;
-import static com.vaticle.typedb.core.server.parameters.util.YamlParser.predefined;
-import static com.vaticle.typedb.core.server.parameters.util.YamlParser.restricted;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.KeyValue.Dynamic;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.KeyValue.Predefined;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.BOOLEAN;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.BYTES_SIZE;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.INET_SOCKET_ADDRESS;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.LIST_STRING;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.PATH;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.STRING;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.dynamic;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.predefined;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.restricted;
 
-public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
+public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
     private static final Predefined<CoreConfig.Server> server = predefined(Server.name, Server.description, new Server());
     private static final Predefined<CoreConfig.Storage> storage = predefined(Storage.name, Storage.description, new Storage());
@@ -462,7 +462,7 @@ public class CoreConfigParser extends YamlParser.Value.Compound<CoreConfig> {
         Set<String> unrecognisedKeys = new HashSet<>(keys);
         predefinedParsers.forEach(parser -> unrecognisedKeys.remove(parser.key()));
         if (!unrecognisedKeys.isEmpty()) {
-            Set<String> childPaths = iterate(unrecognisedKeys).map(key -> YamlParser.concatenate(path, key)).toSet();
+            Set<String> childPaths = iterate(unrecognisedKeys).map(key -> YAMLParser.concatenate(path, key)).toSet();
             throw TypeDBException.of(UNRECOGNISED_CONFIGURATION_OPTIONS, childPaths);
         }
     }

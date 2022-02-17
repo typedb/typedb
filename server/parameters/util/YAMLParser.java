@@ -40,7 +40,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONFIG_OPTION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class YamlParser {
+public class YAMLParser {
 
     public static <TYPE> KeyValue.Predefined<TYPE> predefined(String key, String description, Value<TYPE> valueParser) {
         return new KeyValue.Predefined<>(key, description, valueParser);
