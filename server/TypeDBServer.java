@@ -69,12 +69,12 @@ public class TypeDBServer implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBServer.class);
 
     protected final Factory factory;
+    protected final CoreConfig config;
+    protected final CoreLogback logback;
     protected final CoreDatabaseManager databaseMgr;
     protected final io.grpc.Server server;
-    protected final CoreConfig config;
     protected final boolean debug;
     protected TypeDBService typeDBService;
-    protected final CoreLogback logback;
 
     private TypeDBServer(CoreConfig config, boolean debug) {
         this(config, debug, new CoreFactory(), new CoreLogback());
