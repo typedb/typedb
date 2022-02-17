@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-public class CompoundReactive<PLAN_ID, PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
+public class CompoundReactive<PLAN_ID, PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
 
     private final Publisher<PACKET> leadingPublisher;
     private final List<PLAN_ID> remainingPlan;

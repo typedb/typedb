@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.PublisherBase;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
-import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractReactiveStream;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +54,7 @@ public abstract class Processor<INPUT, OUTPUT,
     protected final Set<Connection<INPUT, ?, ?>> upstreamConnections;
     private final Monitoring monitoring;
     protected final Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors;
-    private ReactiveStream<OUTPUT, OUTPUT> outlet;
+    private AbstractReactiveStream<OUTPUT, OUTPUT> outlet;
     private long endpointId;
     private boolean terminated;
     protected boolean done;
@@ -77,11 +77,11 @@ public abstract class Processor<INPUT, OUTPUT,
 
     public abstract void setUp();
 
-    protected void setOutlet(ReactiveStream<OUTPUT, OUTPUT> outlet) {
+    protected void setOutlet(AbstractReactiveStream<OUTPUT, OUTPUT> outlet) {
         this.outlet = outlet;
     }
 
-    public ReactiveStream<OUTPUT, OUTPUT> outlet() {
+    public AbstractReactiveStream<OUTPUT, OUTPUT> outlet() {
         return outlet;
     }
 
@@ -103,7 +103,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     public void applyConnectionTransforms(List<Function<OUTPUT, OUTPUT>> transformations,
-                                          ReactiveStream<OUTPUT, OUTPUT> outlet, OutletEndpoint<OUTPUT> upstreamEndpoint) {
+                                          AbstractReactiveStream<OUTPUT, OUTPUT> outlet, OutletEndpoint<OUTPUT> upstreamEndpoint) {
         Provider.Publisher<OUTPUT> op = outlet;
         for (Function<OUTPUT, OUTPUT> t : transformations) op = op.map(t);
         op.publishTo(upstreamEndpoint);

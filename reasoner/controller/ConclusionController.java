@@ -28,9 +28,9 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractReactiveStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.BufferedFanOutReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStreamBase;
+import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractUnaryReactiveStream;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -150,7 +150,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         }
 
-        private class ConclusionReactive extends ReactiveStreamBase<ConceptMap, Map<Variable, Concept>> {
+        private class ConclusionReactive extends AbstractUnaryReactiveStream<ConceptMap, Map<Variable, Concept>> {
 
             private final SingleManager<ConceptMap> providerManager;
 
@@ -172,7 +172,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                         driver(), materialiserEndpoint.id(), null,
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
-                ReactiveStream<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
+                AbstractReactiveStream<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
                 MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, monitor(), groupName());
                 op.publishTo(materialiserReactive);
                 materialiserReactive.sendTo(subscriber());
@@ -194,7 +194,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
         }
 
-        private class MaterialiserReactive extends ReactiveStreamBase<Map<Variable, Concept>, Map<Variable, Concept>> {
+        private class MaterialiserReactive extends AbstractUnaryReactiveStream<Map<Variable, Concept>, Map<Variable, Concept>> {
 
             private final ConclusionReactive parent;
             private final SingleManager<Map<Variable, Concept>> providerManager;

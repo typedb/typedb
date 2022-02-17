@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStreamBase;
+import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractUnaryReactiveStream;
 
 import java.util.Set;
 import java.util.function.Function;
@@ -118,7 +118,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             monitoring().reportPathJoin(negation);
         }
 
-        private static class NegationReactive extends ReactiveStreamBase<ConceptMap, ConceptMap> {
+        private static class NegationReactive extends AbstractUnaryReactiveStream<ConceptMap, ConceptMap> {
 
             private final SingleManager<ConceptMap> providerManager;
             private final Runnable onEarlyDone;

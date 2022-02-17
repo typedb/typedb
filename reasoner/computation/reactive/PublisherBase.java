@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 
-public abstract class PublisherBase<OUTPUT> extends PublisherImpl<OUTPUT> {
+public abstract class PublisherBase<OUTPUT> extends AbstractPublisher<OUTPUT> {
 
     protected Receiver<OUTPUT> subscriber;
 
@@ -36,7 +36,7 @@ public abstract class PublisherBase<OUTPUT> extends PublisherImpl<OUTPUT> {
     }
 
     protected void setSubscriber(Receiver<OUTPUT> subscriber) {
-        // TODO: This is duplicated in the ReactiveStream class hierarchy
+        // TODO: This is duplicated in the AbstractReactiveStream class hierarchy
         assert this.subscriber == null;
         assert subscriber != null;
         this.subscriber = subscriber;

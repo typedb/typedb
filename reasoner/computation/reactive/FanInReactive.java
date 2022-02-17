@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
-public class FanInReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
+public class FanInReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
 
     private final Provider.MultiManager<PACKET> providerManager;
 

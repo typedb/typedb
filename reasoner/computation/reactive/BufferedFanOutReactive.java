@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 
-public class BufferedFanOutReactive<PACKET> extends ReactiveStream<PACKET, PACKET> {
+public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKET, PACKET> {
 
     final Map<Receiver<PACKET>, Integer> bufferPositions;  // Points to the next item needed
     final Set<PACKET> bufferSet;

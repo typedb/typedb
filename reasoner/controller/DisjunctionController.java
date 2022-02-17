@@ -27,8 +27,8 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractReactiveStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.FanInReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveStream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
@@ -91,7 +91,7 @@ public abstract class DisjunctionController<
         @Override
         public void setUp() {
             FanInReactive<ConceptMap> fanIn = fanIn(monitoring(), name());
-            ReactiveStream<ConceptMap, ConceptMap> outlet = getOutlet(fanIn);
+            AbstractReactiveStream<ConceptMap, ConceptMap> outlet = getOutlet(fanIn);
             setOutlet(outlet);  // TODO: Needs separating to be able to add a buffer()
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
                 InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
@@ -104,7 +104,7 @@ public abstract class DisjunctionController<
             fanIn.finalise();
         }
 
-        protected ReactiveStream<ConceptMap, ConceptMap> getOutlet(FanInReactive<ConceptMap> fanIn) {
+        protected AbstractReactiveStream<ConceptMap, ConceptMap> getOutlet(FanInReactive<ConceptMap> fanIn) {
             // Simply here to be overridden by root disjuntion to avoid duplicating setUp
             return fanIn.buffer();
         }

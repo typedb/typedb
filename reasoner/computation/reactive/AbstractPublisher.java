@@ -23,13 +23,13 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
 import java.util.function.Function;
 
-public abstract class PublisherImpl<OUTPUT> implements Reactive.Provider.Publisher<OUTPUT> {
+public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Publisher<OUTPUT> {
 
     protected Reactive.Receiver<OUTPUT> subscriber;
     private final Monitoring monitor;
     private final String groupName;
 
-    protected PublisherImpl(Monitoring monitor, String groupName) {
+    protected AbstractPublisher(Monitoring monitor, String groupName) {
         this.monitor = monitor;
         this.groupName = groupName;
     }
@@ -44,34 +44,34 @@ public abstract class PublisherImpl<OUTPUT> implements Reactive.Provider.Publish
     }
 
     @Override
-    public ReactiveStream<OUTPUT, OUTPUT> findFirst() {
+    public AbstractReactiveStream<OUTPUT, OUTPUT> findFirst() {
         FindFirstReactive<OUTPUT> findFirst = new FindFirstReactive<>(this, monitor, groupName());
         publishTo(findFirst);
         return findFirst;
     }
 
     @Override
-    public <R> ReactiveStream<OUTPUT, R> map(Function<OUTPUT, R> function) {
+    public <R> AbstractReactiveStream<OUTPUT, R> map(Function<OUTPUT, R> function) {
         MapReactive<OUTPUT, R> map = new MapReactive<>(this, function, monitor(), groupName());
         publishTo(map);
         return map;
     }
 
     @Override
-    public <R> ReactiveStream<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
+    public <R> AbstractReactiveStream<OUTPUT, R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
         FlatMapOrRetryReactive<OUTPUT, R> flatMap = new FlatMapOrRetryReactive<>(this, function, monitor(), groupName());
         publishTo(flatMap);
         return flatMap;
     }
 
     @Override
-    public ReactiveStream<OUTPUT, OUTPUT> buffer() {
+    public AbstractReactiveStream<OUTPUT, OUTPUT> buffer() {
         BufferReactive<OUTPUT> buffer = new BufferReactive<>(this, monitor(), groupName());
         publishTo(buffer);
         return buffer;
     }
 
-    public ReactiveStream<OUTPUT,OUTPUT> deduplicate() {
+    public AbstractReactiveStream<OUTPUT,OUTPUT> deduplicate() {
         DeduplicationReactive<OUTPUT> dedup = new DeduplicationReactive<>(this, monitor(), groupName());
         publishTo(dedup);
         return dedup;

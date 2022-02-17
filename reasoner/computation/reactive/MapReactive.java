@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
 import java.util.function.Function;
 
-public class MapReactive<INPUT, OUTPUT> extends ReactiveStreamBase<INPUT, OUTPUT> {
+public class MapReactive<INPUT, OUTPUT> extends AbstractUnaryReactiveStream<INPUT, OUTPUT> {
 
     private final Function<INPUT, OUTPUT> mappingFunc;
     private final SingleManager<INPUT> providerManager;

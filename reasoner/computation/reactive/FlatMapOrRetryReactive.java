@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
 import java.util.function.Function;
 
-public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends ReactiveStreamBase<INPUT, OUTPUT> {
+public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends AbstractUnaryReactiveStream<INPUT, OUTPUT> {
 
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
     private final SingleManager<INPUT> providerManager;

@@ -50,13 +50,13 @@ public interface Reactive {
 
             void publishTo(Receiver.Subscriber<T> subscriber);
 
-            ReactiveStream<T, T> findFirst();
+            AbstractReactiveStream<T, T> findFirst();
 
-            <R> ReactiveStream<T, R> map(Function<T, R> function);
+            <R> AbstractReactiveStream<T, R> map(Function<T, R> function);
 
-            <R> ReactiveStream<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
+            <R> AbstractReactiveStream<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
 
-            ReactiveStream<T, T> buffer();
+            AbstractReactiveStream<T, T> buffer();
 
         }
 

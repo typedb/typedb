@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
 import java.util.Stack;
 
-public class BufferReactive<PACKET> extends ReactiveStreamBase<PACKET, PACKET> {
+public class BufferReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
 
     private final SingleManager<PACKET> providerManager;
     private final Stack<PACKET> stack;
