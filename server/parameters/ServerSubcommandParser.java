@@ -63,9 +63,9 @@ public class ServerSubcommandParser {
         private static final String[] tokens = new String[]{};
         private static final String description = "Run TypeDB server";
 
-        private final ConfigParser configParser;
+        private final CoreConfigParser configParser;
 
-        public Server(ConfigParser configParser) {
+        public Server(CoreConfigParser configParser) {
             super(tokens, description);
             this.configParser = configParser;
         }
@@ -75,9 +75,9 @@ public class ServerSubcommandParser {
             Set<Option> auxOptions = findAuxiliaryOptions(options);
             Set<Option> configOptions = excludeOptions(options, auxOptions);
             Optional<Path> configPath = Server.configPath.parse(auxOptions);
-            Config config = configPath
-                    .map(path -> ConfigFactory.config(path, configOptions, configParser))
-                    .orElseGet(() -> ConfigFactory.config(configOptions, configParser));
+            CoreConfig config = configPath
+                    .map(path -> CoreConfigFactory.config(path, configOptions, configParser))
+                    .orElseGet(() -> CoreConfigFactory.config(configOptions, configParser));
             return new ServerSubcommand.Server(debug.parse(auxOptions), help.parse(auxOptions),
                     version.parse(auxOptions), config);
         }

@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.server.parameters.util;
 
-import com.vaticle.typedb.common.yaml.Yaml;
+import com.vaticle.typedb.common.yaml.YAML;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import java.net.InetSocketAddress;
@@ -40,7 +40,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONFIG_OPTION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class YamlParser {
+public class YAMLParser {
 
     public static <TYPE> KeyValue.Predefined<TYPE> predefined(String key, String description, Value<TYPE> valueParser) {
         return new KeyValue.Predefined<>(key, description, valueParser);
@@ -87,7 +87,7 @@ public class YamlParser {
                 return key;
             }
 
-            public TYPE parse(Yaml.Map yaml, String path) {
+            public TYPE parse(YAML.Map yaml, String path) {
                 String childPath = concatenate(path, key());
                 if (!yaml.containsKey(key())) throw TypeDBException.of(MISSING_CONFIG_OPTION, childPath);
                 else return valueParser.parse(yaml.get(key()), childPath);
@@ -114,7 +114,7 @@ public class YamlParser {
                 this.valueParser = valueParser;
             }
 
-            public Map<String, TYPE> parseFrom(Yaml.Map yaml, String path, Predefined<?>... exclude) {
+            public Map<String, TYPE> parseFrom(YAML.Map yaml, String path, Predefined<?>... exclude) {
                 Set<String> excludeKeys = iterate(exclude).map(Predefined::key).toSet();
                 Map<String, TYPE> read = new HashMap<>();
                 yaml.forEach((key, value) -> {
@@ -141,7 +141,7 @@ public class YamlParser {
 
     public static abstract class Value<TYPE> {
 
-        public abstract TYPE parse(Yaml yaml, String path);
+        public abstract TYPE parse(YAML yaml, String path);
 
         boolean isPrimitive() {
             return false;
@@ -232,7 +232,7 @@ public class YamlParser {
             }
 
             @Override
-            public T parse(Yaml yaml, String path) {
+            public T parse(YAML yaml, String path) {
                 T value = valueParser.parse(yaml, path);
                 if (allowed.contains(value)) return value;
                 else throw TypeDBException.of(CONFIG_ENUM_UNEXPECTED_VALUE, path, value, allowed);
@@ -298,22 +298,22 @@ public class YamlParser {
                     "<address:port>"
             );
             public static final Primitive<List<String>> LIST_STRING = new Primitive<>(
-                    (yaml) -> yaml.isList() && iterate(yaml.asList().iterator()).allMatch(Yaml::isString),
+                    (yaml) -> yaml.isList() && iterate(yaml.asList().iterator()).allMatch(YAML::isString),
                     (yaml) -> iterate(yaml.asList().iterator()).map(elem -> elem.asString().value()).toList(),
                     "<[string, ...]>");
 
-            private final Function<Yaml, Boolean> validator;
-            private final Function<Yaml, T> converter;
+            private final Function<YAML, Boolean> validator;
+            private final Function<YAML, T> converter;
             private final String help;
 
-            private Primitive(Function<Yaml, Boolean> validator, Function<Yaml, T> converter, String help) {
+            private Primitive(Function<YAML, Boolean> validator, Function<YAML, T> converter, String help) {
                 this.validator = validator;
                 this.converter = converter;
                 this.help = help;
             }
 
             @Override
-            public T parse(Yaml yaml, String path) {
+            public T parse(YAML yaml, String path) {
                 if (!validator.apply(yaml)) {
                     throw TypeDBException.of(CONFIG_UNEXPECTED_VALUE, path, yaml, help);
                 } else {

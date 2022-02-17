@@ -29,7 +29,7 @@ public class Option {
     private final String name;
     private final String value;
 
-    Option(String name) {
+    public Option(String name) {
         this(name, null);
     }
 

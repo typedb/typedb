@@ -21,11 +21,11 @@ package com.vaticle.typedb.core.server.test;
 import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.parameters.util.Option;
-import com.vaticle.typedb.core.server.parameters.util.YamlParser;
-import com.vaticle.typedb.core.server.parameters.Config;
+import com.vaticle.typedb.core.server.parameters.util.YAMLParser;
+import com.vaticle.typedb.core.server.parameters.CoreConfig;
 import com.vaticle.typedb.core.server.common.Util;
-import com.vaticle.typedb.core.server.parameters.ConfigFactory;
-import com.vaticle.typedb.core.server.parameters.ConfigParser;
+import com.vaticle.typedb.core.server.parameters.CoreConfigFactory;
+import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
@@ -39,18 +39,18 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_UNEXPECTED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONFIG_OPTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CONFIGURATION_OPTIONS;
-import static com.vaticle.typedb.core.server.parameters.ConfigFactory.config;
+import static com.vaticle.typedb.core.server.parameters.CoreConfigFactory.config;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class ConfigTest {
+public class CoreConfigTest {
 
     @Test
     public void config_file_is_read() {
-        Config config = ConfigFactory.config(new ConfigParser());
+        CoreConfig config = CoreConfigFactory.config(new CoreConfigParser());
         assertTrue(config.storage().dataDir().toString().endsWith("server/data"));
         assertEquals(new InetSocketAddress("0.0.0.0", 1729), config.server().address());
         assertEquals(500 * Bytes.MB, config.storage().databaseCache().dataSize());
@@ -70,7 +70,7 @@ public class ConfigTest {
     @Test
     public void minimal_config_with_absolute_paths_is_read() {
         Path configMinimalAbsPaths = Util.getTypedbDir().resolve("server/test/config/config-minimal-abs-path.yml");
-        Config config = ConfigFactory.config(configMinimalAbsPaths, new HashSet<>(), new ConfigParser());
+        CoreConfig config = CoreConfigFactory.config(configMinimalAbsPaths, new HashSet<>(), new CoreConfigParser());
         assertTrue(config.storage().dataDir().isAbsolute());
         assertEquals(new InetSocketAddress("0.0.0.0", 1730), config.server().address());
         assertEquals(200 * Bytes.MB, config.storage().databaseCache().dataSize());
@@ -91,7 +91,7 @@ public class ConfigTest {
     public void config_invalid_path_throws() {
         Path configMissing = Util.getTypedbDir().resolve("server/test/missing.yml");
         try {
-            ConfigFactory.config(configMissing, new HashSet<>(), new ConfigParser());
+            CoreConfigFactory.config(configMissing, new HashSet<>(), new CoreConfigParser());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -103,7 +103,7 @@ public class ConfigTest {
     public void config_file_missing_data_throws() {
         Path configMissingLog = Util.getTypedbDir().resolve("server/test/config/config-missing-data.yml");
         try {
-            ConfigFactory.config(configMissingLog, new HashSet<>(), new ConfigParser());
+            CoreConfigFactory.config(configMissingLog, new HashSet<>(), new CoreConfigParser());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -116,7 +116,7 @@ public class ConfigTest {
     public void config_file_missing_debugger_throws() {
         Path configMissingLogDebugger = Util.getTypedbDir().resolve("server/test/config/config-missing-debugger.yml");
         try {
-            ConfigFactory.config(configMissingLogDebugger, new HashSet<>(), new ConfigParser());
+            CoreConfigFactory.config(configMissingLogDebugger, new HashSet<>(), new CoreConfigParser());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -129,7 +129,7 @@ public class ConfigTest {
     public void config_file_invalid_output_reference_throws() {
         Path configInvalidOutput = Util.getTypedbDir().resolve("server/test/config/config-invalid-logger-output.yml");
         try {
-            ConfigFactory.config(configInvalidOutput, new HashSet<>(), new ConfigParser());
+            CoreConfigFactory.config(configInvalidOutput, new HashSet<>(), new CoreConfigParser());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -141,12 +141,12 @@ public class ConfigTest {
     public void config_file_wrong_path_type_throws() {
         Path configInvalidPathType = Util.getTypedbDir().resolve("server/test/config/config-wrong-path-type.yml");
         try {
-            ConfigFactory.config(configInvalidPathType, new HashSet<>(), new ConfigParser());
+            CoreConfigFactory.config(configInvalidPathType, new HashSet<>(), new CoreConfigParser());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
             assertEquals(CONFIG_UNEXPECTED_VALUE.code(), e.code().get());
-            assertEquals(CONFIG_UNEXPECTED_VALUE.message("storage.data", "123456[int]", YamlParser.Value.Primitive.PATH.help()), e.getMessage());
+            assertEquals(CONFIG_UNEXPECTED_VALUE.message("storage.data", "123456[int]", YAMLParser.Value.Primitive.PATH.help()), e.getMessage());
         }
     }
 
@@ -154,7 +154,7 @@ public class ConfigTest {
     public void config_file_unrecognised_option() {
         Path configUnrecognisedOption = Util.getTypedbDir().resolve("server/test/config/config-unrecognised-option.yml");
         try {
-            ConfigFactory.config(configUnrecognisedOption, new HashSet<>(), new ConfigParser());
+            CoreConfigFactory.config(configUnrecognisedOption, new HashSet<>(), new CoreConfigParser());
             fail();
         } catch (TypeDBException e) {
             assert e.code().isPresent();
@@ -165,7 +165,7 @@ public class ConfigTest {
 
     @Test
     public void config_file_accepts_overrides() {
-        Config config = ConfigFactory.config(
+        CoreConfig config = CoreConfigFactory.config(
                 set(
                     new Option("storage.data", "server/alt-data"),
                     new Option("server.address", "0.0.0.0:1730"),
@@ -173,7 +173,7 @@ public class ConfigTest {
                     new Option("log.logger.default.level", "info"),
                     new Option("log.logger.typedb.output", "[file]")
                 ),
-                new ConfigParser()
+                new CoreConfigParser()
         );
         assertTrue(config.storage().dataDir().toString().endsWith("server/alt-data"));
         assertEquals(new InetSocketAddress("0.0.0.0", 1730), config.server().address());
@@ -192,18 +192,18 @@ public class ConfigTest {
 
     @Test
     public void overrides_list_can_be_yaml_or_repeated() {
-        Config config = ConfigFactory.config(
+        CoreConfig config = CoreConfigFactory.config(
                 set(new Option("log.logger.typedb.output", "[file]")),
-                new ConfigParser()
+                new CoreConfigParser()
         );
         assertEquals(set("file"), set(config.log().logger().filteredLoggers().get("typedb").outputs()));
 
-        Config configWithRepeatedArgs = ConfigFactory.config(
+        CoreConfig configWithRepeatedArgs = CoreConfigFactory.config(
                 set(
                     new Option("log.logger.typedb.output", "file"),
                     new Option("log.logger.typedb.output", "stdout")
                 ),
-                new ConfigParser()
+                new CoreConfigParser()
         );
         assertEquals(set("stdout", "file"), set(configWithRepeatedArgs.log().logger().filteredLoggers().get("typedb").outputs()));
     }
