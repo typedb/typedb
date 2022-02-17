@@ -28,15 +28,11 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
-import static com.vaticle.typedb.common.collection.Collections.map;
-import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -47,7 +43,7 @@ import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.OPTIMIS
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.STATISTICS;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.VARIABLE_START_EDGE;
 
-public abstract class RocksPartitionManager {
+abstract class RocksPartitionManager {
 
     private final List<ColumnFamilyDescriptor> descriptors;
     final List<ColumnFamilyHandle> handles;
@@ -68,9 +64,7 @@ public abstract class RocksPartitionManager {
         });
     }
 
-    public abstract ColumnFamilyHandle get(Key.Partition partition);
-
-    public abstract Key.Partition partition(int columnFamilyID);
+    abstract ColumnFamilyHandle get(Key.Partition partition);
 
     abstract Set<Key.Partition> partitions();
 
@@ -82,12 +76,10 @@ public abstract class RocksPartitionManager {
     static class Schema extends RocksPartitionManager {
 
         private final ColumnFamilyHandle defaultHandle;
-        private final Map<Integer, Key.Partition> partitionMap;
 
         Schema(List<ColumnFamilyDescriptor> descriptors, List<ColumnFamilyHandle> handles) {
             super(descriptors, handles);
             defaultHandle = handles.get(0);
-            partitionMap = map(pair(defaultHandle.getID(), DEFAULT));
         }
 
         static List<ColumnFamilyDescriptor> descriptors(RocksConfiguration.Schema configuration) {
@@ -95,16 +87,9 @@ public abstract class RocksPartitionManager {
         }
 
         @Override
-        public ColumnFamilyHandle get(Key.Partition partition) {
+        ColumnFamilyHandle get(Key.Partition partition) {
             if (partition == DEFAULT) return defaultHandle;
             else throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
-        public Key.Partition partition(int columnFamilyID) {
-            Key.Partition partition = partitionMap.get(columnFamilyID);
-            if (partition == null) throw TypeDBException.of(ILLEGAL_STATE);
-            if (partition != DEFAULT) throw TypeDBException.of(ILLEGAL_STATE);
-            return partition;
         }
 
         @Override
@@ -113,7 +98,7 @@ public abstract class RocksPartitionManager {
         }
     }
 
-    public static class Data extends RocksPartitionManager {
+    static class Data extends RocksPartitionManager {
 
         private static final int DEFAULT_HANDLE_INDEX = 0;
         private static final int VARIABLE_START_EDGE_HANDLE_INDEX = 1;
@@ -121,7 +106,6 @@ public abstract class RocksPartitionManager {
         private static final int OPTIMISATION_EDGE_HANDLE_INDEX = 3;
         private static final int STATISTICS_HANDLE_INDEX = 4;
 
-        private final Map<Integer, Key.Partition> partitionMap;
         private final ColumnFamilyHandle defaultHandle;
         private final ColumnFamilyHandle variableStartEdgeHandle;
         private final ColumnFamilyHandle fixedStartEdgeHandle;
@@ -135,13 +119,6 @@ public abstract class RocksPartitionManager {
             fixedStartEdgeHandle = handles.get(FIXED_START_EDGE_HANDLE_INDEX);
             optimisationEdgeHandle = handles.get(OPTIMISATION_EDGE_HANDLE_INDEX);
             statisticsHandle = handles.get(STATISTICS_HANDLE_INDEX);
-            partitionMap = map(
-                    pair(defaultHandle.getID(), DEFAULT),
-                    pair(variableStartEdgeHandle.getID(), VARIABLE_START_EDGE),
-                    pair(fixedStartEdgeHandle.getID(), FIXED_START_EDGE),
-                    pair(optimisationEdgeHandle.getID(), OPTIMISATION_EDGE),
-                    pair(statisticsHandle.getID(), STATISTICS)
-            );
         }
 
         static List<ColumnFamilyDescriptor> descriptors(RocksConfiguration.Data configuration) {
@@ -170,7 +147,7 @@ public abstract class RocksPartitionManager {
         }
 
         @Override
-        public ColumnFamilyHandle get(Key.Partition partition) {
+        ColumnFamilyHandle get(Key.Partition partition) {
             switch (partition) {
                 case DEFAULT:
                     return defaultHandle;
@@ -185,12 +162,6 @@ public abstract class RocksPartitionManager {
                 default:
                     throw TypeDBException.of(ILLEGAL_STATE);
             }
-        }
-
-        public Key.Partition partition(int columnFamilyID) {
-            Key.Partition partition = partitionMap.get(columnFamilyID);
-            if (partition == null) throw TypeDBException.of(ILLEGAL_STATE);
-            return partition;
         }
 
         @Override
