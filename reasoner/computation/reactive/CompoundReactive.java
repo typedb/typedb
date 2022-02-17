@@ -35,14 +35,14 @@ public class CompoundReactive<PLAN_ID, PACKET> extends AbstractUnaryReactiveStre
     private final BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc;
     private final Map<Provider<PACKET>, PACKET> publisherPackets;
     private final PACKET initialPacket;
-    private final MultiManager<PACKET> providerManager;
+    private final MultiProviderRegistry<PACKET> providerManager;
 
     public CompoundReactive(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
                             BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
                             Monitoring monitor, String groupName) {
         super(monitor, groupName);
         assert plan.size() > 0;
-        this.providerManager = new MultiManager<>(this, null);
+        this.providerManager = new MultiProviderRegistry<>(this, null);
         this.initialPacket = initialPacket;
         this.remainingPlan = new ArrayList<>(plan);
         this.leadingPublisher = spawnLeaderFunc.apply(this.remainingPlan.remove(0), initialPacket);
@@ -53,7 +53,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends AbstractUnaryReactiveStre
     }
 
     @Override
-    protected Manager<PACKET> providerManager() {
+    protected ProviderRegistry<PACKET> providerManager() {
         return providerManager;
     }
 

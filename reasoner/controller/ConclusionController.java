@@ -152,15 +152,15 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         private class ConclusionReactive extends AbstractUnaryReactiveStream<ConceptMap, Map<Variable, Concept>> {
 
-            private final SingleManager<ConceptMap> providerManager;
+            private final SingleProviderRegistry<ConceptMap> providerManager;
 
             protected ConclusionReactive(String groupName, Monitoring monitor) {
                 super(monitor, groupName);
-                this.providerManager = new Provider.SingleManager<>(this, monitor());
+                this.providerManager = new SingleProviderRegistry<>(this, monitor());
             }
 
             @Override
-            protected Manager<ConceptMap> providerManager() {
+            protected ProviderRegistry<ConceptMap> providerManager() {
                 return providerManager;
             }
 
@@ -197,16 +197,16 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         private class MaterialiserReactive extends AbstractUnaryReactiveStream<Map<Variable, Concept>, Map<Variable, Concept>> {
 
             private final ConclusionReactive parent;
-            private final SingleManager<Map<Variable, Concept>> providerManager;
+            private final SingleProviderRegistry<Map<Variable, Concept>> providerManager;
 
             public MaterialiserReactive(ConclusionReactive parent, Monitoring monitor, String groupName) {
                 super(monitor, groupName);
                 this.parent = parent;
-                this.providerManager = new Provider.SingleManager<>(this, monitor());
+                this.providerManager = new SingleProviderRegistry<>(this, monitor());
             }
 
             @Override
-            protected Manager<Map<Variable, Concept>> providerManager() {
+            protected ProviderRegistry<Map<Variable, Concept>> providerManager() {
                 return providerManager;
             }
 

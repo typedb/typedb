@@ -272,7 +272,7 @@ public abstract class Processor<INPUT, OUTPUT,
     public static class OutletEndpoint<PACKET> implements Subscriber<PACKET>, Provider<PACKET> {
 
         private final Connection<PACKET, ?, ?> connection;
-        private final SingleManager<PACKET> providerManager;
+        private final SingleProviderRegistry<PACKET> providerManager;
         protected boolean isPulling;
         private final Monitoring monitor;
         private final String groupName;
@@ -282,7 +282,7 @@ public abstract class Processor<INPUT, OUTPUT,
             this.groupName = groupName;
             this.connection = connection;
             this.isPulling = false;
-            this.providerManager = new Provider.SingleManager<>(this, monitor());
+            this.providerManager = new SingleProviderRegistry<>(this, monitor());
         }
 
         protected Monitoring monitor() {

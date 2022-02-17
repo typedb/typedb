@@ -120,25 +120,20 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
         private static class NegationReactive extends AbstractUnaryReactiveStream<ConceptMap, ConceptMap> {
 
-            private final SingleManager<ConceptMap> providerManager;
+            private final SingleProviderRegistry<ConceptMap> providerManager;
             private final Runnable onEarlyDone;
             private boolean answerFound;
 
             protected NegationReactive(Monitoring monitor, String groupName, Runnable onEarlyDone) {
                 super(monitor, groupName);
                 this.onEarlyDone = onEarlyDone;
-                this.providerManager = new SingleManager<>(this, monitor());
+                this.providerManager = new SingleProviderRegistry<>(this, monitor());
                 this.answerFound = false;
             }
 
             @Override
-            protected Manager<ConceptMap> providerManager() {
+            protected ProviderRegistry<ConceptMap> providerManager() {
                 return providerManager;
-            }
-
-            @Override
-            public void pull(Receiver<ConceptMap> receiver) {
-                super.pull(receiver);
             }
 
             @Override

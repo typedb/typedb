@@ -31,17 +31,6 @@ public interface Reactive {
 
     String groupName();
 
-    interface Receiver<R> extends Reactive {
-
-        void receive(Provider<R> provider, R packet);  // TODO: The provider argument is only needed by compound - can we do without it?
-
-        interface Subscriber<T> extends Receiver<T> {
-
-            void subscribeTo(Provider<T> publisher);
-
-        }
-    }
-
     interface Provider<R> extends Reactive {
 
         void pull(Receiver<R> receiver);  // Should be idempotent if already pulling
@@ -60,7 +49,19 @@ public interface Reactive {
 
         }
 
-        interface Manager<R> {
+    }
+
+    interface Receiver<R> extends Reactive {
+
+        void receive(Provider<R> provider, R packet);  // TODO: The provider argument is only needed by compound - can we do without it?
+
+        interface Subscriber<T> extends Receiver<T> {
+
+            void subscribeTo(Provider<T> publisher);
+
+        }
+
+        interface ProviderRegistry<R> {
             // TODO: Consider managing whether to pull on upstreams by telling the manager whether we are pulling or not
             void add(Provider<R> provider);
 
@@ -74,7 +75,7 @@ public interface Reactive {
 
         }
 
-        class SingleManager<R> implements Manager<R> {
+        class SingleProviderRegistry<R> implements ProviderRegistry<R> {
             // TODO: isPulling and setPulling methods should be managed here
 
             private @Nullable
@@ -83,14 +84,14 @@ public interface Reactive {
             private final Monitoring monitor;
             private boolean isPulling;
 
-            public SingleManager(@Nullable Publisher<R> provider, Receiver.Subscriber<R> subscriber, Monitoring monitor) {
+            public SingleProviderRegistry(@Nullable Provider.Publisher<R> provider, Subscriber<R> subscriber, Monitoring monitor) {
                 this.provider = provider;
                 this.receiver = subscriber;
                 this.monitor = monitor;
                 this.isPulling = false;
             }
 
-            public SingleManager(Receiver.Subscriber<R> subscriber, Monitoring monitor) {
+            public SingleProviderRegistry(Subscriber<R> subscriber, Monitoring monitor) {
                 this.provider = null;
                 this.receiver = subscriber;
                 this.monitor = monitor;
@@ -146,13 +147,13 @@ public interface Reactive {
             }
         }
 
-        class MultiManager<R> implements Manager<R> {
+        class MultiProviderRegistry<R> implements ProviderRegistry<R> {
 
             private final Map<Provider<R>, Boolean> providers;
             private final Receiver<R> receiver;
             private final Monitoring monitor;
 
-            public MultiManager(Receiver.Subscriber<R> subscriber, @Nullable Monitoring monitor) {
+            public MultiProviderRegistry(Subscriber<R> subscriber, @Nullable Monitoring monitor) {
                 this.providers = new HashMap<>();
                 this.receiver = subscriber;
                 this.monitor = monitor;
@@ -211,4 +212,5 @@ public interface Reactive {
             }
         }
     }
+
 }

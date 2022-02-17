@@ -24,17 +24,17 @@ import java.util.Stack;
 
 public class BufferReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
 
-    private final SingleManager<PACKET> providerManager;
+    private final SingleProviderRegistry<PACKET> providerManager;
     private final Stack<PACKET> stack;
 
     protected BufferReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
+        this.providerManager = new SingleProviderRegistry<>(publisher, this, monitor());
         this.stack = new Stack<>();
     }
 
     @Override
-    protected Manager<PACKET> providerManager() {
+    protected ProviderRegistry<PACKET> providerManager() {
         return providerManager;
     }
 
@@ -45,7 +45,7 @@ public class BufferReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, 
             finishPulling();
             subscriber().receive(this, packet);
         } else {
-            // Can add an answer deduplication optimisation here, but means holding an extra set of all answers seen
+            // TODO: Could add an answer deduplication optimisation here, but means holding an extra set of all answers seen
             stack.add(packet);
         }
     }

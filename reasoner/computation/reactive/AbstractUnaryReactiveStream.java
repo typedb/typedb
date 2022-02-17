@@ -32,7 +32,7 @@ public abstract class AbstractUnaryReactiveStream<INPUT, OUTPUT> extends Abstrac
     }
 
     @Override
-    protected abstract Manager<INPUT> providerManager();
+    protected abstract ProviderRegistry<INPUT> providerManager();
 
     @Override
     public void receive(Provider<INPUT> provider, INPUT packet) {

@@ -22,29 +22,20 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
 public class FanInReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
 
-    private final Provider.MultiManager<PACKET> providerManager;
+    private final MultiProviderRegistry<PACKET> providerManager;
 
     protected FanInReactive(Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new Provider.MultiManager<>(this, monitor);
+        this.providerManager = new MultiProviderRegistry<>(this, monitor);
     }
 
     @Override
-    protected MultiManager<PACKET> providerManager() {
+    protected MultiProviderRegistry<PACKET> providerManager() {
         return providerManager;
     }
 
     public static <T> FanInReactive<T> fanIn(Monitoring monitor, String groupName) {
         return new FanInReactive<>(monitor, groupName);
-    }
-
-    @Override
-    public void pull(Receiver<PACKET> receiver) {
-        assert receiver.equals(subscriber);  // TODO: Make a proper exception for this
-        if (!isPulling()) {
-            setPulling();
-            providerManager().pullAll();
-        }
     }
 
     @Override

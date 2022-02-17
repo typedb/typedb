@@ -27,13 +27,13 @@ import javax.annotation.Nullable;
 
 public abstract class Sink<PACKET> implements Subscriber<PACKET>, Provider<PACKET> {
 
-    private SingleManager<PACKET> providerManager;
+    private SingleProviderRegistry<PACKET> providerManager;
     private Monitoring monitor;
     protected boolean isPulling;
 
-    protected SingleManager<PACKET> providerManager() {
+    protected SingleProviderRegistry<PACKET> providerManager() {
         // TODO: We would initialise this on construction if the monitor was ready, but that is set later via setMonitor()
-        if (providerManager == null) this.providerManager = new Provider.SingleManager<>(this, monitor());
+        if (providerManager == null) this.providerManager = new SingleProviderRegistry<>(this, monitor());
         return providerManager;
     }
 

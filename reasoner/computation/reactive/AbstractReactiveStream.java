@@ -30,6 +30,6 @@ public abstract class AbstractReactiveStream<INPUT, OUTPUT> extends AbstractPubl
 
     protected abstract void finishPulling();
 
-    protected abstract Manager<INPUT> providerManager();
+    protected abstract ProviderRegistry<INPUT> providerManager();
 
 }

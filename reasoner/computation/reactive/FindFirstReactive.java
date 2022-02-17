@@ -22,17 +22,17 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
 public class FindFirstReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
 
-    private final SingleManager<PACKET> providerManager;
+    private final SingleProviderRegistry<PACKET> providerManager;
     private boolean packetFound;
 
     FindFirstReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
+        this.providerManager = new SingleProviderRegistry<>(publisher, this, monitor());
         this.packetFound = false;
     }
 
     @Override
-    protected Manager<PACKET> providerManager() {
+    protected ProviderRegistry<PACKET> providerManager() {
         return providerManager;
     }
 
@@ -50,6 +50,7 @@ public class FindFirstReactive<PACKET> extends AbstractUnaryReactiveStream<PACKE
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
-        if (!packetFound) super.pull(receiver);
+        // TODO: THis is the only unary reactive that overrides pull()
+        if (!packetFound) super.pull(receiver);  // TODO: Could this cause a failure to terminate if multiple upstream paths are never joined?
     }
 }

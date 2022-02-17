@@ -25,17 +25,17 @@ import java.util.Set;
 
 public class DeduplicationReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
 
-    private final SingleManager<PACKET> providerManager;
+    private final SingleProviderRegistry<PACKET> providerManager;
     private final Set<PACKET> deduplicationSet;
 
     protected DeduplicationReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
+        this.providerManager = new SingleProviderRegistry<>(publisher, this, monitor());
         this.deduplicationSet = new HashSet<>();
     }
 
     @Override
-    protected Manager<PACKET> providerManager() {
+    protected ProviderRegistry<PACKET> providerManager() {
         return providerManager;
     }
 

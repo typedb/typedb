@@ -26,17 +26,17 @@ import java.util.function.Function;
 public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends AbstractUnaryReactiveStream<INPUT, OUTPUT> {
 
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
-    private final SingleManager<INPUT> providerManager;
+    private final SingleProviderRegistry<INPUT> providerManager;
 
     FlatMapOrRetryReactive(Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
                            Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.transform = transform;
-        this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
+        this.providerManager = new SingleProviderRegistry<>(publisher, this, monitor());
     }
 
     @Override
-    protected Manager<INPUT> providerManager() {
+    protected ProviderRegistry<INPUT> providerManager() {
         return providerManager;
     }
 

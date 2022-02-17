@@ -36,7 +36,7 @@ public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKE
     final List<PACKET> bufferList;
     final Set<Receiver<PACKET>> pullers;
     protected final Set<Receiver<PACKET>> receivers;
-    private final Manager<PACKET> providerManager;
+    private final ProviderRegistry<PACKET> providerManager;
 
     public BufferedFanOutReactive(Monitoring monitor, String groupName) {
         super(monitor, groupName);
@@ -45,11 +45,11 @@ public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKE
         this.bufferPositions = new HashMap<>();
         this.pullers = new HashSet<>();
         this.receivers = new HashSet<>();
-        this.providerManager = new Provider.SingleManager<>(this, monitor());
+        this.providerManager = new SingleProviderRegistry<>(this, monitor());
     }
 
     @Override
-    protected Manager<PACKET> providerManager() {
+    protected ProviderRegistry<PACKET> providerManager() {
         return providerManager;
     }
 

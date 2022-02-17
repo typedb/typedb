@@ -24,15 +24,15 @@ import javax.annotation.Nullable;
 
 public class NoOpReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
 
-    private final SingleManager<PACKET> providerManager;
+    private final SingleProviderRegistry<PACKET> providerManager;
 
     protected NoOpReactive(@Nullable Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new Provider.SingleManager<>(publisher, this, monitor());
+        this.providerManager = new SingleProviderRegistry<>(publisher, this, monitor());
     }
 
     @Override
-    protected Manager<PACKET> providerManager() {
+    protected ProviderRegistry<PACKET> providerManager() {
         return providerManager;
     }
 
