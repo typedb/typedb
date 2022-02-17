@@ -82,9 +82,12 @@ public class FilteredSortedIterator<T extends Comparable<? super T>, ORDER exten
         @Override
         public void seek(T target) {
             if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
-            if (hasNext() && order.isValidNext(target, peek())) return;
+            if (next != null) {
+                if (order.isValidNext(target, next)) return;
+                last = next;
+                next = null;
+            }
             iterator.seek(target);
-            next = null;
         }
 
         @Override

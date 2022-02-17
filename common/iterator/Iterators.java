@@ -171,10 +171,10 @@ public class Iterators {
         public static class Seekable {
 
             public static <T extends Comparable<? super T>> SortedIterator.Seekable<T, Order.Asc> emptySorted() {
-                return iterateSorted(SortedIterator.ASC, new TreeSet<T>());
+                return iterateSorted(new TreeSet<T>(), SortedIterator.ASC);
             }
 
-            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> iterateSorted(ORDER order, Collection<T> elements) {
+            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> iterateSorted(Collection<T> elements, ORDER order) {
                 return new BaseSeekableIterator<>(new TreeSet<>(elements), order);
             }
 
@@ -183,7 +183,7 @@ public class Iterators {
                 return new BaseSeekableIterator<>(new TreeSet<>(list(elements)), order);
             }
 
-            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> iterateSorted(ORDER order, NavigableSet<T> set) {
+            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> iterateSorted(NavigableSet<T> set, ORDER order) {
                 return new BaseSeekableIterator<>(set, order);
             }
 
@@ -206,7 +206,7 @@ public class Iterators {
                 return new MergeMappedIterator.Seekable<>(iterate(list(list(iterators), iterator)), e -> e, iterator.order());
             }
 
-            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> merge(ORDER order, FunctionalIterator<SortedIterator.Seekable<T, ORDER>> iterators) {
+            public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Seekable<T, ORDER> merge(FunctionalIterator<SortedIterator.Seekable<T, ORDER>> iterators, ORDER order) {
                 return new MergeMappedIterator.Seekable<>(iterators, e -> e, order);
             }
 

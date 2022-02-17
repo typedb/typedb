@@ -224,7 +224,7 @@ public class ThingGraph {
         ).mapSorted(kv -> convertToReadable(kv.key()), vertex -> KeyValue.of(vertex.iid(), empty()), ASC);
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return vertices;
         else {
-            Seekable<ThingVertex, Order.Asc> buffered = iterateSorted(ASC, thingsByTypeIID.get(typeVertex.iid()))
+            Seekable<ThingVertex, Order.Asc> buffered = iterateSorted(thingsByTypeIID.get(typeVertex.iid()), ASC)
                     .mapSorted(e -> e, ThingVertex::toWrite, ASC);
             return vertices.merge(buffered).distinct();
         }

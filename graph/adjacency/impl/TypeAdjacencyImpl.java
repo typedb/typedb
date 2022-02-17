@@ -116,7 +116,7 @@ public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIE
             @Override
             public InEdgeIterator edge(Encoding.Edge.Type encoding) {
                 ConcurrentSkipListSet<TypeEdge.View.Backward> t = edges.get(encoding);
-                if (t != null) return new InEdgeIteratorImpl(iterateSorted(ASC, t), owner, encoding);
+                if (t != null) return new InEdgeIteratorImpl(iterateSorted(t, ASC), owner, encoding);
                 return new InEdgeIteratorImpl(emptySorted(), owner, encoding);
             }
 
@@ -144,7 +144,7 @@ public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIE
             @Override
             public OutEdgeIterator edge(Encoding.Edge.Type encoding) {
                 ConcurrentSkipListSet<TypeEdge.View.Forward> t = edges.get(encoding);
-                if (t != null) return new OutEdgeIteratorImpl(iterateSorted(ASC, t), owner, encoding);
+                if (t != null) return new OutEdgeIteratorImpl(iterateSorted(t, ASC), owner, encoding);
                 return new OutEdgeIteratorImpl(emptySorted(), owner, encoding);
             }
 
@@ -227,7 +227,7 @@ public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIE
         Seekable<EDGE_VIEW, Order.Asc> iterateViews(Encoding.Edge.Type encoding) {
             ConcurrentSkipListSet<EDGE_VIEW> bufferedEdges;
             if (isReadOnly && fetched.contains(encoding)) {
-                return (bufferedEdges = edges.get(encoding)) != null ? iterateSorted(ASC, bufferedEdges) : emptySorted();
+                return (bufferedEdges = edges.get(encoding)) != null ? iterateSorted(bufferedEdges, ASC) : emptySorted();
             }
 
             Key.Prefix<EdgeViewIID.Type> prefix = EdgeViewIID.Type.prefix(
@@ -241,7 +241,7 @@ public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIE
                     );
             if (isReadOnly) storageIterator = storageIterator.onConsumed(() -> fetched.add(encoding));
             if ((bufferedEdges = edges.get(encoding)) == null) return storageIterator;
-            else return iterateSorted(ASC, bufferedEdges).merge(storageIterator).distinct();
+            else return iterateSorted(bufferedEdges, ASC).merge(storageIterator).distinct();
         }
 
         @Override

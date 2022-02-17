@@ -48,6 +48,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.AT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
@@ -307,7 +308,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public FunctionalIterator<AttributeTypeImpl> getSubtypes() {
-            return graphMgr.schema().getSubtypes(vertex).map(v -> {
+            return iterate(graphMgr.schema().getSubtypes(vertex)).map(v -> {
                 switch (v.valueType()) {
                     case OBJECT:
                         assert vertex == v;
@@ -407,7 +408,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public FunctionalIterator<AttributeTypeImpl.Boolean> getSubtypes() {
-            return graphMgr.schema().getSubtypes(vertex).map(v -> AttributeTypeImpl.Boolean.of(graphMgr, v));
+            return iterate(graphMgr.schema().getSubtypes(vertex)).map(v -> AttributeTypeImpl.Boolean.of(graphMgr, v));
         }
 
         @Override
@@ -545,7 +546,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public FunctionalIterator<AttributeTypeImpl.Long> getSubtypes() {
-            return graphMgr.schema().getSubtypes(vertex).map(v -> AttributeTypeImpl.Long.of(graphMgr, v));
+            return iterate(graphMgr.schema().getSubtypes(vertex)).map(v -> AttributeTypeImpl.Long.of(graphMgr, v));
         }
 
         @Override
@@ -683,7 +684,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public FunctionalIterator<AttributeTypeImpl.Double> getSubtypes() {
-            return graphMgr.schema().getSubtypes(vertex).map(v -> AttributeTypeImpl.Double.of(graphMgr, v));
+            return iterate(graphMgr.schema().getSubtypes(vertex)).map(v -> AttributeTypeImpl.Double.of(graphMgr, v));
         }
 
         @Override
@@ -821,7 +822,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public FunctionalIterator<AttributeTypeImpl.String> getSubtypes() {
-            return graphMgr.schema().getSubtypes(vertex).map(v -> AttributeTypeImpl.String.of(graphMgr, v));
+            return iterate(graphMgr.schema().getSubtypes(vertex)).map(v -> AttributeTypeImpl.String.of(graphMgr, v));
         }
 
         @Override
@@ -998,7 +999,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public FunctionalIterator<AttributeTypeImpl.DateTime> getSubtypes() {
-            return graphMgr.schema().getSubtypes(vertex).map(v -> AttributeTypeImpl.DateTime.of(graphMgr, v));
+            return iterate(graphMgr.schema().getSubtypes(vertex)).map(v -> AttributeTypeImpl.DateTime.of(graphMgr, v));
         }
 
         @Override

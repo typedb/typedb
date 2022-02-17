@@ -33,6 +33,7 @@ import java.util.List;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ENTITY;
 
@@ -69,7 +70,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public FunctionalIterator<EntityTypeImpl> getSubtypes() {
-        return graphMgr.schema().getSubtypes(vertex).map(v -> of(graphMgr, v));
+        return iterate(graphMgr.schema().getSubtypes(vertex)).map(v -> of(graphMgr, v));
     }
 
     @Override

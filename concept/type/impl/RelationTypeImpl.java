@@ -43,6 +43,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RE
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
@@ -103,7 +104,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public FunctionalIterator<RelationTypeImpl> getSubtypes() {
-        return graphMgr.schema().getSubtypes(vertex).map(v -> of(graphMgr, v));
+        return iterate(graphMgr.schema().getSubtypes(vertex)).map(v -> of(graphMgr, v));
     }
 
     @Override

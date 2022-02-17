@@ -35,6 +35,7 @@ import java.util.Objects;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
@@ -90,7 +91,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public FunctionalIterator<RoleTypeImpl> getSubtypes() {
-        return graphMgr.schema().getSubtypes(vertex).map(v -> of(graphMgr, v));
+        return iterate(graphMgr.schema().getSubtypes(vertex)).map(v -> of(graphMgr, v));
     }
 
     @Override

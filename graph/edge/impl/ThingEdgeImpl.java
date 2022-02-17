@@ -207,7 +207,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
-        public Optional<ThingVertex.Write> optimised() {
+        public Optional<ThingVertex> optimised() {
             return Optional.ofNullable(optimised);
         }
 
@@ -372,7 +372,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
-        public Optional<? extends ThingVertex> optimised() {
+        public Optional<ThingVertex> optimised() {
             return Optional.empty();
         }
 

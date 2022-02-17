@@ -203,12 +203,12 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
     private Seekable<ThingVertex, Order.Asc> createIterator(int pos) {
         StructureEdge<?, ?> edge = edges.get(pos);
         ThingVertex player = answer.get(edge.to().id().asVariable().asRetrievable()).asThing();
-        return Iterators.Sorted.Seekable.merge(ASC, iterate(edge.asNative().asRolePlayer().types()).map(roleLabel -> {
+        return Iterators.Sorted.Seekable.merge(iterate(edge.asNative().asRolePlayer().types()).map(roleLabel -> {
             TypeVertex roleVertex = graphMgr.schema().getType(roleLabel);
             return player.ins().edge(ROLEPLAYER, roleVertex)
                     .fromAndOptimised()
                     .filter(relRole -> relationTypes.contains(relRole.key().type().properLabel()));
-        })).filter(relRole -> !scoped.contains(relRole.value())).mapSorted(
+        }), ASC).filter(relRole -> !scoped.contains(relRole.value())).mapSorted(
                 relRole -> {
                     scoped.record(pos, relRole.value());
                     return relRole.key();

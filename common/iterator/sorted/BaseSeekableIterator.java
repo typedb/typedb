@@ -44,6 +44,7 @@ public class BaseSeekableIterator<T extends Comparable<? super T>, ORDER extends
         this.source = source;
         this.iterator = order.iterateOrdered(source);
         this.last = null;
+        this.next = null;
     }
 
     @Override
@@ -75,7 +76,6 @@ public class BaseSeekableIterator<T extends Comparable<? super T>, ORDER extends
     @Override
     public void seek(T target) {
         if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
-        if (hasNext() && order.compare(peek(), target) == 0) return;
         this.iterator = order.iterateOrdered(source, target);
         this.next = null;
     }

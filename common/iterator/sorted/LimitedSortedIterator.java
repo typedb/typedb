@@ -84,7 +84,6 @@ public class LimitedSortedIterator<T extends Comparable<? super T>, ORDER extend
         @Override
         public void seek(T target) {
             if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
-            if (hasNext() && order.isValidNext(target, peek())) return;
             iterator.seek(target);
         }
 

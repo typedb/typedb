@@ -44,7 +44,7 @@ public interface FunctionalIterator<T> extends Iterator<T> {
     <U> FunctionalIterator<U> flatMap(Function<T, FunctionalIterator<U>> mappingFn);
 
     <U extends Comparable<? super U>, ORDER extends Order> SortedIterator.Seekable<U, ORDER> mergeMap(
-            ORDER order, Function<T, SortedIterator.Seekable<U, ORDER>> mappingFn
+            Function<T, SortedIterator.Seekable<U, ORDER>> mappingFn, ORDER order
     );
 
     FunctionalIterator<T> filter(Predicate<T> predicate);

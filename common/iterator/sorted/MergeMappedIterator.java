@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
@@ -102,11 +101,15 @@ public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER exten
 
     void initialise() {
         iterator.forEachRemaining(value -> {
-            ITER sortedIterator = mappingFn.apply(value);
+            ITER sortedIterator = initialiseIterator(value);
             if (sortedIterator.hasNext()) fetched.add(new ComparableSortedIterator(sortedIterator));
         });
         if (fetched.isEmpty()) state = State.COMPLETED;
         else state = State.FETCHED;
+    }
+
+    ITER initialiseIterator(T value) {
+        return mappingFn.apply(value);
     }
 
     @Override
@@ -141,30 +144,36 @@ public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER exten
             extends MergeMappedIterator<T, U, ORDER, SortedIterator.Seekable<U, ORDER>>
             implements SortedIterator.Seekable<U, ORDER> {
 
+        private U initialSeek;
+
         public Seekable(FunctionalIterator<T> source, Function<T, SortedIterator.Seekable<U, ORDER>> mappingFn, ORDER order) {
             super(source, mappingFn, order);
         }
 
         @Override
+        SortedIterator.Seekable<U, ORDER> initialiseIterator(T value) {
+            SortedIterator.Seekable<U, ORDER> iterator = super.initialiseIterator(value);
+            if (initialSeek != null) iterator.seek(initialSeek);
+            return iterator;
+        }
+
+        @Override
         public void seek(U target) {
             if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
-            if (hasNext() && order.isValidNext(target, peek())) return;
-
-            seekUnfetched(target);
-            seekFetched(target);
-            state = State.NOT_READY;
+            if (state == State.INIT) {
+                initialSeek = target;
+            } else if (state == State.FETCHED) {
+                if (order.isValidNext(target, peek())) return;
+                seekFetched(target);
+                state = State.NOT_READY;
+            } else if (state == State.NOT_READY) {
+                seekUnfetched(target);
+                seekFetched(target);
+            }
         }
 
         private void seekUnfetched(U target) {
-            Iterator<SortedIterator.Seekable<U, ORDER>> unfetchedIterators = unfetched.iterator();
-            while (unfetchedIterators.hasNext()) {
-                SortedIterator.Seekable<U, ORDER> iter = unfetchedIterators.next();
-                if (iter.hasNext()) iter.seek(target);
-                else {
-                    iter.recycle();
-                    unfetchedIterators.remove();
-                }
-            }
+            unfetched.forEach(iter -> iter.seek(target));
         }
 
         private void seekFetched(U target) {

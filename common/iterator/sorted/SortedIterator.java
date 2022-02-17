@@ -130,7 +130,7 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
 
         Seekable<T, ORDER> limit(long limit);
 
-        default Optional<T> matchFirst(T value) {
+        default Optional<T> findFirst(T value) {
             if (!hasNext() || !order().isValidNext(peek(), value)) return Optional.empty();
             seek(value);
             Optional<T> found;

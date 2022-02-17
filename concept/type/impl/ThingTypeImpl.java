@@ -66,6 +66,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TY
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
 import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
@@ -481,7 +482,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public FunctionalIterator<ThingTypeImpl> getSubtypes() {
-            return graphMgr.schema().getSubtypes(vertex).map(v -> {
+            return iterate(graphMgr.schema().getSubtypes(vertex)).map(v -> {
                 switch (v.encoding()) {
                     case THING_TYPE:
                         assert vertex == v;
