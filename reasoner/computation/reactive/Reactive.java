@@ -198,7 +198,7 @@ public interface Reactive {
             public void pull(Provider<R> provider) {
                 assert this.provider != null;
                 assert this.provider == provider;
-                if (!isPulling()) {  // TODO: In most reactives we already do this defence, now we can do it once here abstractly.
+                if (!isPulling()) {
                     setPulling(true);
                     pullProvider();
                 }
@@ -213,8 +213,8 @@ public interface Reactive {
             }
 
             private void pullProvider() {
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
                 assert this.provider != null;
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
                 provider.pull(receiver);
             }
 
