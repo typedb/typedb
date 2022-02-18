@@ -157,9 +157,9 @@ build:
 #    test-behaviour-reasoner-concept-inequality:
 #      image: vaticle-ubuntu-20.04
 #      command: bazel test //test/behaviour/reasoner/tests/concept_inequality:test --test_output=streamed
-    test-behaviour-reasoner-variable-roles:
-      image: vaticle-ubuntu-20.04
-      command: bazel test //test/behaviour/reasoner/tests/variable_roles:test --test_output=streamed
+#    test-behaviour-reasoner-variable-roles:
+#      image: vaticle-ubuntu-20.04
+#      command: bazel test //test/behaviour/reasoner/tests/variable_roles:test --test_output=streamed
     test-assembly-linux-targz:
       image: vaticle-ubuntu-20.04
       filter:
