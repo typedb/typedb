@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public abstract class AbstractUnaryReactiveStream<INPUT, OUTPUT> extends AbstractReactiveStream<INPUT, OUTPUT> {
 
-    protected Receiver<OUTPUT> subscriber;
     private final SingleReceiverRegistry<OUTPUT> receiverRegistry;
 
     protected AbstractUnaryReactiveStream(Monitoring monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
@@ -47,7 +46,7 @@ public abstract class AbstractUnaryReactiveStream<INPUT, OUTPUT> extends Abstrac
 
     @Override
     public void pull(Receiver<OUTPUT> receiver) {
-        assert receiver.equals(subscriber);  // TODO: Make a proper exception for this
+        assert receiver.equals(receiverRegistry().receiver());  // TODO: Make a proper exception for this
         if (!receiverRegistry().isPulling()) {
             receiverRegistry().setPulling();
             providerRegistry().pullAll();

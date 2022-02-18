@@ -78,7 +78,7 @@ public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKE
     @Override
     public void pull(Receiver<PACKET> receiver) {
         bufferPositions.putIfAbsent(receiver, 0);
-        addReceiver(receiver);
+        if (receiverRegistry().addReceiver(receiver)) onNewReceiver();
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
             receiverRegistry().setPulling(receiver);
@@ -94,17 +94,15 @@ public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKE
         receiver.receive(this, bufferList.get(pos));
     }
 
-    private void addReceiver(Receiver<PACKET> receiver) {
-        if (receiverRegistry().addReceiver(receiver)) {
-            if (bufferSet.size() > 0) monitor().onAnswerCreate(bufferSet.size(), this);  // New receiver, so any answer in the buffer will be dispatched there at some point
-            if (receiverRegistry().size() > 1) monitor().onPathJoin(this);
-        }
+    private void onNewReceiver() {
+        if (bufferSet.size() > 0) monitor().onAnswerCreate(bufferSet.size(), this);  // New receiver, so any answer in the buffer will be dispatched there at some point
+        if (receiverRegistry().size() > 1) monitor().onPathJoin(this);
     }
 
     @Override
     public void publishTo(Subscriber<PACKET> subscriber) {
         bufferPositions.putIfAbsent(subscriber, 0);
-        addReceiver(subscriber);
+        if (receiverRegistry().addReceiver(subscriber)) onNewReceiver();
         subscriber.subscribeTo(this);
     }
 

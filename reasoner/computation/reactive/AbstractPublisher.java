@@ -25,7 +25,6 @@ import java.util.function.Function;
 
 public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Publisher<OUTPUT> {
 
-    protected Reactive.Receiver<OUTPUT> subscriber;
     private final Monitoring monitor;
     private final String groupName;
 
