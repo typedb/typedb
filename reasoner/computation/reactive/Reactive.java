@@ -79,8 +79,10 @@ public interface Reactive {
                 isPulling = false;
             }
 
-            public void recordPull() {  // TODO: Make this a boolean to remove checks on isPulling()
+            public boolean recordPull() {
+                boolean newPull = !isPulling;
                 isPulling = true;
+                return newPull;
             }
 
             @Override

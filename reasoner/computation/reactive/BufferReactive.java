@@ -41,7 +41,7 @@ public class BufferReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
-        if (receiverRegistry().isPulling()) {  // TODO: Consider abstracting this logic as receiverRegistry().tryReceive(this, packet)
+        if (receiverRegistry().isPulling()) {
             receiverRegistry().recordReceive();
             receiverRegistry().receiver().receive(this, packet);
         } else {

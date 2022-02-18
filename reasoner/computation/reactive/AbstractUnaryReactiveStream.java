@@ -47,10 +47,7 @@ public abstract class AbstractUnaryReactiveStream<INPUT, OUTPUT> extends Abstrac
     @Override
     public void pull(Receiver<OUTPUT> receiver) {
         assert receiver.equals(receiverRegistry().receiver());  // TODO: Make a proper exception for this
-        if (!receiverRegistry().isPulling()) {
-            receiverRegistry().recordPull();
-            providerRegistry().pullAll();
-        }
+        if (receiverRegistry().recordPull()) providerRegistry().pullAll();
     }
 
     @Override
