@@ -76,16 +76,16 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
     protected static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, RootConjunctionController, RootConjunctionProcessor> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
-        private final EntryPoint reasonerEndpoint;
+        private final EntryPoint reasonerEntryPoint;
 
         protected RootConjunctionProcessor(Driver<RootConjunctionProcessor> driver,
                                            Driver<RootConjunctionController> controller, ConceptMap bounds,
                                            List<Resolvable<?>> plan, Set<Identifier.Variable.Retrievable> filter,
-                                           EntryPoint reasonerEndpoint, String name) {
+                                           EntryPoint reasonerEntryPoint, String name) {
             super(driver, controller, bounds, plan, name);
             this.filter = filter;
-            this.reasonerEndpoint = reasonerEndpoint;
-            this.reasonerEndpoint.setMonitor(monitoring());
+            this.reasonerEntryPoint = reasonerEntryPoint;
+            this.reasonerEntryPoint.setMonitor(monitoring());
         }
 
         @Override
@@ -106,7 +106,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         @Override
         public void setUp() {
             super.setUp();
-            outlet().publishTo(reasonerEndpoint);
+            outlet().publishTo(reasonerEntryPoint);
             new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, monitoring(), name())
                     .buffer()
                     .map(conceptMap -> conceptMap.filter(filter))
@@ -116,14 +116,14 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
 
         @Override
         protected boolean isPulling() {
-            return reasonerEndpoint.isPulling();
+            return reasonerEntryPoint.isPulling();
         }
 
         @Override
         protected void onDone() {
             assert ! done;
 //            done = true;
-            reasonerEndpoint.done();
+            reasonerEntryPoint.done();
         }
     }
 }

@@ -42,7 +42,7 @@ public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKE
         this.bufferSet = new HashSet<>();
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
-        this.providerManager = new SingleProviderRegistry<>(this, monitor());
+        this.providerManager = new SingleProviderRegistry<>(this);
         this.receiverRegistry = new MultiReceiverRegistry<>();
     }
 
@@ -58,8 +58,8 @@ public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKE
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
-        providerRegistry().receivedFrom(provider);
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        providerRegistry().recordReceive(provider);
         assert receiverRegistry().size() > 0;
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
@@ -67,7 +67,7 @@ public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKE
             if (numCreated > 0) monitor().onAnswerCreate(numCreated, this);  // We need to account for sending an answer to all
             // receivers (-1 for the one we received), either now or when they next pull.
             Set<Receiver<PACKET>> toSend = receiverRegistry().pullingReceivers();
-            receiverRegistry().finishPulling();
+            receiverRegistry().recordReceive();
             toSend.forEach(this::send);
         } else {
             if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
@@ -81,7 +81,7 @@ public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKE
         if (receiverRegistry().addReceiver(receiver)) onNewReceiver();
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
-            receiverRegistry().setPulling(receiver);
+            receiverRegistry().recordPull(receiver);
             providerRegistry().pullAll();
         } else {
             send(receiver);

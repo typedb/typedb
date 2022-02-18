@@ -19,19 +19,21 @@
 package com.vaticle.typedb.core.reasoner.computation.actor;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>, PROV_PROCESSOR extends Processor<?, PACKET, ?, PROV_PROCESSOR>> {
+public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>, PROV_PROCESSOR extends Processor<?, PACKET, ?, PROV_PROCESSOR>> implements Reactive.Provider<PACKET>, Reactive.Receiver<PACKET> {
 
     private final Actor.Driver<PROCESSOR> recProcessor;
     private final Actor.Driver<PROV_PROCESSOR> provProcessor;
     private final long recEndpointId;
     private final long provEndpointId;
     private final List<Function<PACKET, PACKET>> transforms;
+    private final String groupName;
 
     /**
      * Connects a processor outlet (upstream, publishing) to another processor's inlet (downstream, subscribing)
@@ -43,14 +45,23 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
         this.recEndpointId = recEndpointId;
         this.provEndpointId = provEndpointId;
         this.transforms = transforms;
+        this.groupName = Connection.class.getSimpleName() + "@" + System.identityHashCode(this);
     }
 
-    protected void receive(PACKET packet) {
-        recProcessor.execute(actor -> actor.endpointReceive(packet, recEndpointId));
+    @Override
+    public String groupName() {
+        return groupName;
     }
 
-    protected void pull() {
-        provProcessor.execute(actor -> actor.endpointPull(provEndpointId));
+    @Override
+    public void receive(Provider<PACKET> provider, PACKET packet) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        recProcessor.execute(actor -> actor.endpointReceive(this, packet, recEndpointId));
+    }
+
+    @Override
+    public void pull(Receiver<PACKET> receiver) {
+        provProcessor.execute(actor -> actor.endpointPull(this, provEndpointId));
     }
 
     protected void propagateMonitors(Set<Actor.Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
@@ -73,5 +84,4 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
     public List<Function<PACKET, PACKET>> transformations() {
         return transforms;
     }
-
 }

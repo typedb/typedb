@@ -30,7 +30,7 @@ public class MapReactive<INPUT, OUTPUT> extends AbstractUnaryReactiveStream<INPU
     protected MapReactive(Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.mappingFunc = mappingFunc;
-        this.providerManager = new SingleProviderRegistry<>(publisher, this, monitor());
+        this.providerManager = new SingleProviderRegistry<>(publisher, this);
     }
 
     @Override
@@ -41,7 +41,7 @@ public class MapReactive<INPUT, OUTPUT> extends AbstractUnaryReactiveStream<INPU
     @Override
     public void receive(Provider<INPUT> provider, INPUT packet) {
         super.receive(provider, packet);
-        receiverRegistry().finishPulling();
+        receiverRegistry().recordReceive();
         receiverRegistry().receiver().receive(this, mappingFunc.apply(packet));
     }
 }

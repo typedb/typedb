@@ -27,7 +27,7 @@ public class FindFirstReactive<PACKET> extends AbstractUnaryReactiveStream<PACKE
 
     FindFirstReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new SingleProviderRegistry<>(publisher, this, monitor());
+        this.providerManager = new SingleProviderRegistry<>(publisher, this);
         this.packetFound = false;
     }
 
@@ -41,7 +41,7 @@ public class FindFirstReactive<PACKET> extends AbstractUnaryReactiveStream<PACKE
         super.receive(provider, packet);
         if (!packetFound) {
             packetFound = true;
-            receiverRegistry().finishPulling();
+            receiverRegistry().recordReceive();
             receiverRegistry().receiver().receive(this, packet);
         } else {
             monitor().onAnswerDestroy(this);

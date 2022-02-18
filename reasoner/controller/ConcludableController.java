@@ -146,7 +146,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
                             .publishTo(fanIn);
                 }));
             });
-            fanIn.finalise();
+            fanIn.finaliseProviders();
         }
 
         private void mayRequestConnection(ConclusionRequest conclusionRequest) {

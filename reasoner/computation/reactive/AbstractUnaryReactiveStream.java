@@ -27,7 +27,7 @@ public abstract class AbstractUnaryReactiveStream<INPUT, OUTPUT> extends Abstrac
 
     protected AbstractUnaryReactiveStream(Monitoring monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
         super(monitor, groupName);
-        this.receiverRegistry = new SingleReceiverRegistry<>(null);
+        this.receiverRegistry = new SingleReceiverRegistry<>();
     }
 
     @Override
@@ -40,15 +40,15 @@ public abstract class AbstractUnaryReactiveStream<INPUT, OUTPUT> extends Abstrac
 
     @Override
     public void receive(Provider<INPUT> provider, INPUT packet) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
-        providerRegistry().receivedFrom(provider);
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        providerRegistry().recordReceive(provider);
     }
 
     @Override
     public void pull(Receiver<OUTPUT> receiver) {
         assert receiver.equals(receiverRegistry().receiver());  // TODO: Make a proper exception for this
         if (!receiverRegistry().isPulling()) {
-            receiverRegistry().setPulling();
+            receiverRegistry().recordPull();
             providerRegistry().pullAll();
         }
     }

@@ -127,7 +127,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             protected NegationReactive(Monitoring monitor, String groupName, Runnable onEarlyDone) {
                 super(monitor, groupName);
                 this.onEarlyDone = onEarlyDone;
-                this.providerManager = new SingleProviderRegistry<>(this, monitor());
+                this.providerManager = new SingleProviderRegistry<>(this);
                 this.answerFound = false;
             }
 

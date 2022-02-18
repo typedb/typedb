@@ -26,7 +26,7 @@ public class FanInReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, P
 
     protected FanInReactive(Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new MultiProviderRegistry<>(this, monitor);
+        this.providerManager = new MultiProviderRegistry<>(this);
     }
 
     @Override
@@ -41,11 +41,13 @@ public class FanInReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, P
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
-        receiverRegistry().finishPulling();
+        receiverRegistry().recordReceive();
         receiverRegistry().receiver().receive(this, packet);
     }
 
-    public void finalise() {
-        providerRegistry().finaliseProviders();
+    public void finaliseProviders() {
+        assert monitor() != null;
+        final int numForks = providerRegistry().size() - 1;
+        if (numForks > 0) monitor().onPathFork(numForks, this);
     }
 }

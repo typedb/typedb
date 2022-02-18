@@ -29,7 +29,7 @@ public class BufferReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, 
 
     protected BufferReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new SingleProviderRegistry<>(publisher, this, monitor());
+        this.providerManager = new SingleProviderRegistry<>(publisher, this);
         this.stack = new Stack<>();
     }
 
@@ -42,7 +42,7 @@ public class BufferReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, 
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
         if (receiverRegistry().isPulling()) {  // TODO: Consider abstracting this logic as receiverRegistry().tryReceive(this, packet)
-            receiverRegistry().finishPulling();
+            receiverRegistry().recordReceive();
             receiverRegistry().receiver().receive(this, packet);
         } else {
             // TODO: Could add an answer deduplication optimisation here, but means holding an extra set of all answers seen
@@ -57,7 +57,7 @@ public class BufferReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, 
             if (stack.size() > 0) {
                 receiver.receive(this, stack.pop());
             } else {
-                receiverRegistry().setPulling();
+                receiverRegistry().recordPull();
                 providerRegistry().pullAll();
             }
         }

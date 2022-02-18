@@ -42,7 +42,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends AbstractUnaryReactiveStre
                             Monitoring monitor, String groupName) {
         super(monitor, groupName);
         assert plan.size() > 0;
-        this.providerManager = new MultiProviderRegistry<>(this, null);
+        this.providerManager = new MultiProviderRegistry<>(this);
         this.initialPacket = initialPacket;
         this.remainingPlan = new ArrayList<>(plan);
         this.leadingPublisher = spawnLeaderFunc.apply(this.remainingPlan.remove(0), initialPacket);
@@ -63,7 +63,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends AbstractUnaryReactiveStre
         PACKET mergedPacket = compoundPacketsFunc.apply(initialPacket, packet);
         if (leadingPublisher.equals(provider)) {
             if (remainingPlan.size() == 0) {  // For a single item plan
-                receiverRegistry().finishPulling();
+                receiverRegistry().recordReceive();
                 receiverRegistry().receiver().receive(this, mergedPacket);
             } else {
                 Publisher<PACKET> follower;
@@ -80,7 +80,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends AbstractUnaryReactiveStre
                 providerRegistry().pull(follower);
             }
         } else {
-            receiverRegistry().finishPulling();
+            receiverRegistry().recordReceive();
             PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(provider));
             receiverRegistry().receiver().receive(this, compoundedPacket);
         }

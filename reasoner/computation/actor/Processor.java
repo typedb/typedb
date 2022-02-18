@@ -20,16 +20,16 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.PublisherBase;
+import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractUnaryPublisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractReactiveStream;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -141,14 +141,14 @@ public abstract class Processor<INPUT, OUTPUT,
         return endpoint;
     }
 
-    protected void endpointPull(long pubEndpointId) {
+    protected void endpointPull(Receiver<OUTPUT> receiver, long pubEndpointId) {
         assert !done;
-        providingEndpoints.get(pubEndpointId).pull(null);
+        providingEndpoints.get(pubEndpointId).pull(receiver);
     }
 
-    protected void endpointReceive(INPUT packet, long subEndpointId) {
+    protected void endpointReceive(Provider<INPUT> provider, INPUT packet, long subEndpointId) {
         assert !done;
-        receivingEndpoints.get(subEndpointId).receive(null, packet);
+        receivingEndpoints.get(subEndpointId).receive(provider, packet);
     }
 
     public Monitoring monitoring() {
@@ -221,18 +221,21 @@ public abstract class Processor<INPUT, OUTPUT,
     /**
      * Governs an input to a processor
      */
-    public static class InletEndpoint<PACKET> extends PublisherBase<PACKET> implements Reactive.Receiver<PACKET> {
+    public static class InletEndpoint<PACKET> extends AbstractUnaryPublisher<PACKET> implements Receiver<PACKET> {
 
         private final long id;
+        private final SingleProviderRegistry<PACKET> providerRegistry;
         private boolean ready;
-        private Connection<PACKET, ?, ?> connection;
-        protected boolean isPulling;
 
         public InletEndpoint(long id, Monitoring monitor, String groupName) {
             super(monitor, groupName);
             this.id = id;
             this.ready = false;
-            this.isPulling = false;
+            this.providerRegistry = new SingleProviderRegistry<>(this);
+        }
+
+        private SingleProviderRegistry<PACKET> providerRegistry() {
+            return providerRegistry;
         }
 
         public long id() {
@@ -241,28 +244,27 @@ public abstract class Processor<INPUT, OUTPUT,
 
         void setReady(Connection<PACKET, ?, ?> connection) {
             // TODO: Poorly named, it sets ready and pulls
-            this.connection = connection;
+            providerRegistry().add(connection);
             assert !ready;
             this.ready = true;
-            pull(subscriber());
+            pull(receiverRegistry().receiver());
         }
 
         @Override
         public void pull(Receiver<PACKET> receiver) {
-            assert receiver.equals(subscriber);
-            if (ready && !isPulling) {
-                isPulling = true;
-                connection.pull();
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, connection, monitor().count()));  // TODO: We do this here because we don't tell the connection who we are when we pull
+            assert receiver.equals(receiverRegistry().receiver());
+            if (ready && !receiverRegistry().isPulling()) {
+                receiverRegistry().recordPull();
+                providerRegistry().pullAll();
             }
         }
 
         @Override
-        public void receive(@Nullable Provider<PACKET> provider, PACKET packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(connection, this, packet, monitor().count()));  // TODO: Highlights a smell that the connection is receiving and so provider is null
-            assert provider == null;
-            isPulling = false;
-            subscriber().receive(this, packet);
+        public void receive(Provider<PACKET> provider, PACKET packet) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+            providerRegistry().recordReceive(provider);
+            receiverRegistry().recordReceive();
+            receiverRegistry().receiver().receive(this, packet);
         }
     }
 
@@ -271,18 +273,26 @@ public abstract class Processor<INPUT, OUTPUT,
      */
     public static class OutletEndpoint<PACKET> implements Subscriber<PACKET>, Provider<PACKET> {
 
-        private final Connection<PACKET, ?, ?> connection;
-        private final SingleProviderRegistry<PACKET> providerManager;
-        protected boolean isPulling;
+        private final SingleProviderRegistry<PACKET> providerRegistry;
+        private final SingleReceiverRegistry<PACKET> receiverRegistry;
+        private final long id;
         private final Monitoring monitor;
         private final String groupName;
 
         public OutletEndpoint(Connection<PACKET, ?, ?> connection, Monitoring monitor, String groupName) {
             this.monitor = monitor;
             this.groupName = groupName;
-            this.connection = connection;
-            this.isPulling = false;
-            this.providerManager = new SingleProviderRegistry<>(this, monitor());
+            this.id = connection.providerEndpointId();
+            this.providerRegistry = new SingleProviderRegistry<>(this);
+            this.receiverRegistry = new SingleReceiverRegistry<>(connection);
+        }
+
+        private SingleProviderRegistry<PACKET> providerRegistry() {
+            return providerRegistry;
+        }
+
+        private SingleReceiverRegistry<PACKET> receiverRegistry() {
+            return receiverRegistry;
         }
 
         protected Monitoring monitor() {
@@ -290,7 +300,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         public long id() {
-            return connection.providerEndpointId();
+            return id;
         }
 
         @Override
@@ -299,28 +309,26 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public void receive(@Nullable Provider<PACKET> provider, PACKET packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
-            isPulling = false;
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(this, connection, packet, monitor().count()));  // TODO: We do this here because we don't tell the connection who we are when it receives
-            connection.receive(packet);
-            providerManager.receivedFrom(provider);
+        public void receive(Provider<PACKET> provider, PACKET packet) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+            providerRegistry().recordReceive(provider);
+            receiverRegistry().recordReceive();
+            receiverRegistry().receiver().receive(this, packet);
         }
 
         @Override
-        public void pull(@Nullable Receiver<PACKET> receiver) {
-            assert receiver == null;
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(connection, this, monitor().count()));  // TODO: Highlights a smell that the connection is pulling and so receiver is null
-            if (!isPulling) {
-                isPulling = true;
-                providerManager.pullAll();
+        public void pull(Receiver<PACKET> receiver) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), this));
+            if (!receiverRegistry().isPulling()) {
+                receiverRegistry().recordPull();
+                providerRegistry().pullAll();
             }
         }
 
         @Override
         public void subscribeTo(Provider<PACKET> provider) {
-            providerManager.add(provider);
-            if (isPulling) providerManager.pull(provider);
+            providerRegistry().add(provider);
+            if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
         }
 
     }

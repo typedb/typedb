@@ -30,7 +30,7 @@ public class DeduplicationReactive<PACKET> extends AbstractUnaryReactiveStream<P
 
     protected DeduplicationReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new SingleProviderRegistry<>(publisher, this, monitor());
+        this.providerManager = new SingleProviderRegistry<>(publisher, this);
         this.deduplicationSet = new HashSet<>();
     }
 
@@ -43,7 +43,7 @@ public class DeduplicationReactive<PACKET> extends AbstractUnaryReactiveStream<P
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
         if (deduplicationSet.add(packet)) {
-            receiverRegistry().finishPulling();
+            receiverRegistry().recordReceive();
             receiverRegistry().receiver().receive(this, packet);
         } else {
             if (receiverRegistry().isPulling()) providerManager.pull(provider);  // Automatic retry

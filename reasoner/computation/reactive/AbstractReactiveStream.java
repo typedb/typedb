@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
-public abstract class AbstractReactiveStream<INPUT, OUTPUT> extends AbstractPublisher<OUTPUT> implements Reactive.Receiver.Subscriber<INPUT>  {
+public abstract class AbstractReactiveStream<INPUT, OUTPUT> extends AbstractPublisher<OUTPUT> implements Reactive.Receiver.Subscriber<INPUT>  {  // TODO: This abstraction disappears
 
     protected AbstractReactiveStream(Monitoring monitor, String groupName) {
         super(monitor, groupName);

@@ -32,7 +32,7 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends AbstractUnaryReactive
                            Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.transform = transform;
-        this.providerManager = new SingleProviderRegistry<>(publisher, this, monitor());
+        this.providerManager = new SingleProviderRegistry<>(publisher, this);
     }
 
     @Override
@@ -45,7 +45,7 @@ public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends AbstractUnaryReactive
         super.receive(provider, packet);
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {
-            receiverRegistry().finishPulling();
+            receiverRegistry().recordReceive();
             // TODO: This can actually create more receive() calls to downstream than the number of pull()s it receives. Should buffer instead. Protected against by manually adding .buffer() after calls to flatMap
             transformed.forEachRemaining(t -> {
                 monitor().onAnswerCreate(this);

@@ -90,46 +90,15 @@ public final class Tracer {
         addNodeGroup(receiverString, provider.groupName(), defaultTrace);
     }
 
-    public synchronized void pull(@Nullable Receiver<?> receiver, Provider<?> provider, long pathsCount) {
-        String receiverString;
-        if (receiver == null) receiverString = "root";
-        else {
-            receiverString = simpleClassId(receiver);
-            addNodeGroup(simpleClassId(provider), receiver.groupName(), defaultTrace);
-        }
-        addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull_c" + pathsCount);
-        addNodeGroup(receiverString, provider.groupName(), defaultTrace);
-    }
-
-    public synchronized void pull(Connection<?, ?, ?> receiver, Provider<?> provider, long pathsCount) {
-        addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull_c" + pathsCount);
-        addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
-    }
-
-    public synchronized void pull(Provider<?> receiver, Connection<?, ?, ?> provider, long pathsCount) {
-        addMessage(simpleClassId(receiver), simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull_c" + pathsCount);
-        addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
-    }
-
-    public synchronized <INPUT, OUTPUT> void receive(Provider<OUTPUT> provider, Receiver<INPUT> receiver, OUTPUT packet,
-                                              long pathsCount) {
-        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE,
-                   packet.toString() + "c" + pathsCount);
+    public synchronized <INPUT, OUTPUT> void receive(Provider<OUTPUT> provider, Receiver<INPUT> receiver, OUTPUT packet) {
+        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
         addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
         addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
-    }
-
-    public synchronized <PACKET> void receive(Connection<PACKET, ?, ?> provider,
-                                              Processor.InletEndpoint<PACKET> receiver, PACKET packet, long pathsCount) {
-        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE,
-                   packet.toString() + "c" + pathsCount);
-        addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
     }
 
     public synchronized <PACKET> void receive(Processor.OutletEndpoint<PACKET> provider,
-                                              Connection<PACKET, ?, ?> receiver, PACKET packet, long pathsCount) {
-        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE,
-                   packet.toString() + "c" + pathsCount);
+                                              Connection<PACKET, ?, ?> receiver, PACKET packet) {
+        addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
         addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 

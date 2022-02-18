@@ -19,10 +19,8 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -53,7 +51,7 @@ public interface Reactive {
 
         interface ReceiverRegistry<R> {
 
-            void finishPulling();
+            void recordReceive();
 
             boolean isPulling();
 
@@ -66,17 +64,22 @@ public interface Reactive {
             private Receiver<R> receiver;
             private boolean isPulling;
 
-            SingleReceiverRegistry(Receiver<R> receiver) {
+            public SingleReceiverRegistry(Receiver<R> receiver) {
                 this.receiver = receiver;
                 this.isPulling = false;
             }
 
+            SingleReceiverRegistry() {
+                this.receiver = null;
+                this.isPulling = false;
+            }
+
             @Override
-            public void finishPulling() {
+            public void recordReceive() {
                 isPulling = false;
             }
 
-            public void setPulling() {
+            public void recordPull() {  // TODO: Make this a boolean to remove checks on isPulling()
                 isPulling = true;
             }
 
@@ -109,11 +112,11 @@ public interface Reactive {
             }
 
             @Override
-            public void finishPulling() {
+            public void recordReceive() {
                 pullingReceivers.clear();
             }
 
-            void setPulling(Receiver<R> receiver) {
+            void recordPull(Receiver<R> receiver) {
                 pullingReceivers.add(receiver);
             }
 
@@ -156,32 +159,25 @@ public interface Reactive {
 
             void pullAll();
 
-            int size();
-
-            void receivedFrom(Provider<R> provider);
+            void recordReceive(Provider<R> provider);  // TODO: This can likely be replaced/removed
 
         }
 
         class SingleProviderRegistry<R> implements ProviderRegistry<R> {
-            // TODO: isPulling and setPulling methods should be managed here
 
-            private @Nullable
-            Provider<R> provider;
+            private Provider<R> provider;
             private final Receiver<R> receiver;
-            private final Monitoring monitor;
             private boolean isPulling;
 
-            public SingleProviderRegistry(@Nullable Provider.Publisher<R> provider, Subscriber<R> subscriber, Monitoring monitor) {
+            public SingleProviderRegistry(Provider.Publisher<R> provider, Receiver<R> receiver) {
                 this.provider = provider;
-                this.receiver = subscriber;
-                this.monitor = monitor;
+                this.receiver = receiver;
                 this.isPulling = false;
             }
 
-            public SingleProviderRegistry(Subscriber<R> subscriber, Monitoring monitor) {
+            public SingleProviderRegistry(Receiver<R> receiver) {
                 this.provider = null;
-                this.receiver = subscriber;
-                this.monitor = monitor;
+                this.receiver = receiver;
                 this.isPulling = false;
             }
 
@@ -189,6 +185,11 @@ public interface Reactive {
             public void add(Provider<R> provider) {
                 assert this.provider == null || provider == this.provider;  // TODO: Add proper exception for trying to add more than one provider. Ideally only allow setting provider once
                 this.provider = provider;
+            }
+
+            @Override
+            public void pullAll() {
+                if (provider != null) pull(provider);
             }
 
             @Override
@@ -210,25 +211,13 @@ public interface Reactive {
             }
 
             private void pullProvider() {
-                if (monitor == null) Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
-                else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.count()));
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
                 assert this.provider != null;
                 provider.pull(receiver);
             }
 
             @Override
-            public void pullAll() {
-                if (provider != null) pull(provider);
-            }
-
-            @Override
-            public int size() {
-                if (provider == null) return 0;
-                else return 1;
-            }
-
-            @Override
-            public void receivedFrom(Provider<R> provider) {
+            public void recordReceive(Provider<R> provider) {
                 assert this.provider == provider;
                 setPulling(false);
             }
@@ -238,12 +227,10 @@ public interface Reactive {
 
             private final Map<Provider<R>, Boolean> providers;
             private final Receiver<R> receiver;
-            private final Monitoring monitor;
 
-            public MultiProviderRegistry(Subscriber<R> subscriber, @Nullable Monitoring monitor) {
+            public MultiProviderRegistry(Subscriber<R> subscriber) {
                 this.providers = new HashMap<>();
                 this.receiver = subscriber;
-                this.monitor = monitor;
             }
 
             @Override
@@ -251,19 +238,8 @@ public interface Reactive {
                 providers.putIfAbsent(provider, false);
             }
 
-            public void finaliseProviders() {
-                assert monitor != null;
-                final int numForks = providers.size() - 1;
-                if (numForks > 0) monitor.onPathFork(numForks, receiver);
-            }
-
             @Override
-            public int size() {
-                return providers.size();
-            }
-
-            @Override
-            public void receivedFrom(Provider<R> provider) {
+            public void recordReceive(Provider<R> provider) {
                 setPulling(provider, false);
             }
 
@@ -293,9 +269,12 @@ public interface Reactive {
 
             private void pullProvider(Provider<R> provider) {
                 assert providers.containsKey(provider);
-                if (monitor == null) Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
-                else Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitor.count()));
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
                 provider.pull(receiver);
+            }
+
+            public int size() {
+                return providers.size();
             }
         }
     }

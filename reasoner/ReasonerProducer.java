@@ -89,7 +89,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         assert this.queue == null || this.queue == queue;
         this.queue = queue;
         required.addAndGet(request);
-        reasonerEntryPoint.pull();
+        reasonerEntryPoint.pull();  // TODO: Consider making this class implement Receiver and providing it to pull()
     }
 
     private void receiveAnswer(ConceptMap answer) {
@@ -131,20 +131,29 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
     }
 
-    public static class EntryPoint extends Sink<ConceptMap> {
+    public static class EntryPoint extends Sink<ConceptMap> {  // TODO: Consider collapsing Sink and EntryPoint into ReasonerProducer
 
         private final Consumer<ConceptMap> answerConsumer;
         private final Consumer<Throwable> exceptionConsumer;
         private final Consumer<Boolean> onDone;
         private final String groupName;
         private final UUID traceId = UUID.randomUUID();
+        private boolean isPulling;
         private int traceCounter = 0;
 
         public EntryPoint(Consumer<ConceptMap> answerConsumer, Consumer<Throwable> exceptionConsumer, Consumer<Boolean> onDone, String groupName) {
+            super();
             this.answerConsumer = answerConsumer;
             this.exceptionConsumer = exceptionConsumer;
             this.onDone = onDone;
             this.groupName = groupName;
+            this.isPulling = false;
+        }
+
+        @Override
+        public void pull() {
+            isPulling = true;
+            super.pull();
         }
 
         @Override
@@ -153,6 +162,12 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
             isPulling = false;
             answerConsumer.accept(packet);
             monitor().onAnswerDestroy(this);
+        }
+
+        @Override
+        public void subscribeTo(Provider<ConceptMap> provider) {
+            super.subscribeTo(provider);
+            if (isPulling) providerManager().pull(provider);
         }
 
         @Override

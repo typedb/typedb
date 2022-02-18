@@ -101,7 +101,7 @@ public abstract class DisjunctionController<
                         .map(Identifier.Variable::asRetrievable).toSet();
                 requestConnection(new NestedConjunctionRequest<>(driver(), endpoint.id(), conjunction, bounds.filter(retrievableConjunctionVars)));
             }
-            fanIn.finalise();
+            fanIn.finaliseProviders();
         }
 
         protected AbstractReactiveStream<ConceptMap, ConceptMap> getOutlet(FanInReactive<ConceptMap> fanIn) {

@@ -21,14 +21,13 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 
-public abstract class PublisherBase<OUTPUT> extends AbstractPublisher<OUTPUT> {
+public abstract class AbstractUnaryPublisher<OUTPUT> extends AbstractPublisher<OUTPUT> {
 
-    protected Receiver<OUTPUT> subscriber;
     protected SingleReceiverRegistry<OUTPUT> receiverRegistry;
 
-    protected PublisherBase(Monitoring monitor, String groupName) {
+    protected AbstractUnaryPublisher(Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.receiverRegistry = new SingleReceiverRegistry<>(null);
+        this.receiverRegistry = new SingleReceiverRegistry<>();
     }
 
     @Override
@@ -38,19 +37,8 @@ public abstract class PublisherBase<OUTPUT> extends AbstractPublisher<OUTPUT> {
 
     @Override
     public void publishTo(Subscriber<OUTPUT> subscriber) {
-        setSubscriber(subscriber);
+        receiverRegistry().addReceiver(subscriber);
         subscriber.subscribeTo(this);
-    }
-
-    protected void setSubscriber(Receiver<OUTPUT> subscriber) {
-        // TODO: This is duplicated in the AbstractReactiveStream class hierarchy
-        assert this.subscriber == null;
-        assert subscriber != null;
-        this.subscriber = subscriber;
-    }
-
-    protected Receiver<OUTPUT> subscriber() {
-        return subscriber;
     }
 
 }

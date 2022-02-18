@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
 import java.util.function.Supplier;
 
-public class Source<PACKET> extends PublisherBase<PACKET> {
+public class Source<PACKET> extends AbstractUnaryPublisher<PACKET> {
 
     private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
     private boolean exhausted;
@@ -42,7 +42,7 @@ public class Source<PACKET> extends PublisherBase<PACKET> {
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
-        assert receiver.equals(subscriber);
+        assert receiver.equals(receiverRegistry().receiver());
         assert !exhausted;
         if (iterator == null) iterator = iteratorSupplier.get();
         if (iterator.hasNext()) {

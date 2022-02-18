@@ -19,21 +19,19 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-import javax.annotation.Nullable;
+public abstract class Sink<PACKET> implements Subscriber<PACKET> {
 
-public abstract class Sink<PACKET> implements Subscriber<PACKET>, Provider<PACKET> {
-
-    private SingleProviderRegistry<PACKET> providerManager;
+    private final SingleProviderRegistry<PACKET> providerManager;
     private Monitoring monitor;
-    protected boolean isPulling;
+
+    protected Sink() {
+        this.providerManager = new SingleProviderRegistry<>(this);
+    }
 
     protected SingleProviderRegistry<PACKET> providerManager() {
-        // TODO: We would initialise this on construction if the monitor was ready, but that is set later via setMonitor()
-        if (providerManager == null) this.providerManager = new SingleProviderRegistry<>(this, monitor());
         return providerManager;
     }
 
@@ -48,30 +46,15 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET>, Provider<PACKE
     @Override
     public void subscribeTo(Provider<PACKET> provider) {
         providerManager().add(provider);
-        if (isPulling) {
-            providerManager().pull(provider);
-        }
     }
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
-        providerManager().receivedFrom(provider);
-    }
-
-    @Override
-    public void pull(@Nullable Receiver<PACKET> receiver) {
-        assert receiver == null;
-        if (!isPulling) {
-            isPulling = true;
-            if (providerManager().size() > 0) {
-                // TODO: This condition isn't congruent with others, can we omit?
-                providerManager().pullAll();
-            }
-        }
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        providerManager().recordReceive(provider);
     }
 
     public void pull() {
-        pull(null);
+        providerManager().pullAll();
     }
 }

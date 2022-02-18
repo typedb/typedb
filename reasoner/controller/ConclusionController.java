@@ -156,7 +156,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
             protected ConclusionReactive(String groupName, Monitoring monitor) {
                 super(monitor, groupName);
-                this.providerManager = new SingleProviderRegistry<>(this, monitor());
+                this.providerManager = new SingleProviderRegistry<>(this);
             }
 
             @Override
@@ -187,8 +187,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             private void receiveMaterialisation(MaterialiserReactive provider, Map<Variable, Concept> packet) {
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet, monitor().count()));
-                receiverRegistry().finishPulling();
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+                receiverRegistry().recordReceive();
                 receiverRegistry().receiver().receive(this, packet);
                 provider.pull(receiverRegistry().receiver());  // We need to pull again so that the materialiser processor does a join of its own accord
             }
@@ -202,7 +202,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             public MaterialiserReactive(ConclusionReactive parent, Monitoring monitor, String groupName) {
                 super(monitor, groupName);
                 this.parent = parent;
-                this.providerManager = new SingleProviderRegistry<>(this, monitor());
+                this.providerManager = new SingleProviderRegistry<>(this);
             }
 
             @Override
@@ -213,7 +213,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             @Override
             public void receive(Provider<Map<Variable, Concept>> provider, Map<Variable, Concept> packet) {
                 super.receive(provider, packet);
-                receiverRegistry().finishPulling();
+                receiverRegistry().recordReceive();
                 parent.receiveMaterialisation(this, packet);
             }
 
