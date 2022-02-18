@@ -30,10 +30,10 @@ import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.THREAD_POOL_SIZE;
+import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.databaseMgr;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.sessions;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.sessionsParallel;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.threadPool;
-import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.databaseMgr;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

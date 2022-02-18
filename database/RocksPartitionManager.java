@@ -35,7 +35,6 @@ import java.util.stream.IntStream;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.DEFAULT;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.FIXED_START_EDGE;
