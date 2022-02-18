@@ -52,6 +52,14 @@ public class Encoding {
     public static final String ROCKS_SCHEMA = "schema";
     public static final int ENCODING_VERSION = 1;
 
+    public interface Partition {
+        short DEFAULT = 0;
+        short VARIABLE_START_EDGE = 1;
+        short FIXED_START_EDGE = 2;
+        short OPTIMISATION_EDGE = 3;
+        short STATISTICS = 4;
+    }
+
     public enum Key {
         PERSISTED(0, true),
         BUFFERED(-1, false);
