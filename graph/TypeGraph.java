@@ -258,13 +258,13 @@ public class TypeGraph {
         Set<TypeVertex> overriddens = new HashSet<>();
         NavigableSet<TypeVertex> ownedAttributeTypes = new TreeSet<>();
         loop(owner, Objects::nonNull, o -> o.outs().edge(SUB).to().firstOrNull())
-                .flatMap(o -> {
+                .flatMap(sub -> {
                     FunctionalIterator<KeyValue<TypeVertex, TypeVertex>> ownsAndOverridden = isKey ?
-                            o.outs().edge(OWNS_KEY).toAndOverridden() :
-                            o.outs().edge(OWNS).toAndOverridden().link(o.outs().edge(OWNS_KEY).toAndOverridden());
+                            sub.outs().edge(OWNS_KEY).toAndOverridden() :
+                            sub.outs().edge(OWNS).toAndOverridden().link(sub.outs().edge(OWNS_KEY).toAndOverridden());
                     return ownsAndOverridden.map(e -> {
                         if (e.value() != null) overriddens.add(e.value());
-                        if (!overriddens.contains(e.key())) return e.key();
+                        if (sub.equals(owner) || !overriddens.contains(e.key())) return e.key();
                         else return null;
                     }).filter(Objects::nonNull);
                 }).toSet(ownedAttributeTypes);
@@ -331,9 +331,9 @@ public class TypeGraph {
             Set<TypeVertex> overriddens = new HashSet<>();
             NavigableSet<TypeVertex> roleTypes = new TreeSet<>();
             loop(player, Objects::nonNull, p -> p.outs().edge(SUB).to().firstOrNull())
-                    .flatMap(s -> s.outs().edge(PLAYS).toAndOverridden().map(e -> {
+                    .flatMap(sub -> sub.outs().edge(PLAYS).toAndOverridden().map(e -> {
                         if (e.value() != null) overriddens.add(e.value());
-                        if (!overriddens.contains(e.key())) return e.key();
+                        if (sub.equals(player) || !overriddens.contains(e.key())) return e.key();
                         else return null;
                     }).noNulls()).toSet(roleTypes);
             return roleTypes;
@@ -371,9 +371,9 @@ public class TypeGraph {
             Set<TypeVertex> overriddens = new HashSet<>();
             NavigableSet<TypeVertex> roleTypes = new TreeSet<>();
             loop(relation, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
-                    .flatMap(s -> s.outs().edge(RELATES).toAndOverridden().map(e -> {
+                    .flatMap(sub -> sub.outs().edge(RELATES).toAndOverridden().map(e -> {
                         if (e.value() != null) overriddens.add(e.value());
-                        if (!overriddens.contains(e.key())) return e.key();
+                        if (sub.equals(relation) || !overriddens.contains(e.key())) return e.key();
                         else return null;
                     }).noNulls()).toSet(roleTypes);
             return roleTypes;

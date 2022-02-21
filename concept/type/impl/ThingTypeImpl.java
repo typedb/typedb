@@ -21,6 +21,8 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
@@ -29,17 +31,18 @@ import com.vaticle.typedb.core.concept.thing.impl.ThingImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
+import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
@@ -64,11 +67,12 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RO
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
+import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
-import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
@@ -130,10 +134,20 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public abstract FunctionalIterator<? extends ThingTypeImpl> getSubtypes();
+    public abstract Seekable<? extends ThingTypeImpl, Order.Asc> getSubtypes();
 
     @Override
-    public abstract FunctionalIterator<? extends ThingTypeImpl> getSubtypesExplicit();
+    public abstract Seekable<? extends ThingTypeImpl, Order.Asc> getSubtypesExplicit();
+
+    <THING extends ThingImpl> Seekable<THING, Order.Asc> instances(Function<ThingVertex, THING> thingConstructor) {
+        return getSubtypes().filter(t -> !t.isAbstract())
+                .mergeMap(t -> graphMgr.data().getReadable(t.vertex), ASC)
+                .mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
+    }
+
+    <THING extends ThingImpl> Seekable<THING, Order.Asc> instancesExplicit(Function<ThingVertex, THING> thingConstructor) {
+        return graphMgr.data().getReadable(vertex).mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
+    }
 
     @Override
     public void setOwns(AttributeType attributeType) {
@@ -170,7 +184,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
         if ((edge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
         else if ((edge = vertex.outs().edge(OWNS, attVertex)) != null) edge.delete();
-        else if (this.getOwns().anyMatch(attr -> attr.equals(attributeType))) {
+        else if (this.getOwns().findFirst((AttributeTypeImpl) attributeType).isPresent()) {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_OWNS,
                     this.getLabel().toString(), attributeType.getLabel().toString()));
         } else {
@@ -180,7 +194,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private <T extends com.vaticle.typedb.core.concept.type.Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
-                                                                                FunctionalIterator<? extends TypeImpl> overridable, FunctionalIterator<? extends TypeImpl> notOverridable) {
+                                                                                Seekable<? extends Type, Order.Asc> overridable,
+                                                                                Seekable<? extends Type, Order.Asc> notOverridable) {
         if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
             throw exception(TypeDBException.of(OVERRIDDEN_NOT_SUPERTYPE, type.getLabel(), overriddenType.getLabel()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
@@ -223,7 +238,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_NO_INSTANCES, vertex.label(), attVertex.label()));
         }
         ownsKeyEdge = vertex.outs().put(OWNS_KEY, attVertex);
-        if (getSupertype().declaredOwns(false).anyMatch(attributeType::equals)) ownsKeyEdge.overridden(attVertex);
+        if (getSupertype().declaredOwns(false).findFirst(attributeType).isPresent()) ownsKeyEdge.overridden(attVertex);
     }
 
     private void ownsKey(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
@@ -235,7 +250,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private void ownsAttribute(AttributeTypeImpl attributeType) {
         validateIsNotDeleted();
-        if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getOwns).anyMatch(a -> a.equals(attributeType))) {
+        Seekable<AttributeType, Order.Asc> owns = getSupertypes().filter(t -> !t.equals(this)).mergeMap(ThingType::getOwns, ASC);
+        if (owns.findFirst(attributeType).isPresent()) {
             throw exception(TypeDBException.of(OWNS_ATT_NOT_AVAILABLE, attributeType.getLabel()));
         }
 
@@ -249,15 +265,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         this.ownsAttribute(attributeType);
         override(OWNS, attributeType, overriddenType,
                 getSupertype().getOwns(attributeType.getValueType()),
-                link(getSupertype().getOwns(true), declaredOwns(false)));
+                getSupertype().getOwns(true).merge(declaredOwns(false)));
     }
 
-    private FunctionalIterator<AttributeTypeImpl> declaredOwns(boolean onlyKey) {
-        if (isRoot()) return Iterators.empty();
-        FunctionalIterator<TypeVertex> iterator;
+    private Seekable<AttributeType, Order.Asc> declaredOwns(boolean onlyKey) {
+        if (isRoot()) return emptySorted();
+        Seekable<TypeVertex, Order.Asc> iterator;
         if (onlyKey) iterator = vertex.outs().edge(OWNS_KEY).to();
-        else iterator = link(vertex.outs().edge(OWNS_KEY).to(), vertex.outs().edge(OWNS).to());
-        return iterator.map(v -> AttributeTypeImpl.of(graphMgr, v));
+        else iterator = vertex.outs().edge(OWNS_KEY).to().merge(vertex.outs().edge(OWNS).to());
+        return iterator.mapSorted(v -> AttributeTypeImpl.of(graphMgr, v), attr -> ((AttributeTypeImpl) attr).vertex, ASC);
     }
 
     FunctionalIterator<AttributeTypeImpl> overriddenOwns(boolean onlyKey, boolean transitive) {
@@ -278,46 +294,49 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public FunctionalIterator<AttributeTypeImpl> getOwns() {
+    public Seekable<AttributeType, Order.Asc> getOwns() {
         return getOwns(false);
     }
 
     @Override
-    public FunctionalIterator<AttributeTypeImpl> getOwnsExplicit() {
+    public Seekable<AttributeType, Order.Asc> getOwnsExplicit() {
         return getOwnsExplicit(false);
     }
 
     @Override
-    public FunctionalIterator<AttributeTypeImpl> getOwns(AttributeType.ValueType valueType) {
+    public Seekable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType) {
         return getOwns(valueType, false);
     }
 
     @Override
-    public FunctionalIterator<AttributeTypeImpl> getOwnsExplicit(AttributeType.ValueType valueType) {
+    public Seekable<AttributeType, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType) {
         return getOwnsExplicit(valueType, false);
     }
 
     @Override
-    public FunctionalIterator<AttributeTypeImpl> getOwns(boolean onlyKey) {
-        if (isRoot()) return Iterators.empty();
-        Set<AttributeTypeImpl> overridden = overriddenOwns(onlyKey, false).toSet();
-        assert getSupertype() != null;
-        return link(declaredOwns(onlyKey), getSupertype().getOwns(onlyKey).filter(key -> !overridden.contains(key)));
+    public Seekable<AttributeType, Order.Asc> getOwns(boolean onlyKey) {
+        if (onlyKey) {
+            return iterateSorted(graphMgr.schema().ownedKeyAttributeTypes(vertex), ASC)
+                    .mapSorted(v -> AttributeTypeImpl.of(graphMgr, v), attr -> ((AttributeTypeImpl) attr).vertex, ASC);
+        } else {
+            return iterateSorted(graphMgr.schema().ownedAttributeTypes(vertex), ASC)
+                    .mapSorted(v -> AttributeTypeImpl.of(graphMgr, v), attr -> ((AttributeTypeImpl) attr).vertex, ASC);
+        }
     }
 
     @Override
-    public FunctionalIterator<AttributeTypeImpl> getOwnsExplicit(boolean onlyKey) {
-        if (isRoot()) return Iterators.empty();
+    public Seekable<AttributeType, Order.Asc> getOwnsExplicit(boolean onlyKey) {
+        if (isRoot()) return emptySorted();
         return declaredOwns(onlyKey);
     }
 
     @Override
-    public FunctionalIterator<AttributeTypeImpl> getOwns(AttributeType.ValueType valueType, boolean onlyKey) {
+    public Seekable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType, boolean onlyKey) {
         return getOwns(onlyKey).filter(att -> att.getValueType().equals(valueType));
     }
 
     @Override
-    public FunctionalIterator<AttributeTypeImpl> getOwnsExplicit(AttributeType.ValueType valueType, boolean onlyKey) {
+    public Seekable<AttributeType, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType, boolean onlyKey) {
         return getOwnsExplicit(onlyKey).filter(att -> att.getValueType().equals(valueType));
     }
 
@@ -338,7 +357,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType) {
         validateIsNotDeleted();
-        if (getSupertypes().filter(t -> !t.equals(this)).flatMap(ThingType::getPlays).anyMatch(a -> a.equals(roleType))) {
+        if (getSupertypes().filter(t -> !t.equals(this)).mergeMap(ThingType::getPlays, ASC).findFirst(roleType).isPresent()) {
             throw exception(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE, roleType.getLabel()));
         }
         vertex.outs().put(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
@@ -349,7 +368,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         validateIsNotDeleted();
         setPlays(roleType);
         override(Encoding.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
-                vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)));
+                vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().mapSorted(v -> RoleTypeImpl.of(graphMgr, v), rt -> rt.vertex, ASC));
     }
 
     @Override
@@ -357,7 +376,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         validateIsNotDeleted();
         TypeEdge edge = vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (edge == null) {
-            if (this.getPlays().anyMatch(attr -> attr.equals(roleType))) {
+            if (this.getPlays().findFirst(roleType).isPresent()) {
                 throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_PLAYS,
                         this.getLabel().toString(), roleType.getLabel().toString()));
             } else {
@@ -372,21 +391,18 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public FunctionalIterator<RoleTypeImpl> getPlays() {
-        if (isRoot()) return Iterators.empty();
-        Set<TypeVertex> overridden = new HashSet<>();
-        vertex.outs().edge(Encoding.Edge.Type.PLAYS).overridden().filter(Objects::nonNull).forEachRemaining(overridden::add);
+    public Seekable<RoleType, Order.Asc> getPlays() {
+        if (isRoot()) return emptySorted();
         assert getSupertype() != null;
-        return link(
-                vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v)),
-                getSupertype().getPlays().filter(att -> !overridden.contains(att.vertex))
-        );
+        return iterateSorted(graphMgr.schema().playedRoleTypes(vertex), ASC)
+                .mapSorted(v -> RoleTypeImpl.of(graphMgr, v), roleType -> ((RoleTypeImpl) roleType).vertex, ASC);
     }
 
     @Override
-    public FunctionalIterator<RoleTypeImpl> getPlaysExplicit() {
-        if (isRoot()) return Iterators.empty();
-        return vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().map(v -> RoleTypeImpl.of(graphMgr, v));
+    public Seekable<RoleType, Order.Asc> getPlaysExplicit() {
+        if (isRoot()) return emptySorted();
+        return vertex.outs().edge(Encoding.Edge.Type.PLAYS).to()
+                .mapSorted(v -> RoleTypeImpl.of(graphMgr, v), rt -> ((RoleTypeImpl) rt).vertex, ASC);
     }
 
     @Override
@@ -437,13 +453,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private List<TypeDBException> exceptions_ownsAbstractAttType() {
-        return getOwns().filter(TypeImpl::isAbstract)
+        return getOwns().filter(Type::isAbstract)
                 .map(attType -> TypeDBException.of(OWNS_ABSTRACT_ATT_TYPE, getLabel(), attType.getLabel()))
                 .toList();
     }
 
     private List<TypeDBException> exceptions_playsAbstractRoleType() {
-        return getPlays().filter(TypeImpl::isAbstract)
+        return getPlays().filter(Type::isAbstract)
                 .map(roleType -> TypeDBException.of(PLAYS_ABSTRACT_ROLE_TYPE, getLabel(), roleType.getLabel()))
                 .toList();
     }
@@ -481,8 +497,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
-        public FunctionalIterator<ThingTypeImpl> getSubtypes() {
-            return iterate(graphMgr.schema().getSubtypes(vertex)).map(v -> {
+        public Seekable<ThingTypeImpl, Order.Asc> getSubtypes() {
+            return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC).mapSorted(v -> {
                 switch (v.encoding()) {
                     case THING_TYPE:
                         assert vertex == v;
@@ -496,11 +512,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                     default:
                         throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                 }
-            });
+            }, thingType -> thingType.vertex, ASC);
         }
 
         @Override
-        public FunctionalIterator<ThingTypeImpl> getSubtypesExplicit() {
+        public Seekable<ThingTypeImpl, Order.Asc> getSubtypesExplicit() {
             return getSubtypesExplicit(v -> {
                 switch (v.encoding()) {
                     case ENTITY_TYPE:
@@ -516,7 +532,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
-        public FunctionalIterator<ThingImpl> getInstances() {
+        public Seekable<ThingImpl, Order.Asc> getInstances() {
             return instances(v -> {
                 switch (v.encoding()) {
                     case ENTITY:
@@ -533,8 +549,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
-        public FunctionalIterator<ThingImpl> getInstancesExplicit() {
-            return empty();
+        public Seekable<ThingImpl, Order.Asc> getInstancesExplicit() {
+            return emptySorted();
         }
 
         @Override

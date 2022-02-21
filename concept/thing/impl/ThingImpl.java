@@ -77,7 +77,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
         }
     }
 
-    protected ThingVertex readableVertex() {
+    public ThingVertex readableVertex() {
         return vertex;
     }
 
@@ -285,5 +285,10 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     @Override
     public final int hashCode() {
         return readableVertex().hashCode(); // does not need caching
+    }
+
+    @Override
+    public int compareTo(Thing other) {
+        return vertex.compareTo(((ThingImpl) other).vertex);
     }
 }

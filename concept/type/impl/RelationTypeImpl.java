@@ -20,21 +20,22 @@ package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_ABSTRACT_ROLE;
@@ -43,8 +44,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RE
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.RELATION;
@@ -65,8 +66,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     public static RelationTypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
-        if (vertex.label().equals(RELATION.label()))
-            return new RelationTypeImpl.Root(graphMgr, vertex);
+        if (vertex.label().equals(RELATION.label())) return new RelationTypeImpl.Root(graphMgr, vertex);
         else return new RelationTypeImpl(graphMgr, vertex);
     }
 
@@ -103,22 +103,23 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public FunctionalIterator<RelationTypeImpl> getSubtypes() {
-        return iterate(graphMgr.schema().getSubtypes(vertex)).map(v -> of(graphMgr, v));
+    public Seekable<RelationTypeImpl, Order.Asc> getSubtypes() {
+        return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
+                .mapSorted(v -> of(graphMgr, v), relationType -> relationType.vertex, ASC);
     }
 
     @Override
-    public FunctionalIterator<RelationTypeImpl> getSubtypesExplicit() {
+    public Seekable<RelationTypeImpl, Order.Asc> getSubtypesExplicit() {
         return super.getSubtypesExplicit(v -> of(graphMgr, v));
     }
 
     @Override
-    public FunctionalIterator<RelationImpl> getInstances() {
+    public Seekable<RelationImpl, Order.Asc> getInstances() {
         return instances(RelationImpl::of);
     }
 
     @Override
-    public FunctionalIterator<RelationImpl> getInstancesExplicit() {
+    public Seekable<RelationImpl, Order.Asc> getInstancesExplicit() {
         return instancesExplicit(RelationImpl::of);
     }
 
@@ -167,22 +168,15 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public FunctionalIterator<RoleTypeImpl> getRelates() {
-        FunctionalIterator<RoleTypeImpl> roles = vertex.outs().edge(RELATES).to().map(v -> RoleTypeImpl.of(graphMgr, v));
-        if (isRoot()) {
-            return roles;
-        } else {
-            assert getSupertype() != null;
-            Set<RoleTypeImpl> overridden = new HashSet<>();
-            overriddenRoles().forEachRemaining(overridden::add);
-            return link(roles, getSupertype().asRelationType().getRelates().filter(role -> !overridden.contains(role)));
-        }
+    public Seekable<RoleTypeImpl, Order.Asc> getRelates() {
+        return iterateSorted(graphMgr.schema().relatedRoleTypes(vertex), ASC)
+                .mapSorted(v -> RoleTypeImpl.of(graphMgr, v), roleType -> roleType.vertex, ASC);
     }
 
     @Override
-    public FunctionalIterator<RoleTypeImpl> getRelatesExplicit() {
-        FunctionalIterator<RoleTypeImpl> roles = vertex.outs().edge(RELATES).to().map(v -> RoleTypeImpl.of(graphMgr, v));
-        return roles;
+    public Seekable<RoleTypeImpl, Order.Asc> getRelatesExplicit() {
+        return vertex.outs().edge(RELATES).to()
+                .mapSorted(v -> RoleTypeImpl.of(graphMgr, v), roleType -> roleType.vertex, ASC);
     }
 
     @Override
@@ -230,9 +224,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public RoleTypeImpl getRelatesExplicit(String roleLabel) {
         TypeVertex roleTypeVertex = graphMgr.schema().getType(roleLabel, vertex.label());
-        if (roleTypeVertex != null) {
-            return RoleTypeImpl.of(graphMgr, roleTypeVertex);
-        } else return null;
+        if (roleTypeVertex != null) return RoleTypeImpl.of(graphMgr, roleTypeVertex);
+        else return null;
     }
 
     @Override
@@ -248,7 +241,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         if (!isRoot() && !isAbstract() && !getRelates().filter(r -> !r.getLabel().equals(ROLE.properLabel())).hasNext()) {
             exceptions.add(TypeDBException.of(RELATION_NO_ROLE, this.getLabel()));
         } else if (!isAbstract()) {
-            getRelates().filter(TypeImpl::isAbstract).forEachRemaining(
+            getRelates().filter(Type::isAbstract).forEachRemaining(
                     rt -> exceptions.add(TypeDBException.of(RELATION_ABSTRACT_ROLE, getLabel(), rt.getLabel()))
             );
         }

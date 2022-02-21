@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 
-public interface Thing extends Concept {
+public interface Thing extends Concept, Comparable<Thing> {
 
     /**
      * Returns the {@code IID} of this {@code Thing} as a byte array.

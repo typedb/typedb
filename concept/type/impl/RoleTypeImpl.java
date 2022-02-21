@@ -20,6 +20,8 @@ package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.impl.RoleImpl;
 import com.vaticle.typedb.core.concept.type.RoleType;
@@ -35,8 +37,9 @@ import java.util.Objects;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ROLE;
@@ -48,7 +51,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         assert vertex.encoding() == ROLE_TYPE;
         if (vertex.encoding() != ROLE_TYPE) {
             throw exception(TypeDBException.of(TYPE_ROOT_MISMATCH, vertex.label(),
-                                               ROLE_TYPE.root().label(), vertex.encoding().root().label()));
+                    ROLE_TYPE.root().label(), vertex.encoding().root().label()));
         }
     }
 
@@ -90,12 +93,13 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public FunctionalIterator<RoleTypeImpl> getSubtypes() {
-        return iterate(graphMgr.schema().getSubtypes(vertex)).map(v -> of(graphMgr, v));
+    public Seekable<RoleTypeImpl, Order.Asc> getSubtypes() {
+        return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
+                .mapSorted(v -> of(graphMgr, v), rt -> rt.vertex, ASC);
     }
 
     @Override
-    public FunctionalIterator<RoleTypeImpl> getSubtypesExplicit() {
+    public Seekable<RoleTypeImpl, Order.Asc> getSubtypesExplicit() {
         return super.getSubtypesExplicit(v -> of(graphMgr, v));
     }
 
@@ -105,13 +109,15 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public FunctionalIterator<RelationTypeImpl> getRelationTypes() {
-        return getRelationType().getSubtypes().filter(r -> r.overriddenRoles().noneMatch(o -> o.equals(this)));
+    public Seekable<RelationTypeImpl, Order.Asc> getRelationTypes() {
+        return iterateSorted(graphMgr.schema().relationsOfRoleType(vertex), ASC)
+                .mapSorted(v -> RelationTypeImpl.of(graphMgr, v), relType -> relType.vertex, ASC);
     }
 
     @Override
-    public FunctionalIterator<ThingTypeImpl> getPlayers() {
-        return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from().map(v -> ThingTypeImpl.of(graphMgr, v));
+    public Seekable<ThingTypeImpl, Order.Asc> getPlayers() {
+        return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from()
+                .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC);
     }
 
     @Override
@@ -129,7 +135,9 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     private FunctionalIterator<RoleImpl> getInstances() {
-        return instances(RoleImpl::of);
+        return getSubtypes().filter(t -> !t.isAbstract())
+                .flatMap(t -> graphMgr.data().getReadable(t.vertex))
+                .map(RoleImpl::of);
     }
 
     @Override
@@ -138,10 +146,14 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public boolean isRoleType() { return true; }
+    public boolean isRoleType() {
+        return true;
+    }
 
     @Override
-    public RoleTypeImpl asRoleType() { return this; }
+    public RoleTypeImpl asRoleType() {
+        return this;
+    }
 
     public RoleImpl create() {
         return create(false);
@@ -161,15 +173,23 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         }
 
         @Override
-        public boolean isRoot() { return true; }
+        public boolean isRoot() {
+            return true;
+        }
 
         @Override
-        public void setLabel(String label) { throw exception(TypeDBException.of(ROOT_TYPE_MUTATION)); }
+        public void setLabel(String label) {
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+        }
 
         @Override
-        void unsetAbstract() { throw exception(TypeDBException.of(ROOT_TYPE_MUTATION)); }
+        void unsetAbstract() {
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+        }
 
         @Override
-        void sup(RoleType superType) { throw exception(TypeDBException.of(ROOT_TYPE_MUTATION)); }
+        void sup(RoleType superType) {
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+        }
     }
 }
