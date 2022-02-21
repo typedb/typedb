@@ -25,12 +25,12 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractUnaryReactiveStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.BufferedFanOutReactive;
 
 import java.util.Set;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
-import static com.vaticle.typedb.core.reasoner.computation.reactive.NoOpReactive.noOp;
 
 public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.NegationProcessor, NegationController> {
 
@@ -102,7 +102,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
         @Override
         public void setUp() {
-            setOutlet(noOp(monitoring(), name()));
+            setOutlet(new BufferedFanOutReactive<>(monitoring(), name()));
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             requestConnection(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
             negation = new NegationReactive(monitoring(), name(), this::onDone);
