@@ -44,7 +44,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RE
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;

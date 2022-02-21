@@ -20,13 +20,13 @@ package com.vaticle.typedb.core.common.iterator;
 
 import java.util.NoSuchElementException;
 
-public class LimitedIterator<T> extends AbstractFunctionalIterator<T> {
+class LimitedIterator<T> extends AbstractFunctionalIterator<T> {
 
     private final FunctionalIterator<T> iterator;
     private final long limit;
     private long counter;
 
-    public LimitedIterator(FunctionalIterator<T> iterator, long limit) {
+    LimitedIterator(FunctionalIterator<T> iterator, long limit) {
         this.iterator = iterator;
         this.limit = limit;
         this.counter = 0L;

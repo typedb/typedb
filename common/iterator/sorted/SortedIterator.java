@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
 import java.util.Iterator;
 import java.util.NavigableSet;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -33,23 +32,39 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
     Order.Asc ASC = new Order.Asc();
     Order.Desc DESC = new Order.Desc();
 
+    interface Orderer {
+
+        <T extends Comparable<? super T>> int compare(T last, T next);
+
+        <T extends Comparable<? super T>> Iterator<T> iterateOrdered(NavigableSet<T> source);
+
+        <T extends Comparable<? super T>> Iterator<T> iterateOrdered(NavigableSet<T> source, T from);
+    }
+
     abstract class Order {
 
-        abstract <T extends Comparable<? super T>> int compare(T last, T next);
+        abstract Orderer orderer();
 
         abstract <T extends Comparable<? super T>> boolean isValidNext(T last, T next);
 
-        // TODO: is it the right place to delegate these operations to?
-        abstract <T extends Comparable<? super T>> Iterator<T> iterateOrdered(NavigableSet<T> source);
-
-        abstract <T extends Comparable<? super T>> Iterator<T> iterateOrdered(NavigableSet<T> source, T from);
-
         public static class Asc extends Order {
 
-            @Override
-            <T extends Comparable<? super T>> int compare(T last, T next) {
-                return last.compareTo(next);
-            }
+            private static final Orderer orderer = new Orderer() {
+                @Override
+                public <T extends Comparable<? super T>> int compare(T last, T next) {
+                    return last.compareTo(next);
+                }
+
+                @Override
+                public <T extends Comparable<? super T>> Iterator<T> iterateOrdered(NavigableSet<T> source) {
+                    return source.iterator();
+                }
+
+                @Override
+                public <T extends Comparable<? super T>> Iterator<T> iterateOrdered(NavigableSet<T> source, T from) {
+                    return source.tailSet(from, true).iterator();
+                }
+            };
 
             @Override
             <T extends Comparable<? super T>> boolean isValidNext(T last, T next) {
@@ -57,22 +72,30 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
             }
 
             @Override
-            <T extends Comparable<? super T>> Iterator<T> iterateOrdered(NavigableSet<T> source) {
-                return source.iterator();
-            }
-
-            @Override
-            <T extends Comparable<? super T>> Iterator<T> iterateOrdered(NavigableSet<T> source, T from) {
-                return source.tailSet(from, true).iterator();
+            Orderer orderer() {
+                return orderer;
             }
         }
 
         public static class Desc extends Order {
 
-            @Override
-            <T extends Comparable<? super T>> int compare(T last, T next) {
-                return -1 * last.compareTo(next);
-            }
+            private static final Orderer orderer = new Orderer() {
+
+                @Override
+                public <T extends Comparable<? super T>> int compare(T last, T next) {
+                    return -1 * last.compareTo(next);
+                }
+
+                @Override
+                public <T extends Comparable<? super T>> Iterator<T> iterateOrdered(NavigableSet<T> source) {
+                    return source.descendingIterator();
+                }
+
+                @Override
+                public <T extends Comparable<? super T>> Iterator<T> iterateOrdered(NavigableSet<T> source, T from) {
+                    return source.headSet(from, true).descendingIterator();
+                }
+            };
 
             @Override
             <T extends Comparable<? super T>> boolean isValidNext(T last, T next) {
@@ -80,13 +103,8 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
             }
 
             @Override
-            <T extends Comparable<? super T>> Iterator<T> iterateOrdered(NavigableSet<T> source) {
-                return source.descendingIterator();
-            }
-
-            @Override
-            <T extends Comparable<? super T>> Iterator<T> iterateOrdered(NavigableSet<T> source, T from) {
-                return source.headSet(from, true).descendingIterator();
+            Orderer orderer() {
+                return orderer;
             }
         }
     }
@@ -114,7 +132,7 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
     SortedIterator<T, ORDER> onConsumed(Runnable function);
 
     @Override
-    SortedIterator<T, ORDER> onFinalised(Runnable function);
+    SortedIterator<T, ORDER> onFinalise(Runnable function);
 
     interface Seekable<T extends Comparable<? super T>, ORDER extends Order> extends SortedIterator<T, ORDER> {
 
@@ -146,6 +164,6 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
         Seekable<T, ORDER> onConsumed(Runnable function);
 
         @Override
-        Seekable<T, ORDER> onFinalised(Runnable function);
+        Seekable<T, ORDER> onFinalise(Runnable function);
     }
 }

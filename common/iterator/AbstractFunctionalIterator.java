@@ -231,7 +231,7 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     }
 
     @Override
-    public FunctionalIterator<T> onFinalised(Runnable function) {
+    public FunctionalIterator<T> onFinalise(Runnable function) {
         return new FinaliseIterator<>(this, function);
     }
 

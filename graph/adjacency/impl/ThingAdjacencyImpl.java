@@ -47,8 +47,8 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Predicate;
 
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;

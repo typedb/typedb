@@ -44,5 +44,4 @@ public class MappedIterator<T, U> extends AbstractFunctionalIterator<U> {
     public void recycle() {
         iterator.recycle();
     }
-
 }

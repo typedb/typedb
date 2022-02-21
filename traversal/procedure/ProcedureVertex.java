@@ -21,9 +21,9 @@ package com.vaticle.typedb.core.traversal.procedure;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
@@ -48,8 +48,8 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
@@ -349,7 +349,7 @@ public abstract class ProcedureVertex<
                 for (Encoding.ValueType valueType : props().valueTypes()) {
                     iterators.add(graphMgr.schema().attributeTypes(valueType));
                 }
-                return Iterators.Sorted.Seekable.merge(iterate(iterators), ASC);
+                return SortedIterators.Seekable.merge(iterate(iterators), ASC);
             } else return filterValueTypes(iterator);
         }
 

@@ -62,8 +62,8 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeGraph.INVALID_SCHEMA_WRITE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.iterateSorted;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.merge;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.merge;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
@@ -291,14 +291,14 @@ public class TypeGraph {
         return owner.outs().edge(OWNS).overridden().noNulls();
     }
 
-    private FunctionalIterator<TypeVertex> ownersOfNonKeyAttType(TypeVertex attType) {
+    private FunctionalIterator<TypeVertex> ownersOfAttTypeNonKey(TypeVertex attType) {
         return attType.ins().edge(OWNS).from()
                 .flatMap(owner -> tree(owner, o -> o.ins().edge(SUB).from().filter(s ->
                         overriddensOwns(s).noneMatch(ov -> ov.equals(attType))
                 )));
     }
 
-    private FunctionalIterator<TypeVertex> ownersOfKeyAttType(TypeVertex attType) {
+    private FunctionalIterator<TypeVertex> ownersOfAttTypeKey(TypeVertex attType) {
         return attType.ins().edge(OWNS_KEY).from()
                 .flatMap(owner -> tree(owner, o -> o.ins().edge(SUB).from().filter(s ->
                         overriddensOwnsKey(s).noneMatch(ov -> ov.equals(attType))
@@ -308,18 +308,18 @@ public class TypeGraph {
     public NavigableSet<TypeVertex> ownersOfAttributeType(TypeVertex attType) {
         Supplier<NavigableSet<TypeVertex>> fn = () -> {
             TreeSet<TypeVertex> owners = new TreeSet<>();
-            ownersOfNonKeyAttType(attType).toSet(owners);
-            ownersOfKeyAttType(attType).toSet(owners);
+            ownersOfAttTypeNonKey(attType).toSet(owners);
+            ownersOfAttTypeKey(attType).toSet(owners);
             return owners;
         };
         if (isReadOnly) return cache.ownersOfAttributeTypes.computeIfAbsent(attType, a -> fn.get());
         else return fn.get();
     }
 
-    public NavigableSet<TypeVertex> ownersOfKeyAttributeType(TypeVertex attType) {
+    public NavigableSet<TypeVertex> ownersOfAttributeTypeKey(TypeVertex attType) {
         Supplier<NavigableSet<TypeVertex>> fn = () -> {
             TreeSet<TypeVertex> owners = new TreeSet<>();
-            ownersOfKeyAttType(attType).toSet(owners);
+            ownersOfAttTypeKey(attType).toSet(owners);
             return owners;
         };
         if (isReadOnly) return cache.ownersOfKeyAttributeTypes.computeIfAbsent(attType, a -> fn.get());

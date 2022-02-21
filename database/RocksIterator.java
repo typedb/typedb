@@ -21,10 +21,10 @@ package com.vaticle.typedb.core.database;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.AbstractSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.graph.common.Storage.Key;
 
 import java.util.NoSuchElementException;
@@ -151,38 +151,38 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     @Override
     public final Seekable<KeyValue<T, ByteArray>, ORDER> merge(
             Seekable<KeyValue<T, ByteArray>, ORDER> iterator) {
-        return Iterators.Sorted.Seekable.merge(this, iterator);
+        return SortedIterators.Seekable.merge(this, iterator);
     }
 
     @Override
     public <V extends Comparable<? super V>, ORD extends Order> Seekable<V, ORD> mapSorted(
             Function<KeyValue<T, ByteArray>, V> mappingFn, Function<V, KeyValue<T, ByteArray>> reverseMappingFn, ORD order) {
-        return Iterators.Sorted.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
+        return SortedIterators.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
     }
 
     @Override
     public Seekable<KeyValue<T, ByteArray>, ORDER> distinct() {
-        return Iterators.Sorted.Seekable.distinct(this);
+        return SortedIterators.Seekable.distinct(this);
     }
 
     @Override
     public Seekable<KeyValue<T, ByteArray>, ORDER> filter(Predicate<KeyValue<T, ByteArray>> predicate) {
-        return Iterators.Sorted.Seekable.filter(this, predicate);
+        return SortedIterators.Seekable.filter(this, predicate);
     }
 
     @Override
     public Seekable<KeyValue<T, ByteArray>, ORDER> limit(long limit) {
-        return Iterators.Sorted.Seekable.limit(this, limit);
+        return SortedIterators.Seekable.limit(this, limit);
     }
 
     @Override
     public Seekable<KeyValue<T, ByteArray>, ORDER> onConsumed(Runnable function) {
-        return Iterators.Sorted.Seekable.onConsume(this, function);
+        return SortedIterators.Seekable.onConsume(this, function);
     }
 
     @Override
-    public Seekable<KeyValue<T, ByteArray>, ORDER> onFinalised(Runnable finalise) {
-        return Iterators.Sorted.Seekable.onFinalise(this, finalise);
+    public Seekable<KeyValue<T, ByteArray>, ORDER> onFinalise(Runnable finalise) {
+        return SortedIterators.Seekable.onFinalise(this, finalise);
     }
 
     static class Ascending<T extends Key> extends RocksIterator<T, Order.Asc> {

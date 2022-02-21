@@ -67,8 +67,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RO
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;

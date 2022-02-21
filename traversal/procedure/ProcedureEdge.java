@@ -53,8 +53,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNSUPPORTED_OPERATION;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
@@ -580,7 +580,7 @@ public abstract class ProcedureEdge<
 
                     private NavigableSet<TypeVertex> ownersOfAttributeType(GraphManager graphMgr, TypeVertex attType) {
                         return isKey ?
-                                graphMgr.schema().ownersOfKeyAttributeType(attType) :
+                                graphMgr.schema().ownersOfAttributeTypeKey(attType) :
                                 graphMgr.schema().ownersOfAttributeType(attType);
                     }
 

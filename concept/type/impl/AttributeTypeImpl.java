@@ -47,9 +47,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.AT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.iterateSorted;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.Seekable.merge;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.merge;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
@@ -151,7 +151,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     public Seekable<? extends ThingTypeImpl, Order.Asc> getOwners(boolean onlyKey) {
         if (isRoot()) return emptySorted();
         else if (onlyKey) {
-            return iterateSorted(graphMgr.schema().ownersOfKeyAttributeType(vertex), ASC)
+            return iterateSorted(graphMgr.schema().ownersOfAttributeTypeKey(vertex), ASC)
                     .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC);
         } else {
             return iterateSorted(graphMgr.schema().ownersOfAttributeType(vertex), ASC)

@@ -24,8 +24,8 @@ import java.util.function.Function;
 public class FlatMappedIterator<T, U> extends AbstractFunctionalIterator<U> {
 
     private final FunctionalIterator<T> sourceIterator;
-    private FunctionalIterator<U> currentIterator;
     private final Function<T, FunctionalIterator<U>> mappingFn;
+    private FunctionalIterator<U> currentIterator;
     private State state;
 
     private enum State {INIT, ACTIVE, COMPLETED}

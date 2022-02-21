@@ -47,5 +47,4 @@ class FinaliseIterator<T> extends AbstractFunctionalIterator<T> implements Funct
     protected void finalize() {
         function.run();
     }
-
 }

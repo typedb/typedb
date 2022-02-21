@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.common.iterator.sorted;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
 import java.util.NoSuchElementException;
@@ -137,38 +136,38 @@ public class MappedSortedIterator<
 
         @Override
         public final SortedIterator.Seekable<U, ORDER> merge(SortedIterator.Seekable<U, ORDER> iterator) {
-            return Iterators.Sorted.Seekable.merge(this, iterator);
+            return SortedIterators.Seekable.merge(this, iterator);
         }
 
         @Override
         public <V extends Comparable<? super V>, ORD extends Order> SortedIterator.Seekable<V, ORD> mapSorted(
                 Function<U, V> mappingFn, Function<V, U> reverseMappingFn, ORD order) {
-            return Iterators.Sorted.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
+            return SortedIterators.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
         }
 
         @Override
         public SortedIterator.Seekable<U, ORDER> distinct() {
-            return Iterators.Sorted.Seekable.distinct(this);
+            return SortedIterators.Seekable.distinct(this);
         }
 
         @Override
         public SortedIterator.Seekable<U, ORDER> filter(Predicate<U> predicate) {
-            return Iterators.Sorted.Seekable.filter(this, predicate);
+            return SortedIterators.Seekable.filter(this, predicate);
         }
 
         @Override
         public SortedIterator.Seekable<U, ORDER> limit(long limit) {
-            return Iterators.Sorted.Seekable.limit(this, limit);
+            return SortedIterators.Seekable.limit(this, limit);
         }
 
         @Override
         public SortedIterator.Seekable<U, ORDER> onConsumed(Runnable function) {
-            return Iterators.Sorted.Seekable.onConsume(this, function);
+            return SortedIterators.Seekable.onConsume(this, function);
         }
 
         @Override
-        public SortedIterator.Seekable<U, ORDER> onFinalised(Runnable function) {
-            return Iterators.Sorted.Seekable.onFinalise(this, function);
+        public SortedIterator.Seekable<U, ORDER> onFinalise(Runnable function) {
+            return SortedIterators.Seekable.onFinalise(this, function);
         }
     }
 }

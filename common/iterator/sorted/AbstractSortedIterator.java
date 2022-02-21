@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.common.iterator.DistinctIterator;
 import com.vaticle.typedb.core.common.iterator.ErrorHandledIterator;
 import com.vaticle.typedb.core.common.iterator.FlatMappedIterator;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.LinkedIterators;
 import com.vaticle.typedb.core.common.iterator.MappedIterator;
 import com.vaticle.typedb.core.common.iterator.OffsetIterator;
@@ -102,7 +101,7 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
 
     @Override
     public SortedIterator<T, ORDER> filter(Predicate<T> predicate) {
-        return Iterators.Sorted.filter(this, predicate);
+        return SortedIterators.filter(this, predicate);
     }
 
     @Override
@@ -262,7 +261,7 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
     }
 
     @Override
-    public SortedIterator<T, ORDER> onFinalised(Runnable function) {
+    public SortedIterator<T, ORDER> onFinalise(Runnable function) {
         return new FinaliseSortedIterator<>(this, function);
     }
 

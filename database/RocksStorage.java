@@ -222,7 +222,7 @@ public abstract class RocksStorage implements Storage {
             else iterator = (RocksIterator<T, ORDER>) new RocksIterator.Descending<>(this, prefix);
             iterators.add(iterator);
             if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED); //guard against close() race conditions
-            return iterator.onFinalised(iterator::close);
+            return iterator.onFinalise(iterator::close);
         }
     }
 

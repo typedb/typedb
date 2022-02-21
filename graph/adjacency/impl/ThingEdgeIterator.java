@@ -30,7 +30,7 @@ import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 
 public abstract class ThingEdgeIterator {

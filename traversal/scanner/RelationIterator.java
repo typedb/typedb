@@ -22,10 +22,10 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
@@ -203,7 +203,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
     private Seekable<ThingVertex, Order.Asc> createIterator(int pos) {
         StructureEdge<?, ?> edge = edges.get(pos);
         ThingVertex player = answer.get(edge.to().id().asVariable().asRetrievable()).asThing();
-        return Iterators.Sorted.Seekable.merge(iterate(edge.asNative().asRolePlayer().types()).map(roleLabel -> {
+        return SortedIterators.Seekable.merge(iterate(edge.asNative().asRolePlayer().types()).map(roleLabel -> {
             TypeVertex roleVertex = graphMgr.schema().getType(roleLabel);
             return player.ins().edge(ROLEPLAYER, roleVertex)
                     .fromAndOptimised()
