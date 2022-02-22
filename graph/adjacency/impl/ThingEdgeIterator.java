@@ -58,7 +58,7 @@ public abstract class ThingEdgeIterator {
         }
 
         ThingEdge.View.Backward targetEdge(ThingVertex targetFrom) {
-            return new ThingEdgeImpl.Target(encoding, targetFrom, owner, null).getBackward();
+            return new ThingEdgeImpl.Target(encoding, targetFrom, owner, null).backwardView();
         }
 
         public static class Optimised extends InEdgeIteratorImpl implements ThingAdjacency.In.InEdgeIterator.Optimised {
@@ -82,7 +82,7 @@ public abstract class ThingEdgeIterator {
 
             @Override
             ThingEdge.View.Backward targetEdge(ThingVertex targetFrom) {
-                return new ThingEdgeImpl.Target(encoding, targetFrom, owner, optimisedType).getBackward();
+                return new ThingEdgeImpl.Target(encoding, targetFrom, owner, optimisedType).backwardView();
             }
         }
     }
@@ -110,7 +110,7 @@ public abstract class ThingEdgeIterator {
         }
 
         ThingEdge.View.Forward targetEdge(ThingVertex targetTo) {
-            return new ThingEdgeImpl.Target(encoding, owner, targetTo, null).getForward();
+            return new ThingEdgeImpl.Target(encoding, owner, targetTo, null).forwardView();
         }
 
         static class Optimised extends OutEdgeIteratorImpl implements ThingAdjacency.Out.OutEdgeIterator.Optimised {
@@ -135,7 +135,7 @@ public abstract class ThingEdgeIterator {
 
             @Override
             ThingEdge.View.Forward targetEdge(ThingVertex targetTo) {
-                return new ThingEdgeImpl.Target(encoding, owner, targetTo, optimisedType).getForward();
+                return new ThingEdgeImpl.Target(encoding, owner, targetTo, optimisedType).forwardView();
             }
         }
     }

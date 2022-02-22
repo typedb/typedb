@@ -160,7 +160,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
             @Override
             ThingEdge.View.Backward getView(ThingEdge edge) {
-                return edge.getBackward();
+                return edge.backwardView();
             }
         }
 
@@ -187,7 +187,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
             @Override
             ThingEdge.View.Forward getView(ThingEdge edge) {
-                return edge.getForward();
+                return edge.forwardView();
             }
         }
     }
@@ -213,9 +213,9 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
         IID[] infixTails(ThingEdge edge) {
             if (edge.encoding().isOptimisation()) {
                 if (isOut()) {
-                    return new IID[]{edge.getForward().iid().infix().asRolePlayer().tail(), edge.toIID().prefix(), edge.toIID().type()};
+                    return new IID[]{edge.forwardView().iid().infix().asRolePlayer().tail(), edge.toIID().prefix(), edge.toIID().type()};
                 } else {
-                    return new IID[]{edge.getBackward().iid().infix().asRolePlayer().tail(), edge.fromIID().prefix(), edge.fromIID().type()};
+                    return new IID[]{edge.backwardView().iid().infix().asRolePlayer().tail(), edge.fromIID().prefix(), edge.fromIID().type()};
                 }
             } else {
                 if (isOut()) return new IID[]{edge.toIID().prefix(), edge.toIID().type()};
@@ -252,8 +252,8 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
         public ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised) {
             assert encoding.isOptimisation();
             Predicate<ThingEdge> predicate = isOut()
-                    ? e -> e.to().equals(adjacent) && e.getForward().iid().suffix().equals(SuffixIID.of(optimised.iid().key()))
-                    : e -> e.from().equals(adjacent) && e.getBackward().iid().suffix().equals(SuffixIID.of(optimised.iid().key()));
+                    ? e -> e.to().equals(adjacent) && e.forwardView().iid().suffix().equals(SuffixIID.of(optimised.iid().key()))
+                    : e -> e.from().equals(adjacent) && e.backwardView().iid().suffix().equals(SuffixIID.of(optimised.iid().key()));
             Seekable<EDGE_VIEW, Order.Asc> iterator = iterateBufferedViews(
                     encoding, new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()}
             );
@@ -401,7 +401,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
                 @Override
                 ThingEdge.View.Backward getView(ThingEdge edge) {
-                    return edge.getBackward();
+                    return edge.backwardView();
                 }
 
                 @Override
@@ -429,7 +429,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
                 @Override
                 ThingEdge.View.Forward getView(ThingEdge edge) {
-                    return edge.getForward();
+                    return edge.forwardView();
                 }
 
                 @Override
@@ -519,7 +519,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
                 @Override
                 ThingEdge.View.Backward getView(ThingEdge edge) {
-                    return edge.getBackward();
+                    return edge.backwardView();
                 }
 
                 @Override
@@ -546,7 +546,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
                 @Override
                 ThingEdge.View.Forward getView(ThingEdge edge) {
-                    return edge.getForward();
+                    return edge.forwardView();
                 }
 
                 @Override

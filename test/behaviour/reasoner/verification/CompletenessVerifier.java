@@ -134,7 +134,7 @@ class CompletenessVerifier {
         try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.READ,
                                                        new Options.Transaction().infer(true))) {
             Disjunction disjunction = new Disjunction(Collections.singletonList(boundConjunction.conjunction()));
-            tx.logic().typeInference().infer(disjunction);
+            tx.logic().typeInference().applyCombination(disjunction);
             return tx.reasoner().executeReasoner(disjunction, filter,
                     new Context.Query(tx.context(), new Options.Query())
             ).toList().size();

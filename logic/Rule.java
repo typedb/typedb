@@ -202,13 +202,13 @@ public class Rule {
             throw TypeDBException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
         }
 
-        logicMgr.typeInference().infer(when);
+        logicMgr.typeInference().applyCombination(when);
         return when.conjunctions().get(0);
     }
 
     private Conjunction thenPattern(com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), list());
-        logicMgr.typeInference().infer(conj, true);
+        logicMgr.typeInference().applyCombination(conj, true);
         return conj;
     }
 
@@ -403,7 +403,7 @@ public class Rule {
 
         private void validateInsertable(LogicManager logicMgr) {
             Conjunction clonedThen = rule.then.clone();
-            logicMgr.typeInference().infer(clonedThen, true);
+            logicMgr.typeInference().applyCombination(clonedThen, true);
             Optional<Variable> ambiguousVar = iterate(clonedThen.variables())
                     .filter(var -> var.isType() && var.id().isLabel() && var.inferredTypes().size() != 1).first();
             if (ambiguousVar.isPresent()) {
@@ -415,9 +415,9 @@ public class Rule {
                     .filter(id -> id.isName() && rule.when.retrieves().contains(id))
                     .map(Identifier.Variable::asName).toSet();
             FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenPermutations = logicMgr.typeInference()
-                    .inferPermutations(rule.when, false, sharedIDs);
+                    .getPermutations(rule.when, false, sharedIDs);
             Set<Map<Identifier.Variable.Name, Label>> insertableThenPermutations = logicMgr.typeInference()
-                    .inferPermutations(rule.then, true, sharedIDs).toSet();
+                    .getPermutations(rule.then, true, sharedIDs).toSet();
             whenPermutations.forEachRemaining(nameLabelMap -> {
                 if (!insertableThenPermutations.contains(nameLabelMap)) {
                     throw TypeDBException.of(RULE_CONCLUSION_ILLEGAL_INSERT, rule.structure.label(), nameLabelMap.toString());

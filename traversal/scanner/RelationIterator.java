@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
@@ -130,7 +129,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private void proposeFirst() {
         assert state == State.INIT && relation == null && proposer == 0;
-        SortedIterator<ThingVertex, Order.Asc> relationIterator = getIterator(proposer);
+        Seekable<ThingVertex, Order.Asc> relationIterator = getIterator(proposer);
         if (relationIterator.hasNext()) {
             relation = relationIterator.next();
             state = State.PROPOSED;
@@ -147,7 +146,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private void proposeNext() {
         assert state == State.EMPTY;
-        SortedIterator<ThingVertex, Order.Asc> relationIterator = getIterator(proposer);
+        Seekable<ThingVertex, Order.Asc> relationIterator = getIterator(proposer);
         scoped.clear(); // relationIterator requires clearing of scoped roles as it is stateful
         while (relationIterator.hasNext()) {
             ThingVertex newRelation = relationIterator.next();

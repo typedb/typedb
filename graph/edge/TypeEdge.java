@@ -49,9 +49,9 @@ public interface TypeEdge extends Edge<Encoding.Edge.Type, TypeVertex> {
      */
     void overridden(TypeVertex overridden);
 
-    TypeEdge.View.Forward getForward();
+    View.Forward forwardView();
 
-    TypeEdge.View.Backward getBackward();
+    View.Backward backwardView();
 
     interface View<T extends TypeEdge.View<T>> extends Comparable<T> {
 

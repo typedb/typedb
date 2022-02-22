@@ -80,23 +80,23 @@ public class TypeInference {
         this.traversalEng = traversalEng;
     }
 
-    public void infer(Disjunction disjunction) {
-        infer(disjunction, new HashMap<>());
+    public void applyCombination(Disjunction disjunction) {
+        applyCombination(disjunction, new HashMap<>());
     }
 
-    private void infer(Disjunction disjunction, Map<Identifier.Variable.Name, Set<Label>> bounds) {
-        disjunction.conjunctions().forEach(conjunction -> infer(conjunction, bounds, false));
+    private void applyCombination(Disjunction disjunction, Map<Identifier.Variable.Name, Set<Label>> bounds) {
+        disjunction.conjunctions().forEach(conjunction -> applyCombination(conjunction, bounds, false));
     }
 
-    public void infer(Conjunction conjunction) {
-        infer(conjunction, false);
+    public void applyCombination(Conjunction conjunction) {
+        applyCombination(conjunction, false);
     }
 
-    public void infer(Conjunction conjunction, boolean insertable) {
-        infer(conjunction, new HashMap<>(), insertable);
+    public void applyCombination(Conjunction conjunction, boolean insertable) {
+        applyCombination(conjunction, new HashMap<>(), insertable);
     }
 
-    private void infer(Conjunction conjunction, Map<Identifier.Variable.Name, Set<Label>> bounds, boolean insertable) {
+    private void applyCombination(Conjunction conjunction, Map<Identifier.Variable.Name, Set<Label>> bounds, boolean insertable) {
         propagateLabels(conjunction);
         if (!bounds.isEmpty()) applyBounds(conjunction, bounds);
         Map<Retrievable.Name, Set<Label>> inferredTypes = new HashMap<>(bounds);
@@ -104,12 +104,12 @@ public class TypeInference {
             new InferenceTraversal(conjunction, insertable, graphMgr, traversalEng).applyCombination(logicCache);
             inferredTypes.putAll(namedInferredTypes(conjunction));
         }
-        conjunction.negations().forEach(negation -> infer(negation.disjunction(), inferredTypes));
+        conjunction.negations().forEach(negation -> applyCombination(negation.disjunction(), inferredTypes));
     }
 
-    public FunctionalIterator<Map<Identifier.Variable.Name, Label>> inferPermutations(Conjunction conjunction,
-                                                                                      boolean insertable,
-                                                                                      Set<Identifier.Variable.Name> filter) {
+    public FunctionalIterator<Map<Identifier.Variable.Name, Label>> getPermutations(Conjunction conjunction,
+                                                                                    boolean insertable,
+                                                                                    Set<Identifier.Variable.Name> filter) {
         propagateLabels(conjunction);
         return new InferenceTraversal(conjunction, insertable, graphMgr, traversalEng).typePermutations(filter);
     }

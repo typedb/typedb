@@ -115,7 +115,7 @@ public class Reasoner {
     }
 
     private void inferAndValidateTypes(Disjunction disjunction) {
-        logicMgr.typeInference().infer(disjunction);
+        logicMgr.typeInference().applyCombination(disjunction);
         if (!disjunction.isCoherent()) {
             Set<Conjunction> causes = incoherentConjunctions(disjunction);
             if (set(disjunction.conjunctions()).equals(causes)) {

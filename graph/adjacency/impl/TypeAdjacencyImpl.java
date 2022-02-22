@@ -131,7 +131,7 @@ public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIE
 
             @Override
             TypeEdge.View.Backward getView(TypeEdge edge) {
-                return edge.getBackward();
+                return edge.backwardView();
             }
         }
 
@@ -150,7 +150,7 @@ public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIE
 
             @Override
             TypeEdge.View.Forward getView(TypeEdge edge) {
-                return edge.getForward();
+                return edge.forwardView();
             }
 
             @Override
@@ -189,7 +189,7 @@ public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIE
 
             @Override
             TypeEdge.View.Backward getView(TypeEdge edge) {
-                return edge.getBackward();
+                return edge.backwardView();
             }
 
             @Override
@@ -206,7 +206,7 @@ public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIE
 
             @Override
             TypeEdge.View.Forward getView(TypeEdge edge) {
-                return edge.getForward();
+                return edge.forwardView();
             }
 
             @Override

@@ -50,12 +50,12 @@ public abstract class TypeEdgeImpl implements TypeEdge {
     }
 
     @Override
-    public View.Forward getForward() {
+    public View.Forward forwardView() {
         return forward;
     }
 
     @Override
-    public View.Backward getBackward() {
+    public View.Backward backwardView() {
         return backward;
     }
 
@@ -453,8 +453,8 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             if (deleted.compareAndSet(false, true)) {
                 from().outs().remove(this);
                 to().ins().remove(this);
-                graph.storage().deleteUntracked(getForward().iid());
-                graph.storage().deleteUntracked(getBackward().iid());
+                graph.storage().deleteUntracked(forwardView().iid());
+                graph.storage().deleteUntracked(backwardView().iid());
             }
         }
 

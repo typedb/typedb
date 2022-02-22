@@ -505,7 +505,7 @@ public class TypeQLSteps {
     }
    
     @Then("templated typeql match; throw exception")
-    public void get_answers_of_templated_typeql_match_throws_exception(String templatedTypeQLQuery) {
+    public void templated_typeql_match_throws_exception(String templatedTypeQLQuery) {
         String templatedQuery = String.join("\n", templatedTypeQLQuery);
         for (ConceptMap answer : answers) {
             String queryString = applyQueryTemplate(templatedQuery, answer);

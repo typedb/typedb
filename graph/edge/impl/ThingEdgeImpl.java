@@ -65,12 +65,12 @@ public abstract class ThingEdgeImpl implements ThingEdge {
     }
 
     @Override
-    public View.Forward getForward() {
+    public View.Forward forwardView() {
         return forward;
     }
 
     @Override
-    public View.Backward getBackward() {
+    public View.Backward backwardView() {
         return backward;
     }
 

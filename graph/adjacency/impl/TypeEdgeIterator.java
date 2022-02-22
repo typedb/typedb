@@ -72,7 +72,7 @@ public abstract class TypeEdgeIterator {
         }
 
         TypeEdge.View.Backward targetEdge(TypeVertex targetFrom) {
-            return new TypeEdgeImpl.Target(encoding, targetFrom, owner).getBackward();
+            return new TypeEdgeImpl.Target(encoding, targetFrom, owner).backwardView();
         }
     }
 
@@ -113,7 +113,7 @@ public abstract class TypeEdgeIterator {
         }
 
         TypeEdge.View.Forward targetEdge(TypeVertex targetTo) {
-            return new TypeEdgeImpl.Target(encoding, owner, targetTo).getForward();
+            return new TypeEdgeImpl.Target(encoding, owner, targetTo).forwardView();
         }
     }
 }

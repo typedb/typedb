@@ -44,9 +44,9 @@ public interface ThingEdge extends Edge<Encoding.Edge.Thing, ThingVertex> {
 
     boolean isInferred();
 
-    View.Forward getForward();
+    View.Forward forwardView();
 
-    View.Backward getBackward();
+    View.Backward backwardView();
 
     interface View<T extends View<T>> extends Comparable<T> {
 

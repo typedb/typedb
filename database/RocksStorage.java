@@ -140,6 +140,16 @@ public abstract class RocksStorage implements Storage {
         }
     }
 
+    <T extends Key, ORDER extends Order> RocksIterator<T, ORDER> createIterator(Key.Prefix<T> prefix, ORDER order) {
+        RocksIterator<T, ORDER> iterator;
+        // TODO how else can we convert an enumerated data tag ('order') into the type without casting
+        if (order == ASC) iterator = (RocksIterator<T, ORDER>) new RocksIterator.Ascending<>(this, prefix);
+        else iterator = (RocksIterator<T, ORDER>) new RocksIterator.Descending<>(this, prefix);
+        iterators.add(iterator);
+        if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED); //guard against close() race conditions
+        return iterator;
+    }
+
     void recycle(RocksIterator<?, ?> rocksIterator) {
         if (rocksIterator.usePrefixBloom()) {
             recycledWithPrefixBloom.get(rocksIterator.partition()).add(rocksIterator.internalRocksIterator);
@@ -216,12 +226,7 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public <T extends Key, ORDER extends Order> SortedIterator.Seekable<KeyValue<T, ByteArray>, ORDER> iterate(Key.Prefix<T> prefix, ORDER order) {
-            RocksIterator<T, ORDER> iterator;
-            // TODO how else can we convert an enumerated data tag ('order') into the type without casting
-            if (order == ASC) iterator = (RocksIterator<T, ORDER>) new RocksIterator.Ascending<>(this, prefix);
-            else iterator = (RocksIterator<T, ORDER>) new RocksIterator.Descending<>(this, prefix);
-            iterators.add(iterator);
-            if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED); //guard against close() race conditions
+            RocksIterator<T, ORDER> iterator = createIterator(prefix, order);
             return iterator.onFinalise(iterator::close);
         }
     }
@@ -307,13 +312,7 @@ public abstract class RocksStorage implements Storage {
         @Override
         public <T extends Key, ORDER extends Order>
         SortedIterator.Seekable<KeyValue<T, ByteArray>, ORDER> iterate(Key.Prefix<T> prefix, ORDER order) {
-            RocksIterator<T, ORDER> iterator;
-            // TODO: how else can we convert an enumerated data tag ('order') into the type without casting?
-            if (order == ASC) iterator = (RocksIterator<T, ORDER>) new RocksIterator.Ascending<>(this, prefix);
-            else iterator = (RocksIterator<T, ORDER>) new RocksIterator.Descending<>(this, prefix);
-            iterators.add(iterator);
-            if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED); //guard against close() race conditions
-            return iterator;
+            return createIterator(prefix, order);
         }
 
         @Override
