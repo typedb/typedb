@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.concept.type;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.Concept;
 
@@ -43,9 +43,9 @@ public interface Type extends Concept, Comparable<Type> {
 
     FunctionalIterator<? extends Type> getSupertypes();
 
-    Seekable<? extends Type, Order.Asc> getSubtypes();
+    Forwardable<? extends Type, Order.Asc> getSubtypes();
 
-    Seekable<? extends Type, Order.Asc> getSubtypesExplicit();
+    Forwardable<? extends Type, Order.Asc> getSubtypesExplicit();
 
     List<TypeDBException> validate();
 }

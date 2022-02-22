@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.concept.type;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 
 public interface RoleType extends Type {
 
@@ -31,14 +31,14 @@ public interface RoleType extends Type {
     FunctionalIterator<? extends RoleType> getSupertypes();
 
     @Override
-    Seekable<? extends RoleType, Order.Asc> getSubtypes();
+    Forwardable<? extends RoleType, Order.Asc> getSubtypes();
 
     @Override
-    Seekable<? extends RoleType, Order.Asc> getSubtypesExplicit();
+    Forwardable<? extends RoleType, Order.Asc> getSubtypesExplicit();
 
     RelationType getRelationType();
 
-    Seekable<? extends RelationType, Order.Asc> getRelationTypes();
+    Forwardable<? extends RelationType, Order.Asc> getRelationTypes();
 
-    Seekable<? extends ThingType, Order.Asc> getPlayers();
+    Forwardable<? extends ThingType, Order.Asc> getPlayers();
 }

@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
@@ -67,8 +67,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RO
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
@@ -134,18 +134,18 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public abstract Seekable<? extends ThingTypeImpl, Order.Asc> getSubtypes();
+    public abstract Forwardable<? extends ThingTypeImpl, Order.Asc> getSubtypes();
 
     @Override
-    public abstract Seekable<? extends ThingTypeImpl, Order.Asc> getSubtypesExplicit();
+    public abstract Forwardable<? extends ThingTypeImpl, Order.Asc> getSubtypesExplicit();
 
-    <THING extends ThingImpl> Seekable<THING, Order.Asc> instances(Function<ThingVertex, THING> thingConstructor) {
+    <THING extends ThingImpl> Forwardable<THING, Order.Asc> instances(Function<ThingVertex, THING> thingConstructor) {
         return getSubtypes().filter(t -> !t.isAbstract())
                 .mergeMap(t -> graphMgr.data().getReadable(t.vertex), ASC)
                 .mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
     }
 
-    <THING extends ThingImpl> Seekable<THING, Order.Asc> instancesExplicit(Function<ThingVertex, THING> thingConstructor) {
+    <THING extends ThingImpl> Forwardable<THING, Order.Asc> instancesExplicit(Function<ThingVertex, THING> thingConstructor) {
         return graphMgr.data().getReadable(vertex).mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
     }
 
@@ -194,8 +194,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private <T extends com.vaticle.typedb.core.concept.type.Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
-                                                                                Seekable<? extends Type, Order.Asc> overridable,
-                                                                                Seekable<? extends Type, Order.Asc> notOverridable) {
+                                                                                Forwardable<? extends Type, Order.Asc> overridable,
+                                                                                Forwardable<? extends Type, Order.Asc> notOverridable) {
         if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
             throw exception(TypeDBException.of(OVERRIDDEN_NOT_SUPERTYPE, type.getLabel(), overriddenType.getLabel()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
@@ -250,7 +250,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private void ownsAttribute(AttributeTypeImpl attributeType) {
         validateIsNotDeleted();
-        Seekable<AttributeType, Order.Asc> owns = getSupertypes().filter(t -> !t.equals(this)).mergeMap(ThingType::getOwns, ASC);
+        Forwardable<AttributeType, Order.Asc> owns = getSupertypes().filter(t -> !t.equals(this)).mergeMap(ThingType::getOwns, ASC);
         if (owns.findFirst(attributeType).isPresent()) {
             throw exception(TypeDBException.of(OWNS_ATT_NOT_AVAILABLE, attributeType.getLabel()));
         }
@@ -268,9 +268,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 getSupertype().getOwns(true).merge(declaredOwns(false)));
     }
 
-    private Seekable<AttributeType, Order.Asc> declaredOwns(boolean onlyKey) {
+    private Forwardable<AttributeType, Order.Asc> declaredOwns(boolean onlyKey) {
         if (isRoot()) return emptySorted();
-        Seekable<TypeVertex, Order.Asc> iterator;
+        Forwardable<TypeVertex, Order.Asc> iterator;
         if (onlyKey) iterator = vertex.outs().edge(OWNS_KEY).to();
         else iterator = vertex.outs().edge(OWNS_KEY).to().merge(vertex.outs().edge(OWNS).to());
         return iterator.mapSorted(v -> AttributeTypeImpl.of(graphMgr, v), attr -> ((AttributeTypeImpl) attr).vertex, ASC);
@@ -294,27 +294,27 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public Seekable<AttributeType, Order.Asc> getOwns() {
+    public Forwardable<AttributeType, Order.Asc> getOwns() {
         return getOwns(false);
     }
 
     @Override
-    public Seekable<AttributeType, Order.Asc> getOwnsExplicit() {
+    public Forwardable<AttributeType, Order.Asc> getOwnsExplicit() {
         return getOwnsExplicit(false);
     }
 
     @Override
-    public Seekable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType) {
+    public Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType) {
         return getOwns(valueType, false);
     }
 
     @Override
-    public Seekable<AttributeType, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType) {
+    public Forwardable<AttributeType, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType) {
         return getOwnsExplicit(valueType, false);
     }
 
     @Override
-    public Seekable<AttributeType, Order.Asc> getOwns(boolean onlyKey) {
+    public Forwardable<AttributeType, Order.Asc> getOwns(boolean onlyKey) {
         if (onlyKey) {
             return iterateSorted(graphMgr.schema().ownedKeyAttributeTypes(vertex), ASC)
                     .mapSorted(v -> AttributeTypeImpl.of(graphMgr, v), attr -> ((AttributeTypeImpl) attr).vertex, ASC);
@@ -325,18 +325,18 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public Seekable<AttributeType, Order.Asc> getOwnsExplicit(boolean onlyKey) {
+    public Forwardable<AttributeType, Order.Asc> getOwnsExplicit(boolean onlyKey) {
         if (isRoot()) return emptySorted();
         return declaredOwns(onlyKey);
     }
 
     @Override
-    public Seekable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType, boolean onlyKey) {
+    public Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType, boolean onlyKey) {
         return getOwns(onlyKey).filter(att -> att.getValueType().equals(valueType));
     }
 
     @Override
-    public Seekable<AttributeType, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType, boolean onlyKey) {
+    public Forwardable<AttributeType, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType, boolean onlyKey) {
         return getOwnsExplicit(onlyKey).filter(att -> att.getValueType().equals(valueType));
     }
 
@@ -391,7 +391,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public Seekable<RoleType, Order.Asc> getPlays() {
+    public Forwardable<RoleType, Order.Asc> getPlays() {
         if (isRoot()) return emptySorted();
         assert getSupertype() != null;
         return iterateSorted(graphMgr.schema().playedRoleTypes(vertex), ASC)
@@ -399,7 +399,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public Seekable<RoleType, Order.Asc> getPlaysExplicit() {
+    public Forwardable<RoleType, Order.Asc> getPlaysExplicit() {
         if (isRoot()) return emptySorted();
         return vertex.outs().edge(Encoding.Edge.Type.PLAYS).to()
                 .mapSorted(v -> RoleTypeImpl.of(graphMgr, v), rt -> ((RoleTypeImpl) rt).vertex, ASC);
@@ -497,7 +497,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
-        public Seekable<ThingTypeImpl, Order.Asc> getSubtypes() {
+        public Forwardable<ThingTypeImpl, Order.Asc> getSubtypes() {
             return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC).mapSorted(v -> {
                 switch (v.encoding()) {
                     case THING_TYPE:
@@ -516,7 +516,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
-        public Seekable<ThingTypeImpl, Order.Asc> getSubtypesExplicit() {
+        public Forwardable<ThingTypeImpl, Order.Asc> getSubtypesExplicit() {
             return getSubtypesExplicit(v -> {
                 switch (v.encoding()) {
                     case ENTITY_TYPE:
@@ -532,7 +532,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
-        public Seekable<ThingImpl, Order.Asc> getInstances() {
+        public Forwardable<ThingImpl, Order.Asc> getInstances() {
             return instances(v -> {
                 switch (v.encoding()) {
                     case ENTITY:
@@ -549,7 +549,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
-        public Seekable<ThingImpl, Order.Asc> getInstancesExplicit() {
+        public Forwardable<ThingImpl, Order.Asc> getInstancesExplicit() {
             return emptySorted();
         }
 

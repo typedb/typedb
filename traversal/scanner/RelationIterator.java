@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
@@ -55,7 +55,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
     private final GraphManager graphMgr;
     private final RelationTraversal traversal;
     private final List<StructureEdge<?, ?>> edges;
-    private final Map<Integer, Seekable<ThingVertex, Order.Asc>> iterators;
+    private final Map<Integer, Forwardable<ThingVertex, Order.Asc>> iterators;
     private final Map<Retrievable, Vertex<?, ?>> answer;
     private final Set<Label> relationTypes;
     private final Scoped scoped;
@@ -129,7 +129,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private void proposeFirst() {
         assert state == State.INIT && relation == null && proposer == 0;
-        Seekable<ThingVertex, Order.Asc> relationIterator = getIterator(proposer);
+        Forwardable<ThingVertex, Order.Asc> relationIterator = getIterator(proposer);
         if (relationIterator.hasNext()) {
             relation = relationIterator.next();
             state = State.PROPOSED;
@@ -146,7 +146,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private void proposeNext() {
         assert state == State.EMPTY;
-        Seekable<ThingVertex, Order.Asc> relationIterator = getIterator(proposer);
+        Forwardable<ThingVertex, Order.Asc> relationIterator = getIterator(proposer);
         scoped.clear(); // relationIterator requires clearing of scoped roles as it is stateful
         while (relationIterator.hasNext()) {
             ThingVertex newRelation = relationIterator.next();
@@ -175,14 +175,14 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private void verifyProposed(int pos) {
         int equality;
-        Seekable<ThingVertex, Order.Asc> relationIterator = getIterator(pos);
+        Forwardable<ThingVertex, Order.Asc> relationIterator = getIterator(pos);
         do {
             if (!relationIterator.hasNext()) {
                 state = State.COMPLETED;
                 return;
             }
             equality = relationIterator.peek().compareTo(this.relation);
-            if (equality < 0) relationIterator.seek(this.relation);
+            if (equality < 0) relationIterator.forward(this.relation);
         } while (equality < 0);
         if (equality > 0) state = State.REJECTED;
     }
@@ -194,15 +194,15 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
         state = State.PROPOSED;
     }
 
-    private Seekable<ThingVertex, Order.Asc> getIterator(int pos) {
+    private Forwardable<ThingVertex, Order.Asc> getIterator(int pos) {
         assert edges.get(pos).to().id().isRetrievable();
         return iterators.computeIfAbsent(pos, this::createIterator);
     }
 
-    private Seekable<ThingVertex, Order.Asc> createIterator(int pos) {
+    private Forwardable<ThingVertex, Order.Asc> createIterator(int pos) {
         StructureEdge<?, ?> edge = edges.get(pos);
         ThingVertex player = answer.get(edge.to().id().asVariable().asRetrievable()).asThing();
-        return SortedIterators.Seekable.merge(iterate(edge.asNative().asRolePlayer().types()).map(roleLabel -> {
+        return SortedIterators.Forwardable.merge(iterate(edge.asNative().asRolePlayer().types()).map(roleLabel -> {
             TypeVertex roleVertex = graphMgr.schema().getType(roleLabel);
             return player.ins().edge(ROLEPLAYER, roleVertex)
                     .fromAndOptimised()

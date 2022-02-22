@@ -29,16 +29,16 @@ import java.util.function.Predicate;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 
-public class BaseSeekableIterator<T extends Comparable<? super T>, ORDER extends Order>
+public class BaseForwardableIterator<T extends Comparable<? super T>, ORDER extends Order>
         extends AbstractSortedIterator<T, ORDER>
-        implements SortedIterator.Seekable<T, ORDER> {
+        implements SortedIterator.Forwardable<T, ORDER> {
 
     private final NavigableSet<T> source;
     private Iterator<T> iterator;
     private T next;
     private T last;
 
-    public BaseSeekableIterator(NavigableSet<T> source, ORDER order) {
+    public BaseForwardableIterator(NavigableSet<T> source, ORDER order) {
         super(order);
         this.source = source;
         this.iterator = order.orderer().iterate(source);
@@ -73,46 +73,46 @@ public class BaseSeekableIterator<T extends Comparable<? super T>, ORDER extends
     }
 
     @Override
-    public void seek(T target) {
+    public void forward(T target) {
         if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
         this.iterator = order.orderer().iterate(source, target);
         this.next = null;
     }
 
     @Override
-    public final Seekable<T, ORDER> merge(Seekable<T, ORDER> iterator) {
-        return SortedIterators.Seekable.merge(this, iterator);
+    public final Forwardable<T, ORDER> merge(Forwardable<T, ORDER> iterator) {
+        return SortedIterators.Forwardable.merge(this, iterator);
     }
 
     @Override
-    public <U extends Comparable<? super U>, ORD extends Order> Seekable<U, ORD> mapSorted(
+    public <U extends Comparable<? super U>, ORD extends Order> Forwardable<U, ORD> mapSorted(
             Function<T, U> mappingFn, Function<U, T> reverseMappingFn, ORD order) {
-        return SortedIterators.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
+        return SortedIterators.Forwardable.mapSorted(order, this, mappingFn, reverseMappingFn);
     }
 
     @Override
-    public Seekable<T, ORDER> distinct() {
-        return SortedIterators.Seekable.distinct(this);
+    public Forwardable<T, ORDER> distinct() {
+        return SortedIterators.Forwardable.distinct(this);
     }
 
     @Override
-    public Seekable<T, ORDER> filter(Predicate<T> predicate) {
-        return SortedIterators.Seekable.filter(this, predicate);
+    public Forwardable<T, ORDER> filter(Predicate<T> predicate) {
+        return SortedIterators.Forwardable.filter(this, predicate);
     }
 
     @Override
-    public SortedIterator.Seekable<T, ORDER> limit(long limit) {
-        return SortedIterators.Seekable.limit(this, limit);
+    public Forwardable<T, ORDER> limit(long limit) {
+        return SortedIterators.Forwardable.limit(this, limit);
     }
 
     @Override
-    public Seekable<T, ORDER> onConsumed(Runnable function) {
-        return SortedIterators.Seekable.onConsume(this, function);
+    public Forwardable<T, ORDER> onConsumed(Runnable function) {
+        return SortedIterators.Forwardable.onConsume(this, function);
     }
 
     @Override
-    public Seekable<T, ORDER> onFinalise(Runnable function) {
-        return SortedIterators.Seekable.onFinalise(this, function);
+    public Forwardable<T, ORDER> onFinalise(Runnable function) {
+        return SortedIterators.Forwardable.onFinalise(this, function);
     }
 
     @Override

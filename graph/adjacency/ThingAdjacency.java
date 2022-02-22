@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.graph.adjacency;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.Edge;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
@@ -44,13 +44,13 @@ public interface ThingAdjacency {
 
         interface InEdgeIterator {
 
-            Seekable<ThingVertex, SortedIterator.Order.Asc> from();
+            Forwardable<ThingVertex, SortedIterator.Order.Asc> from();
 
             SortedIterator<ThingVertex, SortedIterator.Order.Asc> to();
 
             interface Optimised extends InEdgeIterator {
 
-                Seekable<KeyValue<ThingVertex, ThingVertex>, SortedIterator.Order.Asc> fromAndOptimised();
+                Forwardable<KeyValue<ThingVertex, ThingVertex>, SortedIterator.Order.Asc> fromAndOptimised();
             }
         }
     }
@@ -70,11 +70,11 @@ public interface ThingAdjacency {
 
             SortedIterator<ThingVertex, SortedIterator.Order.Asc> from();
 
-            Seekable<ThingVertex, SortedIterator.Order.Asc> to();
+            Forwardable<ThingVertex, SortedIterator.Order.Asc> to();
 
             interface Optimised extends OutEdgeIterator {
 
-                Seekable<KeyValue<ThingVertex, ThingVertex>, SortedIterator.Order.Asc> toAndOptimised();
+                Forwardable<KeyValue<ThingVertex, ThingVertex>, SortedIterator.Order.Asc> toAndOptimised();
             }
         }
     }

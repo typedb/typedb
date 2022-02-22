@@ -19,24 +19,11 @@
 package com.vaticle.typedb.core.common.iterator;
 
 import com.vaticle.typedb.common.collection.Either;
-import com.vaticle.typedb.core.common.iterator.sorted.BaseSeekableIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.BaseSortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.ConsumeHandledSortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.DistinctSortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.FilteredSortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.FinaliseSortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.LimitedSortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.MappedSortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.MergeMappedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NavigableSet;
-import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;

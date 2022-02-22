@@ -22,7 +22,7 @@ import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.graph.adjacency.TypeAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.TypeEdgeIterator.InEdgeIteratorImpl;
 import com.vaticle.typedb.core.graph.adjacency.impl.TypeEdgeIterator.OutEdgeIteratorImpl;
@@ -41,8 +41,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Predicate;
 
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 
 public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIEW>> implements TypeAdjacency {
@@ -224,7 +224,7 @@ public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIE
             return new TypeEdgeImpl.Persisted(owner.graph(), edge, overridden);
         }
 
-        Seekable<EDGE_VIEW, Order.Asc> iterateViews(Encoding.Edge.Type encoding) {
+        Forwardable<EDGE_VIEW, Order.Asc> iterateViews(Encoding.Edge.Type encoding) {
             ConcurrentSkipListSet<EDGE_VIEW> bufferedEdges;
             if (isReadOnly && fetched.contains(encoding)) {
                 return (bufferedEdges = edges.get(encoding)) != null ? iterateSorted(bufferedEdges, ASC) : emptySorted();
@@ -233,7 +233,7 @@ public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIE
             Key.Prefix<EdgeViewIID.Type> prefix = EdgeViewIID.Type.prefix(
                     owner.iid(), InfixIID.Type.of(isOut() ? encoding.forward() : encoding.backward())
             );
-            Seekable<EDGE_VIEW, Order.Asc> storageIterator = owner.graph().storage().iterate(prefix, ASC)
+            Forwardable<EDGE_VIEW, Order.Asc> storageIterator = owner.graph().storage().iterate(prefix, ASC)
                     .mapSorted(
                             kv -> getView(cache(newPersistedEdge(EdgeViewIID.Type.of(kv.key().bytes()), kv.value()))),
                             edgeView -> KeyValue.of(edgeView.iid(), ByteArray.empty()),

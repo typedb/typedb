@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
@@ -48,8 +48,8 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
@@ -71,7 +71,7 @@ public abstract class ProcedureVertex<
         this.dependedEdgeOrders = new AtomicReference<>(null);
     }
 
-    public abstract Seekable<? extends VERTEX, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters);
+    public abstract Forwardable<? extends VERTEX, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters);
 
     @Override
     public void in(ProcedureEdge<?, ?> edge) {
@@ -136,41 +136,41 @@ public abstract class ProcedureVertex<
         }
 
         @Override
-        public Seekable<? extends ThingVertex, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters) {
+        public Forwardable<? extends ThingVertex, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters) {
             assert isStartingVertex();
             if (props().hasIID()) return iterateAndFilterFromIID(graphMgr, parameters);
             else return iterateAndFilterFromTypes(graphMgr, parameters);
         }
 
-        Seekable<? extends ThingVertex, Order.Asc> filter(Seekable<? extends ThingVertex, Order.Asc> iterator,
-                                                          Traversal.Parameters params) {
+        Forwardable<? extends ThingVertex, Order.Asc> filter(Forwardable<? extends ThingVertex, Order.Asc> iterator,
+                                                             Traversal.Parameters params) {
             iterator = filterTypes(iterator);
             if (props().hasIID()) iterator = filterIID(iterator, params);
             if (!props().predicates().isEmpty()) iterator = filterPredicates(filterAttributes(iterator), params);
             return iterator;
         }
 
-        Seekable<? extends ThingVertex, Order.Asc> iterateAndFilterFromIID(GraphManager graphMgr, Traversal.Parameters parameters) {
+        Forwardable<? extends ThingVertex, Order.Asc> iterateAndFilterFromIID(GraphManager graphMgr, Traversal.Parameters parameters) {
             assert props().hasIID() && id().isVariable() && !props().types().isEmpty();
             Identifier.Variable id = id().asVariable();
             ThingVertex vertex = graphMgr.data().getReadable(parameters.getIID(id));
             if (vertex == null) return emptySorted();
-            Seekable<? extends ThingVertex, Order.Asc> iter = filterTypes(iterateSorted(ASC, vertex));
+            Forwardable<? extends ThingVertex, Order.Asc> iter = filterTypes(iterateSorted(ASC, vertex));
             if (!props().predicates().isEmpty()) iter = filterPredicates(filterAttributes(iter), parameters);
             return iter;
         }
 
-        Seekable<? extends ThingVertex, Order.Asc> iterateAndFilterFromTypes(GraphManager graphMgr,
-                                                                             Traversal.Parameters parameters) {
+        Forwardable<? extends ThingVertex, Order.Asc> iterateAndFilterFromTypes(GraphManager graphMgr,
+                                                                                Traversal.Parameters parameters) {
             assert !props().types().isEmpty();
             return iterateAndFilterFromTypes(graphMgr, parameters, iterate(props().types()).map(graphMgr.schema()::getType));
         }
 
-        Seekable<? extends ThingVertex, Order.Asc> iterateAndFilterFromTypes(GraphManager graphMgr,
-                                                                             Traversal.Parameters parameters,
-                                                                             FunctionalIterator<TypeVertex> types) {
+        Forwardable<? extends ThingVertex, Order.Asc> iterateAndFilterFromTypes(GraphManager graphMgr,
+                                                                                Traversal.Parameters parameters,
+                                                                                FunctionalIterator<TypeVertex> types) {
             assert types.hasNext();
-            Seekable<? extends ThingVertex, Order.Asc> iter;
+            Forwardable<? extends ThingVertex, Order.Asc> iter;
             Optional<Predicate.Value<?>> eq = iterate(props().predicates()).filter(p -> p.operator().equals(EQ)).first();
             if (eq.isPresent()) iter = iteratorOfAttributesWithTypes(graphMgr, parameters, eq.get());
             else {
@@ -182,25 +182,25 @@ public abstract class ProcedureVertex<
             else return filterPredicates(mapToAttributes(iter), parameters, eq.orElse(null));
         }
 
-        private Seekable<? extends ThingVertex, Order.Asc> filterIID(Seekable<? extends ThingVertex, Order.Asc> iterator,
-                                                             Traversal.Parameters parameters) {
+        private Forwardable<? extends ThingVertex, Order.Asc> filterIID(Forwardable<? extends ThingVertex, Order.Asc> iterator,
+                                                                        Traversal.Parameters parameters) {
             assert parameters.getIID(id().asVariable()) != null;
             return iterator.filter(v -> v.iid().equals(parameters.getIID(id().asVariable())));
         }
 
-        private Seekable<? extends ThingVertex, Order.Asc> filterTypes(Seekable<? extends ThingVertex, Order.Asc> iterator) {
+        private Forwardable<? extends ThingVertex, Order.Asc> filterTypes(Forwardable<? extends ThingVertex, Order.Asc> iterator) {
             return iterator.filter(v -> props().types().contains(v.type().properLabel()));
         }
 
-        Seekable<? extends AttributeVertex<?>, Order.Asc> filterPredicates(Seekable<? extends AttributeVertex<?>, Order.Asc> iterator,
-                                                                           Traversal.Parameters parameters) {
+        Forwardable<? extends AttributeVertex<?>, Order.Asc> filterPredicates(Forwardable<? extends AttributeVertex<?>, Order.Asc> iterator,
+                                                                              Traversal.Parameters parameters) {
             return filterPredicates(iterator, parameters, null);
         }
 
-        Seekable<? extends AttributeVertex<?>, Order.Asc> filterPredicates(Seekable<? extends AttributeVertex<?>, Order.Asc> iterator,
-                                                                           Traversal.Parameters parameters,
-                                                                           @Nullable Predicate.Value<?> exclude) {
-            // TODO we should be using seek() to optimise filtering for >, <, and =
+        Forwardable<? extends AttributeVertex<?>, Order.Asc> filterPredicates(Forwardable<? extends AttributeVertex<?>, Order.Asc> iterator,
+                                                                              Traversal.Parameters parameters,
+                                                                              @Nullable Predicate.Value<?> exclude) {
+            // TODO we should be using forward() to optimise filtering for >, <, and =
             assert id().isVariable();
             for (Predicate.Value<?> predicate : props().predicates()) {
                 if (Objects.equals(predicate, exclude)) continue;
@@ -211,8 +211,8 @@ public abstract class ProcedureVertex<
             return iterator;
         }
 
-        Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> filterPredicatesOnEdge(Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iterator,
-                                                                                       Traversal.Parameters parameters) {
+        Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> filterPredicatesOnEdge(Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iterator,
+                                                                                          Traversal.Parameters parameters) {
             assert id().isVariable();
             iterator = iterator.filter(kv -> kv.key().isAttribute());
             for (Predicate.Value<?> predicate : props().predicates()) {
@@ -223,9 +223,9 @@ public abstract class ProcedureVertex<
             return iterator;
         }
 
-        Seekable<? extends AttributeVertex<?>, Order.Asc> iteratorOfAttributesWithTypes(GraphManager graphMgr,
-                                                                                        Traversal.Parameters params,
-                                                                                        Predicate.Value<?> eq) {
+        Forwardable<? extends AttributeVertex<?>, Order.Asc> iteratorOfAttributesWithTypes(GraphManager graphMgr,
+                                                                                           Traversal.Parameters params,
+                                                                                           Predicate.Value<?> eq) {
             FunctionalIterator<TypeVertex> attributeTypes = iterate(props().types().iterator())
                     .map(l -> graphMgr.schema().getType(l))
                     .map(t -> {
@@ -235,7 +235,7 @@ public abstract class ProcedureVertex<
             return iteratorOfAttributes(graphMgr, attributeTypes, params, eq);
         }
 
-        Seekable<? extends AttributeVertex<?>, Order.Asc> iteratorOfAttributes(
+        Forwardable<? extends AttributeVertex<?>, Order.Asc> iteratorOfAttributes(
                 GraphManager graphMgr, FunctionalIterator<TypeVertex> attributeTypes,
                 Traversal.Parameters parameters, Predicate.Value<?> eqPredicate
         ) {
@@ -268,13 +268,13 @@ public abstract class ProcedureVertex<
             }
         }
 
-        static Seekable<AttributeVertex<?>, Order.Asc> filterAttributes(Seekable<? extends ThingVertex, Order.Asc> iterator) {
+        static Forwardable<AttributeVertex<?>, Order.Asc> filterAttributes(Forwardable<? extends ThingVertex, Order.Asc> iterator) {
             return mapToAttributes(iterator.filter(ThingVertex::isAttribute));
         }
 
-        static Seekable<AttributeVertex<?>, Order.Asc> mapToAttributes(Seekable<? extends ThingVertex, Order.Asc> iterator) {
+        static Forwardable<AttributeVertex<?>, Order.Asc> mapToAttributes(Forwardable<? extends ThingVertex, Order.Asc> iterator) {
             // TODO: trying to achieve this without casting seems impossible due to the reverse mapping required by mapSorted?
-            return ((Seekable<ThingVertex, Order.Asc>) iterator).mapSorted(ThingVertex::asAttribute, v -> v, ASC);
+            return ((Forwardable<ThingVertex, Order.Asc>) iterator).mapSorted(ThingVertex::asAttribute, v -> v, ASC);
         }
     }
 
@@ -290,9 +290,9 @@ public abstract class ProcedureVertex<
         }
 
         @Override
-        public Seekable<? extends TypeVertex, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters) {
+        public Forwardable<? extends TypeVertex, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters) {
             assert isStartingVertex() && id().isVariable();
-            Seekable<TypeVertex, Order.Asc> iterator = null;
+            Forwardable<TypeVertex, Order.Asc> iterator = null;
 
             if (!props().labels().isEmpty()) iterator = iterateLabels(graphMgr);
             if (!props().valueTypes().isEmpty()) iterator = iterateOrFilterValueTypes(graphMgr, iterator);
@@ -308,7 +308,7 @@ public abstract class ProcedureVertex<
             return iterator;
         }
 
-        Seekable<TypeVertex, Order.Asc> filter(Seekable<TypeVertex, Order.Asc> iterator) {
+        Forwardable<TypeVertex, Order.Asc> filter(Forwardable<TypeVertex, Order.Asc> iterator) {
             if (!props().labels().isEmpty()) iterator = filterLabels(iterator);
             if (!props().valueTypes().isEmpty()) iterator = filterValueTypes(iterator);
             if (props().isAbstract()) iterator = filterAbstract(iterator);
@@ -332,49 +332,49 @@ public abstract class ProcedureVertex<
             return iterate(outs()).anyMatch(ProcedureEdge::onlyStartsFromThingType);
         }
 
-        private Seekable<TypeVertex, Order.Asc> iterateLabels(GraphManager graphMgr) {
+        private Forwardable<TypeVertex, Order.Asc> iterateLabels(GraphManager graphMgr) {
             return iterate(props().labels()).mergeMap(l -> iterateSorted(ASC, graphMgr.schema().getType(l)), ASC);
         }
 
-        private Seekable<TypeVertex, Order.Asc> filterLabels(Seekable<TypeVertex, Order.Asc> iterator) {
+        private Forwardable<TypeVertex, Order.Asc> filterLabels(Forwardable<TypeVertex, Order.Asc> iterator) {
             assert !props().labels().isEmpty();
             return iterator.filter(t -> props().labels().contains(t.properLabel()));
         }
 
-        private Seekable<TypeVertex, Order.Asc> iterateOrFilterValueTypes(GraphManager graphMgr,
-                                                                          Seekable<TypeVertex, Order.Asc> iterator) {
+        private Forwardable<TypeVertex, Order.Asc> iterateOrFilterValueTypes(GraphManager graphMgr,
+                                                                             Forwardable<TypeVertex, Order.Asc> iterator) {
             assert !props().valueTypes().isEmpty();
             if (iterator == null) {
-                List<Seekable<TypeVertex, Order.Asc>> iterators = new ArrayList<>();
+                List<Forwardable<TypeVertex, Order.Asc>> iterators = new ArrayList<>();
                 for (Encoding.ValueType valueType : props().valueTypes()) {
                     iterators.add(graphMgr.schema().attributeTypes(valueType));
                 }
-                return SortedIterators.Seekable.merge(iterate(iterators), ASC);
+                return SortedIterators.Forwardable.merge(iterate(iterators), ASC);
             } else return filterValueTypes(iterator);
         }
 
-        private Seekable<TypeVertex, Order.Asc> filterValueTypes(Seekable<TypeVertex, Order.Asc> iterator) {
+        private Forwardable<TypeVertex, Order.Asc> filterValueTypes(Forwardable<TypeVertex, Order.Asc> iterator) {
             assert !props().valueTypes().isEmpty();
             return iterator.filter(t -> props().valueTypes().contains(t.valueType()));
         }
 
-        private Seekable<TypeVertex, Order.Asc> iterateOrFilterAbstract(GraphManager graphMgr,
-                                                                        Seekable<TypeVertex, Order.Asc> iterator) {
+        private Forwardable<TypeVertex, Order.Asc> iterateOrFilterAbstract(GraphManager graphMgr,
+                                                                           Forwardable<TypeVertex, Order.Asc> iterator) {
             if (iterator == null) return graphMgr.schema().thingTypes().filter(TypeVertex::isAbstract);
             else return filterAbstract(iterator);
         }
 
-        private Seekable<TypeVertex, Order.Asc> filterAbstract(Seekable<TypeVertex, Order.Asc> iterator) {
+        private Forwardable<TypeVertex, Order.Asc> filterAbstract(Forwardable<TypeVertex, Order.Asc> iterator) {
             return iterator.filter(TypeVertex::isAbstract);
         }
 
-        private Seekable<TypeVertex, Order.Asc> iterateAndFilterRegex(GraphManager graphMgr,
-                                                                      Seekable<TypeVertex, Order.Asc> iterator) {
+        private Forwardable<TypeVertex, Order.Asc> iterateAndFilterRegex(GraphManager graphMgr,
+                                                                         Forwardable<TypeVertex, Order.Asc> iterator) {
             if (iterator == null) iterator = graphMgr.schema().attributeTypes(STRING);
             return filterRegex(iterator);
         }
 
-        private Seekable<TypeVertex, Order.Asc> filterRegex(Seekable<TypeVertex, Order.Asc> iterator) {
+        private Forwardable<TypeVertex, Order.Asc> filterRegex(Forwardable<TypeVertex, Order.Asc> iterator) {
             return iterator.filter(at -> at.regex() != null && at.regex().pattern().equals(props().regex().get()));
         }
 

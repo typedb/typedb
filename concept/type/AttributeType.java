@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.concept.type;
 
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typeql.lang.common.TypeQLArg;
@@ -34,16 +34,16 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 public interface AttributeType extends ThingType {
 
     @Override
-    Seekable<? extends AttributeType, Order.Asc> getSubtypes();
+    Forwardable<? extends AttributeType, Order.Asc> getSubtypes();
 
     @Override
-    Seekable<? extends AttributeType, Order.Asc> getSubtypesExplicit();
+    Forwardable<? extends AttributeType, Order.Asc> getSubtypesExplicit();
 
     @Override
-    Seekable<? extends Attribute, Order.Asc> getInstances();
+    Forwardable<? extends Attribute, Order.Asc> getInstances();
 
     @Override
-    Seekable<? extends Attribute, Order.Asc> getInstancesExplicit();
+    Forwardable<? extends Attribute, Order.Asc> getInstancesExplicit();
 
     void setSupertype(AttributeType superType);
 
@@ -51,9 +51,9 @@ public interface AttributeType extends ThingType {
 
     ValueType getValueType();
 
-    Seekable<? extends ThingType, Order.Asc> getOwners();
+    Forwardable<? extends ThingType, Order.Asc> getOwners();
 
-    Seekable<? extends ThingType, Order.Asc> getOwners(boolean onlyKey);
+    Forwardable<? extends ThingType, Order.Asc> getOwners(boolean onlyKey);
 
     boolean isBoolean();
 
@@ -145,16 +145,16 @@ public interface AttributeType extends ThingType {
     interface Boolean extends AttributeType {
 
         @Override
-        Seekable<? extends AttributeType.Boolean, Order.Asc> getSubtypes();
+        Forwardable<? extends Boolean, Order.Asc> getSubtypes();
 
         @Override
-        Seekable<? extends AttributeType.Boolean, Order.Asc> getSubtypesExplicit();
+        Forwardable<? extends Boolean, Order.Asc> getSubtypesExplicit();
 
         @Override
-        Seekable<? extends Attribute.Boolean, Order.Asc> getInstances();
+        Forwardable<? extends Attribute.Boolean, Order.Asc> getInstances();
 
         @Override
-        Seekable<? extends Attribute.Boolean, Order.Asc> getInstancesExplicit();
+        Forwardable<? extends Attribute.Boolean, Order.Asc> getInstancesExplicit();
 
         Attribute.Boolean put(boolean value);
 
@@ -166,16 +166,16 @@ public interface AttributeType extends ThingType {
     interface Long extends AttributeType {
 
         @Override
-        Seekable<? extends AttributeType.Long, Order.Asc> getSubtypes();
+        Forwardable<? extends Long, Order.Asc> getSubtypes();
 
         @Override
-        Seekable<? extends AttributeType.Long, Order.Asc> getSubtypesExplicit();
+        Forwardable<? extends Long, Order.Asc> getSubtypesExplicit();
 
         @Override
-        Seekable<? extends Attribute.Long, Order.Asc> getInstances();
+        Forwardable<? extends Attribute.Long, Order.Asc> getInstances();
 
         @Override
-        Seekable<? extends Attribute.Long, Order.Asc> getInstancesExplicit();
+        Forwardable<? extends Attribute.Long, Order.Asc> getInstancesExplicit();
 
         Attribute.Long put(long value);
 
@@ -187,16 +187,16 @@ public interface AttributeType extends ThingType {
     interface Double extends AttributeType {
 
         @Override
-        Seekable<? extends AttributeType.Double, Order.Asc> getSubtypes();
+        Forwardable<? extends Double, Order.Asc> getSubtypes();
 
         @Override
-        Seekable<? extends AttributeType.Double, Order.Asc> getSubtypesExplicit();
+        Forwardable<? extends Double, Order.Asc> getSubtypesExplicit();
 
         @Override
-        Seekable<? extends Attribute.Double, Order.Asc> getInstances();
+        Forwardable<? extends Attribute.Double, Order.Asc> getInstances();
 
         @Override
-        Seekable<? extends Attribute.Double, Order.Asc> getInstancesExplicit();
+        Forwardable<? extends Attribute.Double, Order.Asc> getInstancesExplicit();
 
         Attribute.Double put(double value);
 
@@ -208,16 +208,16 @@ public interface AttributeType extends ThingType {
     interface String extends AttributeType {
 
         @Override
-        Seekable<? extends AttributeType.String, Order.Asc> getSubtypes();
+        Forwardable<? extends String, Order.Asc> getSubtypes();
 
         @Override
-        Seekable<? extends AttributeType.String, Order.Asc> getSubtypesExplicit();
+        Forwardable<? extends String, Order.Asc> getSubtypesExplicit();
 
         @Override
-        Seekable<? extends Attribute.String, Order.Asc> getInstances();
+        Forwardable<? extends Attribute.String, Order.Asc> getInstances();
 
         @Override
-        Seekable<? extends Attribute.String, Order.Asc> getInstancesExplicit();
+        Forwardable<? extends Attribute.String, Order.Asc> getInstancesExplicit();
 
         void setRegex(Pattern regex);
 
@@ -235,16 +235,16 @@ public interface AttributeType extends ThingType {
     interface DateTime extends AttributeType {
 
         @Override
-        Seekable<? extends AttributeType.DateTime, Order.Asc> getSubtypes();
+        Forwardable<? extends DateTime, Order.Asc> getSubtypes();
 
         @Override
-        Seekable<? extends AttributeType.DateTime, Order.Asc> getSubtypesExplicit();
+        Forwardable<? extends DateTime, Order.Asc> getSubtypesExplicit();
 
         @Override
-        Seekable<? extends Attribute.DateTime, Order.Asc> getInstances();
+        Forwardable<? extends Attribute.DateTime, Order.Asc> getInstances();
 
         @Override
-        Seekable<? extends Attribute.DateTime, Order.Asc> getInstancesExplicit();
+        Forwardable<? extends Attribute.DateTime, Order.Asc> getInstancesExplicit();
 
         Attribute.DateTime put(LocalDateTime value);
 

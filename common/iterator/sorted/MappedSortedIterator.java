@@ -99,9 +99,9 @@ public class MappedSortedIterator<
         source.recycle();
     }
 
-    public static class Seekable<T extends Comparable<? super T>, U extends Comparable<? super U>, ORDER extends Order>
-            extends MappedSortedIterator<T, U, ORDER, SortedIterator.Seekable<T, ?>>
-            implements SortedIterator.Seekable<U, ORDER> {
+    public static class Forwardable<T extends Comparable<? super T>, U extends Comparable<? super U>, ORDER extends Order>
+            extends MappedSortedIterator<T, U, ORDER, SortedIterator.Forwardable<T, ?>>
+            implements SortedIterator.Forwardable<U, ORDER> {
 
         private final Function<U, T> reverseMappingFn;
 
@@ -110,7 +110,7 @@ public class MappedSortedIterator<
          * @param mappingFn        - The forward mapping function must return a new iterator that is sorted with respect to U's comparator.
          * @param reverseMappingFn - The reverse mapping function must be the able to invert the forward mapping function
          */
-        public Seekable(SortedIterator.Seekable<T, ?> source, Function<T, U> mappingFn, Function<U, T> reverseMappingFn, ORDER order) {
+        public Forwardable(SortedIterator.Forwardable<T, ?> source, Function<T, U> mappingFn, Function<U, T> reverseMappingFn, ORDER order) {
             super(source, mappingFn, order);
             this.reverseMappingFn = reverseMappingFn;
         }
@@ -121,53 +121,53 @@ public class MappedSortedIterator<
         }
 
         @Override
-        public void seek(U target) {
+        public void forward(U target) {
             if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
             T reverseMapped = reverseMappingFn.apply(target);
             if (state == State.EMPTY) {
-                source.seek(reverseMapped);
+                source.forward(reverseMapped);
             } else if (state == State.FETCHED) {
                 if (order.isValidNext(target, next)) return;
-                source.seek(reverseMapped);
+                source.forward(reverseMapped);
                 last = next;
                 state = State.EMPTY;
             }
         }
 
         @Override
-        public final SortedIterator.Seekable<U, ORDER> merge(SortedIterator.Seekable<U, ORDER> iterator) {
-            return SortedIterators.Seekable.merge(this, iterator);
+        public final SortedIterator.Forwardable<U, ORDER> merge(SortedIterator.Forwardable<U, ORDER> iterator) {
+            return SortedIterators.Forwardable.merge(this, iterator);
         }
 
         @Override
-        public <V extends Comparable<? super V>, ORD extends Order> SortedIterator.Seekable<V, ORD> mapSorted(
+        public <V extends Comparable<? super V>, ORD extends Order> SortedIterator.Forwardable<V, ORD> mapSorted(
                 Function<U, V> mappingFn, Function<V, U> reverseMappingFn, ORD order) {
-            return SortedIterators.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
+            return SortedIterators.Forwardable.mapSorted(order, this, mappingFn, reverseMappingFn);
         }
 
         @Override
-        public SortedIterator.Seekable<U, ORDER> distinct() {
-            return SortedIterators.Seekable.distinct(this);
+        public SortedIterator.Forwardable<U, ORDER> distinct() {
+            return SortedIterators.Forwardable.distinct(this);
         }
 
         @Override
-        public SortedIterator.Seekable<U, ORDER> filter(Predicate<U> predicate) {
-            return SortedIterators.Seekable.filter(this, predicate);
+        public SortedIterator.Forwardable<U, ORDER> filter(Predicate<U> predicate) {
+            return SortedIterators.Forwardable.filter(this, predicate);
         }
 
         @Override
-        public SortedIterator.Seekable<U, ORDER> limit(long limit) {
-            return SortedIterators.Seekable.limit(this, limit);
+        public SortedIterator.Forwardable<U, ORDER> limit(long limit) {
+            return SortedIterators.Forwardable.limit(this, limit);
         }
 
         @Override
-        public SortedIterator.Seekable<U, ORDER> onConsumed(Runnable function) {
-            return SortedIterators.Seekable.onConsume(this, function);
+        public SortedIterator.Forwardable<U, ORDER> onConsumed(Runnable function) {
+            return SortedIterators.Forwardable.onConsume(this, function);
         }
 
         @Override
-        public SortedIterator.Seekable<U, ORDER> onFinalise(Runnable function) {
-            return SortedIterators.Seekable.onFinalise(this, function);
+        public SortedIterator.Forwardable<U, ORDER> onFinalise(Runnable function) {
+            return SortedIterators.Forwardable.onFinalise(this, function);
         }
     }
 }

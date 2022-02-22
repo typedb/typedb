@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.ConceptImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -114,10 +114,10 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     }
 
     @Override
-    public abstract Seekable<? extends TypeImpl, Order.Asc> getSubtypes();
+    public abstract Forwardable<? extends TypeImpl, Order.Asc> getSubtypes();
 
     @Override
-    public abstract Seekable<? extends TypeImpl, Order.Asc> getSubtypesExplicit();
+    public abstract Forwardable<? extends TypeImpl, Order.Asc> getSubtypesExplicit();
 
     void setSuperTypeVertex(TypeVertex superTypeVertex) {
         vertex.outs().edge(SUB, ((TypeImpl) getSupertype()).vertex).delete();
@@ -138,7 +138,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
         }
     }
 
-    <TYPE extends TypeImpl> Seekable<TYPE, Order.Asc> getSubtypesExplicit(Function<TypeVertex, TYPE> typeConstructor) {
+    <TYPE extends TypeImpl> Forwardable<TYPE, Order.Asc> getSubtypesExplicit(Function<TypeVertex, TYPE> typeConstructor) {
         return vertex.ins().edge(SUB).from().mapSorted(typeConstructor, type -> type.vertex, ASC);
     }
 

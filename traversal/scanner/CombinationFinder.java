@@ -128,7 +128,7 @@ public class CombinationFinder {
 
     private Set<TypeVertex> toTypes(ProcedureEdge<?, ?> edge) {
         if (edge.from().id().equals(edge.to().id())) {
-            // TODO this can be optimised with seek()
+            // TODO this can be optimised with forward()
             return iterate(combination.get(edge.from().id())).flatMap(type -> branchIter(edge, type).filter(to -> to.equals(type))).toSet();
         } else {
             return iterate(combination.get(edge.from().id())).flatMap(type -> branchIter(edge, type)).toSet();

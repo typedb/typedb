@@ -74,61 +74,61 @@ public class SortedIterators {
         return new FinaliseSortedIterator<>(iterator, finalise);
     }
 
-    public static class Seekable {
+    public static class Forwardable {
 
-        public static <T extends Comparable<? super T>> SortedIterator.Seekable<T, SortedIterator.Order.Asc> emptySorted() {
+        public static <T extends Comparable<? super T>> SortedIterator.Forwardable<T, SortedIterator.Order.Asc> emptySorted() {
             return iterateSorted(new TreeSet<T>(), SortedIterator.ASC);
         }
 
-        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Seekable<T, ORDER> iterateSorted(Collection<T> elements, ORDER order) {
-            return new BaseSeekableIterator<>(new TreeSet<>(elements), order);
+        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> iterateSorted(Collection<T> elements, ORDER order) {
+            return new BaseForwardableIterator<>(new TreeSet<>(elements), order);
         }
 
         @SafeVarargs
-        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Seekable<T, ORDER> iterateSorted(ORDER order, T... elements) {
-            return new BaseSeekableIterator<>(new TreeSet<>(list(elements)), order);
+        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> iterateSorted(ORDER order, T... elements) {
+            return new BaseForwardableIterator<>(new TreeSet<>(list(elements)), order);
         }
 
-        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Seekable<T, ORDER> iterateSorted(NavigableSet<T> set, ORDER order) {
-            return new BaseSeekableIterator<>(set, order);
+        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> iterateSorted(NavigableSet<T> set, ORDER order) {
+            return new BaseForwardableIterator<>(set, order);
         }
 
-        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Seekable<T, ORDER> distinct(SortedIterator.Seekable<T, ORDER> iterator) {
-            return new DistinctSortedIterator.Seekable<>(iterator);
+        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> distinct(SortedIterator.Forwardable<T, ORDER> iterator) {
+            return new DistinctSortedIterator.Forwardable<>(iterator);
         }
 
-        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Seekable<T, ORDER> filter(SortedIterator.Seekable<T, ORDER> iterator,
-                                                                                                                                     Predicate<T> predicate) {
-            return new FilteredSortedIterator.Seekable<>(iterator, predicate);
+        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> filter(SortedIterator.Forwardable<T, ORDER> iterator,
+                                                                                                                                        Predicate<T> predicate) {
+            return new FilteredSortedIterator.Forwardable<>(iterator, predicate);
         }
 
-        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Seekable<T, ORDER> limit(SortedIterator.Seekable<T, ORDER> iterator,
-                                                                                                                                    long limit) {
-            return new LimitedSortedIterator.Seekable<>(iterator, limit);
+        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> limit(SortedIterator.Forwardable<T, ORDER> iterator,
+                                                                                                                                       long limit) {
+            return new LimitedSortedIterator.Forwardable<>(iterator, limit);
         }
 
         @SafeVarargs
-        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Seekable<T, ORDER> merge(SortedIterator.Seekable<T, ORDER> iterator, SortedIterator.Seekable<T, ORDER>... iterators) {
-            return new MergeMappedIterator.Seekable<>(Iterators.iterate(list(list(iterators), iterator)), e -> e, iterator.order());
+        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> merge(SortedIterator.Forwardable<T, ORDER> iterator, SortedIterator.Forwardable<T, ORDER>... iterators) {
+            return new MergeMappedIterator.Forwardable<>(Iterators.iterate(list(list(iterators), iterator)), e -> e, iterator.order());
         }
 
-        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Seekable<T, ORDER> merge(FunctionalIterator<SortedIterator.Seekable<T, ORDER>> iterators, ORDER order) {
-            return new MergeMappedIterator.Seekable<>(iterators, e -> e, order);
+        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> merge(FunctionalIterator<SortedIterator.Forwardable<T, ORDER>> iterators, ORDER order) {
+            return new MergeMappedIterator.Forwardable<>(iterators, e -> e, order);
         }
 
         public static <T extends Comparable<? super T>, U extends Comparable<? super U>, ORDER extends SortedIterator.Order>
-        SortedIterator.Seekable<U, ORDER> mapSorted(ORDER order, SortedIterator.Seekable<T, ?> iterator, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
-            return new MappedSortedIterator.Seekable<>(iterator, mappingFn, reverseMappingFn, order);
+        SortedIterator.Forwardable<U, ORDER> mapSorted(ORDER order, SortedIterator.Forwardable<T, ?> iterator, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
+            return new MappedSortedIterator.Forwardable<>(iterator, mappingFn, reverseMappingFn, order);
         }
 
-        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Seekable<T, ORDER> onConsume(SortedIterator.Seekable<T, ORDER> iterator,
-                                                                                                                                        Runnable onConsume) {
-            return new ConsumeHandledSortedIterator.Seekable<>(iterator, onConsume);
+        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> onConsume(SortedIterator.Forwardable<T, ORDER> iterator,
+                                                                                                                                           Runnable onConsume) {
+            return new ConsumeHandledSortedIterator.Forwardable<>(iterator, onConsume);
         }
 
-        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Seekable<T, ORDER> onFinalise(SortedIterator.Seekable<T, ORDER> iterator,
-                                                                                                                                         Runnable finalise) {
-            return new FinaliseSortedIterator.Seekable<>(iterator, finalise);
+        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> onFinalise(SortedIterator.Forwardable<T, ORDER> iterator,
+                                                                                                                                            Runnable finalise) {
+            return new FinaliseSortedIterator.Forwardable<>(iterator, finalise);
         }
     }
 }

@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.graph.adjacency.TypeAdjacency;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
@@ -38,17 +38,17 @@ public abstract class TypeEdgeIterator {
     static class InEdgeIteratorImpl implements TypeAdjacency.In.InEdgeIterator {
 
         final TypeVertex owner;
-        final Seekable<TypeEdge.View.Backward, Order.Asc> edges;
+        final Forwardable<TypeEdge.View.Backward, Order.Asc> edges;
         final Encoding.Edge.Type encoding;
 
-        InEdgeIteratorImpl(Seekable<TypeEdge.View.Backward, Order.Asc> edges, TypeVertex owner, Encoding.Edge.Type encoding) {
+        InEdgeIteratorImpl(Forwardable<TypeEdge.View.Backward, Order.Asc> edges, TypeVertex owner, Encoding.Edge.Type encoding) {
             this.owner = owner;
             this.edges = edges;
             this.encoding = encoding;
         }
 
         @Override
-        public Seekable<TypeVertex, Order.Asc> from() {
+        public Forwardable<TypeVertex, Order.Asc> from() {
             return edges.mapSorted(edgeView -> edgeView.edge().from(), this::targetEdge, ASC);
         }
 
@@ -63,7 +63,7 @@ public abstract class TypeEdgeIterator {
         }
 
         @Override
-        public Seekable<KeyValue<TypeVertex, TypeVertex>, Order.Asc> fromAndOverridden() {
+        public Forwardable<KeyValue<TypeVertex, TypeVertex>, Order.Asc> fromAndOverridden() {
             return edges.mapSorted(
                     edgeView -> KeyValue.of(edgeView.edge().from(), edgeView.edge().overridden()),
                     fromAndOverridden -> targetEdge(fromAndOverridden.key()),
@@ -79,10 +79,10 @@ public abstract class TypeEdgeIterator {
     static class OutEdgeIteratorImpl implements TypeAdjacency.Out.OutEdgeIterator {
 
         final TypeVertex owner;
-        final Seekable<TypeEdge.View.Forward, Order.Asc> edges;
+        final Forwardable<TypeEdge.View.Forward, Order.Asc> edges;
         final Encoding.Edge.Type encoding;
 
-        OutEdgeIteratorImpl(Seekable<TypeEdge.View.Forward, Order.Asc> edges, TypeVertex owner, Encoding.Edge.Type encoding) {
+        OutEdgeIteratorImpl(Forwardable<TypeEdge.View.Forward, Order.Asc> edges, TypeVertex owner, Encoding.Edge.Type encoding) {
             this.owner = owner;
             this.edges = edges;
             this.encoding = encoding;
@@ -94,7 +94,7 @@ public abstract class TypeEdgeIterator {
         }
 
         @Override
-        public Seekable<TypeVertex, Order.Asc> to() {
+        public Forwardable<TypeVertex, Order.Asc> to() {
             return edges.mapSorted(edgeView -> edgeView.edge().to(), this::targetEdge, ASC);
         }
 
@@ -104,7 +104,7 @@ public abstract class TypeEdgeIterator {
         }
 
         @Override
-        public Seekable<KeyValue<TypeVertex, TypeVertex>, Order.Asc> toAndOverridden() {
+        public Forwardable<KeyValue<TypeVertex, TypeVertex>, Order.Asc> toAndOverridden() {
             return edges.mapSorted(
                     edgeView -> KeyValue.of(edgeView.edge().to(), edgeView.edge().overridden()),
                     toAndOverridden -> targetEdge(toAndOverridden.key()),

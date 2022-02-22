@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.impl.RoleImpl;
 import com.vaticle.typedb.core.concept.type.RoleType;
@@ -37,7 +37,7 @@ import java.util.Objects;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
@@ -93,13 +93,13 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public Seekable<RoleTypeImpl, Order.Asc> getSubtypes() {
+    public Forwardable<RoleTypeImpl, Order.Asc> getSubtypes() {
         return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
                 .mapSorted(v -> of(graphMgr, v), rt -> rt.vertex, ASC);
     }
 
     @Override
-    public Seekable<RoleTypeImpl, Order.Asc> getSubtypesExplicit() {
+    public Forwardable<RoleTypeImpl, Order.Asc> getSubtypesExplicit() {
         return super.getSubtypesExplicit(v -> of(graphMgr, v));
     }
 
@@ -109,13 +109,13 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public Seekable<RelationTypeImpl, Order.Asc> getRelationTypes() {
+    public Forwardable<RelationTypeImpl, Order.Asc> getRelationTypes() {
         return iterateSorted(graphMgr.schema().relationsOfRoleType(vertex), ASC)
                 .mapSorted(v -> RelationTypeImpl.of(graphMgr, v), relType -> relType.vertex, ASC);
     }
 
     @Override
-    public Seekable<ThingTypeImpl, Order.Asc> getPlayers() {
+    public Forwardable<ThingTypeImpl, Order.Asc> getPlayers() {
         return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from()
                 .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC);
     }

@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -47,9 +47,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.AT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.merge;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.merge;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
@@ -105,20 +105,20 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public abstract Seekable<? extends AttributeTypeImpl, Order.Asc> getSubtypes();
+    public abstract Forwardable<? extends AttributeTypeImpl, Order.Asc> getSubtypes();
 
     @Override
-    public abstract Seekable<? extends AttributeTypeImpl, Order.Asc> getSubtypesExplicit();
+    public abstract Forwardable<? extends AttributeTypeImpl, Order.Asc> getSubtypesExplicit();
 
     @Override
-    public abstract Seekable<? extends AttributeImpl<?>, Order.Asc> getInstances();
+    public abstract Forwardable<? extends AttributeImpl<?>, Order.Asc> getInstances();
 
-    Seekable<TypeVertex, Order.Asc> getSubtypeVertices(Encoding.ValueType valueType) {
+    Forwardable<TypeVertex, Order.Asc> getSubtypeVertices(Encoding.ValueType valueType) {
         return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
                 .filter(sv -> sv.valueType().equals(valueType));
     }
 
-    Seekable<TypeVertex, Order.Asc> getSubtypeVerticesDirect(Encoding.ValueType valueType) {
+    Forwardable<TypeVertex, Order.Asc> getSubtypeVerticesDirect(Encoding.ValueType valueType) {
         return vertex.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType));
     }
 
@@ -143,12 +143,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     public abstract ValueType getValueType();
 
     @Override
-    public Seekable<? extends ThingTypeImpl, Order.Asc> getOwners() {
+    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwners() {
         return getOwners(false);
     }
 
     @Override
-    public Seekable<? extends ThingTypeImpl, Order.Asc> getOwners(boolean onlyKey) {
+    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwners(boolean onlyKey) {
         if (isRoot()) return emptySorted();
         else if (onlyKey) {
             return iterateSorted(graphMgr.schema().ownersOfAttributeTypeKey(vertex), ASC)
@@ -299,7 +299,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Seekable<AttributeTypeImpl, Order.Asc> getSubtypes() {
+        public Forwardable<AttributeTypeImpl, Order.Asc> getSubtypes() {
             return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC).mapSorted(v -> {
                 switch (v.valueType()) {
                     case OBJECT:
@@ -322,7 +322,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Seekable<AttributeTypeImpl, Order.Asc> getSubtypesExplicit() {
+        public Forwardable<AttributeTypeImpl, Order.Asc> getSubtypesExplicit() {
             return getSubtypesExplicit(v -> {
                 switch (v.valueType()) {
                     case BOOLEAN:
@@ -342,12 +342,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Seekable<AttributeImpl<?>, Order.Asc> getInstances() {
+        public Forwardable<AttributeImpl<?>, Order.Asc> getInstances() {
             return instances(v -> AttributeImpl.of(v.asAttribute()));
         }
 
         @Override
-        public Seekable<AttributeImpl<?>, Order.Asc> getInstancesExplicit() {
+        public Forwardable<AttributeImpl<?>, Order.Asc> getInstancesExplicit() {
             return emptySorted();
         }
 
@@ -399,23 +399,23 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Seekable<AttributeTypeImpl.Boolean, Order.Asc> getSubtypes() {
+        public Forwardable<AttributeTypeImpl.Boolean, Order.Asc> getSubtypes() {
             return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
                     .mapSorted(v -> AttributeTypeImpl.Boolean.of(graphMgr, v), attrType -> attrType.vertex, ASC);
         }
 
         @Override
-        public Seekable<AttributeTypeImpl.Boolean, Order.Asc> getSubtypesExplicit() {
+        public Forwardable<AttributeTypeImpl.Boolean, Order.Asc> getSubtypesExplicit() {
             return super.getSubtypesExplicit(v -> AttributeTypeImpl.Boolean.of(graphMgr, v));
         }
 
         @Override
-        public Seekable<AttributeImpl.Boolean, Order.Asc> getInstances() {
+        public Forwardable<AttributeImpl.Boolean, Order.Asc> getInstances() {
             return instances(v -> new AttributeImpl.Boolean(v.asAttribute().asBoolean()));
         }
 
         @Override
-        public Seekable<AttributeImpl.Boolean, Order.Asc> getInstancesExplicit() {
+        public Forwardable<AttributeImpl.Boolean, Order.Asc> getInstancesExplicit() {
             return instancesExplicit(v -> new AttributeImpl.Boolean(v.asAttribute().asBoolean()));
         }
 
@@ -466,7 +466,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public Seekable<AttributeTypeImpl.Boolean, Order.Asc> getSubtypes() {
+            public Forwardable<AttributeTypeImpl.Boolean, Order.Asc> getSubtypes() {
                 return merge(
                         iterateSorted(ASC, this),
                         super.getSubtypeVertices(BOOLEAN).mapSorted(v ->
@@ -476,7 +476,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public Seekable<AttributeTypeImpl.Boolean, Order.Asc> getSubtypesExplicit() {
+            public Forwardable<AttributeTypeImpl.Boolean, Order.Asc> getSubtypesExplicit() {
                 return super.getSubtypeVerticesDirect(BOOLEAN)
                         .mapSorted(v -> AttributeTypeImpl.Boolean.of(graphMgr, v), attrType -> attrType.vertex, ASC);
             }
@@ -544,23 +544,23 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Seekable<AttributeTypeImpl.Long, Order.Asc> getSubtypes() {
+        public Forwardable<AttributeTypeImpl.Long, Order.Asc> getSubtypes() {
             return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
                     .mapSorted(v -> AttributeTypeImpl.Long.of(graphMgr, v), attrType -> attrType.vertex, ASC);
         }
 
         @Override
-        public Seekable<AttributeTypeImpl.Long, Order.Asc> getSubtypesExplicit() {
+        public Forwardable<AttributeTypeImpl.Long, Order.Asc> getSubtypesExplicit() {
             return super.getSubtypesExplicit(v -> AttributeTypeImpl.Long.of(graphMgr, v));
         }
 
         @Override
-        public Seekable<AttributeImpl.Long, Order.Asc> getInstances() {
+        public Forwardable<AttributeImpl.Long, Order.Asc> getInstances() {
             return instances(v -> new AttributeImpl.Long(v.asAttribute().asLong()));
         }
 
         @Override
-        public Seekable<AttributeImpl.Long, Order.Asc> getInstancesExplicit() {
+        public Forwardable<AttributeImpl.Long, Order.Asc> getInstancesExplicit() {
             return instancesExplicit(v -> new AttributeImpl.Long(v.asAttribute().asLong()));
         }
 
@@ -611,7 +611,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public Seekable<AttributeTypeImpl.Long, Order.Asc> getSubtypes() {
+            public Forwardable<AttributeTypeImpl.Long, Order.Asc> getSubtypes() {
                 return merge(
                         iterateSorted(ASC, this),
                         super.getSubtypeVertices(LONG).mapSorted(v ->
@@ -621,7 +621,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public Seekable<AttributeTypeImpl.Long, Order.Asc> getSubtypesExplicit() {
+            public Forwardable<AttributeTypeImpl.Long, Order.Asc> getSubtypesExplicit() {
                 return super.getSubtypeVerticesDirect(LONG)
                         .mapSorted(v -> AttributeTypeImpl.Long.of(graphMgr, v), attrType -> attrType.vertex, ASC);
             }
@@ -689,23 +689,23 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Seekable<AttributeTypeImpl.Double, Order.Asc> getSubtypes() {
+        public Forwardable<AttributeTypeImpl.Double, Order.Asc> getSubtypes() {
             return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
                     .mapSorted(v -> AttributeTypeImpl.Double.of(graphMgr, v), attrType -> attrType.vertex, ASC);
         }
 
         @Override
-        public Seekable<AttributeTypeImpl.Double, Order.Asc> getSubtypesExplicit() {
+        public Forwardable<AttributeTypeImpl.Double, Order.Asc> getSubtypesExplicit() {
             return super.getSubtypesExplicit(v -> AttributeTypeImpl.Double.of(graphMgr, v));
         }
 
         @Override
-        public Seekable<AttributeImpl.Double, Order.Asc> getInstances() {
+        public Forwardable<AttributeImpl.Double, Order.Asc> getInstances() {
             return instances(v -> new AttributeImpl.Double(v.asAttribute().asDouble()));
         }
 
         @Override
-        public Seekable<AttributeImpl.Double, Order.Asc> getInstancesExplicit() {
+        public Forwardable<AttributeImpl.Double, Order.Asc> getInstancesExplicit() {
             return instancesExplicit(v -> new AttributeImpl.Double(v.asAttribute().asDouble()));
         }
 
@@ -756,7 +756,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public Seekable<AttributeTypeImpl.Double, Order.Asc> getSubtypes() {
+            public Forwardable<AttributeTypeImpl.Double, Order.Asc> getSubtypes() {
                 return merge(
                         iterateSorted(ASC, this),
                         super.getSubtypeVertices(DOUBLE).mapSorted(v ->
@@ -766,7 +766,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public Seekable<AttributeTypeImpl.Double, Order.Asc> getSubtypesExplicit() {
+            public Forwardable<AttributeTypeImpl.Double, Order.Asc> getSubtypesExplicit() {
                 return super.getSubtypeVerticesDirect(DOUBLE)
                         .mapSorted(v -> AttributeTypeImpl.Double.of(graphMgr, v), attrType -> attrType.vertex, ASC);
             }
@@ -834,23 +834,23 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Seekable<AttributeTypeImpl.String, Order.Asc> getSubtypes() {
+        public Forwardable<AttributeTypeImpl.String, Order.Asc> getSubtypes() {
             return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
                     .mapSorted(v -> AttributeTypeImpl.String.of(graphMgr, v), attrType -> attrType.vertex, ASC);
         }
 
         @Override
-        public Seekable<AttributeTypeImpl.String, Order.Asc> getSubtypesExplicit() {
+        public Forwardable<AttributeTypeImpl.String, Order.Asc> getSubtypesExplicit() {
             return super.getSubtypesExplicit(v -> AttributeTypeImpl.String.of(graphMgr, v));
         }
 
         @Override
-        public Seekable<AttributeImpl.String, Order.Asc> getInstances() {
+        public Forwardable<AttributeImpl.String, Order.Asc> getInstances() {
             return instances(v -> new AttributeImpl.String(v.asAttribute().asString()));
         }
 
         @Override
-        public Seekable<AttributeImpl.String, Order.Asc> getInstancesExplicit() {
+        public Forwardable<AttributeImpl.String, Order.Asc> getInstancesExplicit() {
             return instancesExplicit(v -> new AttributeImpl.String(v.asAttribute().asString()));
         }
 
@@ -930,7 +930,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public Seekable<AttributeTypeImpl.String, Order.Asc> getSubtypes() {
+            public Forwardable<AttributeTypeImpl.String, Order.Asc> getSubtypes() {
                 return merge(
                         iterateSorted(ASC, this),
                         super.getSubtypeVertices(STRING).mapSorted(v ->
@@ -940,7 +940,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public Seekable<AttributeTypeImpl.String, Order.Asc> getSubtypesExplicit() {
+            public Forwardable<AttributeTypeImpl.String, Order.Asc> getSubtypesExplicit() {
                 return super.getSubtypeVerticesDirect(STRING)
                         .mapSorted(v -> AttributeTypeImpl.String.of(graphMgr, v), attrType -> attrType.vertex, ASC);
             }
@@ -1018,23 +1018,23 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Seekable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypes() {
+        public Forwardable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypes() {
             return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
                     .mapSorted(v -> AttributeTypeImpl.DateTime.of(graphMgr, v), attrType -> attrType.vertex, ASC);
         }
 
         @Override
-        public Seekable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypesExplicit() {
+        public Forwardable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypesExplicit() {
             return super.getSubtypesExplicit(v -> AttributeTypeImpl.DateTime.of(graphMgr, v));
         }
 
         @Override
-        public Seekable<AttributeImpl.DateTime, Order.Asc> getInstances() {
+        public Forwardable<AttributeImpl.DateTime, Order.Asc> getInstances() {
             return instances(v -> new AttributeImpl.DateTime(v.asAttribute().asDateTime()));
         }
 
         @Override
-        public Seekable<AttributeImpl.DateTime, Order.Asc> getInstancesExplicit() {
+        public Forwardable<AttributeImpl.DateTime, Order.Asc> getInstancesExplicit() {
             return instancesExplicit(v -> new AttributeImpl.DateTime(v.asAttribute().asDateTime()));
         }
 
@@ -1085,7 +1085,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public Seekable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypes() {
+            public Forwardable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypes() {
                 return merge(
                         iterateSorted(ASC, this),
                         super.getSubtypeVertices(DATETIME).mapSorted(v ->
@@ -1095,7 +1095,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public Seekable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypesExplicit() {
+            public Forwardable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypesExplicit() {
                 return super.getSubtypeVerticesDirect(DATETIME)
                         .mapSorted(v -> AttributeTypeImpl.DateTime.of(graphMgr, v), attrType -> attrType.vertex, ASC);
             }

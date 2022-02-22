@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -44,7 +44,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RE
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
@@ -103,23 +103,23 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public Seekable<RelationTypeImpl, Order.Asc> getSubtypes() {
+    public Forwardable<RelationTypeImpl, Order.Asc> getSubtypes() {
         return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
                 .mapSorted(v -> of(graphMgr, v), relationType -> relationType.vertex, ASC);
     }
 
     @Override
-    public Seekable<RelationTypeImpl, Order.Asc> getSubtypesExplicit() {
+    public Forwardable<RelationTypeImpl, Order.Asc> getSubtypesExplicit() {
         return super.getSubtypesExplicit(v -> of(graphMgr, v));
     }
 
     @Override
-    public Seekable<RelationImpl, Order.Asc> getInstances() {
+    public Forwardable<RelationImpl, Order.Asc> getInstances() {
         return instances(RelationImpl::of);
     }
 
     @Override
-    public Seekable<RelationImpl, Order.Asc> getInstancesExplicit() {
+    public Forwardable<RelationImpl, Order.Asc> getInstancesExplicit() {
         return instancesExplicit(RelationImpl::of);
     }
 
@@ -168,13 +168,13 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public Seekable<RoleTypeImpl, Order.Asc> getRelates() {
+    public Forwardable<RoleTypeImpl, Order.Asc> getRelates() {
         return iterateSorted(graphMgr.schema().relatedRoleTypes(vertex), ASC)
                 .mapSorted(v -> RoleTypeImpl.of(graphMgr, v), roleType -> roleType.vertex, ASC);
     }
 
     @Override
-    public Seekable<RoleTypeImpl, Order.Asc> getRelatesExplicit() {
+    public Forwardable<RoleTypeImpl, Order.Asc> getRelatesExplicit() {
         return vertex.outs().edge(RELATES).to()
                 .mapSorted(v -> RoleTypeImpl.of(graphMgr, v), roleType -> roleType.vertex, ASC);
     }

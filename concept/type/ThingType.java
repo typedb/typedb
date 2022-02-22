@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.concept.type;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.concept.thing.Thing;
 
 public interface ThingType extends Type {
@@ -32,14 +32,14 @@ public interface ThingType extends Type {
     FunctionalIterator<? extends ThingType> getSupertypes();
 
     @Override
-    Seekable<? extends ThingType, Order.Asc> getSubtypes();
+    Forwardable<? extends ThingType, Order.Asc> getSubtypes();
 
     @Override
-    Seekable<? extends ThingType, Order.Asc> getSubtypesExplicit();
+    Forwardable<? extends ThingType, Order.Asc> getSubtypesExplicit();
 
-    Seekable<? extends Thing, Order.Asc> getInstances();
+    Forwardable<? extends Thing, Order.Asc> getInstances();
 
-    Seekable<? extends Thing, Order.Asc> getInstancesExplicit();
+    Forwardable<? extends Thing, Order.Asc> getInstancesExplicit();
 
     void setAbstract();
 
@@ -55,21 +55,21 @@ public interface ThingType extends Type {
 
     void unsetOwns(AttributeType attributeType);
 
-    Seekable<AttributeType, Order.Asc> getOwns();
+    Forwardable<AttributeType, Order.Asc> getOwns();
 
-    Seekable<AttributeType, Order.Asc> getOwnsExplicit();
+    Forwardable<AttributeType, Order.Asc> getOwnsExplicit();
 
-    Seekable<AttributeType, Order.Asc> getOwns(boolean onlyKey);
+    Forwardable<AttributeType, Order.Asc> getOwns(boolean onlyKey);
 
-    Seekable<AttributeType, Order.Asc> getOwnsExplicit(boolean onlyKey);
+    Forwardable<AttributeType, Order.Asc> getOwnsExplicit(boolean onlyKey);
 
-    Seekable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType);
+    Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType);
 
-    Seekable<AttributeType, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType);
+    Forwardable<AttributeType, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType);
 
-    Seekable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType, boolean onlyKey);
+    Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType, boolean onlyKey);
 
-    Seekable<AttributeType, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType, boolean onlyKey);
+    Forwardable<AttributeType, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType, boolean onlyKey);
 
     AttributeType getOwnsOverridden(AttributeType attributeType);
 
@@ -79,9 +79,9 @@ public interface ThingType extends Type {
 
     void unsetPlays(RoleType roleType);
 
-    Seekable<RoleType, Order.Asc> getPlays();
+    Forwardable<RoleType, Order.Asc> getPlays();
 
-    Seekable<RoleType, Order.Asc> getPlaysExplicit();
+    Forwardable<RoleType, Order.Asc> getPlaysExplicit();
 
     RoleType getPlaysOverridden(RoleType roleType);
 }

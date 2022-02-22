@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.graph.adjacency.impl;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
@@ -38,17 +38,17 @@ public abstract class ThingEdgeIterator {
     static class InEdgeIteratorImpl implements ThingAdjacency.In.InEdgeIterator {
 
         final ThingVertex owner;
-        final Seekable<ThingEdge.View.Backward, Order.Asc> edges;
+        final Forwardable<ThingEdge.View.Backward, Order.Asc> edges;
         final Encoding.Edge.Thing encoding;
 
-        InEdgeIteratorImpl(Seekable<ThingEdge.View.Backward, Order.Asc> edges, ThingVertex owner, Encoding.Edge.Thing encoding) {
+        InEdgeIteratorImpl(Forwardable<ThingEdge.View.Backward, Order.Asc> edges, ThingVertex owner, Encoding.Edge.Thing encoding) {
             this.owner = owner;
             this.edges = edges;
             this.encoding = encoding;
         }
 
         @Override
-        public Seekable<ThingVertex, Order.Asc> from() {
+        public Forwardable<ThingVertex, Order.Asc> from() {
             return edges.mapSorted(view -> view.edge().from(), this::targetEdge, ASC);
         }
 
@@ -65,14 +65,14 @@ public abstract class ThingEdgeIterator {
 
             private final TypeVertex optimisedType;
 
-            public Optimised(Seekable<ThingEdge.View.Backward, Order.Asc> edges, ThingVertex owner, Encoding.Edge.Thing encoding,
+            public Optimised(Forwardable<ThingEdge.View.Backward, Order.Asc> edges, ThingVertex owner, Encoding.Edge.Thing encoding,
                              TypeVertex optimisedType) {
                 super(edges, owner, encoding);
                 this.optimisedType = optimisedType;
             }
 
             @Override
-            public Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> fromAndOptimised() {
+            public Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> fromAndOptimised() {
                 return edges.mapSorted(
                         edgeView -> KeyValue.of(edgeView.edge().from(), edgeView.edge().optimised().get()),
                         fromAndOptimised -> targetEdge(fromAndOptimised.key()),
@@ -90,10 +90,10 @@ public abstract class ThingEdgeIterator {
     static class OutEdgeIteratorImpl implements ThingAdjacency.Out.OutEdgeIterator {
 
         final ThingVertex owner;
-        final Seekable<ThingEdge.View.Forward, Order.Asc> edges;
+        final Forwardable<ThingEdge.View.Forward, Order.Asc> edges;
         final Encoding.Edge.Thing encoding;
 
-        OutEdgeIteratorImpl(Seekable<ThingEdge.View.Forward, Order.Asc> edges, ThingVertex owner, Encoding.Edge.Thing encoding) {
+        OutEdgeIteratorImpl(Forwardable<ThingEdge.View.Forward, Order.Asc> edges, ThingVertex owner, Encoding.Edge.Thing encoding) {
             this.owner = owner;
             this.edges = edges;
             this.encoding = encoding;
@@ -105,7 +105,7 @@ public abstract class ThingEdgeIterator {
         }
 
         @Override
-        public Seekable<ThingVertex, Order.Asc> to() {
+        public Forwardable<ThingVertex, Order.Asc> to() {
             return edges.mapSorted(view -> view.edge().to(), this::targetEdge, ASC);
         }
 
@@ -117,7 +117,7 @@ public abstract class ThingEdgeIterator {
 
             private final TypeVertex optimisedType;
 
-            Optimised(Seekable<ThingEdge.View.Forward, Order.Asc> edges, ThingVertex owner,
+            Optimised(Forwardable<ThingEdge.View.Forward, Order.Asc> edges, ThingVertex owner,
                       Encoding.Edge.Thing encoding,
                       TypeVertex optimisedType) {
                 super(edges, owner, encoding);
@@ -125,7 +125,7 @@ public abstract class ThingEdgeIterator {
             }
 
             @Override
-            public Seekable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> toAndOptimised() {
+            public Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> toAndOptimised() {
                 return edges.mapSorted(
                         edgeView -> KeyValue.of(edgeView.edge().to(), edgeView.edge().optimised().get()),
                         toAndOptimised -> targetEdge(toAndOptimised.key()),

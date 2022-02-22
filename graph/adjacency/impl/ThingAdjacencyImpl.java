@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingEdgeIterator.InEdgeIteratorImpl;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingEdgeIterator.OutEdgeIteratorImpl;
@@ -47,8 +47,8 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Predicate;
 
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
@@ -93,7 +93,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
         return new ThingEdgeImpl.Persisted(owner().graph(), iid);
     }
 
-    Seekable<EDGE_VIEW, Order.Asc> iteratePersistedViews(Encoding.Edge.Thing encoding, IID... lookahead) {
+    Forwardable<EDGE_VIEW, Order.Asc> iteratePersistedViews(Encoding.Edge.Thing encoding, IID... lookahead) {
         assert encoding != ROLEPLAYER || lookahead.length >= 1;
         Key.Prefix<EdgeViewIID.Thing> prefix = edgeIIDPrefix(encoding, lookahead);
         return owner().graph().storage().iterate(prefix, ASC).mapSorted(
@@ -223,7 +223,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             }
         }
 
-        Seekable<EDGE_VIEW, Order.Asc> iterateBufferedViews(Encoding.Edge.Thing encoding, IID[] lookahead) {
+        Forwardable<EDGE_VIEW, Order.Asc> iterateBufferedViews(Encoding.Edge.Thing encoding, IID[] lookahead) {
             ConcurrentNavigableMap<EDGE_VIEW, ThingEdge> result;
             InfixIID.Thing infixIID = infixIID(encoding, lookahead);
             if (lookahead.length == encoding.lookAhead()) {
@@ -254,10 +254,10 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             Predicate<ThingEdge> predicate = isOut()
                     ? e -> e.to().equals(adjacent) && e.forwardView().iid().suffix().equals(SuffixIID.of(optimised.iid().key()))
                     : e -> e.from().equals(adjacent) && e.backwardView().iid().suffix().equals(SuffixIID.of(optimised.iid().key()));
-            Seekable<EDGE_VIEW, Order.Asc> iterator = iterateBufferedViews(
+            Forwardable<EDGE_VIEW, Order.Asc> iterator = iterateBufferedViews(
                     encoding, new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()}
             );
-            iterator.seek(isOut() ?
+            iterator.forward(isOut() ?
                     getView(new ThingEdgeImpl.Target(encoding, owner, adjacent, optimised.type())) :
                     getView(new ThingEdgeImpl.Target(encoding, adjacent, owner, optimised.type()))
             );
@@ -274,10 +274,10 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
         public ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent) {
             assert !encoding.isOptimisation();
             Predicate<ThingEdge> predicate = isOut() ? e -> e.to().equals(adjacent) : e -> e.from().equals(adjacent);
-            Seekable<EDGE_VIEW, Order.Asc> iterator = iterateBufferedViews(
+            Forwardable<EDGE_VIEW, Order.Asc> iterator = iterateBufferedViews(
                     encoding, new IID[]{adjacent.iid().prefix(), adjacent.iid().type()}
             );
-            iterator.seek(isOut() ?
+            iterator.forward(isOut() ?
                     getView(new ThingEdgeImpl.Target(encoding, owner, adjacent, null)) :
                     getView(new ThingEdgeImpl.Target(encoding, adjacent, owner, null))
             );
@@ -472,10 +472,10 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 return link(bufferedIterator, storageIterator);
             }
 
-            Seekable<EDGE_VIEW, Order.Asc> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
+            Forwardable<EDGE_VIEW, Order.Asc> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
                 assert encoding != ROLEPLAYER || lookahead.length >= 1;
-                Seekable<EDGE_VIEW, Order.Asc> storageIter = iteratePersistedViews(encoding, lookahead);
-                Seekable<EDGE_VIEW, Order.Asc> bufferedIter = iterateBufferedViews(encoding, lookahead);
+                Forwardable<EDGE_VIEW, Order.Asc> storageIter = iteratePersistedViews(encoding, lookahead);
+                Forwardable<EDGE_VIEW, Order.Asc> bufferedIter = iterateBufferedViews(encoding, lookahead);
                 return bufferedIter.merge(storageIter);
             }
 

@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -34,7 +34,7 @@ import java.util.List;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ENTITY;
@@ -71,23 +71,23 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public Seekable<EntityTypeImpl, Order.Asc> getSubtypes() {
+    public Forwardable<EntityTypeImpl, Order.Asc> getSubtypes() {
         return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
                 .mapSorted(v -> of(graphMgr, v), entityType -> entityType.vertex, ASC);
     }
 
     @Override
-    public Seekable<EntityTypeImpl, Order.Asc> getSubtypesExplicit() {
+    public Forwardable<EntityTypeImpl, Order.Asc> getSubtypesExplicit() {
         return super.getSubtypesExplicit(v -> of(graphMgr, v));
     }
 
     @Override
-    public Seekable<EntityImpl, Order.Asc> getInstances() {
+    public Forwardable<EntityImpl, Order.Asc> getInstances() {
         return instances(EntityImpl::of);
     }
 
     @Override
-    public Seekable<EntityImpl, Order.Asc> getInstancesExplicit() {
+    public Forwardable<EntityImpl, Order.Asc> getInstancesExplicit() {
         return instancesExplicit(EntityImpl::of);
     }
 

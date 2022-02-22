@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
@@ -62,8 +62,8 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeGraph.INVALID_SCHEMA_WRITE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.iterateSorted;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Seekable.merge;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.merge;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
@@ -219,7 +219,7 @@ public class TypeGraph {
         return getType(ROLE.label(), ROLE.scope());
     }
 
-    public Seekable<TypeVertex, Order.Asc> thingTypes() {
+    public Forwardable<TypeVertex, Order.Asc> thingTypes() {
         return merge(iterateSorted(ASC, rootThingType()), entityTypes(), relationTypes(), attributeTypes());
     }
 
@@ -233,24 +233,24 @@ public class TypeGraph {
         else return fn.get();
     }
 
-    public Seekable<TypeVertex, Order.Asc> entityTypes() {
+    public Forwardable<TypeVertex, Order.Asc> entityTypes() {
         return iterateSorted(getSubtypes(rootEntityType()), ASC);
     }
 
-    public Seekable<TypeVertex, Order.Asc> attributeTypes() {
+    public Forwardable<TypeVertex, Order.Asc> attributeTypes() {
         return iterateSorted(getSubtypes(rootAttributeType()), ASC);
     }
 
-    public Seekable<TypeVertex, Order.Asc> attributeTypes(Encoding.ValueType valueType) {
+    public Forwardable<TypeVertex, Order.Asc> attributeTypes(Encoding.ValueType valueType) {
         return iterateSorted(cache.valueAttributeTypes.computeIfAbsent(valueType,
                 vt -> attributeTypes().filter(at -> at.valueType().equals(valueType)).toNavigableSet()), ASC);
     }
 
-    public Seekable<TypeVertex, Order.Asc> relationTypes() {
+    public Forwardable<TypeVertex, Order.Asc> relationTypes() {
         return iterateSorted(getSubtypes(rootRelationType()), ASC);
     }
 
-    public Seekable<TypeVertex, Order.Asc> roleTypes() {
+    public Forwardable<TypeVertex, Order.Asc> roleTypes() {
         return iterateSorted(getSubtypes(rootRoleType()), ASC);
     }
 

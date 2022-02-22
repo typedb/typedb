@@ -220,12 +220,12 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public <T extends Key> SortedIterator.Seekable<KeyValue<T, ByteArray>, Order.Asc> iterate(Key.Prefix<T> prefix) {
+        public <T extends Key> SortedIterator.Forwardable<KeyValue<T, ByteArray>, Order.Asc> iterate(Key.Prefix<T> prefix) {
             return iterate(prefix, ASC);
         }
 
         @Override
-        public <T extends Key, ORDER extends Order> SortedIterator.Seekable<KeyValue<T, ByteArray>, ORDER> iterate(Key.Prefix<T> prefix, ORDER order) {
+        public <T extends Key, ORDER extends Order> SortedIterator.Forwardable<KeyValue<T, ByteArray>, ORDER> iterate(Key.Prefix<T> prefix, ORDER order) {
             RocksIterator<T, ORDER> iterator = createIterator(prefix, order);
             return iterator.onFinalise(iterator::close);
         }
@@ -305,13 +305,13 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public <T extends Key> SortedIterator.Seekable<KeyValue<T, ByteArray>, Order.Asc> iterate(Key.Prefix<T> prefix) {
+        public <T extends Key> SortedIterator.Forwardable<KeyValue<T, ByteArray>, Order.Asc> iterate(Key.Prefix<T> prefix) {
             return iterate(prefix, ASC);
         }
 
         @Override
         public <T extends Key, ORDER extends Order>
-        SortedIterator.Seekable<KeyValue<T, ByteArray>, ORDER> iterate(Key.Prefix<T> prefix, ORDER order) {
+        SortedIterator.Forwardable<KeyValue<T, ByteArray>, ORDER> iterate(Key.Prefix<T> prefix, ORDER order) {
             return createIterator(prefix, order);
         }
 

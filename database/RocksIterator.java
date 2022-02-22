@@ -35,7 +35,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 
 public abstract class RocksIterator<T extends Key, ORDER extends Order>
         extends AbstractSortedIterator<KeyValue<T, ByteArray>, ORDER>
-        implements SortedIterator.Seekable<KeyValue<T, ByteArray>, ORDER>, AutoCloseable {
+        implements SortedIterator.Forwardable<KeyValue<T, ByteArray>, ORDER>, AutoCloseable {
 
     final Key.Prefix<T> prefix;
     final RocksStorage storage;
@@ -108,7 +108,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     }
 
     @Override
-    public abstract void seek(KeyValue<T, ByteArray> target);
+    public abstract void forward(KeyValue<T, ByteArray> target);
 
     abstract void seekToFirst();
 
@@ -149,40 +149,40 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     }
 
     @Override
-    public final Seekable<KeyValue<T, ByteArray>, ORDER> merge(
-            Seekable<KeyValue<T, ByteArray>, ORDER> iterator) {
-        return SortedIterators.Seekable.merge(this, iterator);
+    public final Forwardable<KeyValue<T, ByteArray>, ORDER> merge(
+            Forwardable<KeyValue<T, ByteArray>, ORDER> iterator) {
+        return SortedIterators.Forwardable.merge(this, iterator);
     }
 
     @Override
-    public <V extends Comparable<? super V>, ORD extends Order> Seekable<V, ORD> mapSorted(
+    public <V extends Comparable<? super V>, ORD extends Order> Forwardable<V, ORD> mapSorted(
             Function<KeyValue<T, ByteArray>, V> mappingFn, Function<V, KeyValue<T, ByteArray>> reverseMappingFn, ORD order) {
-        return SortedIterators.Seekable.mapSorted(order, this, mappingFn, reverseMappingFn);
+        return SortedIterators.Forwardable.mapSorted(order, this, mappingFn, reverseMappingFn);
     }
 
     @Override
-    public Seekable<KeyValue<T, ByteArray>, ORDER> distinct() {
-        return SortedIterators.Seekable.distinct(this);
+    public Forwardable<KeyValue<T, ByteArray>, ORDER> distinct() {
+        return SortedIterators.Forwardable.distinct(this);
     }
 
     @Override
-    public Seekable<KeyValue<T, ByteArray>, ORDER> filter(Predicate<KeyValue<T, ByteArray>> predicate) {
-        return SortedIterators.Seekable.filter(this, predicate);
+    public Forwardable<KeyValue<T, ByteArray>, ORDER> filter(Predicate<KeyValue<T, ByteArray>> predicate) {
+        return SortedIterators.Forwardable.filter(this, predicate);
     }
 
     @Override
-    public Seekable<KeyValue<T, ByteArray>, ORDER> limit(long limit) {
-        return SortedIterators.Seekable.limit(this, limit);
+    public Forwardable<KeyValue<T, ByteArray>, ORDER> limit(long limit) {
+        return SortedIterators.Forwardable.limit(this, limit);
     }
 
     @Override
-    public Seekable<KeyValue<T, ByteArray>, ORDER> onConsumed(Runnable function) {
-        return SortedIterators.Seekable.onConsume(this, function);
+    public Forwardable<KeyValue<T, ByteArray>, ORDER> onConsumed(Runnable function) {
+        return SortedIterators.Forwardable.onConsume(this, function);
     }
 
     @Override
-    public Seekable<KeyValue<T, ByteArray>, ORDER> onFinalise(Runnable finalise) {
-        return SortedIterators.Seekable.onFinalise(this, finalise);
+    public Forwardable<KeyValue<T, ByteArray>, ORDER> onFinalise(Runnable finalise) {
+        return SortedIterators.Forwardable.onFinalise(this, finalise);
     }
 
     static class Ascending<T extends Key> extends RocksIterator<T, Order.Asc> {
@@ -208,7 +208,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
         }
 
         @Override
-        public synchronized void seek(KeyValue<T, ByteArray> target) {
+        public synchronized void forward(KeyValue<T, ByteArray> target) {
             if (state == State.COMPLETED) return;
             else if (state == State.INIT) initialiseInternalIterator();
             internalRocksIterator.seek(target.key().bytes().getBytes());
@@ -240,7 +240,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
         }
 
         @Override
-        public synchronized void seek(KeyValue<T, ByteArray> target) {
+        public synchronized void forward(KeyValue<T, ByteArray> target) {
             if (state == State.COMPLETED) return;
             else if (state == State.INIT) initialiseInternalIterator();
             internalRocksIterator.seekForPrev(target.key().bytes().getBytes());

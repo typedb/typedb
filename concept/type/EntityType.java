@@ -19,22 +19,22 @@
 package com.vaticle.typedb.core.concept.type;
 
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.concept.thing.Entity;
 
 public interface EntityType extends ThingType {
 
     @Override
-    Seekable<? extends EntityType, Order.Asc> getSubtypes();
+    Forwardable<? extends EntityType, Order.Asc> getSubtypes();
 
     @Override
-    Seekable<? extends EntityType, Order.Asc> getSubtypesExplicit();
+    Forwardable<? extends EntityType, Order.Asc> getSubtypesExplicit();
 
     @Override
-    Seekable<? extends Entity, Order.Asc> getInstances();
+    Forwardable<? extends Entity, Order.Asc> getInstances();
 
     @Override
-    Seekable<? extends Entity, Order.Asc> getInstancesExplicit();
+    Forwardable<? extends Entity, Order.Asc> getInstancesExplicit();
 
     void setSupertype(EntityType superType);
 

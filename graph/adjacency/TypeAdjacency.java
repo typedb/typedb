@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Seekable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -40,13 +40,13 @@ public interface TypeAdjacency {
 
         interface InEdgeIterator {
 
-            Seekable<TypeVertex, Order.Asc> from();
+            Forwardable<TypeVertex, Order.Asc> from();
 
             SortedIterator<TypeVertex, Order.Asc> to();
 
             FunctionalIterator<TypeVertex> overridden();
 
-            Seekable<KeyValue<TypeVertex, TypeVertex>, Order.Asc> fromAndOverridden();
+            Forwardable<KeyValue<TypeVertex, TypeVertex>, Order.Asc> fromAndOverridden();
         }
     }
 
@@ -63,11 +63,11 @@ public interface TypeAdjacency {
 
             SortedIterator<TypeVertex, Order.Asc> from();
 
-            Seekable<TypeVertex, Order.Asc> to();
+            Forwardable<TypeVertex, Order.Asc> to();
 
             FunctionalIterator<TypeVertex> overridden();
 
-            Seekable<KeyValue<TypeVertex, TypeVertex>, Order.Asc> toAndOverridden();
+            Forwardable<KeyValue<TypeVertex, TypeVertex>, Order.Asc> toAndOverridden();
         }
     }
 

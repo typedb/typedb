@@ -126,23 +126,23 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
     @Override
     SortedIterator<T, ORDER> onFinalise(Runnable function);
 
-    interface Seekable<T extends Comparable<? super T>, ORDER extends Order> extends SortedIterator<T, ORDER> {
+    interface Forwardable<T extends Comparable<? super T>, ORDER extends Order> extends SortedIterator<T, ORDER> {
 
-        void seek(T target);
+        void forward(T target);
 
-        Seekable<T, ORDER> merge(Seekable<T, ORDER> iterator);
-
-        @Override
-        Seekable<T, ORDER> distinct();
+        Forwardable<T, ORDER> merge(Forwardable<T, ORDER> iterator);
 
         @Override
-        Seekable<T, ORDER> filter(Predicate<T> predicate);
+        Forwardable<T, ORDER> distinct();
 
-        Seekable<T, ORDER> limit(long limit);
+        @Override
+        Forwardable<T, ORDER> filter(Predicate<T> predicate);
+
+        Forwardable<T, ORDER> limit(long limit);
 
         default Optional<T> findFirst(T value) {
             if (!hasNext() || !order().isValidNext(peek(), value)) return Optional.empty();
-            seek(value);
+            forward(value);
             Optional<T> found;
             if (hasNext() && peek().equals(value)) found = Optional.of(next());
             else found = Optional.empty();
@@ -150,12 +150,12 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
             return found;
         }
 
-        <U extends Comparable<? super U>, ORD extends Order> Seekable<U, ORD> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn, ORD order);
+        <U extends Comparable<? super U>, ORD extends Order> Forwardable<U, ORD> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn, ORD order);
 
         @Override
-        Seekable<T, ORDER> onConsumed(Runnable function);
+        Forwardable<T, ORDER> onConsumed(Runnable function);
 
         @Override
-        Seekable<T, ORDER> onFinalise(Runnable function);
+        Forwardable<T, ORDER> onFinalise(Runnable function);
     }
 }
