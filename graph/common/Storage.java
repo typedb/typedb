@@ -108,33 +108,32 @@ public interface Storage {
             OPTIMISATION_EDGE(Encoding.Partition.OPTIMISATION_EDGE, VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.RolePlayer.LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH),
             STATISTICS(Encoding.Partition.STATISTICS, null);
 
-            private final short ID;
+            private final Encoding.Partition encoding;
             private final Integer fixedStartBytes;
 
-            public static Partition fromId(short ID) {
-                switch (ID) {
-                    case Encoding.Partition.DEFAULT:
-                        return DEFAULT;
-                    case Encoding.Partition.VARIABLE_START_EDGE:
-                        return VARIABLE_START_EDGE;
-                    case Encoding.Partition.FIXED_START_EDGE:
-                        return FIXED_START_EDGE;
-                    case Encoding.Partition.OPTIMISATION_EDGE:
-                        return OPTIMISATION_EDGE;
-                    case Encoding.Partition.STATISTICS:
-                        return STATISTICS;
-                    default:
-                        throw TypeDBException.of(UNRECOGNISED_VALUE);
+            public static Partition fromID(short ID) {
+                if (ID == Encoding.Partition.DEFAULT.ID()) {
+                    return DEFAULT;
+                } else if (ID == Encoding.Partition.VARIABLE_START_EDGE.ID()) {
+                    return VARIABLE_START_EDGE;
+                } else if (ID == Encoding.Partition.FIXED_START_EDGE.ID()) {
+                    return FIXED_START_EDGE;
+                } else if (ID == Encoding.Partition.OPTIMISATION_EDGE.ID()) {
+                    return OPTIMISATION_EDGE;
+                } else if (ID == Encoding.Partition.STATISTICS.ID()) {
+                    return STATISTICS;
+                } else {
+                    throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
             }
 
-            Partition(short ID, @Nullable Integer fixedStartBytes) {
-                this.ID = ID;
+            Partition(Encoding.Partition encoding, @Nullable Integer fixedStartBytes) {
+                this.encoding = encoding;
                 this.fixedStartBytes = fixedStartBytes;
             }
 
-            public short ID() {
-                return ID;
+            public Encoding.Partition encoding() {
+                return encoding;
             }
 
             public Optional<Integer> fixedStartBytes() {

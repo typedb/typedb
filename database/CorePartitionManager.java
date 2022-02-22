@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.database;
 
-import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.common.Storage.Key;
 import org.rocksdb.AbstractImmutableNativeReference;
@@ -29,16 +28,13 @@ import org.rocksdb.RocksDBException;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.map;
-import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.DEFAULT;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.FIXED_START_EDGE;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.OPTIMISATION_EDGE;
@@ -130,19 +126,19 @@ public abstract class CorePartitionManager {
                     configuration.defaultCFOptions()
             );
             descriptors[VARIABLE_START_EDGE_HANDLE_INDEX] = new ColumnFamilyDescriptor(
-                    ByteArray.encodeString(VARIABLE_START_EDGE.name(), STRING_ENCODING).getBytes(),
+                    VARIABLE_START_EDGE.encoding().partitionName().get().getBytes(),
                     configuration.variableStartEdgeCFOptions()
             );
             descriptors[FIXED_START_EDGE_HANDLE_INDEX] = new ColumnFamilyDescriptor(
-                    ByteArray.encodeString(FIXED_START_EDGE.name(), STRING_ENCODING).getBytes(),
+                    FIXED_START_EDGE.encoding().partitionName().get().getBytes(),
                     configuration.fixedStartEdgeCFOptions()
             );
             descriptors[OPTIMISATION_EDGE_HANDLE_INDEX] = new ColumnFamilyDescriptor(
-                    ByteArray.encodeString(OPTIMISATION_EDGE.name(), STRING_ENCODING).getBytes(),
+                    OPTIMISATION_EDGE.encoding().partitionName().get().getBytes(),
                     configuration.optimisationEdgeCFOptions()
             );
             descriptors[STATISTICS_HANDLE_INDEX] = new ColumnFamilyDescriptor(
-                    ByteArray.encodeString(STATISTICS.name(), STRING_ENCODING).getBytes(),
+                    STATISTICS.encoding().partitionName().get().getBytes(),
                     configuration.statisticsCFOptions()
             );
             return Arrays.asList(descriptors);
