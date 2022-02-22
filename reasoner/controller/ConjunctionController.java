@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -28,19 +27,17 @@ import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.reasoner.answer.Mapping;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.controller.Registry.ResolverView;
 import com.vaticle.typedb.core.reasoner.utils.Planner;
-import com.vaticle.typedb.core.reasoner.answer.Mapping;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -56,7 +53,7 @@ public abstract class ConjunctionController<OUTPUT,
     protected final Conjunction conjunction;
     private final Set<Resolvable<?>> resolvables;
     private final Set<Negated> negateds;
-    private final List<Pair<Retrievable, ResolverView.FilteredRetrievable>> retrievableControllers;
+    private final Map<Retrievable, ResolverView.FilteredRetrievable> retrievableControllers;
     private final Map<Concludable, ResolverView.MappedConcludable> concludableControllers;
     private final Map<Negated, ResolverView.FilteredNegation> negationControllers;
     private List<Resolvable<?>> plan;
@@ -68,13 +65,14 @@ public abstract class ConjunctionController<OUTPUT,
         this.conjunction = conjunction;
         this.resolvables = new HashSet<>();
         this.negateds = new HashSet<>();
-        this.retrievableControllers = new ArrayList<>();
+        this.retrievableControllers = new HashMap<>();
         this.concludableControllers = new HashMap<>();
         this.negationControllers = new HashMap<>();
     }
 
     @Override
     public void setUpUpstreamProviders() {
+        assert resolvables.isEmpty();
         Set<Concludable> concludables = concludablesTriggeringRules();
         Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
         resolvables.addAll(concludables);
@@ -83,7 +81,7 @@ public abstract class ConjunctionController<OUTPUT,
             concludableControllers.put(c, registry().registerConcludableController(c));
         });
         iterate(retrievables).forEachRemaining(r -> {
-            retrievableControllers.add(new Pair<>(r, registry().registerRetrievableController(r)));
+            retrievableControllers.put(r, registry().registerRetrievableController(r));
         });
         iterate(conjunction.negations()).forEachRemaining(negation -> {
             Negated negated = new Negated(negation);
@@ -107,10 +105,7 @@ public abstract class ConjunctionController<OUTPUT,
     }
 
     protected ResolverView.FilteredRetrievable retrievableProvider(Retrievable retrievable) {
-        Optional<ResolverView.FilteredRetrievable> controller =
-                iterate(retrievableControllers).filter(r -> r.first() == retrievable).map(Pair::second).first();
-        if (controller.isPresent()) return controller.get();
-        else throw TypeDBException.of(ILLEGAL_STATE);
+        return retrievableControllers.get(retrievable);
     }
 
     protected ResolverView.MappedConcludable concludableProvider(Concludable concludable) {
