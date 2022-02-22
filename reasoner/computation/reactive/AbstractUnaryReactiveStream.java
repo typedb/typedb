@@ -56,7 +56,6 @@ public abstract class AbstractUnaryReactiveStream<INPUT, OUTPUT> extends Abstrac
         if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
     }
 
-
     @Override
     public void publishTo(Subscriber<OUTPUT> subscriber) {
         receiverRegistry().addReceiver(subscriber);

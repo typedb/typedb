@@ -82,7 +82,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
         @Override
         protected Monitoring createMonitoring() {
-            return new Monitor(this);
+            return new NestedMonitor(this);
         }
 
         @Override
@@ -115,7 +115,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             assert !done;
 //            done = true;
             negation.receiveDone(bounds);
-            monitoring().reportPathJoin(negation);
+            monitoring().onPathJoin(negation);
         }
 
         private static class NegationReactive extends AbstractUnaryReactiveStream<ConceptMap, ConceptMap> {
@@ -137,17 +137,22 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             }
 
             @Override
+            public void pull(Receiver<ConceptMap> receiver) {
+                if (!answerFound) super.pull(receiver);
+            }
+
+            @Override
             public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
                 super.receive(provider, packet);
                 answerFound = true;
-                monitor().onAnswerDestroyLocalUpdate(this);
+                // monitor().onAnswerDestroyLocalUpdate(this);  // We don't need to do this because we don't care about the count now that we know the negation is done
                 onEarlyDone.run();
-//                monitor().onPathJoinLocalUpdate(this);  // TODO: We should do this, but this sends paths to -2 somehow, when answer count is still 1. Seems like we have 1 too many answers, and one too few paths.
+                // monitor().onPathJoinLocalUpdate(this);  // We don't need to do this because we don't care about the count now that we know the negation is done
             }
 
             public void receiveDone(ConceptMap packet) {
                 if (!answerFound) {
-                    monitor().reportAnswerCreate(this);
+                    monitor().onAnswerCreate(this);
                     receiverRegistry().receiver().receive(this, packet);
                 }
             }

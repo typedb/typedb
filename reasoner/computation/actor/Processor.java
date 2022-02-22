@@ -518,11 +518,13 @@ public abstract class Processor<INPUT, OUTPUT,
 
         private final Set<Driver<? extends Processor<?, ?, ?, ?>>> registered;
         private final Set<Driver<? extends Processor<?, ?, ?, ?>>> countSenders;
+        protected boolean done;
 
         public Monitor(Processor<?, ?, ?, ?> processor) {
             super(processor);
             this.registered = new HashSet<>();
             this.countSenders = new HashSet<>();
+            this.done = false;
         }
 
         @Override
@@ -541,15 +543,19 @@ public abstract class Processor<INPUT, OUTPUT,
 
         public void receiveInitialReport(Driver<? extends Processor<?, ?, ?, ?>> sender, long pathCountDelta, long answersCountDelta) {
             assert registered.contains(sender);
-            pathsCount += pathCountDelta;
-            answersCount += answersCountDelta;
-            countSenders.add(sender);
-            checkTermination();
+            if (!done) {
+                pathsCount += pathCountDelta;
+                answersCount += answersCountDelta;
+                countSenders.add(sender);
+                checkDone();
+            }
         }
 
         private void receiveReport(int num, CountChange countChange) {
-            updateCount(countChange, num);
-            checkTermination();
+            if (!done) {
+                updateCount(countChange, num);
+                checkDone();
+            }
         }
 
         @Override
@@ -561,15 +567,30 @@ public abstract class Processor<INPUT, OUTPUT,
 
         @Override
         protected void onChange(CountChange countChange, int num, Reactive reactive) {
-            super.onChange(countChange, num, reactive);
-            checkTermination();
+            if (!done) {
+                super.onChange(countChange, num, reactive);
+                checkDone();
+            }
         }
 
-        private void checkTermination() {
+        protected void checkDone() {
             assert count() >= -1 || !registered.equals(countSenders);
             if (count() <= -1 && processor().isPulling() && registered.equals(countSenders)) {
+                done = true;
                 processor().onDone();
             }
+        }
+    }
+
+    public static class NestedMonitor extends Monitor {
+
+        public NestedMonitor(Processor<?, ?, ?, ?> processor) {
+            super(processor);
+        }
+
+        @Override
+        protected void onChange(CountChange countChange, int num, Reactive reactive) {
+            if (!done) checkDone();
         }
     }
 
