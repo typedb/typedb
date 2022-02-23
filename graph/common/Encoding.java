@@ -62,6 +62,7 @@ public class Encoding {
         STATISTICS((short) 4, ByteArray.encodeString("STATISTICS", STRING_ENCODING));
 
         private final short ID;
+        // TODO: Remove partition name (https://github.com/vaticle/typedb/issues/6526)
         private final ByteArray partitionName;
 
         Partition(short ID, @Nullable ByteArray partitionName) {
