@@ -121,6 +121,8 @@ public class TypeGraph {
 
     static class Cache {
 
+        // TODO: incorrect that Type graph is aware of Concept semantics, but we gain a lot of performance this way
+
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> ownedAttributeTypes;
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> ownedKeyAttributeTypes;
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> ownersOfAttributeTypes;
