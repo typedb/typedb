@@ -185,9 +185,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         if (roleVertex != null) {
             TypeEdge relatesEdge = vertex.outs().edge(RELATES, roleVertex);
             if (relatesEdge != null &&
-                    relatesEdge.overridden() != null &&
-                    !relatesEdge.overridden().equals(graphMgr.schema().rootRoleType()))
-                return RoleTypeImpl.of(graphMgr, relatesEdge.overridden());
+                    relatesEdge.overridden().isPresent() &&
+                    !relatesEdge.overridden().get().equals(graphMgr.schema().rootRoleType()))
+                return RoleTypeImpl.of(graphMgr, relatesEdge.overridden().get());
         }
         return null;
     }

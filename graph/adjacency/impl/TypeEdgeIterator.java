@@ -59,13 +59,13 @@ public abstract class TypeEdgeIterator {
 
         @Override
         public FunctionalIterator<TypeVertex> overridden() {
-            return edges.map(edgeView -> edgeView.edge().overridden());
+            return edges.map(edgeView -> edgeView.edge().overridden().get());
         }
 
         @Override
         public Forwardable<KeyValue<TypeVertex, TypeVertex>, Order.Asc> fromAndOverridden() {
             return edges.mapSorted(
-                    edgeView -> KeyValue.of(edgeView.edge().from(), edgeView.edge().overridden()),
+                    edgeView -> KeyValue.of(edgeView.edge().from(), edgeView.edge().overridden().get()),
                     fromAndOverridden -> targetEdge(fromAndOverridden.key()),
                     ASC
             );
@@ -100,13 +100,13 @@ public abstract class TypeEdgeIterator {
 
         @Override
         public FunctionalIterator<TypeVertex> overridden() {
-            return edges.map(edgeView -> edgeView.edge().overridden());
+            return edges.map(edgeView -> edgeView.edge().overridden().get());
         }
 
         @Override
         public Forwardable<KeyValue<TypeVertex, TypeVertex>, Order.Asc> toAndOverridden() {
             return edges.mapSorted(
-                    edgeView -> KeyValue.of(edgeView.edge().to(), edgeView.edge().overridden()),
+                    edgeView -> KeyValue.of(edgeView.edge().to(), edgeView.edge().overridden().get()),
                     toAndOverridden -> targetEdge(toAndOverridden.key()),
                     ASC
             );

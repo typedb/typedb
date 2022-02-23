@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
@@ -180,8 +181,8 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public TypeVertex overridden() {
-            return overridden;
+        public Optional<TypeVertex> overridden() {
+            return Optional.ofNullable(overridden);
         }
 
         @Override
@@ -307,8 +308,8 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public TypeVertex overridden() {
-            return null;
+        public Optional<TypeVertex> overridden() {
+            return Optional.empty();
         }
 
         @Override
@@ -418,11 +419,11 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public TypeVertex overridden() {
-            if (overridden != null) return overridden;
-            if (overriddenIID == null) return null;
+        public Optional<TypeVertex> overridden() {
+            if (overridden != null) return Optional.of(overridden);
+            if (overriddenIID == null) return Optional.empty();
             overridden = graph.convert(overriddenIID);
-            return overridden;
+            return Optional.of(overridden);
         }
 
         /**

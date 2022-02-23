@@ -22,6 +22,8 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.EdgeViewIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
+import java.util.Optional;
+
 /**
  * An edge between two {@code TypeVertex}.
  *
@@ -40,7 +42,7 @@ public interface TypeEdge extends Edge<Encoding.Edge.Type, TypeVertex> {
      *
      * @return the type vertex overridden by the head of this type edge
      */
-    TypeVertex overridden();
+    Optional<TypeVertex> overridden();
 
     /**
      * Sets the head vertex of this type edge to be overridden by a given type vertex.

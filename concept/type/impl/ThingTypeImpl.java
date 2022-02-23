@@ -345,11 +345,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         TypeVertex attrVertex = graphMgr.schema().getType(attributeType.getLabel());
         if (attrVertex != null) {
             TypeEdge ownsEdge = vertex.outs().edge(OWNS_KEY, attrVertex);
-            if (ownsEdge != null && ownsEdge.overridden() != null)
-                return AttributeTypeImpl.of(graphMgr, ownsEdge.overridden());
+            if (ownsEdge != null && ownsEdge.overridden().isPresent()) {
+                return AttributeTypeImpl.of(graphMgr, ownsEdge.overridden().get());
+            }
             ownsEdge = vertex.outs().edge(OWNS, attrVertex);
-            if (ownsEdge != null && ownsEdge.overridden() != null)
-                return AttributeTypeImpl.of(graphMgr, ownsEdge.overridden());
+            if (ownsEdge != null && ownsEdge.overridden().isPresent()) {
+                return AttributeTypeImpl.of(graphMgr, ownsEdge.overridden().get());
+            }
         }
         return null;
     }
@@ -410,8 +412,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         TypeVertex roleVertex = graphMgr.schema().getType(roleType.getLabel());
         if (roleVertex != null) {
             TypeEdge playsEdge = vertex.outs().edge(PLAYS, roleVertex);
-            if (playsEdge != null && playsEdge.overridden() != null)
-                return RoleTypeImpl.of(graphMgr, playsEdge.overridden());
+            if (playsEdge != null && playsEdge.overridden().isPresent()) {
+                return RoleTypeImpl.of(graphMgr, playsEdge.overridden().get());
+            }
         }
         return null;
     }
