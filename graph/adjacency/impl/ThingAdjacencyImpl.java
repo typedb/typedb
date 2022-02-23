@@ -22,8 +22,8 @@ import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingEdgeIterator.InEdgeIteratorImpl;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingEdgeIterator.OutEdgeIteratorImpl;
@@ -47,11 +47,11 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Predicate;
 
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 import static java.util.Arrays.copyOfRange;
 
@@ -74,18 +74,18 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 InfixIID.Thing.of(encoding.backward(), lookAhead);
     }
 
-    EdgeViewIID.Thing edgeIID(Encoding.Edge.Thing encoding, ThingVertex adjacent) {
+    EdgeViewIID.Thing viewIID(Encoding.Edge.Thing encoding, ThingVertex adjacent) {
         return EdgeViewIID.Thing.of(owner().iid(), infixIID(encoding), adjacent.iid());
     }
 
-    EdgeViewIID.Thing edgeIID(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised) {
+    EdgeViewIID.Thing viewIID(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised) {
         return EdgeViewIID.Thing.of(
                 owner().iid(), infixIID(encoding, optimised.iid().type()),
                 adjacent.iid(), SuffixIID.of(optimised.iid().key())
         );
     }
 
-    Key.Prefix<EdgeViewIID.Thing> edgeIIDPrefix(Encoding.Edge.Thing encoding, IID... lookahead) {
+    Key.Prefix<EdgeViewIID.Thing> viewIIDPrefix(Encoding.Edge.Thing encoding, IID... lookahead) {
         return EdgeViewIID.Thing.prefix(owner().iid(), infixIID(encoding, lookahead));
     }
 
@@ -95,7 +95,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
     Forwardable<EDGE_VIEW, Order.Asc> iteratePersistedViews(Encoding.Edge.Thing encoding, IID... lookahead) {
         assert encoding != ROLEPLAYER || lookahead.length >= 1;
-        Key.Prefix<EdgeViewIID.Thing> prefix = edgeIIDPrefix(encoding, lookahead);
+        Key.Prefix<EdgeViewIID.Thing> prefix = viewIIDPrefix(encoding, lookahead);
         return owner().graph().storage().iterate(prefix, ASC).mapSorted(
                 kv -> getView(newPersistedEdge(EdgeViewIID.Thing.of(kv.key().bytes()))),
                 edgeView -> KeyValue.of(edgeView.iid(), ByteArray.empty()),
@@ -118,14 +118,14 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
         @Override
         public ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent) {
-            EdgeViewIID.Thing iid = edgeIID(encoding, adjacent);
+            EdgeViewIID.Thing iid = viewIID(encoding, adjacent);
             if (owner.graph().storage().get(iid) == null) return null;
             else return newPersistedEdge(iid);
         }
 
         @Override
         public ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised) {
-            EdgeViewIID.Thing iid = edgeIID(encoding, adjacent, optimised);
+            EdgeViewIID.Thing iid = viewIID(encoding, adjacent, optimised);
             if (owner.graph().storage().get(iid) == null) return null;
             else return newPersistedEdge(iid);
         }
@@ -149,13 +149,11 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             }
 
             @Override
-            public InEdgeIterator.Optimised edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead) {
+            public InEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead) {
                 IID[] mergedLookahead = new IID[1 + lookAhead.length];
                 mergedLookahead[0] = roleType.iid();
                 System.arraycopy(lookAhead, 0, mergedLookahead, 1, lookAhead.length);
-                return new InEdgeIteratorImpl.Optimised(
-                        iteratePersistedViews(encoding, mergedLookahead), owner, encoding, roleType
-                );
+                return new InEdgeIteratorImpl(iteratePersistedViews(encoding, mergedLookahead), owner, encoding, roleType);
             }
 
             @Override
@@ -176,13 +174,11 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             }
 
             @Override
-            public OutEdgeIterator.Optimised edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead) {
+            public OutEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead) {
                 IID[] mergedLookahead = new IID[1 + lookAhead.length];
                 mergedLookahead[0] = roleType.iid();
                 System.arraycopy(lookAhead, 0, mergedLookahead, 1, lookAhead.length);
-                return new OutEdgeIteratorImpl.Optimised(
-                        iteratePersistedViews(encoding, mergedLookahead), owner, encoding, roleType
-                );
+                return new OutEdgeIteratorImpl(iteratePersistedViews(encoding, mergedLookahead), owner, encoding, roleType);
             }
 
             @Override
@@ -410,14 +406,12 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 }
 
                 @Override
-                public InEdgeIterator.Optimised edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType,
-                                                     IID... lookahead) {
+                public InEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType,
+                                           IID... lookahead) {
                     IID[] mergedLookahead = new IID[1 + lookahead.length];
                     mergedLookahead[0] = roleType.iid();
                     System.arraycopy(lookahead, 0, mergedLookahead, 1, lookahead.length);
-                    return new InEdgeIteratorImpl.Optimised(
-                            iterateBufferedViews(ROLEPLAYER, mergedLookahead), owner, encoding, roleType
-                    );
+                    return new InEdgeIteratorImpl(iterateBufferedViews(ROLEPLAYER, mergedLookahead), owner, encoding, roleType);
                 }
             }
 
@@ -438,14 +432,12 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 }
 
                 @Override
-                public OutEdgeIterator.Optimised edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType,
-                                                      IID... lookahead) {
+                public OutEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType,
+                                            IID... lookahead) {
                     IID[] mergedLookahead = new IID[1 + lookahead.length];
                     mergedLookahead[0] = roleType.iid();
                     System.arraycopy(lookahead, 0, mergedLookahead, 1, lookahead.length);
-                    return new OutEdgeIteratorImpl.Optimised(
-                            iterateBufferedViews(ROLEPLAYER, mergedLookahead), owner, encoding, roleType
-                    );
+                    return new OutEdgeIteratorImpl(iterateBufferedViews(ROLEPLAYER, mergedLookahead), owner, encoding, roleType);
                 }
 
             }
@@ -464,7 +456,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             }
 
             private FunctionalIterator<ThingEdge> iterateEdges(Encoding.Edge.Thing encoding, IID... lookahead) {
-                Key.Prefix<EdgeViewIID.Thing> prefix = edgeIIDPrefix(encoding, lookahead);
+                Key.Prefix<EdgeViewIID.Thing> prefix = viewIIDPrefix(encoding, lookahead);
                 FunctionalIterator<ThingEdge> storageIterator = owner.graph().storage().iterate(prefix, ASC)
                         .map(keyValue -> newPersistedEdge(EdgeViewIID.Thing.of(keyValue.key().bytes())));
                 FunctionalIterator<ThingEdge> bufferedIterator = iterateBufferedViews(encoding, lookahead)
@@ -485,7 +477,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 ThingEdge edge = super.edge(encoding, adjacent);
                 if (edge != null) return edge;
 
-                EdgeViewIID.Thing edgeIID = edgeIID(encoding, adjacent);
+                EdgeViewIID.Thing edgeIID = viewIID(encoding, adjacent);
                 if (owner.graph().storage().get(edgeIID) == null) return null;
                 else return newPersistedEdge(edgeIID);
             }
@@ -496,7 +488,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 ThingEdge edge = super.edge(encoding, adjacent, optimised);
                 if (edge != null) return edge;
 
-                EdgeViewIID.Thing edgeIID = edgeIID(encoding, adjacent, optimised);
+                EdgeViewIID.Thing edgeIID = viewIID(encoding, adjacent, optimised);
                 if (owner.graph().storage().get(edgeIID) == null) return null;
                 else return newPersistedEdge(edgeIID);
             }
@@ -528,12 +520,12 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 }
 
                 @Override
-                public InEdgeIterator.Optimised edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType,
-                                                     IID... lookahead) {
+                public InEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType,
+                                           IID... lookahead) {
                     IID[] mergedLookahead = new IID[1 + lookahead.length];
                     mergedLookahead[0] = roleType.iid();
                     System.arraycopy(lookahead, 0, mergedLookahead, 1, lookahead.length);
-                    return new InEdgeIteratorImpl.Optimised(edgeIterator(ROLEPLAYER, mergedLookahead), owner, encoding, roleType);
+                    return new InEdgeIteratorImpl(edgeIterator(ROLEPLAYER, mergedLookahead), owner, encoding, roleType);
 
                 }
             }
@@ -555,12 +547,12 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 }
 
                 @Override
-                public OutEdgeIterator.Optimised edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType,
-                                                      IID... lookahead) {
+                public OutEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType,
+                                            IID... lookahead) {
                     IID[] mergedLookahead = new IID[1 + lookahead.length];
                     mergedLookahead[0] = roleType.iid();
                     System.arraycopy(lookahead, 0, mergedLookahead, 1, lookahead.length);
-                    return new OutEdgeIteratorImpl.Optimised(edgeIterator(ROLEPLAYER, mergedLookahead), owner, encoding, roleType);
+                    return new OutEdgeIteratorImpl(edgeIterator(ROLEPLAYER, mergedLookahead), owner, encoding, roleType);
                 }
             }
         }

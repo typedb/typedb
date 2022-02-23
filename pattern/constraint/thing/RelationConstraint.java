@@ -90,6 +90,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
     @Override
     public void addTo(GraphTraversal.Thing traversal) {
         for (RolePlayer rolePlayer : rolePlayers) {
+            assert !rolePlayer.inferredRoleTypes.isEmpty();
             ThingVariable player = rolePlayer.player();
             int rep = rolePlayer.repetition();
             if (rolePlayer.roleType().isPresent() && rolePlayer.roleType().get().id().isName()) {
@@ -199,7 +200,6 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         }
 
         public Set<Label> inferredRoleTypes() {
-            assert !inferredRoleTypes.isEmpty();
             return inferredRoleTypes;
         }
 

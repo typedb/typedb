@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.Edge;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
@@ -35,7 +36,7 @@ public interface ThingAdjacency {
 
         InEdgeIterator edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead);
 
-        InEdgeIterator.Optimised edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
+        InEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
 
         @Override
         default boolean isIn() {
@@ -44,14 +45,11 @@ public interface ThingAdjacency {
 
         interface InEdgeIterator {
 
-            Forwardable<ThingVertex, SortedIterator.Order.Asc> from();
+            Forwardable<ThingVertex, Order.Asc> from();
 
-            SortedIterator<ThingVertex, SortedIterator.Order.Asc> to();
+            SortedIterator<ThingVertex, Order.Asc> to();
 
-            interface Optimised extends InEdgeIterator {
-
-                Forwardable<KeyValue<ThingVertex, ThingVertex>, SortedIterator.Order.Asc> fromAndOptimised();
-            }
+            Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> fromAndOptimised();
         }
     }
 
@@ -59,7 +57,7 @@ public interface ThingAdjacency {
 
         OutEdgeIterator edge(Encoding.Edge.Thing.Base encoding, IID... lookAhead);
 
-        OutEdgeIterator.Optimised edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
+        OutEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding, TypeVertex roleType, IID... lookAhead);
 
         @Override
         default boolean isOut() {
@@ -68,14 +66,11 @@ public interface ThingAdjacency {
 
         interface OutEdgeIterator {
 
-            SortedIterator<ThingVertex, SortedIterator.Order.Asc> from();
+            SortedIterator<ThingVertex, Order.Asc> from();
 
-            Forwardable<ThingVertex, SortedIterator.Order.Asc> to();
+            Forwardable<ThingVertex, Order.Asc> to();
 
-            interface Optimised extends OutEdgeIterator {
-
-                Forwardable<KeyValue<ThingVertex, ThingVertex>, SortedIterator.Order.Asc> toAndOptimised();
-            }
+            Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> toAndOptimised();
         }
     }
 
