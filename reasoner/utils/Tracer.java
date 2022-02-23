@@ -84,10 +84,10 @@ public final class Tracer {
         if (receiver == null) receiverString = "root";
         else {
             receiverString = simpleClassId(receiver);
-            addNodeGroup(simpleClassId(provider), receiver.groupName(), defaultTrace);
+            addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
         }
         addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
-        addNodeGroup(receiverString, provider.groupName(), defaultTrace);
+        addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 
     public synchronized <INPUT, OUTPUT> void receive(Provider<OUTPUT> provider, Receiver<INPUT> receiver, OUTPUT packet) {
@@ -136,32 +136,32 @@ public final class Tracer {
     }
 
     public synchronized void initialReport(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, long pathsCount, long answersCountUpdate) {
-        String senderName = sender.name() + "-actor";
+        String senderName = sender.name() + "-monitor";
         pathUpdate(senderName, monitor, "init-p" + pathsCount + "-a" + answersCountUpdate);
         addNodeGroup(senderName, sender.name(), defaultTrace);
     }
 
     private void reportPathCount(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
-        String monitorName = monitor.name() + "-actor";
+        String monitorName = monitor.name() + "-monitor";
         addMessage(sender, monitorName, defaultTrace, EdgeType.REPORT, label);
         addNodeGroup(monitorName, monitor.name(), defaultTrace);
     }
 
     private void pathCount(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
-        String monitorName = monitor.name() + "-actor";
+        String monitorName = monitor.name() + "-monitor";
         addMessage(sender, monitorName, defaultTrace, EdgeType.MONITOR, label);
         addNodeGroup(monitorName, monitor.name(), defaultTrace);
     }
 
     private void pathUpdate(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
-        String monitorName = monitor.name() + "-actor";
+        String monitorName = monitor.name() + "-monitor";
         addMessage(sender, monitorName, defaultTrace, EdgeType.UPDATE, label);
         addNodeGroup(monitorName, monitor.name(), defaultTrace);
     }
 
-    public void registerWithMonitor(Connection<?, ?, ?> connection, Actor.Driver<? extends Processor<?,?,?,?>> monitor) {
-        String monitorName = monitor.name() + "-actor";
-        addMessage(simpleClassId(connection), monitorName, defaultTrace, EdgeType.REGISTER, "register");
+    public void registerWithMonitor(Actor.Driver<?> registree, Actor.Driver<? extends Processor<?,?,?,?>> monitor) {
+        String monitorName = monitor.name() + "-monitor";
+        addMessage(registree.name() + "-monitor", monitorName, defaultTrace, EdgeType.REGISTER, "register");
     }
 
     private void addMessage(String sender, String receiver, Trace trace, EdgeType edgeType,

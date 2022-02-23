@@ -69,7 +69,7 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
     }
 
     protected void registerWithMonitor(Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerWithMonitor(this, monitor));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerWithMonitor(provProcessor, monitor));
         monitor.execute(actor -> actor.monitoring().asMonitor().register(provProcessor));
     }
 
