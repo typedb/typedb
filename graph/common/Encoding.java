@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.map;
@@ -44,6 +45,7 @@ import static com.vaticle.typedb.core.common.collection.Bytes.signedByte;
 import static com.vaticle.typedb.core.common.collection.Bytes.unsignedByte;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Encoding {
@@ -51,6 +53,31 @@ public class Encoding {
     public static final String ROCKS_DATA = "data";
     public static final String ROCKS_SCHEMA = "schema";
     public static final int ENCODING_VERSION = 1;
+
+    public enum Partition {
+        DEFAULT((short) 0, null),
+        VARIABLE_START_EDGE((short) 1, ByteArray.encodeString("VARIABLE_START_EDGE", STRING_ENCODING)),
+        FIXED_START_EDGE((short) 2, ByteArray.encodeString("FIXED_START_EDGE", STRING_ENCODING)),
+        OPTIMISATION_EDGE((short) 3, ByteArray.encodeString("OPTIMISATION_EDGE", STRING_ENCODING)),
+        STATISTICS((short) 4, ByteArray.encodeString("STATISTICS", STRING_ENCODING));
+
+        private final short ID;
+        // TODO: Remove partition name (See issue #6526)
+        private final ByteArray partitionName;
+
+        Partition(short ID, @Nullable ByteArray partitionName) {
+            this.ID = ID;
+            this.partitionName = partitionName;
+        }
+
+        public short ID() {
+            return ID;
+        }
+
+        public Optional<ByteArray> partitionName() {
+            return Optional.ofNullable(partitionName);
+        }
+    }
 
     public enum Key {
         PERSISTED(0, true),

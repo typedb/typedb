@@ -67,7 +67,7 @@ public abstract class RocksStorage implements Storage {
     // TODO: use a single read options when 'setAutoPrefixMode(true)' is available on ReadOptions API
     protected final ReadOptions readOptions;
     protected final ReadOptions readOptionsWithPrefixBloom;
-    protected final RocksPartitionManager partitionMgr;
+    protected final CorePartitionManager partitionMgr;
     protected final Snapshot snapshot;
     protected final ReadWriteLock deleteCloseSchemaWriteLock;
     protected final ConcurrentSet<RocksIterator<?>> iterators;
@@ -79,7 +79,7 @@ public abstract class RocksStorage implements Storage {
     private final WriteOptions writeOptions;
     private final AtomicBoolean isOpen;
 
-    private RocksStorage(OptimisticTransactionDB rocksDB, RocksPartitionManager partitionMgr, boolean isReadOnly) {
+    private RocksStorage(OptimisticTransactionDB rocksDB, CorePartitionManager partitionMgr, boolean isReadOnly) {
         this.isReadOnly = isReadOnly;
         this.partitionMgr = partitionMgr;
         iterators = new ConcurrentSet<>();
@@ -188,7 +188,7 @@ public abstract class RocksStorage implements Storage {
 
     static class Cache extends RocksStorage {
 
-        Cache(OptimisticTransactionDB rocksDB, RocksPartitionManager partitionMgr) {
+        Cache(OptimisticTransactionDB rocksDB, CorePartitionManager partitionMgr) {
             super(rocksDB, partitionMgr, true);
         }
 
@@ -220,7 +220,7 @@ public abstract class RocksStorage implements Storage {
 
         protected final CoreTransaction transaction;
 
-        TransactionBounded(OptimisticTransactionDB rocksDB, RocksPartitionManager partitionMgr, CoreTransaction transaction) {
+        TransactionBounded(OptimisticTransactionDB rocksDB, CorePartitionManager partitionMgr, CoreTransaction transaction) {
             super(rocksDB, partitionMgr, transaction.type().isRead());
             this.transaction = transaction;
         }

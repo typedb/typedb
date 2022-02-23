@@ -32,6 +32,7 @@ import java.util.Optional;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 
 public interface Storage {
 
@@ -101,16 +102,38 @@ public interface Storage {
     interface Key extends Comparable<Key> {
 
         enum Partition {
-            DEFAULT(null),
-            VARIABLE_START_EDGE(null),
-            FIXED_START_EDGE(VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.DEFAULT_LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH),
-            OPTIMISATION_EDGE(VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.RolePlayer.LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH),
-            STATISTICS(null);
+            DEFAULT(Encoding.Partition.DEFAULT, null),
+            VARIABLE_START_EDGE(Encoding.Partition.VARIABLE_START_EDGE, null),
+            FIXED_START_EDGE(Encoding.Partition.FIXED_START_EDGE, VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.DEFAULT_LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH),
+            OPTIMISATION_EDGE(Encoding.Partition.OPTIMISATION_EDGE, VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.RolePlayer.LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH),
+            STATISTICS(Encoding.Partition.STATISTICS, null);
 
+            private final Encoding.Partition encoding;
             private final Integer fixedStartBytes;
 
-            Partition(@Nullable Integer fixedStartBytes) {
+            public static Partition fromID(short ID) {
+                if (ID == Encoding.Partition.DEFAULT.ID()) {
+                    return DEFAULT;
+                } else if (ID == Encoding.Partition.VARIABLE_START_EDGE.ID()) {
+                    return VARIABLE_START_EDGE;
+                } else if (ID == Encoding.Partition.FIXED_START_EDGE.ID()) {
+                    return FIXED_START_EDGE;
+                } else if (ID == Encoding.Partition.OPTIMISATION_EDGE.ID()) {
+                    return OPTIMISATION_EDGE;
+                } else if (ID == Encoding.Partition.STATISTICS.ID()) {
+                    return STATISTICS;
+                } else {
+                    throw TypeDBException.of(UNRECOGNISED_VALUE);
+                }
+            }
+
+            Partition(Encoding.Partition encoding, @Nullable Integer fixedStartBytes) {
+                this.encoding = encoding;
                 this.fixedStartBytes = fixedStartBytes;
+            }
+
+            public Encoding.Partition encoding() {
+                return encoding;
             }
 
             public Optional<Integer> fixedStartBytes() {

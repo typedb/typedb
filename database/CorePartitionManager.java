@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.database;
 
-import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.common.Storage.Key;
 import org.rocksdb.AbstractImmutableNativeReference;
@@ -33,21 +32,21 @@ import java.util.Set;
 import java.util.stream.IntStream;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.DEFAULT;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.FIXED_START_EDGE;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.OPTIMISATION_EDGE;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.STATISTICS;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.VARIABLE_START_EDGE;
 
-abstract class RocksPartitionManager {
+public abstract class CorePartitionManager {
 
     private final List<ColumnFamilyDescriptor> descriptors;
     final List<ColumnFamilyHandle> handles;
 
-    private RocksPartitionManager(List<ColumnFamilyDescriptor> descriptors, List<ColumnFamilyHandle> handles) {
+    private CorePartitionManager(List<ColumnFamilyDescriptor> descriptors, List<ColumnFamilyHandle> handles) {
         validateListsMatch(descriptors, handles);
         this.descriptors = descriptors;
         this.handles = handles;
@@ -63,7 +62,7 @@ abstract class RocksPartitionManager {
         });
     }
 
-    abstract ColumnFamilyHandle get(Key.Partition partition);
+    public abstract ColumnFamilyHandle get(Key.Partition partition);
 
     abstract Set<Key.Partition> partitions();
 
@@ -72,11 +71,11 @@ abstract class RocksPartitionManager {
         handles.forEach(AbstractImmutableNativeReference::close);
     }
 
-    static class Schema extends RocksPartitionManager {
+    public static class Schema extends CorePartitionManager {
 
-        private final ColumnFamilyHandle defaultHandle;
+        protected final ColumnFamilyHandle defaultHandle;
 
-        Schema(List<ColumnFamilyDescriptor> descriptors, List<ColumnFamilyHandle> handles) {
+        protected Schema(List<ColumnFamilyDescriptor> descriptors, List<ColumnFamilyHandle> handles) {
             super(descriptors, handles);
             defaultHandle = handles.get(0);
         }
@@ -86,7 +85,7 @@ abstract class RocksPartitionManager {
         }
 
         @Override
-        ColumnFamilyHandle get(Key.Partition partition) {
+        public ColumnFamilyHandle get(Key.Partition partition) {
             if (partition == DEFAULT) return defaultHandle;
             else throw TypeDBException.of(ILLEGAL_STATE);
         }
@@ -97,7 +96,7 @@ abstract class RocksPartitionManager {
         }
     }
 
-    static class Data extends RocksPartitionManager {
+    public static class Data extends CorePartitionManager {
 
         private static final int DEFAULT_HANDLE_INDEX = 0;
         private static final int VARIABLE_START_EDGE_HANDLE_INDEX = 1;
@@ -105,13 +104,13 @@ abstract class RocksPartitionManager {
         private static final int OPTIMISATION_EDGE_HANDLE_INDEX = 3;
         private static final int STATISTICS_HANDLE_INDEX = 4;
 
-        private final ColumnFamilyHandle defaultHandle;
-        private final ColumnFamilyHandle variableStartEdgeHandle;
-        private final ColumnFamilyHandle fixedStartEdgeHandle;
-        private final ColumnFamilyHandle optimisationEdgeHandle;
-        private final ColumnFamilyHandle statisticsHandle;
+        protected final ColumnFamilyHandle defaultHandle;
+        protected final ColumnFamilyHandle variableStartEdgeHandle;
+        protected final ColumnFamilyHandle fixedStartEdgeHandle;
+        protected final ColumnFamilyHandle optimisationEdgeHandle;
+        protected final ColumnFamilyHandle statisticsHandle;
 
-        Data(List<ColumnFamilyDescriptor> descriptors, List<ColumnFamilyHandle> handles) {
+        protected Data(List<ColumnFamilyDescriptor> descriptors, List<ColumnFamilyHandle> handles) {
             super(descriptors, handles);
             defaultHandle = handles.get(DEFAULT_HANDLE_INDEX);
             variableStartEdgeHandle = handles.get(VARIABLE_START_EDGE_HANDLE_INDEX);
@@ -127,26 +126,26 @@ abstract class RocksPartitionManager {
                     configuration.defaultCFOptions()
             );
             descriptors[VARIABLE_START_EDGE_HANDLE_INDEX] = new ColumnFamilyDescriptor(
-                    ByteArray.encodeString(VARIABLE_START_EDGE.name(), STRING_ENCODING).getBytes(),
+                    VARIABLE_START_EDGE.encoding().partitionName().get().getBytes(),
                     configuration.variableStartEdgeCFOptions()
             );
             descriptors[FIXED_START_EDGE_HANDLE_INDEX] = new ColumnFamilyDescriptor(
-                    ByteArray.encodeString(FIXED_START_EDGE.name(), STRING_ENCODING).getBytes(),
+                    FIXED_START_EDGE.encoding().partitionName().get().getBytes(),
                     configuration.fixedStartEdgeCFOptions()
             );
             descriptors[OPTIMISATION_EDGE_HANDLE_INDEX] = new ColumnFamilyDescriptor(
-                    ByteArray.encodeString(OPTIMISATION_EDGE.name(), STRING_ENCODING).getBytes(),
+                    OPTIMISATION_EDGE.encoding().partitionName().get().getBytes(),
                     configuration.optimisationEdgeCFOptions()
             );
             descriptors[STATISTICS_HANDLE_INDEX] = new ColumnFamilyDescriptor(
-                    ByteArray.encodeString(STATISTICS.name(), STRING_ENCODING).getBytes(),
+                    STATISTICS.encoding().partitionName().get().getBytes(),
                     configuration.statisticsCFOptions()
             );
             return Arrays.asList(descriptors);
         }
 
         @Override
-        ColumnFamilyHandle get(Key.Partition partition) {
+        public ColumnFamilyHandle get(Key.Partition partition) {
             switch (partition) {
                 case DEFAULT:
                     return defaultHandle;
