@@ -739,12 +739,15 @@ public class CoreDatabase implements TypeDB.Database {
                 } catch (TypeDBException e) {
                     if (e.code().isPresent() && e.code().get().equals(DATABASE_CLOSED.code())) {
                         break;
-                    } else if (e.code().isPresent() && (e.code().get().equals(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION.code()) ||
+                    } else if (e.code().isPresent() && (
+                            e.code().get().equals(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION.code()) ||
                             e.code().get().equals(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION.code()) ||
-                            e.code().get().equals(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION.code()))) {
+                            e.code().get().equals(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION.code())
+                    )) {
                         countJobNotifications.release();
                     } else {
-                        throw e;
+                        LOG.error("Background statistics counting received exception.", e);
+                        countJobNotifications.release();
                     }
                 }
                 waitForCountJob();

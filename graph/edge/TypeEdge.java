@@ -19,15 +19,17 @@
 package com.vaticle.typedb.core.graph.edge;
 
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.EdgeViewIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+
+import java.util.Optional;
 
 /**
  * An edge between two {@code TypeVertex}.
  *
  * This edge can only have a encoding of type {@code Encoding.Edge.Type}.
  */
-public interface TypeEdge extends Edge<Encoding.Edge.Type, EdgeIID.Type, TypeVertex> {
+public interface TypeEdge extends Edge<Encoding.Edge.Type, TypeVertex> {
 
     @Override
     TypeVertex from();
@@ -40,7 +42,7 @@ public interface TypeEdge extends Edge<Encoding.Edge.Type, EdgeIID.Type, TypeVer
      *
      * @return the type vertex overridden by the head of this type edge
      */
-    TypeVertex overridden();
+    Optional<TypeVertex> overridden();
 
     /**
      * Sets the head vertex of this type edge to be overridden by a given type vertex.
@@ -48,4 +50,27 @@ public interface TypeEdge extends Edge<Encoding.Edge.Type, EdgeIID.Type, TypeVer
      * @param overridden the type vertex to override by the head vertex
      */
     void overridden(TypeVertex overridden);
+
+    View.Forward forwardView();
+
+    View.Backward backwardView();
+
+    interface View<T extends TypeEdge.View<T>> extends Comparable<T> {
+
+        EdgeViewIID.Type iid();
+
+        TypeEdge edge();
+
+        interface Forward extends TypeEdge.View<TypeEdge.View.Forward> {
+
+            @Override
+            int compareTo(Forward other);
+        }
+
+        interface Backward extends TypeEdge.View<TypeEdge.View.Backward> {
+
+            @Override
+            int compareTo(Backward other);
+        }
+    }
 }

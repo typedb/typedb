@@ -20,9 +20,12 @@ package com.vaticle.typedb.core.graph;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
@@ -40,6 +43,7 @@ import com.vaticle.typedb.core.graph.vertex.impl.AttributeVertexImpl;
 import com.vaticle.typedb.core.graph.vertex.impl.ThingVertexImpl;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -52,14 +56,16 @@ import java.util.stream.Stream;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.collection.ByteArray.empty;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
-import static com.vaticle.typedb.core.common.iterator.Iterators.Sorted.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_ENTITY_TYPE;
@@ -211,14 +217,15 @@ public class ThingGraph {
         else return vertex;
     }
 
-    public FunctionalIterator.Sorted<ThingVertex> getReadable(TypeVertex typeVertex) {
-        FunctionalIterator.Sorted<ThingVertex> vertices = storage.iterate(
-                VertexIID.Thing.prefix(typeVertex.iid())
-        ).mapSorted(kv -> convertToReadable(kv.key()));
+    public Forwardable<ThingVertex, Order.Asc> getReadable(TypeVertex typeVertex) {
+        Forwardable<ThingVertex, Order.Asc> vertices = storage.iterate(
+                VertexIID.Thing.prefix(typeVertex.iid()),
+                ASC
+        ).mapSorted(kv -> convertToReadable(kv.key()), vertex -> KeyValue.of(vertex.iid(), empty()), ASC);
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return vertices;
         else {
-            FunctionalIterator.Sorted<ThingVertex> buffered = iterateSorted(thingsByTypeIID.get(typeVertex.iid()))
-                    .mapSorted(e -> e, ThingVertex::toWrite);
+            Forwardable<ThingVertex, Order.Asc> buffered = iterateSorted(thingsByTypeIID.get(typeVertex.iid()), ASC)
+                    .mapSorted(e -> e, ThingVertex::toWrite, ASC);
             return vertices.merge(buffered).distinct();
         }
     }
@@ -615,15 +622,14 @@ public class ThingGraph {
             return vertexCount(type.iid(), true);
         }
 
-        public long thingVertexTransitiveMax(Set<Label> labels, Set<Label> filter) {
-            return thingVertexTransitiveMax(labels.stream().map(typeGraph::getType), filter);
+        public long thingVertexTransitiveMax(Set<Label> labels) {
+            return thingVertexTransitiveMax(iterate(labels).map(typeGraph::getType));
         }
 
-        public long thingVertexTransitiveMax(Stream<TypeVertex> types, Set<Label> filter) {
-            return types.mapToLong(t -> tree(t, v -> v.ins().edge(SUB).from()
-                    .filter(tf -> !filter.contains(tf.properLabel())))
+        public long thingVertexTransitiveMax(FunctionalIterator<TypeVertex> types) {
+            return types.map(t -> tree(t, v -> v.ins().edge(SUB).from())
                     .stream().mapToLong(this::thingVertexCount).sum()
-            ).max().orElse(0);
+            ).stream().max(Comparator.naturalOrder()).orElse(0L);
         }
 
         public boolean needsBackgroundCounting() {

@@ -20,6 +20,8 @@ package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.ConceptImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -30,7 +32,6 @@ import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
-import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.TypeQL;
 
@@ -47,6 +48,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.INV
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_BEEN_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 
 public abstract class TypeImpl extends ConceptImpl implements Type {
@@ -112,19 +114,10 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     }
 
     @Override
-    public abstract FunctionalIterator<? extends TypeImpl> getSubtypes();
+    public abstract Forwardable<? extends TypeImpl, Order.Asc> getSubtypes();
 
     @Override
-    public abstract FunctionalIterator<? extends Type> getSubtypesExplicit();
-
-    <THING> FunctionalIterator<THING> instances(Function<ThingVertex, THING> thingConstructor) {
-        return getSubtypes().filter(t -> !t.isAbstract())
-                .flatMap(t -> graphMgr.data().getReadable(t.vertex)).map(thingConstructor);
-    }
-
-    <THING> FunctionalIterator<THING> instancesExplicit(Function<ThingVertex, THING> thingConstructor) {
-        return graphMgr.data().getReadable(vertex).map(thingConstructor);
-    }
+    public abstract Forwardable<? extends TypeImpl, Order.Asc> getSubtypesExplicit();
 
     void setSuperTypeVertex(TypeVertex superTypeVertex) {
         vertex.outs().edge(SUB, ((TypeImpl) getSupertype()).vertex).delete();
@@ -145,13 +138,12 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
         }
     }
 
-    <TYPE extends Type> FunctionalIterator<TYPE> getSubtypesExplicit(Function<TypeVertex, TYPE> typeConstructor) {
-        return vertex.ins().edge(SUB).from().map(typeConstructor);
+    <TYPE extends TypeImpl> Forwardable<TYPE, Order.Asc> getSubtypesExplicit(Function<TypeVertex, TYPE> typeConstructor) {
+        return vertex.ins().edge(SUB).from().mapSorted(typeConstructor, type -> type.vertex, ASC);
     }
 
     void validateDelete() {
-        TypeVertex type = graphMgr.schema().getType(getLabel());
-        FunctionalIterator<RuleStructure> rules = graphMgr.schema().rules().references().get(type);
+        FunctionalIterator<RuleStructure> rules = graphMgr.schema().rules().references().get(vertex);
         if (rules.hasNext()) {
             throw exception(TypeDBException.of(TYPE_REFERENCED_IN_RULES, getLabel(), rules.toList()));
         }
@@ -163,10 +155,14 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     }
 
     @Override
-    public boolean isType() { return true; }
+    public boolean isType() {
+        return true;
+    }
 
     @Override
-    public TypeImpl asType() { return this; }
+    public TypeImpl asType() {
+        return this;
+    }
 
     @Override
     public EntityTypeImpl asEntityType() {
@@ -222,5 +218,10 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     @Override
     public final int hashCode() {
         return vertex.hashCode(); // does not need caching
+    }
+
+    @Override
+    public int compareTo(Type other) {
+        return vertex.compareTo(((TypeImpl) other).vertex);
     }
 }

@@ -724,6 +724,27 @@ public class RuleTest {
     }
 
     @Test
+    public void rule_with_ambiguous_then_throws() throws IOException {
+        Util.resetDirectory(dataDir);
+
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    txn.query().define(TypeQL.parseQuery("define " +
+                            "person sub entity, plays marriage:husband, plays marriage:wife;" +
+                            "marriage sub relation, relates husband, relates wife;"));
+
+                    assertThrows(() -> txn.logic().putRule(
+                            "invalid-marriage-insertion",
+                            TypeQL.parsePattern("{$x isa person;}").asConjunction(),
+                            TypeQL.parseVariable("(role: $x) isa marriage;").asThing()));
+                }
+            }
+        }
+    }
+
+    @Test
     public void rule_with_negated_cycle_throws_an_error() throws IOException {
         Util.resetDirectory(dataDir);
 

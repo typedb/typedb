@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.traversal.GraphTraversal;
+import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.planner.GraphPlanner;
@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -77,14 +76,14 @@ public class GraphProcedure implements PermutationProcedure {
         return procedure.new Builder();
     }
 
-    public Stream<ProcedureVertex<?, ?>> vertices() {
-        return vertices.values().stream();
+    public FunctionalIterator<ProcedureVertex<?, ?>> vertices() {
+        return iterate(vertices.values());
     }
 
     public ProcedureVertex<?, ?> startVertex() {
         if (startVertex == null) {
             startVertex = this.vertices().filter(ProcedureVertex::isStartingVertex)
-                    .findAny().orElseThrow(() -> TypeDBException.of(ILLEGAL_STATE));
+                    .first().orElseThrow(() -> TypeDBException.of(ILLEGAL_STATE));
         }
         return startVertex;
     }
@@ -169,7 +168,7 @@ public class GraphProcedure implements PermutationProcedure {
     }
 
     @Override
-    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
+    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
         if (LOG.isTraceEnabled()) {
             LOG.trace(params.toString());
@@ -190,7 +189,7 @@ public class GraphProcedure implements PermutationProcedure {
     }
 
     @Override
-    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
+    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter) {
         if (LOG.isTraceEnabled()) {
             LOG.trace(params.toString());

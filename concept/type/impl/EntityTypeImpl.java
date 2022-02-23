@@ -19,7 +19,8 @@
 package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -33,6 +34,8 @@ import java.util.List;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ENTITY;
 
@@ -42,7 +45,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         super(graphMgr, vertex);
         if (vertex.encoding() != ENTITY_TYPE) {
             throw exception(TypeDBException.of(TYPE_ROOT_MISMATCH, vertex.label(),
-                                               ENTITY_TYPE.root().label(), vertex.encoding().root().label()));
+                    ENTITY_TYPE.root().label(), vertex.encoding().root().label()));
         }
     }
 
@@ -68,22 +71,23 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public FunctionalIterator<EntityTypeImpl> getSubtypes() {
-        return graphMgr.schema().getSubtypes(vertex).map(v -> of(graphMgr, v));
+    public Forwardable<EntityTypeImpl, Order.Asc> getSubtypes() {
+        return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
+                .mapSorted(v -> of(graphMgr, v), entityType -> entityType.vertex, ASC);
     }
 
     @Override
-    public FunctionalIterator<EntityTypeImpl> getSubtypesExplicit() {
+    public Forwardable<EntityTypeImpl, Order.Asc> getSubtypesExplicit() {
         return super.getSubtypesExplicit(v -> of(graphMgr, v));
     }
 
     @Override
-    public FunctionalIterator<EntityImpl> getInstances() {
+    public Forwardable<EntityImpl, Order.Asc> getInstances() {
         return instances(EntityImpl::of);
     }
 
     @Override
-    public FunctionalIterator<EntityImpl> getInstancesExplicit() {
+    public Forwardable<EntityImpl, Order.Asc> getInstancesExplicit() {
         return instancesExplicit(EntityImpl::of);
     }
 
@@ -105,10 +109,14 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public boolean isEntityType() { return true; }
+    public boolean isEntityType() {
+        return true;
+    }
 
     @Override
-    public EntityTypeImpl asEntityType() { return this; }
+    public EntityTypeImpl asEntityType() {
+        return this;
+    }
 
     private static class Root extends EntityTypeImpl {
 
@@ -118,7 +126,9 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         }
 
         @Override
-        public boolean isRoot() { return true; }
+        public boolean isRoot() {
+            return true;
+        }
 
         @Override
         public void setLabel(String label) {

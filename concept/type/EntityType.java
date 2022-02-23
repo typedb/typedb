@@ -18,22 +18,23 @@
 
 package com.vaticle.typedb.core.concept.type;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.concept.thing.Entity;
 
 public interface EntityType extends ThingType {
 
     @Override
-    FunctionalIterator<? extends EntityType> getSubtypes();
+    Forwardable<? extends EntityType, Order.Asc> getSubtypes();
 
     @Override
-    FunctionalIterator<? extends EntityType> getSubtypesExplicit();
+    Forwardable<? extends EntityType, Order.Asc> getSubtypesExplicit();
 
     @Override
-    FunctionalIterator<? extends Entity> getInstances();
+    Forwardable<? extends Entity, Order.Asc> getInstances();
 
     @Override
-    FunctionalIterator<? extends Entity> getInstancesExplicit();
+    Forwardable<? extends Entity, Order.Asc> getInstancesExplicit();
 
     void setSupertype(EntityType superType);
 

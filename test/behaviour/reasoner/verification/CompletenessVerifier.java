@@ -133,9 +133,11 @@ class CompletenessVerifier {
     private int numReasonedAnswers(BoundConjunction boundConjunction, Set<Identifier.Variable.Retrievable> filter) {
         try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.READ,
                                                        new Options.Transaction().infer(true))) {
-            return tx.reasoner().executeReasoner(
-                    new Disjunction(Collections.singletonList(boundConjunction.conjunction())),
-                    filter, new Context.Query(tx.context(), new Options.Query())).toList().size();
+            Disjunction disjunction = new Disjunction(Collections.singletonList(boundConjunction.conjunction()));
+            tx.logic().typeInference().applyCombination(disjunction);
+            return tx.reasoner().executeReasoner(disjunction, filter,
+                    new Context.Query(tx.context(), new Options.Query())
+            ).toList().size();
         }
     }
 

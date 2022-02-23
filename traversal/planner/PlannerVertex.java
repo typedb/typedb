@@ -227,23 +227,13 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         void updateObjective(GraphManager graph) {
             if (props().hasIID()) {
                 setObjectiveCoefficient(1);
-            } else if (!props().types().isEmpty()) {
+            } else {
+                assert !props().types().isEmpty();
                 if (iterate(props().predicates()).anyMatch(p -> p.operator().equals(EQ))) {
                     setObjectiveCoefficient(props().types().size());
                 } else {
                     setObjectiveCoefficient(graph.data().stats().thingVertexSum(props().types()));
                 }
-            } else if (!props().predicates().isEmpty()) {
-                FunctionalIterator<TypeVertex> attTypes = iterate(props().predicates())
-                        .flatMap(p -> iterate(p.valueType().comparables()))
-                        .flatMap(vt -> graph.schema().attributeTypes(vt));
-                if (iterate(props().predicates()).anyMatch(p -> p.operator().equals(EQ))) {
-                    setObjectiveCoefficient(attTypes.count());
-                } else {
-                    setObjectiveCoefficient(graph.data().stats().thingVertexSum(attTypes.stream()));
-                }
-            } else {
-                setObjectiveCoefficient(graph.data().stats().thingVertexTransitiveCount(graph.schema().rootThingType()));
             }
         }
 

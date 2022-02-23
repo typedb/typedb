@@ -146,6 +146,12 @@ public abstract class GraphTraversal extends Traversal {
         structure.typeVertex(attributeType).props().valueType(Encoding.ValueType.of(valueType));
     }
 
+    public void valueType(Identifier.Variable attributeType, Set<TypeQLArg.ValueType> valueTypes) {
+        valueTypes.forEach(valueType ->
+                structure.typeVertex(attributeType).props().valueType(Encoding.ValueType.of(valueType))
+        );
+    }
+
     public static class Type extends GraphTraversal {
 
         public Type() {
@@ -286,11 +292,6 @@ public abstract class GraphTraversal extends Traversal {
         public void playing(Identifier.Variable thing, Identifier.Scoped role) {
             assert modifiable;
             structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(role), PLAYING);
-        }
-
-        public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, int repetition) {
-            assert modifiable;
-            structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player), repetition);
         }
 
         public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, Set<Label> roleTypes, int repetition) {

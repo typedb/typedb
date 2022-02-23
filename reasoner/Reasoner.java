@@ -53,6 +53,7 @@ import java.util.Set;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_SUB_PATTERN;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
@@ -114,10 +115,14 @@ public class Reasoner {
     }
 
     private void inferAndValidateTypes(Disjunction disjunction) {
-        logicMgr.typeInference().infer(disjunction);
+        logicMgr.typeInference().applyCombination(disjunction);
         if (!disjunction.isCoherent()) {
             Set<Conjunction> causes = incoherentConjunctions(disjunction);
-            throw TypeDBException.of(UNSATISFIABLE_PATTERN, disjunction, causes);
+            if (set(disjunction.conjunctions()).equals(causes)) {
+                throw TypeDBException.of(UNSATISFIABLE_PATTERN, disjunction);
+            } else {
+                throw TypeDBException.of(UNSATISFIABLE_SUB_PATTERN, disjunction, causes);
+            }
         }
     }
 

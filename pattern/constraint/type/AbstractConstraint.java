@@ -76,7 +76,7 @@ public class AbstractConstraint extends TypeConstraint {
     }
 
     @Override
-    public AbstractConstraint clone(Conjunction.Cloner cloner) {
+    public AbstractConstraint clone(Conjunction.ConstraintCloner cloner) {
         return cloner.cloneVariable(owner).setAbstract();
     }
 }

@@ -60,5 +60,5 @@ public abstract class Constraint {
     @Override
     public abstract int hashCode();
 
-    public abstract Constraint clone(Conjunction.Cloner constraintCloner);
+    public abstract Constraint clone(Conjunction.ConstraintCloner constraintCloner);
 }

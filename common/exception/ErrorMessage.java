@@ -276,7 +276,13 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_REGEX =
                 new Pattern(15, "The type variable '%s' has multiple 'regex' constraints.");
         public static final Pattern UNSATISFIABLE_PATTERN =
-                new Pattern(16, "The pattern '%s' can never be satisfied the current schema, specifically due to '%s'.");
+                new Pattern(16, "The pattern '%s' can never be satisfied the current schema.");
+        public static final Pattern UNSATISFIABLE_SUB_PATTERN =
+                new Pattern(17, "The pattern '%s' can never be satisfied the current schema, due to '%s'.");
+        public static final Pattern UNSATISFIABLE_PATTERN_VARIABLE =
+                new Pattern(18, "The pattern '%s' can never be satisfied the current schema, due to contradicting types for '%s'.");
+        public static final Pattern UNSATISFIABLE_PATTERN_VARIABLE_VALUE =
+                new Pattern(19, "The pattern '%s' can never be satisfied the current schema, due to contradicting attribute value types for '%s'.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";
@@ -557,16 +563,18 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new RuleWrite(2, "A cycle containing negation(s) that can cause inference contradictions has been detected in rules: %s");
         public static final RuleWrite INVALID_NEGATION_CONTAINS_DISJUNCTION =
                 new RuleWrite(3, "The rule '%s' contains a negation containing a disjunction, which is currently unsupported");
-        public static final RuleWrite RULE_CAN_HAVE_INVALID_CONCLUSION =
-                new RuleWrite(4, "The rule '%s''s conclusion may insert types '%s', which is not allowed in the current schema.");
+        public static final RuleWrite RULE_CONCLUSION_ILLEGAL_INSERT =
+                new RuleWrite(4, "The conclusion of rule '%s' may insert types '%s', which is not allowed in the current schema.");
+        public static final RuleWrite RULE_CONCLUSION_AMBIGUOUS_LABELLED_TYPE =
+                new RuleWrite(5, "The conclusion of rule '%s' contains ambiguous label '%s' (could represent: '%s'). ");
         public static final RuleWrite RULE_WHEN_CANNOT_BE_SATISFIED =
-                new RuleWrite(5, "The rule '%s' has a when clause '%s' that can never be satisfied in the current schema.");
+                new RuleWrite(6, "The rule '%s' has a when clause '%s' that can never be satisfied in the current schema.");
         public static final RuleWrite RULE_THEN_CANNOT_BE_SATISFIED =
-                new RuleWrite(6, "The rule '%s' has a then clause '%s' that can never be satisfied in the current schema.");
+                new RuleWrite(7, "The rule '%s' has a then clause '%s' that can never be satisfied in the current schema.");
         public static final RuleWrite RULE_THEN_INVALID_VALUE_ASSIGNMENT =
-                new RuleWrite(7, "The rule '%s' has a then clause with an invalid assignment of '%s' into a '%s'.");
+                new RuleWrite(8, "The rule '%s' has a then clause with an invalid assignment of '%s' into a '%s'.");
         public static final RuleWrite MAX_RULE_REACHED =
-                new RuleWrite(8, "The maximum number of rules has been reached: '%s'");
+                new RuleWrite(9, "The maximum number of rules has been reached: '%s'");
 
         private static final String codePrefix = "RUW";
         private static final String messagePrefix = "Invalid Rule Write";

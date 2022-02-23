@@ -20,8 +20,8 @@ package com.vaticle.typedb.core.logic;
 
 import com.vaticle.typedb.core.common.cache.CommonCache;
 import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
-import com.vaticle.typedb.core.traversal.structure.Structure;
 
 import java.util.Map;
 import java.util.Optional;
@@ -29,20 +29,24 @@ import java.util.Set;
 
 public class LogicCache {
 
-    private final CommonCache<Structure, Optional<Map<Identifier.Variable.Retrievable, Set<Label>>>> typeResolverCache;
+    private final CommonCache<GraphTraversal.Type, Optional<Map<Identifier.Variable.Retrievable, Set<Label>>>> typeInferenceCache;
     private final CommonCache<String, Rule> ruleCache;
 
     public LogicCache() {
         this.ruleCache = new CommonCache<>();
-        this.typeResolverCache = new CommonCache<>();
+        this.typeInferenceCache = new CommonCache<>();
     }
 
     public LogicCache(int size, int timeOutMinutes) {
         this.ruleCache = new CommonCache<>(size, timeOutMinutes);
-        this.typeResolverCache = new CommonCache<>(size, timeOutMinutes);
+        this.typeInferenceCache = new CommonCache<>(size, timeOutMinutes);
     }
 
-    public CommonCache<Structure, Optional<Map<Identifier.Variable.Retrievable, Set<Label>>>> resolver() { return typeResolverCache; }
+    public CommonCache<GraphTraversal.Type, Optional<Map<Identifier.Variable.Retrievable, Set<Label>>>> inference() {
+        return typeInferenceCache;
+    }
 
-    CommonCache<String, Rule> rule() { return ruleCache; }
+    CommonCache<String, Rule> rule() {
+        return ruleCache;
+    }
 }

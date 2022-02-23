@@ -253,7 +253,6 @@ public class UnifyHasConcludableTest {
         // TODO: implement a test for unifier pruning, will require type hinting
     }
 
-
     @Test
     public void has_attribute_variable_unifies_rule_has_exact() {
         String conjunction = "{ $y has $a; }";

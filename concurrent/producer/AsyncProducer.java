@@ -28,6 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -41,6 +43,8 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
     private final FunctionalIterator<FunctionalIterator<T>> iterators;
     private final ConcurrentMap<FunctionalIterator<T>, CompletableFuture<Void>> runningJobs;
     private final AtomicBoolean isDone;
+    private final ReadWriteLock recycleLock;
+    private volatile boolean isRecycled;
     private boolean isInitialised;
 
     AsyncProducer(FunctionalIterator<FunctionalIterator<T>> iterators, int parallelisation) {
@@ -50,6 +54,8 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
         this.runningJobs = new ConcurrentHashMap<>();
         this.isDone = new AtomicBoolean(false);
         this.isInitialised = false;
+        this.recycleLock = new ReentrantReadWriteLock();
+        this.isRecycled = false;
     }
 
     @Override
@@ -98,7 +104,8 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
     }
 
     private synchronized void transition(Queue<T> queue, FunctionalIterator<T> iterator, int unfulfilled, Executor executor) {
-        if (!iterator.hasNext()) {
+        if (isRecycled) done(queue);
+        else if (!iterator.hasNext()) {
             if (runningJobs.remove(iterator) != null && iterators.hasNext()) compensate(queue, unfulfilled, executor);
             else if (!runningJobs.isEmpty() && unfulfilled > 0) distribute(queue, unfulfilled, executor);
             else if (runningJobs.isEmpty()) done(queue);
@@ -122,8 +129,18 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
         try {
             int unfulfilled = request;
             if (runningJobs.containsKey(iterator)) {
-                for (; unfulfilled > 0 && iterator.hasNext() && !isDone.get(); unfulfilled--) {
-                    queue.put(iterator.next());
+                for (; unfulfilled > 0 && !isDone.get(); unfulfilled--) {
+                    try {
+                        recycleLock.readLock().lock();
+                        if (isRecycled) {
+                            done(queue);
+                            return;
+                        }
+                        if (iterator.hasNext()) queue.put(iterator.next());
+                        else break;
+                    } finally {
+                        recycleLock.readLock().unlock();
+                    }
                 }
             }
             if (!isDone.get()) transition(queue, iterator, unfulfilled, executor);
@@ -146,7 +163,13 @@ public class AsyncProducer<T> implements FunctionalProducer<T> {
 
     @Override
     public synchronized void recycle() {
-        iterators.recycle();
-        runningJobs.keySet().forEach(FunctionalIterator::recycle);
+        try {
+            recycleLock.writeLock().lock();
+            iterators.recycle();
+            runningJobs.keySet().forEach(FunctionalIterator::recycle);
+            isRecycled = true;
+        } finally {
+            recycleLock.writeLock().unlock();
+        }
     }
 }

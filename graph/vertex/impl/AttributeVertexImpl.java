@@ -283,8 +283,13 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        protected ThingAdjacency.Write newAdjacency(Encoding.Direction.Adjacency direction) {
-            return new ThingAdjacencyImpl.Write.Persisted(this, direction);
+        protected ThingAdjacency.Write.In newInAdjacency() {
+            return new ThingAdjacencyImpl.Write.Persisted.In(this);
+        }
+
+        @Override
+        protected ThingAdjacency.Write.Out newOutAdjacency() {
+            return new ThingAdjacencyImpl.Write.Persisted.Out(this);
         }
 
         @Override

@@ -231,37 +231,37 @@ public class Conjunction implements Pattern, Cloneable {
         return hash;
     }
 
-    public static class Cloner {
+    public static class ConstraintCloner {
 
         private final Map<Identifier.Variable, Variable> variables;
         private final Map<Constraint, Constraint> constraints;
 
-        public Cloner() {
+        public ConstraintCloner() {
             variables = new HashMap<>();
             constraints = new HashMap<>();
         }
 
-        public static Cloner cloneExactly(Set<? extends Constraint> s1, Constraint... s2) {
+        public static ConstraintCloner cloneExactly(Set<? extends Constraint> s1, Constraint... s2) {
             LinkedHashSet<Constraint> ordered = new LinkedHashSet<>(s1);
             Collections.addAll(ordered, s2);
             return cloneExactly(ordered);
         }
 
-        public static Cloner cloneExactly(Set<? extends Constraint> s1, Set<? extends Constraint> s2, Constraint... s3) {
+        public static ConstraintCloner cloneExactly(Set<? extends Constraint> s1, Set<? extends Constraint> s2, Constraint... s3) {
             LinkedHashSet<Constraint> ordered = new LinkedHashSet<>(s1);
             ordered.addAll(s2);
             Collections.addAll(ordered, s3);
             return cloneExactly(ordered);
         }
 
-        public static Cloner cloneExactly(Constraint constraint) {
+        public static ConstraintCloner cloneExactly(Constraint constraint) {
             LinkedHashSet<Constraint> orderedSet = new LinkedHashSet<>();
             orderedSet.add(constraint);
             return cloneExactly(orderedSet);
         }
 
-        private static Cloner cloneExactly(LinkedHashSet<? extends Constraint> constraints) {
-            Cloner cloner = new Cloner();
+        private static ConstraintCloner cloneExactly(LinkedHashSet<? extends Constraint> constraints) {
+            ConstraintCloner cloner = new ConstraintCloner();
             constraints.forEach(cloner::clone);
             return cloner;
         }

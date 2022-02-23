@@ -22,6 +22,7 @@ host_compatible_java_test(
     name = "test-database",
     size = "small",
     srcs = ["DatabaseTest.java"],
+    test_class = "com.vaticle.typedb.core.database.DatabaseTest",
     data = glob(["data/**"]),
     native_libraries_deps = [
         "//:typedb",
@@ -30,7 +31,26 @@ host_compatible_java_test(
         "//database:database",
         "//common/test:util",
     ],
-    test_class = "com.vaticle.typedb.core.database.DatabaseTest",
+)
+
+host_compatible_java_test(
+    name = "test-rocks-iterator",
+    srcs = ["RocksIteratorTest.java"],
+    test_class = "com.vaticle.typedb.core.database.RocksIteratorTest",
+    native_libraries_deps = [
+        "//:typedb",
+        "//common:common",
+        "//graph:graph",
+        "//concept:concept",
+        "//database:database",
+
+        "//common/test:util",
+    ],
+    deps = [
+        "//test/integration/util:util",
+    ],
+    data = glob(["data/**"]),
+    size = "small",
 )
 
 checkstyle_test(
