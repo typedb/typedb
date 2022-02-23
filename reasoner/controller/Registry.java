@@ -231,11 +231,13 @@ public class Registry {
 
     public Actor.Driver<ConclusionController> registerConclusionController(Rule.Conclusion conclusion) {
         LOG.debug("Register ConclusionController: '{}'", conclusion);
-        Actor.Driver<ConclusionController> controller = ruleConclusions.get(conclusion.rule());
-        if (controller == null) {
-            controller = Actor.driver(driver -> new ConclusionController(driver, "", conclusion, executorService, materialiserController, this), executorService);
-            controller.execute(ConclusionController::setUpUpstreamProviders);
-        }
+        Actor.Driver<ConclusionController> controller = ruleConclusions.computeIfAbsent(conclusion.rule(), r -> {
+            Actor.Driver<ConclusionController> c = Actor.driver(
+                    driver -> new ConclusionController(driver, "", conclusion, executorService,
+                                                       materialiserController, this), executorService);
+            c.execute(ConclusionController::setUpUpstreamProviders);
+            return c;
+        });
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
@@ -243,11 +245,12 @@ public class Registry {
 
     public Actor.Driver<ConditionController> registerConditionController(Rule.Condition condition) {
         LOG.debug("Register ConditionController: '{}'", condition);
-        Actor.Driver<ConditionController> controller = ruleConditions.get(condition.rule());
-        if (controller == null) {
-            controller = Actor.driver(driver -> new ConditionController(driver, condition, executorService, this), executorService);
-            controller.execute(ConditionController::setUpUpstreamProviders);
-        }
+        Actor.Driver<ConditionController> controller = ruleConditions.computeIfAbsent(condition.rule(), r -> {
+            Actor.Driver<ConditionController> c = Actor.driver(
+                    driver -> new ConditionController(driver, condition, executorService, this), executorService);
+            c.execute(ConditionController::setUpUpstreamProviders);
+            return c;
+        });
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
