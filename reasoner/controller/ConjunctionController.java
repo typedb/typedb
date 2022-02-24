@@ -43,7 +43,7 @@ import java.util.Set;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.computation.reactive.stream.NoOpReactive.noOp;
+import static com.vaticle.typedb.core.reasoner.computation.reactive.stream.NoOpStream.noOp;
 
 public abstract class ConjunctionController<OUTPUT,
         CONTROLLER extends ConjunctionController<OUTPUT, CONTROLLER, PROCESSOR>,

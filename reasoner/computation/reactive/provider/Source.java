@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
 import java.util.function.Supplier;
 
-public class Source<PACKET> extends AbstractSingleReceiverPublisher<PACKET> {
+public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
 
     private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
     private boolean exhausted;

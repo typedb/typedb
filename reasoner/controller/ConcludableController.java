@@ -27,8 +27,8 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedFanOutReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -41,7 +41,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInReactive.fanIn;
+import static com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream.fanIn;
 
 public class ConcludableController extends Controller<ConceptMap, Map<Variable, Concept>, ConceptMap,
         ConcludableController.ConcludableProcessor, ConcludableController> {
@@ -129,9 +129,9 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 
         @Override
         public void setUp() {
-            setOutlet(new BufferedFanOutReactive<>(monitoring(), name()));
+            setOutlet(new FanOutStream<>(monitoring(), name()));
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
-            FanInReactive<ConceptMap> fanIn = fanIn(monitoring(), name());
+            FanInStream<ConceptMap> fanIn = fanIn(monitoring(), name());
             if (singleAnswerRequired) fanIn.buffer().findFirst().publishTo(outlet());  // TODO: Buffer not needed as we're feeding a BufferedFanOut as the outlet
             else fanIn.buffer().publishTo(outlet());  // TODO: Buffer not needed as we're feeding a BufferedFanOut as the outlet
 

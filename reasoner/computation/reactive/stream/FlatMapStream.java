@@ -24,13 +24,13 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRe
 
 import java.util.function.Function;
 
-public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends AbstractSingleReceiverReactiveStream<INPUT, OUTPUT> {
+public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT> {
 
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
     private final ProviderRegistry.SingleProviderRegistry<INPUT> providerManager;
 
-    public FlatMapOrRetryReactive(Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
-                                  Monitoring monitor, String groupName) {
+    public FlatMapStream(Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
+                         Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.transform = transform;
         this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);

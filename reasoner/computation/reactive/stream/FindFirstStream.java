@@ -21,17 +21,15 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
-import java.util.Stack;
-
-public class BufferReactive<PACKET> extends AbstractSingleReceiverReactiveStream<PACKET, PACKET> {
+public class FindFirstStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
     private final ProviderRegistry.SingleProviderRegistry<PACKET> providerManager;
-    private final Stack<PACKET> stack;
+    private boolean packetFound;
 
-    public BufferReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
+    public FindFirstStream(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
-        this.stack = new Stack<>();
+        this.packetFound = false;
     }
 
     @Override
@@ -42,25 +40,18 @@ public class BufferReactive<PACKET> extends AbstractSingleReceiverReactiveStream
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
-        if (receiverRegistry().isPulling()) {
+        if (!packetFound) {
+            packetFound = true;
             receiverRegistry().recordReceive();
             receiverRegistry().receiver().receive(this, packet);
         } else {
-            // TODO: Could add an answer deduplication optimisation here, but means holding an extra set of all answers seen
-            stack.add(packet);
+            monitor().onAnswerDestroy(this);
         }
     }
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
-        assert receiver.equals(receiverRegistry().receiver());  // TODO: Make a proper exception for this
-        if (!receiverRegistry().isPulling()) {
-            if (stack.size() > 0) {
-                receiver.receive(this, stack.pop());
-            } else {
-                receiverRegistry().recordPull();
-                providerRegistry().pullAll();
-            }
-        }
+        // TODO: This is the only single receiver reactive that overrides pull()
+        if (!packetFound) super.pull(receiver);  // TODO: Could this cause a failure to terminate if multiple upstream paths are never joined?
     }
 }

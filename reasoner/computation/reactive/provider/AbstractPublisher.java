@@ -21,11 +21,11 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.DeduplicationReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FindFirstReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FlatMapOrRetryReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.MapReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.DeduplicationStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FindFirstStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FlatMapStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.MapStream;
 
 import java.util.function.Function;
 
@@ -52,35 +52,35 @@ public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Pub
 
     @Override
     public Stream<OUTPUT,OUTPUT> findFirst() {
-        FindFirstReactive<OUTPUT> findFirst = new FindFirstReactive<>(this, monitor, groupName());
+        FindFirstStream<OUTPUT> findFirst = new FindFirstStream<>(this, monitor, groupName());
         publishTo(findFirst);
         return findFirst;
     }
 
     @Override
     public <R> Stream<OUTPUT, R> map(Function<OUTPUT, R> function) {
-        MapReactive<OUTPUT, R> map = new MapReactive<>(this, function, monitor(), groupName());
+        MapStream<OUTPUT, R> map = new MapStream<>(this, function, monitor(), groupName());
         publishTo(map);
         return map;
     }
 
     @Override
     public <R> Stream<OUTPUT,R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
-        FlatMapOrRetryReactive<OUTPUT, R> flatMap = new FlatMapOrRetryReactive<>(this, function, monitor(), groupName());
+        FlatMapStream<OUTPUT, R> flatMap = new FlatMapStream<>(this, function, monitor(), groupName());
         publishTo(flatMap);
         return flatMap;
     }
 
     @Override
     public Stream<OUTPUT, OUTPUT> buffer() {
-        BufferReactive<OUTPUT> buffer = new BufferReactive<>(this, monitor(), groupName());
+        BufferedStream<OUTPUT> buffer = new BufferedStream<>(this, monitor(), groupName());
         publishTo(buffer);
         return buffer;
     }
 
     @Override
     public Stream<OUTPUT,OUTPUT> deduplicate() {
-        DeduplicationReactive<OUTPUT> dedup = new DeduplicationReactive<>(this, monitor(), groupName());
+        DeduplicationStream<OUTPUT> dedup = new DeduplicationStream<>(this, monitor(), groupName());
         publishTo(dedup);
         return dedup;
     }

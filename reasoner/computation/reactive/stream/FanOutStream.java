@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class BufferedFanOutReactive<PACKET> extends AbstractPublisher<PACKET> implements Reactive.Stream<PACKET, PACKET> {
+public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements Reactive.Stream<PACKET, PACKET> {
 
     final Map<Receiver<PACKET>, Integer> bufferPositions;  // Points to the next item needed
     final Set<PACKET> bufferSet;
@@ -40,7 +40,7 @@ public class BufferedFanOutReactive<PACKET> extends AbstractPublisher<PACKET> im
     private final ProviderRegistry<PACKET> providerManager;
     private final ReceiverRegistry.MultiReceiverRegistry<PACKET> receiverRegistry;
 
-    public BufferedFanOutReactive(Monitoring monitor, String groupName) {
+    public FanOutStream(Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.bufferSet = new HashSet<>();
         this.bufferList = new ArrayList<>();

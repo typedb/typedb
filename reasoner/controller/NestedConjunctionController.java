@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.CompoundReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.CompoundStream;
 
 import java.util.List;
 import java.util.Set;
@@ -70,7 +70,7 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
         @Override
         public void setUp() {
             super.setUp();
-            new CompoundReactive<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, monitoring(), name()).buffer().publishTo(outlet());
+            new CompoundStream<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, monitoring(), name()).buffer().publishTo(outlet());
         }
     }
 

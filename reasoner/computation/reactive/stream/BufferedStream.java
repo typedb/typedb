@@ -21,15 +21,17 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
-public class FindFirstReactive<PACKET> extends AbstractSingleReceiverReactiveStream<PACKET, PACKET> {
+import java.util.Stack;
+
+public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
     private final ProviderRegistry.SingleProviderRegistry<PACKET> providerManager;
-    private boolean packetFound;
+    private final Stack<PACKET> stack;
 
-    public FindFirstReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
+    public BufferedStream(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
-        this.packetFound = false;
+        this.stack = new Stack<>();
     }
 
     @Override
@@ -40,18 +42,25 @@ public class FindFirstReactive<PACKET> extends AbstractSingleReceiverReactiveStr
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
-        if (!packetFound) {
-            packetFound = true;
+        if (receiverRegistry().isPulling()) {
             receiverRegistry().recordReceive();
             receiverRegistry().receiver().receive(this, packet);
         } else {
-            monitor().onAnswerDestroy(this);
+            // TODO: Could add an answer deduplication optimisation here, but means holding an extra set of all answers seen
+            stack.add(packet);
         }
     }
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
-        // TODO: THis is the only unary reactive that overrides pull()
-        if (!packetFound) super.pull(receiver);  // TODO: Could this cause a failure to terminate if multiple upstream paths are never joined?
+        assert receiver.equals(receiverRegistry().receiver());  // TODO: Make a proper exception for this
+        if (!receiverRegistry().isPulling()) {
+            if (stack.size() > 0) {
+                receiver.receive(this, stack.pop());
+            } else {
+                receiverRegistry().recordPull();
+                providerRegistry().pullAll();
+            }
+        }
     }
 }

@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
@@ -39,7 +39,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInReactive.fanIn;
+import static com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream.fanIn;
 import static com.vaticle.typedb.core.reasoner.controller.ConjunctionController.merge;
 
 public abstract class DisjunctionController<
@@ -90,7 +90,7 @@ public abstract class DisjunctionController<
 
         @Override
         public void setUp() {
-            FanInReactive<ConceptMap> fanIn = fanIn(monitoring(), name());
+            FanInStream<ConceptMap> fanIn = fanIn(monitoring(), name());
             Reactive.Stream<ConceptMap, ConceptMap> outlet = getOutlet(fanIn);
             setOutlet(outlet);  // TODO: Needs separating to be able to add a buffer()
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
@@ -104,7 +104,7 @@ public abstract class DisjunctionController<
             fanIn.finaliseProviders();
         }
 
-        protected Reactive.Stream<ConceptMap, ConceptMap> getOutlet(FanInReactive<ConceptMap> fanIn) {
+        protected Reactive.Stream<ConceptMap, ConceptMap> getOutlet(FanInStream<ConceptMap> fanIn) {
             // Simply here to be overridden by root disjuntion to avoid duplicating setUp
             return fanIn.buffer();
         }

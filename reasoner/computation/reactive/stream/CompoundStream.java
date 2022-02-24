@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-public class CompoundReactive<PLAN_ID, PACKET> extends AbstractSingleReceiverReactiveStream<PACKET, PACKET> {
+public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
     private final Publisher<PACKET> leadingPublisher;
     private final List<PLAN_ID> remainingPlan;
@@ -38,9 +38,9 @@ public class CompoundReactive<PLAN_ID, PACKET> extends AbstractSingleReceiverRea
     private final PACKET initialPacket;
     private final ProviderRegistry.MultiProviderRegistry<PACKET> providerManager;
 
-    public CompoundReactive(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
-                            BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
-                            Monitoring monitor, String groupName) {
+    public CompoundStream(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
+                          BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
+                          Monitoring monitor, String groupName) {
         super(monitor, groupName);
         assert plan.size() > 0;
         this.providerManager = new ProviderRegistry.MultiProviderRegistry<>(this);
@@ -71,7 +71,7 @@ public class CompoundReactive<PLAN_ID, PACKET> extends AbstractSingleReceiverRea
                 if (remainingPlan.size() == 1) {
                     follower = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
                 } else {
-                    follower = new CompoundReactive<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, monitor(), groupName()).buffer();
+                    follower = new CompoundStream<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, monitor(), groupName()).buffer();
                 }
                 publisherPackets.put(follower, mergedPacket);
                 monitor().onPathFork(1, this);

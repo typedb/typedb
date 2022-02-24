@@ -21,34 +21,29 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.function.Function;
 
-public class DeduplicationReactive<PACKET> extends AbstractSingleReceiverReactiveStream<PACKET, PACKET> {
+public class MapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT> {
 
-    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerManager;
-    private final Set<PACKET> deduplicationSet;
+    private final Function<INPUT, OUTPUT> mappingFunc;
+    private final ProviderRegistry.SingleProviderRegistry<INPUT> providerManager;
 
-    public DeduplicationReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
+    public MapStream(Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, Monitoring monitor,
+                     String groupName) {
         super(monitor, groupName);
+        this.mappingFunc = mappingFunc;
         this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
-        this.deduplicationSet = new HashSet<>();
     }
 
     @Override
-    protected ProviderRegistry<PACKET> providerRegistry() {
+    protected ProviderRegistry<INPUT> providerRegistry() {
         return providerManager;
     }
 
     @Override
-    public void receive(Provider<PACKET> provider, PACKET packet) {
+    public void receive(Provider<INPUT> provider, INPUT packet) {
         super.receive(provider, packet);
-        if (deduplicationSet.add(packet)) {
-            receiverRegistry().recordReceive();
-            receiverRegistry().receiver().receive(this, packet);
-        } else {
-            if (receiverRegistry().isPulling()) providerManager.pull(provider);  // Automatic retry
-            monitor().onAnswerDestroy(this);  // Already seen this answer, so join this path
-        }
+        receiverRegistry().recordReceive();
+        receiverRegistry().receiver().receive(this, mappingFunc.apply(packet));
     }
 }

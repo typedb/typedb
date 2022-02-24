@@ -21,15 +21,18 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
-import javax.annotation.Nullable;
+import java.util.HashSet;
+import java.util.Set;
 
-public class NoOpReactive<PACKET> extends AbstractSingleReceiverReactiveStream<PACKET, PACKET> {
+public class DeduplicationStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
     private final ProviderRegistry.SingleProviderRegistry<PACKET> providerManager;
+    private final Set<PACKET> deduplicationSet;
 
-    protected NoOpReactive(@Nullable Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
+    public DeduplicationStream(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
+        this.deduplicationSet = new HashSet<>();
     }
 
     @Override
@@ -37,14 +40,15 @@ public class NoOpReactive<PACKET> extends AbstractSingleReceiverReactiveStream<P
         return providerManager;
     }
 
-    public static <T> NoOpReactive<T> noOp(Monitoring monitor, String groupName) {
-        return new NoOpReactive<>(null, monitor, groupName);
-    }
-
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
-        receiverRegistry().recordReceive();
-        receiverRegistry().receiver().receive(this, packet);
+        if (deduplicationSet.add(packet)) {
+            receiverRegistry().recordReceive();
+            receiverRegistry().receiver().receive(this, packet);
+        } else {
+            if (receiverRegistry().isPulling()) providerManager.pull(provider);  // Automatic retry
+            monitor().onAnswerDestroy(this);  // Already seen this answer, so join this path
+        }
     }
 }

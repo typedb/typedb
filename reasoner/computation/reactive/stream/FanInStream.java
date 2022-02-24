@@ -21,11 +21,11 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
-public class FanInReactive<PACKET> extends AbstractSingleReceiverReactiveStream<PACKET, PACKET> {
+public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
     private final ProviderRegistry.MultiProviderRegistry<PACKET> providerManager;
 
-    protected FanInReactive(Monitoring monitor, String groupName) {
+    protected FanInStream(Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new ProviderRegistry.MultiProviderRegistry<>(this);
     }
@@ -35,8 +35,8 @@ public class FanInReactive<PACKET> extends AbstractSingleReceiverReactiveStream<
         return providerManager;
     }
 
-    public static <T> FanInReactive<T> fanIn(Monitoring monitor, String groupName) {
-        return new FanInReactive<>(monitor, groupName);
+    public static <T> FanInStream<T> fanIn(Monitoring monitor, String groupName) {
+        return new FanInStream<>(monitor, groupName);
     }
 
     @Override

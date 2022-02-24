@@ -21,29 +21,30 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
-import java.util.function.Function;
+import javax.annotation.Nullable;
 
-public class MapReactive<INPUT, OUTPUT> extends AbstractSingleReceiverReactiveStream<INPUT, OUTPUT> {
+public class NoOpStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
-    private final Function<INPUT, OUTPUT> mappingFunc;
-    private final ProviderRegistry.SingleProviderRegistry<INPUT> providerManager;
+    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerManager;
 
-    public MapReactive(Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, Monitoring monitor,
-                       String groupName) {
+    protected NoOpStream(@Nullable Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.mappingFunc = mappingFunc;
         this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
     }
 
     @Override
-    protected ProviderRegistry<INPUT> providerRegistry() {
+    protected ProviderRegistry<PACKET> providerRegistry() {
         return providerManager;
     }
 
+    public static <T> NoOpStream<T> noOp(Monitoring monitor, String groupName) {
+        return new NoOpStream<>(null, monitor, groupName);
+    }
+
     @Override
-    public void receive(Provider<INPUT> provider, INPUT packet) {
+    public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
         receiverRegistry().recordReceive();
-        receiverRegistry().receiver().receive(this, mappingFunc.apply(packet));
+        receiverRegistry().receiver().receive(this, packet);
     }
 }

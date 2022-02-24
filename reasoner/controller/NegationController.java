@@ -24,8 +24,8 @@ import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractSingleReceiverReactiveStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedFanOutReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.Set;
@@ -103,7 +103,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
         @Override
         public void setUp() {
-            setOutlet(new BufferedFanOutReactive<>(monitoring(), name()));
+            setOutlet(new FanOutStream<>(monitoring(), name()));
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             requestConnection(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
             negation = new NegationReactive(monitoring(), name(), this::onDone);
@@ -119,7 +119,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             monitoring().onPathJoin(negation);
         }
 
-        private static class NegationReactive extends AbstractSingleReceiverReactiveStream<ConceptMap, ConceptMap> {
+        private static class NegationReactive extends SingleReceiverStream<ConceptMap, ConceptMap> {
 
             private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerManager;
             private final Runnable onEarlyDone;

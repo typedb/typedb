@@ -28,8 +28,8 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedFanOutReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractSingleReceiverReactiveStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -100,7 +100,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         @Override
         public void setUp() {
-            setOutlet(new BufferedFanOutReactive<>(monitoring(), name()));
+            setOutlet(new FanOutStream<>(monitoring(), name()));
             InletEndpoint<Either<ConceptMap, Materialisation>> conditionEndpoint = createReceivingEndpoint();
             mayRequestCondition(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
             ConclusionReactive conclusionReactive = new ConclusionReactive(name(), monitoring());
@@ -150,7 +150,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         }
 
-        private class ConclusionReactive extends AbstractSingleReceiverReactiveStream<ConceptMap, Map<Variable, Concept>> {
+        private class ConclusionReactive extends SingleReceiverStream<ConceptMap, Map<Variable, Concept>> {
 
             private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerManager;
 
@@ -195,7 +195,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
         }
 
-        private class MaterialiserReactive extends AbstractSingleReceiverReactiveStream<Map<Variable, Concept>, Map<Variable, Concept>> {
+        private class MaterialiserReactive extends SingleReceiverStream<Map<Variable, Concept>, Map<Variable, Concept>> {
 
             private final ConclusionReactive parent;
             private final ProviderRegistry.SingleProviderRegistry<Map<Variable, Concept>> providerManager;

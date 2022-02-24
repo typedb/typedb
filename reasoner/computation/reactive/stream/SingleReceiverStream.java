@@ -25,11 +25,11 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRe
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-public abstract class AbstractSingleReceiverReactiveStream<INPUT, OUTPUT> extends AbstractPublisher<OUTPUT> implements Reactive.Stream<INPUT, OUTPUT> {
+public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublisher<OUTPUT> implements Reactive.Stream<INPUT, OUTPUT> {
 
     private final ReceiverRegistry.SingleReceiverRegistry<OUTPUT> receiverRegistry;
 
-    protected AbstractSingleReceiverReactiveStream(Monitoring monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
+    protected SingleReceiverStream(Monitoring monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
         super(monitor, groupName);
         this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>();
     }
