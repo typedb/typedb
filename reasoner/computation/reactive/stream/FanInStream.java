@@ -18,14 +18,14 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
     private final ProviderRegistry.MultiProviderRegistry<PACKET> providerManager;
 
-    protected FanInStream(Monitoring monitor, String groupName) {
+    protected FanInStream(TerminationTracker monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new ProviderRegistry.MultiProviderRegistry<>(this);
     }
@@ -35,7 +35,7 @@ public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
         return providerManager;
     }
 
-    public static <T> FanInStream<T> fanIn(Monitoring monitor, String groupName) {
+    public static <T> FanInStream<T> fanIn(TerminationTracker monitor, String groupName) {
         return new FanInStream<>(monitor, groupName);
     }
 

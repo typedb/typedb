@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 
 import java.util.function.Supplier;
 
@@ -29,14 +29,14 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
     private boolean exhausted;
     private FunctionalIterator<PACKET> iterator;
 
-    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, Monitoring monitor, String groupName) {
+    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, TerminationTracker monitor, String groupName) {
         super(monitor, groupName);
         this.iteratorSupplier = iteratorSupplier;
         this.exhausted = false;
     }
 
     public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier,
-                                                             Monitoring monitor, String groupName) {
+                                                             TerminationTracker monitor, String groupName) {
         return new Source<>(iteratorSupplier, monitor, groupName);
     }
 

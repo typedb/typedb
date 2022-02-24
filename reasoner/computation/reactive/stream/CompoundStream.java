@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
 
     public CompoundStream(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
                           BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
-                          Monitoring monitor, String groupName) {
+                          TerminationTracker monitor, String groupName) {
         super(monitor, groupName);
         assert plan.size() > 0;
         this.providerManager = new ProviderRegistry.MultiProviderRegistry<>(this);

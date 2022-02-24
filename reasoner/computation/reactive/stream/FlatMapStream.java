@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.function.Function;
@@ -30,7 +30,7 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OU
     private final ProviderRegistry.SingleProviderRegistry<INPUT> providerManager;
 
     public FlatMapStream(Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
-                         Monitoring monitor, String groupName) {
+                         TerminationTracker monitor, String groupName) {
         super(monitor, groupName);
         this.transform = transform;
         this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);

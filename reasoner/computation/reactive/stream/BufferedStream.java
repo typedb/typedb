@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.Stack;
@@ -28,7 +28,7 @@ public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET>
     private final ProviderRegistry.SingleProviderRegistry<PACKET> providerManager;
     private final Stack<PACKET> stack;
 
-    public BufferedStream(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
+    public BufferedStream(Publisher<PACKET> publisher, TerminationTracker monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
         this.stack = new Stack<>();

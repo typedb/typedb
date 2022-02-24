@@ -82,7 +82,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         }
 
         @Override
-        protected Monitoring createMonitoring() {
+        protected TerminationTracker createMonitoring() {
             return new NestedMonitor(this);
         }
 
@@ -92,13 +92,13 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         }
 
         @Override
-        protected Set<Driver<? extends Processor<?, ?, ?, ?>>> upstreamMonitors() {
-            return set(driver());
+        protected Set<Monitor.Reference> upstreamMonitors() {
+            return set(monitoring().asMonitor().getReference());
         }
 
         @Override
-        protected Set<Driver<? extends Processor<?, ?, ?, ?>>> newUpstreamMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
-            return set(driver());
+        protected Set<Monitor.Reference> newUpstreamMonitors(Set<Monitor.Reference> monitors) {
+            return set(monitoring().asMonitor().getReference());
         }
 
         @Override
@@ -125,7 +125,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             private final Runnable onEarlyDone;
             private boolean answerFound;
 
-            protected NegationReactive(Monitoring monitor, String groupName, Runnable onEarlyDone) {
+            protected NegationReactive(TerminationTracker monitor, String groupName, Runnable onEarlyDone) {
                 super(monitor, groupName);
                 this.onEarlyDone = onEarlyDone;
                 this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(this);
@@ -146,9 +146,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
                 super.receive(provider, packet);
                 answerFound = true;
-                // monitor().onAnswerDestroyLocalUpdate(this);  // We don't need to do this because we don't care about the count now that we know the negation is done
                 onEarlyDone.run();
-                // monitor().onPathJoinLocalUpdate(this);  // We don't need to do this because we don't care about the count now that we know the negation is done
             }
 
             public void receiveDone(ConceptMap packet) {

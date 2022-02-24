@@ -53,8 +53,8 @@ public abstract class Processor<INPUT, OUTPUT,
     private final Map<Long, InletEndpoint<INPUT>> receivingEndpoints;
     private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
     protected final Set<Connection<INPUT, ?, ?>> upstreamConnections;
-    private final Monitoring monitoring;
-    protected final Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors;
+    private final TerminationTracker monitoring;
+    protected final Set<Monitor.Reference> monitors;
     private Reactive.Stream<OUTPUT,OUTPUT> outlet;
     private long endpointId;
     private boolean terminated;
@@ -72,8 +72,8 @@ public abstract class Processor<INPUT, OUTPUT,
         this.monitoring = createMonitoring();
     }
 
-    protected Monitoring createMonitoring() {
-        return new Monitoring(this);
+    protected TerminationTracker createMonitoring() {
+        return new TerminationTracker(this);
     }
 
     public abstract void setUp();
@@ -112,14 +112,14 @@ public abstract class Processor<INPUT, OUTPUT,
 
     protected <PROV_PROCESSOR extends Processor<?, INPUT, ?, PROV_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PROV_PROCESSOR> connection) {
         assert !done;
-        Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors = upstreamMonitors();
+        Set<Monitor.Reference> monitors = upstreamMonitors();
         monitors.forEach(connection::registerWithMonitor);
         if (monitors.size() > 0) connection.propagateMonitors(monitors);
         receivingEndpoints.get(connection.receiverEndpointId()).setReady(connection);
         upstreamConnections.add(connection);
     }
 
-    protected Set<Driver<? extends Processor<?, ?, ?, ?>>> upstreamMonitors() {
+    protected Set<Monitor.Reference> upstreamMonitors() {
         return this.monitors;
     }
 
@@ -152,18 +152,18 @@ public abstract class Processor<INPUT, OUTPUT,
         receivingEndpoints.get(subEndpointId).receive(provider, packet);
     }
 
-    public Monitoring monitoring() {
+    public TerminationTracker monitoring() {
         return monitoring;
     }
 
-    protected Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors() {
+    protected Set<Monitor.Reference> monitors() {
         return monitors;
     }
 
-    protected void addAndPropagateMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
+    protected void addAndPropagateMonitors(Set<Monitor.Reference> monitors) {
         assert !done;
-        Set<Driver<? extends Processor<?, ?, ?, ?>>> newMonitors = newMonitors(monitors);
-        Set<Driver<? extends Processor<?, ?, ?, ?>>> newUpstreamMonitors = newUpstreamMonitors(monitors);
+        Set<Monitor.Reference> newMonitors = newMonitors(monitors);
+        Set<Monitor.Reference> newUpstreamMonitors = newUpstreamMonitors(monitors);
         this.monitors.addAll(newMonitors);
         if (newUpstreamMonitors.size() > 0) {
             upstreamConnections.forEach(connection -> {
@@ -174,14 +174,14 @@ public abstract class Processor<INPUT, OUTPUT,
         }
     }
 
-    protected Set<Driver<? extends Processor<?, ?, ?, ?>>> newUpstreamMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
-        Set<Driver<? extends Processor<?, ?, ?, ?>>> newMonitors = new HashSet<>(monitors);
+    protected Set<Monitor.Reference> newUpstreamMonitors(Set<Monitor.Reference> monitors) {
+        Set<Monitor.Reference> newMonitors = new HashSet<>(monitors);
         newMonitors.removeAll(this.monitors);
         return newMonitors;
     }
 
-    protected Set<Driver<? extends Processor<?, ?, ?, ?>>> newMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
-        Set<Driver<? extends Processor<?, ?, ?, ?>>> newMonitors = new HashSet<>(monitors);
+    protected Set<Monitor.Reference> newMonitors(Set<Monitor.Reference> monitors) {
+        Set<Monitor.Reference> newMonitors = new HashSet<>(monitors);
         newMonitors.removeAll(this.monitors);
         return newMonitors;
     }
@@ -228,7 +228,7 @@ public abstract class Processor<INPUT, OUTPUT,
         private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
         private boolean ready;
 
-        public InletEndpoint(long id, Monitoring monitor, String groupName) {
+        public InletEndpoint(long id, TerminationTracker monitor, String groupName) {
             super(monitor, groupName);
             this.id = id;
             this.ready = false;
@@ -274,10 +274,10 @@ public abstract class Processor<INPUT, OUTPUT,
         private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
         private final ReceiverRegistry.SingleReceiverRegistry<PACKET> receiverRegistry;
         private final long id;
-        private final Monitoring monitor;
+        private final TerminationTracker monitor;
         private final String groupName;
 
-        public OutletEndpoint(Connection<PACKET, ?, ?> connection, Monitoring monitor, String groupName) {
+        public OutletEndpoint(Connection<PACKET, ?, ?> connection, TerminationTracker monitor, String groupName) {
             this.monitor = monitor;
             this.groupName = groupName;
             this.id = connection.providerEndpointId();
@@ -293,7 +293,7 @@ public abstract class Processor<INPUT, OUTPUT,
             return receiverRegistry;
         }
 
-        protected Monitoring monitor() {
+        protected TerminationTracker monitor() {
             return monitor;
         }
 
@@ -390,19 +390,19 @@ public abstract class Processor<INPUT, OUTPUT,
         }
     }
 
-    public static class Monitoring {
+    public static class TerminationTracker {
 
         protected long pathsCount;
         protected long answersCount;
         private final Processor<?, ?, ?, ?> processor;
 
-        Monitoring(Processor<?, ?, ?, ?> processor) {
+        TerminationTracker(Processor<?, ?, ?, ?> processor) {
             this.processor = processor;
             this.pathsCount = 0;
             this.answersCount = 0;
         }
 
-        protected Monitor asMonitor() {
+        public Monitor asMonitor() {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
@@ -474,23 +474,24 @@ public abstract class Processor<INPUT, OUTPUT,
             final int update = num;
             processor().monitors().forEach(monitor -> {
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportCountChange(reactive, countChange, monitor, update));
-                monitor.execute(actor -> actor.monitoring().asMonitor().receiveReport(update, countChange));
+                monitor.driver().execute(actor -> actor.monitoring().asMonitor().receiveReport(update, countChange));
             });
         }
 
-        protected void sendInitialReport(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
+        protected void sendInitialReport(Monitor.Reference monitor) {
             final long pathsCountUpdate = pathsCount;
             final long answersCountUpdate = answersCount;
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.initialReport(processor().driver(), monitor, pathsCountUpdate, answersCountUpdate));
-            monitor.execute(actor -> actor.monitoring().asMonitor().receiveInitialReport(processor().driver(), pathsCountUpdate, answersCountUpdate));
+            monitor.driver().execute(actor -> actor.monitoring().asMonitor().receiveInitialReport(processor().driver(), pathsCountUpdate, answersCountUpdate));
         }
 
     }
 
-    public static class Monitor extends Monitoring {
+    public static class Monitor extends TerminationTracker {
 
         private final Set<Driver<? extends Processor<?, ?, ?, ?>>> registered;
         private final Set<Driver<? extends Processor<?, ?, ?, ?>>> countSenders;
+        private final Reference reference;
         protected boolean done;
 
         public Monitor(Processor<?, ?, ?, ?> processor) {
@@ -498,6 +499,7 @@ public abstract class Processor<INPUT, OUTPUT,
             this.registered = new HashSet<>();
             this.countSenders = new HashSet<>();
             this.done = false;
+            this.reference = new Reference(processor().driver());
         }
 
         @Override
@@ -506,7 +508,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        protected Monitor asMonitor() {
+        public Monitor asMonitor() {
             return this;
         }
 
@@ -555,6 +557,23 @@ public abstract class Processor<INPUT, OUTPUT,
             if (pathsCount == -1 && answersCount == 0 && processor().isPulling() && registered.equals(countSenders)) {
                 done = true;
                 processor().onDone();
+            }
+        }
+
+        public Reference getReference() {
+            return reference;
+        }
+
+        public static class Reference {
+
+            private final Driver<? extends Processor<?, ?, ?, ?>> driver;
+
+            Reference(Driver<? extends Processor<?, ?, ?, ?>> driver) {
+                this.driver = driver;
+            }
+
+            public Driver<? extends Processor<?, ?, ?, ?>> driver() {
+                return driver;
             }
         }
     }

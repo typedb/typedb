@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring.CountChange;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker.CountChange;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
@@ -131,20 +131,20 @@ public final class Tracer {
     }
 
     public void reportCountChange(Reactive reactive, CountChange countChange,
-                                  Actor.Driver<? extends Processor<?,?,?,?>> monitor, int num) {
+                                  Processor.Monitor.Reference monitor, int num) {
         reportPathCount(simpleClassId(reactive), monitor, countLabel(countChange, num));
     }
 
-    public synchronized void initialReport(Actor.Driver<?> sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, long pathsCount, long answersCountUpdate) {
+    public synchronized void initialReport(Actor.Driver<?> sender, Processor.Monitor.Reference monitor, long pathsCount, long answersCountUpdate) {
         String senderName = sender.name() + "-monitor";
         pathUpdate(senderName, monitor, "init-p" + pathsCount + "-a" + answersCountUpdate);
         addNodeGroup(senderName, sender.name(), defaultTrace);
     }
 
-    private void reportPathCount(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
-        String monitorName = monitor.name() + "-monitor";
+    private void reportPathCount(String sender, Processor.Monitor.Reference monitor, String label) {
+        String monitorName = monitor.driver().name() + "-monitor";
         addMessage(sender, monitorName, defaultTrace, EdgeType.REPORT, label);
-        addNodeGroup(monitorName, monitor.name(), defaultTrace);
+        addNodeGroup(monitorName, monitor.driver().name(), defaultTrace);
     }
 
     private void pathCount(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
@@ -153,14 +153,14 @@ public final class Tracer {
         addNodeGroup(monitorName, monitor.name(), defaultTrace);
     }
 
-    private void pathUpdate(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
-        String monitorName = monitor.name() + "-monitor";
+    private void pathUpdate(String sender, Processor.Monitor.Reference monitor, String label) {
+        String monitorName = monitor.driver().name() + "-monitor";
         addMessage(sender, monitorName, defaultTrace, EdgeType.UPDATE, label);
-        addNodeGroup(monitorName, monitor.name(), defaultTrace);
+        addNodeGroup(monitorName, monitor.driver().name(), defaultTrace);
     }
 
-    public void registerWithMonitor(Actor.Driver<?> registree, Actor.Driver<? extends Processor<?,?,?,?>> monitor) {
-        String monitorName = monitor.name() + "-monitor";
+    public void registerWithMonitor(Actor.Driver<?> registree, Processor.Monitor.Reference monitor) {
+        String monitorName = monitor.driver().name() + "-monitor";
         addMessage(registree.name() + "-monitor", monitorName, defaultTrace, EdgeType.REGISTER, "register");
     }
 

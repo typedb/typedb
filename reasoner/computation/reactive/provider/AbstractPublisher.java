@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.DeduplicationStream;
@@ -31,17 +31,17 @@ import java.util.function.Function;
 
 public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Publisher<OUTPUT> {
 
-    private final Monitoring monitor;
+    private final TerminationTracker monitor;
     private final String groupName;
 
-    protected AbstractPublisher(Monitoring monitor, String groupName) {
+    protected AbstractPublisher(TerminationTracker monitor, String groupName) {
         this.monitor = monitor;
         this.groupName = groupName;
     }
 
     protected abstract ReceiverRegistry<OUTPUT> receiverRegistry();
 
-    protected Monitoring monitor() {
+    protected TerminationTracker monitor() {
         return monitor;
     }
 

@@ -64,13 +64,13 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
         provProcessor.execute(actor -> actor.endpointPull(this, provEndpointId));
     }
 
-    protected void propagateMonitors(Set<Actor.Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
+    protected void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
         provProcessor.execute(actor -> actor.addAndPropagateMonitors(monitors));
     }
 
-    protected void registerWithMonitor(Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor) {
+    protected void registerWithMonitor(Processor.Monitor.Reference monitor) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerWithMonitor(provProcessor, monitor));
-        monitor.execute(actor -> actor.monitoring().asMonitor().register(provProcessor));
+        monitor.driver().execute(actor -> actor.monitoring().asMonitor().register(provProcessor));
     }
 
     protected long receiverEndpointId() {

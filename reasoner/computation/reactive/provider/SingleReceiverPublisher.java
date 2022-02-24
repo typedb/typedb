@@ -18,14 +18,14 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 
 public abstract class SingleReceiverPublisher<OUTPUT> extends AbstractPublisher<OUTPUT> {
 
     protected ReceiverRegistry.SingleReceiverRegistry<OUTPUT> receiverRegistry;
 
-    protected SingleReceiverPublisher(Monitoring monitor, String groupName) {
+    protected SingleReceiverPublisher(TerminationTracker monitor, String groupName) {
         super(monitor, groupName);
         this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>();
     }

@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import javax.annotation.Nullable;
@@ -27,7 +27,7 @@ public class NoOpStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
     private final ProviderRegistry.SingleProviderRegistry<PACKET> providerManager;
 
-    protected NoOpStream(@Nullable Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
+    protected NoOpStream(@Nullable Publisher<PACKET> publisher, TerminationTracker monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
     }
@@ -37,7 +37,7 @@ public class NoOpStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
         return providerManager;
     }
 
-    public static <T> NoOpStream<T> noOp(Monitoring monitor, String groupName) {
+    public static <T> NoOpStream<T> noOp(TerminationTracker monitor, String groupName) {
         return new NoOpStream<>(null, monitor, groupName);
     }
 

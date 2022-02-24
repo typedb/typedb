@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -82,18 +81,18 @@ public class RootDisjunctionController
         }
 
         @Override
-        protected Monitoring createMonitoring() {
+        protected TerminationTracker createMonitoring() {
             return new Monitor(this);
         }
 
         @Override
-        protected Set<Driver<? extends Processor<?, ?, ?, ?>>> upstreamMonitors() {
-            return set(driver());
+        protected Set<Monitor.Reference> upstreamMonitors() {
+            return set(monitoring().asMonitor().getReference());
         }
 
         @Override
-        protected Set<Driver<? extends Processor<?, ?, ?, ?>>> newUpstreamMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
-            return set(driver());
+        protected Set<Monitor.Reference> newUpstreamMonitors(Set<Monitor.Reference> monitors) {
+            return set(monitoring().asMonitor().getReference());
         }
 
         @Override

@@ -25,7 +25,6 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.CompoundStream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
@@ -89,18 +88,18 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         }
 
         @Override
-        protected Monitoring createMonitoring() {
+        protected TerminationTracker createMonitoring() {
             return new Monitor(this);
         }
 
         @Override
-        protected Set<Driver<? extends Processor<?, ?, ?, ?>>> upstreamMonitors() {
-            return set(driver());
+        protected Set<Monitor.Reference> upstreamMonitors() {
+            return set(monitoring().asMonitor().getReference());
         }
 
         @Override
-        protected Set<Driver<? extends Processor<?, ?, ?, ?>>> newUpstreamMonitors(Set<Driver<? extends Processor<?, ?, ?, ?>>> monitors) {
-            return set(driver());
+        protected Set<Monitor.Reference> newUpstreamMonitors(Set<Monitor.Reference> monitors) {
+            return set(monitoring().asMonitor().getReference());
         }
 
         @Override
@@ -121,7 +120,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
 
         @Override
         protected void onDone() {
-            assert ! done;
+            assert !done;
 //            done = true;
             reasonerEntryPoint.done();
         }

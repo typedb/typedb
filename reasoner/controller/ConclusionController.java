@@ -154,7 +154,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
             private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerManager;
 
-            protected ConclusionReactive(String groupName, Monitoring monitor) {
+            protected ConclusionReactive(String groupName, TerminationTracker monitor) {
                 super(monitor, groupName);
                 this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(this);
             }
@@ -200,7 +200,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             private final ConclusionReactive parent;
             private final ProviderRegistry.SingleProviderRegistry<Map<Variable, Concept>> providerManager;
 
-            public MaterialiserReactive(ConclusionReactive parent, Monitoring monitor, String groupName) {
+            public MaterialiserReactive(ConclusionReactive parent, TerminationTracker monitor, String groupName) {
                 super(monitor, groupName);
                 this.parent = parent;
                 this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(this);
