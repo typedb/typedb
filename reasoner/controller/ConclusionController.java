@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedFanOutReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractSingleReceiverReactiveStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.subscriber.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -151,11 +152,11 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         private class ConclusionReactive extends AbstractSingleReceiverReactiveStream<ConceptMap, Map<Variable, Concept>> {
 
-            private final SingleProviderRegistry<ConceptMap> providerManager;
+            private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerManager;
 
             protected ConclusionReactive(String groupName, Monitoring monitor) {
                 super(monitor, groupName);
-                this.providerManager = new SingleProviderRegistry<>(this);
+                this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(this);
             }
 
             @Override
@@ -197,12 +198,12 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         private class MaterialiserReactive extends AbstractSingleReceiverReactiveStream<Map<Variable, Concept>, Map<Variable, Concept>> {
 
             private final ConclusionReactive parent;
-            private final SingleProviderRegistry<Map<Variable, Concept>> providerManager;
+            private final ProviderRegistry.SingleProviderRegistry<Map<Variable, Concept>> providerManager;
 
             public MaterialiserReactive(ConclusionReactive parent, Monitoring monitor, String groupName) {
                 super(monitor, groupName);
                 this.parent = parent;
-                this.providerManager = new SingleProviderRegistry<>(this);
+                this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(this);
             }
 
             @Override

@@ -19,18 +19,19 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+import com.vaticle.typedb.core.reasoner.computation.reactive.subscriber.ProviderRegistry;
 
 public class FanInReactive<PACKET> extends AbstractSingleReceiverReactiveStream<PACKET, PACKET> {
 
-    private final MultiProviderRegistry<PACKET> providerManager;
+    private final ProviderRegistry.MultiProviderRegistry<PACKET> providerManager;
 
     protected FanInReactive(Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new MultiProviderRegistry<>(this);
+        this.providerManager = new ProviderRegistry.MultiProviderRegistry<>(this);
     }
 
     @Override
-    protected MultiProviderRegistry<PACKET> providerRegistry() {
+    protected ProviderRegistry.MultiProviderRegistry<PACKET> providerRegistry() {
         return providerManager;
     }
 

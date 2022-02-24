@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.ReceiverRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.subscriber.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -224,17 +225,17 @@ public abstract class Processor<INPUT, OUTPUT,
     public static class InletEndpoint<PACKET> extends AbstractSingleReceiverPublisher<PACKET> implements Receiver<PACKET> {
 
         private final long id;
-        private final SingleProviderRegistry<PACKET> providerRegistry;
+        private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
         private boolean ready;
 
         public InletEndpoint(long id, Monitoring monitor, String groupName) {
             super(monitor, groupName);
             this.id = id;
             this.ready = false;
-            this.providerRegistry = new SingleProviderRegistry<>(this);
+            this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
         }
 
-        private SingleProviderRegistry<PACKET> providerRegistry() {
+        private ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
             return providerRegistry;
         }
 
@@ -270,7 +271,7 @@ public abstract class Processor<INPUT, OUTPUT,
      */
     public static class OutletEndpoint<PACKET> implements Subscriber<PACKET>, Provider<PACKET> {
 
-        private final SingleProviderRegistry<PACKET> providerRegistry;
+        private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
         private final ReceiverRegistry.SingleReceiverRegistry<PACKET> receiverRegistry;
         private final long id;
         private final Monitoring monitor;
@@ -280,11 +281,11 @@ public abstract class Processor<INPUT, OUTPUT,
             this.monitor = monitor;
             this.groupName = groupName;
             this.id = connection.providerEndpointId();
-            this.providerRegistry = new SingleProviderRegistry<>(this);
+            this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
             this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(connection);
         }
 
-        private SingleProviderRegistry<PACKET> providerRegistry() {
+        private ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
             return providerRegistry;
         }
 

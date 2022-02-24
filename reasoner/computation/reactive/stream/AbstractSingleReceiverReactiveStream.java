@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.AbstractPublisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.ReceiverRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.subscriber.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public abstract class AbstractSingleReceiverReactiveStream<INPUT, OUTPUT> extends AbstractPublisher<OUTPUT> implements Reactive.Stream<INPUT, OUTPUT> {

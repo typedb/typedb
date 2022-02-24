@@ -19,16 +19,17 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+import com.vaticle.typedb.core.reasoner.computation.reactive.subscriber.ProviderRegistry;
 
 import javax.annotation.Nullable;
 
 public class NoOpReactive<PACKET> extends AbstractSingleReceiverReactiveStream<PACKET, PACKET> {
 
-    private final SingleProviderRegistry<PACKET> providerManager;
+    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerManager;
 
     protected NoOpReactive(@Nullable Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new SingleProviderRegistry<>(publisher, this);
+        this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
     }
 
     @Override

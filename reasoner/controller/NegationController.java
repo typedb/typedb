@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractSingleReceiverReactiveStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedFanOutReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.subscriber.ProviderRegistry;
 
 import java.util.Set;
 import java.util.function.Function;
@@ -120,14 +121,14 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
         private static class NegationReactive extends AbstractSingleReceiverReactiveStream<ConceptMap, ConceptMap> {
 
-            private final SingleProviderRegistry<ConceptMap> providerManager;
+            private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerManager;
             private final Runnable onEarlyDone;
             private boolean answerFound;
 
             protected NegationReactive(Monitoring monitor, String groupName, Runnable onEarlyDone) {
                 super(monitor, groupName);
                 this.onEarlyDone = onEarlyDone;
-                this.providerManager = new SingleProviderRegistry<>(this);
+                this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(this);
                 this.answerFound = false;
             }
 

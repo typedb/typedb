@@ -24,14 +24,14 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public abstract class Sink<PACKET> implements Subscriber<PACKET> {
 
-    private final SingleProviderRegistry<PACKET> providerManager;
+    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerManager;
     private Monitoring monitor;
 
     protected Sink() {
-        this.providerManager = new SingleProviderRegistry<>(this);
+        this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(this);
     }
 
-    protected SingleProviderRegistry<PACKET> providerManager() {
+    protected ProviderRegistry.SingleProviderRegistry<PACKET> providerManager() {
         return providerManager;
     }
 

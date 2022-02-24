@@ -20,19 +20,20 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+import com.vaticle.typedb.core.reasoner.computation.reactive.subscriber.ProviderRegistry;
 
 import java.util.function.Function;
 
 public class FlatMapOrRetryReactive<INPUT, OUTPUT> extends AbstractSingleReceiverReactiveStream<INPUT, OUTPUT> {
 
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
-    private final SingleProviderRegistry<INPUT> providerManager;
+    private final ProviderRegistry.SingleProviderRegistry<INPUT> providerManager;
 
     public FlatMapOrRetryReactive(Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
                                   Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.transform = transform;
-        this.providerManager = new SingleProviderRegistry<>(publisher, this);
+        this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
     }
 
     @Override
