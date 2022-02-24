@@ -21,21 +21,22 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.AbstractPublisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-public abstract class AbstractUnaryReactiveStream<INPUT, OUTPUT> extends AbstractPublisher<OUTPUT> implements Reactive.Stream<INPUT, OUTPUT> {
+public abstract class AbstractSingleReceiverReactiveStream<INPUT, OUTPUT> extends AbstractPublisher<OUTPUT> implements Reactive.Stream<INPUT, OUTPUT> {
 
-    private final SingleReceiverRegistry<OUTPUT> receiverRegistry;
+    private final ReceiverRegistry.SingleReceiverRegistry<OUTPUT> receiverRegistry;
 
-    protected AbstractUnaryReactiveStream(Monitoring monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
+    protected AbstractSingleReceiverReactiveStream(Monitoring monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
         super(monitor, groupName);
-        this.receiverRegistry = new SingleReceiverRegistry<>();
+        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>();
     }
 
     protected abstract ProviderRegistry<INPUT> providerRegistry();
 
     @Override
-    protected SingleReceiverRegistry<OUTPUT> receiverRegistry() {
+    protected ReceiverRegistry.SingleReceiverRegistry<OUTPUT> receiverRegistry() {
         return receiverRegistry;
     }
 

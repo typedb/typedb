@@ -20,11 +20,12 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.AbstractUnaryPublisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.AbstractSingleReceiverPublisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
+import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -220,7 +221,7 @@ public abstract class Processor<INPUT, OUTPUT,
     /**
      * Governs an input to a processor
      */
-    public static class InletEndpoint<PACKET> extends AbstractUnaryPublisher<PACKET> implements Receiver<PACKET> {
+    public static class InletEndpoint<PACKET> extends AbstractSingleReceiverPublisher<PACKET> implements Receiver<PACKET> {
 
         private final long id;
         private final SingleProviderRegistry<PACKET> providerRegistry;
@@ -270,7 +271,7 @@ public abstract class Processor<INPUT, OUTPUT,
     public static class OutletEndpoint<PACKET> implements Subscriber<PACKET>, Provider<PACKET> {
 
         private final SingleProviderRegistry<PACKET> providerRegistry;
-        private final SingleReceiverRegistry<PACKET> receiverRegistry;
+        private final ReceiverRegistry.SingleReceiverRegistry<PACKET> receiverRegistry;
         private final long id;
         private final Monitoring monitor;
         private final String groupName;
@@ -280,14 +281,14 @@ public abstract class Processor<INPUT, OUTPUT,
             this.groupName = groupName;
             this.id = connection.providerEndpointId();
             this.providerRegistry = new SingleProviderRegistry<>(this);
-            this.receiverRegistry = new SingleReceiverRegistry<>(connection);
+            this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(connection);
         }
 
         private SingleProviderRegistry<PACKET> providerRegistry() {
             return providerRegistry;
         }
 
-        private SingleReceiverRegistry<PACKET> receiverRegistry() {
+        private ReceiverRegistry.SingleReceiverRegistry<PACKET> receiverRegistry() {
             return receiverRegistry;
         }
 

@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
 import javax.annotation.Nullable;
 
-public class NoOpReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
+public class NoOpReactive<PACKET> extends AbstractSingleReceiverReactiveStream<PACKET, PACKET> {
 
     private final SingleProviderRegistry<PACKET> providerManager;
 

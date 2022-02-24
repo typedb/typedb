@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractUnaryReactiveStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractSingleReceiverReactiveStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedFanOutReactive;
 
 import java.util.Set;
@@ -118,7 +118,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             monitoring().onPathJoin(negation);
         }
 
-        private static class NegationReactive extends AbstractUnaryReactiveStream<ConceptMap, ConceptMap> {
+        private static class NegationReactive extends AbstractSingleReceiverReactiveStream<ConceptMap, ConceptMap> {
 
             private final SingleProviderRegistry<ConceptMap> providerManager;
             private final Runnable onEarlyDone;

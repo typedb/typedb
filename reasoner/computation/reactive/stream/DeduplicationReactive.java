@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import java.util.HashSet;
 import java.util.Set;
 
-public class DeduplicationReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
+public class DeduplicationReactive<PACKET> extends AbstractSingleReceiverReactiveStream<PACKET, PACKET> {
 
     private final SingleProviderRegistry<PACKET> providerManager;
     private final Set<PACKET> deduplicationSet;

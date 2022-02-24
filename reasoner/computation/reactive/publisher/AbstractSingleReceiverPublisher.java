@@ -21,17 +21,17 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.publisher;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 
-public abstract class AbstractUnaryPublisher<OUTPUT> extends AbstractPublisher<OUTPUT> {
+public abstract class AbstractSingleReceiverPublisher<OUTPUT> extends AbstractPublisher<OUTPUT> {
 
-    protected SingleReceiverRegistry<OUTPUT> receiverRegistry;
+    protected ReceiverRegistry.SingleReceiverRegistry<OUTPUT> receiverRegistry;
 
-    protected AbstractUnaryPublisher(Monitoring monitor, String groupName) {
+    protected AbstractSingleReceiverPublisher(Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.receiverRegistry = new SingleReceiverRegistry<>();
+        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>();
     }
 
     @Override
-    protected SingleReceiverRegistry<OUTPUT> receiverRegistry() {
+    protected ReceiverRegistry.SingleReceiverRegistry<OUTPUT> receiverRegistry() {
         return receiverRegistry;
     }
 

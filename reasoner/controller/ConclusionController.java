@@ -29,7 +29,7 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedFanOutReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractUnaryReactiveStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractSingleReceiverReactiveStream;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -149,7 +149,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         }
 
-        private class ConclusionReactive extends AbstractUnaryReactiveStream<ConceptMap, Map<Variable, Concept>> {
+        private class ConclusionReactive extends AbstractSingleReceiverReactiveStream<ConceptMap, Map<Variable, Concept>> {
 
             private final SingleProviderRegistry<ConceptMap> providerManager;
 
@@ -194,7 +194,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
         }
 
-        private class MaterialiserReactive extends AbstractUnaryReactiveStream<Map<Variable, Concept>, Map<Variable, Concept>> {
+        private class MaterialiserReactive extends AbstractSingleReceiverReactiveStream<Map<Variable, Concept>, Map<Variable, Concept>> {
 
             private final ConclusionReactive parent;
             private final SingleProviderRegistry<Map<Variable, Concept>> providerManager;

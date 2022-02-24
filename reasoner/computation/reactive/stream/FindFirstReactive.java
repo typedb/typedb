@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
-public class FindFirstReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
+public class FindFirstReactive<PACKET> extends AbstractSingleReceiverReactiveStream<PACKET, PACKET> {
 
     private final SingleProviderRegistry<PACKET> providerManager;
     private boolean packetFound;

@@ -22,9 +22,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 
 public interface Reactive {
@@ -49,98 +47,6 @@ public interface Reactive {
 
             Stream<T, T> deduplicate();
 
-        }
-
-        interface ReceiverRegistry<R> {
-
-            void recordReceive();
-
-            boolean isPulling();
-
-            boolean addReceiver(Receiver<R> subscriber);
-
-        }
-
-        class SingleReceiverRegistry<R> implements ReceiverRegistry<R> {
-
-            private Receiver<R> receiver;
-            private boolean isPulling;
-
-            public SingleReceiverRegistry(Receiver<R> receiver) {
-                this.receiver = receiver;
-                this.isPulling = false;
-            }
-
-            public SingleReceiverRegistry() {
-                this.receiver = null;
-                this.isPulling = false;
-            }
-
-            @Override
-            public void recordReceive() {
-                isPulling = false;
-            }
-
-            public boolean recordPull() {
-                boolean newPull = !isPulling;
-                isPulling = true;
-                return newPull;
-            }
-
-            @Override
-            public boolean isPulling() {
-                return isPulling;
-            }
-
-            @Override
-            public boolean addReceiver(Receiver<R> receiver) {
-                assert this.receiver == null;
-                this.receiver = receiver;
-                return true;
-            }
-
-            public Receiver<R> receiver() {
-                assert this.receiver != null;
-                return receiver;
-            }
-        }
-
-        class MultiReceiverRegistry<R> implements ReceiverRegistry<R> {
-
-            private final Set<Receiver<R>> receivers;
-            private final Set<Receiver<R>> pullingReceivers;
-
-            public MultiReceiverRegistry() {
-                this.receivers = new HashSet<>();
-                this.pullingReceivers = new HashSet<>();
-            }
-
-            @Override
-            public void recordReceive() {
-                pullingReceivers.clear();
-            }
-
-            public void recordPull(Receiver<R> receiver) {
-                pullingReceivers.add(receiver);
-            }
-
-            @Override
-            public boolean isPulling() {
-                return pullingReceivers.size() > 0;
-            }
-
-            @Override
-            public boolean addReceiver(Receiver<R> receiver) {
-                return receivers.add(receiver);
-            }
-
-            public int size() {
-                return receivers.size();
-            }
-
-            public Set<Receiver<R>> pullingReceivers() {
-                return new HashSet<>(pullingReceivers);
-            }
         }
 
     }

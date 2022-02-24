@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.AbstractPublisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ public class BufferedFanOutReactive<PACKET> extends AbstractPublisher<PACKET> im
     final Set<PACKET> bufferSet;
     final List<PACKET> bufferList;
     private final ProviderRegistry<PACKET> providerManager;
-    private final MultiReceiverRegistry<PACKET> receiverRegistry;
+    private final ReceiverRegistry.MultiReceiverRegistry<PACKET> receiverRegistry;
 
     public BufferedFanOutReactive(Monitoring monitor, String groupName) {
         super(monitor, groupName);
@@ -44,11 +45,11 @@ public class BufferedFanOutReactive<PACKET> extends AbstractPublisher<PACKET> im
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
         this.providerManager = new SingleProviderRegistry<>(this);
-        this.receiverRegistry = new MultiReceiverRegistry<>();
+        this.receiverRegistry = new ReceiverRegistry.MultiReceiverRegistry<>();
     }
 
     @Override
-    protected MultiReceiverRegistry<PACKET> receiverRegistry() {
+    protected ReceiverRegistry.MultiReceiverRegistry<PACKET> receiverRegistry() {
         return receiverRegistry;
     }
 
