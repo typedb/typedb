@@ -70,6 +70,6 @@ native_java_libraries(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*", "*/*/*"]),
+    include = glob(["*", "*/*", "*/*/*", "*/*/*/*"]),
     license_type = "agpl",
 )
