@@ -28,9 +28,9 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractReactiveStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.BufferedFanOutReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractUnaryReactiveStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractReactiveStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedFanOutReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractUnaryReactiveStream;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 

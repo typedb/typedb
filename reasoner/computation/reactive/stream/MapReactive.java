@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
@@ -27,7 +27,8 @@ public class MapReactive<INPUT, OUTPUT> extends AbstractUnaryReactiveStream<INPU
     private final Function<INPUT, OUTPUT> mappingFunc;
     private final SingleProviderRegistry<INPUT> providerManager;
 
-    protected MapReactive(Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, Monitoring monitor, String groupName) {
+    public MapReactive(Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, Monitoring monitor,
+                       String groupName) {
         super(monitor, groupName);
         this.mappingFunc = mappingFunc;
         this.providerManager = new SingleProviderRegistry<>(publisher, this);

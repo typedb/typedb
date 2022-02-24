@@ -27,9 +27,9 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.BufferedFanOutReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.FanInReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedFanOutReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.Source;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -41,7 +41,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.computation.reactive.FanInReactive.fanIn;
+import static com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInReactive.fanIn;
 
 public class ConcludableController extends Controller<ConceptMap, Map<Variable, Concept>, ConceptMap,
         ConcludableController.ConcludableProcessor, ConcludableController> {

@@ -16,29 +16,18 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.AbstractPublisher;
 
-public abstract class AbstractUnaryPublisher<OUTPUT> extends AbstractPublisher<OUTPUT> {
+public abstract class AbstractReactiveStream<INPUT, OUTPUT> extends AbstractPublisher<OUTPUT> implements Reactive.Receiver.Subscriber<INPUT> {  // TODO: This abstraction disappears
 
-    protected SingleReceiverRegistry<OUTPUT> receiverRegistry;
-
-    protected AbstractUnaryPublisher(Monitoring monitor, String groupName) {
+    protected AbstractReactiveStream(Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.receiverRegistry = new SingleReceiverRegistry<>();
     }
 
-    @Override
-    protected SingleReceiverRegistry<OUTPUT> receiverRegistry() {
-        return receiverRegistry;
-    }
-
-    @Override
-    public void publishTo(Subscriber<OUTPUT> subscriber) {
-        receiverRegistry().addReceiver(subscriber);
-        subscriber.subscribeTo(this);
-    }
+    protected abstract ProviderRegistry<INPUT> providerRegistry();
 
 }

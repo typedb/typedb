@@ -16,22 +16,21 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Stack;
 
-public class DeduplicationReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
+public class BufferReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
 
     private final SingleProviderRegistry<PACKET> providerManager;
-    private final Set<PACKET> deduplicationSet;
+    private final Stack<PACKET> stack;
 
-    protected DeduplicationReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
+    public BufferReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new SingleProviderRegistry<>(publisher, this);
-        this.deduplicationSet = new HashSet<>();
+        this.stack = new Stack<>();
     }
 
     @Override
@@ -42,12 +41,25 @@ public class DeduplicationReactive<PACKET> extends AbstractUnaryReactiveStream<P
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
-        if (deduplicationSet.add(packet)) {
+        if (receiverRegistry().isPulling()) {
             receiverRegistry().recordReceive();
             receiverRegistry().receiver().receive(this, packet);
         } else {
-            if (receiverRegistry().isPulling()) providerManager.pull(provider);  // Automatic retry
-            monitor().onAnswerDestroy(this);  // Already seen this answer, so join this path
+            // TODO: Could add an answer deduplication optimisation here, but means holding an extra set of all answers seen
+            stack.add(packet);
+        }
+    }
+
+    @Override
+    public void pull(Receiver<PACKET> receiver) {
+        assert receiver.equals(receiverRegistry().receiver());  // TODO: Make a proper exception for this
+        if (!receiverRegistry().isPulling()) {
+            if (stack.size() > 0) {
+                receiver.receive(this, stack.pop());
+            } else {
+                receiverRegistry().recordPull();
+                providerRegistry().pullAll();
+            }
         }
     }
 }

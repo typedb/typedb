@@ -16,45 +16,34 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-public abstract class Sink<PACKET> implements Subscriber<PACKET> {
+import javax.annotation.Nullable;
+
+public class NoOpReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
 
     private final SingleProviderRegistry<PACKET> providerManager;
-    private Monitoring monitor;
 
-    protected Sink() {
-        this.providerManager = new SingleProviderRegistry<>(this);
-    }
-
-    protected SingleProviderRegistry<PACKET> providerManager() {
-        return providerManager;
-    }
-
-    protected Monitoring monitor() {
-        return monitor;
-    }
-
-    public void setMonitor(Monitoring monitor) {
-        this.monitor = monitor;
+    protected NoOpReactive(@Nullable Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
+        super(monitor, groupName);
+        this.providerManager = new SingleProviderRegistry<>(publisher, this);
     }
 
     @Override
-    public void subscribeTo(Provider<PACKET> provider) {
-        providerManager().add(provider);
+    protected ProviderRegistry<PACKET> providerRegistry() {
+        return providerManager;
+    }
+
+    public static <T> NoOpReactive<T> noOp(Monitoring monitor, String groupName) {
+        return new NoOpReactive<>(null, monitor, groupName);
     }
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
-        providerManager().recordReceive(provider);
-    }
-
-    public void pull() {
-        providerManager().pullAll();
+        super.receive(provider, packet);
+        receiverRegistry().recordReceive();
+        receiverRegistry().receiver().receive(this, packet);
     }
 }

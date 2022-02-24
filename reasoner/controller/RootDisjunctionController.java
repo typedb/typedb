@@ -23,8 +23,8 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.FanInReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractReactiveStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractReactiveStream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Set;

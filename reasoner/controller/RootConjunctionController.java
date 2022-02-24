@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.CompoundReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.CompoundReactive;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.List;

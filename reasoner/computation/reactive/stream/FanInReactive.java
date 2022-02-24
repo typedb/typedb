@@ -16,28 +16,26 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
-import javax.annotation.Nullable;
+public class FanInReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
 
-public class NoOpReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
+    private final MultiProviderRegistry<PACKET> providerManager;
 
-    private final SingleProviderRegistry<PACKET> providerManager;
-
-    protected NoOpReactive(@Nullable Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
+    protected FanInReactive(Monitoring monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new SingleProviderRegistry<>(publisher, this);
+        this.providerManager = new MultiProviderRegistry<>(this);
     }
 
     @Override
-    protected ProviderRegistry<PACKET> providerRegistry() {
+    protected MultiProviderRegistry<PACKET> providerRegistry() {
         return providerManager;
     }
 
-    public static <T> NoOpReactive<T> noOp(Monitoring monitor, String groupName) {
-        return new NoOpReactive<>(null, monitor, groupName);
+    public static <T> FanInReactive<T> fanIn(Monitoring monitor, String groupName) {
+        return new FanInReactive<>(monitor, groupName);
     }
 
     @Override
@@ -45,5 +43,11 @@ public class NoOpReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PA
         super.receive(provider, packet);
         receiverRegistry().recordReceive();
         receiverRegistry().receiver().receive(this, packet);
+    }
+
+    public void finaliseProviders() {
+        assert monitor() != null;
+        final int numForks = providerRegistry().size() - 1;
+        if (numForks > 0) monitor().onPathFork(numForks, this);
     }
 }

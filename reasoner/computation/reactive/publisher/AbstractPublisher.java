@@ -16,10 +16,17 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive.publisher;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractReactiveStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.DeduplicationReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FindFirstReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FlatMapOrRetryReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.MapReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 
 import java.util.function.Function;
 

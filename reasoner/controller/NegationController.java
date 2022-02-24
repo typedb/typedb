@@ -24,8 +24,8 @@ import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractUnaryReactiveStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.BufferedFanOutReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractUnaryReactiveStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedFanOutReactive;
 
 import java.util.Set;
 import java.util.function.Function;

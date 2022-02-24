@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractReactiveStream;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.HashMap;
@@ -69,7 +70,7 @@ public interface Reactive {
                 this.isPulling = false;
             }
 
-            SingleReceiverRegistry() {
+            public SingleReceiverRegistry() {
                 this.receiver = null;
                 this.isPulling = false;
             }
@@ -118,7 +119,7 @@ public interface Reactive {
                 pullingReceivers.clear();
             }
 
-            void recordPull(Receiver<R> receiver) {
+            public void recordPull(Receiver<R> receiver) {
                 pullingReceivers.add(receiver);
             }
 

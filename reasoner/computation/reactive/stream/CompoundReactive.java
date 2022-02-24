@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;

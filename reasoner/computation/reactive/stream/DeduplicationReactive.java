@@ -16,19 +16,22 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 
-public class FindFirstReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
+import java.util.HashSet;
+import java.util.Set;
+
+public class DeduplicationReactive<PACKET> extends AbstractUnaryReactiveStream<PACKET, PACKET> {
 
     private final SingleProviderRegistry<PACKET> providerManager;
-    private boolean packetFound;
+    private final Set<PACKET> deduplicationSet;
 
-    FindFirstReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
+    public DeduplicationReactive(Publisher<PACKET> publisher, Monitoring monitor, String groupName) {
         super(monitor, groupName);
         this.providerManager = new SingleProviderRegistry<>(publisher, this);
-        this.packetFound = false;
+        this.deduplicationSet = new HashSet<>();
     }
 
     @Override
@@ -39,18 +42,12 @@ public class FindFirstReactive<PACKET> extends AbstractUnaryReactiveStream<PACKE
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
-        if (!packetFound) {
-            packetFound = true;
+        if (deduplicationSet.add(packet)) {
             receiverRegistry().recordReceive();
             receiverRegistry().receiver().receive(this, packet);
         } else {
-            monitor().onAnswerDestroy(this);
+            if (receiverRegistry().isPulling()) providerManager.pull(provider);  // Automatic retry
+            monitor().onAnswerDestroy(this);  // Already seen this answer, so join this path
         }
-    }
-
-    @Override
-    public void pull(Receiver<PACKET> receiver) {
-        // TODO: THis is the only unary reactive that overrides pull()
-        if (!packetFound) super.pull(receiver);  // TODO: Could this cause a failure to terminate if multiple upstream paths are never joined?
     }
 }

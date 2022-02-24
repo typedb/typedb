@@ -27,8 +27,8 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractReactiveStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.FanInReactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractReactiveStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInReactive;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
@@ -39,7 +39,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.computation.reactive.FanInReactive.fanIn;
+import static com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInReactive.fanIn;
 import static com.vaticle.typedb.core.reasoner.controller.ConjunctionController.merge;
 
 public abstract class DisjunctionController<
