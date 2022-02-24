@@ -477,30 +477,6 @@ public abstract class Processor<INPUT, OUTPUT,
             });
         }
 
-        // Methods to report to downstream monitors without changing the status of this monitoring
-        public void reportPathJoin(Reactive joiner) {
-            reportToMonitors(CountChange.PathJoin, 1, joiner);
-        }
-
-        public void reportAnswerCreate(Reactive creator) {
-            reportToMonitors(CountChange.AnswerCreate, 1, creator);
-        }
-
-        public void onAnswerDestroyLocalUpdate(Reactive destroyer) {
-            updateCount(CountChange.AnswerDestroy, 1);
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.onCountChange(destroyer, CountChange.AnswerDestroy, processor().driver(), 1));
-        }
-
-        public void onPathJoinLocalUpdate(Reactive joiner) {
-            updateCount(CountChange.PathJoin, 1);
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.onCountChange(joiner, CountChange.PathJoin, processor().driver(), 1));
-        }
-
-        public void onAnswerCreateLocalUpdate(Reactive creator) {
-            onChange(CountChange.AnswerCreate, 1, creator);
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.onCountChange(creator, CountChange.AnswerCreate, processor().driver(), 1));
-        }
-
         protected void sendInitialReport(Driver<? extends Processor<?, ?, ?, ?>> monitor) {
             final long pathsCountUpdate = pathsCount;
             final long answersCountUpdate = answersCount;
