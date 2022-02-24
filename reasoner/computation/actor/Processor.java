@@ -508,10 +508,6 @@ public abstract class Processor<INPUT, OUTPUT,
             monitor.execute(actor -> actor.monitoring().asMonitor().receiveInitialReport(processor().driver(), pathsCountUpdate, answersCountUpdate));
         }
 
-        public long count() {
-            return pathsCount + answersCount;
-        }
-
     }
 
     public static class Monitor extends Monitoring {
@@ -562,7 +558,7 @@ public abstract class Processor<INPUT, OUTPUT,
         protected void updateCount(CountChange countChange, int num) {
             super.updateCount(countChange, num);
             assert answersCount >= 0 || !registered.equals(countSenders);
-            assert count() >= -1 || !registered.equals(countSenders);
+            assert pathsCount >= -1 || !registered.equals(countSenders);
         }
 
         @Override
@@ -574,8 +570,13 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         protected void checkDone() {
-            assert count() >= -1 || !registered.equals(countSenders);
-            if (count() <= -1 && processor().isPulling() && registered.equals(countSenders)) {
+            assert !done;
+            if (registered.equals(countSenders)) {
+                assert pathsCount >= -1;
+                assert pathsCount >= 0 || answersCount == 0;
+                assert answersCount >= 0;
+            }
+            if (pathsCount == -1 && answersCount == 0 && processor().isPulling() && registered.equals(countSenders)) {
                 done = true;
                 processor().onDone();
             }
