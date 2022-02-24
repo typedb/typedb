@@ -19,6 +19,8 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.AbstractPublisher;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.ArrayList;
@@ -28,8 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
-public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKET, PACKET> {
+public class BufferedFanOutReactive<PACKET> extends AbstractPublisher<PACKET> implements Reactive.Stream<PACKET, PACKET> {
 
     final Map<Receiver<PACKET>, Integer> bufferPositions;  // Points to the next item needed
     final Set<PACKET> bufferSet;
@@ -51,7 +52,6 @@ public class BufferedFanOutReactive<PACKET> extends AbstractReactiveStream<PACKE
         return receiverRegistry;
     }
 
-    @Override
     protected ProviderRegistry<PACKET> providerRegistry() {
         return providerManager;
     }

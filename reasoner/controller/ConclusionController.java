@@ -28,7 +28,6 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractReactiveStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedFanOutReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractUnaryReactiveStream;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
@@ -172,7 +171,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                         driver(), materialiserEndpoint.id(), null,
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
-                AbstractReactiveStream<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
+                Stream<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
                 MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, monitor(), groupName());
                 op.publishTo(materialiserReactive);
                 materialiserReactive.sendTo(receiverRegistry().receiver());

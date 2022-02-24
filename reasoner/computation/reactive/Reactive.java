@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractReactiveStream;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.HashMap;
@@ -40,13 +39,15 @@ public interface Reactive {
 
             void publishTo(Receiver.Subscriber<T> subscriber);
 
-            AbstractReactiveStream<T, T> findFirst();
+            Stream<T,T> findFirst();
 
-            <R> AbstractReactiveStream<T, R> map(Function<T, R> function);
+            <R> Stream<T, R> map(Function<T, R> function);
 
-            <R> AbstractReactiveStream<T, R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
+            <R> Stream<T,R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
 
-            AbstractReactiveStream<T, T> buffer();
+            Stream<T, T> buffer();
+
+            Stream<T, T> deduplicate();
 
         }
 
@@ -280,6 +281,10 @@ public interface Reactive {
                 return providers.size();
             }
         }
+    }
+
+    interface Stream<INPUT, OUTPUT> extends Receiver.Subscriber<INPUT>, Provider.Publisher<OUTPUT> {
+
     }
 
 }

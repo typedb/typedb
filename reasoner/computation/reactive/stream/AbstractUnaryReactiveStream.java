@@ -19,9 +19,11 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.AbstractPublisher;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-public abstract class AbstractUnaryReactiveStream<INPUT, OUTPUT> extends AbstractReactiveStream<INPUT, OUTPUT> {
+public abstract class AbstractUnaryReactiveStream<INPUT, OUTPUT> extends AbstractPublisher<OUTPUT> implements Reactive.Stream<INPUT, OUTPUT> {
 
     private final SingleReceiverRegistry<OUTPUT> receiverRegistry;
 
@@ -30,7 +32,6 @@ public abstract class AbstractUnaryReactiveStream<INPUT, OUTPUT> extends Abstrac
         this.receiverRegistry = new SingleReceiverRegistry<>();
     }
 
-    @Override
     protected abstract ProviderRegistry<INPUT> providerRegistry();
 
     @Override

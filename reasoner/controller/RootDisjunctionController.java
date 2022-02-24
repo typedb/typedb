@@ -23,8 +23,8 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.AbstractReactiveStream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Set;
@@ -103,7 +103,7 @@ public class RootDisjunctionController
         }
 
         @Override
-        protected AbstractReactiveStream<ConceptMap, ConceptMap> getOutlet(FanInReactive<ConceptMap> fanIn) {
+        protected Reactive.Stream<ConceptMap, ConceptMap> getOutlet(FanInReactive<ConceptMap> fanIn) {
             // Simply here to be overridden by root disjuntion to avoid duplicating setUp
             return fanIn.buffer().map(conceptMap -> conceptMap.filter(filter)).deduplicate();
         }
