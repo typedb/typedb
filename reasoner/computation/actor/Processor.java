@@ -549,7 +549,6 @@ public abstract class Processor<INPUT, OUTPUT,
             assert !done;
             if (registered.equals(countSenders)) {
                 assert pathsCount >= -1;
-                assert pathsCount >= 0 || answersCount == 0;
                 assert answersCount >= 0;
             }
             if (pathsCount == -1 && answersCount == 0 && processor().isPulling() && registered.equals(countSenders)) {
