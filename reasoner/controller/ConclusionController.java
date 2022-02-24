@@ -190,6 +190,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
                 receiverRegistry().recordReceive();
                 receiverRegistry().receiver().receive(this, packet);
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, provider));
                 provider.pull(receiverRegistry().receiver());  // We need to pull again so that the materialiser processor does a join of its own accord
             }
         }
