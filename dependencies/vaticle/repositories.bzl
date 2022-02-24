@@ -48,8 +48,8 @@ def vaticle_typedb_protocol():
 def vaticle_typedb_behaviour():
     git_repository(
         name = "vaticle_typedb_behaviour",
-        remote = "https://github.com/flyingsilverfin/typedb-behaviour",
-        commit = "0a91ae5feb657e31368f93efa37a2f6560119e07", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_behaviour
+        remote = "https://github.com/vaticle/typedb-behaviour",
+        commit = "d09adefdcf8d0befedb46a95a6623998add71cff", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_behaviour
     )
 
 def vaticle_factory_tracing():
