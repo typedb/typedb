@@ -29,7 +29,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedFanOutReactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInReactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.Source;
+import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 

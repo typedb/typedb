@@ -20,9 +20,9 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.Monitoring;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.AbstractPublisher;
-import com.vaticle.typedb.core.reasoner.computation.reactive.publisher.ReceiverRegistry;
-import com.vaticle.typedb.core.reasoner.computation.reactive.subscriber.ProviderRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.provider.AbstractPublisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.ArrayList;
