@@ -51,7 +51,6 @@ public class FindFirstStream<PACKET> extends SingleReceiverStream<PACKET, PACKET
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
-        // TODO: This is the only single receiver reactive that overrides pull()
         if (!packetFound) super.pull(receiver);  // TODO: Could this cause a failure to terminate if multiple upstream paths are never joined?
     }
 }

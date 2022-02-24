@@ -53,7 +53,7 @@ public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET>
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
-        assert receiver.equals(receiverRegistry().receiver());  // TODO: Make a proper exception for this
+        assert receiver.equals(receiverRegistry().receiver());
         if (!receiverRegistry().isPulling()) {
             if (stack.size() > 0) {
                 receiver.receive(this, stack.pop());
