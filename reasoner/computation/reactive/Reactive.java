@@ -19,10 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
 
 public interface Reactive {
