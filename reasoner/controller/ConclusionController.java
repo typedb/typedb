@@ -181,7 +181,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 tracker().onAnswerDestroy(this);
 
                 // TODO: We would like to use a provider manager for this, but it's restricted to work to this reactive's input type.
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive));
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive, receiverRegistry().monitors()));
                 materialiserReactive.pull(receiverRegistry().receiver(), receiverRegistry().monitors());
                 providerRegistry().pull(provider, receiverRegistry().monitors());  // We need to pull on the condition again in case materialisation fails
             }
@@ -190,7 +190,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
                 receiverRegistry().recordReceive();
                 receiverRegistry().receiver().receive(this, packet);
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, provider));
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, provider, receiverRegistry().monitors()));
                 provider.pull(receiverRegistry().receiver(), receiverRegistry().monitors());  // We need to pull again so that the materialiser processor does a join of its own accord
             }
         }

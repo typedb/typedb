@@ -114,8 +114,7 @@ public abstract class Processor<INPUT, OUTPUT,
         assert !done;
         Set<Monitor.Reference> monitors = upstreamMonitors();
         monitors.forEach(connection::registerWithMonitor);
-        if (monitors.size() > 0) connection.propagateMonitors(monitors);
-        receivingEndpoints.get(connection.receiverEndpointId()).setReady(connection);
+        receivingEndpoints.get(connection.receiverEndpointId()).setReady(connection, upstreamMonitors());
         upstreamConnections.add(connection);
     }
 
@@ -144,6 +143,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
     protected void endpointPull(Receiver<OUTPUT> receiver, long pubEndpointId, Set<Monitor.Reference> monitors) {
         assert !done;
+        addAndPropagateMonitors(monitors);  // TODO: Consider moving this inside the outlet's pull method
         providingEndpoints.get(pubEndpointId).pull(receiver, monitors);
     }
 
@@ -168,9 +168,8 @@ public abstract class Processor<INPUT, OUTPUT,
         if (newUpstreamMonitors.size() > 0) {
             upstreamConnections.forEach(connection -> {
                 newUpstreamMonitors.forEach(connection::registerWithMonitor);
-                connection.propagateMonitors(newUpstreamMonitors);
             });
-            newMonitors.forEach(monitor -> monitoring().sendInitialReport(monitor));
+            newMonitors.forEach(monitor -> monitoring().sendSynchronisationReport(monitor));
         }
     }
 
@@ -243,18 +242,24 @@ public abstract class Processor<INPUT, OUTPUT,
             return id;
         }
 
-        void setReady(Connection<PACKET, ?, ?> connection) {
+        void setReady(Connection<PACKET, ?, ?> connection, Set<Monitor.Reference> monitors) {
             // TODO: Poorly named, it sets ready and pulls
             providerRegistry().add(connection);
             assert !ready;
             this.ready = true;
-            pull(receiverRegistry().receiver(), receiverRegistry().monitors());
+            pull(receiverRegistry().receiver(), monitors);
         }
 
         @Override
         public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             assert receiver.equals(receiverRegistry().receiver());
-            if (ready && receiverRegistry().recordPull(monitors)) providerRegistry().pullAll(receiverRegistry().monitors());
+            if (ready && receiverRegistry().recordPull(monitors)) providerRegistry().pullAll(monitorsToPropagate());
+        }
+
+        Set<Monitor.Reference> monitorsToPropagate() {
+            Set<Monitor.Reference> monitors = new HashSet<>(receiverRegistry().monitors());
+            if (tracker().isMonitor()) monitors.add(tracker().asMonitor().getReference());
+            return monitors;
         }
 
         @Override
@@ -316,7 +321,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
         @Override
         public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), this));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), this, monitors));
             if (receiverRegistry().recordPull(monitors)) providerRegistry().pullAll(receiverRegistry().monitors());
         }
 
@@ -480,7 +485,7 @@ public abstract class Processor<INPUT, OUTPUT,
             monitor.driver().execute(actor -> actor.monitoring().asMonitor().receiveReport(update, countChange));
         }
 
-        protected void sendInitialReport(Monitor.Reference monitor) {
+        protected void sendSynchronisationReport(Monitor.Reference monitor) {
             final long pathsCountUpdate = pathsCount;
             final long answersCountUpdate = answersCount;
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.initialReport(processor().driver(), monitor, pathsCountUpdate, answersCountUpdate));

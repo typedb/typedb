@@ -60,8 +60,7 @@ public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET>
             if (stack.size() > 0) {
                 receiver.receive(this, stack.pop());
             } else {
-                receiverRegistry().recordPull(monitors);
-                providerRegistry().pullAll(receiverRegistry().monitors());// TODO: Shouldn't this be conditional on the recordPull like all other occurrences?
+                if (receiverRegistry().recordPull(monitors)) providerRegistry().pullAll(receiverRegistry().monitors());
             }
         }
     }

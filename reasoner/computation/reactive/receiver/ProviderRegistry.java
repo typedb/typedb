@@ -85,7 +85,7 @@ public abstract class ProviderRegistry<R> {
 
         private void pullProvider(Set<Processor.Monitor.Reference> monitors) {
             assert this.provider != null;
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitors));
             provider.pull(receiver, monitors);
         }
 
@@ -142,7 +142,7 @@ public abstract class ProviderRegistry<R> {
 
         private void pullProvider(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors) {
             assert providers.containsKey(provider);
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitors));
             provider.pull(receiver, monitors);
         }
 

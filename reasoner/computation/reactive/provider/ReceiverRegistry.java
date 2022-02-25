@@ -26,11 +26,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
+
 public abstract class ReceiverRegistry<R> {
 
-    abstract void recordReceive();  // TODO: This should have usages
+    abstract void recordReceive();
 
-    abstract boolean addReceiver(Reactive.Receiver<R> subscriber);  // TODO: There's a bug in intellisense here, there are more usages
+    abstract boolean addReceiver(Reactive.Receiver<R> receiver);
 
     public abstract Set<Processor.Monitor.Reference> monitors();
 
@@ -103,10 +105,17 @@ public abstract class ReceiverRegistry<R> {
             pullingReceivers.clear();
         }
 
-        // TODO: Why are recordPull and addReceiver separate? We should only add a receiver when we are recording a pull
-        public void recordPull(Reactive.Receiver<R> receiver, Set<Processor.Monitor.Reference> monitors) {
+        public Set<Processor.Monitor.Reference> recordPull(Reactive.Receiver<R> receiver, Set<Processor.Monitor.Reference> monitors) {
             pullingReceivers.add(receiver);
-            monitors.forEach(monitor -> monitorReceivers.computeIfAbsent(monitor, m -> new HashSet<>()).add(receiver));
+            Set<Processor.Monitor.Reference> newMonitors = new HashSet<>();
+            monitors.forEach(monitor -> {
+                Set<Reactive.Receiver<R>> recs = monitorReceivers.computeIfAbsent(monitor, mon -> {
+                    newMonitors.add(mon);
+                    return new HashSet<>(set(receiver));
+                });
+                if (recs.add(receiver)) newMonitors.add(monitor);
+            });
+            return newMonitors;
         }
 
         public boolean isPulling() {

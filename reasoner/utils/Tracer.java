@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -79,14 +80,15 @@ public final class Tracer {
         return Optional.ofNullable(INSTANCE);
     }
 
-    public synchronized void pull(@Nullable Receiver<?> receiver, Provider<?> provider) {
+    public synchronized void pull(@Nullable Receiver<?> receiver, Provider<?> provider,
+                                  Set<Processor.Monitor.Reference> monitors) {
         String receiverString;
         if (receiver == null) receiverString = "root";
         else {
             receiverString = simpleClassId(receiver);
             addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
         }
-        addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
+        addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull_mon" + monitors.size());
         addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 
