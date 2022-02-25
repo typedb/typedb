@@ -18,8 +18,11 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
+
+import java.util.Set;
 
 public class FindFirstStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
@@ -45,12 +48,12 @@ public class FindFirstStream<PACKET> extends SingleReceiverStream<PACKET, PACKET
             receiverRegistry().recordReceive();
             receiverRegistry().receiver().receive(this, packet);
         } else {
-            monitor().onAnswerDestroy(this);
+            tracker().onAnswerDestroy(this);
         }
     }
 
     @Override
-    public void pull(Receiver<PACKET> receiver) {
-        if (!packetFound) super.pull(receiver);  // TODO: Could this cause a failure to terminate if multiple upstream paths are never joined?
+    public void pull(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
+        if (!packetFound) super.pull(receiver, monitors);  // TODO: Could this cause a failure to terminate if multiple upstream paths are never joined?
     }
 }

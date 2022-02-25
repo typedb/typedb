@@ -18,19 +18,21 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.receiver;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class ProviderRegistry<R> {
     // TODO: Consider managing whether to pull on upstreams by telling the manager whether we are pulling or not
     public abstract void add(Reactive.Provider<R> provider);
 
-    public abstract void pull(Reactive.Provider<R> provider);
+    public abstract void pull(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors);
 
-    public abstract void pullAll();
+    public abstract void pullAll(Set<Processor.Monitor.Reference> monitors);
 
     public abstract void recordReceive(Reactive.Provider<R> provider);
 
@@ -59,17 +61,17 @@ public abstract class ProviderRegistry<R> {
         }
 
         @Override
-        public void pullAll() {
-            if (provider != null) pull(provider);
+        public void pullAll(Set<Processor.Monitor.Reference> monitors) {
+            if (provider != null) pull(provider, monitors);
         }
 
         @Override
-        public void pull(Reactive.Provider<R> provider) {
+        public void pull(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors) {
             assert this.provider != null;
             assert this.provider == provider;
             if (!isPulling()) {
                 setPulling(true);
-                pullProvider();
+                pullProvider(monitors);
             }
         }
 
@@ -81,10 +83,10 @@ public abstract class ProviderRegistry<R> {
             isPulling = pulling;
         }
 
-        private void pullProvider() {
+        private void pullProvider(Set<Processor.Monitor.Reference> monitors) {
             assert this.provider != null;
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
-            provider.pull(receiver);
+            provider.pull(receiver, monitors);
         }
 
         @Override
@@ -115,16 +117,16 @@ public abstract class ProviderRegistry<R> {
         }
 
         @Override
-        public void pullAll() {
-            providers.keySet().forEach(this::pull);
+        public void pullAll(Set<Processor.Monitor.Reference> monitors) {
+            providers.keySet().forEach(provider -> pull(provider, monitors));
         }
 
         @Override
-        public void pull(Reactive.Provider<R> provider) {
+        public void pull(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors) {
             assert providers.containsKey(provider);
             if (!isPulling(provider)) {
                 setPulling(provider, true);
-                pullProvider(provider);
+                pullProvider(provider, monitors);
             }
         }
 
@@ -138,10 +140,10 @@ public abstract class ProviderRegistry<R> {
             providers.put(provider, isPulling);
         }
 
-        private void pullProvider(Reactive.Provider<R> provider) {
+        private void pullProvider(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors) {
             assert providers.containsKey(provider);
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
-            provider.pull(receiver);
+            provider.pull(receiver, monitors);
         }
 
         public int size() {

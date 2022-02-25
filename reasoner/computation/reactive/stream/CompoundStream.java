@@ -71,14 +71,14 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
                 if (remainingPlan.size() == 1) {
                     follower = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
                 } else {
-                    follower = new CompoundStream<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, monitor(), groupName()).buffer();
+                    follower = new CompoundStream<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, tracker(), groupName()).buffer();
                 }
                 publisherPackets.put(follower, mergedPacket);
-                monitor().onPathFork(1, this);
-                monitor().onAnswerDestroy(this);
+                tracker().onPathFork(1, this);
+                tracker().onAnswerDestroy(this);
                 follower.publishTo(this);
-                providerRegistry().pull(leadingPublisher);  // Pull again on the leader in case the follower never produces an answer
-                providerRegistry().pull(follower);
+                providerRegistry().pull(leadingPublisher, receiverRegistry().monitors());  // Pull again on the leader in case the follower never produces an answer
+                providerRegistry().pull(follower, receiverRegistry().monitors());
             }
         } else {
             receiverRegistry().recordReceive();

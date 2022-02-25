@@ -173,17 +173,17 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
                 Stream<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
-                MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, monitor(), groupName());
+                MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, tracker(), groupName());
                 op.publishTo(materialiserReactive);
                 materialiserReactive.sendTo(receiverRegistry().receiver());
 
-                monitor().onPathFork(1, this);
-                monitor().onAnswerDestroy(this);
+                tracker().onPathFork(1, this);
+                tracker().onAnswerDestroy(this);
 
                 // TODO: We would like to use a provider manager for this, but it's restricted to work to this reactive's input type.
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive));
-                materialiserReactive.pull(receiverRegistry().receiver());
-                providerRegistry().pull(provider);  // We need to pull on the condition again in case materialisation fails
+                materialiserReactive.pull(receiverRegistry().receiver(), receiverRegistry().monitors());
+                providerRegistry().pull(provider, receiverRegistry().monitors());  // We need to pull on the condition again in case materialisation fails
             }
 
             private void receiveMaterialisation(MaterialiserReactive provider, Map<Variable, Concept> packet) {
@@ -191,7 +191,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 receiverRegistry().recordReceive();
                 receiverRegistry().receiver().receive(this, packet);
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, provider));
-                provider.pull(receiverRegistry().receiver());  // We need to pull again so that the materialiser processor does a join of its own accord
+                provider.pull(receiverRegistry().receiver(), receiverRegistry().monitors());  // We need to pull again so that the materialiser processor does a join of its own accord
             }
         }
 

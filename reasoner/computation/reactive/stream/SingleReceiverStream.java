@@ -18,12 +18,15 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.AbstractPublisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
+
+import java.util.Set;
 
 public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublisher<OUTPUT> implements Reactive.Stream<INPUT, OUTPUT> {
 
@@ -48,15 +51,15 @@ public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublis
     }
 
     @Override
-    public void pull(Receiver<OUTPUT> receiver) {
+    public void pull(Receiver<OUTPUT> receiver, Set<Processor.Monitor.Reference> monitors) {
         assert receiver.equals(receiverRegistry().receiver());
-        if (receiverRegistry().recordPull()) providerRegistry().pullAll();
+        if (receiverRegistry().recordPull(monitors)) providerRegistry().pullAll(receiverRegistry().monitors());
     }
 
     @Override
     public void subscribeTo(Provider<INPUT> provider) {
         providerRegistry().add(provider);
-        if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
+        if (receiverRegistry().isPulling()) providerRegistry().pull(provider, receiverRegistry().monitors());
     }
 
     @Override

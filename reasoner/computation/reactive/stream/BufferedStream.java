@@ -18,9 +18,11 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
+import java.util.Set;
 import java.util.Stack;
 
 public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
@@ -52,14 +54,14 @@ public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET>
     }
 
     @Override
-    public void pull(Receiver<PACKET> receiver) {
+    public void pull(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
         assert receiver.equals(receiverRegistry().receiver());
         if (!receiverRegistry().isPulling()) {
             if (stack.size() > 0) {
                 receiver.receive(this, stack.pop());
             } else {
-                receiverRegistry().recordPull();
-                providerRegistry().pullAll();
+                receiverRegistry().recordPull(monitors);
+                providerRegistry().pullAll(receiverRegistry().monitors());// TODO: Shouldn't this be conditional on the recordPull like all other occurrences?
             }
         }
     }

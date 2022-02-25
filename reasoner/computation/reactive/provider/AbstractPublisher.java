@@ -31,18 +31,18 @@ import java.util.function.Function;
 
 public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Publisher<OUTPUT> {
 
-    private final TerminationTracker monitor;
+    private final TerminationTracker tracker;
     private final String groupName;
 
-    protected AbstractPublisher(TerminationTracker monitor, String groupName) {
-        this.monitor = monitor;
+    protected AbstractPublisher(TerminationTracker tracker, String groupName) {
+        this.tracker = tracker;
         this.groupName = groupName;
     }
 
     protected abstract ReceiverRegistry<OUTPUT> receiverRegistry();
 
-    protected TerminationTracker monitor() {
-        return monitor;
+    protected TerminationTracker tracker() {
+        return tracker;
     }
 
     @Override
@@ -52,35 +52,35 @@ public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Pub
 
     @Override
     public Stream<OUTPUT,OUTPUT> findFirst() {
-        FindFirstStream<OUTPUT> findFirst = new FindFirstStream<>(this, monitor, groupName());
+        FindFirstStream<OUTPUT> findFirst = new FindFirstStream<>(this, tracker, groupName());
         publishTo(findFirst);
         return findFirst;
     }
 
     @Override
     public <R> Stream<OUTPUT, R> map(Function<OUTPUT, R> function) {
-        MapStream<OUTPUT, R> map = new MapStream<>(this, function, monitor(), groupName());
+        MapStream<OUTPUT, R> map = new MapStream<>(this, function, tracker(), groupName());
         publishTo(map);
         return map;
     }
 
     @Override
     public <R> Stream<OUTPUT,R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
-        FlatMapStream<OUTPUT, R> flatMap = new FlatMapStream<>(this, function, monitor(), groupName());
+        FlatMapStream<OUTPUT, R> flatMap = new FlatMapStream<>(this, function, tracker(), groupName());
         publishTo(flatMap);
         return flatMap;
     }
 
     @Override
     public Stream<OUTPUT, OUTPUT> buffer() {
-        BufferedStream<OUTPUT> buffer = new BufferedStream<>(this, monitor(), groupName());
+        BufferedStream<OUTPUT> buffer = new BufferedStream<>(this, tracker(), groupName());
         publishTo(buffer);
         return buffer;
     }
 
     @Override
     public Stream<OUTPUT,OUTPUT> deduplicate() {
-        DeduplicationStream<OUTPUT> dedup = new DeduplicationStream<>(this, monitor(), groupName());
+        DeduplicationStream<OUTPUT> dedup = new DeduplicationStream<>(this, tracker(), groupName());
         publishTo(dedup);
         return dedup;
     }

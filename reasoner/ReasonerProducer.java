@@ -38,6 +38,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
+
 @ThreadSafe
 public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename to MatchProducer and create abstract supertype
 
@@ -167,7 +169,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         @Override
         public void subscribeTo(Provider<ConceptMap> provider) {
             super.subscribeTo(provider);
-            if (isPulling) providerManager().pull(provider);
+            if (isPulling) providerManager().pull(provider, set());
         }
 
         @Override

@@ -19,8 +19,10 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 
+import java.util.Set;
 import java.util.function.Supplier;
 
 public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
@@ -41,16 +43,16 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
     }
 
     @Override
-    public void pull(Receiver<PACKET> receiver) {
+    public void pull(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
         assert receiver.equals(receiverRegistry().receiver());
         assert !exhausted;
         if (iterator == null) iterator = iteratorSupplier.get();
         if (iterator.hasNext()) {
-            monitor().onAnswerCreate(this);
+            tracker().onAnswerCreate(this);
             receiver.receive(this, iterator.next());
         } else {
             exhausted = true;
-            monitor().onPathJoin(this);
+            tracker().onPathJoin(this);
         }
     }
 

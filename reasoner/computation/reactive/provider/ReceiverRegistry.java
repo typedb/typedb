@@ -18,32 +18,38 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public abstract class ReceiverRegistry<R> {
 
-    abstract void recordReceive();
+    abstract void recordReceive();  // TODO: This should have usages
 
-    abstract boolean isPulling();
+    abstract boolean addReceiver(Reactive.Receiver<R> subscriber);  // TODO: There's a bug in intellisense here, there are more usages
 
-    abstract boolean addReceiver(Reactive.Receiver<R> subscriber);
+    public abstract Set<Processor.Monitor.Reference> monitors();
 
     public static class SingleReceiverRegistry<R> extends ReceiverRegistry<R> {
 
-        private Reactive.Receiver<R> receiver;
         private boolean isPulling;
+        private final Set<Processor.Monitor.Reference> monitors;
+        private Reactive.Receiver<R> receiver;
 
         public SingleReceiverRegistry(Reactive.Receiver<R> receiver) {
             this.receiver = receiver;
             this.isPulling = false;
+            this.monitors = new HashSet<>();
         }
 
         public SingleReceiverRegistry() {
             this.receiver = null;
             this.isPulling = false;
+            this.monitors = new HashSet<>();
         }
 
         @Override
@@ -51,13 +57,13 @@ public abstract class ReceiverRegistry<R> {
             isPulling = false;
         }
 
-        public boolean recordPull() {
+        public boolean recordPull(Set<Processor.Monitor.Reference> monitors) {
+            this.monitors.addAll(monitors);  // TODO: If this pull includes new monitors (can it?) then should this method return true? Also if the pull isn't transmitted upstream then those reactives won't be aware of the new monitor(s)
             boolean newPull = !isPulling;
             isPulling = true;
             return newPull;
         }
 
-        @Override
         public boolean isPulling() {
             return isPulling;
         }
@@ -69,6 +75,11 @@ public abstract class ReceiverRegistry<R> {
             return true;
         }
 
+        @Override
+        public Set<Processor.Monitor.Reference> monitors() {
+            return monitors;
+        }
+
         public Reactive.Receiver<R> receiver() {
             assert this.receiver != null;
             return receiver;
@@ -78,11 +89,13 @@ public abstract class ReceiverRegistry<R> {
     public static class MultiReceiverRegistry<R> extends ReceiverRegistry<R> {
 
         private final Set<Reactive.Receiver<R>> receivers;
+        private final Map<Processor.Monitor.Reference, Set<Reactive.Receiver<R>>> monitorReceivers;
         private final Set<Reactive.Receiver<R>> pullingReceivers;
 
         public MultiReceiverRegistry() {
             this.receivers = new HashSet<>();
             this.pullingReceivers = new HashSet<>();
+            this.monitorReceivers = new HashMap<>();
         }
 
         @Override
@@ -90,11 +103,12 @@ public abstract class ReceiverRegistry<R> {
             pullingReceivers.clear();
         }
 
-        public void recordPull(Reactive.Receiver<R> receiver) {
+        // TODO: Why are recordPull and addReceiver separate? We should only add a receiver when we are recording a pull
+        public void recordPull(Reactive.Receiver<R> receiver, Set<Processor.Monitor.Reference> monitors) {
             pullingReceivers.add(receiver);
+            monitors.forEach(monitor -> monitorReceivers.computeIfAbsent(monitor, m -> new HashSet<>()).add(receiver));
         }
 
-        @Override
         public boolean isPulling() {
             return pullingReceivers.size() > 0;
         }
@@ -104,8 +118,13 @@ public abstract class ReceiverRegistry<R> {
             return receivers.add(receiver);
         }
 
-        public int size() {
-            return receivers.size();
+        @Override
+        public Set<Processor.Monitor.Reference> monitors() {
+            return monitorReceivers.keySet();
+        }
+
+        public int size(Processor.Monitor.Reference monitor) {
+            return monitorReceivers.get(monitor).size();
         }
 
         public Set<Reactive.Receiver<R>> pullingReceivers() {

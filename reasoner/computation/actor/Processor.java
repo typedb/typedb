@@ -142,9 +142,9 @@ public abstract class Processor<INPUT, OUTPUT,
         return endpoint;
     }
 
-    protected void endpointPull(Receiver<OUTPUT> receiver, long pubEndpointId) {
+    protected void endpointPull(Receiver<OUTPUT> receiver, long pubEndpointId, Set<Monitor.Reference> monitors) {
         assert !done;
-        providingEndpoints.get(pubEndpointId).pull(receiver);
+        providingEndpoints.get(pubEndpointId).pull(receiver, monitors);
     }
 
     protected void endpointReceive(Provider<INPUT> provider, INPUT packet, long subEndpointId) {
@@ -248,13 +248,13 @@ public abstract class Processor<INPUT, OUTPUT,
             providerRegistry().add(connection);
             assert !ready;
             this.ready = true;
-            pull(receiverRegistry().receiver());
+            pull(receiverRegistry().receiver(), receiverRegistry().monitors());
         }
 
         @Override
-        public void pull(Receiver<PACKET> receiver) {
+        public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             assert receiver.equals(receiverRegistry().receiver());
-            if (ready && receiverRegistry().recordPull()) providerRegistry().pullAll();
+            if (ready && receiverRegistry().recordPull(monitors)) providerRegistry().pullAll(receiverRegistry().monitors());
         }
 
         @Override
@@ -315,15 +315,15 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public void pull(Receiver<PACKET> receiver) {
+        public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), this));
-            if (receiverRegistry().recordPull()) providerRegistry().pullAll();
+            if (receiverRegistry().recordPull(monitors)) providerRegistry().pullAll(receiverRegistry().monitors());
         }
 
         @Override
         public void subscribeTo(Provider<PACKET> provider) {
             providerRegistry().add(provider);
-            if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
+            if (receiverRegistry().isPulling()) providerRegistry().pull(provider, receiverRegistry().monitors());
         }
 
     }
@@ -392,6 +392,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
     public static class TerminationTracker {
 
+        // These counts are used for synchronisation when a new monitor joins, and for the termination in monitor subclasses
         protected long pathsCount;
         protected long answersCount;
         private final Processor<?, ?, ?, ?> processor;
@@ -424,28 +425,31 @@ public abstract class Processor<INPUT, OUTPUT,
         public void onPathFork(int numForks, Reactive forker) {
             assert numForks > 0;
             onChange(CountChange.PathFork, numForks, forker);
-            reportToMonitors(CountChange.PathFork, numForks, forker);
+            processor().monitors().forEach(m -> reportToMonitor(CountChange.PathFork, numForks, forker, m));
         }
 
         public void onPathJoin(Reactive joiner) {
             onChange(CountChange.PathJoin, 1, joiner);
-            reportToMonitors(CountChange.PathJoin, 1, joiner);
+            processor().monitors().forEach(m -> reportToMonitor(CountChange.PathJoin, 1, joiner, m));
+        }
+
+        public void reportPathJoin(Reactive joiner, Monitor.Reference monitor) {
+            reportToMonitor(CountChange.PathJoin, 1, joiner, monitor);
         }
 
         public void onAnswerCreate(Reactive creator) {
             onChange(CountChange.AnswerCreate, 1, creator);
-            reportToMonitors(CountChange.AnswerCreate, 1, creator);
+            processor().monitors().forEach(m -> reportToMonitor(CountChange.AnswerCreate, 1, creator, m));
         }
 
-        public void onAnswerCreate(int num, Reactive creator) {
+        public void reportAnswerCreate(int num, Reactive creator, Monitor.Reference monitor) {
             assert num >= 0;
-            onChange(CountChange.AnswerCreate, num, creator);
-            reportToMonitors(CountChange.AnswerCreate, num, creator);
+            reportToMonitor(CountChange.AnswerCreate, num, creator, monitor);
         }
 
         public void onAnswerDestroy(Reactive destroyer) {
             onChange(CountChange.AnswerDestroy, 1, destroyer);
-            reportToMonitors(CountChange.AnswerDestroy, 1, destroyer);
+            processor().monitors().forEach(m -> reportToMonitor(CountChange.AnswerDestroy, 1, destroyer, m));
         }
 
         protected void onChange(CountChange countChange, int num, Reactive reactive) {
@@ -470,12 +474,10 @@ public abstract class Processor<INPUT, OUTPUT,
             }
         }
 
-        protected void reportToMonitors(CountChange countChange, int num, Reactive reactive) {
+        protected void reportToMonitor(CountChange countChange, int num, Reactive reactive, Monitor.Reference monitor) {
             final int update = num;
-            processor().monitors().forEach(monitor -> {
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportCountChange(reactive, countChange, monitor, update));
-                monitor.driver().execute(actor -> actor.monitoring().asMonitor().receiveReport(update, countChange));
-            });
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportCountChange(reactive, countChange, monitor, update));
+            monitor.driver().execute(actor -> actor.monitoring().asMonitor().receiveReport(update, countChange));
         }
 
         protected void sendInitialReport(Monitor.Reference monitor) {

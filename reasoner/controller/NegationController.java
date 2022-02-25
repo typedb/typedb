@@ -138,8 +138,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             }
 
             @Override
-            public void pull(Receiver<ConceptMap> receiver) {
-                if (!answerFound) super.pull(receiver);
+            public void pull(Receiver<ConceptMap> receiver, Set<Monitor.Reference> monitors) {
+                if (!answerFound) super.pull(receiver, monitors);
             }
 
             @Override
@@ -151,7 +151,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
             public void receiveDone(ConceptMap packet) {
                 if (!answerFound) {
-                    monitor().onAnswerCreate(this);
+                    tracker().onAnswerCreate(this);
                     receiverRegistry().receiver().receive(this, packet);
                 }
             }

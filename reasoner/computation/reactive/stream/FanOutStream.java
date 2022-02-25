@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.AbstractPublisher;
@@ -62,29 +63,30 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     public void receive(Provider<PACKET> provider, PACKET packet) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         providerRegistry().recordReceive(provider);
-        assert receiverRegistry().size() > 0;
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
-            final int numCreated = receiverRegistry().size() - 1;
-            if (numCreated > 0) monitor().onAnswerCreate(numCreated, this);  // We need to account for sending an answer to all
-            // receivers (-1 for the one we received), either now or when they next pull.
+            // assert receiverRegistry().monitors().size() > 0;  // TODO: Should we assert this?
+            receiverRegistry().monitors().forEach(monitor -> {
+                final int numCreated = receiverRegistry().size(monitor) - 1;
+                if (numCreated > 0) tracker().reportAnswerCreate(numCreated, this, monitor);  // We need to account for sending an answer to all receivers (-1 for the one we received), either now or when they next pull.
+            });
             Set<Receiver<PACKET>> toSend = receiverRegistry().pullingReceivers();
             receiverRegistry().recordReceive();
             toSend.forEach(this::send);
         } else {
-            if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
-            monitor().onAnswerDestroy(this);  // When an answer is a duplicate then destroy it
+            if (receiverRegistry().isPulling()) providerRegistry().pull(provider, receiverRegistry().monitors());
+            tracker().onAnswerDestroy(this);  // When an answer is a duplicate then destroy it
         }
     }
 
     @Override
-    public void pull(Receiver<PACKET> receiver) {
+    public void pull(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
         bufferPositions.putIfAbsent(receiver, 0);
-        if (receiverRegistry().addReceiver(receiver)) onNewReceiver();
+        if (receiverRegistry().addReceiver(receiver)) onNewReceiver(monitors);
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
-            receiverRegistry().recordPull(receiver);
-            providerRegistry().pullAll();
+            receiverRegistry().recordPull(receiver, monitors);
+            providerRegistry().pullAll(receiverRegistry().monitors());
         } else {
             send(receiver);
         }
@@ -96,22 +98,25 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         receiver.receive(this, bufferList.get(pos));
     }
 
-    private void onNewReceiver() {
-        if (bufferSet.size() > 0) monitor().onAnswerCreate(bufferSet.size(), this);  // New receiver, so any answer in the buffer will be dispatched there at some point
-        if (receiverRegistry().size() > 1) monitor().onPathJoin(this);
+    private void onNewReceiver(Set<Processor.Monitor.Reference> monitors) {
+        monitors.forEach(monitor -> {
+            if (bufferSet.size() > 0) tracker().reportAnswerCreate(bufferSet.size(), this, monitor);  // New receiver, so any answer in the buffer will be dispatched there at some point
+            if (receiverRegistry().size(monitor) > 1) tracker().reportPathJoin(this, monitor);
+            // We want to report joins to our tracker and parent monitors, but we should report a join to a monitor if we have more than one receiver that reports to that monitor
+        });
     }
 
     @Override
     public void publishTo(Subscriber<PACKET> subscriber) {
         bufferPositions.putIfAbsent(subscriber, 0);
-        if (receiverRegistry().addReceiver(subscriber)) onNewReceiver();
+        if (receiverRegistry().addReceiver(subscriber)) onNewReceiver(receiverRegistry().monitors());
         subscriber.subscribeTo(this);
     }
 
     @Override
     public void subscribeTo(Provider<PACKET> provider) {
         providerRegistry().add(provider);
-        if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
+        if (receiverRegistry().isPulling()) providerRegistry().pull(provider, receiverRegistry().monitors());
     }
 
 }
