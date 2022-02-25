@@ -256,6 +256,16 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
     }
 
     @Override
+    public Optional<Long> sum(Function<T, Long> toLong) {
+        if (!hasNext()) return Optional.empty();
+        long sum = 0;
+        while(hasNext()) {
+            sum += toLong.apply(next());
+        }
+        return Optional.of(sum);
+    }
+
+    @Override
     public SortedIterator<T, ORDER> onConsumed(Runnable function) {
         return new ConsumeHandledSortedIterator<>(this, function);
     }

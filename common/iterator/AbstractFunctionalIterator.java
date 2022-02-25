@@ -221,6 +221,16 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     }
 
     @Override
+    public Optional<Long> sum(Function<T, Long> toLong) {
+        if (!hasNext()) return Optional.empty();
+        long sum = 0;
+        while(hasNext()) {
+            sum += toLong.apply(next());
+        }
+        return Optional.of(sum);
+    }
+
+    @Override
     public FunctionalIterator<T> onConsumed(Runnable function) {
         return new ConsumeHandledIterator<>(this, function);
     }

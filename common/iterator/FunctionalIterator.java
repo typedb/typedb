@@ -87,6 +87,8 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
     long count();
 
+    Optional<Long> sum(Function<T, Long> toLong);
+
     FunctionalIterator<T> onConsumed(Runnable function);
 
     FunctionalIterator<T> onError(Function<Exception, TypeDBException> exceptionFn);
