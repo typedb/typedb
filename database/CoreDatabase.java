@@ -23,6 +23,7 @@ import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.graph.TypeGraph;
@@ -457,7 +458,7 @@ public class CoreDatabase implements TypeDB.Database {
     }
 
     /*
-    In the consistency manager, we aim to only completely synchronize on commit. However,
+    In the consistency manager, we aim to only completely synchronize for key clash validation. However,
     because we use multiple data structures, tracking and recording without synchronized is non-atomic. To avoid this,
     we move records first, then delete them -- this means intermediate readers may see a storage in two states. We
     avoid this causing issues by deduplicating into sets where otherwise we may have used iterators.
@@ -479,23 +480,25 @@ public class CoreDatabase implements TypeDB.Database {
             storageTimeline.closed(storage);
         }
 
-        public void commitCompletely(RocksStorage.Data storage) {
-            storageTimeline.commitCompletely(storage);
+        public void endCommit(RocksStorage.Data storage) {
+            storageTimeline.endCommit(storage);
         }
 
-        void tryCommitOptimistically(RocksStorage.Data storage) {
+        void validateAndBeginCommit(RocksStorage.Data storage) {
             assert storageTimeline.isUncommitted(storage);
-            Set<RocksStorage.Data> concurrent = storageTimeline.concurrentlyCommitted(storage);
             synchronized (this) {
-                for (RocksStorage.Data committed : concurrent) {
-                    validateModifiedKeys(storage, committed);
-                    if (hasIntersection(storage.deletedKeys(), committed.modifiedKeys())) {
+                Set<RocksStorage.Data> concurrent = storageTimeline.committing();
+                storageTimeline.committedConcurrently(storage).toSet(concurrent);
+                for (RocksStorage.Data committedOrCommitting : concurrent) {
+                    validateModifiedKeys(storage, committedOrCommitting);
+                    if (hasIntersection(storage.deletedKeys(), committedOrCommitting.modifiedKeys())) {
                         throw TypeDBException.of(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);
-                    } else if (hasIntersection(storage.exclusiveBytes(), committed.exclusiveBytes())) {
+                    } else if (hasIntersection(storage.exclusiveBytes(), committedOrCommitting.exclusiveBytes())) {
                         throw TypeDBException.of(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION);
                     }
                 }
-                storageTimeline.commitOptimistically(storage);
+                // TODO record the concurrent set in the transactions
+                storageTimeline.beginCommit(storage);
             }
         }
 
@@ -550,11 +553,11 @@ public class CoreDatabase implements TypeDB.Database {
                 return commitState.containsKey(storage);
             }
 
-            void commitOptimistically(RocksStorage.Data storage) {
+            void beginCommit(RocksStorage.Data storage) {
                 commitState.put(storage, CommitState.COMMITTING);
             }
 
-            void commitCompletely(RocksStorage.Data storage) {
+            void endCommit(RocksStorage.Data storage) {
                 assert commitState.get(storage) == CommitState.COMMITTING && storage.snapshotEnd().isPresent();
                 events.compute(storage.snapshotEnd().get(), (snapshot, events) -> {
                     if (events == null) events = new ConcurrentHashMap<>();
@@ -582,16 +585,17 @@ public class CoreDatabase implements TypeDB.Database {
                 }
             }
 
-            Set<RocksStorage.Data> concurrentlyCommitted(RocksStorage.Data storage) {
+            Set<RocksStorage.Data> committing() {
+                return iterate(commitState.keySet())
+                        .filter(s -> commitState.get(s) == StorageTimeline.CommitState.COMMITTING).toSet();
+            }
+
+            FunctionalIterator<RocksStorage.Data> committedConcurrently(RocksStorage.Data storage) {
                 assert !storage.snapshotEnd().isPresent();
-                Set<RocksStorage.Data> concurrentCommitted = iterate(commitState.keySet())
-                        .filter(s -> commitState.get(s) == CommitState.COMMITTING).toSet();
-                events.tailMap(storage.snapshotStart() + 1).forEach((snapshot, events) -> {
-                    events.forEach((s, type) -> {
-                        if (type == Event.COMMITTED) concurrentCommitted.add(s);
-                    });
-                });
-                return concurrentCommitted;
+                return iterate(events.tailMap(storage.snapshotStart() + 1).values())
+                        .flatMap(events -> iterate(events.entrySet()))
+                        .filter(storageEvent -> storageEvent.getValue() == Event.COMMITTED)
+                        .map(Map.Entry::getKey);
             }
 
             private boolean isDeletable(RocksStorage.Data storage) {
@@ -741,8 +745,8 @@ public class CoreDatabase implements TypeDB.Database {
                         break;
                     } else if (e.code().isPresent() && (
                             e.code().get().equals(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION.code()) ||
-                            e.code().get().equals(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION.code()) ||
-                            e.code().get().equals(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION.code())
+                                    e.code().get().equals(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION.code()) ||
+                                    e.code().get().equals(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION.code())
                     )) {
                         countJobNotifications.release();
                     } else {
