@@ -328,9 +328,6 @@ public abstract class RocksStorage implements Storage {
         }
 
         public void commit() throws RocksDBException {
-            // guarantee at least 1 write per tx
-            rocksTransaction.putUntracked(partitionMgr.get(Partition.DEFAULT), TRANSACTION_DUMMY_WRITE.bytes().getBytes(),
-                    ByteArray.empty().getBytes());
             // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
             // TODO: We should benchmark this
             rocksTransaction.disableIndexing();
@@ -386,6 +383,7 @@ public abstract class RocksStorage implements Storage {
         private final ConcurrentSkipListSet<ByteArray> exclusiveBytes; // these are not real keys, just reserved bytes
         private final long snapshotStart;
         private volatile Long snapshotEnd;
+        private boolean hasWrite;
 
         public Data(CoreDatabase database, CoreTransaction transaction) {
             super(database.rocksData, database.rocksDataPartitionMgr, transaction);
@@ -396,6 +394,7 @@ public abstract class RocksStorage implements Storage {
             this.deletedKeys = new ConcurrentSkipListSet<>();
             this.exclusiveBytes = new ConcurrentSkipListSet<>();
             this.snapshotEnd = null;
+            this.hasWrite = false;
             if (transaction.type().isWrite()) this.database.consistencyMgr().register(this);
         }
 
@@ -437,6 +436,7 @@ public abstract class RocksStorage implements Storage {
             } finally {
                 deleteCloseSchemaWriteLock.readLock().unlock();
             }
+            hasWrite = true;
         }
 
         @Override
@@ -444,6 +444,12 @@ public abstract class RocksStorage implements Storage {
             deleteUntracked(key);
             this.deletedKeys.add(key.bytes());
             this.modifiedKeys.remove(key.bytes());
+        }
+
+        @Override
+        public void deleteUntracked(Key key) {
+            super.deleteUntracked(key);
+            hasWrite = true;
         }
 
         @Override
@@ -466,10 +472,18 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void commit() throws RocksDBException {
-            database.consistencyMgr().tryCommitOptimistically(this);
+            database.consistencyMgr().validateAndBeginCommit(this);
+            if (!hasWrite) {
+                // guarantee at least 1 write per tx to ensure we get a snapshotEnd greater than the start
+                rocksTransaction.putUntracked(
+                        partitionMgr.get(Partition.DEFAULT),
+                        TRANSACTION_DUMMY_WRITE.bytes().getBytes(),
+                        ByteArray.empty().getBytes()
+                );
+            }
             super.commit();
             snapshotEnd = database.rocksData.getLatestSequenceNumber();
-            database.consistencyMgr().commitCompletely(this);
+            database.consistencyMgr().endCommit(this);
         }
 
         @Override
@@ -490,6 +504,7 @@ public abstract class RocksStorage implements Storage {
             } finally {
                 deleteCloseSchemaWriteLock.readLock().unlock();
             }
+            hasWrite = true;
         }
 
         public long snapshotStart() {
