@@ -52,7 +52,7 @@ public class Encoding {
 
     public static final String ROCKS_DATA = "data";
     public static final String ROCKS_SCHEMA = "schema";
-    public static final int ENCODING_VERSION = 1;
+    public static final int ENCODING_VERSION = 2;
 
     public enum Partition {
         DEFAULT((short) 0, null),
@@ -161,7 +161,8 @@ public class Encoding {
     public enum PrefixType {
         SYSTEM,
         INDEX,
-        STATISTICS,
+//        STATISTICS,
+        METADATA,
         TYPE,
         THING,
         RULE;
@@ -178,10 +179,11 @@ public class Encoding {
         // leave large open range for future indices
         INDEX_TYPE(20, PrefixType.INDEX),
         INDEX_RULE(21, PrefixType.INDEX),
-        STATISTICS_THINGS(60, PrefixType.STATISTICS),
-        STATISTICS_COUNT_JOB(61, PrefixType.STATISTICS),
-        STATISTICS_COUNTED(62, PrefixType.STATISTICS),
-        STATISTICS_SNAPSHOT(63, PrefixType.STATISTICS),
+        METADATA_STATISTICS(60, PrefixType.METADATA),
+//        STATISTICS_THINGS(60, PrefixType.STATISTICS),
+//        STATISTICS_COUNT_JOB(61, PrefixType.STATISTICS),
+//        STATISTICS_COUNTED(62, PrefixType.STATISTICS),
+//        STATISTICS_SNAPSHOT(63, PrefixType.STATISTICS),
         VERTEX_THING_TYPE(100, PrefixType.TYPE),
         VERTEX_ENTITY_TYPE(110, PrefixType.TYPE),
         VERTEX_ATTRIBUTE_TYPE(111, PrefixType.TYPE),
@@ -197,10 +199,11 @@ public class Encoding {
                 pair(SYSTEM.key, SYSTEM),
                 pair(INDEX_TYPE.key, INDEX_TYPE),
                 pair(INDEX_RULE.key, INDEX_RULE),
-                pair(STATISTICS_THINGS.key, STATISTICS_THINGS),
-                pair(STATISTICS_COUNT_JOB.key, STATISTICS_COUNT_JOB),
-                pair(STATISTICS_COUNTED.key, STATISTICS_COUNTED),
-                pair(STATISTICS_SNAPSHOT.key, STATISTICS_SNAPSHOT),
+                pair(METADATA_STATISTICS.key, METADATA_STATISTICS),
+//                pair(STATISTICS_THINGS.key, STATISTICS_THINGS),
+//                pair(STATISTICS_COUNT_JOB.key, STATISTICS_COUNT_JOB),
+//                pair(STATISTICS_COUNTED.key, STATISTICS_COUNTED),
+//                pair(STATISTICS_SNAPSHOT.key, STATISTICS_SNAPSHOT),
                 pair(VERTEX_THING_TYPE.key, VERTEX_THING_TYPE),
                 pair(VERTEX_ENTITY_TYPE.key, VERTEX_ENTITY_TYPE),
                 pair(VERTEX_ATTRIBUTE_TYPE.key, VERTEX_ATTRIBUTE_TYPE),
@@ -218,7 +221,7 @@ public class Encoding {
         private final ByteArray bytes;
 
         Prefix(int key, PrefixType type) {
-            assert key < 200 : "The encoding range >= 200 is reserved for TypeDB Cluster.";
+            assert key < 180 : "The encoding range >= 180 is reserved for TypeDB Cluster.";
             this.key = unsignedByte(key);
             this.type = type;
             this.bytes = ByteArray.of(new byte[]{this.key});
@@ -246,8 +249,8 @@ public class Encoding {
             return type.equals(PrefixType.INDEX);
         }
 
-        public boolean isStatistics() {
-            return type.equals(PrefixType.STATISTICS);
+        public boolean isMetadata() {
+            return type.equals(PrefixType.METADATA);
         }
 
         public boolean isType() {
@@ -931,6 +934,55 @@ public class Encoding {
 
             public ByteArray bytes() {
                 return bytes;
+            }
+        }
+    }
+
+    public interface Metadata {
+
+        interface Statistics {
+
+            enum Prefix {
+
+                VERSION(0),
+                VERTEX_COUNT(1),
+                VERTEX_COUNT_TRANSITIVE(2),
+                HAS_TYPE_EDGE_COUNT(3),
+                HAS_EDGE_COUNT(4),
+                MISCOUNT(100),
+                TX_COMMITTED_ID(200);
+
+                private final ByteArray bytes;
+
+                Prefix(int key) {
+                    this.bytes = ByteArray.join(
+                            Encoding.Prefix.METADATA_STATISTICS.bytes(),
+                            ByteArray.of(new byte[]{unsignedByte(key)})
+                    );
+                }
+
+                public ByteArray bytes() {
+                    return this.bytes;
+                }
+            }
+
+            enum Infix {
+                CONDITIONAL_OVERCOUNT_ATTRIBUTE(0),
+                CONDITIONAL_UNDERCOUNT_ATTRIBUTE(1),
+                CONDITIONAL_OVERCOUNT_HAS(10),
+                CONDITIONAL_UNDERCOUNT_HAS(11);
+
+                private final byte key;
+                private final ByteArray bytes;
+
+                Infix(int key) {
+                    this.key = unsignedByte(key);
+                    this.bytes = ByteArray.of(new byte[]{this.key});
+                }
+
+                public ByteArray bytes() {
+                    return bytes;
+                }
             }
         }
     }

@@ -326,7 +326,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
         public ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, boolean isInferred) {
             assert !encoding.isOptimisation();
             if (encoding == Encoding.Edge.Thing.Base.HAS && isOut() && !isInferred) {
-                owner.graph().stats().hasEdgeCreated(owner.iid(), adjacent.iid().asAttribute());
+                owner.graph().stats().hasEdgeCreated(owner, adjacent.asAttribute());
             }
             ThingEdgeImpl edge = isOut()
                     ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, isInferred)

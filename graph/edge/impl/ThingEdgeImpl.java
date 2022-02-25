@@ -96,7 +96,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         public boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || this.getClass() != object.getClass()) return false;
-            return edge.equals(((ThingEdgeImpl.View<?>)object).edge);
+            return edge.equals(((ThingEdgeImpl.View<?>) object).edge);
         }
 
         @Override
@@ -256,7 +256,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                     graph.storage().deleteUntracked(backward.iid());
                 }
                 if (encoding == Encoding.Edge.Thing.Base.HAS && !isInferred) {
-                    graph.stats().hasEdgeDeleted(from.iid(), to.iid().asAttribute());
+                    graph.stats().hasEdgeDeleted(from, to.asAttribute());
                 }
             }
         }
@@ -521,12 +521,14 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public void delete() {
             if (deleted.compareAndSet(false, true)) {
-                graph.convertToWritable(fromIID).setModified();
-                graph.convertToWritable(toIID).setModified();
+                ThingVertex.Write fromWritable = graph.convertToWritable(fromIID);
+                fromWritable.setModified();
+                ThingVertex.Write toWritable = graph.convertToWritable(toIID);
+                toWritable.setModified();
                 graph.storage().deleteTracked(forward.iid());
                 graph.storage().deleteUntracked(backward.iid());
                 if (encoding == Encoding.Edge.Thing.Base.HAS && !isInferred) {
-                    graph.stats().hasEdgeDeleted(fromIID, toIID.asAttribute());
+                    graph.stats().hasEdgeDeleted(fromWritable, toWritable.asAttribute());
                 }
             }
         }

@@ -341,9 +341,10 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
          * A different implementation of this class may override it.
          */
         protected void triggerStatisticBgCounter() {
-            if (graphMgr.data().stats().needsBackgroundCounting()) {
-                session.database().statisticsBackgroundCounter.needsBackgroundCounting();
-            }
+            // TODO
+//            if (graphMgr.data().stats().needsBackgroundCounting()) {
+//                session.database().statisticsBackgroundCounter.needsBackgroundCounting();
+//            }
         }
     }
 }

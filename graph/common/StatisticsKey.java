@@ -45,88 +45,124 @@ public class StatisticsKey implements Key {
 
     public static StatisticsKey vertexCount(VertexIID.Type typeIID) {
         return new StatisticsKey(join(
-                Encoding.Prefix.STATISTICS_THINGS.bytes(),
-                typeIID.bytes(),
-                Encoding.Statistics.Infix.VERTEX_COUNT.bytes()
+                Encoding.Metadata.Statistics.Prefix.VERTEX_COUNT.bytes(),
+                typeIID.bytes()
         ));
     }
 
     public static StatisticsKey vertexTransitiveCount(VertexIID.Type typeIID) {
         return new StatisticsKey(join(
-                Encoding.Prefix.STATISTICS_THINGS.bytes(),
-                typeIID.bytes(),
-                Encoding.Statistics.Infix.VERTEX_TRANSITIVE_COUNT.bytes()
+                Encoding.Metadata.Statistics.Prefix.VERTEX_COUNT_TRANSITIVE.bytes(),
+                typeIID.bytes()
         ));
     }
 
     public static StatisticsKey hasEdgeCount(VertexIID.Type thingTypeIID, VertexIID.Type attTypeIID) {
         return new StatisticsKey(join(
-                Encoding.Prefix.STATISTICS_THINGS.bytes(),
+                Encoding.Metadata.Statistics.Prefix.HAS_TYPE_EDGE_COUNT.bytes(),
                 thingTypeIID.bytes(),
-                Encoding.Statistics.Infix.HAS_EDGE_COUNT.bytes(),
                 attTypeIID.bytes()
         ));
     }
 
     public static StatisticsKey hasEdgeTotalCount(VertexIID.Type thingTypeIID) {
         return new StatisticsKey(join(
-                Encoding.Prefix.STATISTICS_THINGS.bytes(),
-                thingTypeIID.bytes(),
-                Encoding.Statistics.Infix.HAS_EDGE_TOTAL_COUNT.bytes()
-        ));
-    }
-
-
-    public static StatisticsKey attributeCounted(VertexIID.Attribute<?> attIID) {
-        return new StatisticsKey(join(Encoding.Prefix.STATISTICS_COUNTED.bytes(), attIID.bytes()));
-    }
-
-    public static StatisticsKey hasEdgeCounted(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
-        return new StatisticsKey(join(
-                Encoding.Prefix.STATISTICS_COUNTED.bytes(),
-                thingIID.bytes(),
-                Encoding.Statistics.Infix.HAS_EDGE_COUNT.bytes(),
-                attIID.bytes()
+                Encoding.Metadata.Statistics.Prefix.HAS_EDGE_COUNT.bytes(),
+                thingTypeIID.bytes()
         ));
     }
 
     public static StatisticsKey snapshot() {
-        return new StatisticsKey(Encoding.Prefix.STATISTICS_SNAPSHOT.bytes());
+        return new StatisticsKey(Encoding.Metadata.Statistics.Prefix.VERSION.bytes());
     }
 
-    public static class CountJobKey extends StatisticsKey {
+    public static class MisCountKey extends StatisticsKey {
 
-        private CountJobKey(ByteArray key) {
-            super(key);
+        private MisCountKey(ByteArray bytes) {
+            super(bytes);
         }
 
-        public static CountJobKey of(ByteArray bytes) {
-            assert bytes.get(0) == Encoding.Prefix.STATISTICS_COUNT_JOB.bytes().get(0) && (
-                    bytes.get(1) == Encoding.Statistics.JobType.ATTRIBUTE_VERTEX.bytes().get(0) ||
-                            bytes.get(1) == Encoding.Statistics.JobType.HAS_EDGE.bytes().get(0)
-            );
-            return new CountJobKey(bytes);
+        private static MisCountKey of(ByteArray bytes) {
+            assert bytes.hasPrefix(Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes());
+            return new MisCountKey(bytes);
         }
 
-        public static Key.Prefix<CountJobKey> prefix() {
-            return new Key.Prefix<>(Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(), Partition.STATISTICS, CountJobKey::of);
+        public static Key.Prefix<MisCountKey> prefix() {
+            return new Key.Prefix<>(Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes(), Partition.STATISTICS, MisCountKey::of);
         }
 
-        public static StatisticsKey attribute(VertexIID.Attribute<?> attIID) {
-            return new StatisticsKey(join(
-                    Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(),
-                    Encoding.Statistics.JobType.ATTRIBUTE_VERTEX.bytes(),
+        public static MisCountKey attConditionalOvercount(long txnID, VertexIID.Attribute<?> attIID) {
+            return new MisCountKey(join(
+                    Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes(),
+                    ByteArray.encodeLong(txnID),
+                    Encoding.Metadata.Statistics.Infix.CONDITIONAL_OVERCOUNT_ATTRIBUTE.bytes(),
                     attIID.bytes()
             ));
         }
 
-        public static StatisticsKey hasEdge(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
-            return new StatisticsKey(join(
-                    Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(),
-                    Encoding.Statistics.JobType.HAS_EDGE.bytes(),
+        public static MisCountKey attConditionalUndercount(long txnID, VertexIID.Attribute<?> attIID) {
+            return new MisCountKey(join(
+                    Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes(),
+                    ByteArray.encodeLong(txnID),
+                    Encoding.Metadata.Statistics.Infix.CONDITIONAL_UNDERCOUNT_ATTRIBUTE.bytes(),
+                    attIID.bytes()
+            ));
+        }
+
+        public static MisCountKey hasConditionalOvercount(long txnID, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
+            return new MisCountKey(join(
+                    Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes(),
+                    ByteArray.encodeLong(txnID),
+                    Encoding.Metadata.Statistics.Infix.CONDITIONAL_OVERCOUNT_HAS.bytes(),
+                    thingIID.bytes(),
+                    attIID.bytes()
+            ));
+        }
+
+        public static MisCountKey hasConditionalUndercount(long txnID, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
+            return new MisCountKey(join(
+                    Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes(),
+                    ByteArray.encodeLong(txnID),
+                    Encoding.Metadata.Statistics.Infix.CONDITIONAL_UNDERCOUNT_HAS.bytes(),
                     thingIID.bytes(),
                     attIID.bytes()
             ));
         }
     }
+
+//    public static class CountJobKey extends StatisticsKey {
+//
+//        private CountJobKey(ByteArray key) {
+//            super(key);
+//        }
+//
+//        public static CountJobKey of(ByteArray bytes) {
+//            assert bytes.get(0) == Encoding.Prefix.STATISTICS_COUNT_JOB.bytes().get(0) && (
+//                    bytes.get(1) == Encoding.Statistics.JobType.ATTRIBUTE_VERTEX.bytes().get(0) ||
+//                            bytes.get(1) == Encoding.Statistics.JobType.HAS_EDGE.bytes().get(0)
+//            );
+//            return new CountJobKey(bytes);
+//        }
+//
+//        public static Key.Prefix<CountJobKey> prefix() {
+//            return new Key.Prefix<>(Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(), Partition.STATISTICS, CountJobKey::of);
+//        }
+//
+//        public static StatisticsKey attribute(VertexIID.Attribute<?> attIID) {
+//            return new StatisticsKey(join(
+//                    Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(),
+//                    Encoding.Statistics.JobType.ATTRIBUTE_VERTEX.bytes(),
+//                    attIID.bytes()
+//            ));
+//        }
+//
+//        public static StatisticsKey hasEdge(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
+//            return new StatisticsKey(join(
+//                    Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(),
+//                    Encoding.Statistics.JobType.HAS_EDGE.bytes(),
+//                    thingIID.bytes(),
+//                    attIID.bytes()
+//            ));
+//        }
+//    }
 }

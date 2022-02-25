@@ -727,7 +727,8 @@ public class CoreDatabase implements TypeDB.Database {
             countJobNotifications = new Semaphore(0);
             thread = NamedThreadFactory.create(session.database().name + "::statistics-background-counter")
                     .newThread(this::countFn);
-            thread.start();
+            // TODO re-enable new statistics
+//            thread.start();
         }
 
         public void needsBackgroundCounting() {
@@ -737,8 +738,9 @@ public class CoreDatabase implements TypeDB.Database {
         private void countFn() {
             do {
                 try (CoreTransaction.Data tx = session.transaction(WRITE)) {
-                    boolean shouldRestart = tx.graphMgr.data().stats().processCountJobs();
-                    if (shouldRestart) countJobNotifications.release();
+                    // TODO
+//                    boolean shouldRestart = tx.graphMgr.data().stats().processCountJobs();
+//                    if (shouldRestart) countJobNotifications.release();
                     tx.commit();
                 } catch (TypeDBException e) {
                     if (e.code().isPresent() && e.code().get().equals(DATABASE_CLOSED.code())) {
