@@ -233,6 +233,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                 } finally {
                     graphMgr.clear();
                     closeResources();
+                    notifyClosed();
                 }
             } else {
                 throw TypeDBException.of(TRANSACTION_CLOSED);
@@ -326,6 +327,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                 } finally {
                     graphMgr.data().clear();
                     closeResources();
+                    notifyClosed();
                 }
             } else {
                 throw TypeDBException.of(TRANSACTION_CLOSED);
@@ -382,8 +384,8 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
         @Override
         void notifyClosed() {
-            super.notifyClosed();
             if (type().isWrite()) session.database().consistencyMgr().closed(this);
+            super.notifyClosed();
         }
 
         @Override
