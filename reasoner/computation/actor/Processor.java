@@ -253,13 +253,15 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             assert receiver.equals(receiverRegistry().receiver());
-            if (ready && receiverRegistry().recordPull(monitors)) providerRegistry().pullAll(monitorsToPropagate());
+            // TODO: What if after ready this receives a different set of monitors to before?
+            if (ready && receiverRegistry().recordPull(receiver, monitors)) providerRegistry().pullAll(monitorsToPropagate(monitors));
         }
 
-        Set<Monitor.Reference> monitorsToPropagate() {
-            Set<Monitor.Reference> monitors = new HashSet<>(receiverRegistry().monitors());
-            if (tracker().isMonitor()) monitors.add(tracker().asMonitor().getReference());
-            return monitors;
+        Set<Monitor.Reference> monitorsToPropagate(Set<Monitor.Reference> monitors) {
+            Set<Monitor.Reference> toPropagate = new HashSet<>(receiverRegistry().monitors());
+            toPropagate.addAll(monitors);
+            if (tracker().isMonitor()) toPropagate.add(tracker().asMonitor().getReference());
+            return toPropagate;
         }
 
         @Override
@@ -322,7 +324,7 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), this, monitors));
-            if (receiverRegistry().recordPull(monitors)) providerRegistry().pullAll(receiverRegistry().monitors());
+            if (receiverRegistry().recordPull(receiver, monitors)) providerRegistry().pullAll(receiverRegistry().monitors());
         }
 
         @Override
@@ -488,8 +490,8 @@ public abstract class Processor<INPUT, OUTPUT,
         protected void sendSynchronisationReport(Monitor.Reference monitor) {
             final long pathsCountUpdate = pathsCount;
             final long answersCountUpdate = answersCount;
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.initialReport(processor().driver(), monitor, pathsCountUpdate, answersCountUpdate));
-            monitor.driver().execute(actor -> actor.monitoring().asMonitor().receiveInitialReport(processor().driver(), pathsCountUpdate, answersCountUpdate));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.synchronisationReport(processor().driver(), monitor, pathsCountUpdate, answersCountUpdate));
+            monitor.driver().execute(actor -> actor.monitoring().asMonitor().receiveSynchronisationReport(processor().driver(), pathsCountUpdate, answersCountUpdate));
         }
 
     }
@@ -523,8 +525,9 @@ public abstract class Processor<INPUT, OUTPUT,
             registered.add(registree);
         }
 
-        public void receiveInitialReport(Driver<? extends Processor<?, ?, ?, ?>> sender, long pathCountDelta, long answersCountDelta) {
+        public void receiveSynchronisationReport(Driver<? extends Processor<?, ?, ?, ?>> sender, long pathCountDelta, long answersCountDelta) {
             assert registered.contains(sender);
+            assert !countSenders.contains(sender);
             if (!done) {
                 pathsCount += pathCountDelta;
                 answersCount += answersCountDelta;

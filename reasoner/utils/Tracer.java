@@ -137,7 +137,7 @@ public final class Tracer {
         reportPathCount(simpleClassId(reactive), monitor, countLabel(countChange, num));
     }
 
-    public synchronized void initialReport(Actor.Driver<?> sender, Processor.Monitor.Reference monitor, long pathsCount, long answersCountUpdate) {
+    public synchronized void synchronisationReport(Actor.Driver<?> sender, Processor.Monitor.Reference monitor, long pathsCount, long answersCountUpdate) {
         String senderName = sender.name() + "-monitor";
         pathUpdate(senderName, monitor, "init-p" + pathsCount + "-a" + answersCountUpdate);
         addNodeGroup(senderName, sender.name(), defaultTrace);

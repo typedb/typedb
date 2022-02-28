@@ -22,8 +22,6 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationT
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
-
 public abstract class Sink<PACKET> implements Subscriber<PACKET> {
 
     private final ProviderRegistry.SingleProviderRegistry<PACKET> providerManager;
@@ -56,7 +54,4 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET> {
         providerManager().recordReceive(provider);
     }
 
-    public void pull() {
-        providerManager().pullAll(set());
-    }
 }

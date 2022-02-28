@@ -152,10 +152,9 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
             this.isPulling = false;
         }
 
-        @Override
         public void pull() {
             isPulling = true;
-            super.pull();
+            providerManager().pullAll(set());
         }
 
         @Override
