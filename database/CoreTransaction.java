@@ -38,14 +38,21 @@ import com.vaticle.typedb.core.traversal.TraversalCache;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.rocksdb.RocksDBException;
 
+import java.util.NavigableSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.vaticle.typedb.common.collection.Collections.hasIntersection;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_COMMIT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION;
 
 public abstract class CoreTransaction implements TypeDB.Transaction {
 
@@ -109,23 +116,24 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         return logicMgr;
     }
 
+    public Reasoner reasoner() {
+        if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
+        return reasoner;
+    }
+
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
             closeResources();
+            notifyClosed();
         }
     }
 
-    public Reasoner reasoner() {
-        return reasoner;
+    void notifyClosed() {
+        session.closed(this);
     }
 
-    protected void closeResources() {
-        closeStorage();
-        session.remove(this);
-    }
-
-    abstract void closeStorage();
+    protected abstract void closeResources();
 
     boolean isSchema() {
         return false;
@@ -242,7 +250,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         }
 
         @Override
-        void closeStorage() {
+        protected void closeResources() {
             schemaStorage.close();
             dataStorage.close();
         }
@@ -262,6 +270,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             ThingGraph thingGraph = new ThingGraph(dataStorage, cache.typeGraph());
             graphMgr = new GraphManager(cache.typeGraph(), thingGraph);
 
+            if (type().isWrite()) session.database().consistencyMgr().opened(this);
             initialise(graphMgr, cache.traversal(), cache.logic());
         }
 
@@ -301,7 +310,15 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
+
+                    synchronized (session.database().consistencyMgr()) {
+                        Set<CoreTransaction.Data> transactions = session.database().consistencyMgr().commitMayConflict(this);
+                        validateConsistency(transactions);
+                        session.database().consistencyMgr().beginCommit(this);
+                    }
+
                     dataStorage.commit();
+                    session.database().consistencyMgr().endCommit(this);
                     triggerStatisticBgCounter();
                 } catch (RocksDBException e) {
                     rollback();
@@ -312,6 +329,38 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                 }
             } else {
                 throw TypeDBException.of(TRANSACTION_CLOSED);
+            }
+        }
+
+        private void validateConsistency(Set<CoreTransaction.Data> concurrent) {
+            for (CoreTransaction.Data otherTxn : concurrent) {
+                validateModifiedKeys(otherTxn);
+                if (hasIntersection(dataStorage.deletedKeys(), otherTxn.dataStorage.modifiedKeys())) {
+                    throw TypeDBException.of(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);
+                } else if (hasIntersection(dataStorage.exclusiveBytes(), otherTxn.dataStorage.exclusiveBytes())) {
+                    throw TypeDBException.of(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION);
+                }
+            }
+        }
+
+        private void validateModifiedKeys(CoreTransaction.Data concurrent) {
+            NavigableSet<ByteArray> active = dataStorage.modifiedKeys();
+            NavigableSet<ByteArray> other = concurrent.dataStorage.deletedKeys();
+            if (active.isEmpty()) return;
+            ByteArray currentKey = active.first();
+            while (currentKey != null) {
+                ByteArray otherKey = other.ceiling(currentKey);
+                if (otherKey != null && otherKey.equals(currentKey)) {
+                    if (dataStorage.isModifiedValidatedKey(currentKey)) {
+                        throw TypeDBException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
+                    } else {
+                        otherKey = other.higher(currentKey);
+                    }
+                }
+                currentKey = otherKey;
+                NavigableSet<ByteArray> tmp = other;
+                other = active;
+                active = tmp;
             }
         }
 
@@ -326,9 +375,15 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         }
 
         @Override
-        void closeStorage() {
+        protected void closeResources() {
             session.database().cacheUnborrow(cache);
             dataStorage.close();
+        }
+
+        @Override
+        void notifyClosed() {
+            super.notifyClosed();
+            if (type().isWrite()) session.database().consistencyMgr().closed(this);
         }
 
         @Override
@@ -345,6 +400,14 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 //            if (graphMgr.data().stats().needsBackgroundCounting()) {
 //                session.database().statisticsBackgroundCounter.needsBackgroundCounting();
 //            }
+        }
+
+        public Long snapshotStart() {
+            return dataStorage.snapshotStart();
+        }
+
+        public Optional<Long> snapshotEnd() {
+            return dataStorage.snapshotEnd();
         }
     }
 }

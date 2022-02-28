@@ -395,7 +395,6 @@ public abstract class RocksStorage implements Storage {
             this.exclusiveBytes = new ConcurrentSkipListSet<>();
             this.snapshotEnd = null;
             this.hasWrite = false;
-            if (transaction.type().isWrite()) this.database.consistencyMgr().register(this);
         }
 
         @Override
@@ -472,7 +471,6 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void commit() throws RocksDBException {
-            database.consistencyMgr().validateAndBeginCommit(this);
             if (!hasWrite) {
                 // guarantee at least 1 write per tx to ensure we get a snapshotEnd greater than the start
                 rocksTransaction.putUntracked(
@@ -483,13 +481,6 @@ public abstract class RocksStorage implements Storage {
             }
             super.commit();
             snapshotEnd = database.rocksData.getLatestSequenceNumber();
-            database.consistencyMgr().endCommit(this);
-        }
-
-        @Override
-        public void close() {
-            super.close();
-            if (transaction.type().isWrite()) database.consistencyMgr().closed(this);
         }
 
         @Override
@@ -507,11 +498,11 @@ public abstract class RocksStorage implements Storage {
             hasWrite = true;
         }
 
-        public long snapshotStart() {
+        long snapshotStart() {
             return snapshotStart;
         }
 
-        public Optional<Long> snapshotEnd() {
+        Optional<Long> snapshotEnd() {
             return Optional.ofNullable(snapshotEnd);
         }
 

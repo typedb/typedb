@@ -207,7 +207,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         return sessionServices.get(uuid);
     }
 
-    public void remove(SessionService sessionSvc) {
+    public void closed(SessionService sessionSvc) {
         sessionServices.remove(sessionSvc.UUID());
     }
 

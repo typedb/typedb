@@ -68,7 +68,7 @@ public class SessionService implements AutoCloseable {
         }
     }
 
-    void remove(TransactionService transactionSvc) {
+    void closed(TransactionService transactionSvc) {
         transactionServices.remove(transactionSvc);
         mayStartIdleTimeout();
     }
@@ -120,7 +120,7 @@ public class SessionService implements AutoCloseable {
             if (isOpen.compareAndSet(true, false)) {
                 transactionServices.forEach(TransactionService::close);
                 session.close();
-                typeDBSvc.remove(this);
+                typeDBSvc.closed(this);
             }
         } finally {
             accessLock.writeLock().unlock();
@@ -133,7 +133,7 @@ public class SessionService implements AutoCloseable {
             if (isOpen.compareAndSet(true, false)) {
                 transactionServices.forEach(tr -> tr.close(error));
                 session.close();
-                typeDBSvc.remove(this);
+                typeDBSvc.closed(this);
             }
         } finally {
             accessLock.writeLock().unlock();

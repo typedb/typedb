@@ -48,7 +48,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,7 +62,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
-import static com.vaticle.typedb.common.collection.Collections.hasIntersection;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INCOMPATIBLE_ENCODING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.ROCKS_LOGGER_SHUTDOWN_FAILED;
@@ -407,7 +405,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    void remove(CoreSession session) {
+    void closed(CoreSession session) {
         if (session != statisticsBackgroundCounterSession) {
             long lock = sessions.remove(session.uuid()).second();
             if (session.type().isSchema()) schemaLock().unlockWrite(lock);
@@ -458,153 +456,123 @@ public class CoreDatabase implements TypeDB.Database {
     }
 
     /*
-    In the consistency manager, we aim to only completely synchronize for key clash validation. However,
-    because we use multiple data structures, tracking and recording without synchronized is non-atomic. To avoid this,
+    Because we use multiple data structures, tracking and recording without synchronized is non-atomic. To avoid this,
     we move records first, then delete them -- this means intermediate readers may see a storage in two states. We
     avoid this causing issues by deduplicating into sets where otherwise we may have used iterators.
-    This is preferable to intermediate readers not seeing the storage at all, possibly causing consistency violations
+    This is preferable to intermediate readers not seeing the transaction at all, possibly causing consistency violations
      */
     public static class ConsistencyManager {
 
-        private final StorageTimeline storageTimeline;
+        private final TransactionTimeline transactionTimeline;
 
         ConsistencyManager() {
-            this.storageTimeline = new StorageTimeline();
+            this.transactionTimeline = new TransactionTimeline();
         }
 
-        void register(RocksStorage.Data storage) {
-            storageTimeline.opened(storage);
+        void opened(CoreTransaction.Data transaction) {
+            transactionTimeline.opened(transaction);
         }
 
-        public void closed(RocksStorage.Data storage) {
-            storageTimeline.closed(storage);
+        public void closed(CoreTransaction.Data transaction) {
+            transactionTimeline.closed(transaction);
         }
 
-        public void endCommit(RocksStorage.Data storage) {
-            storageTimeline.endCommit(storage);
+        public void beginCommit(CoreTransaction.Data transaction) {
+            transactionTimeline.beginCommit(transaction);
         }
 
-        void validateAndBeginCommit(RocksStorage.Data storage) {
-            assert storageTimeline.isUncommitted(storage);
-            synchronized (this) {
-                Set<RocksStorage.Data> concurrent = storageTimeline.committing();
-                storageTimeline.committedConcurrently(storage).toSet(concurrent);
-                for (RocksStorage.Data committedOrCommitting : concurrent) {
-                    validateModifiedKeys(storage, committedOrCommitting);
-                    if (hasIntersection(storage.deletedKeys(), committedOrCommitting.modifiedKeys())) {
-                        throw TypeDBException.of(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);
-                    } else if (hasIntersection(storage.exclusiveBytes(), committedOrCommitting.exclusiveBytes())) {
-                        throw TypeDBException.of(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION);
-                    }
-                }
-                // TODO record the concurrent set in the transactions
-                storageTimeline.beginCommit(storage);
-            }
+        public void endCommit(CoreTransaction.Data transaction) {
+            transactionTimeline.endCommit(transaction);
         }
 
-        private void validateModifiedKeys(RocksStorage.Data storage, RocksStorage.Data committed) {
-            NavigableSet<ByteArray> active = storage.modifiedKeys();
-            NavigableSet<ByteArray> other = committed.deletedKeys();
-            if (active.isEmpty()) return;
-            ByteArray currentKey = active.first();
-            while (currentKey != null) {
-                ByteArray otherKey = other.ceiling(currentKey);
-                if (otherKey != null && otherKey.equals(currentKey)) {
-                    if (storage.isModifiedValidatedKey(currentKey)) {
-                        throw TypeDBException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
-                    } else {
-                        otherKey = other.higher(currentKey);
-                    }
-                }
-                currentKey = otherKey;
-                NavigableSet<ByteArray> tmp = other;
-                other = active;
-                active = tmp;
-            }
+        public Set<CoreTransaction.Data> commitMayConflict(CoreTransaction.Data transaction) {
+            Set<CoreTransaction.Data> concurrent = transactionTimeline.committing();
+            transactionTimeline.committedConcurrently(transaction).toSet(concurrent);
+            return concurrent;
         }
 
         // visible for testing
         public int committedEventCount() {
-            return storageTimeline.committedEventCount();
+            return transactionTimeline.committedEventCount();
         }
 
-        private static class StorageTimeline {
+        private static class TransactionTimeline {
 
-            private final ConcurrentNavigableMap<Long, ConcurrentMap<RocksStorage.Data, Event>> events;
-            private final ConcurrentMap<RocksStorage.Data, CommitState> commitState;
+            private final ConcurrentNavigableMap<Long, ConcurrentMap<CoreTransaction.Data, Event>> events;
+            private final ConcurrentMap<CoreTransaction.Data, CommitState> commitState;
             private final AtomicBoolean cleanupRunning;
 
             enum Event {OPENED, COMMITTED}
 
             enum CommitState {UNCOMMITTED, COMMITTING}
 
-            private StorageTimeline() {
+            private TransactionTimeline() {
                 this.events = new ConcurrentSkipListMap<>();
                 this.commitState = new ConcurrentHashMap<>();
                 this.cleanupRunning = new AtomicBoolean(false);
             }
 
-            void opened(RocksStorage.Data storage) {
-                events.computeIfAbsent(storage.snapshotStart(), (key) -> new ConcurrentHashMap<>()).put(storage, Event.OPENED);
-                commitState.put(storage, CommitState.UNCOMMITTED);
+            void opened(CoreTransaction.Data transaction) {
+                events.computeIfAbsent(transaction.snapshotStart(), (key) -> new ConcurrentHashMap<>()).put(transaction, Event.OPENED);
+                commitState.put(transaction, CommitState.UNCOMMITTED);
             }
 
-            boolean isUncommitted(RocksStorage.Data storage) {
-                return commitState.containsKey(storage);
+            boolean isUncommitted(CoreTransaction.Data transaction) {
+                return commitState.containsKey(transaction);
             }
 
-            void beginCommit(RocksStorage.Data storage) {
-                commitState.put(storage, CommitState.COMMITTING);
+            void beginCommit(CoreTransaction.Data transaction) {
+                commitState.put(transaction, CommitState.COMMITTING);
             }
 
-            void endCommit(RocksStorage.Data storage) {
-                assert commitState.get(storage) == CommitState.COMMITTING && storage.snapshotEnd().isPresent();
-                events.compute(storage.snapshotEnd().get(), (snapshot, events) -> {
+            void endCommit(CoreTransaction.Data transaction) {
+                assert commitState.get(transaction) == CommitState.COMMITTING && transaction.snapshotEnd().isPresent();
+                events.compute(transaction.snapshotEnd().get(), (snapshot, events) -> {
                     if (events == null) events = new ConcurrentHashMap<>();
-                    events.put(storage, Event.COMMITTED);
+                    events.put(transaction, Event.COMMITTED);
                     return events;
                 });
-                commitState.remove(storage);
+                commitState.remove(transaction);
             }
 
-            void closed(RocksStorage.Data storage) {
-                if (commitState.containsKey(storage)) {
-                    commitState.remove(storage);
-                    deleteOpenedEvent(storage);
+            void closed(CoreTransaction.Data transaction) {
+                if (commitState.containsKey(transaction)) {
+                    commitState.remove(transaction);
+                    deleteOpenedEvent(transaction);
                 } else {
-                    Map<RocksStorage.Data, Event> events = this.events.get(storage.snapshotEnd().get());
+                    Map<CoreTransaction.Data, Event> events = this.events.get(transaction.snapshotEnd().get());
                     if (events != null) {
-                        Event event = events.get(storage);
+                        Event event = events.get(transaction);
                         assert event == null || event == Event.COMMITTED;
-                        if (events.get(storage) != null && isDeletable(storage)) {
-                            deleteCommittedEvent(storage);
-                            deleteOpenedEvent(storage);
+                        if (events.get(transaction) != null && isDeletable(transaction)) {
+                            deleteCommittedEvent(transaction);
+                            deleteOpenedEvent(transaction);
                         }
                     }
                     cleanupCommitted();
                 }
             }
 
-            Set<RocksStorage.Data> committing() {
+            Set<CoreTransaction.Data> committing() {
                 return iterate(commitState.keySet())
-                        .filter(s -> commitState.get(s) == StorageTimeline.CommitState.COMMITTING).toSet();
+                        .filter(txn -> commitState.get(txn) == TransactionTimeline.CommitState.COMMITTING).toSet();
             }
 
-            FunctionalIterator<RocksStorage.Data> committedConcurrently(RocksStorage.Data storage) {
-                assert !storage.snapshotEnd().isPresent();
-                return iterate(events.tailMap(storage.snapshotStart() + 1).values())
+            FunctionalIterator<CoreTransaction.Data> committedConcurrently(CoreTransaction.Data transaction) {
+                assert !transaction.snapshotEnd().isPresent();
+                return iterate(events.tailMap(transaction.snapshotStart() + 1).values())
                         .flatMap(events -> iterate(events.entrySet()))
                         .filter(storageEvent -> storageEvent.getValue() == Event.COMMITTED)
                         .map(Map.Entry::getKey);
             }
 
-            private boolean isDeletable(RocksStorage.Data storage) {
-                assert storage.snapshotEnd().isPresent() || commitState.containsKey(storage);
-                if (commitState.containsKey(storage)) return false;
+            private boolean isDeletable(CoreTransaction.Data transaction) {
+                assert transaction.snapshotEnd().isPresent() || commitState.containsKey(transaction);
+                if (commitState.containsKey(transaction)) return false;
                 // check for: open transactions that were opened before this one was committed
-                Map<Long, ConcurrentMap<RocksStorage.Data, Event>> beforeCommitted = events.headMap(storage.snapshotEnd().get());
-                for (RocksStorage.Data uncommitted : commitState.keySet()) {
-                    ConcurrentMap<RocksStorage.Data, Event> events = beforeCommitted.get(uncommitted.snapshotStart());
+                Map<Long, ConcurrentMap<CoreTransaction.Data, Event>> beforeCommitted = events.headMap(transaction.snapshotEnd().get());
+                for (CoreTransaction.Data uncommitted : commitState.keySet()) {
+                    ConcurrentMap<CoreTransaction.Data, Event> events = beforeCommitted.get(uncommitted.snapshotStart());
                     if (events != null && events.containsKey(uncommitted) && events.get(uncommitted) == Event.OPENED) {
                         return false;
                     }
@@ -612,20 +580,20 @@ public class CoreDatabase implements TypeDB.Database {
                 return true;
             }
 
-            private void deleteCommittedEvent(RocksStorage.Data storage) {
-                events.compute(storage.snapshotEnd().get(), (snapshot, events) -> {
+            private void deleteCommittedEvent(CoreTransaction.Data transaction) {
+                events.compute(transaction.snapshotEnd().get(), (snapshot, events) -> {
                     if (events != null) {
-                        events.remove(storage);
+                        events.remove(transaction);
                         if (!events.isEmpty()) return events;
                     }
                     return null;
                 });
             }
 
-            private void deleteOpenedEvent(RocksStorage.Data storage) {
-                events.compute(storage.snapshotStart(), (snapshot, events) -> {
+            private void deleteOpenedEvent(CoreTransaction.Data transaction) {
+                events.compute(transaction.snapshotStart(), (snapshot, events) -> {
                     if (events != null) {
-                        events.remove(storage);
+                        events.remove(transaction);
                         if (!events.isEmpty()) return events;
                     }
                     return null;
@@ -634,11 +602,11 @@ public class CoreDatabase implements TypeDB.Database {
 
             private void cleanupCommitted() {
                 if (cleanupRunning.compareAndSet(false, true)) {
-                    for (Map.Entry<Long, ConcurrentMap<RocksStorage.Data, Event>> entry : this.events.entrySet()) {
+                    for (Map.Entry<Long, ConcurrentMap<CoreTransaction.Data, Event>> entry : this.events.entrySet()) {
                         Long snapshot = entry.getKey();
-                        ConcurrentMap<RocksStorage.Data, Event> events = entry.getValue();
-                        RocksStorage.Data other;
-                        for (Iterator<RocksStorage.Data> iter = events.keySet().iterator(); iter.hasNext(); ) {
+                        ConcurrentMap<CoreTransaction.Data, Event> events = entry.getValue();
+                        CoreTransaction.Data other;
+                        for (Iterator<CoreTransaction.Data> iter = events.keySet().iterator(); iter.hasNext(); ) {
                             other = iter.next();
                             if (other.snapshotEnd().isPresent() && isDeletable(other)) iter.remove();
                         }
@@ -649,7 +617,7 @@ public class CoreDatabase implements TypeDB.Database {
             }
 
             private int committedEventCount() {
-                Set<RocksStorage.Data> recorded = new HashSet<>();
+                Set<CoreTransaction.Data> recorded = new HashSet<>();
                 this.events.forEach((snapshot, events) ->
                         events.forEach((storage, type) -> {
                             if (type == Event.COMMITTED) recorded.add(storage);
