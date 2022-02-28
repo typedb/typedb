@@ -35,6 +35,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -108,10 +109,71 @@ public class StatisticsTest {
                 assertEquals(batches, statistics.thingVertexCount(Label.of("employment")));
                 assertEquals(batches, statistics.thingVertexCount(Label.of("employee", "employment")));
                 assertEquals(batches, statistics.thingVertexCount(Label.of("employer", "employment")));
+                assertEquals(batches * 9, statistics.thingVertexTransitiveCount(txn.graphMgr.schema().getType(Label.of("thing"))));
+                assertEquals(batches * 4, statistics.thingVertexTransitiveCount(txn.graphMgr.schema().getType(Label.of("role", "relation"))));
             }
         }
     }
-//
+
+    @Test
+    public void concurrent_attribute_inserts_are_corrected() {
+        int batches = 10;
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            List<CoreTransaction> transactions = new ArrayList<>();
+            for (int i = 0; i < batches; i++) transactions.add(session.transaction(Arguments.Transaction.Type.WRITE));
+            for (int i = 0; i < batches; i++) {
+                CoreTransaction txn = transactions.get(i);
+                txn.query().insert(TypeQL.parseQuery("insert " +
+                        "$x isa person, has name 'Alice';"
+                ));
+                txn.commit();
+            }
+
+            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
+                assertEquals(batches, statistics.thingVertexCount(Label.of("person")));
+                assertEquals(batches, statistics.hasEdgeCount(Label.of("person"), Label.of("name")));
+                assertEquals(1, statistics.thingVertexCount(Label.of("name")));
+            }
+        }
+    }
+
+    @Test
+    public void concurrent_has_inserts_are_corrected() {
+        int batches = 10;
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Bill';").asInsert());
+                txn.commit();
+            }
+            List<CoreTransaction> transactions = new ArrayList<>();
+            for (int i = 0; i < batches; i++) transactions.add(session.transaction(Arguments.Transaction.Type.WRITE));
+            for (int i = 0; i < batches; i++) {
+                CoreTransaction txn = transactions.get(i);
+                txn.query().insert(TypeQL.parseQuery("match " +
+                        "$x isa person, has name 'Bill';" +
+                        "insert" +
+                        "$x has name 'Billy';"
+                ));
+                txn.commit();
+            }
+
+            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
+                assertEquals(1, statistics.thingVertexCount(Label.of("person")));
+                assertEquals(1, statistics.hasEdgeCount(Label.of("person"), Label.of("name")));
+                assertEquals(1, statistics.thingVertexCount(Label.of("name")));
+            }
+        }
+    }
+
+    @Test
+    public void reboot_counts_correct() {
+
+        // TODO
+
+    }
+
 //    @Test
 //    public void test_statistics() throws IOException {
 //        Util.resetDirectory(dataDir);
