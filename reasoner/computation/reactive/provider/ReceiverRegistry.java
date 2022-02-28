@@ -60,10 +60,9 @@ public abstract class ReceiverRegistry<R> {
         }
 
         public boolean recordPull(Set<Processor.Monitor.Reference> monitors) {
-            this.monitors.addAll(monitors);  // TODO: If this pull includes new monitors (can it?) then should this method return true? Also if the pull isn't transmitted upstream then those reactives won't be aware of the new monitor(s)
-            boolean newPull = !isPulling;
+            boolean newRecord = this.monitors.addAll(monitors) || !isPulling; // TODO: If this pull includes new monitors (can it?) then should this method return true? Also if the pull isn't transmitted upstream then those reactives won't be aware of the new monitor(s)
             isPulling = true;
-            return newPull;
+            return newRecord;
         }
 
         public boolean isPulling() {

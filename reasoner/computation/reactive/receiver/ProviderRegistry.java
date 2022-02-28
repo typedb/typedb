@@ -69,10 +69,8 @@ public abstract class ProviderRegistry<R> {
         public void pull(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors) {
             assert this.provider != null;
             assert this.provider == provider;
-            if (!isPulling()) {
-                setPulling(true);
-                pullProvider(monitors);
-            }
+            setPulling(true);
+            pullProvider(monitors);
         }
 
         private boolean isPulling() {
@@ -124,10 +122,8 @@ public abstract class ProviderRegistry<R> {
         @Override
         public void pull(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors) {
             assert providers.containsKey(provider);
-            if (!isPulling(provider)) {
-                setPulling(provider, true);
-                pullProvider(provider, monitors);
-            }
+            setPulling(provider, true);
+            pullProvider(provider, monitors);
         }
 
         private boolean isPulling(Reactive.Provider<R> provider) {

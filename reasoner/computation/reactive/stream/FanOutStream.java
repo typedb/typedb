@@ -86,7 +86,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         newMonitors.forEach(this::onNewReceiverOrMonitor);
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
-            providerRegistry().pullAll(newMonitors);  // TODO: pull all monitors from receiverRegistry or just use the new monitors?
+            providerRegistry().pullAll(receiverRegistry().monitors());
         } else {
             send(receiver);
         }

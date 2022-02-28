@@ -45,14 +45,15 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
     @Override
     public void pull(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
         assert receiver.equals(receiverRegistry().receiver());
-        assert !exhausted;
-        if (iterator == null) iterator = iteratorSupplier.get();
-        if (iterator.hasNext()) {
-            tracker().onAnswerCreate(this);
-            receiver.receive(this, iterator.next());
-        } else {
-            exhausted = true;
-            tracker().onPathJoin(this);
+        if (!exhausted) {
+            if (iterator == null) iterator = iteratorSupplier.get();
+            if (iterator.hasNext()) {
+                tracker().onAnswerCreate(this);
+                receiver.receive(this, iterator.next());
+            } else {
+                exhausted = true;
+                tracker().onPathJoin(this);
+            }
         }
     }
 
