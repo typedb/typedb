@@ -691,6 +691,10 @@ public class ThingGraph {
                     storage.mergeUntracked(vertexTransitiveCount(typeGraph.rootAttributeType().iid()), encodeLong(delta));
                 }
             });
+
+            deltaHasEdgeCount.forEach((ownership, delta) -> {
+                storage.mergeUntracked(StatisticsKey.hasEdgeCount(ownership.first(), ownership.second()), encodeLong(delta));
+            });
 //            attributeVertexCountJobs.forEach((attIID, countWorkValue) -> storage.putTracked(
 //                    CountJobKey.attribute(attIID), countWorkValue.bytes(), false
 //            ));
@@ -698,7 +702,7 @@ public class ThingGraph {
 //                    CountJobKey.hasEdge(IIDMap.getOrDefault(hasEdge.first(), hasEdge.first()),
 //                            hasEdge.second()), countWorkValue.bytes(),
 //                    false));
-            if (!deltaVertexCount.isEmpty()) {
+            if (!deltaVertexCount.isEmpty() || !deltaHasEdgeCount.isEmpty()) {
                 storage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
             }
         }

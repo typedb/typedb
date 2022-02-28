@@ -28,6 +28,7 @@ host_compatible_java_test(
         "//database:database",
         "//common:common",
         "//concept:concept",
+        "//graph:graph",
     ],
     deps = [
         "//test/integration/util:util",
