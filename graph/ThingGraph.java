@@ -44,6 +44,7 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -575,12 +576,32 @@ public class ThingGraph {
                 hasEdgeDeleted = new ConcurrentSkipListSet<>(comparator);
             }
 
+            public NavigableSet<AttributeVertex.Write<?>> attributesCreated() {
+                return attributesCreated;
+            }
+
+            public NavigableSet<AttributeVertex.Write<?>> attributesDeleted() {
+                return attributesDeleted;
+            }
+
+            public NavigableSet<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> hasEdgeCreated() {
+                return hasEdgeCreated;
+            }
+
+            public NavigableSet<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> hasEdgeDeleted() {
+                return hasEdgeDeleted;
+            }
+
             void clear(){
                 attributesCreated.clear();
                 attributesDeleted.clear();
                 hasEdgeCreated.clear();
                 hasEdgeDeleted.clear();
             }
+        }
+
+        public Miscountable miscountable() {
+            return miscountable;
         }
 
         public long snapshot() {

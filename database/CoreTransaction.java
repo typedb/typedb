@@ -30,6 +30,9 @@ import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.TypeGraph;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.query.QueryManager;
@@ -38,6 +41,9 @@ import com.vaticle.typedb.core.traversal.TraversalCache;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.rocksdb.RocksDBException;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
@@ -124,6 +130,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
+            // TODO: this should call `doClose()` which is then also called from `commit()`
             closeResources();
             notifyClosed();
         }
@@ -312,15 +319,17 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
 
+                    Set<CoreTransaction.Data> concurrentTxn;
                     synchronized (session.database().consistencyMgr()) {
-                        Set<CoreTransaction.Data> transactions = session.database().consistencyMgr().commitMayConflict(this);
-                        validateConsistency(transactions);
+                        concurrentTxn = session.database().consistencyMgr().commitMayConflict(this);
+                        validateConsistency(concurrentTxn);
                         session.database().consistencyMgr().commitStarted(this);
                     }
 
+                    recordMiscounts(concurrentTxn);
                     dataStorage.commit();
                     session.database().consistencyMgr().commitSuccessful(this);
-                    triggerStatisticBgCounter();
+//                    triggerStatisticBgCounter();
                 } catch (RocksDBException e) {
                     rollback();
                     throw TypeDBException.of(e);
@@ -331,6 +340,20 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                 }
             } else {
                 throw TypeDBException.of(TRANSACTION_CLOSED);
+            }
+        }
+
+        private void recordMiscounts(Set<CoreTransaction.Data> concurrentTxn) {
+            // TODO a transaction shouldn't be dealing with vertices directly?
+            Map<AttributeVertex<?>, List<CoreTransaction>> attrOvercountDependencies = new HashMap<>();
+            Map<AttributeVertex<?>, List<CoreTransaction>> attrUndercountDependencies = new HashMap<>();
+            Map<Pair<ThingVertex, AttributeVertex<?>>, List<CoreTransaction>> hasOvercountDependencies = new HashMap<>();
+            Map<Pair<ThingVertex, AttributeVertex<?>>, List<CoreTransaction>> hasUndercountDependencies = new HashMap<>();
+            for (CoreTransaction.Data concurrent : concurrentTxn) {
+                intersection(
+                        graphMgr.data().stats().miscountable().attributesCreated(),
+                        concurrent.graphMgr.data().stats().miscountable().attributesCreated()
+                );
             }
         }
 
@@ -384,7 +407,10 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
         @Override
         void notifyClosed() {
-            if (type().isWrite()) session.database().consistencyMgr().closed(this);
+            if (type().isWrite()) {
+                session.database().consistencyMgr().closed(this);
+                // TODO notify statistics manager this tx has finished
+            }
             super.notifyClosed();
         }
 
