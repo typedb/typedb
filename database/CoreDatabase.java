@@ -23,7 +23,6 @@ import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.graph.TypeGraph;
@@ -463,167 +462,126 @@ public class CoreDatabase implements TypeDB.Database {
      */
     public static class ConsistencyManager {
 
-        private final TransactionTimeline transactionTimeline;
+        private final ConcurrentNavigableMap<Long, ConcurrentMap<CoreTransaction.Data, Event>> events;
+        private final ConcurrentMap<CoreTransaction.Data, CommitState> commitState;
+        private final AtomicBoolean cleanupRunning;
+
+        enum Event {OPENED, COMMITTED}
+
+        enum CommitState {UNCOMMITTED, COMMITTING}
 
         ConsistencyManager() {
-            this.transactionTimeline = new TransactionTimeline();
+            this.events = new ConcurrentSkipListMap<>();
+            this.commitState = new ConcurrentHashMap<>();
+            this.cleanupRunning = new AtomicBoolean(false);
         }
 
         void opened(CoreTransaction.Data transaction) {
-            transactionTimeline.opened(transaction);
+            events.computeIfAbsent(transaction.snapshotStart(), (key) -> new ConcurrentHashMap<>()).put(transaction, Event.OPENED);
+            commitState.put(transaction, CommitState.UNCOMMITTED);
+        }
+
+        public void commitStarted(CoreTransaction.Data transaction) {
+            commitState.put(transaction, CommitState.COMMITTING);
+        }
+
+        public void commitSuccessful(CoreTransaction.Data transaction) {
+            assert commitState.get(transaction) == CommitState.COMMITTING && transaction.snapshotEnd().isPresent();
+            events.compute(transaction.snapshotEnd().get(), (snapshot, events) -> {
+                if (events == null) events = new ConcurrentHashMap<>();
+                events.put(transaction, Event.COMMITTED);
+                return events;
+            });
+            commitState.remove(transaction);
         }
 
         public void closed(CoreTransaction.Data transaction) {
-            transactionTimeline.closed(transaction);
-        }
-
-        public void beginCommit(CoreTransaction.Data transaction) {
-            transactionTimeline.beginCommit(transaction);
-        }
-
-        public void endCommit(CoreTransaction.Data transaction) {
-            transactionTimeline.endCommit(transaction);
+            if (commitState.containsKey(transaction)) {
+                commitState.remove(transaction);
+                deleteOpenedEvent(transaction);
+            } else {
+                Map<CoreTransaction.Data, Event> events = this.events.get(transaction.snapshotEnd().get());
+                if (events != null) {
+                    Event event = events.get(transaction);
+                    assert event == null || event == Event.COMMITTED;
+                    if (events.get(transaction) != null && isDeletable(transaction)) {
+                        deleteCommittedEvent(transaction);
+                        deleteOpenedEvent(transaction);
+                    }
+                }
+                cleanupCommitted();
+            }
         }
 
         public Set<CoreTransaction.Data> commitMayConflict(CoreTransaction.Data transaction) {
-            Set<CoreTransaction.Data> concurrent = transactionTimeline.committing();
-            transactionTimeline.committedConcurrently(transaction).toSet(concurrent);
+            Set<CoreTransaction.Data> concurrent = iterate(commitState.keySet())
+                    .filter(txn -> commitState.get(txn) == CommitState.COMMITTING).toSet();
+            iterate(events.tailMap(transaction.snapshotStart() + 1).values())
+                    .flatMap(events1 -> iterate(events1.entrySet()))
+                    .filter(storageEvent -> storageEvent.getValue() == Event.COMMITTED)
+                    .map(Map.Entry::getKey).toSet(concurrent);
             return concurrent;
         }
 
         // visible for testing
         public int committedEventCount() {
-            return transactionTimeline.committedEventCount();
+            Set<CoreTransaction.Data> recorded = new HashSet<>();
+            this.events.forEach((snapshot, events) ->
+                    events.forEach((storage, type) -> {
+                        if (type == Event.COMMITTED) recorded.add(storage);
+                    })
+            );
+            return recorded.size();
         }
 
-        private static class TransactionTimeline {
 
-            private final ConcurrentNavigableMap<Long, ConcurrentMap<CoreTransaction.Data, Event>> events;
-            private final ConcurrentMap<CoreTransaction.Data, CommitState> commitState;
-            private final AtomicBoolean cleanupRunning;
-
-            enum Event {OPENED, COMMITTED}
-
-            enum CommitState {UNCOMMITTED, COMMITTING}
-
-            private TransactionTimeline() {
-                this.events = new ConcurrentSkipListMap<>();
-                this.commitState = new ConcurrentHashMap<>();
-                this.cleanupRunning = new AtomicBoolean(false);
-            }
-
-            void opened(CoreTransaction.Data transaction) {
-                events.computeIfAbsent(transaction.snapshotStart(), (key) -> new ConcurrentHashMap<>()).put(transaction, Event.OPENED);
-                commitState.put(transaction, CommitState.UNCOMMITTED);
-            }
-
-            boolean isUncommitted(CoreTransaction.Data transaction) {
-                return commitState.containsKey(transaction);
-            }
-
-            void beginCommit(CoreTransaction.Data transaction) {
-                commitState.put(transaction, CommitState.COMMITTING);
-            }
-
-            void endCommit(CoreTransaction.Data transaction) {
-                assert commitState.get(transaction) == CommitState.COMMITTING && transaction.snapshotEnd().isPresent();
-                events.compute(transaction.snapshotEnd().get(), (snapshot, events) -> {
-                    if (events == null) events = new ConcurrentHashMap<>();
-                    events.put(transaction, Event.COMMITTED);
-                    return events;
-                });
-                commitState.remove(transaction);
-            }
-
-            void closed(CoreTransaction.Data transaction) {
-                if (commitState.containsKey(transaction)) {
-                    commitState.remove(transaction);
-                    deleteOpenedEvent(transaction);
-                } else {
-                    Map<CoreTransaction.Data, Event> events = this.events.get(transaction.snapshotEnd().get());
-                    if (events != null) {
-                        Event event = events.get(transaction);
-                        assert event == null || event == Event.COMMITTED;
-                        if (events.get(transaction) != null && isDeletable(transaction)) {
-                            deleteCommittedEvent(transaction);
-                            deleteOpenedEvent(transaction);
-                        }
-                    }
-                    cleanupCommitted();
+        private boolean isDeletable(CoreTransaction.Data transaction) {
+            assert transaction.snapshotEnd().isPresent() || commitState.containsKey(transaction);
+            if (commitState.containsKey(transaction)) return false;
+            // check for: open transactions that were opened before this one was committed
+            Map<Long, ConcurrentMap<CoreTransaction.Data, Event>> beforeCommitted = events.headMap(transaction.snapshotEnd().get());
+            for (CoreTransaction.Data uncommitted : commitState.keySet()) {
+                ConcurrentMap<CoreTransaction.Data, Event> events = beforeCommitted.get(uncommitted.snapshotStart());
+                if (events != null && events.containsKey(uncommitted) && events.get(uncommitted) == Event.OPENED) {
+                    return false;
                 }
             }
+            return true;
+        }
 
-            Set<CoreTransaction.Data> committing() {
-                return iterate(commitState.keySet())
-                        .filter(txn -> commitState.get(txn) == TransactionTimeline.CommitState.COMMITTING).toSet();
-            }
-
-            FunctionalIterator<CoreTransaction.Data> committedConcurrently(CoreTransaction.Data transaction) {
-                assert !transaction.snapshotEnd().isPresent();
-                return iterate(events.tailMap(transaction.snapshotStart() + 1).values())
-                        .flatMap(events -> iterate(events.entrySet()))
-                        .filter(storageEvent -> storageEvent.getValue() == Event.COMMITTED)
-                        .map(Map.Entry::getKey);
-            }
-
-            private boolean isDeletable(CoreTransaction.Data transaction) {
-                assert transaction.snapshotEnd().isPresent() || commitState.containsKey(transaction);
-                if (commitState.containsKey(transaction)) return false;
-                // check for: open transactions that were opened before this one was committed
-                Map<Long, ConcurrentMap<CoreTransaction.Data, Event>> beforeCommitted = events.headMap(transaction.snapshotEnd().get());
-                for (CoreTransaction.Data uncommitted : commitState.keySet()) {
-                    ConcurrentMap<CoreTransaction.Data, Event> events = beforeCommitted.get(uncommitted.snapshotStart());
-                    if (events != null && events.containsKey(uncommitted) && events.get(uncommitted) == Event.OPENED) {
-                        return false;
-                    }
+        private void deleteCommittedEvent(CoreTransaction.Data transaction) {
+            events.compute(transaction.snapshotEnd().get(), (snapshot, events) -> {
+                if (events != null) {
+                    events.remove(transaction);
+                    if (!events.isEmpty()) return events;
                 }
-                return true;
-            }
+                return null;
+            });
+        }
 
-            private void deleteCommittedEvent(CoreTransaction.Data transaction) {
-                events.compute(transaction.snapshotEnd().get(), (snapshot, events) -> {
-                    if (events != null) {
-                        events.remove(transaction);
-                        if (!events.isEmpty()) return events;
-                    }
-                    return null;
-                });
-            }
-
-            private void deleteOpenedEvent(CoreTransaction.Data transaction) {
-                events.compute(transaction.snapshotStart(), (snapshot, events) -> {
-                    if (events != null) {
-                        events.remove(transaction);
-                        if (!events.isEmpty()) return events;
-                    }
-                    return null;
-                });
-            }
-
-            private void cleanupCommitted() {
-                if (cleanupRunning.compareAndSet(false, true)) {
-                    for (Map.Entry<Long, ConcurrentMap<CoreTransaction.Data, Event>> entry : this.events.entrySet()) {
-                        Long snapshot = entry.getKey();
-                        ConcurrentMap<CoreTransaction.Data, Event> events = entry.getValue();
-                        CoreTransaction.Data other;
-                        for (Iterator<CoreTransaction.Data> iter = events.keySet().iterator(); iter.hasNext(); ) {
-                            other = iter.next();
-                            if (other.snapshotEnd().isPresent() && isDeletable(other)) iter.remove();
-                        }
-                        if (events.isEmpty()) this.events.remove(snapshot);
-                    }
-                    cleanupRunning.set(false);
+        private void deleteOpenedEvent(CoreTransaction.Data transaction) {
+            events.compute(transaction.snapshotStart(), (snapshot, events) -> {
+                if (events != null) {
+                    events.remove(transaction);
+                    if (!events.isEmpty()) return events;
                 }
-            }
+                return null;
+            });
+        }
 
-            private int committedEventCount() {
-                Set<CoreTransaction.Data> recorded = new HashSet<>();
-                this.events.forEach((snapshot, events) ->
-                        events.forEach((storage, type) -> {
-                            if (type == Event.COMMITTED) recorded.add(storage);
-                        })
-                );
-                return recorded.size();
+        private void cleanupCommitted() {
+            if (cleanupRunning.compareAndSet(false, true)) {
+                for (Map.Entry<Long, ConcurrentMap<CoreTransaction.Data, Event>> entry : this.events.entrySet()) {
+                    Long snapshot = entry.getKey();
+                    ConcurrentMap<CoreTransaction.Data, Event> events = entry.getValue();
+                    CoreTransaction.Data other;
+                    for (Iterator<CoreTransaction.Data> iter = events.keySet().iterator(); iter.hasNext(); ) {
+                        other = iter.next();
+                        if (other.snapshotEnd().isPresent() && isDeletable(other)) iter.remove();
+                    }
+                    if (events.isEmpty()) this.events.remove(snapshot);
+                }
+                cleanupRunning.set(false);
             }
         }
     }

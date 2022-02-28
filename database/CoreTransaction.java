@@ -314,11 +314,11 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     synchronized (session.database().consistencyMgr()) {
                         Set<CoreTransaction.Data> transactions = session.database().consistencyMgr().commitMayConflict(this);
                         validateConsistency(transactions);
-                        session.database().consistencyMgr().beginCommit(this);
+                        session.database().consistencyMgr().commitStarted(this);
                     }
 
                     dataStorage.commit();
-                    session.database().consistencyMgr().endCommit(this);
+                    session.database().consistencyMgr().commitSuccessful(this);
                     triggerStatisticBgCounter();
                 } catch (RocksDBException e) {
                     rollback();
