@@ -29,7 +29,8 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
-import com.vaticle.typedb.core.graph.common.StatisticsKey;
+import com.vaticle.typedb.core.graph.common.StatisticsKeyValue;
+import com.vaticle.typedb.core.graph.common.StatisticsKeyValue.Key;
 import com.vaticle.typedb.core.graph.common.Storage;
 import com.vaticle.typedb.core.graph.iid.PartitionedIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
@@ -66,7 +67,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_RELATI
 import static com.vaticle.typedb.core.graph.common.Encoding.Status.BUFFERED;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_MAX_SIZE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
-import static com.vaticle.typedb.core.graph.common.StatisticsKey.vertexTransitiveCount;
+import static com.vaticle.typedb.core.graph.common.StatisticsKeyValue.Key.vertexTransitiveCount;
 import static com.vaticle.typedb.core.graph.iid.VertexIID.Thing.generate;
 
 public class ThingGraph {
@@ -454,9 +455,7 @@ public class ThingGraph {
         }); // thingsByIID no longer contains valid mapping from IID to TypeVertex
         thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(ThingVertex.Write::commit);
         attributesByIID.valuesIterator().forEachRemaining(AttributeVertex.Write::commit);
-        statistics.commit(committedIIDs);
-
-        clear(); // we now flush the indexes after commit, and we do not expect this Graph.Thing to be used again
+        statistics.commit();
     }
 
     private static class AttributesByIID {
@@ -539,12 +538,7 @@ public class ThingGraph {
         private final ConcurrentMap<VertexIID.Type, Long> deltaVertexCount;
         private final ConcurrentMap<Pair<VertexIID.Type, VertexIID.Type>, Long> persistedHasEdgeCount;
         private final ConcurrentMap<Pair<VertexIID.Type, VertexIID.Type>, Long> deltaHasEdgeCount;
-
-        // TODO: if we buffer deletes in the ThingGraph as well as writes, we should centralise all of these into the existing write buffers
-        private final ConcurrentSkipListSet<AttributeVertex<?>> attributesCreated;
-        private final ConcurrentSkipListSet<AttributeVertex<?>> attributesDeleted;
-        private final ConcurrentSkipListSet<Pair<ThingVertex, AttributeVertex<?>>> hasEdgeCreated;
-        private final ConcurrentSkipListSet<Pair<ThingVertex, AttributeVertex<?>>> hasEdgeDeleted;
+        private final Miscountable miscountable;
 
         private final TypeGraph typeGraph;
         private final Storage.Data storage;
@@ -555,18 +549,38 @@ public class ThingGraph {
             deltaVertexCount = new ConcurrentHashMap<>();
             persistedHasEdgeCount = new ConcurrentHashMap<>();
             deltaHasEdgeCount = new ConcurrentHashMap<>();
+            miscountable = new Miscountable();
 
-            attributesCreated = new ConcurrentSkipListSet<>();
-            attributesDeleted = new ConcurrentSkipListSet<>();
-            Comparator<Pair<ThingVertex, AttributeVertex<?>>> comparator = Comparator.comparing(
-                    (Function<Pair<ThingVertex, AttributeVertex<?>>, ThingVertex>) Pair::first
-            ).thenComparing(Pair::second);
-            hasEdgeCreated = new ConcurrentSkipListSet<>(comparator);
-            hasEdgeDeleted = new ConcurrentSkipListSet<>(comparator);
-
-            snapshot = bytesToLongOrZero(storage.get(StatisticsKey.snapshot()));
+            snapshot = bytesToLongOrZero(storage.get(StatisticsKeyValue.Key.snapshot()));
             this.typeGraph = typeGraph;
             this.storage = storage;
+        }
+
+        public static class Miscountable {
+
+            // TODO: if we buffer deletes in the ThingGraph as well as writes,
+            //  we could centralise all of these into the existing write buffers
+            private final ConcurrentSkipListSet<AttributeVertex.Write<?>> attributesCreated;
+            private final ConcurrentSkipListSet<AttributeVertex.Write<?>> attributesDeleted;
+            private final ConcurrentSkipListSet<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> hasEdgeCreated;
+            private final ConcurrentSkipListSet<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> hasEdgeDeleted;
+
+            Miscountable() {
+                attributesCreated = new ConcurrentSkipListSet<>();
+                attributesDeleted = new ConcurrentSkipListSet<>();
+                Comparator<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> comparator = Comparator.comparing(
+                        (Function<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, ThingVertex>) Pair::first
+                ).thenComparing(Pair::second);
+                hasEdgeCreated = new ConcurrentSkipListSet<>(comparator);
+                hasEdgeDeleted = new ConcurrentSkipListSet<>(comparator);
+            }
+
+            void clear(){
+                attributesCreated.clear();
+                attributesDeleted.clear();
+                hasEdgeCreated.clear();
+                hasEdgeDeleted.clear();
+            }
         }
 
         public long snapshot() {
@@ -633,24 +647,24 @@ public class ThingGraph {
             deltaVertexCount.compute(typeIID, (k, v) -> (v == null ? 0 : v) - 1);
         }
 
-        void attributeVertexCreated(AttributeVertex<?> attribute) {
+        void attributeVertexCreated(AttributeVertex.Write<?> attribute) {
             vertexCreated(attribute.type().iid());
-            attributesCreated.add(attribute);
+            miscountable.attributesCreated.add(attribute);
         }
 
-        void attributeVertexDeleted(AttributeVertex<?> attribute) {
+        void attributeVertexDeleted(AttributeVertex.Write<?> attribute) {
             vertexDeleted(attribute.type().iid());
-            attributesDeleted.add(attribute);
+            miscountable.attributesDeleted.add(attribute);
         }
 
-        public void hasEdgeCreated(ThingVertex thing, AttributeVertex<?> attribute) {
+        public void hasEdgeCreated(ThingVertex.Write thing, AttributeVertex.Write<?> attribute) {
             deltaHasEdgeCount.compute(new Pair<>(thing.type().iid(), attribute.type().iid()), (k, v) -> (v == null ? 0 : v) + 1);
-            hasEdgeCreated.add(new Pair<>(thing, attribute));
+            miscountable.hasEdgeCreated.add(new Pair<>(thing, attribute));
         }
 
-        public void hasEdgeDeleted(ThingVertex thing, AttributeVertex<?> attribute) {
+        public void hasEdgeDeleted(ThingVertex.Write thing, AttributeVertex.Write<?> attribute) {
             deltaHasEdgeCount.compute(new Pair<>(thing.type().iid(), attribute.type().iid()), (k, v) -> (v == null ? 0 : v) + 1);
-            hasEdgeCreated.add(new Pair<>(thing, attribute));
+            miscountable.hasEdgeCreated.add(new Pair<>(thing, attribute));
         }
 
         private long deltaVertexCount(VertexIID.Type typeIID) {
@@ -663,24 +677,17 @@ public class ThingGraph {
 
         private long persistedVertexCount(VertexIID.Type typeIID) {
             return persistedVertexCount.computeIfAbsent(typeIID, iid ->
-                    bytesToLongOrZero(storage.get(StatisticsKey.vertexCount(typeIID))));
+                    bytesToLongOrZero(storage.get(StatisticsKeyValue.Key.vertexCount(typeIID))));
         }
 
         private long persistedHasEdgeCount(VertexIID.Type thingTypeIID, VertexIID.Type attTypeIID) {
             return persistedHasEdgeCount.computeIfAbsent(pair(thingTypeIID, attTypeIID), iid ->
-                    bytesToLongOrZero(storage.get(StatisticsKey.hasEdgeCount(thingTypeIID, attTypeIID))));
+                    bytesToLongOrZero(storage.get(StatisticsKeyValue.Key.hasEdgeCount(thingTypeIID, attTypeIID))));
         }
 
-        private boolean isRootTypeIID(VertexIID.Type typeIID) {
-            return typeIID.equals(typeGraph.rootEntityType().iid()) ||
-                    typeIID.equals(typeGraph.rootRelationType().iid()) ||
-                    typeIID.equals(typeGraph.rootAttributeType().iid()) ||
-                    typeIID.equals(typeGraph.rootRoleType().iid());
-        }
-
-        private void commit(Map<VertexIID.Thing, VertexIID.Thing> IIDMap) {
+        private void commit() {
             deltaVertexCount.forEach((typeIID, delta) -> {
-                storage.mergeUntracked(StatisticsKey.vertexCount(typeIID), encodeLong(delta));
+                storage.mergeUntracked(StatisticsKeyValue.Key.vertexCount(typeIID), encodeLong(delta));
                 if (typeIID.encoding().prefix() == VERTEX_ENTITY_TYPE) {
                     storage.mergeUntracked(vertexTransitiveCount(typeGraph.rootEntityType().iid()), encodeLong(delta));
                 } else if (typeIID.encoding().prefix() == VERTEX_RELATION_TYPE) {
@@ -693,17 +700,10 @@ public class ThingGraph {
             });
 
             deltaHasEdgeCount.forEach((ownership, delta) -> {
-                storage.mergeUntracked(StatisticsKey.hasEdgeCount(ownership.first(), ownership.second()), encodeLong(delta));
+                storage.mergeUntracked(StatisticsKeyValue.Key.hasEdgeCount(ownership.first(), ownership.second()), encodeLong(delta));
             });
-//            attributeVertexCountJobs.forEach((attIID, countWorkValue) -> storage.putTracked(
-//                    CountJobKey.attribute(attIID), countWorkValue.bytes(), false
-//            ));
-//            hasEdgeCountJobs.forEach((hasEdge, countWorkValue) -> storage.putTracked(
-//                    CountJobKey.hasEdge(IIDMap.getOrDefault(hasEdge.first(), hasEdge.first()),
-//                            hasEdge.second()), countWorkValue.bytes(),
-//                    false));
             if (!deltaVertexCount.isEmpty() || !deltaHasEdgeCount.isEmpty()) {
-                storage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
+                storage.mergeUntracked(StatisticsKeyValue.Key.snapshot(), encodeLong(1));
             }
         }
 
@@ -712,12 +712,7 @@ public class ThingGraph {
             deltaVertexCount.clear();
             persistedHasEdgeCount.clear();
             deltaHasEdgeCount.clear();
-            attributesCreated.clear();
-            attributesDeleted.clear();
-            hasEdgeCreated.clear();
-            hasEdgeDeleted.clear();
-//            attributeVertexCountJobs.clear();
-//            hasEdgeCountJobs.clear();
+            miscountable.clear();
         }
 
         private long bytesToLongOrZero(ByteArray bytes) {
