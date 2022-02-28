@@ -93,16 +93,6 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         }
 
         @Override
-        protected Set<Monitor.Reference> upstreamMonitors() {
-            return set(monitoring().asMonitor().getReference());
-        }
-
-        @Override
-        protected Set<Monitor.Reference> newUpstreamMonitors(Set<Monitor.Reference> monitors) {
-            return set(monitoring().asMonitor().getReference());
-        }
-
-        @Override
         public void setUp() {
             super.setUp();
             outlet().publishTo(reasonerEntryPoint);

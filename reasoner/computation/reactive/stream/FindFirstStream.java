@@ -48,7 +48,7 @@ public class FindFirstStream<PACKET> extends SingleReceiverStream<PACKET, PACKET
             receiverRegistry().recordReceive();
             receiverRegistry().receiver().receive(this, packet);
         } else {
-            tracker().onAnswerDestroy(this);
+            tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());
         }
     }
 

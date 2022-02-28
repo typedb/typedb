@@ -92,16 +92,6 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         }
 
         @Override
-        protected Set<Monitor.Reference> upstreamMonitors() {
-            return set(monitoring().asMonitor().getReference());
-        }
-
-        @Override
-        protected Set<Monitor.Reference> newUpstreamMonitors(Set<Monitor.Reference> monitors) {
-            return set(monitoring().asMonitor().getReference());
-        }
-
-        @Override
         public void setUp() {
             setOutlet(new FanOutStream<>(monitoring(), name()));
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
@@ -116,7 +106,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             assert !done;
 //            done = true;
             negation.receiveDone(bounds);
-            monitoring().onPathJoin(negation);
+            monitoring().syncAndReportPathJoin(negation, set());
         }
 
         private static class NegationReactive extends SingleReceiverStream<ConceptMap, ConceptMap> {
@@ -151,7 +141,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
             public void receiveDone(ConceptMap packet) {
                 if (!answerFound) {
-                    tracker().onAnswerCreate(this);
+                    tracker().syncAndReportAnswerCreate(this, receiverRegistry().monitors());
                     receiverRegistry().receiver().receive(this, packet);
                 }
             }

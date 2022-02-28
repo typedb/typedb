@@ -74,8 +74,8 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
                     follower = new CompoundStream<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, tracker(), groupName()).buffer();
                 }
                 publisherPackets.put(follower, mergedPacket);
-                tracker().onPathFork(1, this);
-                tracker().onAnswerDestroy(this);
+                tracker().syncAndReportPathFork(1, this, receiverRegistry().monitors());
+                tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());
                 follower.publishTo(this);
                 providerRegistry().pull(leadingPublisher, receiverRegistry().monitors());  // Pull again on the leader in case the follower never produces an answer
                 providerRegistry().pull(follower, receiverRegistry().monitors());

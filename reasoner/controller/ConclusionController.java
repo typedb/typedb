@@ -186,8 +186,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 op.publishTo(materialiserReactive);
                 materialiserReactive.sendTo(receiverRegistry().receiver());
 
-                tracker().onPathFork(1, this);
-                tracker().onAnswerDestroy(this);
+                tracker().syncAndReportPathFork(1, this, receiverRegistry().monitors());
+                tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());
 
                 // TODO: We would like to use a provider manager for this, but it's restricted to work to this reactive's input type.
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive, receiverRegistry().monitors()));

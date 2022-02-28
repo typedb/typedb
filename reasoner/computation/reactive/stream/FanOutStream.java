@@ -75,7 +75,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
             toSend.forEach(this::send);
         } else {
             if (receiverRegistry().isPulling()) providerRegistry().pull(provider, receiverRegistry().monitors());
-            tracker().onAnswerDestroy(this);  // When an answer is a duplicate then destroy it
+            tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());  // When an answer is a duplicate then destroy it
         }
     }
 

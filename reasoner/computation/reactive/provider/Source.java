@@ -48,11 +48,11 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
         if (!exhausted) {
             if (iterator == null) iterator = iteratorSupplier.get();
             if (iterator.hasNext()) {
-                tracker().onAnswerCreate(this);
+                tracker().syncAndReportAnswerCreate(this, receiverRegistry().monitors());
                 receiver.receive(this, iterator.next());
             } else {
                 exhausted = true;
-                tracker().onPathJoin(this);
+                tracker().syncAndReportPathJoin(this, receiverRegistry().monitors());
             }
         }
     }

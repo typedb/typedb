@@ -54,7 +54,6 @@ public abstract class Processor<INPUT, OUTPUT,
     private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
     protected final Set<Connection<INPUT, ?, ?>> upstreamConnections;
     private final TerminationTracker monitoring;
-    protected final Set<Monitor.Reference> monitors;
     private Reactive.Stream<OUTPUT,OUTPUT> outlet;
     private long endpointId;
     private boolean terminated;
@@ -66,7 +65,6 @@ public abstract class Processor<INPUT, OUTPUT,
         this.endpointId = 0;
         this.receivingEndpoints = new HashMap<>();
         this.providingEndpoints = new HashMap<>();
-        this.monitors = new HashSet<>();
         this.upstreamConnections = new HashSet<>();
         this.done = false;
         this.monitoring = createMonitoring();
@@ -112,14 +110,10 @@ public abstract class Processor<INPUT, OUTPUT,
 
     protected <PROV_PROCESSOR extends Processor<?, INPUT, ?, PROV_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PROV_PROCESSOR> connection) {
         assert !done;
-        Set<Monitor.Reference> monitors = upstreamMonitors();
-        monitors.forEach(connection::registerWithMonitor);
-        receivingEndpoints.get(connection.receiverEndpointId()).setReady(connection, upstreamMonitors());
+        InletEndpoint<INPUT> inlet = receivingEndpoints.get(connection.receiverEndpointId());
+        inlet.setReady(connection);
+        inlet.preparedPull();
         upstreamConnections.add(connection);
-    }
-
-    protected Set<Monitor.Reference> upstreamMonitors() {
-        return this.monitors;
     }
 
     private long nextEndpointId() {
@@ -143,7 +137,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
     protected void endpointPull(Receiver<OUTPUT> receiver, long pubEndpointId, Set<Monitor.Reference> monitors) {
         assert !done;
-        addAndPropagateMonitors(monitors);  // TODO: Consider moving this inside the outlet's pull method
+        monitors.forEach(monitor -> monitoring().sendSynchronisationReport(monitor));  // TODO: Consider moving this inside the outlet's pull method
         providingEndpoints.get(pubEndpointId).pull(receiver, monitors);
     }
 
@@ -154,35 +148,6 @@ public abstract class Processor<INPUT, OUTPUT,
 
     public TerminationTracker monitoring() {
         return monitoring;
-    }
-
-    protected Set<Monitor.Reference> monitors() {
-        return monitors;
-    }
-
-    protected void addAndPropagateMonitors(Set<Monitor.Reference> monitors) {
-        assert !done;
-        Set<Monitor.Reference> newMonitors = newMonitors(monitors);
-        Set<Monitor.Reference> newUpstreamMonitors = newUpstreamMonitors(monitors);
-        this.monitors.addAll(newMonitors);
-        if (newUpstreamMonitors.size() > 0) {
-            upstreamConnections.forEach(connection -> {
-                newUpstreamMonitors.forEach(connection::registerWithMonitor);
-            });
-            newMonitors.forEach(monitor -> monitoring().sendSynchronisationReport(monitor));
-        }
-    }
-
-    protected Set<Monitor.Reference> newUpstreamMonitors(Set<Monitor.Reference> monitors) {
-        Set<Monitor.Reference> newMonitors = new HashSet<>(monitors);
-        newMonitors.removeAll(this.monitors);
-        return newMonitors;
-    }
-
-    protected Set<Monitor.Reference> newMonitors(Set<Monitor.Reference> monitors) {
-        Set<Monitor.Reference> newMonitors = new HashSet<>(monitors);
-        newMonitors.removeAll(this.monitors);
-        return newMonitors;
     }
 
     protected boolean isPulling() {
@@ -226,12 +191,14 @@ public abstract class Processor<INPUT, OUTPUT,
         private final long id;
         private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
         private boolean ready;
+        private PreparedPull preparedPull;
 
         public InletEndpoint(long id, TerminationTracker monitor, String groupName) {
             super(monitor, groupName);
             this.id = id;
             this.ready = false;
             this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
+            this.preparedPull = null;
         }
 
         private ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
@@ -242,19 +209,36 @@ public abstract class Processor<INPUT, OUTPUT,
             return id;
         }
 
-        void setReady(Connection<PACKET, ?, ?> connection, Set<Monitor.Reference> monitors) {
-            // TODO: Poorly named, it sets ready and pulls
+        void setReady(Connection<PACKET, ?, ?> connection) {
             providerRegistry().add(connection);
             assert !ready;
             this.ready = true;
-            pull(receiverRegistry().receiver(), monitors);
         }
 
         @Override
         public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             assert receiver.equals(receiverRegistry().receiver());
-            // TODO: What if after ready this receives a different set of monitors to before?
-            if (ready && receiverRegistry().recordPull(receiver, monitors)) providerRegistry().pullAll(monitorsToPropagate(monitors));
+            assert preparedPull == null;
+            if (!ready) {
+                preparedPull = new PreparedPull(receiver, monitors);
+            } else {
+                if (receiverRegistry().recordPull(receiver, monitors)) providerRegistry().pullAll(monitorsToPropagate(monitors));
+            }
+        }
+
+        public void preparedPull() {
+            if (receiverRegistry().recordPull(preparedPull.receiver, preparedPull.monitors)) providerRegistry().pullAll(monitorsToPropagate(preparedPull.monitors));
+            preparedPull = null;
+        }
+
+        private class PreparedPull {
+            private final Receiver<PACKET> receiver;
+            private final Set<Monitor.Reference> monitors;
+
+            PreparedPull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
+                this.receiver = receiver;
+                this.monitors = monitors;
+            }
         }
 
         Set<Monitor.Reference> monitorsToPropagate(Set<Monitor.Reference> monitors) {
@@ -429,24 +413,24 @@ public abstract class Processor<INPUT, OUTPUT,
             AnswerDestroy
         }
 
-        public void onPathFork(int numForks, Reactive forker) {
+        public void syncAndReportPathFork(int numForks, Reactive forker, Set<Monitor.Reference> monitors) {
             assert numForks > 0;
             onChange(CountChange.PathFork, numForks, forker);
-            processor().monitors().forEach(m -> reportToMonitor(CountChange.PathFork, numForks, forker, m));
+            monitors.forEach(m -> reportToMonitor(CountChange.PathFork, numForks, forker, m));
         }
 
-        public void onPathJoin(Reactive joiner) {
+        public void syncAndReportPathJoin(Reactive joiner, Set<Monitor.Reference> monitors) {
             onChange(CountChange.PathJoin, 1, joiner);
-            processor().monitors().forEach(m -> reportToMonitor(CountChange.PathJoin, 1, joiner, m));
+            monitors.forEach(m -> reportToMonitor(CountChange.PathJoin, 1, joiner, m));
         }
 
         public void reportPathJoin(Reactive joiner, Monitor.Reference monitor) {
             reportToMonitor(CountChange.PathJoin, 1, joiner, monitor);
         }
 
-        public void onAnswerCreate(Reactive creator) {
+        public void syncAndReportAnswerCreate(Reactive creator, Set<Monitor.Reference> monitors) {
             onChange(CountChange.AnswerCreate, 1, creator);
-            processor().monitors().forEach(m -> reportToMonitor(CountChange.AnswerCreate, 1, creator, m));
+            monitors.forEach(m -> reportToMonitor(CountChange.AnswerCreate, 1, creator, m));
         }
 
         public void reportAnswerCreate(int num, Reactive creator, Monitor.Reference monitor) {
@@ -454,9 +438,9 @@ public abstract class Processor<INPUT, OUTPUT,
             reportToMonitor(CountChange.AnswerCreate, num, creator, monitor);
         }
 
-        public void onAnswerDestroy(Reactive destroyer) {
+        public void syncAndReportAnswerDestroy(Reactive destroyer, Set<Monitor.Reference> monitors) {
             onChange(CountChange.AnswerDestroy, 1, destroyer);
-            processor().monitors().forEach(m -> reportToMonitor(CountChange.AnswerDestroy, 1, destroyer, m));
+            monitors.forEach(m -> reportToMonitor(CountChange.AnswerDestroy, 1, destroyer, m));
         }
 
         protected void onChange(CountChange countChange, int num, Reactive reactive) {

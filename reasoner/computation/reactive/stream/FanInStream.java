@@ -49,6 +49,6 @@ public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
     public void finaliseProviders() {
         assert tracker() != null;
         final int numForks = providerRegistry().size() - 1;
-        if (numForks > 0) tracker().onPathFork(numForks, this);
+        if (numForks > 0) tracker().syncAndReportPathFork(numForks, this, receiverRegistry().monitors());
     }
 }

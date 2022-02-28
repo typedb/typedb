@@ -61,6 +61,7 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
 
     @Override
     public void pull(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
+        monitors.forEach(this::registerWithMonitor);
         provProcessor.execute(actor -> actor.endpointPull(this, provEndpointId, monitors));
     }
 
