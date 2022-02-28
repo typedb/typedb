@@ -153,15 +153,23 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         private class ConclusionReactive extends SingleReceiverStream<ConceptMap, Map<Variable, Concept>> {
 
             private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerManager;
+            private final Set<MaterialiserReactive> materialiserReactives;
 
             protected ConclusionReactive(String groupName, TerminationTracker monitor) {
                 super(monitor, groupName);
                 this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(this);
+                this.materialiserReactives = new HashSet<>();
             }
 
             @Override
             protected ProviderRegistry<ConceptMap> providerRegistry() {
                 return providerManager;
+            }
+
+            @Override
+            public void pull(Receiver<Map<Variable, Concept>> receiver, Set<Monitor.Reference> monitors) {
+                super.pull(receiver, monitors);
+                materialiserReactives.forEach(m -> m.pull(receiverRegistry().receiver(), receiverRegistry().monitors()));
             }
 
             @Override
@@ -174,6 +182,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 );
                 Stream<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
                 MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, tracker(), groupName());
+                materialiserReactives.add(materialiserReactive);
                 op.publishTo(materialiserReactive);
                 materialiserReactive.sendTo(receiverRegistry().receiver());
 

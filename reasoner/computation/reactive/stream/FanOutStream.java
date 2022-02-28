@@ -99,8 +99,10 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     }
 
     private void onNewReceiverOrMonitor(Processor.Monitor.Reference monitor) {
-        if (bufferSet.size() > 0) tracker().reportAnswerCreate(bufferSet.size(), this, monitor);  // New receiver, so any answer in the buffer will be dispatched there at some point
-        if (receiverRegistry().size(monitor) > 1) tracker().reportPathJoin(this, monitor);
+        if (receiverRegistry().size(monitor) > 1) {
+            if (bufferSet.size() > 0) tracker().reportAnswerCreate(bufferSet.size(), this, monitor);  // New receiver, so any answer in the buffer will be dispatched there at some point
+            tracker().reportPathJoin(this, monitor);
+        }
         // We want to report joins to our tracker and parent monitors, but we should report a join to a monitor if we have more than one receiver that reports to that monitor
     }
 
