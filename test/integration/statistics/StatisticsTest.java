@@ -110,7 +110,7 @@ public class StatisticsTest {
     }
 
     @Test
-    public void concurrent_attribute_inserts_are_corrected() {
+    public void concurrent_attribute_inserts_are_corrected() throws InterruptedException {
         int batches = 10;
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             List<CoreTransaction> transactions = new ArrayList<>();
@@ -123,6 +123,8 @@ public class StatisticsTest {
                 txn.commit();
             }
 
+            Thread.sleep(1000);
+
             try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
                 assertEquals(batches, statistics.thingVertexCount(Label.of("person")));
@@ -133,7 +135,7 @@ public class StatisticsTest {
     }
 
     @Test
-    public void concurrent_has_inserts_are_corrected() {
+    public void concurrent_has_inserts_are_corrected() throws InterruptedException {
         int batches = 10;
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -152,16 +154,20 @@ public class StatisticsTest {
                 txn.commit();
             }
 
+            Thread.sleep(1000);
+
             try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
                 assertEquals(1, statistics.thingVertexCount(Label.of("person")));
-                assertEquals(1, statistics.hasEdgeCount(Label.of("person"), Label.of("name")));
-                assertEquals(1, statistics.thingVertexCount(Label.of("name")));
+                assertEquals(2, statistics.hasEdgeCount(Label.of("person"), Label.of("name")));
+                assertEquals(2, statistics.thingVertexCount(Label.of("name")));
             }
         }
     }
 
     // TODO deletes
+
+    // TODO attribute on attribute
 
     @Test
     public void reboot_counts_correct() {

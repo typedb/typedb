@@ -29,8 +29,7 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
-import com.vaticle.typedb.core.graph.common.StatisticsKeyValue;
-import com.vaticle.typedb.core.graph.common.StatisticsKeyValue.Key;
+import com.vaticle.typedb.core.graph.common.StatisticsKey;
 import com.vaticle.typedb.core.graph.common.Storage;
 import com.vaticle.typedb.core.graph.iid.PartitionedIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
@@ -45,7 +44,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.NavigableSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -69,7 +67,6 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_RELATI
 import static com.vaticle.typedb.core.graph.common.Encoding.Status.BUFFERED;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_MAX_SIZE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
-import static com.vaticle.typedb.core.graph.common.StatisticsKeyValue.Key.vertexTransitiveCount;
 import static com.vaticle.typedb.core.graph.iid.VertexIID.Thing.generate;
 
 public class ThingGraph {
@@ -553,7 +550,7 @@ public class ThingGraph {
             deltaHasEdgeCount = new ConcurrentHashMap<>();
             miscountable = new Miscountable();
 
-            snapshot = bytesToLongOrZero(storage.get(StatisticsKeyValue.Key.snapshot()));
+            snapshot = bytesToLongOrZero(storage.get(StatisticsKey.version()));
             this.typeGraph = typeGraph;
             this.storage = storage;
         }
@@ -574,11 +571,12 @@ public class ThingGraph {
                 hasEdgeDeleted = new HashSet<>();
             }
 
-            void clear(){
-                attributesCreated.clear();
-                attributesDeleted.clear();
-                hasEdgeCreated.clear();
-                hasEdgeDeleted.clear();
+            void clear() {
+                // TODO we don't want to clear this?
+//                attributesCreated.clear();
+//                attributesDeleted.clear();
+//                hasEdgeCreated.clear();
+//                hasEdgeDeleted.clear();
             }
 
             public FunctionalIterator<AttributeVertex.Write<?>> attrCreatedIntersection(Miscountable other) {
@@ -699,33 +697,23 @@ public class ThingGraph {
 
         private long persistedVertexCount(VertexIID.Type typeIID) {
             return persistedVertexCount.computeIfAbsent(typeIID, iid ->
-                    bytesToLongOrZero(storage.get(StatisticsKeyValue.Key.vertexCount(typeIID))));
+                    bytesToLongOrZero(storage.get(StatisticsKey.vertexCount(typeIID))));
         }
 
         private long persistedHasEdgeCount(VertexIID.Type thingTypeIID, VertexIID.Type attTypeIID) {
             return persistedHasEdgeCount.computeIfAbsent(pair(thingTypeIID, attTypeIID), iid ->
-                    bytesToLongOrZero(storage.get(StatisticsKeyValue.Key.hasEdgeCount(thingTypeIID, attTypeIID))));
+                    bytesToLongOrZero(storage.get(StatisticsKey.hasEdgeCount(thingTypeIID, attTypeIID))));
         }
 
         private void commit() {
-            deltaVertexCount.forEach((typeIID, delta) -> {
-                storage.mergeUntracked(StatisticsKeyValue.Key.vertexCount(typeIID), encodeLong(delta));
-                if (typeIID.encoding().prefix() == VERTEX_ENTITY_TYPE) {
-                    storage.mergeUntracked(vertexTransitiveCount(typeGraph.rootEntityType().iid()), encodeLong(delta));
-                } else if (typeIID.encoding().prefix() == VERTEX_RELATION_TYPE) {
-                    storage.mergeUntracked(vertexTransitiveCount(typeGraph.rootRelationType().iid()), encodeLong(delta));
-                } else if (typeIID.encoding().prefix() == Encoding.Prefix.VERTEX_ROLE_TYPE) {
-                    storage.mergeUntracked(vertexTransitiveCount(typeGraph.rootRoleType().iid()), encodeLong(delta));
-                } else if (typeIID.encoding().prefix() == VERTEX_ATTRIBUTE_TYPE) {
-                    storage.mergeUntracked(vertexTransitiveCount(typeGraph.rootAttributeType().iid()), encodeLong(delta));
-                }
-            });
-
-            deltaHasEdgeCount.forEach((ownership, delta) -> {
-                storage.mergeUntracked(StatisticsKeyValue.Key.hasEdgeCount(ownership.first(), ownership.second()), encodeLong(delta));
-            });
+            deltaVertexCount.forEach((typeIID, delta) ->
+                    storage.mergeUntracked(StatisticsKey.vertexCount(typeIID), encodeLong(delta))
+            );
+            deltaHasEdgeCount.forEach((ownership, delta) ->
+                    storage.mergeUntracked(StatisticsKey.hasEdgeCount(ownership.first(), ownership.second()), encodeLong(delta))
+            );
             if (!deltaVertexCount.isEmpty() || !deltaHasEdgeCount.isEmpty()) {
-                storage.mergeUntracked(StatisticsKeyValue.Key.snapshot(), encodeLong(1));
+                storage.mergeUntracked(StatisticsKey.version(), encodeLong(1));
             }
         }
 

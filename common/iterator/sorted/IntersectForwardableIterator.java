@@ -89,8 +89,10 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
             if (i == candidateSource) continue;
             Forwardable<T, ORDER> iterator = iterators.get(i);
             if (iterator.hasNext() && !iterator.peek().equals(candidate)) iterator.forward(candidate);
-            if (!iterator.hasNext()) state = State.COMPLETED;
-            else if (!iterator.peek().equals(candidate)) {
+            if (!iterator.hasNext()) {
+                state = State.COMPLETED;
+                return;
+            } else if (!iterator.peek().equals(candidate)) {
                 assert order.isValidNext(candidate, iterator.peek());
                 candidate = iterator.peek();
                 candidateSource = i;

@@ -952,6 +952,8 @@ public class Encoding {
                 MISCOUNT(100),
                 TX_COMMITTED_ID(200);
 
+                public static final int LENGTH = 2;
+
                 private final ByteArray bytes;
 
                 Prefix(int key) {
@@ -972,6 +974,8 @@ public class Encoding {
                 CONDITIONAL_OVERCOUNT_HAS(10),
                 CONDITIONAL_UNDERCOUNT_HAS(11);
 
+                public static final int LENGTH = 1;
+
                 private final byte key;
                 private final ByteArray bytes;
 
@@ -982,6 +986,10 @@ public class Encoding {
 
                 public ByteArray bytes() {
                     return bytes;
+                }
+
+                public byte key() {
+                    return key;
                 }
             }
         }

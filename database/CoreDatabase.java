@@ -28,7 +28,9 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
+import com.vaticle.typedb.core.graph.common.StatisticsKey;
 import com.vaticle.typedb.core.graph.common.Storage;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.traversal.TraversalCache;
 import org.rocksdb.ColumnFamilyDescriptor;
@@ -53,6 +55,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
@@ -62,6 +65,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INCOMPATIBLE_ENCODING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.ROCKS_LOGGER_SHUTDOWN_FAILED;
@@ -97,6 +101,7 @@ public class CoreDatabase implements TypeDB.Database {
     private final StampedLock schemaLock;
     private final CoreDatabaseManager databaseMgr;
     private final ConsistencyManager consistencyMgr;
+    private final StatisticsSynchroniser statisticsSynchroniser;
     private final Factory.Session sessionFactory;
     private final AtomicInteger schemaLockWriteRequests;
     private final AtomicLong transactionID;
@@ -118,8 +123,9 @@ public class CoreDatabase implements TypeDB.Database {
         sessions = new ConcurrentHashMap<>();
         schemaLock = new StampedLock();
         schemaLockWriteRequests = new AtomicInteger(0);
-        this.transactionID = new AtomicLong(0);
+        transactionID = new AtomicLong(0);
         consistencyMgr = new ConsistencyManager();
+        statisticsSynchroniser = new StatisticsSynchroniser();
         rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
                 options().storageIndexCacheSize(), LOG.isDebugEnabled(), ROCKS_LOG_PERIOD);
         isOpen = new AtomicBoolean(false);
@@ -134,14 +140,12 @@ public class CoreDatabase implements TypeDB.Database {
 
         CoreDatabase database = new CoreDatabase(databaseMgr, name, sessionFactory);
         database.initialise();
-        database.statisticsBgCounterStart();
         return database;
     }
 
     static CoreDatabase loadAndOpen(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
         CoreDatabase database = new CoreDatabase(databaseMgr, name, sessionFactory);
         database.load();
-        database.statisticsBgCounterStart();
         return database;
     }
 
@@ -157,6 +161,7 @@ public class CoreDatabase implements TypeDB.Database {
                 txn.commit();
             }
         }
+        statisticsSynchroniser.initialise();
     }
 
     private void openSchema() {
@@ -213,6 +218,7 @@ public class CoreDatabase implements TypeDB.Database {
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
         }
+        statisticsSynchroniser.initialiseAndCleanup();
     }
 
     private void openData() {
@@ -366,6 +372,10 @@ public class CoreDatabase implements TypeDB.Database {
         return consistencyMgr;
     }
 
+    StatisticsSynchroniser statisticsSynchroniser() {
+        return statisticsSynchroniser;
+    }
+
     /**
      * Get the lock that guarantees that the schema is not modified at the same
      * time as data being written to the database. When a schema session is
@@ -442,7 +452,8 @@ public class CoreDatabase implements TypeDB.Database {
      */
     protected void closeResources() {
         sessions.values().forEach(p -> p.first().close());
-        statisticsBgCounterStop();
+//        statisticsBgCounterStop();
+        statisticsSynchroniser.close();
         cacheClose();
         rocksDataPartitionMgr.close();
         rocksData.close();
@@ -520,6 +531,10 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
+        Set<CoreTransaction.Data> uncommitted() {
+            return commitState.keySet();
+        }
+
         public Set<CoreTransaction.Data> commitMayConflict(CoreTransaction.Data transaction) {
             Set<CoreTransaction.Data> concurrent = iterate(commitState.keySet())
                     .filter(txn -> commitState.get(txn) == CommitState.COMMITTING).toSet();
@@ -540,7 +555,6 @@ public class CoreDatabase implements TypeDB.Database {
             );
             return recorded.size();
         }
-
 
         private boolean isDeletable(CoreTransaction.Data transaction) {
             assert transaction.snapshotEnd().isPresent() || commitState.containsKey(transaction);
@@ -648,6 +662,95 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
+    public class StatisticsSynchroniser {
+
+        private final ExecutorService executor;
+        private CoreSession.Data session;
+
+        StatisticsSynchroniser() {
+            executor = Executors.newSingleThreadExecutor(NamedThreadFactory.create(name + "::statistics-manager"));
+        }
+
+        public void initialise() {
+            session = createAndOpenSession(DATA, new Options.Session()).asData();
+        }
+
+        public void initialiseAndCleanup() {
+            initialise();
+            cleanupMiscounts();
+        }
+
+        private void cleanupMiscounts() {
+            LOG.debug("Synchronising remaining statistics.");
+            updateMiscounts();
+            LOG.debug("Statistics are up to date.");
+        }
+        // TODO will we have separate commit and close?
+//        void transactionCommitted(long txnID) {
+//            executor.submit(() -> updateMiscounts(txnID));
+//        }
+
+        public void transactionClosed(long id) {
+            // TODO optimise this to only call if there is a dependant transaction in memory
+            executor.submit(() -> updateMiscounts());
+        }
+
+        private void updateMiscounts() {
+            Set<Long> uncommittedIDs = iterate(consistencyMgr.uncommitted()).map(t -> t.id).toSet();
+            try (CoreTransaction.Data txn = session.transaction(WRITE)) {
+                txn.dataStorage.iterate(StatisticsKey.MisCount.prefix()).forEachRemaining(kv -> {
+                    Set<Long> conditions = kv.value().decodeLongSet();
+                    if (anyCommitted(conditions, txn.dataStorage)) {
+                        txn.dataStorage.deleteUntracked(kv.key());
+                        if (kv.key().isAttrConditionalOvercount()) {
+                            VertexIID.Attribute<?> attribute = kv.key().attributeMiscounted();
+                            VertexIID.Type type = attribute.type();
+                            txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(-1));
+                        } else if (kv.key().isAttrConditionalUndercount()) {
+                            VertexIID.Attribute<?> attribute = kv.key().attributeMiscounted();
+                            VertexIID.Type type = attribute.type();
+                            txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(1));
+                        } else if (kv.key().isHasConditionalOvercount()) {
+                            Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = kv.key().hasMiscounted();
+                            txn.dataStorage.mergeUntracked(
+                                    StatisticsKey.hasEdgeCount(has.first().type(), has.second().type()),
+                                    encodeLong(-1)
+                            );
+                        } else if (kv.key().isHasConditionalUndercount()) {
+                            Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = kv.key().hasMiscounted();
+                            txn.dataStorage.mergeUntracked(
+                                    StatisticsKey.hasEdgeCount(has.first().type(), has.second().type()),
+                                    encodeLong(1)
+                            );
+                        }
+                    } else if (noneOpen(conditions, uncommittedIDs)) {
+                        txn.dataStorage.deleteUntracked(kv.key());
+                    }
+                });
+                txn.dataStorage.mergeUntracked(StatisticsKey.version(), encodeLong(1));
+                txn.commit();
+            }
+        }
+
+        private boolean anyCommitted(Set<Long> txnIDs, RocksStorage.Data dataStorage) {
+            for (Long txnID : txnIDs) {
+                if (dataStorage.get(StatisticsKey.txnCommitted(txnID)) != null) return true;
+            }
+            return false;
+        }
+
+        private boolean noneOpen(Set<Long> txnIDs, Set<Long> openTxnIDs) {
+            if (openTxnIDs.isEmpty()) return true;
+            return iterate(txnIDs).anyMatch(openTxnIDs::contains);
+        }
+
+        void close() {
+            session.close();
+            executor.shutdownNow();
+//            executor.awaitTermination(null, null); // TODO
+        }
+    }
+
     public static class StatisticsBackgroundCounter {
 
         private final CoreSession.Data session;
@@ -660,7 +763,6 @@ public class CoreDatabase implements TypeDB.Database {
             countJobNotifications = new Semaphore(0);
             thread = NamedThreadFactory.create(session.database().name + "::statistics-background-counter")
                     .newThread(this::countFn);
-            // TODO re-enable new statistics
 //            thread.start();
         }
 

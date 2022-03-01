@@ -30,7 +30,7 @@ import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.TypeGraph;
-import com.vaticle.typedb.core.graph.common.StatisticsKeyValue;
+import com.vaticle.typedb.core.graph.common.StatisticsKey;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.logic.LogicCache;
@@ -60,7 +60,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 
 public abstract class CoreTransaction implements TypeDB.Transaction {
 
@@ -270,7 +269,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
         protected final RocksStorage.Data dataStorage;
         private final CoreDatabase.Cache cache;
-        private final long id;
+        final long id;
 
         public Data(CoreSession.Data session, Arguments.Transaction.Type type,
                     Options.Transaction options, Factory.Storage storageFactory) {
@@ -330,10 +329,9 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                         session.database().consistencyMgr().commitStarted(this);
                     }
 
-                    recordMiscounts(concurrentTxn);
+                    recordStatisticsMetadata(concurrentTxn);
                     dataStorage.commit();
                     session.database().consistencyMgr().commitSuccessful(this);
-//                    triggerStatisticBgCounter();
                 } catch (RocksDBException e) {
                     rollback();
                     throw TypeDBException.of(e);
@@ -347,7 +345,12 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             }
         }
 
-        private void recordMiscounts(Set<CoreTransaction.Data> concurrentTxn) {
+        private void recordStatisticsMetadata(Set<CoreTransaction.Data> concurrentTxn) {
+            recordMiscounts(concurrentTxn);
+            dataStorage.putUntracked(StatisticsKey.txnCommitted(id));
+        }
+
+        private void recordMiscounts(Set<Data> concurrentTxn) {
             Map<AttributeVertex.Write<?>, Set<Long>> attrOvercountDependencies = new HashMap<>();
             Map<AttributeVertex.Write<?>, Set<Long>> attrUndercountDependencies = new HashMap<>();
             Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
@@ -372,16 +375,16 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             }
 
             attrOvercountDependencies.forEach((attr, txs) ->
-                dataStorage.putUntracked(StatisticsKeyValue.Key.MisCount.attConditionalOvercount(id, attr.iid()), encodeLongSet(txs))
+                    dataStorage.putUntracked(StatisticsKey.MisCount.attrConditionalOvercount(id, attr.iid()), encodeLongSet(txs))
             );
             attrUndercountDependencies.forEach((attr, txs) ->
-                dataStorage.putUntracked(StatisticsKeyValue.Key.MisCount.attConditionalUndercount(id, attr.iid()), encodeLongSet(txs))
+                    dataStorage.putUntracked(StatisticsKey.MisCount.attrConditionalUndercount(id, attr.iid()), encodeLongSet(txs))
             );
             hasOvercountDependencies.forEach((has, txs) ->
-                    dataStorage.putUntracked(StatisticsKeyValue.Key.MisCount.hasConditionalOvercount(id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
+                    dataStorage.putUntracked(StatisticsKey.MisCount.hasConditionalOvercount(id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
             );
             hasUndercountDependencies.forEach((has, txs) ->
-                    dataStorage.putUntracked(StatisticsKeyValue.Key.MisCount.hasConditionalUndercount(id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
+                    dataStorage.putUntracked(StatisticsKey.MisCount.hasConditionalUndercount(id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
             );
         }
 
@@ -438,7 +441,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         void notifyClosed() {
             if (type().isWrite()) {
                 session.database().consistencyMgr().closed(this);
-                // TODO notify statistics manager this tx has finished
+                session.database().statisticsSynchroniser().transactionClosed(id);
             }
             super.notifyClosed();
         }
@@ -446,17 +449,6 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         @Override
         public FunctionalIterator<Pair<ByteArray, ByteArray>> committedIIDs() {
             return graphMgr.data().committedIIDs();
-        }
-
-        /**
-         * Responsible for triggering {@link CoreDatabase.StatisticsBackgroundCounter}, if necessary.
-         * A different implementation of this class may override it.
-         */
-        protected void triggerStatisticBgCounter() {
-            // TODO
-//            if (graphMgr.data().stats().needsBackgroundCounting()) {
-//                session.database().statisticsBackgroundCounter.needsBackgroundCounting();
-//            }
         }
 
         public Long snapshotStart() {
