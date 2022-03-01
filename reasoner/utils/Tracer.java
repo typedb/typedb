@@ -88,7 +88,11 @@ public final class Tracer {
             receiverString = simpleClassId(receiver);
             addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
         }
-        addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull_mon" + monitors.size());
+        StringBuilder monitorsLabel = new StringBuilder();
+        for (Processor.Monitor.Reference monitor : monitors) {
+            monitorsLabel.append(simpleClassHashCode(monitor.driver()));
+        }
+        addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull_mon" + monitorsLabel.toString());
         addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 
@@ -105,7 +109,11 @@ public final class Tracer {
     }
 
     private static String simpleClassId(Object obj) {
-        return obj.getClass().getSimpleName() + "@" + System.identityHashCode(obj);
+        return obj.getClass().getSimpleName() + simpleClassHashCode(obj);
+    }
+
+    private static String simpleClassHashCode(Object obj) {
+        return "@" + System.identityHashCode(obj);
     }
 
     private String countLabel(CountChange countChange, int num) {
