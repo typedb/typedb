@@ -225,7 +225,7 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             assert receiver.equals(receiverRegistry().receiver());
-            if (!ready) providerRegistry().pullAll(monitorsToPropagate(monitors));
+            if (!ready && receiverRegistry().recordPull(receiver, monitors)) providerRegistry().pullAll(monitorsToPropagate(monitors));
         }
 
         @Override
@@ -300,7 +300,7 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), this, monitors));
-            providerRegistry().pullAll(receiverRegistry().monitors());
+            if (receiverRegistry().recordPull(receiver, monitors)) providerRegistry().pullAll(receiverRegistry().monitors());
         }
 
         @Override
