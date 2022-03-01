@@ -138,32 +138,32 @@ public final class Tracer {
     }
 
     public synchronized void synchronisationReport(Actor.Driver<?> sender, Processor.Monitor.Reference monitor, long pathsCount, long answersCountUpdate) {
-        String senderName = sender.name() + "-monitor";
+        String senderName = sender.name() + simpleClassHashCode(sender);
         pathUpdate(senderName, monitor, "init-p" + pathsCount + "-a" + answersCountUpdate);
         addNodeGroup(senderName, sender.name(), defaultTrace);
     }
 
     private void reportPathCount(String sender, Processor.Monitor.Reference monitor, String label) {
-        String monitorName = monitor.driver().name() + "-monitor";
+        String monitorName = monitor.driver().name() + simpleClassHashCode(monitor.driver());
         addMessage(sender, monitorName, defaultTrace, EdgeType.REPORT, label);
         addNodeGroup(monitorName, monitor.driver().name(), defaultTrace);
     }
 
     private void pathCount(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
-        String monitorName = monitor.name() + "-monitor";
+        String monitorName = monitor.name() + simpleClassHashCode(monitor);
         addMessage(sender, monitorName, defaultTrace, EdgeType.MONITOR, label);
         addNodeGroup(monitorName, monitor.name(), defaultTrace);
     }
 
     private void pathUpdate(String sender, Processor.Monitor.Reference monitor, String label) {
-        String monitorName = monitor.driver().name() + "-monitor";
+        String monitorName = monitor.driver().name() + simpleClassHashCode(monitor.driver());
         addMessage(sender, monitorName, defaultTrace, EdgeType.UPDATE, label);
         addNodeGroup(monitorName, monitor.driver().name(), defaultTrace);
     }
 
     public void registerWithMonitor(Actor.Driver<?> registree, Processor.Monitor.Reference monitor) {
-        String monitorName = monitor.driver().name() + "-monitor";
-        addMessage(registree.name() + "-monitor", monitorName, defaultTrace, EdgeType.REGISTER, "register");
+        String monitorName = monitor.driver().name() + simpleClassHashCode(monitor.driver());
+        addMessage(registree.name() + simpleClassHashCode(registree), monitorName, defaultTrace, EdgeType.REGISTER, "register");
     }
 
     private void addMessage(String sender, String receiver, Trace trace, EdgeType edgeType,
@@ -177,9 +177,10 @@ public final class Tracer {
 
     public synchronized void startDefaultTrace() {
         Trace trace = defaultTrace;
-        assert !rootRequestTracers.containsKey(trace);
-        rootRequestTracers.put(trace, new RootRequestTracer(trace));
-        rootRequestTracers.get(trace).start();
+        if (!rootRequestTracers.containsKey(trace)) {
+            rootRequestTracers.put(trace, new RootRequestTracer(trace));
+            rootRequestTracers.get(trace).start();
+        }
     }
 
     public synchronized void finishDefaultTrace() {

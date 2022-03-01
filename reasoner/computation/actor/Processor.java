@@ -218,7 +218,7 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             assert receiver.equals(receiverRegistry().receiver());
-            assert preparedPull == null;
+            assert preparedPull == null || preparedPull.equals(new PreparedPull(receiver, monitors));
             if (!ready) {
                 preparedPull = new PreparedPull(receiver, monitors);
             } else {
@@ -227,7 +227,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         public void preparedPull() {
-            if (receiverRegistry().recordPull(preparedPull.receiver, preparedPull.monitors)) providerRegistry().pullAll(monitorsToPropagate(preparedPull.monitors));
+            if (preparedPull != null && receiverRegistry().recordPull(preparedPull.receiver, preparedPull.monitors)) providerRegistry().pullAll(monitorsToPropagate(preparedPull.monitors));
             preparedPull = null;
         }
 
@@ -238,6 +238,20 @@ public abstract class Processor<INPUT, OUTPUT,
             PreparedPull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
                 this.receiver = receiver;
                 this.monitors = monitors;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                PreparedPull that = (PreparedPull) o;
+                return receiver.equals(that.receiver) &&
+                        monitors.equals(that.monitors);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(receiver, monitors);
             }
         }
 
@@ -511,8 +525,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
         public void receiveSynchronisationReport(Driver<? extends Processor<?, ?, ?, ?>> sender, long pathCountDelta, long answersCountDelta) {
             assert registered.contains(sender);
-            assert !countSenders.contains(sender);
-            if (!done) {
+            if (!countSenders.contains(sender) && !done) {
                 pathsCount += pathCountDelta;
                 answersCount += answersCountDelta;
                 countSenders.add(sender);
