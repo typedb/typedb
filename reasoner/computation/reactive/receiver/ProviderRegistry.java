@@ -96,17 +96,17 @@ public abstract class ProviderRegistry<R> {
 
     public static class MultiProviderRegistry<R> extends ProviderRegistry<R> {
 
-        private final Map<Reactive.Provider<R>, Boolean> providers;
+        private final Map<Reactive.Provider<R>, Boolean> providersPullState;
         private final Reactive.Receiver<R> receiver;
 
         public MultiProviderRegistry(Reactive.Receiver.Subscriber<R> subscriber) {
-            this.providers = new HashMap<>();
+            this.providersPullState = new HashMap<>();
             this.receiver = subscriber;
         }
 
         @Override
         public void add(Reactive.Provider<R> provider) {
-            providers.putIfAbsent(provider, false);
+            providersPullState.putIfAbsent(provider, false);
         }
 
         @Override
@@ -116,34 +116,36 @@ public abstract class ProviderRegistry<R> {
 
         @Override
         public void pullAll(Set<Processor.Monitor.Reference> monitors) {
-            providers.keySet().forEach(provider -> pull(provider, monitors));
+            providersPullState.keySet().forEach(provider -> pull(provider, monitors));
         }
 
         @Override
         public void pull(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors) {
-            assert providers.containsKey(provider);
-            setPulling(provider, true);
-            pullProvider(provider, monitors);
+            assert providersPullState.containsKey(provider);
+            if (!isPulling(provider)) {
+                setPulling(provider, true);
+                pullProvider(provider, monitors);
+            }
         }
 
         private boolean isPulling(Reactive.Provider<R> provider) {
-            assert providers.containsKey(provider);
-            return providers.get(provider);
+            assert providersPullState.containsKey(provider);
+            return providersPullState.get(provider);
         }
 
         private void setPulling(Reactive.Provider<R> provider, boolean isPulling) {
-            assert providers.containsKey(provider);
-            providers.put(provider, isPulling);
+            assert providersPullState.containsKey(provider);
+            providersPullState.put(provider, isPulling);
         }
 
         private void pullProvider(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors) {
-            assert providers.containsKey(provider);
+            assert providersPullState.containsKey(provider);
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitors));
             provider.pull(receiver, monitors);
         }
 
         public int size() {
-            return providers.size();
+            return providersPullState.size();
         }
     }
 }

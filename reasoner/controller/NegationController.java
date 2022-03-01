@@ -111,20 +111,20 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
         private static class NegationReactive extends SingleReceiverStream<ConceptMap, ConceptMap> {
 
-            private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerManager;
+            private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerRegistry;
             private final Runnable onEarlyDone;
             private boolean answerFound;
 
             protected NegationReactive(TerminationTracker monitor, String groupName, Runnable onEarlyDone) {
                 super(monitor, groupName);
                 this.onEarlyDone = onEarlyDone;
-                this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(this);
+                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
                 this.answerFound = false;
             }
 
             @Override
             protected ProviderRegistry<ConceptMap> providerRegistry() {
-                return providerManager;
+                return providerRegistry;
             }
 
             @Override

@@ -154,7 +154,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
         public void pull() {
             isPulling = true;
-            providerManager().pullAll(set());
+            providerRegistry().pullAll(set());
         }
 
         @Override
@@ -168,7 +168,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         @Override
         public void subscribeTo(Provider<ConceptMap> provider) {
             super.subscribeTo(provider);
-            if (isPulling) providerManager().pull(provider, set());
+            if (isPulling) providerRegistry().pull(provider, set());
         }
 
         @Override

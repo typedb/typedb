@@ -24,15 +24,15 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public abstract class Sink<PACKET> implements Subscriber<PACKET> {
 
-    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerManager;
+    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
     private TerminationTracker monitor;
 
     protected Sink() {
-        this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(this);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
     }
 
-    protected ProviderRegistry.SingleProviderRegistry<PACKET> providerManager() {
-        return providerManager;
+    protected ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
+        return providerRegistry;
     }
 
     protected TerminationTracker monitor() {
@@ -45,13 +45,13 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET> {
 
     @Override
     public void subscribeTo(Provider<PACKET> provider) {
-        providerManager().add(provider);
+        providerRegistry().add(provider);
     }
 
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
-        providerManager().recordReceive(provider);
+        providerRegistry().recordReceive(provider);
     }
 
 }

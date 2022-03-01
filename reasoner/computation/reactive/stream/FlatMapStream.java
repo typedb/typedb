@@ -27,18 +27,18 @@ import java.util.function.Function;
 public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT> {
 
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
-    private final ProviderRegistry.SingleProviderRegistry<INPUT> providerManager;
+    private final ProviderRegistry.SingleProviderRegistry<INPUT> providerRegistry;
 
     public FlatMapStream(Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
                          TerminationTracker monitor, String groupName) {
         super(monitor, groupName);
         this.transform = transform;
-        this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
     }
 
     @Override
     protected ProviderRegistry<INPUT> providerRegistry() {
-        return providerManager;
+        return providerRegistry;
     }
 
     @Override
@@ -53,7 +53,7 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OU
                 receiverRegistry().receiver().receive(this, t);
             });
         } else if (receiverRegistry().isPulling()) {
-            providerManager.pull(provider, receiverRegistry().monitors());  // Automatic retry
+            providerRegistry.pull(provider, receiverRegistry().monitors());  // Automatic retry
         }
         tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());  // Because we discarded the original packet and gained as many as are in the iterator
     }

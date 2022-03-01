@@ -27,18 +27,18 @@ import java.util.Stack;
 
 public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
-    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerManager;
+    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
     private final Stack<PACKET> stack;
 
     public BufferedStream(Publisher<PACKET> publisher, TerminationTracker monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
         this.stack = new Stack<>();
     }
 
     @Override
     protected ProviderRegistry<PACKET> providerRegistry() {
-        return providerManager;
+        return providerRegistry;
     }
 
     @Override

@@ -25,16 +25,16 @@ import javax.annotation.Nullable;
 
 public class NoOpStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
-    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerManager;
+    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
 
     protected NoOpStream(@Nullable Publisher<PACKET> publisher, TerminationTracker monitor, String groupName) {
         super(monitor, groupName);
-        this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
     }
 
     @Override
     protected ProviderRegistry<PACKET> providerRegistry() {
-        return providerManager;
+        return providerRegistry;
     }
 
     public static <T> NoOpStream<T> noOp(TerminationTracker monitor, String groupName) {

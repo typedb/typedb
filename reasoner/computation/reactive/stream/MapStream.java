@@ -26,18 +26,18 @@ import java.util.function.Function;
 public class MapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT> {
 
     private final Function<INPUT, OUTPUT> mappingFunc;
-    private final ProviderRegistry.SingleProviderRegistry<INPUT> providerManager;
+    private final ProviderRegistry.SingleProviderRegistry<INPUT> providerRegistry;
 
     public MapStream(Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, TerminationTracker monitor,
                      String groupName) {
         super(monitor, groupName);
         this.mappingFunc = mappingFunc;
-        this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
     }
 
     @Override
     protected ProviderRegistry<INPUT> providerRegistry() {
-        return providerManager;
+        return providerRegistry;
     }
 
     @Override

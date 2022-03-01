@@ -152,18 +152,18 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         private class ConclusionReactive extends SingleReceiverStream<ConceptMap, Map<Variable, Concept>> {
 
-            private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerManager;
+            private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerRegistry;
             private final Set<MaterialiserReactive> materialiserReactives;
 
             protected ConclusionReactive(String groupName, TerminationTracker monitor) {
                 super(monitor, groupName);
-                this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(this);
+                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
                 this.materialiserReactives = new HashSet<>();
             }
 
             @Override
             protected ProviderRegistry<ConceptMap> providerRegistry() {
-                return providerManager;
+                return providerRegistry;
             }
 
             @Override
@@ -207,17 +207,17 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         private class MaterialiserReactive extends SingleReceiverStream<Map<Variable, Concept>, Map<Variable, Concept>> {
 
             private final ConclusionReactive parent;
-            private final ProviderRegistry.SingleProviderRegistry<Map<Variable, Concept>> providerManager;
+            private final ProviderRegistry.SingleProviderRegistry<Map<Variable, Concept>> providerRegistry;
 
             public MaterialiserReactive(ConclusionReactive parent, TerminationTracker monitor, String groupName) {
                 super(monitor, groupName);
                 this.parent = parent;
-                this.providerManager = new ProviderRegistry.SingleProviderRegistry<>(this);
+                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
             }
 
             @Override
             protected ProviderRegistry<Map<Variable, Concept>> providerRegistry() {
-                return providerManager;
+                return providerRegistry;
             }
 
             @Override

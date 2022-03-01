@@ -36,14 +36,14 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
     private final BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc;
     private final Map<Provider<PACKET>, PACKET> publisherPackets;
     private final PACKET initialPacket;
-    private final ProviderRegistry.MultiProviderRegistry<PACKET> providerManager;
+    private final ProviderRegistry.MultiProviderRegistry<PACKET> providerRegistry;
 
     public CompoundStream(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
                           BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
                           TerminationTracker monitor, String groupName) {
         super(monitor, groupName);
         assert plan.size() > 0;
-        this.providerManager = new ProviderRegistry.MultiProviderRegistry<>(this);
+        this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this);
         this.initialPacket = initialPacket;
         this.remainingPlan = new ArrayList<>(plan);
         this.leadingPublisher = spawnLeaderFunc.apply(this.remainingPlan.remove(0), initialPacket);
@@ -55,7 +55,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
 
     @Override
     protected ProviderRegistry<PACKET> providerRegistry() {
-        return providerManager;
+        return providerRegistry;
     }
 
     @Override
