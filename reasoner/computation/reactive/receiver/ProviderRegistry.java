@@ -70,7 +70,7 @@ public abstract class ProviderRegistry<R> {
 
         @Override
         public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
-
+            provider.propagateMonitors(receiver, monitors);
         }
 
         @Override
@@ -143,7 +143,7 @@ public abstract class ProviderRegistry<R> {
         public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
             Set<Processor.Monitor.Reference> toPropagate = new HashSet<>(monitors);
             toPropagate.removeAll(this.monitors);
-            providerPullState.keySet().forEach(provider -> provider.propagateMonitors(toPropagate));
+            providerPullState.keySet().forEach(provider -> provider.propagateMonitors(receiver, toPropagate));
         }
 
         private boolean isPulling(Reactive.Provider<R> provider) {

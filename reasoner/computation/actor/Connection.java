@@ -65,9 +65,9 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
     }
 
     @Override
-    public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
+    public void propagateMonitors(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
         monitors.forEach(this::registerWithMonitor);
-        provProcessor.execute(actor -> actor.endpointPropagateMonitors(provEndpointId, monitors));
+        provProcessor.execute(actor -> actor.endpointPropagateMonitors(this, provEndpointId, monitors));
     }
 
     protected void registerWithMonitor(Processor.Monitor.Reference monitor) {

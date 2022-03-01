@@ -82,19 +82,12 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     @Override
     public void pull(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
         bufferPositions.putIfAbsent(receiver, 0);
-        Set<Processor.Monitor.Reference> newMonitors = receiverRegistry().recordPull(receiver, monitors);
-        newMonitors.forEach(this::onNewReceiverOrMonitor);
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
-            providerRegistry().pullAll(receiverRegistry().monitors());
+            if (receiverRegistry().recordPull(receiver)) providerRegistry().pullAll(receiverRegistry().monitors());
         } else {
             send(receiver);
         }
-    }
-
-    @Override
-    public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
-        providerRegistry().propagateMonitors(monitors);
     }
 
     private void send(Receiver<PACKET> receiver) {  // TODO: Naming should show this updates the buffer position
@@ -103,12 +96,19 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         receiver.receive(this, bufferList.get(pos));
     }
 
-    private void onNewReceiverOrMonitor(Processor.Monitor.Reference monitor) {
+    @Override
+    public void propagateMonitors(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
+        Set<Processor.Monitor.Reference> newMonitors = receiverRegistry().registerMonitors(receiver, monitors);
+        newMonitors.forEach(this::onNewMonitor);
+        providerRegistry().propagateMonitors(monitors);
+    }
+
+    private void onNewMonitor(Processor.Monitor.Reference monitor) {
         if (receiverRegistry().size(monitor) > 1) {
+            // We want to report joins to our tracker and parent monitors, but we should report a join to a monitor if we have more than one receiver that reports to that monitor
             if (bufferSet.size() > 0) tracker().reportAnswerCreate(bufferSet.size(), this, monitor);  // New receiver, so any answer in the buffer will be dispatched there at some point
             tracker().reportPathJoin(this, monitor);
         }
-        // We want to report joins to our tracker and parent monitors, but we should report a join to a monitor if we have more than one receiver that reports to that monitor
     }
 
     @Override

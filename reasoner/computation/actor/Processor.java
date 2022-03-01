@@ -141,9 +141,9 @@ public abstract class Processor<INPUT, OUTPUT,
         providingEndpoints.get(pubEndpointId).pull(receiver, monitors);
     }
 
-    public void endpointPropagateMonitors(long pubEndpointId, Set<Monitor.Reference> monitors) {
+    public void endpointPropagateMonitors(Receiver<OUTPUT> receiver, long pubEndpointId, Set<Monitor.Reference> monitors) {
         monitors.forEach(monitor -> monitoring().sendSynchronisationReport(monitor));
-        providingEndpoints.get(pubEndpointId).propagateMonitors(monitors);
+        providingEndpoints.get(pubEndpointId).propagateMonitors(receiver, monitors);
     }
 
     protected void endpointReceive(Provider<INPUT> provider, INPUT packet, long subEndpointId) {
@@ -225,11 +225,11 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             assert receiver.equals(receiverRegistry().receiver());
-            if (!ready && receiverRegistry().recordPull(receiver, monitors)) providerRegistry().pullAll(monitorsToPropagate(monitors));
+            if (!ready && receiverRegistry().recordPull(receiver)) providerRegistry().pullAll(monitorsToPropagate(monitors));
         }
 
         @Override
-        public void propagateMonitors(Set<Monitor.Reference> monitors) {
+        public void propagateMonitors(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             providerRegistry().propagateMonitors(monitors);
         }
 
@@ -300,11 +300,11 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), this, monitors));
-            if (receiverRegistry().recordPull(receiver, monitors)) providerRegistry().pullAll(receiverRegistry().monitors());
+            if (receiverRegistry().recordPull(receiver)) providerRegistry().pullAll(receiverRegistry().monitors());
         }
 
         @Override
-        public void propagateMonitors(Set<Monitor.Reference> monitors) {
+        public void propagateMonitors(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             providerRegistry().propagateMonitors(monitors);
         }
 

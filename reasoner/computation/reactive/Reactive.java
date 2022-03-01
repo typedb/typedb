@@ -32,7 +32,7 @@ public interface Reactive {
 
         void pull(Receiver<R> receiver, Set<Processor.Monitor.Reference> monitors);  // Should be idempotent if already pulling
 
-        void propagateMonitors(Set<Processor.Monitor.Reference> monitors);
+        void propagateMonitors(Receiver<R> receiver, Set<Processor.Monitor.Reference> monitors);
 
         interface Publisher<T> extends Provider<T> {
 

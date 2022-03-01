@@ -57,9 +57,9 @@ public abstract class ReceiverRegistry<R> {
             isPulling = false;
         }
 
-        public boolean recordPull(Reactive.Receiver<R> receiver, Set<Processor.Monitor.Reference> monitors) {
+        public boolean recordPull(Reactive.Receiver<R> receiver) {
             assert this.receiver.equals(receiver);
-            boolean newPull = this.monitors.addAll(monitors) || !isPulling;
+            boolean newPull = !isPulling;
             isPulling = true;
             return newPull;
         }
@@ -103,8 +103,13 @@ public abstract class ReceiverRegistry<R> {
             pullingReceivers.clear();
         }
 
-        public Set<Processor.Monitor.Reference> recordPull(Reactive.Receiver<R> receiver, Set<Processor.Monitor.Reference> monitors) {
+        public boolean recordPull(Reactive.Receiver<R> receiver) {
+            boolean newPull = !pullingReceivers.contains(receiver);
             pullingReceivers.add(receiver);
+            return newPull;
+        }
+
+        public Set<Processor.Monitor.Reference> registerMonitors(Reactive.Receiver<R> receiver, Set<Processor.Monitor.Reference> monitors) {
             Set<Processor.Monitor.Reference> newMonitors = new HashSet<>();
             monitors.forEach(monitor -> {
                 Set<Reactive.Receiver<R>> recs = monitorReceivers.computeIfAbsent(monitor, m -> new HashSet<>());

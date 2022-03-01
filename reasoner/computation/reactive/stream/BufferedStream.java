@@ -56,7 +56,7 @@ public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET>
     @Override
     public void pull(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
         assert receiver.equals(receiverRegistry().receiver());
-        boolean newPull = receiverRegistry().recordPull(receiver, monitors);
+        boolean newPull = receiverRegistry().recordPull(receiver);
         if (stack.size() > 0) {
             receiver.receive(this, stack.pop());
         } else {

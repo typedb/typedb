@@ -45,7 +45,7 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
     @Override
     public void pull(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
         assert receiver.equals(receiverRegistry().receiver());
-        receiverRegistry().recordPull(receiver, monitors);
+        receiverRegistry().recordPull(receiver);
         if (!exhausted) {
             if (iterator == null) iterator = iteratorSupplier.get();
             if (iterator.hasNext()) {
@@ -59,7 +59,7 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
     }
 
     @Override
-    public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
+    public void propagateMonitors(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
         // Nowhere to propagate to
     }
 
