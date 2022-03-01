@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.TypeGraph;
+import com.vaticle.typedb.core.graph.common.StatisticsKeyValue;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
@@ -41,7 +42,9 @@ import com.vaticle.typedb.core.traversal.TraversalCache;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.rocksdb.RocksDBException;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -59,6 +62,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 
 public abstract class CoreTransaction implements TypeDB.Transaction {
 
@@ -268,11 +273,13 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
         protected final RocksStorage.Data dataStorage;
         private final CoreDatabase.Cache cache;
+        private final long id;
 
         public Data(CoreSession.Data session, Arguments.Transaction.Type type,
                     Options.Transaction options, Factory.Storage storageFactory) {
             super(session, type, options);
 
+            id = session.database().nextTransactionID();
             cache = session.database().cacheBorrow();
             dataStorage = storageFactory.storageData(session.database(), this);
             ThingGraph thingGraph = new ThingGraph(dataStorage, cache.typeGraph());
@@ -345,16 +352,33 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
         private void recordMiscounts(Set<CoreTransaction.Data> concurrentTxn) {
             // TODO a transaction shouldn't be dealing with vertices directly?
-            Map<AttributeVertex<?>, List<CoreTransaction>> attrOvercountDependencies = new HashMap<>();
-            Map<AttributeVertex<?>, List<CoreTransaction>> attrUndercountDependencies = new HashMap<>();
-            Map<Pair<ThingVertex, AttributeVertex<?>>, List<CoreTransaction>> hasOvercountDependencies = new HashMap<>();
-            Map<Pair<ThingVertex, AttributeVertex<?>>, List<CoreTransaction>> hasUndercountDependencies = new HashMap<>();
+            Map<AttributeVertex<?>, Set<Long>> attrOvercountDependencies = new HashMap<>();
+            Map<AttributeVertex<?>, Set<Long>> attrUndercountDependencies = new HashMap<>();
+            Map<Pair<ThingVertex, AttributeVertex<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
+            Map<Pair<ThingVertex, AttributeVertex<?>>, Set<Long>> hasUndercountDependencies = new HashMap<>();
             for (CoreTransaction.Data concurrent : concurrentTxn) {
-                intersection(
-                        graphMgr.data().stats().miscountable().attributesCreated(),
-                        concurrent.graphMgr.data().stats().miscountable().attributesCreated()
-                );
+                iterateSorted(graphMgr.data().stats().miscountable().attributesCreated(), ASC)
+                        .intersect(iterateSorted(concurrent.graphMgr.data().stats().miscountable().attributesCreated(), ASC))
+                        .forEachRemaining(attribute -> {
+                            Set<Long> ids = attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>());
+                            ids.add(concurrent.id);
+                        });
+                iterateSorted(graphMgr.data().stats().miscountable().attributesDeleted(), ASC)
+                        .intersect(iterateSorted(concurrent.graphMgr.data().stats().miscountable().attributesDeleted(), ASC))
+                        .forEachRemaining(attribute -> {
+                            Set<Long> ids = attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>());
+                            ids.add(concurrent.id);
+                        });
+
+                // TODO has edges, can we use comparable Pairs to make intersection fast?
             }
+
+            attrOvercountDependencies.forEach((attr, txs) -> {
+                dataStorage.putUntracked(StatisticsKeyValue.Key.MisCount.attConditionalOvercount(id, attr.iid()), ByteArray.encodeLongSet(txs));
+            });
+            attrUndercountDependencies.forEach((attr, txs) -> {
+                dataStorage.putUntracked(StatisticsKeyValue.Key.MisCount.attConditionalUndercount(id, attr.iid()), ByteArray.encodeLongSet(txs));
+            });
         }
 
         private void validateConsistency(Set<CoreTransaction.Data> concurrent) {

@@ -58,6 +58,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
@@ -96,8 +97,9 @@ public class CoreDatabase implements TypeDB.Database {
     private final StampedLock schemaLock;
     private final CoreDatabaseManager databaseMgr;
     private final ConsistencyManager consistencyMgr;
-    private final AtomicInteger schemaLockWriteRequests;
     private final Factory.Session sessionFactory;
+    private final AtomicInteger schemaLockWriteRequests;
+    private final AtomicLong transactionID;
     protected OptimisticTransactionDB rocksSchema;
     protected OptimisticTransactionDB rocksData;
     protected CorePartitionManager.Schema rocksSchemaPartitionMgr;
@@ -116,6 +118,7 @@ public class CoreDatabase implements TypeDB.Database {
         sessions = new ConcurrentHashMap<>();
         schemaLock = new StampedLock();
         schemaLockWriteRequests = new AtomicInteger(0);
+        this.transactionID = new AtomicLong(0);
         consistencyMgr = new ConsistencyManager();
         rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
                 options().storageIndexCacheSize(), LOG.isDebugEnabled(), ROCKS_LOG_PERIOD);
@@ -327,6 +330,10 @@ public class CoreDatabase implements TypeDB.Database {
 
         statisticsBackgroundCounterSession = sessionFactory.sessionData(this, new Options.Session());
         statisticsBackgroundCounter = new StatisticsBackgroundCounter(statisticsBackgroundCounterSession);
+    }
+
+    long nextTransactionID() {
+        return transactionID.getAndIncrement();
     }
 
     protected void statisticsBgCounterStop() {

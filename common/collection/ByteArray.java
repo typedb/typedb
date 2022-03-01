@@ -30,6 +30,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
@@ -276,6 +279,27 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     public LocalDateTime decodeSortedAsDateTime(ZoneId timeZoneID) {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(decodeSortedAsLong()), timeZoneID);
+    }
+
+    public static ByteArray encodeLongSet(Set<Long> longs) {
+        ByteArray[] encoded = new ByteArray[longs.size()];
+        Iterator<Long> iterator = longs.iterator();
+        int i = 0;
+        while (iterator.hasNext()) {
+            encoded[i] = encodeLong(iterator.next());
+            assert encoded[i].length() == LONG_SIZE;
+            i++;
+        }
+        return join(encoded);
+    }
+
+    public Set<Long> decodeLongSet() {
+        assert length() % LONG_SIZE == 0;
+        Set<Long> longs = new HashSet<>();
+        for (int i = 0; i < length(); i += LONG_SIZE) {
+            longs.add(view(i, i + LONG_SIZE).decodeLong());
+        }
+        return longs;
     }
 
     @Override

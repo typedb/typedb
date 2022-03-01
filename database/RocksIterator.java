@@ -155,6 +155,12 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     }
 
     @Override
+    public SortedIterator.Forwardable<KeyValue<T, ByteArray>, ORDER> intersect(
+            SortedIterator.Forwardable<KeyValue<T, ByteArray>, ORDER> iterator) {
+        return SortedIterators.Forwardable.intersect(this, iterator);
+    }
+
+    @Override
     public <V extends Comparable<? super V>, ORD extends Order> Forwardable<V, ORD> mapSorted(
             Function<KeyValue<T, ByteArray>, V> mappingFn, Function<V, KeyValue<T, ByteArray>> reverseMappingFn, ORD order) {
         return SortedIterators.Forwardable.mapSorted(order, this, mappingFn, reverseMappingFn);

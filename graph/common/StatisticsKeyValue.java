@@ -139,31 +139,6 @@ public interface StatisticsKeyValue {
         }
     }
 
-    class Value {
-
-        public static ByteArray encodeLongSet(Set<Long> longs) {
-            ByteArray[] encoded = new ByteArray[longs.size()];
-            Iterator<Long> iterator = longs.iterator();
-            int i = 0;
-            while (iterator.hasNext()) {
-                encoded[i] = ByteArray.encodeLong(iterator.next());
-                assert encoded[i].length() == Bytes.LONG_SIZE;
-                i++;
-            }
-            return ByteArray.join(encoded);
-        }
-
-        public static Set<Long> decodeLongSet(ByteArray bytes) {
-            assert bytes.length() % Bytes.LONG_SIZE == 0;
-            Set<Long> longs = new HashSet<>();
-            for (int i = 0; i < bytes.length(); i += Bytes.LONG_SIZE) {
-                longs.add(bytes.view(i, i + Bytes.LONG_SIZE).decodeLong());
-            }
-            return longs;
-        }
-    }
-
-
 
 //    public static class CountJobKey extends StatisticsKey {
 //
