@@ -77,8 +77,8 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
                 tracker().syncAndReportPathFork(1, this, receiverRegistry().monitors());
                 tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());
                 follower.publishTo(this);
-                providerRegistry().pull(leadingPublisher, receiverRegistry().monitors());  // Pull again on the leader in case the follower never produces an answer
-                providerRegistry().pull(follower, receiverRegistry().monitors());
+                providerRegistry().pull(leadingPublisher);  // Pull again on the leader in case the follower never produces an answer
+                providerRegistry().pull(follower);
             }
         } else {
             receiverRegistry().recordReceive();

@@ -53,7 +53,7 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OU
                 receiverRegistry().receiver().receive(this, t);
             });
         } else if (receiverRegistry().isPulling()) {
-            providerRegistry.pull(provider, receiverRegistry().monitors());  // Automatic retry
+            providerRegistry.pull(provider);  // Automatic retry
         }
         tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());  // Because we discarded the original packet and gained as many as are in the iterator
     }

@@ -167,9 +167,9 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             @Override
-            public void pull(Receiver<Map<Variable, Concept>> receiver, Set<Monitor.Reference> monitors) {
-                super.pull(receiver, monitors);
-                materialiserReactives.forEach(m -> m.pull(receiverRegistry().receiver(), receiverRegistry().monitors()));
+            public void pull(Receiver<Map<Variable, Concept>> receiver) {
+                super.pull(receiver);
+                materialiserReactives.forEach(m -> m.pull(receiverRegistry().receiver()));
             }
 
             @Override
@@ -190,17 +190,17 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());
 
                 // TODO: We would like to use a provider manager for this, but it's restricted to work to this reactive's input type.
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive, receiverRegistry().monitors()));
-                materialiserReactive.pull(receiverRegistry().receiver(), receiverRegistry().monitors());
-                providerRegistry().pull(provider, receiverRegistry().monitors());  // We need to pull on the condition again in case materialisation fails
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive));
+                materialiserReactive.pull(receiverRegistry().receiver());
+                providerRegistry().pull(provider);  // We need to pull on the condition again in case materialisation fails
             }
 
             private void receiveMaterialisation(MaterialiserReactive provider, Map<Variable, Concept> packet) {
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
                 receiverRegistry().recordReceive();
                 receiverRegistry().receiver().receive(this, packet);
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, provider, receiverRegistry().monitors()));
-                provider.pull(receiverRegistry().receiver(), receiverRegistry().monitors());  // We need to pull again so that the materialiser processor does a join of its own accord
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, provider));
+                provider.pull(receiverRegistry().receiver());  // We need to pull again so that the materialiser processor does a join of its own accord
             }
         }
 

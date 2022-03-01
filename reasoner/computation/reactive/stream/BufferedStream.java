@@ -18,11 +18,9 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
-import java.util.Set;
 import java.util.Stack;
 
 public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
@@ -54,13 +52,13 @@ public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET>
     }
 
     @Override
-    public void pull(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
+    public void pull(Receiver<PACKET> receiver) {
         assert receiver.equals(receiverRegistry().receiver());
         boolean newPull = receiverRegistry().recordPull(receiver);
         if (stack.size() > 0) {
             receiver.receive(this, stack.pop());
         } else {
-            if (newPull) providerRegistry().pullAll(receiverRegistry().monitors());
+            if (newPull) providerRegistry().pullAll();
         }
     }
 }

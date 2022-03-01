@@ -60,8 +60,8 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
     }
 
     @Override
-    public void pull(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
-        provProcessor.execute(actor -> actor.endpointPull(this, provEndpointId, monitors));
+    public void pull(Receiver<PACKET> receiver) {
+        provProcessor.execute(actor -> actor.endpointPull(this, provEndpointId));
     }
 
     @Override

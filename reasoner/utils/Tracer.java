@@ -80,8 +80,19 @@ public final class Tracer {
         return Optional.ofNullable(INSTANCE);
     }
 
-    public synchronized void pull(@Nullable Receiver<?> receiver, Provider<?> provider,
-                                  Set<Processor.Monitor.Reference> monitors) {
+    public synchronized void pull(@Nullable Receiver<?> receiver, Provider<?> provider) {
+        String receiverString;
+        if (receiver == null) receiverString = "root";
+        else {
+            receiverString = simpleClassId(receiver);
+            addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
+        }
+        addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
+        addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
+    }
+
+    public synchronized void propagateMonitors(@Nullable Receiver<?> receiver, Provider<?> provider,
+                                               Set<Processor.Monitor.Reference> monitors) {
         String receiverString;
         if (receiver == null) receiverString = "root";
         else {

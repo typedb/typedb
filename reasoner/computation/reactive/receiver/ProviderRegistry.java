@@ -31,9 +31,9 @@ public abstract class ProviderRegistry<R> {
     // TODO: Consider managing whether to pull on upstreams by telling the manager whether we are pulling or not
     public abstract void add(Reactive.Provider<R> provider);
 
-    public abstract void pull(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors);
+    public abstract void pull(Reactive.Provider<R> provider);
 
-    public abstract void pullAll(Set<Processor.Monitor.Reference> monitors);
+    public abstract void pullAll();
 
     public abstract void propagateMonitors(Set<Processor.Monitor.Reference> monitors);
 
@@ -64,8 +64,8 @@ public abstract class ProviderRegistry<R> {
         }
 
         @Override
-        public void pullAll(Set<Processor.Monitor.Reference> monitors) {
-            if (provider != null) pull(provider, monitors);
+        public void pullAll() {
+            if (provider != null) pull(provider);
         }
 
         @Override
@@ -74,11 +74,13 @@ public abstract class ProviderRegistry<R> {
         }
 
         @Override
-        public void pull(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors) {
+        public void pull(Reactive.Provider<R> provider) {
             assert this.provider != null;
             assert this.provider == provider;
-            setPulling(true);
-            pullProvider(monitors);
+            if (!isPulling()) {
+                setPulling(true);
+                pullProvider();
+            }
         }
 
         private boolean isPulling() {
@@ -89,10 +91,10 @@ public abstract class ProviderRegistry<R> {
             isPulling = pulling;
         }
 
-        private void pullProvider(Set<Processor.Monitor.Reference> monitors) {
+        private void pullProvider() {
             assert this.provider != null;
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitors));
-            provider.pull(receiver, monitors);
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
+            provider.pull(receiver);
         }
 
         @Override
@@ -117,7 +119,7 @@ public abstract class ProviderRegistry<R> {
         @Override
         public void add(Reactive.Provider<R> provider) {
             providerPullState.putIfAbsent(provider, false);
-            propagateMonitors(monitors);  // TODO: This can propagate monitors ahead of pulls
+            // propagateMonitors(monitors);  // TODO: This can propagate monitors ahead of pulls
         }
 
         @Override
@@ -126,16 +128,16 @@ public abstract class ProviderRegistry<R> {
         }
 
         @Override
-        public void pullAll(Set<Processor.Monitor.Reference> monitors) {
-            providerPullState.keySet().forEach(provider -> pull(provider, monitors));
+        public void pullAll() {
+            providerPullState.keySet().forEach(this::pull);
         }
 
         @Override
-        public void pull(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors) {
+        public void pull(Reactive.Provider<R> provider) {
             assert providerPullState.containsKey(provider);
             if (!isPulling(provider)) {
                 setPulling(provider, true);
-                pullProvider(provider, monitors);
+                pullProvider(provider);
             }
         }
 
@@ -156,10 +158,10 @@ public abstract class ProviderRegistry<R> {
             providerPullState.put(provider, isPulling);
         }
 
-        private void pullProvider(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors) {
+        private void pullProvider(Reactive.Provider<R> provider) {
             assert providerPullState.containsKey(provider);
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitors));
-            provider.pull(receiver, monitors);
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
+            provider.pull(receiver);
         }
 
         public int size() {

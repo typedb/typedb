@@ -74,17 +74,17 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
             receiverRegistry().recordReceive();
             toSend.forEach(this::send);
         } else {
-            if (receiverRegistry().isPulling()) providerRegistry().pull(provider, receiverRegistry().monitors());
+            if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
             tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());  // When an answer is a duplicate then destroy it
         }
     }
 
     @Override
-    public void pull(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
+    public void pull(Receiver<PACKET> receiver) {
         bufferPositions.putIfAbsent(receiver, 0);
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
-            if (receiverRegistry().recordPull(receiver)) providerRegistry().pullAll(receiverRegistry().monitors());
+            if (receiverRegistry().recordPull(receiver)) providerRegistry().pullAll();
         } else {
             send(receiver);
         }
@@ -121,7 +121,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     @Override
     public void subscribeTo(Provider<PACKET> provider) {
         providerRegistry().add(provider);
-        if (receiverRegistry().isPulling()) providerRegistry().pull(provider, receiverRegistry().monitors());
+        if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
     }
 
 }

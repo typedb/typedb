@@ -28,7 +28,6 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRe
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverStream;
 
-import java.util.Set;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -128,8 +127,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             }
 
             @Override
-            public void pull(Receiver<ConceptMap> receiver, Set<Monitor.Reference> monitors) {
-                if (!answerFound) super.pull(receiver, monitors);
+            public void pull(Receiver<ConceptMap> receiver) {
+                if (!answerFound) super.pull(receiver);
             }
 
             @Override

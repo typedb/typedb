@@ -155,7 +155,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
         public void pull() {
             isPulling = true;
-            providerRegistry().pullAll(set());
+            providerRegistry().pullAll();
         }
 
         public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
@@ -173,7 +173,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         @Override
         public void subscribeTo(Provider<ConceptMap> provider) {
             super.subscribeTo(provider);
-            if (isPulling) providerRegistry().pull(provider, set());
+            if (isPulling) providerRegistry().pull(provider);
         }
 
         @Override

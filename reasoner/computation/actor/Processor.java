@@ -136,9 +136,9 @@ public abstract class Processor<INPUT, OUTPUT,
         return endpoint;
     }
 
-    protected void endpointPull(Receiver<OUTPUT> receiver, long pubEndpointId, Set<Monitor.Reference> monitors) {
+    protected void endpointPull(Receiver<OUTPUT> receiver, long pubEndpointId) {
         assert !done;
-        providingEndpoints.get(pubEndpointId).pull(receiver, monitors);
+        providingEndpoints.get(pubEndpointId).pull(receiver);
     }
 
     public void endpointPropagateMonitors(Receiver<OUTPUT> receiver, long pubEndpointId, Set<Monitor.Reference> monitors) {
@@ -219,18 +219,18 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         public void pull() {
-            pull(receiverRegistry().receiver(), set());
+            pull(receiverRegistry().receiver());
         }
 
         @Override
-        public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
+        public void pull(Receiver<PACKET> receiver) {
             assert receiver.equals(receiverRegistry().receiver());
-            if (!ready && receiverRegistry().recordPull(receiver)) providerRegistry().pullAll(monitorsToPropagate(monitors));
+            if (!ready && receiverRegistry().recordPull(receiver)) providerRegistry().pullAll();
         }
 
         @Override
         public void propagateMonitors(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
-            providerRegistry().propagateMonitors(monitors);
+            providerRegistry().propagateMonitors(monitorsToPropagate(monitors));
         }
 
         Set<Monitor.Reference> monitorsToPropagate(Set<Monitor.Reference> monitors) {
@@ -298,9 +298,9 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), this, monitors));
-            if (receiverRegistry().recordPull(receiver)) providerRegistry().pullAll(receiverRegistry().monitors());
+        public void pull(Receiver<PACKET> receiver) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), this));
+            if (receiverRegistry().recordPull(receiver)) providerRegistry().pullAll();
         }
 
         @Override
@@ -311,7 +311,7 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void subscribeTo(Provider<PACKET> provider) {
             providerRegistry().add(provider);
-            if (receiverRegistry().isPulling()) providerRegistry().pull(provider, receiverRegistry().monitors());
+            if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
         }
 
     }
