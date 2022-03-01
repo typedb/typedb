@@ -109,10 +109,7 @@ public abstract class ReceiverRegistry<R> {
             pullingReceivers.add(receiver);
             Set<Processor.Monitor.Reference> newMonitors = new HashSet<>();
             monitors.forEach(monitor -> {
-                Set<Reactive.Receiver<R>> recs = monitorReceivers.computeIfAbsent(monitor, mon -> {
-                    newMonitors.add(mon);
-                    return new HashSet<>(set(receiver));
-                });
+                Set<Reactive.Receiver<R>> recs = monitorReceivers.computeIfAbsent(monitor, m -> new HashSet<>());
                 if (recs.add(receiver)) newMonitors.add(monitor);
             });
             return newMonitors;
