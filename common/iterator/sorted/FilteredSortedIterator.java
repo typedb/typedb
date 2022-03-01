@@ -95,6 +95,11 @@ public class FilteredSortedIterator<T extends Comparable<? super T>, ORDER exten
         }
 
         @Override
+        public SortedIterator.Forwardable<T, ORDER> intersect(SortedIterator.Forwardable<T, ORDER> iterator) {
+            return SortedIterators.Forwardable.intersect(this, iterator);
+        }
+
+        @Override
         public <U extends Comparable<? super U>, ORD extends Order> SortedIterator.Forwardable<U, ORD> mapSorted(
                 Function<T, U> mappingFn, Function<U, T> reverseMappingFn, ORD order) {
             return SortedIterators.Forwardable.mapSorted(order, this, mappingFn, reverseMappingFn);

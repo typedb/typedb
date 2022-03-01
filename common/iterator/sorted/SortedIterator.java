@@ -132,6 +132,8 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
 
         Forwardable<T, ORDER> merge(Forwardable<T, ORDER> iterator);
 
+        Forwardable<T, ORDER> intersect(Forwardable<T, ORDER> iterator);
+
         @Override
         Forwardable<T, ORDER> distinct();
 
