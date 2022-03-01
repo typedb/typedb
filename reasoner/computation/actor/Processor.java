@@ -40,6 +40,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
@@ -112,7 +113,7 @@ public abstract class Processor<INPUT, OUTPUT,
         assert !done;
         InletEndpoint<INPUT> inlet = receivingEndpoints.get(connection.receiverEndpointId());
         inlet.setReady(connection);
-        inlet.preparedPull();
+        inlet.pull();
         upstreamConnections.add(connection);
     }
 
@@ -195,14 +196,12 @@ public abstract class Processor<INPUT, OUTPUT,
         private final long id;
         private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
         private boolean ready;
-        private PreparedPull preparedPull;
 
         public InletEndpoint(long id, TerminationTracker monitor, String groupName) {
             super(monitor, groupName);
             this.id = id;
             this.ready = false;
             this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
-            this.preparedPull = null;
         }
 
         private ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
@@ -219,49 +218,19 @@ public abstract class Processor<INPUT, OUTPUT,
             this.ready = true;
         }
 
+        public void pull() {
+            pull(receiverRegistry().receiver(), set());
+        }
+
         @Override
         public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             assert receiver.equals(receiverRegistry().receiver());
-            assert preparedPull == null || preparedPull.equals(new PreparedPull(receiver, monitors));
-            if (!ready) {
-                preparedPull = new PreparedPull(receiver, monitors);
-            } else {
-                if (receiverRegistry().recordPull(receiver, monitors)) providerRegistry().pullAll(monitorsToPropagate(monitors));
-            }
+            if (!ready) providerRegistry().pullAll(monitorsToPropagate(monitors));
         }
 
         @Override
         public void propagateMonitors(Set<Monitor.Reference> monitors) {
             providerRegistry().propagateMonitors(monitors);
-        }
-
-        public void preparedPull() {
-            if (preparedPull != null && receiverRegistry().recordPull(preparedPull.receiver, preparedPull.monitors)) providerRegistry().pullAll(monitorsToPropagate(preparedPull.monitors));
-            preparedPull = null;
-        }
-
-        private class PreparedPull {
-            private final Receiver<PACKET> receiver;
-            private final Set<Monitor.Reference> monitors;
-
-            PreparedPull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
-                this.receiver = receiver;
-                this.monitors = monitors;
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                PreparedPull that = (PreparedPull) o;
-                return receiver.equals(that.receiver) &&
-                        monitors.equals(that.monitors);
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hash(receiver, monitors);
-            }
         }
 
         Set<Monitor.Reference> monitorsToPropagate(Set<Monitor.Reference> monitors) {
@@ -331,7 +300,7 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), this, monitors));
-            if (receiverRegistry().recordPull(receiver, monitors)) providerRegistry().pullAll(receiverRegistry().monitors());
+            providerRegistry().pullAll(receiverRegistry().monitors());
         }
 
         @Override

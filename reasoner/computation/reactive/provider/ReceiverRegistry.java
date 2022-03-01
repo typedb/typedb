@@ -26,8 +26,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
-
 public abstract class ReceiverRegistry<R> {
 
     abstract void recordReceive();
@@ -57,13 +55,6 @@ public abstract class ReceiverRegistry<R> {
         @Override
         public void recordReceive() {
             isPulling = false;
-        }
-
-        public boolean recordPull(Reactive.Receiver<R> receiver, Set<Processor.Monitor.Reference> monitors) {
-            assert this.receiver.equals(receiver);
-            boolean newPull = this.monitors.addAll(monitors) || !isPulling;
-            isPulling = true;
-            return newPull;
         }
 
         public boolean isPulling() {

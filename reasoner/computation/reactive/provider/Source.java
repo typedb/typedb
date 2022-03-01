@@ -45,7 +45,6 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
     @Override
     public void pull(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
         assert receiver.equals(receiverRegistry().receiver());
-        receiverRegistry().recordPull(receiver, monitors);
         if (!exhausted) {
             if (iterator == null) iterator = iteratorSupplier.get();
             if (iterator.hasNext()) {
