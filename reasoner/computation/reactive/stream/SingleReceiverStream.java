@@ -57,6 +57,11 @@ public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublis
     }
 
     @Override
+    public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
+        providerRegistry().propagateMonitors(monitors);
+    }
+
+    @Override
     public void subscribeTo(Provider<INPUT> provider) {
         providerRegistry().add(provider);
         if (receiverRegistry().isPulling()) providerRegistry().pull(provider, receiverRegistry().monitors());

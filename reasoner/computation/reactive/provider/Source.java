@@ -58,4 +58,9 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
         }
     }
 
+    @Override
+    public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
+        // Nowhere to propagate to
+    }
+
 }

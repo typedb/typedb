@@ -18,8 +18,11 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
+
+import java.util.Set;
 
 public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 

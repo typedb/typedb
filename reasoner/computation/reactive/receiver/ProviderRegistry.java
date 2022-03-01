@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,6 +34,8 @@ public abstract class ProviderRegistry<R> {
     public abstract void pull(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors);
 
     public abstract void pullAll(Set<Processor.Monitor.Reference> monitors);
+
+    public abstract void propagateMonitors(Set<Processor.Monitor.Reference> monitors);
 
     public abstract void recordReceive(Reactive.Provider<R> provider);
 
@@ -66,6 +69,11 @@ public abstract class ProviderRegistry<R> {
         }
 
         @Override
+        public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
+
+        }
+
+        @Override
         public void pull(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors) {
             assert this.provider != null;
             assert this.provider == provider;
@@ -96,17 +104,20 @@ public abstract class ProviderRegistry<R> {
 
     public static class MultiProviderRegistry<R> extends ProviderRegistry<R> {
 
-        private final Map<Reactive.Provider<R>, Boolean> providersPullState;
+        private final Map<Reactive.Provider<R>, Boolean> providerPullState;
+        private final Set<Processor.Monitor.Reference> monitors;
         private final Reactive.Receiver<R> receiver;
 
         public MultiProviderRegistry(Reactive.Receiver.Subscriber<R> subscriber) {
-            this.providersPullState = new HashMap<>();
+            this.providerPullState = new HashMap<>();
             this.receiver = subscriber;
+            this.monitors = new HashSet<>();
         }
 
         @Override
         public void add(Reactive.Provider<R> provider) {
-            providersPullState.putIfAbsent(provider, false);
+            providerPullState.putIfAbsent(provider, false);
+            propagateMonitors(monitors);  // TODO: This can propagate monitors ahead of pulls
         }
 
         @Override
@@ -116,36 +127,43 @@ public abstract class ProviderRegistry<R> {
 
         @Override
         public void pullAll(Set<Processor.Monitor.Reference> monitors) {
-            providersPullState.keySet().forEach(provider -> pull(provider, monitors));
+            providerPullState.keySet().forEach(provider -> pull(provider, monitors));
         }
 
         @Override
         public void pull(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors) {
-            assert providersPullState.containsKey(provider);
+            assert providerPullState.containsKey(provider);
             if (!isPulling(provider)) {
                 setPulling(provider, true);
                 pullProvider(provider, monitors);
             }
         }
 
+        @Override
+        public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
+            Set<Processor.Monitor.Reference> toPropagate = new HashSet<>(monitors);
+            toPropagate.removeAll(this.monitors);
+            providerPullState.keySet().forEach(provider -> provider.propagateMonitors(toPropagate));
+        }
+
         private boolean isPulling(Reactive.Provider<R> provider) {
-            assert providersPullState.containsKey(provider);
-            return providersPullState.get(provider);
+            assert providerPullState.containsKey(provider);
+            return providerPullState.get(provider);
         }
 
         private void setPulling(Reactive.Provider<R> provider, boolean isPulling) {
-            assert providersPullState.containsKey(provider);
-            providersPullState.put(provider, isPulling);
+            assert providerPullState.containsKey(provider);
+            providerPullState.put(provider, isPulling);
         }
 
         private void pullProvider(Reactive.Provider<R> provider, Set<Processor.Monitor.Reference> monitors) {
-            assert providersPullState.containsKey(provider);
+            assert providerPullState.containsKey(provider);
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider, monitors));
             provider.pull(receiver, monitors);
         }
 
         public int size() {
-            return providersPullState.size();
+            return providerPullState.size();
         }
     }
 }

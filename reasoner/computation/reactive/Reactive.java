@@ -32,6 +32,8 @@ public interface Reactive {
 
         void pull(Receiver<R> receiver, Set<Processor.Monitor.Reference> monitors);  // Should be idempotent if already pulling
 
+        void propagateMonitors(Set<Processor.Monitor.Reference> monitors);
+
         interface Publisher<T> extends Provider<T> {
 
             void publishTo(Receiver.Subscriber<T> subscriber);
@@ -52,7 +54,7 @@ public interface Reactive {
 
     interface Receiver<R> extends Reactive {
 
-        void receive(Provider<R> provider, R packet);  // TODO: The provider argument is only needed by compound - can we do without it?
+        void receive(Provider<R> provider, R packet);
 
         interface Subscriber<T> extends Receiver<T> {
 

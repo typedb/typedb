@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.Sink;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
@@ -155,6 +156,10 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         public void pull() {
             isPulling = true;
             providerRegistry().pullAll(set());
+        }
+
+        public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
+            providerRegistry().propagateMonitors(monitors);
         }
 
         @Override

@@ -92,6 +92,11 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         }
     }
 
+    @Override
+    public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
+        providerRegistry().propagateMonitors(monitors);
+    }
+
     private void send(Receiver<PACKET> receiver) {  // TODO: Naming should show this updates the buffer position
         Integer pos = bufferPositions.get(receiver);
         bufferPositions.put(receiver, pos + 1);

@@ -137,8 +137,12 @@ public abstract class Processor<INPUT, OUTPUT,
 
     protected void endpointPull(Receiver<OUTPUT> receiver, long pubEndpointId, Set<Monitor.Reference> monitors) {
         assert !done;
-        monitors.forEach(monitor -> monitoring().sendSynchronisationReport(monitor));  // TODO: Consider moving this inside the outlet's pull method
         providingEndpoints.get(pubEndpointId).pull(receiver, monitors);
+    }
+
+    public void endpointPropagateMonitors(long pubEndpointId, Set<Monitor.Reference> monitors) {
+        monitors.forEach(monitor -> monitoring().sendSynchronisationReport(monitor));
+        providingEndpoints.get(pubEndpointId).propagateMonitors(monitors);
     }
 
     protected void endpointReceive(Provider<INPUT> provider, INPUT packet, long subEndpointId) {
@@ -224,6 +228,11 @@ public abstract class Processor<INPUT, OUTPUT,
             } else {
                 if (receiverRegistry().recordPull(receiver, monitors)) providerRegistry().pullAll(monitorsToPropagate(monitors));
             }
+        }
+
+        @Override
+        public void propagateMonitors(Set<Monitor.Reference> monitors) {
+            providerRegistry().propagateMonitors(monitors);
         }
 
         public void preparedPull() {
@@ -323,6 +332,11 @@ public abstract class Processor<INPUT, OUTPUT,
         public void pull(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), this, monitors));
             if (receiverRegistry().recordPull(receiver, monitors)) providerRegistry().pullAll(receiverRegistry().monitors());
+        }
+
+        @Override
+        public void propagateMonitors(Set<Monitor.Reference> monitors) {
+            providerRegistry().propagateMonitors(monitors);
         }
 
         @Override
