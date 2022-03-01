@@ -43,6 +43,7 @@ import com.vaticle.typedb.core.graph.vertex.impl.ThingVertexImpl;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -563,33 +564,14 @@ public class ThingGraph {
             //  we could centralise all of these into the existing write buffers
             private final ConcurrentSkipListSet<AttributeVertex.Write<?>> attributesCreated;
             private final ConcurrentSkipListSet<AttributeVertex.Write<?>> attributesDeleted;
-            private final ConcurrentSkipListSet<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> hasEdgeCreated;
-            private final ConcurrentSkipListSet<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> hasEdgeDeleted;
+            private final Set<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> hasEdgeCreated;
+            private final Set<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> hasEdgeDeleted;
 
             Miscountable() {
                 attributesCreated = new ConcurrentSkipListSet<>();
                 attributesDeleted = new ConcurrentSkipListSet<>();
-                Comparator<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> comparator = Comparator.comparing(
-                        (Function<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, ThingVertex>) Pair::first
-                ).thenComparing(Pair::second);
-                hasEdgeCreated = new ConcurrentSkipListSet<>(comparator);
-                hasEdgeDeleted = new ConcurrentSkipListSet<>(comparator);
-            }
-
-            public NavigableSet<AttributeVertex.Write<?>> attributesCreated() {
-                return attributesCreated;
-            }
-
-            public NavigableSet<AttributeVertex.Write<?>> attributesDeleted() {
-                return attributesDeleted;
-            }
-
-            public NavigableSet<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> hasEdgeCreated() {
-                return hasEdgeCreated;
-            }
-
-            public NavigableSet<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> hasEdgeDeleted() {
-                return hasEdgeDeleted;
+                hasEdgeCreated = new HashSet<>();
+                hasEdgeDeleted = new HashSet<>();
             }
 
             void clear(){
@@ -597,6 +579,25 @@ public class ThingGraph {
                 attributesDeleted.clear();
                 hasEdgeCreated.clear();
                 hasEdgeDeleted.clear();
+            }
+
+            public FunctionalIterator<AttributeVertex.Write<?>> attrCreatedIntersection(Miscountable other) {
+                return iterateSorted(attributesCreated, ASC)
+                        .intersect(iterateSorted(other.attributesCreated, ASC));
+            }
+
+            public FunctionalIterator<AttributeVertex.Write<?>> attrDeletedIntersection(Miscountable other) {
+                return iterateSorted(attributesDeleted, ASC)
+                        .intersect(iterateSorted(other.attributesDeleted, ASC));
+            }
+
+            // TODO these could be optimised using navigable sets and a forwardable intersection algorithm?
+            public FunctionalIterator<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> hasCreatedIntersection(Miscountable other) {
+                return iterate(hasEdgeCreated).filter(other.hasEdgeCreated::contains);
+            }
+
+            public FunctionalIterator<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> hasDeletedIntersection(Miscountable other) {
+                return iterate(hasEdgeDeleted).filter(other.hasEdgeDeleted::contains);
             }
         }
 

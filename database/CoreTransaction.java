@@ -31,7 +31,6 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.StatisticsKeyValue;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.logic.LogicCache;
@@ -42,10 +41,8 @@ import com.vaticle.typedb.core.traversal.TraversalCache;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.rocksdb.RocksDBException;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
@@ -54,6 +51,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.vaticle.typedb.common.collection.Collections.hasIntersection;
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongSet;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_COMMIT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
@@ -63,7 +61,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 
 public abstract class CoreTransaction implements TypeDB.Transaction {
 
@@ -351,38 +348,46 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         }
 
         private void recordMiscounts(Set<CoreTransaction.Data> concurrentTxn) {
-            // TODO a transaction shouldn't be dealing with vertices directly?
-            Map<AttributeVertex<?>, Set<Long>> attrOvercountDependencies = new HashMap<>();
-            Map<AttributeVertex<?>, Set<Long>> attrUndercountDependencies = new HashMap<>();
-            Map<Pair<ThingVertex, AttributeVertex<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
-            Map<Pair<ThingVertex, AttributeVertex<?>>, Set<Long>> hasUndercountDependencies = new HashMap<>();
+            Map<AttributeVertex.Write<?>, Set<Long>> attrOvercountDependencies = new HashMap<>();
+            Map<AttributeVertex.Write<?>, Set<Long>> attrUndercountDependencies = new HashMap<>();
+            Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
+            Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasUndercountDependencies = new HashMap<>();
             for (CoreTransaction.Data concurrent : concurrentTxn) {
-                iterateSorted(graphMgr.data().stats().miscountable().attributesCreated(), ASC)
-                        .intersect(iterateSorted(concurrent.graphMgr.data().stats().miscountable().attributesCreated(), ASC))
-                        .forEachRemaining(attribute -> {
-                            Set<Long> ids = attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>());
-                            ids.add(concurrent.id);
-                        });
-                iterateSorted(graphMgr.data().stats().miscountable().attributesDeleted(), ASC)
-                        .intersect(iterateSorted(concurrent.graphMgr.data().stats().miscountable().attributesDeleted(), ASC))
-                        .forEachRemaining(attribute -> {
-                            Set<Long> ids = attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>());
-                            ids.add(concurrent.id);
-                        });
-
-                // TODO has edges, can we use comparable Pairs to make intersection fast?
+                graphMgr.data().stats().miscountable().attrCreatedIntersection(concurrent.graphMgr.data().stats().miscountable())
+                        .forEachRemaining(attribute ->
+                                attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
+                        );
+                graphMgr.data().stats().miscountable().attrDeletedIntersection(concurrent.graphMgr.data().stats().miscountable())
+                        .forEachRemaining(attribute ->
+                                attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
+                        );
+                graphMgr.data().stats().miscountable().hasCreatedIntersection(concurrent.graphMgr.data().stats().miscountable())
+                        .forEachRemaining(pair ->
+                                hasOvercountDependencies.computeIfAbsent(pair, (key) -> new HashSet<>()).add(concurrent.id)
+                        );
+                graphMgr.data().stats().miscountable().hasDeletedIntersection(concurrent.graphMgr.data().stats().miscountable())
+                        .forEachRemaining(attribute ->
+                                hasUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
+                        );
             }
 
-            attrOvercountDependencies.forEach((attr, txs) -> {
-                dataStorage.putUntracked(StatisticsKeyValue.Key.MisCount.attConditionalOvercount(id, attr.iid()), ByteArray.encodeLongSet(txs));
-            });
-            attrUndercountDependencies.forEach((attr, txs) -> {
-                dataStorage.putUntracked(StatisticsKeyValue.Key.MisCount.attConditionalUndercount(id, attr.iid()), ByteArray.encodeLongSet(txs));
-            });
+            attrOvercountDependencies.forEach((attr, txs) ->
+                dataStorage.putUntracked(StatisticsKeyValue.Key.MisCount.attConditionalOvercount(id, attr.iid()), encodeLongSet(txs))
+            );
+            attrUndercountDependencies.forEach((attr, txs) ->
+                dataStorage.putUntracked(StatisticsKeyValue.Key.MisCount.attConditionalUndercount(id, attr.iid()), encodeLongSet(txs))
+            );
+            hasOvercountDependencies.forEach((has, txs) ->
+                    dataStorage.putUntracked(StatisticsKeyValue.Key.MisCount.hasConditionalOvercount(id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
+            );
+            hasUndercountDependencies.forEach((has, txs) ->
+                    dataStorage.putUntracked(StatisticsKeyValue.Key.MisCount.hasConditionalUndercount(id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
+            );
         }
 
         private void validateConsistency(Set<CoreTransaction.Data> concurrent) {
             for (CoreTransaction.Data otherTxn : concurrent) {
+                // TODO we should push the checks of intersections into the storage which checks against another storage
                 validateModifiedKeys(otherTxn);
                 if (hasIntersection(dataStorage.deletedKeys(), otherTxn.dataStorage.modifiedKeys())) {
                     throw TypeDBException.of(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);

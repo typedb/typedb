@@ -161,6 +161,8 @@ public class StatisticsTest {
         }
     }
 
+    // TODO deletes
+
     @Test
     public void reboot_counts_correct() {
 
