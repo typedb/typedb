@@ -214,11 +214,11 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Transaction(7, "Attempted schema writes when transaction type does not allow.");
         public static final Transaction TRANSACTION_DATA_READ_VIOLATION =
                 new Transaction(8, "Attempted data writes when transaction type does not allow.");
-        public static final Transaction TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION =
+        public static final Transaction TRANSACTION_ISOLATION_MODIFY_DELETE_VIOLATION =
                 new Transaction(9, "The transaction modifies a key that is deleted in a concurrent transaction.");
-        public static final Transaction TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION =
+        public static final Transaction TRANSACTION_ISOLATION_DELETE_MODIFY_VIOLATION =
                 new Transaction(10, "The transaction deletes a key that is modified in concurrent transaction.");
-        public static final Transaction TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION =
+        public static final Transaction TRANSACTION_ISOLATION_EXCLUSIVE_CREATE_VIOLATION =
                 new Transaction(11, "The transaction fails to create a key that is created exclusively in a concurrent transaction.");
         public static final Transaction SESSION_DATA_VIOLATION =
                 new Transaction(12, "Attempted schema writes when session type does not allow.");

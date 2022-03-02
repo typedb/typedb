@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 
+import static com.vaticle.typedb.common.collection.Collections.hasIntersection;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
@@ -506,20 +507,43 @@ public abstract class RocksStorage implements Storage {
             return Optional.ofNullable(snapshotEnd);
         }
 
-        public NavigableSet<ByteArray> deletedKeys() {
+        public boolean modifyDeleteConflict(RocksStorage.Data otherStorage) {
+            NavigableSet<ByteArray> active = modifiedKeys();
+            NavigableSet<ByteArray> other = otherStorage.deletedKeys();
+            if (active.isEmpty()) return false;
+            ByteArray currentKey = active.first();
+            while (currentKey != null) {
+                ByteArray otherKey = other.ceiling(currentKey);
+                if (otherKey != null && otherKey.equals(currentKey)) {
+                    if (isModifiedValidatedKey(currentKey)) return true;
+                    else otherKey = other.higher(currentKey);
+                }
+                currentKey = otherKey;
+                NavigableSet<ByteArray> tmp = other;
+                other = active;
+                active = tmp;
+            }
+            return false;
+        }
+
+        public boolean deleteModifyConflict(RocksStorage.Data otherStorage) {
+            return hasIntersection(deletedKeys, otherStorage.modifiedKeys());
+        }
+
+        public boolean exclusiveCreateConflict(RocksStorage.Data otherStorage) {
+            return hasIntersection(exclusiveBytes, otherStorage.exclusiveBytes);
+        }
+
+        private NavigableSet<ByteArray> deletedKeys() {
             return deletedKeys;
         }
 
-        public NavigableSet<ByteArray> modifiedKeys() {
+        private NavigableSet<ByteArray> modifiedKeys() {
             return modifiedKeys.keySet();
         }
 
-        public boolean isModifiedValidatedKey(ByteArray key) {
+        private boolean isModifiedValidatedKey(ByteArray key) {
             return modifiedKeys.getOrDefault(key, false);
-        }
-
-        public NavigableSet<ByteArray> exclusiveBytes() {
-            return exclusiveBytes;
         }
     }
 }

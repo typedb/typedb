@@ -44,12 +44,10 @@ import org.rocksdb.RocksDBException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.vaticle.typedb.common.collection.Collections.hasIntersection;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongSet;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
@@ -57,9 +55,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION;
 
 public abstract class CoreTransaction implements TypeDB.Transaction {
 
@@ -239,7 +234,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                 } catch (RocksDBException e) {
                     throw TypeDBException.of(e);
                 } finally {
-                    graphMgr.clear();
+                    cleanUp();
                     closeResources();
                     notifyClosed();
                 }
@@ -263,6 +258,11 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             schemaStorage.close();
             dataStorage.close();
         }
+
+        @Override
+        public void cleanUp() {
+            graphMgr.clear();
+        }
     }
 
     public static class Data extends CoreTransaction {
@@ -281,7 +281,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             ThingGraph thingGraph = new ThingGraph(dataStorage, cache.typeGraph());
             graphMgr = new GraphManager(cache.typeGraph(), thingGraph);
 
-            if (type().isWrite()) session.database().consistencyMgr().opened(this);
+            if (type().isWrite()) session.database().isolationMgr().opened(this);
             initialise(graphMgr, cache.traversal(), cache.logic());
         }
 
@@ -322,21 +322,14 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
 
-                    Set<CoreTransaction.Data> concurrentTxn;
-                    synchronized (session.database().consistencyMgr()) {
-                        concurrentTxn = session.database().consistencyMgr().commitMayConflict(this);
-                        validateConsistency(concurrentTxn);
-                        session.database().consistencyMgr().commitStarted(this);
-                    }
-
-                    recordStatisticsMetadata(concurrentTxn);
+                    session.database().isolationMgr().validateAndStartCommit(this);
+                    session.database().statisticsCompensator().recordMetadata(this);
                     dataStorage.commit();
-                    session.database().consistencyMgr().commitSuccessful(this);
+                    session.database().isolationMgr().commitSucceeded(this);
                 } catch (RocksDBException e) {
                     rollback();
                     throw TypeDBException.of(e);
                 } finally {
-                    graphMgr.data().clear();
                     closeResources();
                     notifyClosed();
                 }
@@ -345,86 +338,16 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             }
         }
 
-        private void recordStatisticsMetadata(Set<CoreTransaction.Data> concurrentTxn) {
-            recordMiscounts(concurrentTxn);
-            dataStorage.putUntracked(StatisticsKey.txnCommitted(id));
-        }
-
-        private void recordMiscounts(Set<Data> concurrentTxn) {
-            Map<AttributeVertex.Write<?>, Set<Long>> attrOvercountDependencies = new HashMap<>();
-            Map<AttributeVertex.Write<?>, Set<Long>> attrUndercountDependencies = new HashMap<>();
-            Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
-            Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasUndercountDependencies = new HashMap<>();
-            for (CoreTransaction.Data concurrent : concurrentTxn) {
-                graphMgr.data().stats().miscountable().attrCreatedIntersection(concurrent.graphMgr.data().stats().miscountable())
-                        .forEachRemaining(attribute ->
-                                attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
-                        );
-                graphMgr.data().stats().miscountable().attrDeletedIntersection(concurrent.graphMgr.data().stats().miscountable())
-                        .forEachRemaining(attribute ->
-                                attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
-                        );
-                graphMgr.data().stats().miscountable().hasCreatedIntersection(concurrent.graphMgr.data().stats().miscountable())
-                        .forEachRemaining(pair ->
-                                hasOvercountDependencies.computeIfAbsent(pair, (key) -> new HashSet<>()).add(concurrent.id)
-                        );
-                graphMgr.data().stats().miscountable().hasDeletedIntersection(concurrent.graphMgr.data().stats().miscountable())
-                        .forEachRemaining(attribute ->
-                                hasUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
-                        );
-            }
-
-            attrOvercountDependencies.forEach((attr, txs) ->
-                    dataStorage.putUntracked(StatisticsKey.MisCount.attrConditionalOvercount(id, attr.iid()), encodeLongSet(txs))
-            );
-            attrUndercountDependencies.forEach((attr, txs) ->
-                    dataStorage.putUntracked(StatisticsKey.MisCount.attrConditionalUndercount(id, attr.iid()), encodeLongSet(txs))
-            );
-            hasOvercountDependencies.forEach((has, txs) ->
-                    dataStorage.putUntracked(StatisticsKey.MisCount.hasConditionalOvercount(id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
-            );
-            hasUndercountDependencies.forEach((has, txs) ->
-                    dataStorage.putUntracked(StatisticsKey.MisCount.hasConditionalUndercount(id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
-            );
-        }
-
-        private void validateConsistency(Set<CoreTransaction.Data> concurrent) {
-            for (CoreTransaction.Data otherTxn : concurrent) {
-                // TODO we should push the checks of intersections into the storage which checks against another storage
-                validateModifiedKeys(otherTxn);
-                if (hasIntersection(dataStorage.deletedKeys(), otherTxn.dataStorage.modifiedKeys())) {
-                    throw TypeDBException.of(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);
-                } else if (hasIntersection(dataStorage.exclusiveBytes(), otherTxn.dataStorage.exclusiveBytes())) {
-                    throw TypeDBException.of(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION);
-                }
-            }
-        }
-
-        private void validateModifiedKeys(CoreTransaction.Data concurrent) {
-            NavigableSet<ByteArray> active = dataStorage.modifiedKeys();
-            NavigableSet<ByteArray> other = concurrent.dataStorage.deletedKeys();
-            if (active.isEmpty()) return;
-            ByteArray currentKey = active.first();
-            while (currentKey != null) {
-                ByteArray otherKey = other.ceiling(currentKey);
-                if (otherKey != null && otherKey.equals(currentKey)) {
-                    if (dataStorage.isModifiedValidatedKey(currentKey)) {
-                        throw TypeDBException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
-                    } else {
-                        otherKey = other.higher(currentKey);
-                    }
-                }
-                currentKey = otherKey;
-                NavigableSet<ByteArray> tmp = other;
-                other = active;
-                active = tmp;
-            }
+        @Override
+        public void cleanUp() {
+            graphMgr.data().clear();
+            session.database().statisticsCompensator().remove(this);
         }
 
         @Override
         public void rollback() {
             try {
-                graphMgr.data().clear();
+                cleanUp();
                 dataStorage.rollback();
             } catch (RocksDBException e) {
                 throw TypeDBException.of(e);
@@ -440,8 +363,8 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         @Override
         void notifyClosed() {
             if (type().isWrite()) {
-                session.database().consistencyMgr().closed(this);
-                session.database().statisticsSynchroniser().transactionClosed(id);
+                session.database().isolationMgr().closed(this);
+                session.database().statisticsCompensator().transactionClosed(id);
             }
             super.notifyClosed();
         }

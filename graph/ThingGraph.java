@@ -61,9 +61,6 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
-import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_ATTRIBUTE_TYPE;
-import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_ENTITY_TYPE;
-import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_RELATION_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Status.BUFFERED;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_MAX_SIZE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
@@ -427,6 +424,7 @@ public class ThingGraph {
         thingsByIID.clear();
         thingsByTypeIID.clear();
         attributesByIID.clear();
+        committedIIDs.clear();
         statistics.clear();
     }
 
@@ -572,11 +570,10 @@ public class ThingGraph {
             }
 
             void clear() {
-                // TODO we don't want to clear this?
-//                attributesCreated.clear();
-//                attributesDeleted.clear();
-//                hasEdgeCreated.clear();
-//                hasEdgeDeleted.clear();
+                attributesCreated.clear();
+                attributesDeleted.clear();
+                hasEdgeCreated.clear();
+                hasEdgeDeleted.clear();
             }
 
             public FunctionalIterator<AttributeVertex.Write<?>> attrCreatedIntersection(Miscountable other) {
