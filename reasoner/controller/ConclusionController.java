@@ -153,12 +153,19 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         private class ConclusionReactive extends SingleReceiverStream<ConceptMap, Map<Variable, Concept>> {
 
             private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerRegistry;
-            private final Set<MaterialiserReactive> materialiserReactives;
+            private ProviderRegistry.MultiProviderRegistry<Map<Variable, Concept>> materialiserRegistry;
 
             protected ConclusionReactive(String groupName, TerminationTracker monitor) {
                 super(monitor, groupName);
                 this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
-                this.materialiserReactives = new HashSet<>();
+                this.materialiserRegistry = null;
+            }
+
+            @Override
+            public void publishTo(Subscriber<Map<Variable, Concept>> subscriber) {
+                super.publishTo(subscriber);
+                // We need to wait until the receiver has been given before we can create the materialiser registry
+                this.materialiserRegistry = new ProviderRegistry.MultiProviderRegistry<>(receiverRegistry().receiver());
             }
 
             @Override
@@ -166,10 +173,20 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 return providerRegistry;
             }
 
+            protected ProviderRegistry.MultiProviderRegistry<Map<Variable, Concept>> materialiserRegistry() {
+                return materialiserRegistry;
+            }
+
             @Override
             public void pull(Receiver<Map<Variable, Concept>> receiver) {
                 super.pull(receiver);
-                materialiserReactives.forEach(m -> m.pull(receiverRegistry().receiver()));
+                materialiserRegistry().pullAll();
+            }
+
+            @Override
+            public void propagateMonitors(Receiver<Map<Variable, Concept>> receiver, Set<Monitor.Reference> monitors) {
+                super.propagateMonitors(receiver, monitors);
+                materialiserRegistry().propagateMonitors(monitors);
             }
 
             @Override
@@ -182,16 +199,16 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 );
                 Stream<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
                 MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, tracker(), groupName());
-                materialiserReactives.add(materialiserReactive);
+                materialiserRegistry().add(materialiserReactive);
                 op.publishTo(materialiserReactive);
                 materialiserReactive.sendTo(receiverRegistry().receiver());
 
                 tracker().syncAndReportPathFork(1, this, receiverRegistry().monitors());
                 tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());
 
-                // TODO: We would like to use a provider manager for this, but it's restricted to work to this reactive's input type.
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive));
-                materialiserReactive.pull(receiverRegistry().receiver());
+                materialiserRegistry().pull(materialiserReactive);
+                materialiserRegistry().propagateMonitors(materialiserReactive);
                 providerRegistry().pull(provider);  // We need to pull on the condition again in case materialisation fails
             }
 
