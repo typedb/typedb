@@ -70,6 +70,7 @@ public abstract class ProviderRegistry<R> {
 
         @Override
         public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.propagateMonitors(receiver, provider, monitors));
             provider.propagateMonitors(receiver, monitors);
         }
 
@@ -145,7 +146,10 @@ public abstract class ProviderRegistry<R> {
         public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
             Set<Processor.Monitor.Reference> toPropagate = new HashSet<>(monitors);
             toPropagate.removeAll(this.monitors);
-            providerPullState.keySet().forEach(provider -> provider.propagateMonitors(receiver, toPropagate));
+            providerPullState.keySet().forEach(provider -> {
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.propagateMonitors(receiver, provider, toPropagate));
+                provider.propagateMonitors(receiver, toPropagate);
+            });
         }
 
         private boolean isPulling(Reactive.Provider<R> provider) {

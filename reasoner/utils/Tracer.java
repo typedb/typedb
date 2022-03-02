@@ -103,7 +103,7 @@ public final class Tracer {
         for (Processor.Monitor.Reference monitor : monitors) {
             monitorsLabel.append(simpleClassHashCode(monitor.driver()));
         }
-        addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull_mon" + monitorsLabel.toString());
+        addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PROPAGATE, "prop" + monitorsLabel.toString());
         addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 
@@ -322,7 +322,9 @@ public final class Tracer {
         MONITOR("orange"),
         REPORT("orange3"),
         UPDATE("orangered"),
-        REGISTER("cyan4");
+        REGISTER("cyan4"),
+        PROPAGATE("purple");
+
 
         private final String colour;
 
