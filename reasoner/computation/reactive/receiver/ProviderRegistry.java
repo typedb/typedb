@@ -27,6 +27,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
+
 public abstract class ProviderRegistry<R> {
     // TODO: Consider managing whether to pull on upstreams by telling the manager whether we are pulling or not
     public abstract void add(Reactive.Provider<R> provider);
@@ -41,20 +43,23 @@ public abstract class ProviderRegistry<R> {
 
     public static class SingleProviderRegistry<R> extends ProviderRegistry<R> {
 
-        private Reactive.Provider<R> provider;
         private final Reactive.Receiver<R> receiver;
+        private final MonitorPropagator monitorPropagator;
+        private Reactive.Provider<R> provider;
         private boolean isPulling;
 
         public SingleProviderRegistry(Reactive.Provider.Publisher<R> provider, Reactive.Receiver<R> receiver) {
             this.provider = provider;
             this.receiver = receiver;
             this.isPulling = false;
+            this.monitorPropagator = new MonitorPropagator();
         }
 
         public SingleProviderRegistry(Reactive.Receiver<R> receiver) {
             this.provider = null;
             this.receiver = receiver;
             this.isPulling = false;
+            this.monitorPropagator = new MonitorPropagator();
         }
 
         @Override
@@ -70,8 +75,7 @@ public abstract class ProviderRegistry<R> {
 
         @Override
         public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.propagateMonitors(receiver, provider, monitors));
-            provider.propagateMonitors(receiver, monitors);
+            this.monitorPropagator.propagate(receiver, set(provider), monitors);
         }
 
         @Override
@@ -108,19 +112,19 @@ public abstract class ProviderRegistry<R> {
     public static class MultiProviderRegistry<R> extends ProviderRegistry<R> {
 
         private final Map<Reactive.Provider<R>, Boolean> providerPullState;
-        private final Set<Processor.Monitor.Reference> monitors;
+        private final MonitorPropagator monitorPropagator;
         private final Reactive.Receiver<R> receiver;
 
-        public MultiProviderRegistry(Reactive.Receiver.Subscriber<R> subscriber) {
+        public MultiProviderRegistry(Reactive.Receiver<R> receiver) {
             this.providerPullState = new HashMap<>();
-            this.receiver = subscriber;
-            this.monitors = new HashSet<>();
+            this.receiver = receiver;
+            this.monitorPropagator = new MonitorPropagator();
         }
 
         @Override
         public void add(Reactive.Provider<R> provider) {
             providerPullState.putIfAbsent(provider, false);
-            // propagateMonitors(monitors);  // TODO: This can propagate monitors ahead of pulls
+            // monitors.propagateToNewProvider(receiver, provider);  // TODO: This can propagate monitors ahead of pulls
         }
 
         @Override
@@ -144,12 +148,11 @@ public abstract class ProviderRegistry<R> {
 
         @Override
         public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
-            Set<Processor.Monitor.Reference> toPropagate = new HashSet<>(monitors);
-            toPropagate.removeAll(this.monitors);
-            providerPullState.keySet().forEach(provider -> {
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.propagateMonitors(receiver, provider, toPropagate));
-                provider.propagateMonitors(receiver, toPropagate);
-            });
+            this.monitorPropagator.propagate(receiver, providerPullState.keySet(), monitors);
+        }
+
+        public void propagateMonitors(Reactive.Provider<R> provider) {
+            monitorPropagator.propagateToNewProvider(receiver, provider);
         }
 
         private boolean isPulling(Reactive.Provider<R> provider) {
@@ -170,6 +173,31 @@ public abstract class ProviderRegistry<R> {
 
         public int size() {
             return providerPullState.size();
+        }
+    }
+
+    private static class MonitorPropagator {
+
+        private final Set<Processor.Monitor.Reference> monitors;
+
+        private MonitorPropagator() {
+            monitors = new HashSet<>();
+        }
+
+        public <R> void propagate(Reactive.Receiver<R> receiver, Set<Reactive.Provider<R>> providers, Set<Processor.Monitor.Reference> monitors) {
+            Set<Processor.Monitor.Reference> toPropagate = new HashSet<>(monitors);
+            toPropagate.removeAll(this.monitors);
+            if (!toPropagate.isEmpty()) {
+                this.monitors.addAll(toPropagate);
+                providers.forEach(provider -> {
+                    Tracer.getIfEnabled().ifPresent(tracer -> tracer.propagateMonitors(receiver, provider, toPropagate));
+                    provider.propagateMonitors(receiver, toPropagate);
+                });
+            }
+        }
+
+        public <R> void propagateToNewProvider(Reactive.Receiver<R> receiver, Reactive.Provider<R> provider) {
+            provider.propagateMonitors(receiver, monitors);
         }
     }
 }

@@ -113,7 +113,7 @@ public abstract class Processor<INPUT, OUTPUT,
         assert !done;
         InletEndpoint<INPUT> inlet = receivingEndpoints.get(connection.receiverEndpointId());
         inlet.setReady(connection);
-        inlet.pull();
+        inlet.onReady();
         upstreamConnections.add(connection);
     }
 
@@ -196,12 +196,14 @@ public abstract class Processor<INPUT, OUTPUT,
         private final long id;
         private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
         private boolean ready;
+        private final Set<Monitor.Reference> monitorsToPropagate;
 
         public InletEndpoint(long id, TerminationTracker monitor, String groupName) {
             super(monitor, groupName);
             this.id = id;
             this.ready = false;
             this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
+            this.monitorsToPropagate = new HashSet<>();
         }
 
         private ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
@@ -218,8 +220,10 @@ public abstract class Processor<INPUT, OUTPUT,
             this.ready = true;
         }
 
-        public void pull() {
+        void onReady() {
             pull(receiverRegistry().receiver());
+            propagateMonitors(receiverRegistry().receiver(), monitorsToPropagate);
+            monitorsToPropagate.clear();
         }
 
         @Override
@@ -233,7 +237,9 @@ public abstract class Processor<INPUT, OUTPUT,
 
         @Override
         public void propagateMonitors(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
-            providerRegistry().propagateMonitors(monitorsToPropagate(monitors));
+            assert receiver.equals(receiverRegistry().receiver());
+            if (ready) providerRegistry().propagateMonitors(monitorsToPropagate(monitors));
+            else monitorsToPropagate.addAll(monitors);
         }
 
         Set<Monitor.Reference> monitorsToPropagate(Set<Monitor.Reference> monitors) {

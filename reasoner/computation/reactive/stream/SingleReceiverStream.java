@@ -58,6 +58,7 @@ public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublis
 
     @Override
     public void propagateMonitors(Receiver<OUTPUT> receiver, Set<Processor.Monitor.Reference> monitors) {
+        assert receiverRegistry().receiver().equals(receiver);
         providerRegistry().propagateMonitors(monitors);
     }
 
