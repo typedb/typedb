@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,22 +72,27 @@ public class Monitor extends Actor<Monitor> {
         }
 
         public <R> void registerPath(Reactive.Provider<R> provider, Reactive.Receiver<R> receiver) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerPath(provider, receiver, monitor));
             monitor.execute(actor -> actor.registerPath(provider, receiver));
         }
 
         public <R> void registerTerminus(Reactive.Provider<R> provider) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerTerminus(provider, monitor));
             monitor.execute(actor -> actor.registerTerminus(provider));
         }
 
         public <R> void createAnswer(Reactive.Provider<R> provider) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.createAnswer(1, provider, monitor));
             monitor.execute(actor -> actor.createAnswer(provider));
         }
 
         public <R> void createAnswer(int numCreated, Reactive.Provider<R> provider) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.createAnswer(numCreated, provider, monitor));
             monitor.execute(actor -> actor.createAnswer(numCreated, provider));
         }
 
         public <R> void consumeAnswer(Reactive.Receiver<R> receiver) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.consumeAnswer(receiver, monitor));
             monitor.execute(actor -> actor.consumeAnswer(receiver));
         }
 

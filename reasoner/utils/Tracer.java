@@ -19,7 +19,9 @@
 package com.vaticle.typedb.core.reasoner.utils;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
@@ -99,6 +101,25 @@ public final class Tracer {
         addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 
+    public <R> void registerPath(Provider<R> provider, Receiver<R> receiver, Actor.Driver<Monitor> monitor) {
+        String providerName;
+        if (provider == null) providerName = "entry";
+        else providerName = simpleClassId(provider);
+        addMessage(providerName, monitor.name(), defaultTrace, EdgeType.REGISTER, "reg_" + simpleClassId(receiver));
+    }
+
+    public <R> void registerTerminus(Provider<R> provider, Actor.Driver<Monitor> monitor) {
+        addMessage(simpleClassId(provider), monitor.name(), defaultTrace, EdgeType.TERMINUS, "terminate");
+    }
+
+    public <R> void createAnswer(int numCreated, Provider<R> provider, Actor.Driver<Monitor> monitor) {
+        addMessage(simpleClassId(provider), monitor.name(), defaultTrace, EdgeType.CREATE, "create" + numCreated);
+    }
+
+    public <R> void consumeAnswer(Receiver<R> receiver, Actor.Driver<Monitor> monitor) {
+        addMessage(simpleClassId(receiver), monitor.name(), defaultTrace, EdgeType.CONSUME, "consume");
+    }
+
     private static String simpleClassId(Object obj) {
         return obj.getClass().getSimpleName() + simpleClassHashCode(obj);
     }
@@ -107,9 +128,8 @@ public final class Tracer {
         return "@" + System.identityHashCode(obj);
     }
 
-    private void addMessage(String sender, String receiver, Trace trace, EdgeType edgeType,
-                            String conceptMap) {
-        rootRequestTracers.get(trace).addMessage(sender, receiver, edgeType, conceptMap);
+    private void addMessage(String sender, String receiver, Trace trace, EdgeType edgeType, String label) {
+        rootRequestTracers.get(trace).addMessage(sender, receiver, edgeType, label);
     }
 
     private void addNodeGroup(String node, String group, Trace trace) {
@@ -241,9 +261,10 @@ public final class Tracer {
     enum EdgeType {
         PULL("blue"),
         RECEIVE("green"),
-        MONITOR("orange"),
-        REPORT("orange3"),
-        UPDATE("orangered");
+        REGISTER("orange"),
+        TERMINUS("orange3"),
+        CREATE("orangered"),
+        CONSUME("red");
 
         private final String colour;
 
