@@ -59,7 +59,7 @@ public class StatisticsTest {
                         "person sub entity, owns name, plays friendship:friend, plays employment:employee;" +
                         "friendship sub relation, relates friend;" +
                         "name sub attribute, value string;" +
-                        "company sub entity, owns address @key, plays employment:employer;" +
+                        "company sub entity, owns address @key, owns name, plays employment:employer;" +
                         "employment sub relation, relates employer, relates employee;" +
                         "address sub attribute, value string;").asDefine());
                 txn.commit();
@@ -83,7 +83,7 @@ public class StatisticsTest {
                             "$clone isa person, has name 'name-" + i + "';" +
                             "$y isa person, has name 'name-" + (i + batches) + "';" +
                             "(friend: $x, friend: $y) isa friendship;" +
-                            "$c isa company, has address 'Margaret Street Nr. " + i + "';" +
+                            "$c isa company, has name 'company-name-" + i + "', has address 'Margaret Street Nr. " + i + "';" +
                             "(employee: $x, employer: $c) isa employment;"));
                     txn.commit();
                 }
@@ -94,17 +94,49 @@ public class StatisticsTest {
 
                 assertEquals(batches * 3, statistics.thingVertexCount(Label.of("person")));
                 assertEquals(batches * 3, statistics.hasEdgeCount(Label.of("person"), Label.of("name")));
-                assertEquals(batches * 2, statistics.thingVertexCount(Label.of("name"))); // because of clone person
+                assertEquals(batches * 3, statistics.thingVertexCount(Label.of("name")));
                 assertEquals(batches, statistics.thingVertexCount(Label.of("friendship")));
                 assertEquals(batches * 2, statistics.thingVertexCount(Label.of("friend", "friendship")));
                 assertEquals(batches, statistics.thingVertexCount(Label.of("company")));
+                assertEquals(batches, statistics.hasEdgeCount(Label.of("company"), Label.of("name")));
                 assertEquals(batches, statistics.thingVertexCount(Label.of("address")));
                 assertEquals(batches, statistics.hasEdgeCount(Label.of("company"), Label.of("address")));
                 assertEquals(batches, statistics.thingVertexCount(Label.of("employment")));
                 assertEquals(batches, statistics.thingVertexCount(Label.of("employee", "employment")));
                 assertEquals(batches, statistics.thingVertexCount(Label.of("employer", "employment")));
-                assertEquals(batches * 9, statistics.thingVertexTransitiveCount(txn.graphMgr.schema().getType(Label.of("thing"))));
+                assertEquals(batches * 10, statistics.thingVertexTransitiveCount(txn.graphMgr.schema().getType(Label.of("thing"))));
                 assertEquals(batches * 4, statistics.thingVertexTransitiveCount(txn.graphMgr.schema().getType(Label.of("role", "relation"))));
+            }
+
+            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                txn.query().delete(TypeQL.parseQuery("match " +
+                        "$x isa person, has name $n; $n 'name-1';" +
+                        "$c isa company, has name $a; $a 'company-name-1';" +
+                        "$r (employee: $x, employer: $c) isa employment;" +
+                        "delete " +
+                        "$x isa person; $n isa name;" +
+                        "$c has $a;" +
+                        "$r (employer: $c);"));
+                txn.commit();
+            }
+            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
+
+                assertEquals(batches * 3 - 1, statistics.thingVertexCount(Label.of("person")));
+                // deleting 'name-1' should remove it from first person and the clone
+                assertEquals(batches * 3 - 2, statistics.hasEdgeCount(Label.of("person"), Label.of("name")));
+                assertEquals(batches * 3 - 1, statistics.thingVertexCount(Label.of("name")));
+                assertEquals(batches, statistics.thingVertexCount(Label.of("friendship")));
+                assertEquals(batches * 2 - 1, statistics.thingVertexCount(Label.of("friend", "friendship")));
+                assertEquals(batches, statistics.thingVertexCount(Label.of("company")));
+                assertEquals(batches - 1, statistics.hasEdgeCount(Label.of("company"), Label.of("name")));
+                assertEquals(batches, statistics.thingVertexCount(Label.of("address")));
+                assertEquals(batches, statistics.hasEdgeCount(Label.of("company"), Label.of("address")));
+                assertEquals(batches, statistics.thingVertexCount(Label.of("employment")));
+                assertEquals(batches, statistics.thingVertexCount(Label.of("employee", "employment")));
+                assertEquals(batches - 1, statistics.thingVertexCount(Label.of("employer", "employment")));
+                assertEquals(batches * 10 - 2, statistics.thingVertexTransitiveCount(txn.graphMgr.schema().getType(Label.of("thing"))));
+                assertEquals(batches * 4 - 2, statistics.thingVertexTransitiveCount(txn.graphMgr.schema().getType(Label.of("role", "relation"))));
             }
         }
     }
