@@ -68,6 +68,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
+import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongSet;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
@@ -787,7 +788,7 @@ public class CoreDatabase implements TypeDB.Database {
 
         public void writeMetadata(CoreTransaction.Data txn) {
             Set<CoreTransaction.Data> concurrentTxn = isolationMgr.getConcurrentlyCommitted(txn);
-//            recordMiscountDependencies(txn, concurrentTxn);
+            recordMiscountDependencies(txn, concurrentTxn);
             txn.dataStorage.putUntracked(StatisticsKey.txnCommitted(txn.id));
         }
 
@@ -797,22 +798,28 @@ public class CoreDatabase implements TypeDB.Database {
             Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
             Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasUndercountDependencies = new HashMap<>();
             for (CoreTransaction.Data concurrent : concurrentTxn) {
-//                txn.graphMgr.data().stats().miscountable().attrCreatedIntersection(concurrent.graphMgr.data().stats().miscountable())
-//                        .forEachRemaining(attribute ->
-//                                attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
-//                        );
-//                txn.graphMgr.data().stats().miscountable().attrDeletedIntersection(concurrent.graphMgr.data().stats().miscountable())
-//                        .forEachRemaining(attribute ->
-//                                attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
-//                        );
-//                txn.graphMgr.data().stats().miscountable().hasCreatedIntersection(concurrent.graphMgr.data().stats().miscountable())
-//                        .forEachRemaining(pair ->
-//                                hasOvercountDependencies.computeIfAbsent(pair, (key) -> new HashSet<>()).add(concurrent.id)
-//                        );
-//                txn.graphMgr.data().stats().miscountable().hasDeletedIntersection(concurrent.graphMgr.data().stats().miscountable())
-//                        .forEachRemaining(attribute ->
-//                                hasUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
-//                        );
+                txn.graphMgr.data().attributesCreated().intersect(concurrent.graphMgr.data().attributesCreated())
+                        .forEachRemaining(attribute ->
+                                attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
+                        );
+                txn.graphMgr.data().attributesDeleted().intersect(concurrent.graphMgr.data().attributesDeleted())
+                        .forEachRemaining(attribute ->
+                                attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
+                        );
+                iterate(txn.graphMgr.data().hasEdgeCreated()).filter(concurrent.graphMgr.data().hasEdgeCreated()::contains)
+                        .forEachRemaining(edge ->
+                                hasOvercountDependencies.computeIfAbsent(
+                                        pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
+                                        (key) -> new HashSet<>()
+                                ).add(concurrent.id)
+                        );
+                iterate(txn.graphMgr.data().hasEdgeDeleted()).filter(concurrent.graphMgr.data().hasEdgeDeleted()::contains)
+                        .forEachRemaining(edge ->
+                                hasUndercountDependencies.computeIfAbsent(
+                                        pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
+                                        (key) -> new HashSet<>()
+                                ).add(concurrent.id)
+                        );
             }
 
             attrOvercountDependencies.forEach((attr, txs) ->

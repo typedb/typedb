@@ -302,7 +302,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 if (bufferedEdges == null) bufferedEdges = new ConcurrentSkipListMap<>();
                 bufferedEdges.compute(edgeView, (view, existingEdge) -> {
                     if (existingEdge == null) {
-                        owner.graph().edgeCreated(edge);
+                        if (isOut()) owner.graph().edgeCreated(edge); // only record creation in one direction
                         return edge;
                     } else if (existingEdge.isInferred() && !edge.isInferred()) {
                         existingEdge.isInferred(true);
