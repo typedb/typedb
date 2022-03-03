@@ -24,6 +24,8 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+
 public class Monitor extends Actor<Monitor> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
@@ -71,7 +73,7 @@ public class Monitor extends Actor<Monitor> {
             this.monitor = monitor;
         }
 
-        public <R> void registerPath(Reactive.Provider<R> provider, Reactive.Receiver<R> receiver) {
+        public <R> void registerPath(@Nullable Reactive.Provider<R> provider, Reactive.Receiver<R> receiver) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerPath(provider, receiver, monitor));
             monitor.execute(actor -> actor.registerPath(provider, receiver));
         }

@@ -101,9 +101,9 @@ public final class Tracer {
         addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 
-    public <R> void registerPath(Provider<R> provider, Receiver<R> receiver, Actor.Driver<Monitor> monitor) {
+    public <R> void registerPath(@Nullable Provider<R> provider, Receiver<R> receiver, Actor.Driver<Monitor> monitor) {
         String providerName;
-        if (provider == null) providerName = "entry";
+        if (provider == null) providerName = "entry";  // TODO: Prevent provider from ever being null
         else providerName = simpleClassId(provider);
         addMessage(providerName, monitor.name(), defaultTrace, EdgeType.REGISTER, "reg_" + simpleClassId(receiver));
     }
