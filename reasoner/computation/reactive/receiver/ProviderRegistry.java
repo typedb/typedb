@@ -61,7 +61,7 @@ public abstract class ProviderRegistry<R> {
         public void add(Reactive.Provider<R> provider) {
             assert this.provider == null;
             this.provider = provider;
-            monitor.registerPath(receiver, provider);
+            monitor.registerPath(provider, receiver);
         }
 
         @Override
@@ -114,7 +114,7 @@ public abstract class ProviderRegistry<R> {
 
         @Override
         public void add(Reactive.Provider<R> provider) {
-            if (providerPullState.putIfAbsent(provider, false) == null) monitor.registerPath(receiver, provider);
+            if (providerPullState.putIfAbsent(provider, false) == null) monitor.registerPath(provider, receiver);
         }
 
         @Override

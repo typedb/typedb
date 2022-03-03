@@ -32,7 +32,7 @@ public class Monitor extends Actor<Monitor> {
         super(driver, name);
     }
 
-    public <R> void registerPath(Reactive.Receiver<R> receiver, Reactive.Provider<R> provider) {
+    public <R> void registerPath(Reactive.Provider<R> provider, Reactive.Receiver<R> receiver) {
         // This can terminate paths by either connecting to a provider which is a terminus or connecting to a provider we already know about (a join)
     }
 
@@ -70,8 +70,8 @@ public class Monitor extends Actor<Monitor> {
             this.monitor = monitor;
         }
 
-        public <R> void registerPath(Reactive.Receiver<R> receiver, Reactive.Provider<R> provider) {
-            monitor.execute(actor -> actor.registerPath(receiver, provider));
+        public <R> void registerPath(Reactive.Provider<R> provider, Reactive.Receiver<R> receiver) {
+            monitor.execute(actor -> actor.registerPath(provider, receiver));
         }
 
         public <R> void registerTerminus(Reactive.Provider<R> provider) {
