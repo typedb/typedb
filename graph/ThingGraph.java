@@ -635,28 +635,6 @@ public class ThingGraph {
             this.typeGraph = typeGraph;
             this.storage = storage;
         }
-//
-//        public static class Miscountable {
-//
-//            public FunctionalIterator<AttributeVertex.Write<?>> attrCreatedIntersection(Miscountable other) {
-//                return iterateSorted(attributesCreated, ASC)
-//                        .intersect(iterateSorted(other.attributesCreated, ASC));
-//            }
-//
-//            public FunctionalIterator<AttributeVertex.Write<?>> attrDeletedIntersection(Miscountable other) {
-//                return iterateSorted(attributesDeleted, ASC)
-//                        .intersect(iterateSorted(other.attributesDeleted, ASC));
-//            }
-//
-//            // TODO these could be optimised using navigable sets and a forwardable intersection algorithm?
-//            public FunctionalIterator<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> hasCreatedIntersection(Miscountable other) {
-//                return iterate(hasEdgeCreated).filter(other.hasEdgeCreated::contains);
-//            }
-//
-//            public FunctionalIterator<Pair<ThingVertex.Write, AttributeVertex.Write<?>>> hasDeletedIntersection(Miscountable other) {
-//                return iterate(hasEdgeDeleted).filter(other.hasEdgeDeleted::contains);
-//            }
-//        }
 
         public long snapshot() {
             return snapshot;

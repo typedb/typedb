@@ -160,7 +160,6 @@ public class Encoding {
     public enum PrefixType {
         SYSTEM,
         INDEX,
-//        STATISTICS,
         METADATA,
         TYPE,
         THING,
@@ -179,10 +178,6 @@ public class Encoding {
         INDEX_TYPE(20, PrefixType.INDEX),
         INDEX_RULE(21, PrefixType.INDEX),
         METADATA_STATISTICS(60, PrefixType.METADATA),
-//        STATISTICS_THINGS(60, PrefixType.STATISTICS),
-//        STATISTICS_COUNT_JOB(61, PrefixType.STATISTICS),
-//        STATISTICS_COUNTED(62, PrefixType.STATISTICS),
-//        STATISTICS_SNAPSHOT(63, PrefixType.STATISTICS),
         VERTEX_THING_TYPE(100, PrefixType.TYPE),
         VERTEX_ENTITY_TYPE(110, PrefixType.TYPE),
         VERTEX_ATTRIBUTE_TYPE(111, PrefixType.TYPE),
@@ -199,10 +194,6 @@ public class Encoding {
                 pair(INDEX_TYPE.key, INDEX_TYPE),
                 pair(INDEX_RULE.key, INDEX_RULE),
                 pair(METADATA_STATISTICS.key, METADATA_STATISTICS),
-//                pair(STATISTICS_THINGS.key, STATISTICS_THINGS),
-//                pair(STATISTICS_COUNT_JOB.key, STATISTICS_COUNT_JOB),
-//                pair(STATISTICS_COUNTED.key, STATISTICS_COUNTED),
-//                pair(STATISTICS_SNAPSHOT.key, STATISTICS_SNAPSHOT),
                 pair(VERTEX_THING_TYPE.key, VERTEX_THING_TYPE),
                 pair(VERTEX_ENTITY_TYPE.key, VERTEX_ENTITY_TYPE),
                 pair(VERTEX_ATTRIBUTE_TYPE.key, VERTEX_ATTRIBUTE_TYPE),
@@ -990,101 +981,6 @@ public class Encoding {
                 public byte key() {
                     return key;
                 }
-            }
-        }
-    }
-
-    public interface Statistics {
-
-        /**
-         * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
-         */
-        enum JobType {
-            ATTRIBUTE_VERTEX(0),
-            HAS_EDGE(1);
-
-            private final byte key;
-            private final ByteArray bytes;
-
-            JobType(int key) {
-                this.key = unsignedByte(key);
-                this.bytes = ByteArray.of(new byte[]{this.key});
-            }
-
-            public static JobType of(ByteArray key) {
-                if (key.length() == 1) {
-                    if (key.get(0) == ATTRIBUTE_VERTEX.key) return ATTRIBUTE_VERTEX;
-                    else if (key.get(0) == HAS_EDGE.key) return HAS_EDGE;
-                    else throw TypeDBException.of(UNRECOGNISED_VALUE);
-                }
-                throw TypeDBException.of(UNRECOGNISED_VALUE);
-            }
-
-            public byte key() {
-                return key;
-            }
-
-            public ByteArray bytes() {
-                return bytes;
-            }
-        }
-
-        /**
-         * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
-         */
-        enum JobOperation {
-            CREATED(0),
-            DELETED(1);
-
-            private final byte key;
-            private final ByteArray bytes;
-
-            JobOperation(int key) {
-                this.key = unsignedByte(key);
-                this.bytes = ByteArray.of(new byte[]{this.key});
-            }
-
-            public static JobOperation of(ByteArray key) {
-                if (key.length() == 1) {
-                    if (key.get(0) == CREATED.key) return CREATED;
-                    else if (key.get(0) == DELETED.key) return DELETED;
-                    else throw TypeDBException.of(UNRECOGNISED_VALUE);
-                }
-                throw TypeDBException.of(UNRECOGNISED_VALUE);
-            }
-
-            public byte key() {
-                return key;
-            }
-
-            public ByteArray bytes() {
-                return bytes;
-            }
-        }
-
-        /**
-         * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
-         */
-        enum Infix {
-            VERTEX_COUNT(0),
-            VERTEX_TRANSITIVE_COUNT(1),
-            HAS_EDGE_COUNT(2),
-            HAS_EDGE_TOTAL_COUNT(3);
-
-            private final byte key;
-            private final ByteArray bytes;
-
-            Infix(int key) {
-                this.key = unsignedByte(key);
-                this.bytes = ByteArray.of(new byte[]{this.key});
-            }
-
-            public byte key() {
-                return key;
-            }
-
-            public ByteArray bytes() {
-                return bytes;
             }
         }
     }

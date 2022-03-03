@@ -53,6 +53,6 @@ public abstract class VertexImpl<VERTEX_IID extends VertexIID> {
 
     @Override
     public final int hashCode() {
-        return iid.hashCode(); // does not need caching, and IID may change at commit
+        return iid.hashCode(); // do not cache - IID may change at commit
     }
 }
