@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static junit.framework.TestCase.assertEquals;
@@ -145,7 +146,7 @@ public class StatisticsTest {
     }
 
     @Test
-    public void concurrent_attribute_inserts_are_corrected() throws InterruptedException {
+    public void concurrent_attribute_inserts_are_corrected() throws InterruptedException, ExecutionException {
         int batches = 10;
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             List<CoreTransaction> transactions = new ArrayList<>();
@@ -158,7 +159,7 @@ public class StatisticsTest {
                 txn.commit();
             }
 
-            Thread.sleep(1000);
+            databaseMgr.databases.get(database).statisticsCompensator().mayCompensate().get();
 
             try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
@@ -170,7 +171,7 @@ public class StatisticsTest {
     }
 
     @Test
-    public void concurrent_has_inserts_are_corrected() throws InterruptedException {
+    public void concurrent_has_inserts_are_corrected() throws InterruptedException, ExecutionException {
         int batches = 10;
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -189,7 +190,7 @@ public class StatisticsTest {
                 txn.commit();
             }
 
-            Thread.sleep(1000);
+            databaseMgr.databases.get(database).statisticsCompensator().mayCompensate().get();
 
             try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
@@ -201,7 +202,7 @@ public class StatisticsTest {
     }
 
     @Test
-    public void concurrent_circular_ownerships_are_corrected() throws InterruptedException {
+    public void concurrent_circular_ownerships_are_corrected() throws InterruptedException, ExecutionException {
         int batches = 10;
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -225,8 +226,7 @@ public class StatisticsTest {
                 txn.commit();
             }
 
-            // TODO force statistics to update
-            Thread.sleep(1000);
+            databaseMgr.databases.get(database).statisticsCompensator().mayCompensate().get();
 
             try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 ThingGraph.Statistics statistics = txn.graphMgr.data().stats();

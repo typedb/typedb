@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
@@ -721,9 +722,9 @@ public class CoreDatabase implements TypeDB.Database {
 //            executor.submit(() -> updateMiscounts(txnID));
 //        }
 
-        public void transactionClosed(long id) {
+        public CompletableFuture<Void> mayCompensate() {
             // TODO optimise this to only call if there is a dependant transaction in memory
-            executor.submit(() -> compensate());
+            return CompletableFuture.runAsync(() -> compensate(), executor);
         }
 
         public void remove(CoreTransaction.Data data) {
