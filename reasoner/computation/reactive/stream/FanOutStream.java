@@ -71,7 +71,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
                 if (numCreated > 0) tracker().reportAnswerCreate(numCreated, this, monitor);  // We need to account for sending an answer to all receivers (-1 for the one we received), either now or when they next pull.
             });
             Set<Receiver<PACKET>> toSend = receiverRegistry().pullingReceivers();
-            receiverRegistry().recordReceive();
+            receiverRegistry().setNotPulling();
             toSend.forEach(this::send);
         } else {
             if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
@@ -81,10 +81,12 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
+        receiverRegistry().recordPull(receiver);
         bufferPositions.putIfAbsent(receiver, 0);
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
-            if (receiverRegistry().recordPull(receiver)) providerRegistry().pullAll();
+            assert receiverRegistry().isPulling();
+            providerRegistry().pullAll();
         } else {
             send(receiver);
         }

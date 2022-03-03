@@ -28,7 +28,7 @@ import java.util.Set;
 
 public abstract class ReceiverRegistry<R> {
 
-    abstract void recordReceive();
+    abstract void setNotPulling();
 
     abstract boolean addReceiver(Reactive.Receiver<R> receiver);
 
@@ -53,15 +53,13 @@ public abstract class ReceiverRegistry<R> {
         }
 
         @Override
-        public void recordReceive() {
+        public void setNotPulling() {
             isPulling = false;
         }
 
-        public boolean recordPull(Reactive.Receiver<R> receiver) {
+        public void recordPull(Reactive.Receiver<R> receiver) {
             assert this.receiver.equals(receiver);
-            boolean newPull = !isPulling;
             isPulling = true;
-            return newPull;
         }
 
         public boolean isPulling() {
@@ -70,6 +68,7 @@ public abstract class ReceiverRegistry<R> {
 
         @Override
         public boolean addReceiver(Reactive.Receiver<R> receiver) {
+            // TODO: update monitor
             assert this.receiver == null;
             this.receiver = receiver;
             return true;
@@ -99,14 +98,13 @@ public abstract class ReceiverRegistry<R> {
         }
 
         @Override
-        public void recordReceive() {
+        public void setNotPulling() {
             pullingReceivers.clear();
         }
 
-        public boolean recordPull(Reactive.Receiver<R> receiver) {
-            boolean newPull = !pullingReceivers.contains(receiver);
+        public void recordPull(Reactive.Receiver<R> receiver) {
+            assert receivers.contains(receiver);
             pullingReceivers.add(receiver);
-            return newPull;
         }
 
         public Set<Processor.Monitor.Reference> registerMonitors(Reactive.Receiver<R> receiver, Set<Processor.Monitor.Reference> monitors) {
@@ -124,6 +122,7 @@ public abstract class ReceiverRegistry<R> {
 
         @Override
         public boolean addReceiver(Reactive.Receiver<R> receiver) {
+            // TODO: Update monitor
             return receivers.add(receiver);
         }
 

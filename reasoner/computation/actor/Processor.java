@@ -229,7 +229,8 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void pull(Receiver<PACKET> receiver) {
             assert receiver.equals(receiverRegistry().receiver());
-            if (ready && receiverRegistry().recordPull(receiver)) {
+            receiverRegistry().recordPull(receiver);
+            if (ready) {
                 providerRegistry().pullAll();
                 if (tracker().isMonitor()) propagateMonitors(receiver, set(tracker().asMonitor().getReference()));
             }
@@ -253,7 +254,7 @@ public abstract class Processor<INPUT, OUTPUT,
         public void receive(Provider<PACKET> provider, PACKET packet) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
             providerRegistry().recordReceive(provider);
-            receiverRegistry().recordReceive();
+            receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
         }
     }
@@ -302,14 +303,15 @@ public abstract class Processor<INPUT, OUTPUT,
         public void receive(Provider<PACKET> provider, PACKET packet) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
             providerRegistry().recordReceive(provider);
-            receiverRegistry().recordReceive();
+            receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
         }
 
         @Override
         public void pull(Receiver<PACKET> receiver) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), this));
-            if (receiverRegistry().recordPull(receiver)) providerRegistry().pullAll();
+            receiverRegistry().recordPull(receiver);
+            providerRegistry().pullAll();
         }
 
         @Override

@@ -53,7 +53,8 @@ public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublis
     @Override
     public void pull(Receiver<OUTPUT> receiver) {
         assert receiver.equals(receiverRegistry().receiver());
-        if (receiverRegistry().recordPull(receiver)) providerRegistry().pullAll();
+        receiverRegistry().recordPull(receiver);
+        providerRegistry().pullAll();
     }
 
     @Override

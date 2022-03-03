@@ -36,7 +36,7 @@ public class DeduplicationStream<PACKET> extends SingleReceiverStream<PACKET, PA
     }
 
     @Override
-    protected ProviderRegistry<PACKET> providerRegistry() {
+    protected ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
         return providerRegistry;
     }
 
@@ -44,10 +44,11 @@ public class DeduplicationStream<PACKET> extends SingleReceiverStream<PACKET, PA
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
         if (deduplicationSet.add(packet)) {
-            receiverRegistry().recordReceive();
+            receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
         } else {
-            if (receiverRegistry().isPulling()) providerRegistry.pull(provider);  // Automatic retry
+            assert receiverRegistry().isPulling();
+            providerRegistry.pull(provider);  // Automatic retry
             tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());  // Already seen this answer, so join this path
         }
     }

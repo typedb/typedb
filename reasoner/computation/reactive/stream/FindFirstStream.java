@@ -42,7 +42,7 @@ public class FindFirstStream<PACKET> extends SingleReceiverStream<PACKET, PACKET
         super.receive(provider, packet);
         if (!packetFound) {
             packetFound = true;
-            receiverRegistry().recordReceive();
+            receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
         } else {
             tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());

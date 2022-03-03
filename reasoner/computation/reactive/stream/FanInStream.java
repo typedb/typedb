@@ -18,11 +18,8 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
-
-import java.util.Set;
 
 public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
@@ -45,7 +42,7 @@ public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
-        receiverRegistry().recordReceive();
+        receiverRegistry().setNotPulling();
         receiverRegistry().receiver().receive(this, packet);
     }
 

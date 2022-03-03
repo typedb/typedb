@@ -64,7 +64,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
         PACKET mergedPacket = compoundPacketsFunc.apply(initialPacket, packet);
         if (leadingPublisher.equals(provider)) {
             if (remainingPlan.size() == 0) {  // For a single item plan
-                receiverRegistry().recordReceive();
+                receiverRegistry().setNotPulling();
                 receiverRegistry().receiver().receive(this, mergedPacket);
             } else {
                 Publisher<PACKET> follower;
@@ -81,7 +81,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
                 providerRegistry().pull(follower);
             }
         } else {
-            receiverRegistry().recordReceive();
+            receiverRegistry().setNotPulling();
             PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(provider));
             receiverRegistry().receiver().receive(this, compoundedPacket);
         }

@@ -37,7 +37,7 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OU
     }
 
     @Override
-    protected ProviderRegistry<INPUT> providerRegistry() {
+    protected ProviderRegistry.SingleProviderRegistry<INPUT> providerRegistry() {
         return providerRegistry;
     }
 
@@ -46,14 +46,15 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OU
         super.receive(provider, packet);
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {
-            receiverRegistry().recordReceive();
+            receiverRegistry().setNotPulling();
             // TODO: This can actually create more receive() calls to downstream than the number of pull()s it receives. Should buffer instead. Protected against by manually adding .buffer() after calls to flatMap
             transformed.forEachRemaining(t -> {
                 tracker().syncAndReportAnswerCreate(this, receiverRegistry().monitors());
                 receiverRegistry().receiver().receive(this, t);
             });
-        } else if (receiverRegistry().isPulling()) {
-            providerRegistry.pull(provider);  // Automatic retry
+        } else {
+            assert receiverRegistry().isPulling();
+            providerRegistry().pull(provider);  // Automatic retry
         }
         tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());  // Because we discarded the original packet and gained as many as are in the iterator
     }

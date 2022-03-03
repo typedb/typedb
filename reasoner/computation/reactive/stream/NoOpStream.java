@@ -44,7 +44,7 @@ public class NoOpStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
     @Override
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
-        receiverRegistry().recordReceive();
+        receiverRegistry().setNotPulling();
         receiverRegistry().receiver().receive(this, packet);
     }
 }

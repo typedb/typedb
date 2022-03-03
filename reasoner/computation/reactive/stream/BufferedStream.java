@@ -43,7 +43,7 @@ public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET>
     public void receive(Provider<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
         if (receiverRegistry().isPulling()) {
-            receiverRegistry().recordReceive();
+            receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
         } else {
             // TODO: Could add an answer deduplication optimisation here, but means holding an extra set of all answers seen
@@ -54,11 +54,12 @@ public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET>
     @Override
     public void pull(Receiver<PACKET> receiver) {
         assert receiver.equals(receiverRegistry().receiver());
-        boolean newPull = receiverRegistry().recordPull(receiver);
+        receiverRegistry().recordPull(receiver);
         if (stack.size() > 0) {
             receiver.receive(this, stack.pop());
         } else {
-            if (newPull) providerRegistry().pullAll();
+            assert receiverRegistry().isPulling();
+            providerRegistry().pullAll();
         }
     }
 }

@@ -43,7 +43,7 @@ public class MapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT
     @Override
     public void receive(Provider<INPUT> provider, INPUT packet) {
         super.receive(provider, packet);
-        receiverRegistry().recordReceive();
+        receiverRegistry().setNotPulling();
         receiverRegistry().receiver().receive(this, mappingFunc.apply(packet));
     }
 }
