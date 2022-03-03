@@ -90,7 +90,7 @@ public abstract class DisjunctionController<
 
         @Override
         public void setUp() {
-            FanInStream<ConceptMap> fanIn = fanIn(monitoring(), name());
+            FanInStream<ConceptMap> fanIn = fanIn(monitor(), name());
             Reactive.Stream<ConceptMap, ConceptMap> outlet = getOutlet(fanIn);
             setOutlet(outlet);  // TODO: Needs separating to be able to add a buffer()
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {

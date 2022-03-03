@@ -74,8 +74,8 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
 
         @Override
         public void setUp() {
-            setOutlet(new FanOutStream<>(monitoring(), name()));
-            new Source<>(traversalSupplier, monitoring(), name()).publishTo(outlet());
+            setOutlet(new FanOutStream<>(monitor(), name()));
+            new Source<>(traversalSupplier, monitor(), name()).publishTo(outlet());
         }
     }
 }

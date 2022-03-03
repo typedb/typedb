@@ -18,8 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.AbstractPublisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
@@ -41,12 +40,12 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     private final ProviderRegistry<PACKET> providerRegistry;
     private final ReceiverRegistry.MultiReceiverRegistry<PACKET> receiverRegistry;
 
-    public FanOutStream(TerminationTracker monitor, String groupName) {
+    public FanOutStream(Monitor.MonitorRef monitor, String groupName) {
         super(monitor, groupName);
         this.bufferSet = new HashSet<>();
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
         this.receiverRegistry = new ReceiverRegistry.MultiReceiverRegistry<>();
     }
 
@@ -66,16 +65,16 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
             // assert receiverRegistry().monitors().size() > 0;  // TODO: Should we assert this?
-            receiverRegistry().monitors().forEach(monitor -> {
-                final int numCreated = receiverRegistry().size(monitor) - 1;
-                if (numCreated > 0) tracker().reportAnswerCreate(numCreated, this, monitor);  // We need to account for sending an answer to all receivers (-1 for the one we received), either now or when they next pull.
-            });
+//            receiverRegistry().monitors().forEach(monitor -> {  // TODO: Bring back logic to account for new answers being created for receivers that are not pulling
+//                final int numCreated = receiverRegistry().size(monitor) - 1;
+//                if (numCreated > 0) monitor().reportAnswerCreate(numCreated, this);  // We need to account for sending an answer to all receivers (-1 for the one we received), either now or when they next pull.
+//            });
             Set<Receiver<PACKET>> toSend = receiverRegistry().pullingReceivers();
             receiverRegistry().setNotPulling();
             toSend.forEach(this::send);
         } else {
             if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
-            tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());  // When an answer is a duplicate then destroy it
+            monitor().syncAndReportAnswerDestroy(this);  // When an answer is a duplicate then destroy it
         }
     }
 
@@ -98,19 +97,12 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         receiver.receive(this, bufferList.get(pos));
     }
 
-    @Override
-    public void propagateMonitors(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
-        Set<Processor.Monitor.Reference> newMonitors = receiverRegistry().registerMonitors(receiver, monitors);
-        newMonitors.forEach(this::onNewMonitor);
-        providerRegistry().propagateMonitors(monitors);
-    }
-
-    private void onNewMonitor(Processor.Monitor.Reference monitor) {
-        if (receiverRegistry().size(monitor) > 1) {
-            // We want to report joins to our tracker and parent monitors, but we should report a join to a monitor if we have more than one receiver that reports to that monitor
-            if (bufferSet.size() > 0) tracker().reportAnswerCreate(bufferSet.size(), this, monitor);  // New receiver, so any answer in the buffer will be dispatched there at some point
-            tracker().reportPathJoin(this, monitor);
-        }
+    private void onNewReceiver() {
+        // TODO: Bring back logic to report answer creation when there are forks, or account for this in the monitor
+//        if (receiverRegistry().size(monitor) > 1) {
+//            if (bufferSet.size() > 0) monitor().reportAnswerCreate(bufferSet.size(), this);  // New receiver, so any answer in the buffer will be dispatched there at some point
+//            monitor().reportPathJoin(this);
+//        }
     }
 
     @Override

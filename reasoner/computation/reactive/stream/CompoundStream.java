@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
 
     public CompoundStream(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
                           BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
-                          TerminationTracker monitor, String groupName) {
+                          Monitor.MonitorRef monitor, String groupName) {
         super(monitor, groupName);
         assert plan.size() > 0;
         this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this);
@@ -71,11 +71,11 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
                 if (remainingPlan.size() == 1) {
                     follower = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
                 } else {
-                    follower = new CompoundStream<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, tracker(), groupName()).buffer();
+                    follower = new CompoundStream<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, monitor(), groupName()).buffer();
                 }
                 publisherPackets.put(follower, mergedPacket);
-                tracker().syncAndReportPathFork(1, this, receiverRegistry().monitors());
-                tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());
+                monitor().syncAndReportPathFork(1, this);
+                monitor().syncAndReportAnswerDestroy(this);
                 follower.publishTo(this);
                 providerRegistry().pull(leadingPublisher);  // Pull again on the leader in case the follower never produces an answer
                 providerRegistry().pull(follower);

@@ -19,9 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 
-import java.util.Set;
 import java.util.function.Function;
 
 public interface Reactive {
@@ -31,8 +29,6 @@ public interface Reactive {
     interface Provider<R> extends Reactive {
 
         void pull(Receiver<R> receiver);
-
-        void propagateMonitors(Receiver<R> receiver, Set<Processor.Monitor.Reference> monitors);
 
         interface Publisher<T> extends Provider<T> {
 

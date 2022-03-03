@@ -19,11 +19,8 @@
 package com.vaticle.typedb.core.reasoner.utils;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker.CountChange;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
 import org.slf4j.Logger;
@@ -39,7 +36,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -91,22 +87,6 @@ public final class Tracer {
         addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 
-    public synchronized void propagateMonitors(@Nullable Receiver<?> receiver, Provider<?> provider,
-                                               Set<Processor.Monitor.Reference> monitors) {
-        String receiverString;
-        if (receiver == null) receiverString = "root";
-        else {
-            receiverString = simpleClassId(receiver);
-            addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
-        }
-        StringBuilder monitorsLabel = new StringBuilder();
-        for (Processor.Monitor.Reference monitor : monitors) {
-            monitorsLabel.append(simpleClassHashCode(monitor.driver()));
-        }
-        addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PROPAGATE, "prop" + monitorsLabel.toString());
-        addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
-    }
-
     public synchronized <INPUT, OUTPUT> void receive(Provider<OUTPUT> provider, Receiver<INPUT> receiver, OUTPUT packet) {
         addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
         addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
@@ -125,64 +105,6 @@ public final class Tracer {
 
     private static String simpleClassHashCode(Object obj) {
         return "@" + System.identityHashCode(obj);
-    }
-
-    private String countLabel(CountChange countChange, int num) {
-        String label = "";
-        switch (countChange) {
-            case PathFork:
-                label += "fork" + num;
-                break;
-            case PathJoin:
-                label += "join" + num;
-                break;
-            case AnswerCreate:
-                label += "create" + num;
-                break;
-            case AnswerDestroy:
-                label += "destroy" + num;
-                break;
-        }
-        return label;
-    }
-
-    public synchronized void onCountChange(Reactive reactive, CountChange countChange,
-                                           Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, int num) {
-        pathCount(simpleClassId(reactive), monitor, countLabel(countChange, num));
-    }
-
-    public void reportCountChange(Reactive reactive, CountChange countChange,
-                                  Processor.Monitor.Reference monitor, int num) {
-        reportPathCount(simpleClassId(reactive), monitor, countLabel(countChange, num));
-    }
-
-    public synchronized void synchronisationReport(Actor.Driver<?> sender, Processor.Monitor.Reference monitor, long pathsCount, long answersCountUpdate) {
-        String senderName = sender.name() + simpleClassHashCode(sender);
-        pathUpdate(senderName, monitor, "init-p" + pathsCount + "-a" + answersCountUpdate);
-        addNodeGroup(senderName, sender.name(), defaultTrace);
-    }
-
-    private void reportPathCount(String sender, Processor.Monitor.Reference monitor, String label) {
-        String monitorName = monitor.driver().name() + simpleClassHashCode(monitor.driver());
-        addMessage(sender, monitorName, defaultTrace, EdgeType.REPORT, label);
-        addNodeGroup(monitorName, monitor.driver().name(), defaultTrace);
-    }
-
-    private void pathCount(String sender, Actor.Driver<? extends Processor<?, ?, ?, ?>> monitor, String label) {
-        String monitorName = monitor.name() + simpleClassHashCode(monitor);
-        addMessage(sender, monitorName, defaultTrace, EdgeType.MONITOR, label);
-        addNodeGroup(monitorName, monitor.name(), defaultTrace);
-    }
-
-    private void pathUpdate(String sender, Processor.Monitor.Reference monitor, String label) {
-        String monitorName = monitor.driver().name() + simpleClassHashCode(monitor.driver());
-        addMessage(sender, monitorName, defaultTrace, EdgeType.UPDATE, label);
-        addNodeGroup(monitorName, monitor.driver().name(), defaultTrace);
-    }
-
-    public void registerWithMonitor(Actor.Driver<?> registree, Processor.Monitor.Reference monitor) {
-        String monitorName = monitor.driver().name() + simpleClassHashCode(monitor.driver());
-        addMessage(registree.name() + simpleClassHashCode(registree), monitorName, defaultTrace, EdgeType.REGISTER, "register");
     }
 
     private void addMessage(String sender, String receiver, Trace trace, EdgeType edgeType,
@@ -321,10 +243,7 @@ public final class Tracer {
         RECEIVE("green"),
         MONITOR("orange"),
         REPORT("orange3"),
-        UPDATE("orangered"),
-        REGISTER("cyan4"),
-        PROPAGATE("purple");
-
+        UPDATE("orangered");
 
         private final String colour;
 

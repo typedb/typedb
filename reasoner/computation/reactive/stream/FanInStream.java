@@ -18,14 +18,14 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
     private final ProviderRegistry.MultiProviderRegistry<PACKET> providerRegistry;
 
-    protected FanInStream(TerminationTracker monitor, String groupName) {
+    protected FanInStream(Monitor.MonitorRef monitor, String groupName) {
         super(monitor, groupName);
         this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this);
     }
@@ -35,7 +35,7 @@ public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
         return providerRegistry;
     }
 
-    public static <T> FanInStream<T> fanIn(TerminationTracker monitor, String groupName) {
+    public static <T> FanInStream<T> fanIn(Monitor.MonitorRef monitor, String groupName) {
         return new FanInStream<>(monitor, groupName);
     }
 
@@ -47,8 +47,8 @@ public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
     }
 
     public void finaliseProviders() {
-        assert tracker() != null;
+        assert monitor() != null;
         final int numForks = providerRegistry().size() - 1;
-        if (numForks > 0) tracker().syncAndReportPathFork(numForks, this, receiverRegistry().monitors());
+        if (numForks > 0) monitor().syncAndReportPathFork(numForks, this);
     }
 }

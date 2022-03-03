@@ -40,7 +40,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
@@ -54,11 +53,11 @@ public abstract class Processor<INPUT, OUTPUT,
     private final Map<Long, InletEndpoint<INPUT>> receivingEndpoints;
     private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
     protected final Set<Connection<INPUT, ?, ?>> upstreamConnections;
-    private final TerminationTracker monitoring;
     private Reactive.Stream<OUTPUT,OUTPUT> outlet;
     private long endpointId;
     private boolean terminated;
     protected boolean done;
+    private final Monitor.MonitorRef monitor;
 
     protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, String name) {
         super(driver, name);
@@ -68,11 +67,7 @@ public abstract class Processor<INPUT, OUTPUT,
         this.providingEndpoints = new HashMap<>();
         this.upstreamConnections = new HashSet<>();
         this.done = false;
-        this.monitoring = createMonitoring();
-    }
-
-    protected TerminationTracker createMonitoring() {
-        return new TerminationTracker(this);
+        this.monitor = null;  // TODO: Pass in monitor
     }
 
     public abstract void setUp();
@@ -124,14 +119,14 @@ public abstract class Processor<INPUT, OUTPUT,
 
     protected OutletEndpoint<OUTPUT> createProvidingEndpoint(Connection<OUTPUT, ?, PROCESSOR> connection) {
         assert !done;
-        OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection, monitoring(), name());
+        OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection, monitor(), name());
         providingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
 
     protected InletEndpoint<INPUT> createReceivingEndpoint() {
         assert !done;
-        InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId(), monitoring(), name());
+        InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId(), monitor(), name());
         receivingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
@@ -141,18 +136,13 @@ public abstract class Processor<INPUT, OUTPUT,
         providingEndpoints.get(pubEndpointId).pull(receiver);
     }
 
-    public void endpointPropagateMonitors(Receiver<OUTPUT> receiver, long pubEndpointId, Set<Monitor.Reference> monitors) {
-        monitors.forEach(monitor -> monitoring().sendSynchronisationReport(monitor));
-        providingEndpoints.get(pubEndpointId).propagateMonitors(receiver, monitors);
-    }
-
     protected void endpointReceive(Provider<INPUT> provider, INPUT packet, long subEndpointId) {
         assert !done;
         receivingEndpoints.get(subEndpointId).receive(provider, packet);
     }
 
-    public TerminationTracker monitoring() {
-        return monitoring;
+    public Monitor.MonitorRef monitor() {
+        return monitor;
     }
 
     protected boolean isPulling() {
@@ -196,14 +186,12 @@ public abstract class Processor<INPUT, OUTPUT,
         private final long id;
         private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
         private boolean ready;
-        private final Set<Monitor.Reference> monitorsToPropagate;
 
-        public InletEndpoint(long id, TerminationTracker monitor, String groupName) {
+        public InletEndpoint(long id, Monitor.MonitorRef monitor, String groupName) {
             super(monitor, groupName);
             this.id = id;
             this.ready = false;
-            this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
-            this.monitorsToPropagate = new HashSet<>();
+            this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
         }
 
         private ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
@@ -222,32 +210,13 @@ public abstract class Processor<INPUT, OUTPUT,
 
         void onReady() {
             pull(receiverRegistry().receiver());
-            propagateMonitors(receiverRegistry().receiver(), monitorsToPropagate);
-            monitorsToPropagate.clear();
         }
 
         @Override
         public void pull(Receiver<PACKET> receiver) {
             assert receiver.equals(receiverRegistry().receiver());
             receiverRegistry().recordPull(receiver);
-            if (ready) {
-                providerRegistry().pullAll();
-                if (tracker().isMonitor()) propagateMonitors(receiver, set(tracker().asMonitor().getReference()));
-            }
-        }
-
-        @Override
-        public void propagateMonitors(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
-            assert receiver.equals(receiverRegistry().receiver());
-            if (ready) providerRegistry().propagateMonitors(monitorsToPropagate(monitors));
-            else monitorsToPropagate.addAll(monitors);
-        }
-
-        Set<Monitor.Reference> monitorsToPropagate(Set<Monitor.Reference> monitors) {
-            Set<Monitor.Reference> toPropagate = new HashSet<>(receiverRegistry().monitors());
-            toPropagate.addAll(monitors);
-            if (tracker().isMonitor()) toPropagate.add(tracker().asMonitor().getReference());
-            return toPropagate;
+            if (ready) providerRegistry().pullAll();
         }
 
         @Override
@@ -267,15 +236,13 @@ public abstract class Processor<INPUT, OUTPUT,
         private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
         private final ReceiverRegistry.SingleReceiverRegistry<PACKET> receiverRegistry;
         private final long id;
-        private final TerminationTracker monitor;
         private final String groupName;
 
-        public OutletEndpoint(Connection<PACKET, ?, ?> connection, TerminationTracker monitor, String groupName) {
-            this.monitor = monitor;
+        public OutletEndpoint(Connection<PACKET, ?, ?> connection, Monitor.MonitorRef monitor, String groupName) {
             this.groupName = groupName;
             this.id = connection.providerEndpointId();
-            this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
-            this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(connection);
+            this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
+            this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(connection, monitor);
         }
 
         private ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
@@ -284,10 +251,6 @@ public abstract class Processor<INPUT, OUTPUT,
 
         private ReceiverRegistry.SingleReceiverRegistry<PACKET> receiverRegistry() {
             return receiverRegistry;
-        }
-
-        protected TerminationTracker monitor() {
-            return monitor;
         }
 
         public long id() {
@@ -312,12 +275,6 @@ public abstract class Processor<INPUT, OUTPUT,
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), this));
             receiverRegistry().recordPull(receiver);
             providerRegistry().pullAll();
-        }
-
-        @Override
-        public void propagateMonitors(Receiver<PACKET> receiver, Set<Monitor.Reference> monitors) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.propagateMonitors(receiver, this, monitors));
-            providerRegistry().propagateMonitors(monitors);
         }
 
         @Override
@@ -387,208 +344,6 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public int hashCode() {
             return Objects.hash(provControllerId, recProcessor, recEndpointId, connectionTransforms, provProcessorId);
-        }
-    }
-
-    public static class TerminationTracker {
-
-        // These counts are used for synchronisation when a new monitor joins, and for the termination in monitor subclasses
-        protected long pathsCount;
-        protected long answersCount;
-        private final Processor<?, ?, ?, ?> processor;
-
-        TerminationTracker(Processor<?, ?, ?, ?> processor) {
-            this.processor = processor;
-            this.pathsCount = 0;
-            this.answersCount = 0;
-        }
-
-        public Monitor asMonitor() {
-            throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
-        Processor<?, ?, ?, ?> processor() {
-            return processor;
-        }
-
-        public boolean isMonitor() {
-            return false;
-        }
-
-        public enum CountChange {
-            PathFork,
-            PathJoin,
-            AnswerCreate,
-            AnswerDestroy
-        }
-
-        public void syncAndReportPathFork(int numForks, Reactive forker, Set<Monitor.Reference> monitors) {
-            assert numForks > 0;
-            onChange(CountChange.PathFork, numForks, forker);
-            monitors.forEach(m -> reportToMonitor(CountChange.PathFork, numForks, forker, m));
-        }
-
-        public void syncAndReportPathJoin(Reactive joiner, Set<Monitor.Reference> monitors) {
-            onChange(CountChange.PathJoin, 1, joiner);
-            monitors.forEach(m -> reportToMonitor(CountChange.PathJoin, 1, joiner, m));
-        }
-
-        public void reportPathJoin(Reactive joiner, Monitor.Reference monitor) {
-            reportToMonitor(CountChange.PathJoin, 1, joiner, monitor);
-        }
-
-        public void syncAndReportAnswerCreate(Reactive creator, Set<Monitor.Reference> monitors) {
-            onChange(CountChange.AnswerCreate, 1, creator);
-            monitors.forEach(m -> reportToMonitor(CountChange.AnswerCreate, 1, creator, m));
-        }
-
-        public void reportAnswerCreate(int num, Reactive creator, Monitor.Reference monitor) {
-            assert num >= 0;
-            reportToMonitor(CountChange.AnswerCreate, num, creator, monitor);
-        }
-
-        public void syncAndReportAnswerDestroy(Reactive destroyer, Set<Monitor.Reference> monitors) {
-            onChange(CountChange.AnswerDestroy, 1, destroyer);
-            monitors.forEach(m -> reportToMonitor(CountChange.AnswerDestroy, 1, destroyer, m));
-        }
-
-        protected void onChange(CountChange countChange, int num, Reactive reactive) {
-            updateCount(countChange, num);
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.onCountChange(reactive, countChange, processor().driver(), num));
-        }
-
-        protected void updateCount(CountChange countChange, int num) {
-            switch (countChange) {
-                case PathFork:
-                    pathsCount += num;
-                    break;
-                case PathJoin:
-                    pathsCount -= num;
-                    break;
-                case AnswerCreate:
-                    answersCount += num;
-                    break;
-                case AnswerDestroy:
-                    answersCount -= num;
-                    break;
-            }
-        }
-
-        protected void reportToMonitor(CountChange countChange, int num, Reactive reactive, Monitor.Reference monitor) {
-            final int update = num;
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.reportCountChange(reactive, countChange, monitor, update));
-            monitor.driver().execute(actor -> actor.monitoring().asMonitor().receiveReport(update, countChange));
-        }
-
-        protected void sendSynchronisationReport(Monitor.Reference monitor) {
-            final long pathsCountUpdate = pathsCount;
-            final long answersCountUpdate = answersCount;
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.synchronisationReport(processor().driver(), monitor, pathsCountUpdate, answersCountUpdate));
-            monitor.driver().execute(actor -> actor.monitoring().asMonitor().receiveSynchronisationReport(processor().driver(), pathsCountUpdate, answersCountUpdate));
-        }
-
-    }
-
-    public static class Monitor extends TerminationTracker {
-
-        private final Set<Driver<? extends Processor<?, ?, ?, ?>>> registered;
-        private final Set<Driver<? extends Processor<?, ?, ?, ?>>> countSenders;
-        private final Reference reference;
-        protected boolean done;
-
-        public Monitor(Processor<?, ?, ?, ?> processor) {
-            super(processor);
-            this.registered = new HashSet<>();
-            this.countSenders = new HashSet<>();
-            this.done = false;
-            this.reference = new Reference(processor().driver());
-        }
-
-        @Override
-        public boolean isMonitor() {
-            return true;
-        }
-
-        @Override
-        public Monitor asMonitor() {
-            return this;
-        }
-
-        public void register(Driver<? extends Processor<?, ?, ?, ?>> registree) {
-            registered.add(registree);
-        }
-
-        public void receiveSynchronisationReport(Driver<? extends Processor<?, ?, ?, ?>> sender, long pathCountDelta, long answersCountDelta) {
-            assert registered.contains(sender);
-            if (!countSenders.contains(sender) && !done) {
-                pathsCount += pathCountDelta;
-                answersCount += answersCountDelta;
-                countSenders.add(sender);
-                checkDone();
-            }
-        }
-
-        private void receiveReport(int num, CountChange countChange) {
-            if (!done) {
-                updateCount(countChange, num);
-                checkDone();
-            }
-        }
-
-        @Override
-        protected void updateCount(CountChange countChange, int num) {
-            super.updateCount(countChange, num);
-            assert answersCount >= 0 || !registered.equals(countSenders);
-            assert pathsCount >= -1 || !registered.equals(countSenders);
-        }
-
-        @Override
-        protected void onChange(CountChange countChange, int num, Reactive reactive) {
-            if (!done) {
-                super.onChange(countChange, num, reactive);
-                checkDone();
-            }
-        }
-
-        protected void checkDone() {
-            assert !done;
-            if (registered.equals(countSenders)) {
-                assert pathsCount >= -1;
-                assert answersCount >= 0;
-            }
-            if (pathsCount == -1 && answersCount == 0 && processor().isPulling() && registered.equals(countSenders)) {
-                done = true;
-                processor().onDone();
-            }
-        }
-
-        public Reference getReference() {
-            return reference;
-        }
-
-        public static class Reference {
-
-            private final Driver<? extends Processor<?, ?, ?, ?>> driver;
-
-            Reference(Driver<? extends Processor<?, ?, ?, ?>> driver) {
-                this.driver = driver;
-            }
-
-            public Driver<? extends Processor<?, ?, ?, ?>> driver() {
-                return driver;
-            }
-        }
-    }
-
-    public static class NestedMonitor extends Monitor {
-
-        public NestedMonitor(Processor<?, ?, ?, ?> processor) {
-            super(processor);
-        }
-
-        @Override
-        protected void onChange(CountChange countChange, int num, Reactive reactive) {
-            if (!done) checkDone();
         }
     }
 

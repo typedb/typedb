@@ -23,14 +23,13 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverStream;
 
 import java.util.function.Function;
-
-import static com.vaticle.typedb.common.collection.Collections.set;
 
 public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.NegationProcessor, NegationController> {
 
@@ -81,21 +80,16 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         }
 
         @Override
-        protected TerminationTracker createMonitoring() {
-            return new NestedMonitor(this);
-        }
-
-        @Override
         protected boolean isPulling() {
             return true;  // TODO: Check this
         }
 
         @Override
         public void setUp() {
-            setOutlet(new FanOutStream<>(monitoring(), name()));
+            setOutlet(new FanOutStream<>(monitor(), name()));
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             requestConnection(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
-            negation = new NegationReactive(monitoring(), name(), this::onDone);
+            negation = new NegationReactive(monitor(), name(), this::onDone);
             endpoint.publishTo(negation);
             negation.publishTo(outlet());
         }
@@ -105,7 +99,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             assert !done;
 //            done = true;
             negation.receiveDone(bounds);
-            monitoring().syncAndReportPathJoin(negation, set());
+            monitor().syncAndReportPathJoin(negation);
         }
 
         private static class NegationReactive extends SingleReceiverStream<ConceptMap, ConceptMap> {
@@ -114,10 +108,10 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             private final Runnable onEarlyDone;
             private boolean answerFound;
 
-            protected NegationReactive(TerminationTracker monitor, String groupName, Runnable onEarlyDone) {
+            protected NegationReactive(Monitor.MonitorRef monitor, String groupName, Runnable onEarlyDone) {
                 super(monitor, groupName);
                 this.onEarlyDone = onEarlyDone;
-                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
+                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
                 this.answerFound = false;
             }
 
@@ -140,7 +134,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
             public void receiveDone(ConceptMap packet) {
                 if (!answerFound) {
-                    tracker().syncAndReportAnswerCreate(this, receiverRegistry().monitors());
+                    monitor().syncAndReportAnswerCreate(this);
                     receiverRegistry().receiver().receive(this, packet);
                 }
             }

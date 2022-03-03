@@ -19,10 +19,8 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 
-import java.util.Set;
 import java.util.function.Supplier;
 
 public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
@@ -31,14 +29,14 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
     private boolean exhausted;
     private FunctionalIterator<PACKET> iterator;
 
-    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, TerminationTracker monitor, String groupName) {
+    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, Monitor.MonitorRef monitor, String groupName) {
         super(monitor, groupName);
         this.iteratorSupplier = iteratorSupplier;
         this.exhausted = false;
     }
 
     public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier,
-                                                             TerminationTracker monitor, String groupName) {
+                                                             Monitor.MonitorRef monitor, String groupName) {
         return new Source<>(iteratorSupplier, monitor, groupName);
     }
 
@@ -49,18 +47,13 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
         if (!exhausted) {
             if (iterator == null) iterator = iteratorSupplier.get();
             if (iterator.hasNext()) {
-                tracker().syncAndReportAnswerCreate(this, receiverRegistry().monitors());
+                monitor().syncAndReportAnswerCreate(this);
                 receiver.receive(this, iterator.next());
             } else {
                 exhausted = true;
-                tracker().syncAndReportPathJoin(this, receiverRegistry().monitors());
+                monitor().syncAndReportPathJoin(this);
             }
         }
-    }
-
-    @Override
-    public void propagateMonitors(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
-        // Nowhere to propagate to
     }
 
 }

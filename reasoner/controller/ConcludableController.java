@@ -129,13 +129,13 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 
         @Override
         public void setUp() {
-            setOutlet(new FanOutStream<>(monitoring(), name()));
+            setOutlet(new FanOutStream<>(monitor(), name()));
             boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
-            FanInStream<ConceptMap> fanIn = fanIn(monitoring(), name());
+            FanInStream<ConceptMap> fanIn = fanIn(monitor(), name());
             if (singleAnswerRequired) fanIn.buffer().findFirst().publishTo(outlet());  // TODO: Buffer not needed as we're feeding a BufferedFanOut as the outlet
             else fanIn.buffer().publishTo(outlet());  // TODO: Buffer not needed as we're feeding a BufferedFanOut as the outlet
 
-            Source.fromIteratorSupplier(traversalSuppplier, monitoring(), name()).publishTo(fanIn);
+            Source.fromIteratorSupplier(traversalSuppplier, monitor(), name()).publishTo(fanIn);
 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {

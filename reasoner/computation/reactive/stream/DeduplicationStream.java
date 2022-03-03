@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.HashSet;
@@ -29,9 +29,9 @@ public class DeduplicationStream<PACKET> extends SingleReceiverStream<PACKET, PA
     private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
     private final Set<PACKET> deduplicationSet;
 
-    public DeduplicationStream(Publisher<PACKET> publisher, TerminationTracker monitor, String groupName) {
+    public DeduplicationStream(Publisher<PACKET> publisher, Monitor.MonitorRef monitor, String groupName) {
         super(monitor, groupName);
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, monitor);
         this.deduplicationSet = new HashSet<>();
     }
 
@@ -49,7 +49,7 @@ public class DeduplicationStream<PACKET> extends SingleReceiverStream<PACKET, PA
         } else {
             assert receiverRegistry().isPulling();
             providerRegistry.pull(provider);  // Automatic retry
-            tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());  // Already seen this answer, so join this path
+            monitor().syncAndReportAnswerDestroy(this);  // Already seen this answer, so join this path
         }
     }
 }

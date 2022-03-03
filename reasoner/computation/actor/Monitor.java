@@ -44,7 +44,25 @@ public class Monitor extends Actor<Monitor> {
 
     }
 
-    public static class Path {
+    public static class MonitorRef {
+
+        public void syncAndReportPathFork(int numForks, Reactive forker) {
+        }
+
+        public void syncAndReportPathJoin(Reactive joiner) {
+        }
+
+        public void reportPathJoin(Reactive joiner) {
+        }
+
+        public void syncAndReportAnswerCreate(Reactive creator) {
+        }
+
+        public void reportAnswerCreate(int num, Reactive creator) {
+        }
+
+        public void syncAndReportAnswerDestroy(Reactive destroyer) {
+        }
 
     }
 }

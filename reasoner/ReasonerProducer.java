@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.Sink;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
@@ -38,8 +37,6 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-
-import static com.vaticle.typedb.common.collection.Collections.set;
 
 @ThreadSafe
 public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename to MatchProducer and create abstract supertype
@@ -158,16 +155,12 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
             providerRegistry().pullAll();
         }
 
-        public void propagateMonitors(Set<Processor.Monitor.Reference> monitors) {
-            providerRegistry().propagateMonitors(monitors);
-        }
-
         @Override
         public void receive(@Nullable Provider<ConceptMap> provider, ConceptMap packet) {
             super.receive(provider, packet);
             isPulling = false;
             answerConsumer.accept(packet);
-            monitor().syncAndReportAnswerDestroy(this, set());
+            monitor().syncAndReportAnswerDestroy(this);
         }
 
         @Override

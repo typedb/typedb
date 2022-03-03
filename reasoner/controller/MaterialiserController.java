@@ -85,12 +85,12 @@ public class MaterialiserController extends Controller<Materialisable, Void, Eit
 
         @Override
         public void setUp() {
-            setOutlet(new FanOutStream<>(monitoring(), name()));
+            setOutlet(new FanOutStream<>(monitor(), name()));
             new Source<>(
                     () -> materialise(materialisable, traversalEng, conceptMgr)
                             .map(Iterators::single)
                             .orElse(Iterators.empty()),
-                    monitoring(), name()
+                    monitor(), name()
             )
                     .map(Either::<ConceptMap, Materialisation>second)
                     .publishTo(outlet());

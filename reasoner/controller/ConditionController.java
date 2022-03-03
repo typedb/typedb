@@ -68,7 +68,7 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
         @Override
         public void setUp() {
             super.setUp();
-            new CompoundStream<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, monitoring(), name())
+            new CompoundStream<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, monitor(), name())
                     .map(Either::<ConceptMap, Materialisation>first).buffer().publishTo(outlet());
         }
     }

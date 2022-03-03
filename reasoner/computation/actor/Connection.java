@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
 public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>, PROV_PROCESSOR extends Processor<?, PACKET, ?, PROV_PROCESSOR>> implements Reactive.Provider<PACKET>, Reactive.Receiver<PACKET> {
@@ -62,17 +61,6 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
     @Override
     public void pull(Receiver<PACKET> receiver) {
         provProcessor.execute(actor -> actor.endpointPull(this, provEndpointId));
-    }
-
-    @Override
-    public void propagateMonitors(Receiver<PACKET> receiver, Set<Processor.Monitor.Reference> monitors) {
-        monitors.forEach(this::registerWithMonitor);
-        provProcessor.execute(actor -> actor.endpointPropagateMonitors(this, provEndpointId, monitors));
-    }
-
-    protected void registerWithMonitor(Processor.Monitor.Reference monitor) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerWithMonitor(provProcessor, monitor));
-        monitor.driver().execute(actor -> actor.monitoring().asMonitor().register(provProcessor));
     }
 
     protected long receiverEndpointId() {

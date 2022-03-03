@@ -29,8 +29,6 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import java.util.Set;
 import java.util.function.Function;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
-
 public class RootDisjunctionController
         extends DisjunctionController<RootDisjunctionController.RootDisjunctionProcessor, RootDisjunctionController> {
     private final Set<Identifier.Variable.Retrievable> filter;
@@ -77,12 +75,7 @@ public class RootDisjunctionController
             super(driver, controller, disjunction, bounds, name);
             this.filter = filter;
             this.reasonerEndpoint = reasonerEndpoint;
-            this.reasonerEndpoint.setMonitor(monitoring());
-        }
-
-        @Override
-        protected TerminationTracker createMonitoring() {
-            return new Monitor(this);
+            this.reasonerEndpoint.setMonitor(monitor());
         }
 
         @Override

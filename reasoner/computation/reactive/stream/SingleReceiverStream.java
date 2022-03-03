@@ -18,23 +18,20 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.AbstractPublisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-import java.util.Set;
-
 public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublisher<OUTPUT> implements Reactive.Stream<INPUT, OUTPUT> {
 
     private final ReceiverRegistry.SingleReceiverRegistry<OUTPUT> receiverRegistry;
 
-    protected SingleReceiverStream(TerminationTracker monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
+    protected SingleReceiverStream(Monitor.MonitorRef monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
         super(monitor, groupName);
-        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>();
+        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(monitor);
     }
 
     protected abstract ProviderRegistry<INPUT> providerRegistry();
@@ -55,12 +52,6 @@ public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublis
         assert receiver.equals(receiverRegistry().receiver());
         receiverRegistry().recordPull(receiver);
         providerRegistry().pullAll();
-    }
-
-    @Override
-    public void propagateMonitors(Receiver<OUTPUT> receiver, Set<Processor.Monitor.Reference> monitors) {
-        assert receiverRegistry().receiver().equals(receiver);
-        providerRegistry().propagateMonitors(monitors);
     }
 
     @Override

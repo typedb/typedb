@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
@@ -100,10 +101,10 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         @Override
         public void setUp() {
-            setOutlet(new FanOutStream<>(monitoring(), name()));
+            setOutlet(new FanOutStream<>(monitor(), name()));
             InletEndpoint<Either<ConceptMap, Materialisation>> conditionEndpoint = createReceivingEndpoint();
             mayRequestCondition(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
-            ConclusionReactive conclusionReactive = new ConclusionReactive(name(), monitoring());
+            ConclusionReactive conclusionReactive = new ConclusionReactive(name(), monitor());
             conditionEndpoint.map(a -> a.first()).publishTo(conclusionReactive);
             conclusionReactive.publishTo(outlet());
         }
@@ -155,9 +156,9 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerRegistry;
             private ProviderRegistry.MultiProviderRegistry<Map<Variable, Concept>> materialiserRegistry;
 
-            protected ConclusionReactive(String groupName, TerminationTracker monitor) {
+            protected ConclusionReactive(String groupName, Monitor.MonitorRef monitor) {
                 super(monitor, groupName);
-                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
+                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
                 this.materialiserRegistry = null;
             }
 
@@ -184,12 +185,6 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             @Override
-            public void propagateMonitors(Receiver<Map<Variable, Concept>> receiver, Set<Monitor.Reference> monitors) {
-                super.propagateMonitors(receiver, monitors);
-                materialiserRegistry().propagateMonitors(monitors);
-            }
-
-            @Override
             public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
                 super.receive(provider, packet);
                 InletEndpoint<Either<ConceptMap, Materialisation>> materialiserEndpoint = createReceivingEndpoint();
@@ -198,17 +193,16 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
                 Stream<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
-                MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, tracker(), groupName());
+                MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, monitor(), groupName());
                 materialiserRegistry().add(materialiserReactive);
                 op.publishTo(materialiserReactive);
                 materialiserReactive.sendTo(receiverRegistry().receiver());
 
-                tracker().syncAndReportPathFork(1, this, receiverRegistry().monitors());
-                tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());
+                monitor().syncAndReportPathFork(1, this);
+                monitor().syncAndReportAnswerDestroy(this);
 
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive));
                 materialiserRegistry().pull(materialiserReactive);
-                materialiserRegistry().propagateMonitors(materialiserReactive);
                 providerRegistry().pull(provider);  // We need to pull on the condition again in case materialisation fails
             }
 
@@ -226,10 +220,10 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             private final ConclusionReactive parent;
             private final ProviderRegistry.SingleProviderRegistry<Map<Variable, Concept>> providerRegistry;
 
-            public MaterialiserReactive(ConclusionReactive parent, TerminationTracker monitor, String groupName) {
+            public MaterialiserReactive(ConclusionReactive parent, Monitor.MonitorRef monitor, String groupName) {
                 super(monitor, groupName);
                 this.parent = parent;
-                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
+                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
             }
 
             @Override

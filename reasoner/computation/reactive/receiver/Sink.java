@@ -18,28 +18,28 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.receiver;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public abstract class Sink<PACKET> implements Subscriber<PACKET> {
 
     private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
-    private TerminationTracker monitor;
+    private Monitor.MonitorRef monitor;
 
     protected Sink() {
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
     }
 
     protected ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
         return providerRegistry;
     }
 
-    protected TerminationTracker monitor() {
+    protected Monitor.MonitorRef monitor() {
         return monitor;
     }
 
-    public void setMonitor(TerminationTracker monitor) {
+    public void setMonitor(Monitor.MonitorRef monitor) {
         this.monitor = monitor;
     }
 

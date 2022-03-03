@@ -18,12 +18,10 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public abstract class ReceiverRegistry<R> {
@@ -32,24 +30,22 @@ public abstract class ReceiverRegistry<R> {
 
     abstract boolean addReceiver(Reactive.Receiver<R> receiver);
 
-    public abstract Set<Processor.Monitor.Reference> monitors();
-
     public static class SingleReceiverRegistry<R> extends ReceiverRegistry<R> {
 
         private boolean isPulling;
-        private final Set<Processor.Monitor.Reference> monitors;
         private Reactive.Receiver<R> receiver;
+        private Monitor.MonitorRef monitor;
 
-        public SingleReceiverRegistry(Reactive.Receiver<R> receiver) {
+        public SingleReceiverRegistry(Reactive.Receiver<R> receiver, Monitor.MonitorRef monitor) {
             this.receiver = receiver;
+            this.monitor = monitor;
             this.isPulling = false;
-            this.monitors = new HashSet<>();
         }
 
-        public SingleReceiverRegistry() {
+        public SingleReceiverRegistry(Monitor.MonitorRef monitor) {
+            this.monitor = monitor;
             this.receiver = null;
             this.isPulling = false;
-            this.monitors = new HashSet<>();
         }
 
         @Override
@@ -74,11 +70,6 @@ public abstract class ReceiverRegistry<R> {
             return true;
         }
 
-        @Override
-        public Set<Processor.Monitor.Reference> monitors() {
-            return monitors;
-        }
-
         public Reactive.Receiver<R> receiver() {
             assert this.receiver != null;
             return receiver;
@@ -88,13 +79,11 @@ public abstract class ReceiverRegistry<R> {
     public static class MultiReceiverRegistry<R> extends ReceiverRegistry<R> {
 
         private final Set<Reactive.Receiver<R>> receivers;
-        private final Map<Processor.Monitor.Reference, Set<Reactive.Receiver<R>>> monitorReceivers;
         private final Set<Reactive.Receiver<R>> pullingReceivers;
 
         public MultiReceiverRegistry() {
             this.receivers = new HashSet<>();
             this.pullingReceivers = new HashSet<>();
-            this.monitorReceivers = new HashMap<>();
         }
 
         @Override
@@ -107,15 +96,6 @@ public abstract class ReceiverRegistry<R> {
             pullingReceivers.add(receiver);
         }
 
-        public Set<Processor.Monitor.Reference> registerMonitors(Reactive.Receiver<R> receiver, Set<Processor.Monitor.Reference> monitors) {
-            Set<Processor.Monitor.Reference> newMonitors = new HashSet<>();
-            monitors.forEach(monitor -> {
-                Set<Reactive.Receiver<R>> recs = monitorReceivers.computeIfAbsent(monitor, m -> new HashSet<>());
-                if (recs.add(receiver)) newMonitors.add(monitor);
-            });
-            return newMonitors;
-        }
-
         public boolean isPulling() {
             return pullingReceivers.size() > 0;
         }
@@ -124,15 +104,6 @@ public abstract class ReceiverRegistry<R> {
         public boolean addReceiver(Reactive.Receiver<R> receiver) {
             // TODO: Update monitor
             return receivers.add(receiver);
-        }
-
-        @Override
-        public Set<Processor.Monitor.Reference> monitors() {
-            return monitorReceivers.keySet();
-        }
-
-        public int size(Processor.Monitor.Reference monitor) {
-            return monitorReceivers.get(monitor).size();
         }
 
         public Set<Reactive.Receiver<R>> pullingReceivers() {

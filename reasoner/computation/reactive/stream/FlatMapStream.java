@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor.TerminationTracker;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.function.Function;
@@ -30,10 +30,10 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OU
     private final ProviderRegistry.SingleProviderRegistry<INPUT> providerRegistry;
 
     public FlatMapStream(Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
-                         TerminationTracker monitor, String groupName) {
+                         Monitor.MonitorRef monitor, String groupName) {
         super(monitor, groupName);
         this.transform = transform;
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, monitor);
     }
 
     @Override
@@ -49,13 +49,13 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OU
             receiverRegistry().setNotPulling();
             // TODO: This can actually create more receive() calls to downstream than the number of pull()s it receives. Should buffer instead. Protected against by manually adding .buffer() after calls to flatMap
             transformed.forEachRemaining(t -> {
-                tracker().syncAndReportAnswerCreate(this, receiverRegistry().monitors());
+                monitor().syncAndReportAnswerCreate(this);
                 receiverRegistry().receiver().receive(this, t);
             });
         } else {
             assert receiverRegistry().isPulling();
             providerRegistry().pull(provider);  // Automatic retry
         }
-        tracker().syncAndReportAnswerDestroy(this, receiverRegistry().monitors());  // Because we discarded the original packet and gained as many as are in the iterator
+        monitor().syncAndReportAnswerDestroy(this);  // Because we discarded the original packet and gained as many as are in the iterator
     }
 }

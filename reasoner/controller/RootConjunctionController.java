@@ -32,8 +32,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
-
 public class RootConjunctionController extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.RootConjunctionProcessor> {
     private final Set<Identifier.Variable.Retrievable> filter;
     private final EntryPoint reasonerEndpoint;
@@ -84,19 +82,14 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
             super(driver, controller, bounds, plan, name);
             this.filter = filter;
             this.reasonerEntryPoint = reasonerEntryPoint;
-            this.reasonerEntryPoint.setMonitor(monitoring());
-        }
-
-        @Override
-        protected TerminationTracker createMonitoring() {
-            return new Monitor(this);
+            this.reasonerEntryPoint.setMonitor(monitor());
         }
 
         @Override
         public void setUp() {
             super.setUp();
             outlet().publishTo(reasonerEntryPoint);
-            new CompoundStream<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, monitoring(), name())
+            new CompoundStream<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, monitor(), name())
                     .buffer()
                     .map(conceptMap -> conceptMap.filter(filter))
                     .deduplicate()
