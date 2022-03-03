@@ -30,9 +30,6 @@ import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.TypeGraph;
-import com.vaticle.typedb.core.graph.common.StatisticsKey;
-import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
-import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.query.QueryManager;
@@ -41,15 +38,10 @@ import com.vaticle.typedb.core.traversal.TraversalCache;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.rocksdb.RocksDBException;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.vaticle.typedb.common.util.Objects.className;
-import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongSet;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_COMMIT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
@@ -323,7 +315,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     graphMgr.data().commit();
 
                     session.database().isolationMgr().validateAndStartCommit(this);
-                    session.database().statisticsCompensator().recordMetadata(this);
+                    session.database().statisticsCompensator().writeMetadata(this);
                     dataStorage.commit();
                     session.database().isolationMgr().commitSucceeded(this);
                 } catch (RocksDBException e) {
@@ -347,7 +339,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         @Override
         public void rollback() {
             try {
-                cleanUp();
+                graphMgr.data().clear();
                 dataStorage.rollback();
             } catch (RocksDBException e) {
                 throw TypeDBException.of(e);

@@ -72,7 +72,7 @@ public class GraphPlanner implements Planner {
     protected volatile GraphProcedure procedure;
     private volatile boolean isUpToDate;
     private volatile long totalDuration;
-    private volatile long snapshot;
+    private volatile long version;
     private volatile boolean hasObjective;
 
     volatile double totalCostLastRecorded;
@@ -92,7 +92,7 @@ public class GraphPlanner implements Planner {
         totalCostNext = INIT_ZERO;
         branchingFactor = INIT_ZERO;
         costExponentUnit = INIT_ZERO;
-        snapshot = -1L;
+        version = -1L;
         hasObjective = false;
     }
 
@@ -240,12 +240,13 @@ public class GraphPlanner implements Planner {
     }
 
     private void updateObjective(GraphManager graph) {
-        if (snapshot < graph.data().stats().snapshot()) {
+        if (version < graph.data().stats().snapshot()) {
             totalCostNext = INIT_ZERO;
+            // TODO: we should not include the graph's uncommitted writes, but only the persisted counts in the costs
             setBranchingFactor(graph);
             setCostExponentUnit(graph);
             computeTotalCostNext(graph);
-            snapshot = graph.data().stats().snapshot();
+            version = graph.data().stats().snapshot();
             hasObjective = true;
 
             assert !Double.isNaN(totalCostNext) && !Double.isNaN(totalCostLastRecorded) && totalCostLastRecorded > 0;
@@ -256,7 +257,7 @@ public class GraphPlanner implements Planner {
                 edges.forEach(PlannerEdge::recordCost);
             }
         }
-        assert hasObjective : String.format("Failed to set objective function. Planner snapshot: %d; statistics snapshot: %d", snapshot, graph.data().stats().snapshot());
+        assert hasObjective : String.format("Failed to set objective function. Planner snapshot: %d; statistics snapshot: %d", version, graph.data().stats().snapshot());
         if (LOG.isTraceEnabled()) LOG.trace(optimiser.toString());
     }
 

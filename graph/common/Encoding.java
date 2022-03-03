@@ -103,8 +103,7 @@ public class Encoding {
     public enum Status {
         BUFFERED(0),
         COMMITTED(1),
-        PERSISTED(2),
-        IMMUTABLE(3);
+        PERSISTED(2);
 
         private final int status;
 
@@ -944,7 +943,7 @@ public class Encoding {
 
             enum Prefix {
 
-                VERSION(0),
+                SNAPSHOT(0),
                 VERTEX_COUNT(1),
                 VERTEX_COUNT_TRANSITIVE(2),
                 HAS_TYPE_EDGE_COUNT(3),

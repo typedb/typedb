@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_ROLE;
-import static com.vaticle.typedb.core.graph.common.Encoding.Status.BUFFERED;
+import static com.vaticle.typedb.core.graph.common.Encoding.Status.PERSISTED;
 import static java.util.Objects.hash;
 
 public abstract class ThingEdgeImpl implements ThingEdge {
@@ -251,13 +251,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             if (deleted.compareAndSet(false, true)) {
                 from.outs().remove(this);
                 to.ins().remove(this);
-                if (!(from.status().equals(BUFFERED)) && !(to.status().equals(BUFFERED))) {
+                if (from.status().equals(PERSISTED) && to.status().equals(PERSISTED)) {
                     graph.storage().deleteTracked(forward.iid());
                     graph.storage().deleteUntracked(backward.iid());
                 }
-                if (encoding == Encoding.Edge.Thing.Base.HAS && !isInferred) {
-                    graph.stats().hasEdgeDeleted(from, to.asAttribute());
-                }
+                graph.edgeDeleted(this);
             }
         }
 
@@ -527,9 +525,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 toWritable.setModified();
                 graph.storage().deleteTracked(forward.iid());
                 graph.storage().deleteUntracked(backward.iid());
-                if (encoding == Encoding.Edge.Thing.Base.HAS && !isInferred) {
-                    graph.stats().hasEdgeDeleted(fromWritable, toWritable.asAttribute());
-                }
+                graph.edgeDeleted(this);
             }
         }
 

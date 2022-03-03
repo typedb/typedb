@@ -193,7 +193,8 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
         final ThingVertex.Write owner;
         final ConcurrentMap<InfixIID.Thing, ConcurrentSet<InfixIID.Thing>> infixes;
-        final ConcurrentMap<InfixIID.Thing, ConcurrentNavigableMap<EDGE_VIEW, ThingEdge>> edges;
+        // TODO: we can simplify this to ignore the idea of reasoning in write transactions
+        final ConcurrentMap<InfixIID.Thing, ConcurrentNavigableMap<EDGE_VIEW, ThingEdgeImpl.Buffered>> edges;
 
         Write(ThingVertex.Write owner) {
             this.owner = owner;
@@ -220,7 +221,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
         }
 
         Forwardable<EDGE_VIEW, Order.Asc> iterateBufferedViews(Encoding.Edge.Thing encoding, IID[] lookahead) {
-            ConcurrentNavigableMap<EDGE_VIEW, ThingEdge> result;
+            ConcurrentNavigableMap<EDGE_VIEW, ThingEdgeImpl.Buffered> result;
             InfixIID.Thing infixIID = infixIID(encoding, lookahead);
             if (lookahead.length == encoding.lookAhead()) {
                 return (result = edges.get(infixIID)) != null ? iterateSorted(result.keySet(), ASC) : emptySorted();
@@ -239,7 +240,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             }
 
             return iterate(iids).mergeMap(iid -> {
-                ConcurrentNavigableMap<EDGE_VIEW, ThingEdge> res;
+                ConcurrentNavigableMap<EDGE_VIEW, ThingEdgeImpl.Buffered> res;
                 return (res = edges.get(iid)) != null ? iterateSorted(res.keySet(), ASC) : emptySorted();
             }, ASC);
         }
@@ -286,8 +287,8 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             return edge;
         }
 
-        private ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingEdgeImpl edge, IID[] infixes,
-                                  boolean isReflexive) {
+        private void put(Encoding.Edge.Thing encoding, ThingEdgeImpl.Buffered edge, IID[] infixes,
+                         boolean isReflexive) {
             assert encoding.lookAhead() == infixes.length;
             InfixIID.Thing infixIID = infixIID(encoding);
             for (int i = 0; i < encoding.lookAhead(); i++) {
@@ -296,16 +297,18 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 );
             }
 
-            edges.compute(infixIID, (iid, bufferedEdges) -> {
+            this.edges.compute(infixIID, (iid, bufferedEdges) -> {
                 EDGE_VIEW edgeView = getView(edge);
-                if (bufferedEdges == null) {
-                    bufferedEdges = new ConcurrentSkipListMap<>();
-                    bufferedEdges.put(edgeView, edge);
-                } else {
-                    ThingEdge existingEdge = bufferedEdges.get(edgeView);
-                    if (existingEdge == null) bufferedEdges.put(edgeView, edge);
-                    else if (existingEdge.isInferred() && !edge.isInferred()) existingEdge.isInferred(false);
-                }
+                if (bufferedEdges == null) bufferedEdges = new ConcurrentSkipListMap<>();
+                bufferedEdges.compute(edgeView, (view, existingEdge) -> {
+                    if (existingEdge == null) {
+                        owner.graph().edgeCreated(edge);
+                        return edge;
+                    } else if (existingEdge.isInferred() && !edge.isInferred()) {
+                        existingEdge.isInferred(true);
+                    }
+                    return existingEdge;
+                });
                 return bufferedEdges;
             });
 
@@ -315,35 +318,34 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 if (isOut()) ((ThingAdjacencyImpl.Write<?>) edge.to().ins()).putNonReflexive(edge);
                 else ((ThingAdjacencyImpl.Write<?>) edge.from().outs()).putNonReflexive(edge);
             }
-            return edge;
         }
 
-        private void putNonReflexive(ThingEdgeImpl edge) {
+        private void putNonReflexive(ThingEdgeImpl.Buffered edge) {
             put(edge.encoding(), edge, infixTails(edge), false);
         }
 
         @Override
         public ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, boolean isInferred) {
             assert !encoding.isOptimisation();
-            if (encoding == Encoding.Edge.Thing.Base.HAS && isOut() && !isInferred) {
-                owner.graph().stats().hasEdgeCreated(owner, adjacent.asAttribute());
-            }
-            ThingEdgeImpl edge = isOut()
+            ThingEdgeImpl.Buffered edge = isOut()
                     ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, isInferred)
                     : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, isInferred);
             IID[] infixes = new IID[]{adjacent.iid().prefix(), adjacent.iid().type()};
-            return put(encoding, edge, infixes, true);
+            put(encoding, edge, infixes, true);
+
+            return edge;
         }
 
         @Override
         public ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, ThingVertex.Write optimised,
                              boolean isInferred) {
             assert encoding.isOptimisation();
-            ThingEdgeImpl edge = isOut()
+            ThingEdgeImpl.Buffered edge = isOut()
                     ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, optimised, isInferred)
                     : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, optimised, isInferred);
             IID[] infixes = new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()};
-            return put(encoding, edge, infixes, true);
+            put(encoding, edge, infixes, true);
+            return edge;
         }
 
         @Override

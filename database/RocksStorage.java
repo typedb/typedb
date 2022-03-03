@@ -413,6 +413,7 @@ public abstract class RocksStorage implements Storage {
             putTracked(key, value, true);
         }
 
+        // TODO: we don't need checkConsistency anymore
         @Override
         public void putTracked(Key key, ByteArray value, boolean checkConsistency) {
             putUntracked(key, value);

@@ -66,8 +66,8 @@ public class StatisticsKey implements Storage.Key {
         ));
     }
 
-    public static StatisticsKey version() {
-        return new StatisticsKey(Encoding.Metadata.Statistics.Prefix.VERSION.bytes());
+    public static StatisticsKey snapshot() {
+        return new StatisticsKey(Encoding.Metadata.Statistics.Prefix.SNAPSHOT.bytes());
     }
 
     public static class MisCount extends StatisticsKey {

@@ -115,6 +115,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     public void setHas(Attribute attribute, boolean isInferred) {
         validateIsNotDeleted();
         AttributeVertex.Write<?> attrVertex = ((AttributeImpl<?>) attribute).writableVertex();
+        // TODO optimise with findFirst()
         if (getType().getOwns().noneMatch(t -> t.equals(attribute.getType()))) {
             throw exception(TypeDBException.of(THING_CANNOT_OWN_ATTRIBUTE, attribute.getType().getLabel(), readableVertex().type().label()));
         } else if (getType().getOwns(true).anyMatch(t -> t.equals(attribute.getType()))) {

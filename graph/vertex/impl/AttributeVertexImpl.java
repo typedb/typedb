@@ -30,6 +30,8 @@ import java.time.LocalDateTime;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Status.BUFFERED;
+import static com.vaticle.typedb.core.graph.common.Encoding.Status.PERSISTED;
 
 public abstract class AttributeVertexImpl {
 
@@ -74,7 +76,12 @@ public abstract class AttributeVertexImpl {
 
         @Override
         public Encoding.Status status() {
-            return Encoding.Status.IMMUTABLE;
+            return isPersisted() ? PERSISTED : BUFFERED;
+        }
+
+        private boolean isPersisted() {
+            if (isPersisted == null) isPersisted = graph.storage().get(iid) != null;
+            return isPersisted;
         }
 
         @Override
@@ -85,11 +92,6 @@ public abstract class AttributeVertexImpl {
                 // TODO: implement for ValueType.TEXT
                 return null;
             }
-        }
-
-        public boolean isPersisted() {
-            if (isPersisted == null) isPersisted = graph.storage().get(iid) != null;
-            return isPersisted;
         }
 
         @Override
@@ -304,7 +306,12 @@ public abstract class AttributeVertexImpl {
 
         @Override
         public Encoding.Status status() {
-            return Encoding.Status.IMMUTABLE;
+            return isPersisted() ? PERSISTED : BUFFERED;
+        }
+
+        private boolean isPersisted() {
+            if (isPersisted == null) isPersisted = graph.storage().get(iid) != null;
+            return isPersisted;
         }
 
         @Override
@@ -325,11 +332,6 @@ public abstract class AttributeVertexImpl {
         @Override
         public boolean isInferred() {
             return isInferred;
-        }
-
-        public boolean isPersisted() {
-            if (isPersisted == null) isPersisted = graph.storage().get(iid) != null;
-            return isPersisted;
         }
 
         @Override

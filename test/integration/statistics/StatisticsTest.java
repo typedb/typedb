@@ -169,6 +169,8 @@ public class StatisticsTest {
 
     // TODO attribute on attribute
 
+    // TODO test insert, delete in same tx, then commit
+
     @Test
     public void reboot_counts_correct() {
 
