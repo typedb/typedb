@@ -166,7 +166,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             public void publishTo(Subscriber<Map<Variable, Concept>> subscriber) {
                 super.publishTo(subscriber);
                 // We need to wait until the receiver has been given before we can create the materialiser registry
-                this.materialiserRegistry = new ProviderRegistry.MultiProviderRegistry<>(receiverRegistry().receiver());
+                this.materialiserRegistry = new ProviderRegistry.MultiProviderRegistry<>(receiverRegistry().receiver(), monitor());
             }
 
             @Override
@@ -199,7 +199,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 materialiserReactive.sendTo(receiverRegistry().receiver());
 
                 monitor().syncAndReportPathFork(1, this);
-                monitor().syncAndReportAnswerDestroy(this);
+                monitor().consumeAnswer(this);
 
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive));
                 materialiserRegistry().pull(materialiserReactive);

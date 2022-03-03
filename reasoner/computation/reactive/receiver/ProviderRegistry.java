@@ -40,24 +40,28 @@ public abstract class ProviderRegistry<R> {
         private final Reactive.Receiver<R> receiver;
         private Reactive.Provider<R> provider;
         private boolean isPulling;
+        private final Monitor.MonitorRef monitor;
 
         public SingleProviderRegistry(Reactive.Provider.Publisher<R> provider, Reactive.Receiver<R> receiver,
                                       Monitor.MonitorRef monitor) {
-            this.provider = provider;
+            add(provider);
             this.receiver = receiver;
+            this.monitor = monitor;
             this.isPulling = false;
         }
 
         public SingleProviderRegistry(Reactive.Receiver<R> receiver, Monitor.MonitorRef monitor) {
             this.provider = null;
             this.receiver = receiver;
+            this.monitor = monitor;
             this.isPulling = false;
         }
 
         @Override
         public void add(Reactive.Provider<R> provider) {
-            assert this.provider == null || provider == this.provider;
+            assert this.provider == null;
             this.provider = provider;
+            monitor.registerPath(receiver, provider);
         }
 
         @Override
@@ -98,17 +102,19 @@ public abstract class ProviderRegistry<R> {
 
     public static class MultiProviderRegistry<R> extends ProviderRegistry<R> {
 
-        private final Map<Reactive.Provider<R>, Boolean> providerPullState;
+        private final Monitor.MonitorRef monitor;
         private final Reactive.Receiver<R> receiver;
+        private final Map<Reactive.Provider<R>, Boolean> providerPullState;
 
-        public MultiProviderRegistry(Reactive.Receiver<R> receiver) {
+        public MultiProviderRegistry(Reactive.Receiver<R> receiver, Monitor.MonitorRef monitor) {
+            this.monitor = monitor;
             this.providerPullState = new HashMap<>();
             this.receiver = receiver;
         }
 
         @Override
         public void add(Reactive.Provider<R> provider) {
-            providerPullState.putIfAbsent(provider, false);
+            if (providerPullState.putIfAbsent(provider, false) == null) monitor.registerPath(receiver, provider);
         }
 
         @Override

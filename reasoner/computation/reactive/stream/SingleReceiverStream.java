@@ -31,7 +31,7 @@ public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublis
 
     protected SingleReceiverStream(Monitor.MonitorRef monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
         super(monitor, groupName);
-        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(monitor);
+        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(this, monitor);
     }
 
     protected abstract ProviderRegistry<INPUT> providerRegistry();

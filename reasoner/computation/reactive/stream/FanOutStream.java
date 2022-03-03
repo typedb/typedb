@@ -46,7 +46,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
         this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
-        this.receiverRegistry = new ReceiverRegistry.MultiReceiverRegistry<>();
+        this.receiverRegistry = new ReceiverRegistry.MultiReceiverRegistry<>(this, monitor);
     }
 
     @Override
@@ -64,17 +64,14 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         providerRegistry().recordReceive(provider);
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
-            // assert receiverRegistry().monitors().size() > 0;  // TODO: Should we assert this?
-//            receiverRegistry().monitors().forEach(monitor -> {  // TODO: Bring back logic to account for new answers being created for receivers that are not pulling
-//                final int numCreated = receiverRegistry().size(monitor) - 1;
-//                if (numCreated > 0) monitor().reportAnswerCreate(numCreated, this);  // We need to account for sending an answer to all receivers (-1 for the one we received), either now or when they next pull.
-//            });
+            final int numCreated = receiverRegistry().size() - 1;
+            if (numCreated > 0) monitor().createAnswer(numCreated, this);  // We need to account for sending an answer to all receivers (-1 for the one we received), either now or when they next pull.
             Set<Receiver<PACKET>> toSend = receiverRegistry().pullingReceivers();
             receiverRegistry().setNotPulling();
             toSend.forEach(this::send);
         } else {
             if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
-            monitor().syncAndReportAnswerDestroy(this);  // When an answer is a duplicate then destroy it
+            monitor().consumeAnswer(this);  // When an answer is a duplicate then destroy it
         }
     }
 
@@ -98,17 +95,16 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     }
 
     private void onNewReceiver() {
-        // TODO: Bring back logic to report answer creation when there are forks, or account for this in the monitor
-//        if (receiverRegistry().size(monitor) > 1) {
-//            if (bufferSet.size() > 0) monitor().reportAnswerCreate(bufferSet.size(), this);  // New receiver, so any answer in the buffer will be dispatched there at some point
-//            monitor().reportPathJoin(this);
-//        }
+        if (receiverRegistry().size() > 1) {
+            if (bufferSet.size() > 0) monitor().createAnswer(bufferSet.size(), this);  // New receiver, so any answer in the buffer will be dispatched there at some point
+            monitor().reportPathJoin(this);
+        }
     }
 
     @Override
     public void publishTo(Subscriber<PACKET> subscriber) {
         bufferPositions.putIfAbsent(subscriber, 0);
-        receiverRegistry().addReceiver(subscriber);
+        if (receiverRegistry().addReceiver(subscriber)) onNewReceiver();
         subscriber.subscribeTo(this);
     }
 

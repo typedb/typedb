@@ -27,7 +27,7 @@ public abstract class SingleReceiverPublisher<OUTPUT> extends AbstractPublisher<
 
     protected SingleReceiverPublisher(Monitor.MonitorRef monitor, String groupName) {
         super(monitor, groupName);
-        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(monitor);
+        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(this, monitor);
     }
 
     @Override

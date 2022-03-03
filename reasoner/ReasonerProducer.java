@@ -160,7 +160,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
             super.receive(provider, packet);
             isPulling = false;
             answerConsumer.accept(packet);
-            monitor().syncAndReportAnswerDestroy(this);
+            monitor().consumeAnswer(this);
         }
 
         @Override

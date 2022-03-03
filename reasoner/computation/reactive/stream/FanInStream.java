@@ -27,7 +27,7 @@ public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
     protected FanInStream(Monitor.MonitorRef monitor, String groupName) {
         super(monitor, groupName);
-        this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this);
+        this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this, monitor);
     }
 
     @Override

@@ -46,6 +46,26 @@ public class Monitor extends Actor<Monitor> {
 
     public static class MonitorRef {
 
+        public <R> void registerPath(Reactive.Receiver<R> receiver, Reactive.Provider<R> provider) {
+            // This can terminate paths by either connecting to a provider which is a terminus or connecting to a provider we already know about (a join)
+        }
+
+        public <R> void registerTerminus(Reactive.Provider<R> provider) {
+
+        }
+
+        public <R> void createAnswer(Reactive.Provider<R> provider) {
+
+        }
+
+        public <R> void createAnswer(int numCreated, Reactive.Provider<R> provider) {
+
+        }
+
+        public <R> void consumeAnswer(Reactive.Receiver<R> receiver) {
+
+        }
+
         public void syncAndReportPathFork(int numForks, Reactive forker) {
         }
 
@@ -53,15 +73,6 @@ public class Monitor extends Actor<Monitor> {
         }
 
         public void reportPathJoin(Reactive joiner) {
-        }
-
-        public void syncAndReportAnswerCreate(Reactive creator) {
-        }
-
-        public void reportAnswerCreate(int num, Reactive creator) {
-        }
-
-        public void syncAndReportAnswerDestroy(Reactive destroyer) {
         }
 
     }

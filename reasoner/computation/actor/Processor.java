@@ -242,7 +242,7 @@ public abstract class Processor<INPUT, OUTPUT,
             this.groupName = groupName;
             this.id = connection.providerEndpointId();
             this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
-            this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(connection, monitor);
+            this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(this, connection, monitor);
         }
 
         private ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {

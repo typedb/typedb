@@ -134,7 +134,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
             public void receiveDone(ConceptMap packet) {
                 if (!answerFound) {
-                    monitor().syncAndReportAnswerCreate(this);
+                    monitor().createAnswer(this);
                     receiverRegistry().receiver().receive(this, packet);
                 }
             }
