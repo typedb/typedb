@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream;
@@ -82,8 +83,9 @@ public abstract class DisjunctionController<
         private final ConceptMap bounds;
 
         protected DisjunctionProcessor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller,
-                                       Disjunction disjunction, ConceptMap bounds, String name) {
-            super(driver, controller, name);
+                                       Monitor.MonitorRef monitorRef, Disjunction disjunction, ConceptMap bounds,
+                                       String name) {
+            super(driver, controller, monitorRef, name);
             this.disjunction = disjunction;
             this.bounds = bounds;
         }

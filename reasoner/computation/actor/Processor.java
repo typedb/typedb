@@ -57,9 +57,10 @@ public abstract class Processor<INPUT, OUTPUT,
     private long endpointId;
     private boolean terminated;
     protected boolean done;
-    private final Monitor.MonitorRef monitor;
+    private final Monitor.MonitorRef monitorRef;
 
-    protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, String name) {
+    protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, Monitor.MonitorRef monitorRef,
+                        String name) {
         super(driver, name);
         this.controller = controller;
         this.endpointId = 0;
@@ -67,7 +68,7 @@ public abstract class Processor<INPUT, OUTPUT,
         this.providingEndpoints = new HashMap<>();
         this.upstreamConnections = new HashSet<>();
         this.done = false;
-        this.monitor = null;  // TODO: Pass in monitor
+        this.monitorRef = monitorRef;
     }
 
     public abstract void setUp();
@@ -142,7 +143,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     public Monitor.MonitorRef monitor() {
-        return monitor;
+        return monitorRef;
     }
 
     protected boolean isPulling() {

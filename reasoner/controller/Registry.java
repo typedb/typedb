@@ -71,6 +71,7 @@ public class Registry {
     private final Actor.Driver<MaterialiserController> materialiserController;
     private final AtomicBoolean terminated;
     private final Actor.Driver<Monitor> monitor;
+    private final Monitor.MonitorRef monitorRef;
     private Throwable terminationCause;
     private ActorExecutorGroup executorService;
 
@@ -88,8 +89,9 @@ public class Registry {
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
         this.monitor = Actor.driver(driver -> new Monitor(driver, "monitor"), executorService);
+        this.monitorRef = new Monitor.MonitorRef(monitor);
         this.materialiserController = Actor.driver(driver -> new MaterialiserController(
-                driver, executorService, this, traversalEngine(), conceptManager()), executorService
+                driver, executorService, monitorRef, this, traversalEngine(), conceptManager()), executorService
         );
     }
 
@@ -114,6 +116,7 @@ public class Registry {
             terminationCause = cause;
             controllers.forEach(actor -> actor.execute(r -> r.terminate(cause)));
             materialiserController.execute(actor -> actor.terminate(cause));
+            monitor.execute(actor -> actor.terminate(cause));
         }
     }
 
@@ -122,8 +125,8 @@ public class Registry {
                                                                                    EntryPoint reasonerEntryPoint) {
         LOG.debug("Creating Root Conjunction for: '{}'", conjunction);
         Actor.Driver<RootConjunctionController> controller =
-                Actor.driver(driver -> new RootConjunctionController(driver, conjunction, filter, executorService, this,
-                                                                     reasonerEntryPoint), executorService);
+                Actor.driver(driver -> new RootConjunctionController(driver, conjunction, filter, executorService,
+                                                                     monitorRef, this, reasonerEntryPoint), executorService);
         controller.execute(RootConjunctionController::setUpUpstreamProviders);
         controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));
         // TODO: Consider exception handling
@@ -137,8 +140,8 @@ public class Registry {
                                                                                    EntryPoint reasonerEntryPoint) {
         LOG.debug("Creating Root Disjunction for: '{}'", disjunction);
         Actor.Driver<RootDisjunctionController> controller =
-                Actor.driver(driver -> new RootDisjunctionController(driver, disjunction, filter, executorService, this,
-                                                                     reasonerEntryPoint), executorService);
+                Actor.driver(driver -> new RootDisjunctionController(driver, disjunction, filter, executorService,
+                                                                     monitorRef, this, reasonerEntryPoint), executorService);
         controller.execute(RootDisjunctionController::setUpUpstreamProviders);
         controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));
         // TODO: Consider exception handling
@@ -150,7 +153,7 @@ public class Registry {
     public Actor.Driver<NestedConjunctionController> registerNestedConjunctionController(Conjunction conjunction) {
         LOG.debug("Creating Nested Conjunction for: '{}'", conjunction);
         Actor.Driver<NestedConjunctionController> controller =
-                Actor.driver(driver -> new NestedConjunctionController(driver, conjunction, executorService, this),
+                Actor.driver(driver -> new NestedConjunctionController(driver, conjunction, executorService, monitorRef, this),
                              executorService);
         controller.execute(ConjunctionController::setUpUpstreamProviders);
         controllers.add(controller);
@@ -161,7 +164,7 @@ public class Registry {
     public Actor.Driver<NestedDisjunctionController> registerNestedDisjunctionController(Disjunction disjunction) {
         LOG.debug("Creating Nested Disjunction for: '{}'", disjunction);
         Actor.Driver<NestedDisjunctionController> controller =
-                Actor.driver(driver -> new NestedDisjunctionController(driver, disjunction, executorService, this),
+                Actor.driver(driver -> new NestedDisjunctionController(driver, disjunction, executorService, monitorRef, this),
                              executorService);
         controller.execute(NestedDisjunctionController::setUpUpstreamProviders);
         controllers.add(controller);
@@ -177,7 +180,9 @@ public class Registry {
             controllerView = resolverViewOpt.get();
             controllerConcludables.get(controllerView.controller()).add(concludable);
         } else {
-            Actor.Driver<ConcludableController> controller = Actor.driver(driver -> new ConcludableController(driver, concludable, executorService, this), executorService);
+            Actor.Driver<ConcludableController> controller =
+                    Actor.driver(driver -> new ConcludableController(driver, concludable, executorService, monitorRef,
+                                                                     this), executorService);
             controller.execute(ConcludableController::setUpUpstreamProviders);
             controllerView = ResolverView.concludable(controller, identity(concludable));
             controllers.add(controller);
@@ -208,7 +213,7 @@ public class Registry {
     public ResolverView.FilteredRetrievable registerRetrievableController(Retrievable retrievable) {
         LOG.debug("Register RetrievableController: '{}'", retrievable.pattern());
         Actor.Driver<RetrievableController> controller = Actor.driver(
-                driver -> new RetrievableController(driver, "", retrievable, executorService, this), executorService);
+                driver -> new RetrievableController(driver, "", retrievable, executorService, monitorRef, this), executorService);
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return ResolverView.retrievable(controller, retrievable.retrieves());
@@ -217,7 +222,7 @@ public class Registry {
     public ResolverView.FilteredNegation registerNegationController(Negated negated, Conjunction conjunction) {
         LOG.debug("Creating NegationController for : {}", negated);
         Actor.Driver<NegationController> negationController = Actor.driver(
-                driver -> new NegationController(driver, negated, executorService, this), executorService);
+                driver -> new NegationController(driver, negated, executorService, monitorRef, this), executorService);
         negationController.execute(NegationController::setUpUpstreamProviders);
         controllers.add(negationController);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
@@ -237,7 +242,7 @@ public class Registry {
         Actor.Driver<ConclusionController> controller = ruleConclusions.computeIfAbsent(conclusion.rule(), r -> {
             Actor.Driver<ConclusionController> c = Actor.driver(
                     driver -> new ConclusionController(driver, "", conclusion, executorService,
-                                                       materialiserController, this), executorService);
+                                                       materialiserController, monitorRef, this), executorService);
             c.execute(ConclusionController::setUpUpstreamProviders);
             return c;
         });
@@ -250,7 +255,7 @@ public class Registry {
         LOG.debug("Register ConditionController: '{}'", condition);
         Actor.Driver<ConditionController> controller = ruleConditions.computeIfAbsent(condition.rule(), r -> {
             Actor.Driver<ConditionController> c = Actor.driver(
-                    driver -> new ConditionController(driver, condition, executorService, this), executorService);
+                    driver -> new ConditionController(driver, condition, executorService, monitorRef, this), executorService);
             c.execute(ConditionController::setUpUpstreamProviders);
             return c;
         });
@@ -264,7 +269,7 @@ public class Registry {
 //                                                        Consumer<Request> requestFailed, Consumer<Throwable> exception) {
 //        Actor.Driver<RootResolver.Explain> resolver = Actor.driver(
 //                driver -> new RootResolver.Explain(
-//                        driver, conjunction, requestAnswered, requestFailed, exception, this), executorService);
+//                        driver, conjunction, requestAnswered, requestFailed, exception, monitorRef, this), executorService);
 //        resolvers.add(resolver);
 //        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
 //        return resolver;

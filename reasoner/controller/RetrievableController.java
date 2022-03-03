@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
@@ -35,12 +36,14 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
         RetrievableController.RetrievableProcessor, RetrievableController> {
 
     private final Retrievable retrievable;
+    private final Monitor.MonitorRef monitorRef;
     private final Registry registry;
 
     public RetrievableController(Driver<RetrievableController> driver, String name, Retrievable retrievable,
-                                 ActorExecutorGroup executorService, Registry registry) {
+                                 ActorExecutorGroup executorService, Monitor.MonitorRef monitorRef, Registry registry) {
         super(driver, executorService, registry, name);
         this.retrievable = retrievable;
+        this.monitorRef = monitorRef;
         this.registry = registry;
     }
 
@@ -52,7 +55,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     @Override
     protected Function<Driver<RetrievableProcessor>, RetrievableProcessor> createProcessorFunc(ConceptMap conceptMap) {
         return driver -> new RetrievableProcessor(
-                driver, driver(), () -> Traversal.traversalIterator(registry, retrievable.pattern(), conceptMap),
+                driver, driver(), monitorRef, () -> Traversal.traversalIterator(registry, retrievable.pattern(), conceptMap),
                 RetrievableProcessor.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ", bounds: " + conceptMap.toString() + ")"
         );
     }
@@ -67,8 +70,9 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
 
         protected RetrievableProcessor(Driver<RetrievableProcessor> driver, Driver<RetrievableController> controller,
+                                       Monitor.MonitorRef monitorRef,
                                        Supplier<FunctionalIterator<ConceptMap>> traversalSupplier, String name) {
-            super(driver, controller, name);
+            super(driver, controller, monitorRef, name);
             this.traversalSupplier = traversalSupplier;
         }
 

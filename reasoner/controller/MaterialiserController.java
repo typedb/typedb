@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
@@ -41,10 +42,12 @@ public class MaterialiserController extends Controller<Materialisable, Void, Eit
 
     private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
+    private final Monitor.MonitorRef monitorRef;
 
     public MaterialiserController(Driver<MaterialiserController> driver, ActorExecutorGroup executorService,
-                                  Registry registry, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                                  Monitor.MonitorRef monitorRef, Registry registry, TraversalEngine traversalEng, ConceptManager conceptMgr) {
         super(driver, executorService, registry, MaterialiserController.class.getSimpleName());
+        this.monitorRef = monitorRef;
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
     }
@@ -57,7 +60,7 @@ public class MaterialiserController extends Controller<Materialisable, Void, Eit
     @Override
     protected Function<Driver<MaterialiserProcessor>, MaterialiserProcessor> createProcessorFunc(Materialisable materialisable) {
         return driver -> new MaterialiserProcessor(
-                driver, driver(), materialisable, traversalEng, conceptMgr,
+                driver, driver(), monitorRef, materialisable, traversalEng, conceptMgr,
                 MaterialiserProcessor.class.getSimpleName() + "(Materialisable: " + materialisable + ")"
         );
     }
@@ -76,8 +79,8 @@ public class MaterialiserController extends Controller<Materialisable, Void, Eit
 
         protected MaterialiserProcessor(
                 Driver<MaterialiserProcessor> driver, Driver<MaterialiserController> controller,
-                Materialisable materialisable, TraversalEngine traversalEng, ConceptManager conceptMgr, String name) {
-            super(driver, controller, name);
+                Monitor.MonitorRef monitorRef, Materialisable materialisable, TraversalEngine traversalEng, ConceptManager conceptMgr, String name) {
+            super(driver, controller, monitorRef, name);
             this.materialisable = materialisable;
             this.traversalEng = traversalEng;
             this.conceptMgr = conceptMgr;

@@ -44,13 +44,16 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         ConclusionController.ConclusionProcessor, ConclusionController> {
     private final Rule.Conclusion conclusion;
     private final Driver<MaterialiserController> materialiserController;
+    private final Monitor.MonitorRef monitorRef;
     private Driver<ConditionController> conditionController;
 
     public ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion conclusion,
-                                ActorExecutorGroup executorService, Driver<MaterialiserController> materialiserController, Registry registry) {
+                                ActorExecutorGroup executorService, Driver<MaterialiserController> materialiserController,
+                                Monitor.MonitorRef monitorRef, Registry registry) {
         super(driver, executorService, registry, name);
         this.conclusion = conclusion;
         this.materialiserController = materialiserController;
+        this.monitorRef = monitorRef;
     }
 
     @Override
@@ -61,7 +64,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
     @Override
     protected Function<Driver<ConclusionProcessor>, ConclusionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new ConclusionProcessor(
-                driver, driver(), this.conclusion.rule(), bounds, registry().conceptManager(),
+                driver, driver(), monitorRef, this.conclusion.rule(), bounds, registry().conceptManager(),
                 ConclusionProcessor.class.getSimpleName() + "(pattern: " + conclusion + ", bounds: " + bounds + ")"
         );
     }
@@ -87,11 +90,10 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         private final Set<ConditionRequest> conditionRequests;
         private final Set<MaterialiserRequest> materialiserRequests;
 
-        protected ConclusionProcessor(
-                Driver<ConclusionProcessor> driver,
-                Driver<ConclusionController> controller, Rule rule,
-                ConceptMap bounds, ConceptManager conceptManager, String name) {
-            super(driver, controller, name);
+        protected ConclusionProcessor(Driver<ConclusionProcessor> driver,
+                                      Driver<ConclusionController> controller, Monitor.MonitorRef monitorRef, Rule rule,
+                                      ConceptMap bounds, ConceptManager conceptManager, String name) {
+            super(driver, controller, monitorRef, name);
             this.rule = rule;
             this.bounds = bounds;
             this.conceptManager = conceptManager;

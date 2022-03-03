@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.CompoundStream;
 
 import java.util.List;
@@ -35,10 +36,13 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
     // TODO: It would be better not to use Either, since this class only ever outputs a ConceptMap
 
     private final Rule.Condition condition;
+    private final Monitor.MonitorRef monitorRef;
 
-    public ConditionController(Driver<ConditionController> driver, Rule.Condition condition, ActorExecutorGroup executorService, Registry registry) {
+    public ConditionController(Driver<ConditionController> driver, Rule.Condition condition,
+                               ActorExecutorGroup executorService, Monitor.MonitorRef monitorRef, Registry registry) {
         super(driver, condition.conjunction(), executorService, registry);
         this.condition = condition;
+        this.monitorRef = monitorRef;
     }
 
     @Override
@@ -49,7 +53,7 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
     @Override
     protected Function<Driver<ConditionController.ConditionProcessor>, ConditionController.ConditionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new ConditionProcessor(
-                driver, driver(), bounds, plan(),
+                driver, driver(), monitorRef, bounds, plan(),
                 ConditionProcessor.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
         );
     }
@@ -61,8 +65,8 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
 
     protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<Either<ConceptMap, Materialisation>, ConditionController, ConditionProcessor>{
         protected ConditionProcessor(Driver<ConditionProcessor> driver, Driver<ConditionController> controller,
-                                     ConceptMap bounds, List<Resolvable<?>> plan, String name) {
-            super(driver, controller, bounds, plan, name);
+                                     Monitor.MonitorRef monitorRef, ConceptMap bounds, List<Resolvable<?>> plan, String name) {
+            super(driver, controller, monitorRef, bounds, plan, name);
         }
 
         @Override

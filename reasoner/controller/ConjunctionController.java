@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.answer.Mapping;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.controller.Registry.ResolverView;
 import com.vaticle.typedb.core.reasoner.utils.Planner;
@@ -130,8 +131,9 @@ public abstract class ConjunctionController<OUTPUT,
         protected final List<Resolvable<?>> plan;
 
         protected ConjunctionProcessor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller,
-                                       ConceptMap bounds, List<Resolvable<?>> plan, String name) {
-            super(driver, controller, name);
+                                       Monitor.MonitorRef monitorRef, ConceptMap bounds, List<Resolvable<?>> plan,
+                                       String name) {
+            super(driver, controller, monitorRef, name);
             this.bounds = bounds;
             this.plan = plan;
         }

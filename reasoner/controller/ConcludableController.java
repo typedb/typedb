@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream;
@@ -49,13 +50,15 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
     private final Map<Conclusion, Driver<ConclusionController>> conclusionControllers;
     private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
     private final Set<Variable.Retrievable> unboundVars;
+    private final Monitor.MonitorRef monitorRef;
     private final Registry registry;
     private final Concludable concludable;
 
     public ConcludableController(Driver<ConcludableController> driver, Concludable concludable,
-                                 ActorExecutorGroup executorService, Registry registry) {
+                                 ActorExecutorGroup executorService, Monitor.MonitorRef monitorRef, Registry registry) {
         super(driver, executorService, registry,
               ConcludableController.class.getSimpleName() + "(pattern: " + concludable + ")");
+        this.monitorRef = monitorRef;
         this.registry = registry;
         this.concludable = concludable;
         this.unboundVars = unboundVars();
@@ -92,7 +95,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular
         //  concludable. They should be filtered before being passed to the concludableProcessor's constructor
         return driver -> new ConcludableProcessor(
-                driver, driver(), bounds, unboundVars, conclusionUnifiers,
+                driver, driver(), monitorRef, bounds, unboundVars, conclusionUnifiers,
                 () -> Traversal.traversalIterator(registry, concludable.pattern(), bounds),
                 ConcludableProcessor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
         );
@@ -116,10 +119,11 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         private final Set<ConclusionRequest> requestedConnections;
 
         public ConcludableProcessor(Driver<ConcludableProcessor> driver, Driver<ConcludableController> controller,
-                                    ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
+                                    Monitor.MonitorRef monitorRef, ConceptMap bounds,
+                                    Set<Variable.Retrievable> unboundVars,
                                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier, String name) {
-            super(driver, controller, name);
+            super(driver, controller, monitorRef, name);
             this.bounds = bounds;
             this.unboundVars = unboundVars;
             this.conclusionUnifiers = conclusionUnifiers;

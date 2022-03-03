@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.CompoundStream;
 
 import java.util.List;
@@ -32,9 +33,12 @@ import java.util.function.Function;
 
 public class NestedConjunctionController extends ConjunctionController<ConceptMap, NestedConjunctionController, NestedConjunctionController.NestedConjunctionProcessor> {
 
+    private final Monitor.MonitorRef monitorRef;
+
     public NestedConjunctionController(Driver<NestedConjunctionController> driver, Conjunction conjunction,
-                                       ActorExecutorGroup executorService, Registry registry) {
+                                       ActorExecutorGroup executorService, Monitor.MonitorRef monitorRef, Registry registry) {
         super(driver, conjunction, executorService, registry);
+        this.monitorRef = monitorRef;
     }
 
     @Override
@@ -48,7 +52,7 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
     protected Function<Driver<NestedConjunctionController.NestedConjunctionProcessor>,
             NestedConjunctionController.NestedConjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new NestedConjunctionProcessor(
-                driver, driver(), bounds, plan(),
+                driver, driver(), monitorRef, bounds, plan(),
                 NestedConjunctionProcessor.class.getSimpleName() + "(pattern: " + conjunction + ", bounds: " + bounds + ")"
         );
     }
@@ -62,9 +66,9 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
 
         protected NestedConjunctionProcessor(Driver<NestedConjunctionProcessor> driver,
                                              Driver<NestedConjunctionController> controller,
-                                             ConceptMap bounds, List<Resolvable<?>> plan,
+                                             Monitor.MonitorRef monitorRef, ConceptMap bounds, List<Resolvable<?>> plan,
                                              String name) {
-            super(driver, controller, bounds, plan, name);
+            super(driver, controller, monitorRef, bounds, plan, name);
         }
 
         @Override

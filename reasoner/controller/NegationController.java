@@ -34,12 +34,14 @@ import java.util.function.Function;
 public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.NegationProcessor, NegationController> {
 
     private final Negated negated;
+    private final Monitor.MonitorRef monitorRef;
     private Driver<NestedDisjunctionController> disjunctionContoller;
 
     public NegationController(Driver<NegationController> driver, Negated negated, ActorExecutorGroup executorService,
-                              Registry registry) {
+                              Monitor.MonitorRef monitorRef, Registry registry) {
         super(driver, executorService, registry, NegationController.class.getSimpleName() + "(pattern:" + negated + ")");
         this.negated = negated;
+        this.monitorRef = monitorRef;
     }
 
     @Override
@@ -52,7 +54,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
     @Override
     protected Function<Driver<NegationProcessor>, NegationProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new NegationProcessor(
-                driver, driver(), negated, bounds,
+                driver, driver(), monitorRef, negated, bounds,
                 NegationProcessor.class.getSimpleName() + "(pattern: " + negated + ", bounds: " + bounds + ")"
         );
     }
@@ -73,8 +75,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         private NegationReactive negation;
 
         protected NegationProcessor(Driver<NegationProcessor> driver, Driver<NegationController> controller,
-                                    Negated negated, ConceptMap bounds, String name) {
-            super(driver, controller, name);
+                                    Monitor.MonitorRef monitorRef, Negated negated, ConceptMap bounds, String name) {
+            super(driver, controller, monitorRef, name);
             this.negated = negated;
             this.bounds = bounds;
         }
