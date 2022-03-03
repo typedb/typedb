@@ -35,6 +35,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import org.slf4j.Logger;
@@ -69,6 +70,7 @@ public class Registry {
     private final boolean resolutionTracing;
     private final Actor.Driver<MaterialiserController> materialiserController;
     private final AtomicBoolean terminated;
+    private final Actor.Driver<Monitor> monitor;
     private Throwable terminationCause;
     private ActorExecutorGroup executorService;
 
@@ -85,6 +87,7 @@ public class Registry {
         this.controllers = new ConcurrentSet<>();
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
+        this.monitor = Actor.driver(driver -> new Monitor(driver, "monitor"), executorService);
         this.materialiserController = Actor.driver(driver -> new MaterialiserController(
                 driver, executorService, this, traversalEngine(), conceptManager()), executorService
         );
