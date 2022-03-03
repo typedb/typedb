@@ -39,9 +39,9 @@ public abstract class ReceiverRegistry<R> {
 
         public SingleReceiverRegistry(Reactive.Provider<R> provider, Reactive.Receiver<R> receiver, Monitor.MonitorRef monitor) {
             this.provider = provider;
-            addReceiver(receiver);
             this.monitor = monitor;
             this.isPulling = false;
+            addReceiver(receiver);
         }
 
         public SingleReceiverRegistry(Reactive.Provider<R> provider, Monitor.MonitorRef monitor) {

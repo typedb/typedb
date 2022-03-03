@@ -44,10 +44,10 @@ public abstract class ProviderRegistry<R> {
 
         public SingleProviderRegistry(Reactive.Provider.Publisher<R> provider, Reactive.Receiver<R> receiver,
                                       Monitor.MonitorRef monitor) {
-            add(provider);
             this.receiver = receiver;
             this.monitor = monitor;
             this.isPulling = false;
+            add(provider);
         }
 
         public SingleProviderRegistry(Reactive.Receiver<R> receiver, Monitor.MonitorRef monitor) {
@@ -59,9 +59,9 @@ public abstract class ProviderRegistry<R> {
 
         @Override
         public void add(Reactive.Provider<R> provider) {
-            assert this.provider == null;
+            assert this.provider == null || provider == this.provider;  // TODO: Tighten this to allow adding only once
+            if (this.provider == null) monitor.registerPath(provider, receiver);
             this.provider = provider;
-            monitor.registerPath(provider, receiver);
         }
 
         @Override

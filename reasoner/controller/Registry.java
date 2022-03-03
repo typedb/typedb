@@ -107,6 +107,10 @@ public class Registry {
         return logicMgr;
     }
 
+    public Monitor.MonitorRef monitor() {
+        return monitorRef;
+    }
+
     public boolean resolutionTracing() {
         return resolutionTracing;
     }

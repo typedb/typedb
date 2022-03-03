@@ -25,22 +25,19 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 public abstract class Sink<PACKET> implements Subscriber<PACKET> {
 
     private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
-    private Monitor.MonitorRef monitor;
+    private final Monitor.MonitorRef monitorRef;
 
-    protected Sink() {
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
+    protected Sink(Monitor.MonitorRef monitorRef) {
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitorRef);
+        this.monitorRef = monitorRef;
     }
 
     protected ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
         return providerRegistry;
     }
 
-    protected Monitor.MonitorRef monitor() {
-        return monitor;
-    }
-
-    public void setMonitor(Monitor.MonitorRef monitor) {
-        this.monitor = monitor;
+    protected Monitor.MonitorRef monitorRef() {
+        return monitorRef;
     }
 
     @Override

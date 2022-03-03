@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.Sink;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
@@ -60,7 +61,8 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.queue = null;
         this.done = false;
         this.required = new AtomicInteger();
-        this.reasonerEntryPoint = new EntryPoint(this::receiveAnswer, this::exception, this::answersFinished, conjunction.toString());  // TODO Try wrapping the root processor in an entrypoint object, which is still a reactive
+        this.reasonerEntryPoint = new EntryPoint(controllerRegistry.monitor(), this::receiveAnswer, this::exception,
+                                                 this::answersFinished, conjunction.toString());  // TODO Try wrapping the root processor in an entrypoint object, which is still a reactive
         this.controllerRegistry.createRootConjunctionController(conjunction, filter, reasonerEntryPoint);
         if (options.traceInference()) {
             Tracer.initialise(options.logsDir());
@@ -76,7 +78,8 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.queue = null;
         this.done = false;
         this.required = new AtomicInteger();
-        this.reasonerEntryPoint = new EntryPoint(this::receiveAnswer, this::exception, this::answersFinished, disjunction.toString());
+        this.reasonerEntryPoint = new EntryPoint(controllerRegistry.monitor(), this::receiveAnswer, this::exception,
+                                                 this::answersFinished, disjunction.toString());
         this.controllerRegistry.createRootDisjunctionController(disjunction, filter, reasonerEntryPoint);
         if (options.traceInference()) {
             Tracer.initialise(options.logsDir());
@@ -104,7 +107,6 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     // note: root resolver calls this single-threaded, so is threads safe
 
     private void answersFinished(Boolean aVoid) {  // TODO: Is there a nicer way? Use a runnable
-        // TODO: Call when the end of answers has been detected
         LOG.trace("All answers found.");
 //        if (options.traceInference()) Tracer.get().finishDefaultTrace();
         finish();
@@ -141,8 +143,8 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         private boolean isPulling;
         private int traceCounter = 0;
 
-        public EntryPoint(Consumer<ConceptMap> answerConsumer, Consumer<Throwable> exceptionConsumer, Consumer<Boolean> onDone, String groupName) {
-            super();
+        public EntryPoint(Monitor.MonitorRef monitorRef, Consumer<ConceptMap> answerConsumer, Consumer<Throwable> exceptionConsumer, Consumer<Boolean> onDone, String groupName) {
+            super(monitorRef);
             this.answerConsumer = answerConsumer;
             this.exceptionConsumer = exceptionConsumer;
             this.onDone = onDone;
@@ -160,7 +162,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
             super.receive(provider, packet);
             isPulling = false;
             answerConsumer.accept(packet);
-            monitor().consumeAnswer(this);
+            monitorRef().consumeAnswer(this);
         }
 
         @Override

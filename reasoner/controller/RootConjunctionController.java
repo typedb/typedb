@@ -86,7 +86,6 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
             super(driver, controller, monitorRef, bounds, plan, name);
             this.filter = filter;
             this.reasonerEntryPoint = reasonerEntryPoint;
-            this.reasonerEntryPoint.setMonitor(monitor());
         }
 
         @Override
