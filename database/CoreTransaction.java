@@ -356,7 +356,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         void notifyClosed() {
             if (type().isWrite()) {
                 session.database().isolationMgr().closed(this);
-                session.database().statisticsCompensator().mayCompensate();
+                session.database().statisticsCompensator().mayCompensate(this);
             }
             super.notifyClosed();
         }

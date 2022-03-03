@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
@@ -33,6 +34,7 @@ import com.vaticle.typedb.core.graph.common.Storage;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.traversal.TraversalCache;
 import org.rocksdb.ColumnFamilyDescriptor;
@@ -52,6 +54,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -116,7 +119,6 @@ public class CoreDatabase implements TypeDB.Database {
     protected CorePartitionManager.Schema rocksSchemaPartitionMgr;
     protected CorePartitionManager.Data rocksDataPartitionMgr;
     protected CoreSession.Data statisticsBackgroundCounterSession;
-    protected StatisticsBackgroundCounter statisticsBackgroundCounter;
     protected ScheduledExecutorService scheduledPropertiesLogger;
     private Cache cache;
 
@@ -336,26 +338,8 @@ public class CoreDatabase implements TypeDB.Database {
         if (cache != null) cache.close();
     }
 
-    protected void statisticsBgCounterStart() {
-        assert statisticsBackgroundCounterSession == null;
-        assert statisticsBackgroundCounter == null;
-
-        statisticsBackgroundCounterSession = sessionFactory.sessionData(this, new Options.Session());
-        statisticsBackgroundCounter = new StatisticsBackgroundCounter(statisticsBackgroundCounterSession);
-    }
-
     long nextTransactionID() {
         return transactionID.getAndIncrement();
-    }
-
-    protected void statisticsBgCounterStop() {
-        assert statisticsBackgroundCounterSession != null;
-        assert statisticsBackgroundCounter != null;
-
-        statisticsBackgroundCounter.stop();
-        statisticsBackgroundCounter = null;
-        statisticsBackgroundCounterSession.close();
-        statisticsBackgroundCounterSession = null;
     }
 
     protected Path directory() {
@@ -552,6 +536,7 @@ public class CoreDatabase implements TypeDB.Database {
                     if (events.get(transaction) != null && isDeletable(transaction)) {
                         deleteCommittedEvent(transaction);
                         deleteOpenedEvent(transaction);
+                        isolatedConcurrentCommits.remove(transaction);
                     }
                 }
                 cleanupCommitted();
@@ -632,6 +617,7 @@ public class CoreDatabase implements TypeDB.Database {
                         if (other.snapshotEnd().isPresent() && isDeletable(other)) {
                             // TODO we should only have 1 place we clean up committed information
                             other.cleanUp();
+                            isolatedConcurrentCommits.remove(other);
                             iter.remove();
                         }
                     }
@@ -701,9 +687,11 @@ public class CoreDatabase implements TypeDB.Database {
 
         private final ExecutorService executor;
         private CoreSession.Data session;
+        private ConcurrentMap<CoreTransaction.Data, Set<CoreTransaction.Data>> dependencies;
 
         StatisticsCompensator() {
             executor = Executors.newSingleThreadExecutor(NamedThreadFactory.create(name + "::statistics-manager"));
+            dependencies = new ConcurrentHashMap<>();
         }
 
         public void initialise() {
@@ -722,13 +710,26 @@ public class CoreDatabase implements TypeDB.Database {
 //            executor.submit(() -> updateMiscounts(txnID));
 //        }
 
-        public CompletableFuture<Void> mayCompensate() {
-            // TODO optimise this to only call if there is a dependant transaction in memory
+        public CompletableFuture<Void> mayCompensate(CoreTransaction.Data transaction) {
+            if (dependencies.containsKey(transaction)) {
+                return CompletableFuture.runAsync(() -> compensate(), executor);
+            } else {
+                return CompletableFuture.completedFuture(null);
+            }
+        }
+
+        public CompletableFuture<Void> compensateAll() {
             return CompletableFuture.runAsync(() -> compensate(), executor);
         }
 
         public void remove(CoreTransaction.Data data) {
-            // TODO this means we no longer need to synchronize against this data transaction
+            dependencies.forEach((txn, deps) -> {
+                if (deps.contains(data)) dependencies.compute(txn, (t, ds) -> {
+                    ds.remove(data);
+                    if (ds.isEmpty()) return null;
+                    else return ds;
+                });
+            });
         }
 
         private void compensate() {
@@ -767,6 +768,17 @@ public class CoreDatabase implements TypeDB.Database {
                 txn.commit();
                 // TODO: when do we clean up a transaction ID committed key?
             }
+
+            try (CoreTransaction.Data txn = session.transaction(WRITE)) {
+                LOG.warn("\nTotal thing count: " + txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootThingType()));
+                long hasCount = 0;
+                NavigableSet<TypeVertex> allTypes = txn.graphMgr.schema().getSubtypes(txn.graphMgr.schema().rootThingType());
+                Set<TypeVertex> attributes = txn.graphMgr.schema().getSubtypes(txn.graphMgr.schema().rootAttributeType());
+                for (TypeVertex attr : attributes) {
+                    hasCount += txn.graphMgr.data().stats().hasEdgeSum(allTypes, attr);
+                }
+                LOG.warn("Total has count: " + hasCount);
+            }
         }
 
         private boolean anyCommitted(Set<Long> txnIDs, RocksStorage.Data dataStorage) {
@@ -794,33 +806,39 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         private void recordMiscountDependencies(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
+            Set<CoreTransaction.Data> txnDependencies = new HashSet<>();
             Map<AttributeVertex.Write<?>, Set<Long>> attrOvercountDependencies = new HashMap<>();
             Map<AttributeVertex.Write<?>, Set<Long>> attrUndercountDependencies = new HashMap<>();
             Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
             Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasUndercountDependencies = new HashMap<>();
             for (CoreTransaction.Data concurrent : concurrentTxn) {
                 txn.graphMgr.data().attributesCreated().intersect(concurrent.graphMgr.data().attributesCreated())
-                        .forEachRemaining(attribute ->
-                                attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
+                        .forEachRemaining(attribute -> {
+                                    attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id);
+                                    txnDependencies.add(concurrent);
+                                }
                         );
                 txn.graphMgr.data().attributesDeleted().intersect(concurrent.graphMgr.data().attributesDeleted())
-                        .forEachRemaining(attribute ->
-                                attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
-                        );
+                        .forEachRemaining(attribute -> {
+                            attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id);
+                            txnDependencies.add(concurrent);
+                        });
                 iterate(txn.graphMgr.data().hasEdgeCreated()).filter(concurrent.graphMgr.data().hasEdgeCreated()::contains)
-                        .forEachRemaining(edge ->
-                                hasOvercountDependencies.computeIfAbsent(
-                                        pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
-                                        (key) -> new HashSet<>()
-                                ).add(concurrent.id)
-                        );
+                        .forEachRemaining(edge -> {
+                            hasOvercountDependencies.computeIfAbsent(
+                                    pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
+                                    (key) -> new HashSet<>()
+                            ).add(concurrent.id);
+                            txnDependencies.add(concurrent);
+                        });
                 iterate(txn.graphMgr.data().hasEdgeDeleted()).filter(concurrent.graphMgr.data().hasEdgeDeleted()::contains)
-                        .forEachRemaining(edge ->
-                                hasUndercountDependencies.computeIfAbsent(
-                                        pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
-                                        (key) -> new HashSet<>()
-                                ).add(concurrent.id)
-                        );
+                        .forEachRemaining(edge -> {
+                            hasUndercountDependencies.computeIfAbsent(
+                                    pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
+                                    (key) -> new HashSet<>()
+                            ).add(concurrent.id);
+                            txnDependencies.add(concurrent);
+                        });
             }
 
             attrOvercountDependencies.forEach((attr, txs) ->
@@ -835,6 +853,14 @@ public class CoreDatabase implements TypeDB.Database {
             hasUndercountDependencies.forEach((has, txs) ->
                     txn.dataStorage.putUntracked(StatisticsKey.MisCount.hasConditionalUndercount(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
             );
+
+            txnDependencies.forEach(dependency -> {
+                dependencies.compute(txn, (t, deps) -> {
+                    if (deps == null) deps = new HashSet<>();
+                    deps.add(dependency);
+                    return deps;
+                });
+            });
         }
     }
 

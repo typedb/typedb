@@ -226,6 +226,8 @@ public class DataImporter {
                 commitBatch();
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
             } finally {
                 transaction.close();
             }

@@ -489,7 +489,6 @@ public class ThingGraph {
         thingsByIID.clear();
         thingsByTypeIID.clear();
         attributesByIID.clear();
-        committedIIDs.clear();
         statistics.clear();
     }
 
