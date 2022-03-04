@@ -78,8 +78,8 @@ public class ThingGraph {
     private final ConcurrentMap<VertexIID.Type, ConcurrentSkipListSet<ThingVertex.Write>> thingsByTypeIID;
     private final Map<VertexIID.Thing, VertexIID.Thing> committedIIDs;
     private final Statistics statistics;
-    private final ConcurrentSkipListSet<AttributeVertex.Write<?>> attributesCreated;
-    private final ConcurrentSkipListSet<AttributeVertex.Write<?>> attributesDeleted;
+    private final ConcurrentSet<AttributeVertex.Write<?>> attributesCreated;
+    private final ConcurrentSet<AttributeVertex.Write<?>> attributesDeleted;
     private final ConcurrentSet<ThingEdge> hasEdgeCreated;
     private final ConcurrentSet<ThingEdge> hasEdgeDeleted;
     private boolean isModified;
@@ -93,8 +93,8 @@ public class ThingGraph {
         thingsByTypeIID = new ConcurrentHashMap<>();
         statistics = new Statistics(typeGraph, storage);
         committedIIDs = new HashMap<>();
-        attributesCreated = new ConcurrentSkipListSet<>();
-        attributesDeleted = new ConcurrentSkipListSet<>();
+        attributesCreated = new ConcurrentSet<>();
+        attributesDeleted = new ConcurrentSet<>();
         hasEdgeCreated = new ConcurrentSet<>();
         hasEdgeDeleted = new ConcurrentSet<>();
     }
@@ -498,12 +498,12 @@ public class ThingGraph {
                 .map(entry -> new Pair<>(entry.getKey().bytes(), entry.getValue().bytes()));
     }
 
-    public Forwardable<AttributeVertex.Write<?>, Order.Asc> attributesCreated() {
-        return iterateSorted(attributesCreated, ASC);
+    public Set<AttributeVertex.Write<?>> attributesCreated() {
+        return attributesCreated;
     }
 
-    public Forwardable<AttributeVertex.Write<?>, Order.Asc> attributesDeleted() {
-        return iterateSorted(attributesDeleted, ASC);
+    public Set<AttributeVertex.Write<?>> attributesDeleted() {
+        return attributesDeleted;
     }
 
     public Set<ThingEdge> hasEdgeCreated() {

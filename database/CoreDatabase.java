@@ -48,6 +48,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -490,13 +492,34 @@ public class CoreDatabase implements TypeDB.Database {
             commitState.put(transaction, CommitState.UNCOMMITTED);
         }
 
+        long commitTimeNanos = 0;
+        long mayViolateNanos = 0;
+        long validationNanos = 0;
+        long concurrent = 0;
+        long commits = 0;
+
         public void validateAndStartCommit(CoreTransaction.Data txn) {
             assert !isolatedConcurrentCommits.containsKey(txn);
             synchronized (this) {
+                commits++;
+                Instant start = Instant.now();
                 Set<CoreTransaction.Data> transactions = mayViolateIsolation(txn);
+                Instant txns = Instant.now();
                 transactions.forEach(other -> validateIsolation(txn, other));
+                Instant validation = Instant.now();
                 commitStarted(txn);
                 isolatedConcurrentCommits.put(txn, transactions);
+                Instant end = Instant.now();
+                commitTimeNanos += Duration.between(start, end).toNanos();
+                mayViolateNanos += Duration.between(start, txns).toNanos();
+                validationNanos += Duration.between(txns, validation).toNanos();
+                concurrent += transactions.size();
+                if (commits % 1000 == 0) {
+                    LOG.warn("Mean synchronized nanos: " + (commitTimeNanos / (double) commits));
+                    LOG.warn("Mean get mayViolateIsolation nanos: " + (mayViolateNanos / (double) commits));
+                    LOG.warn("Mean validation nanos: " + (validationNanos / (double) commits));
+                    LOG.warn("Mean validated transactions: " + (concurrent / (double) commits));
+                }
             }
         }
 
@@ -690,7 +713,7 @@ public class CoreDatabase implements TypeDB.Database {
         private ConcurrentMap<CoreTransaction.Data, Set<CoreTransaction.Data>> dependencies;
 
         StatisticsCompensator() {
-            executor = Executors.newSingleThreadExecutor(NamedThreadFactory.create(name + "::statistics-manager"));
+            executor = Executors.newSingleThreadExecutor(NamedThreadFactory.create(name + "::statistics-compensator"));
             dependencies = new ConcurrentHashMap<>();
         }
 
@@ -704,11 +727,6 @@ public class CoreDatabase implements TypeDB.Database {
             compensate();
             LOG.debug("Statistics are up to date.");
         }
-
-        // TODO will we have separate commit and close?
-//        void transactionCommitted(long txnID) {
-//            executor.submit(() -> updateMiscounts(txnID));
-//        }
 
         public CompletableFuture<Void> mayCompensate(CoreTransaction.Data transaction) {
             if (dependencies.containsKey(transaction)) {
@@ -769,16 +787,16 @@ public class CoreDatabase implements TypeDB.Database {
                 // TODO: when do we clean up a transaction ID committed key?
             }
 
-            try (CoreTransaction.Data txn = session.transaction(WRITE)) {
-                LOG.warn("\nTotal thing count: " + txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootThingType()));
-                long hasCount = 0;
-                NavigableSet<TypeVertex> allTypes = txn.graphMgr.schema().getSubtypes(txn.graphMgr.schema().rootThingType());
-                Set<TypeVertex> attributes = txn.graphMgr.schema().getSubtypes(txn.graphMgr.schema().rootAttributeType());
-                for (TypeVertex attr : attributes) {
-                    hasCount += txn.graphMgr.data().stats().hasEdgeSum(allTypes, attr);
-                }
-                LOG.warn("Total has count: " + hasCount);
-            }
+//            try (CoreTransaction.Data txn = session.transaction(WRITE)) {
+//                LOG.warn("\nTotal thing count: " + txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootThingType()));
+//                long hasCount = 0;
+//                NavigableSet<TypeVertex> allTypes = txn.graphMgr.schema().getSubtypes(txn.graphMgr.schema().rootThingType());
+//                Set<TypeVertex> attributes = txn.graphMgr.schema().getSubtypes(txn.graphMgr.schema().rootAttributeType());
+//                for (TypeVertex attr : attributes) {
+//                    hasCount += txn.graphMgr.data().stats().hasEdgeSum(allTypes, attr);
+//                }
+//                LOG.warn("Total has count: " + hasCount);
+//            }
         }
 
         private boolean anyCommitted(Set<Long> txnIDs, RocksStorage.Data dataStorage) {
@@ -812,33 +830,41 @@ public class CoreDatabase implements TypeDB.Database {
             Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
             Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasUndercountDependencies = new HashMap<>();
             for (CoreTransaction.Data concurrent : concurrentTxn) {
-                txn.graphMgr.data().attributesCreated().intersect(concurrent.graphMgr.data().attributesCreated())
-                        .forEachRemaining(attribute -> {
-                                    attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id);
-                                    txnDependencies.add(concurrent);
-                                }
-                        );
-                txn.graphMgr.data().attributesDeleted().intersect(concurrent.graphMgr.data().attributesDeleted())
-                        .forEachRemaining(attribute -> {
-                            attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id);
-                            txnDependencies.add(concurrent);
-                        });
-                iterate(txn.graphMgr.data().hasEdgeCreated()).filter(concurrent.graphMgr.data().hasEdgeCreated()::contains)
-                        .forEachRemaining(edge -> {
-                            hasOvercountDependencies.computeIfAbsent(
-                                    pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
-                                    (key) -> new HashSet<>()
-                            ).add(concurrent.id);
-                            txnDependencies.add(concurrent);
-                        });
-                iterate(txn.graphMgr.data().hasEdgeDeleted()).filter(concurrent.graphMgr.data().hasEdgeDeleted()::contains)
-                        .forEachRemaining(edge -> {
-                            hasUndercountDependencies.computeIfAbsent(
-                                    pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
-                                    (key) -> new HashSet<>()
-                            ).add(concurrent.id);
-                            txnDependencies.add(concurrent);
-                        });
+                if (!txn.graphMgr.data().attributesCreated().isEmpty() && !concurrent.graphMgr.data().attributesCreated().isEmpty()) {
+                    iterate(txn.graphMgr.data().attributesCreated()).filter(concurrent.graphMgr.data().attributesCreated()::contains)
+                            .forEachRemaining(attribute -> {
+                                        attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id);
+                                        txnDependencies.add(concurrent);
+                                    }
+                            );
+                }
+                if (!txn.graphMgr.data().attributesDeleted().isEmpty() && !concurrent.graphMgr.data().attributesDeleted().isEmpty()) {
+                    iterate(txn.graphMgr.data().attributesDeleted()).filter(concurrent.graphMgr.data().attributesDeleted()::contains)
+                            .forEachRemaining(attribute -> {
+                                attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id);
+                                txnDependencies.add(concurrent);
+                            });
+                }
+                if (!txn.graphMgr.data().hasEdgeCreated().isEmpty() && !concurrent.graphMgr.data().hasEdgeCreated().isEmpty()) {
+                    iterate(txn.graphMgr.data().hasEdgeCreated()).filter(concurrent.graphMgr.data().hasEdgeCreated()::contains)
+                            .forEachRemaining(edge -> {
+                                hasOvercountDependencies.computeIfAbsent(
+                                        pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
+                                        (key) -> new HashSet<>()
+                                ).add(concurrent.id);
+                                txnDependencies.add(concurrent);
+                            });
+                }
+                if (!txn.graphMgr.data().hasEdgeDeleted().isEmpty() && !concurrent.graphMgr.data().hasEdgeDeleted().isEmpty()) {
+                    iterate(txn.graphMgr.data().hasEdgeDeleted()).filter(concurrent.graphMgr.data().hasEdgeDeleted()::contains)
+                            .forEachRemaining(edge -> {
+                                hasUndercountDependencies.computeIfAbsent(
+                                        pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
+                                        (key) -> new HashSet<>()
+                                ).add(concurrent.id);
+                                txnDependencies.add(concurrent);
+                            });
+                }
             }
 
             attrOvercountDependencies.forEach((attr, txs) ->
