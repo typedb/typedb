@@ -767,8 +767,10 @@ public class ThingGraph {
         private void clear() {
             persistedVertexCount.clear();
             deltaVertexCount.clear();
+            inferredVertexCount.clear();
             persistedHasEdgeCount.clear();
             deltaHasEdgeCount.clear();
+            inferredHasEdgeCount.clear();
         }
     }
 }
