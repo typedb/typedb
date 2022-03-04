@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.Sink;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
@@ -133,7 +134,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
 
     }
 
-    public static class EntryPoint extends Sink<ConceptMap> {  // TODO: Consider collapsing Sink and EntryPoint into ReasonerProducer
+    public static class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Finishable<ConceptMap> {  // TODO: Consider collapsing Sink and EntryPoint into ReasonerProducer
 
         private final Consumer<ConceptMap> answerConsumer;
         private final Consumer<Throwable> exceptionConsumer;
@@ -184,12 +185,13 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
             exceptionConsumer.accept(e);
         }
 
-        public void done() {
-            onDone.accept(true);
-        }
-
         public boolean isPulling() {
             return isPulling;
+        }
+
+        @Override
+        public void onFinished() {
+            onDone.accept(true);
         }
     }
 

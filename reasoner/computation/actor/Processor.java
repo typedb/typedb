@@ -150,7 +150,7 @@ public abstract class Processor<INPUT, OUTPUT,
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    protected void onDone() {
+    protected void onFinished(Receiver.Finishable<?> finishable) {
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 

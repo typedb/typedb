@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
+import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.rocks.RocksSession;
@@ -134,7 +135,7 @@ public class ResolutionTest {
                 LinkedBlockingQueue<ConceptMap> responses = new LinkedBlockingQueue<>();
                 LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
 
-                EntryPoint reasonerEntryPoint = new EntryPoint(responses::add, exceptions::add, l -> {}, "EntryPoint");
+                EntryPoint reasonerEntryPoint = new EntryPoint(registry.monitor(), responses::add, exceptions::add, l -> {}, "EntryPoint");
                 try {
                     registry.createRootConjunctionController(conjunctionPattern, new HashSet<>(), reasonerEntryPoint);
                 } catch (TypeDBException e) {
@@ -483,11 +484,11 @@ public class ResolutionTest {
         public AtomicBoolean doneReceived;
         public EntryPoint entryPoint;
 
-        AnswerProducer() {
+        AnswerProducer(Monitor.MonitorRef monitor) {
             responses = new LinkedBlockingQueue<>();
             exceptions = new LinkedBlockingQueue<>();
             doneReceived = new AtomicBoolean(false);
-            entryPoint = new EntryPoint(this::onAnswer, exceptions::add, this::receivedDone, "EntryPoint");
+            entryPoint = new EntryPoint(monitor, this::onAnswer, exceptions::add, this::receivedDone, "EntryPoint");
         }
 
         void onAnswer(ConceptMap answer) {
@@ -513,7 +514,7 @@ public class ResolutionTest {
             Tracer.get().startDefaultTrace();
         }
         Registry registry = transaction.reasoner().controllerRegistry();
-        AnswerProducer ans = new AnswerProducer();
+        AnswerProducer ans = new AnswerProducer(registry.monitor());
         ans.getNextAnswer();
         try {
              registry.createRootDisjunctionController(disjunction, filter, ans.entryPoint);
@@ -534,7 +535,7 @@ public class ResolutionTest {
         Set<Identifier.Variable.Retrievable> filter = new HashSet<>();
         iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName).map(Identifier.Variable::asName)
                 .forEachRemaining(filter::add);
-        AnswerProducer ans = new AnswerProducer();
+        AnswerProducer ans = new AnswerProducer(registry.monitor());
         ans.getNextAnswer();
         try {
             registry.createRootConjunctionController(conjunction, filter, ans.entryPoint);

@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.CompoundStream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
@@ -86,6 +87,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
             super(driver, controller, monitorRef, bounds, plan, name);
             this.filter = filter;
             this.reasonerEntryPoint = reasonerEntryPoint;
+            monitor().registerRoot(driver(), reasonerEntryPoint);
         }
 
         @Override
@@ -105,10 +107,11 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         }
 
         @Override
-        protected void onDone() {
+        protected void onFinished(Reactive.Receiver.Finishable<?> finishable) {
             assert !done;
 //            done = true;
-            reasonerEntryPoint.done();
+            assert finishable == reasonerEntryPoint;
+            finishable.onFinished();
         }
     }
 }

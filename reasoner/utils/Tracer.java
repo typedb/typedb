@@ -101,15 +101,23 @@ public final class Tracer {
         addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
     }
 
-    public <R> void registerPath(@Nullable Provider<R> provider, Receiver<R> receiver, Actor.Driver<Monitor> monitor) {
+    public <R> void registerRoot(Receiver.Finishable<R> root, Actor.Driver<Monitor> monitor) {
+        addMessage(simpleClassId(root), monitor.name(), defaultTrace, EdgeType.ROOT, "reg_root");
+    }
+
+    public <R> void registerPath(Receiver<R> receiver, @Nullable Provider<R> provider, Actor.Driver<Monitor> monitor) {
         String providerName;
         if (provider == null) providerName = "entry";  // TODO: Prevent provider from ever being null
         else providerName = simpleClassId(provider);
         addMessage(simpleClassId(receiver), monitor.name(), defaultTrace, EdgeType.REGISTER, "reg_" + providerName);
     }
 
-    public <R> void registerTerminus(Provider<R> provider, Actor.Driver<Monitor> monitor) {
-        addMessage(simpleClassId(provider), monitor.name(), defaultTrace, EdgeType.TERMINUS, "terminate");
+    public <R> void registerSource(Provider<R> source, Actor.Driver<Monitor> monitor) {
+        addMessage(simpleClassId(source), monitor.name(), defaultTrace, EdgeType.SOURCE, "reg_source");
+    }
+
+    public <R> void sourceFinished(Provider<R> provider, Actor.Driver<Monitor> monitor) {
+        addMessage(simpleClassId(provider), monitor.name(), defaultTrace, EdgeType.SOURCE_FINISH, "source_finished");
     }
 
     public <R> void createAnswer(int numCreated, Provider<R> provider, Actor.Driver<Monitor> monitor) {
@@ -261,9 +269,11 @@ public final class Tracer {
     enum EdgeType {
         PULL("blue"),
         RECEIVE("green"),
+        ROOT("black"),
         REGISTER("orange"),
-        TERMINUS("orange3"),
-        CREATE("orangered"),
+        SOURCE("purple"),
+        SOURCE_FINISH("brown"),
+        CREATE("cyan"),
         CONSUME("red");
 
         private final String colour;

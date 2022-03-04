@@ -58,6 +58,12 @@ public interface Reactive {
 
         }
 
+        interface Finishable<T> extends Receiver<T> {
+
+            void onFinished();
+
+        }
+
     }
 
     interface Stream<INPUT, OUTPUT> extends Receiver.Subscriber<INPUT>, Provider.Publisher<OUTPUT> {

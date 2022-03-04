@@ -69,21 +69,21 @@ public class RootDisjunctionController
             extends DisjunctionController.DisjunctionProcessor<RootDisjunctionController, RootDisjunctionProcessor> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
-        private final EntryPoint reasonerEndpoint;
+        private final EntryPoint reasonerEntryPoint;
 
         protected RootDisjunctionProcessor(Driver<RootDisjunctionProcessor> driver,
                                            Driver<RootDisjunctionController> controller, Monitor.MonitorRef monitorRef, Disjunction disjunction,
                                            ConceptMap bounds, Set<Identifier.Variable.Retrievable> filter,
-                                           EntryPoint reasonerEndpoint, String name) {
+                                           EntryPoint reasonerEntryPoint, String name) {
             super(driver, controller, monitorRef, disjunction, bounds, name);
             this.filter = filter;
-            this.reasonerEndpoint = reasonerEndpoint;
+            this.reasonerEntryPoint = reasonerEntryPoint;
         }
 
         @Override
         public void setUp() {
             super.setUp();
-            outlet().publishTo(reasonerEndpoint);
+            outlet().publishTo(reasonerEntryPoint);
         }
 
         @Override
@@ -94,14 +94,15 @@ public class RootDisjunctionController
 
         @Override
         protected boolean isPulling() {
-            return reasonerEndpoint.isPulling();
+            return reasonerEntryPoint.isPulling();
         }
 
         @Override
-        protected void onDone() {
+        protected void onFinished(Reactive.Receiver.Finishable<?> finishable) {
             assert !done;
 //            done = true;
-            reasonerEndpoint.done();
+            assert finishable == reasonerEntryPoint;
+            finishable.onFinished();
         }
     }
 }

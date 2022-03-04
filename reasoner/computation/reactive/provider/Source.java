@@ -33,6 +33,7 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
         super(monitor, groupName);
         this.iteratorSupplier = iteratorSupplier;
         this.exhausted = false;
+        monitor().registerSource(this);
     }
 
     public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier,
@@ -51,7 +52,7 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
                 receiver.receive(this, iterator.next());
             } else {
                 exhausted = true;
-                monitor().registerTerminus(this);
+                monitor().sourceFinished(this);
             }
         }
     }
