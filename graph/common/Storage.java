@@ -88,16 +88,12 @@ public interface Storage {
 
         void putTracked(Key key, ByteArray value);
 
-        void putTracked(Key key, ByteArray value, boolean checkConsistency);
-
         void deleteTracked(Key key);
 
         void mergeUntracked(Key key, ByteArray value);
 
         // TODO: investigate why replacing ByteArray with Key for tracking makes navigable set intersection super slow
         void trackModified(ByteArray key);
-
-        void trackModified(ByteArray key, boolean checkConsistency);
 
         void trackExclusiveBytes(ByteArray bytes);
     }

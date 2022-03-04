@@ -46,8 +46,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentNavigableMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -379,7 +377,7 @@ public abstract class RocksStorage implements Storage {
         private final CoreDatabase database;
         private final KeyGenerator.Data dataKeyGenerator;
 
-        private final ConcurrentNavigableMap<ByteArray, Boolean> modifiedKeys;
+        private final ConcurrentSkipListSet<ByteArray> modifiedKeys;
         private final ConcurrentSkipListSet<ByteArray> deletedKeys;
         private final ConcurrentSkipListSet<ByteArray> exclusiveBytes; // these are not real keys, just reserved bytes
         private final long snapshotStart;
@@ -391,7 +389,7 @@ public abstract class RocksStorage implements Storage {
             this.database = database;
             this.dataKeyGenerator = database.dataKeyGenerator();
             this.snapshotStart = snapshot.getSequenceNumber();
-            this.modifiedKeys = new ConcurrentSkipListMap<>();
+            this.modifiedKeys = new ConcurrentSkipListSet<>();
             this.deletedKeys = new ConcurrentSkipListSet<>();
             this.exclusiveBytes = new ConcurrentSkipListSet<>();
             this.snapshotEnd = null;
@@ -410,14 +408,8 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void putTracked(Key key, ByteArray value) {
-            putTracked(key, value, true);
-        }
-
-        // TODO: we don't need checkConsistency anymore
-        @Override
-        public void putTracked(Key key, ByteArray value, boolean checkConsistency) {
             putUntracked(key, value);
-            trackModified(key.bytes(), checkConsistency);
+            trackModified(key.bytes());
         }
 
         @Override
@@ -455,13 +447,8 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void trackModified(ByteArray key) {
-            trackModified(key, true);
-        }
-
-        @Override
-        public void trackModified(ByteArray key, boolean checkConsistency) {
             assert isOpen();
-            this.modifiedKeys.put(key, checkConsistency);
+            this.modifiedKeys.add(key);
             this.deletedKeys.remove(key);
         }
 
@@ -509,42 +496,15 @@ public abstract class RocksStorage implements Storage {
         }
 
         public boolean modifyDeleteConflict(RocksStorage.Data otherStorage) {
-            NavigableSet<ByteArray> active = modifiedKeys();
-            NavigableSet<ByteArray> other = otherStorage.deletedKeys();
-            if (active.isEmpty()) return false;
-            ByteArray currentKey = active.first();
-            while (currentKey != null) {
-                ByteArray otherKey = other.ceiling(currentKey);
-                if (otherKey != null && otherKey.equals(currentKey)) {
-                    if (isModifiedValidatedKey(currentKey)) return true;
-                    else otherKey = other.higher(currentKey);
-                }
-                currentKey = otherKey;
-                NavigableSet<ByteArray> tmp = other;
-                other = active;
-                active = tmp;
-            }
-            return false;
+            return hasIntersection(modifiedKeys, otherStorage.deletedKeys);
         }
 
         public boolean deleteModifyConflict(RocksStorage.Data otherStorage) {
-            return hasIntersection(deletedKeys, otherStorage.modifiedKeys());
+            return hasIntersection(deletedKeys, otherStorage.modifiedKeys);
         }
 
         public boolean exclusiveCreateConflict(RocksStorage.Data otherStorage) {
             return hasIntersection(exclusiveBytes, otherStorage.exclusiveBytes);
-        }
-
-        private NavigableSet<ByteArray> deletedKeys() {
-            return deletedKeys;
-        }
-
-        private NavigableSet<ByteArray> modifiedKeys() {
-            return modifiedKeys.keySet();
-        }
-
-        private boolean isModifiedValidatedKey(ByteArray key) {
-            return modifiedKeys.getOrDefault(key, false);
         }
     }
 }
