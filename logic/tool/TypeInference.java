@@ -176,10 +176,9 @@ public class TypeInference {
             this.rolePlayerToInference = new HashMap<>();
             this.nextGeneratedID = largestAnonymousVar(conjunction) + 1;
             conjunction.variables().forEach(this::register);
-            traversal.filter(set(
-                    inferenceToOriginal.keySet(),
-                    iterate(rolePlayerToInference.values()).map(var -> var.id().asRetrievable()).toSet()
-            ));
+            traversal.filter(iterate(inferenceToOriginal.keySet())
+                    .link(iterate(rolePlayerToInference.values()).map(var -> var.id().asRetrievable())).toSet()
+            );
         }
 
         private FunctionalIterator<Map<Identifier.Variable.Name, Label>> typePermutations(Set<Identifier.Variable.Name> filter) {
@@ -297,7 +296,6 @@ public class TypeInference {
 
         private void registerValueType(TypeVariable resolver, ValueTypeConstraint valueTypeConstraint) {
             traversal.valueType(resolver.id(), valueTypeConstraint.valueType());
-            restrictTypesByValueType(resolver, set(Encoding.ValueType.of(valueTypeConstraint.valueType())));
         }
 
         private TypeVariable register(ThingVariable var) {
@@ -332,11 +330,8 @@ public class TypeInference {
 
             Set<Encoding.ValueType> valueTypes = iterate(predicateValueTypes)
                     .flatMap(valueType -> iterate(valueType.comparables())).toSet();
-            if (!valueTypes.isEmpty()) {
-                restrictValueTypes(inferenceVar.id(), iterate(valueTypes));
-                restrictTypesByValueType(inferenceVar, traversal.structure().typeVertex(inferenceVar.id()).props().valueTypes());
-            }
-            registerSubAttribute(inferenceVar);
+            if (!valueTypes.isEmpty()) restrictValueTypes(inferenceVar.id(), iterate(valueTypes));
+            else registerSubAttribute(inferenceVar);
         }
 
         private void registerIsa(TypeVariable inferenceVar, IsaConstraint isaConstraint) {
@@ -369,7 +364,6 @@ public class TypeInference {
         private void registerHas(TypeVariable inferenceVar, HasConstraint hasConstraint) {
             TypeVariable attrVar = register(hasConstraint.attribute());
             traversal.owns(inferenceVar.id(), attrVar.id(), false);
-            registerSubAttribute(attrVar);
         }
 
         private void registerRelation(TypeVariable inferenceVar, RelationConstraint constraint) {
@@ -441,32 +435,6 @@ public class TypeInference {
                 conjunction.setCoherent(false);
                 throw TypeDBException.of(UNSATISFIABLE_PATTERN_VARIABLE_VALUE, conjunction, inferenceToOriginal.get(id.asRetrievable()));
             }
-        }
-
-        private void restrictTypesByValueType(TypeVariable resolver, Set<Encoding.ValueType> valueTypes) {
-            FunctionalIterator<TypeVertex> attrTypes = empty();
-            for (Encoding.ValueType valueType : valueTypes) {
-                switch (valueType) {
-                    case STRING:
-                        attrTypes = attrTypes.link(graphMgr.schema().attributeTypes(Encoding.ValueType.STRING));
-                        break;
-                    case LONG:
-                        attrTypes = attrTypes.link(graphMgr.schema().attributeTypes(Encoding.ValueType.LONG));
-                        break;
-                    case DOUBLE:
-                        attrTypes = attrTypes.link(graphMgr.schema().attributeTypes(Encoding.ValueType.DOUBLE));
-                        break;
-                    case BOOLEAN:
-                        attrTypes = attrTypes.link(graphMgr.schema().attributeTypes(Encoding.ValueType.BOOLEAN));
-                        break;
-                    case DATETIME:
-                        attrTypes = attrTypes.link(graphMgr.schema().attributeTypes(Encoding.ValueType.DATETIME));
-                        break;
-                    default:
-                        throw TypeDBException.of(ILLEGAL_STATE);
-                }
-            }
-            restrictTypes(resolver.id(), attrTypes.map(TypeVertex::properLabel));
         }
 
         private Retrievable newID() {
