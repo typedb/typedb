@@ -66,6 +66,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     boolean isModified;
     String label;
     String scope;
+    Label properLabel;
     Boolean isAbstract; // needs to be declared as the Boolean class
     Encoding.ValueType valueType;
     Pattern regex;
@@ -157,7 +158,12 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     @Override
     public Label properLabel() {
-        return Label.of(label, scope);
+        if (properLabel == null) computeProperLabel();
+        return properLabel;
+    }
+
+    void computeProperLabel() {
+        this.properLabel = Label.of(label, scope);
     }
 
     protected abstract TypeAdjacency.In newInAdjacency();
@@ -289,6 +295,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             assert !isDeleted();
             graph.update(this, this.label, scope, label, scope);
             this.label = label;
+            computeProperLabel();
         }
 
         @Override
@@ -296,6 +303,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             assert !isDeleted();
             graph.update(this, label, this.scope, label, scope);
             this.scope = scope;
+            computeProperLabel();
         }
 
         @Override
@@ -438,6 +446,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             graph.storage().deleteUntracked(IndexIID.Type.Label.of(this.label, scope));
             graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope), iid.bytes());
             this.label = label;
+            computeProperLabel();
         }
 
         @Override
@@ -448,6 +457,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             graph.storage().deleteUntracked(IndexIID.Type.Label.of(label, this.scope));
             graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope), iid.bytes());
             this.scope = scope;
+            computeProperLabel();
         }
 
         @Override
