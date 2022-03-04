@@ -34,7 +34,6 @@ host_compatible_java_test(
         "//test/integration/util:util",
 
         # External dependencies from Vaticle
-        "@vaticle_typeql_lang_java//query:query",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
 )
