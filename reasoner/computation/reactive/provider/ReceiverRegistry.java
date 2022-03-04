@@ -67,7 +67,6 @@ public abstract class ReceiverRegistry<R> {
 
         @Override
         public boolean addReceiver(Reactive.Receiver<R> receiver) {
-            monitor.registerPath(provider, receiver);
             assert this.receiver == null;
             this.receiver = receiver;
             return false;
@@ -109,9 +108,7 @@ public abstract class ReceiverRegistry<R> {
 
         @Override
         public boolean addReceiver(Reactive.Receiver<R> receiver) {
-            boolean newReceiver = receivers.add(receiver);
-            if (newReceiver) monitor.registerPath(provider, receiver);
-            return newReceiver;
+            return receivers.add(receiver);
         }
 
         public Set<Reactive.Receiver<R>> pullingReceivers() {

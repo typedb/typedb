@@ -59,6 +59,7 @@ public abstract class ProviderRegistry<R> {
 
         @Override
         public void add(Reactive.Provider<R> provider) {
+            assert provider != null;
             assert this.provider == null || provider == this.provider;  // TODO: Tighten this to allow adding only once
             if (this.provider == null) monitor.registerPath(provider, receiver);
             this.provider = provider;
@@ -114,6 +115,7 @@ public abstract class ProviderRegistry<R> {
 
         @Override
         public void add(Reactive.Provider<R> provider) {
+            assert provider != null;
             if (providerPullState.putIfAbsent(provider, false) == null) monitor.registerPath(provider, receiver);
         }
 

@@ -105,7 +105,7 @@ public final class Tracer {
         String providerName;
         if (provider == null) providerName = "entry";  // TODO: Prevent provider from ever being null
         else providerName = simpleClassId(provider);
-        addMessage(providerName, monitor.name(), defaultTrace, EdgeType.REGISTER, "reg_" + simpleClassId(receiver));
+        addMessage(simpleClassId(receiver), monitor.name(), defaultTrace, EdgeType.REGISTER, "reg_" + providerName);
     }
 
     public <R> void registerTerminus(Provider<R> provider, Actor.Driver<Monitor> monitor) {
