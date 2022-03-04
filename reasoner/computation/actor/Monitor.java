@@ -18,8 +18,10 @@
 
 package com.vaticle.typedb.core.reasoner.computation.actor;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,9 +32,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+
 public class Monitor extends Actor<Monitor> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
+    private final Registry registry;
     private boolean terminated;
     // TODO: Reactive elements from inside other actors shouldn't have been sent here over an actor boundary.
     private final Map<Reactive, Set<Reactive.Provider<?>>> paths;
@@ -41,8 +47,8 @@ public class Monitor extends Actor<Monitor> {
     private final Set<Reactive.Provider<?>> sources;
     private final Set<Reactive.Provider<?>> finishedSources;
 
-    public Monitor(Driver<Monitor> driver, String name) {
-        super(driver, name);
+    public Monitor(Driver<Monitor> driver, Registry registry) {
+        super(driver, Monitor.class.getSimpleName()); this.registry = registry;
         this.paths = new HashMap<>();
         this.reactiveGraphMembership = new HashMap<>();
         this.reactiveAnswerCounts = new HashMap<>();
@@ -53,8 +59,9 @@ public class Monitor extends Actor<Monitor> {
     private <R> void registerRoot(Driver<? extends Processor<R, ?, ?, ?>> processor, Reactive.Receiver.Finishable<R> receiver) {
         // We assume that this is called before the root has any connected paths registered
         // TODO: What if a new root is registered which shares paths with an already complete ReactiveGraph? It should be able to find all of its contained paths
+
         ReactiveGraph reactiveGraph = new ReactiveGraph(processor, receiver);
-        reactiveGraphMembership.computeIfAbsent(receiver, r -> new HashSet<>()).add(reactiveGraph);
+        addToGraphs(receiver, set(reactiveGraph));
     }
 
     private <R> void registerPath(Reactive.Receiver<R> receiver, Reactive.Provider<R> provider) {
@@ -63,21 +70,24 @@ public class Monitor extends Actor<Monitor> {
         if (receiverGraphs != null) {
             addToGraphs(provider, receiverGraphs);
             propagateReactiveGraphs(provider, receiverGraphs);
+            // checkFinished(receiverGraphs); // TODO: In case a root connects to an already complete graph it should terminate straight away - we need to check for that which means we need to check eagerly here. Except we can't do this or we'll terminate straight away.
         }
     }
 
-    void addToGraphs(Reactive.Provider<?> provider, Set<ReactiveGraph> reactiveGraphs) {
-        Set<ReactiveGraph> providerGraphs = reactiveGraphMembership.computeIfAbsent(provider, r -> new HashSet<>());
+    void addToGraphs(Reactive reactive, Set<ReactiveGraph> reactiveGraphs) {
+        Set<ReactiveGraph> providerGraphs = reactiveGraphMembership.computeIfAbsent(reactive, r -> new HashSet<>());
         providerGraphs.addAll(reactiveGraphs);
-        reactiveGraphs.forEach(g -> g.reactives.add(provider));
+        reactiveGraphs.forEach(g -> g.reactives.add(reactive));
     }
 
     private <R> void propagateReactiveGraphs(Reactive.Provider<R> provider, Set<ReactiveGraph> parentGraphs) {
         Set<Reactive.Provider<?>> children = paths.get(provider);
-        children.forEach(child -> {
-            addToGraphs(child, parentGraphs);
-            propagateReactiveGraphs(child, parentGraphs);
-        });
+        if (children != null) {
+            children.forEach(child -> {
+                addToGraphs(child, parentGraphs);
+                propagateReactiveGraphs(child, parentGraphs);
+            });
+        }
     }
 
     private <R> void registerSource(Reactive.Provider<R> source) {
@@ -92,13 +102,13 @@ public class Monitor extends Actor<Monitor> {
     private <R> void createAnswer(int numCreated, Reactive.Provider<R> provider) {
         reactiveAnswerCounts.putIfAbsent(provider, 0);
         reactiveAnswerCounts.computeIfPresent(provider, (r, c) -> c + numCreated);
-        checkFinished(reactiveGraphMembership.get(provider));
+        checkFinished(reactiveGraphMembership.getOrDefault(provider, set()));
     }
 
     private <R> void consumeAnswer(Reactive.Receiver<R> receiver) {
-        Integer newCount = reactiveAnswerCounts.computeIfPresent(receiver, (r, c) -> c - 1);
-        assert newCount != null;
-        checkFinished(reactiveGraphMembership.get(receiver));
+        reactiveAnswerCounts.putIfAbsent(receiver, 0);
+        reactiveAnswerCounts.computeIfPresent(receiver, (r, c) -> c - 1);
+        checkFinished(reactiveGraphMembership.getOrDefault(receiver, set()));
     }
 
     private void checkFinished(Set<ReactiveGraph> reactiveGraphs) {
@@ -115,7 +125,6 @@ public class Monitor extends Actor<Monitor> {
             this.rootProcessor = rootProcessor;
             this.root = root;
             this.reactives = new HashSet<>();
-            this.reactives.add(root);
         }
 
         void checkFinished(Map<Reactive, Integer> reactiveAnswerCounts, Set<Reactive.Provider<?>> sources,
@@ -134,7 +143,7 @@ public class Monitor extends Actor<Monitor> {
 
         int count(Map<Reactive, Integer> reactiveAnswerCounts) {
             int count = 0;
-            for (Reactive reactive : reactives) count += reactiveAnswerCounts.get(reactive);
+            for (Reactive reactive : reactives) count += reactiveAnswerCounts.getOrDefault(reactive, 0);
             assert count >= 0;
             return count;
         }
@@ -143,7 +152,18 @@ public class Monitor extends Actor<Monitor> {
 
     @Override
     protected void exception(Throwable e) {
-
+        if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent()) {
+            String code = ((TypeDBException) e).code().get();
+            if (code.equals(RESOURCE_CLOSED.code())) {
+                LOG.debug("Controller interrupted by resource close: {}", e.getMessage());
+                registry.terminate(e);
+                return;
+            } else {
+                LOG.debug("Controller interrupted by TypeDB exception: {}", e.getMessage());
+            }
+        }
+        LOG.error("Actor exception", e);
+        registry.terminate(e);
     }
 
     public void terminate(Throwable cause) {
@@ -180,8 +200,7 @@ public class Monitor extends Actor<Monitor> {
         }
 
         public <R> void createAnswer(Reactive.Provider<R> provider) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.createAnswer(1, provider, monitor));
-            monitor.execute(actor -> actor.createAnswer(1, provider));
+            createAnswer(1, provider);
         }
 
         public <R> void createAnswer(int numCreated, Reactive.Provider<R> provider) {
