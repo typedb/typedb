@@ -22,7 +22,10 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -501,25 +504,25 @@ public class CoreDatabase implements TypeDB.Database {
         public void validateAndStartCommit(CoreTransaction.Data txn) {
             assert !isolatedConcurrentCommits.containsKey(txn);
             synchronized (this) {
-                commits++;
-                Instant start = Instant.now();
+//                commits++;
+//                Instant start = Instant.now();
                 Set<CoreTransaction.Data> transactions = mayViolateIsolation(txn);
-                Instant txns = Instant.now();
+//                Instant txns = Instant.now();
                 transactions.forEach(other -> validateIsolation(txn, other));
-                Instant validation = Instant.now();
+//                Instant validation = Instant.now();
                 commitStarted(txn);
                 isolatedConcurrentCommits.put(txn, transactions);
-                Instant end = Instant.now();
-                commitTimeNanos += Duration.between(start, end).toNanos();
-                mayViolateNanos += Duration.between(start, txns).toNanos();
-                validationNanos += Duration.between(txns, validation).toNanos();
-                concurrent += transactions.size();
-                if (commits % 1000 == 0) {
-                    LOG.warn("Mean synchronized nanos: " + (commitTimeNanos / (double) commits));
-                    LOG.warn("Mean get mayViolateIsolation nanos: " + (mayViolateNanos / (double) commits));
-                    LOG.warn("Mean validation nanos: " + (validationNanos / (double) commits));
-                    LOG.warn("Mean validated transactions: " + (concurrent / (double) commits));
-                }
+//                Instant end = Instant.now();
+//                commitTimeNanos += Duration.between(start, end).toNanos();
+//                mayViolateNanos += Duration.between(start, txns).toNanos();
+//                validationNanos += Duration.between(txns, validation).toNanos();
+//                concurrent += transactions.size();
+//                if (commits % 1000 == 0) {
+//                    LOG.warn("Mean synchronized nanos: " + (commitTimeNanos / (double) commits));
+//                    LOG.warn("Mean get mayViolateIsolation nanos: " + (mayViolateNanos / (double) commits));
+//                    LOG.warn("Mean validation nanos: " + (validationNanos / (double) commits));
+//                    LOG.warn("Mean validated transactions: " + (concurrent / (double) commits));
+//                }
             }
         }
 
@@ -710,7 +713,7 @@ public class CoreDatabase implements TypeDB.Database {
 
         private final ExecutorService executor;
         private CoreSession.Data session;
-        private ConcurrentMap<CoreTransaction.Data, Set<CoreTransaction.Data>> dependencies;
+        private final ConcurrentMap<CoreTransaction.Data, Set<CoreTransaction.Data>> dependencies;
 
         StatisticsCompensator() {
             executor = Executors.newSingleThreadExecutor(NamedThreadFactory.create(name + "::statistics-compensator"));
@@ -738,6 +741,7 @@ public class CoreDatabase implements TypeDB.Database {
 
         public CompletableFuture<Void> compensateAll() {
             return CompletableFuture.runAsync(() -> compensate(), executor);
+            // TODO clean up all tx IDs
         }
 
         public void remove(CoreTransaction.Data data) {
@@ -753,6 +757,7 @@ public class CoreDatabase implements TypeDB.Database {
         private void compensate() {
             Set<Long> uncommittedIDs = iterate(isolationMgr.getUncommitted()).map(t -> t.id).toSet();
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
+                boolean[] updated = new boolean[] {false};
                 txn.dataStorage.iterate(StatisticsKey.MisCount.prefix()).forEachRemaining(kv -> {
                     Set<Long> conditions = kv.value().decodeLongSet();
                     if (anyCommitted(conditions, txn.dataStorage)) {
@@ -778,12 +783,16 @@ public class CoreDatabase implements TypeDB.Database {
                                     encodeLong(1)
                             );
                         }
+                        updated[0] = true;
                     } else if (iterate(conditions).noneMatch(uncommittedIDs::contains)) {
                         txn.dataStorage.deleteUntracked(kv.key());
+                        updated[0] = true;
                     }
                 });
-                txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
-                txn.commit();
+                if (updated[0]) {
+                    txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
+                    txn.commit();
+                }
                 // TODO: when do we clean up a transaction ID committed key?
             }
 
