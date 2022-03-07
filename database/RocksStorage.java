@@ -41,7 +41,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.util.Arrays;
-import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -377,10 +376,8 @@ public abstract class RocksStorage implements Storage {
         private final CoreDatabase database;
         private final KeyGenerator.Data dataKeyGenerator;
 
-        private final ConcurrentSkipListSet<ByteArray> modifiedKeys;
-        private final ConcurrentSkipListSet<ByteArray> deletedKeys;
-        private final ConcurrentSkipListSet<ByteArray> exclusiveBytes; // these are not real keys, just reserved bytes
         private final long snapshotStart;
+        private final ModificationRecord modificationRecord;
         private volatile Long snapshotEnd;
         private boolean hasWrite;
 
@@ -389,11 +386,33 @@ public abstract class RocksStorage implements Storage {
             this.database = database;
             this.dataKeyGenerator = database.dataKeyGenerator();
             this.snapshotStart = snapshot.getSequenceNumber();
-            this.modifiedKeys = new ConcurrentSkipListSet<>();
-            this.deletedKeys = new ConcurrentSkipListSet<>();
-            this.exclusiveBytes = new ConcurrentSkipListSet<>();
+            this.modificationRecord = new ModificationRecord();
             this.snapshotEnd = null;
             this.hasWrite = false;
+        }
+
+        public static class ModificationRecord {
+            private final ConcurrentSkipListSet<ByteArray> modifiedKeys;
+            private final ConcurrentSkipListSet<ByteArray> deletedKeys;
+            private final ConcurrentSkipListSet<ByteArray> exclusiveBytes; // these are not real keys, just reserved bytes
+
+            private ModificationRecord() {
+                this.modifiedKeys = new ConcurrentSkipListSet<>();
+                this.deletedKeys = new ConcurrentSkipListSet<>();
+                this.exclusiveBytes = new ConcurrentSkipListSet<>();
+            }
+
+            boolean modifyDeleteConflict(ModificationRecord record) {
+                return hasIntersection(modifiedKeys, record.deletedKeys);
+            }
+
+            boolean deleteModifyConflict(ModificationRecord record) {
+                return hasIntersection(deletedKeys, record.modifiedKeys);
+            }
+
+            boolean exclusiveCreateConflict(ModificationRecord record) {
+                return hasIntersection(exclusiveBytes, record.exclusiveBytes);
+            }
         }
 
         @Override
@@ -435,8 +454,8 @@ public abstract class RocksStorage implements Storage {
         @Override
         public void deleteTracked(Key key) {
             deleteUntracked(key);
-            this.deletedKeys.add(key.bytes());
-            this.modifiedKeys.remove(key.bytes());
+            modificationRecord.deletedKeys.add(key.bytes());
+            modificationRecord.modifiedKeys.remove(key.bytes());
         }
 
         @Override
@@ -448,14 +467,14 @@ public abstract class RocksStorage implements Storage {
         @Override
         public void trackModified(ByteArray key) {
             assert isOpen();
-            this.modifiedKeys.add(key);
-            this.deletedKeys.remove(key);
+            modificationRecord.modifiedKeys.add(key);
+            modificationRecord.deletedKeys.remove(key);
         }
 
         @Override
         public void trackExclusiveBytes(ByteArray bytes) {
             assert isOpen();
-            this.exclusiveBytes.add(bytes);
+            modificationRecord.exclusiveBytes.add(bytes);
         }
 
         @Override
@@ -495,16 +514,8 @@ public abstract class RocksStorage implements Storage {
             return Optional.ofNullable(snapshotEnd);
         }
 
-        public boolean modifyDeleteConflict(RocksStorage.Data otherStorage) {
-            return hasIntersection(modifiedKeys, otherStorage.deletedKeys);
-        }
-
-        public boolean deleteModifyConflict(RocksStorage.Data otherStorage) {
-            return hasIntersection(deletedKeys, otherStorage.modifiedKeys);
-        }
-
-        public boolean exclusiveCreateConflict(RocksStorage.Data otherStorage) {
-            return hasIntersection(exclusiveBytes, otherStorage.exclusiveBytes);
+        public ModificationRecord modificationRecord() {
+            return modificationRecord;
         }
     }
 }

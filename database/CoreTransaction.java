@@ -273,7 +273,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             ThingGraph thingGraph = new ThingGraph(dataStorage, cache.typeGraph());
             graphMgr = new GraphManager(cache.typeGraph(), thingGraph);
 
-            if (type().isWrite()) session.database().isolationMgr().opened(this);
+            if (type().isWrite()) session.database().isolationMgr().opened(id, dataStorage.snapshotStart());
             initialise(graphMgr, cache.traversal(), cache.logic());
         }
 
@@ -314,10 +314,10 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
 
-                    session.database().isolationMgr().validateAndStartCommit(this);
+                    session.database().isolationMgr().validateAndStartCommit(id, dataStorage.modificationRecord());
                     session.database().statisticsCompensator().writeMetadata(this);
                     dataStorage.commit();
-                    session.database().isolationMgr().commitSucceeded(this);
+                    session.database().isolationMgr().commitSucceeded(id, dataStorage.snapshotEnd().get());
                 } catch (RocksDBException e) {
                     rollback();
                     throw TypeDBException.of(e);
@@ -333,7 +333,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         @Override
         public void cleanUp() {
             graphMgr.data().clear();
-            session.database().statisticsCompensator().remove(this);
+            session.database().statisticsCompensator().cleanUp(this);
         }
 
         @Override
@@ -355,7 +355,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         @Override
         void notifyClosed() {
             if (type().isWrite()) {
-                session.database().isolationMgr().closed(this);
+                session.database().isolationMgr().closed(id);
                 session.database().statisticsCompensator().mayCompensate(this);
             }
             super.notifyClosed();
