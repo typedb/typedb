@@ -46,7 +46,7 @@ public class Monitor extends Actor<Monitor> {
     private final Map<Reactive, Set<ReactiveGraph>> reactiveGraphMembership;
     private final Map<Reactive, Integer> reactiveAnswers;
     private final Map<Reactive, Integer> reactiveFrontiers;
-    private final Set<Reactive> reactiveGraphRoots;
+    private final Map<Reactive, ReactiveGraph> reactiveGraphRoots;
     private final Set<Reactive> finishedReactiveGraphRoots;
     private final Set<Reactive.Provider<?>> sources;
     private final Set<Reactive.Provider<?>> finishedSources;
@@ -57,7 +57,7 @@ public class Monitor extends Actor<Monitor> {
         this.reactiveGraphMembership = new HashMap<>();
         this.reactiveAnswers = new HashMap<>();
         this.reactiveFrontiers = new HashMap<>();
-        this.reactiveGraphRoots = new HashSet<>();
+        this.reactiveGraphRoots = new HashMap<>();
         this.finishedReactiveGraphRoots = new HashSet<>();
         this.sources = new HashSet<>();
         this.finishedSources = new HashSet<>();
@@ -67,32 +67,27 @@ public class Monitor extends Actor<Monitor> {
         // We assume that this is called before the root has any connected paths registered
         // TODO: What if a new root is registered which shares paths with an already complete ReactiveGraph? It should be able to find all of its contained paths
         ReactiveGraph reactiveGraph = new ReactiveGraph(processor, root);
-        boolean existingRoot = reactiveGraphRoots.add(root);
-        assert existingRoot;
+        ReactiveGraph existingRoot = reactiveGraphRoots.put(root, reactiveGraph);
+        assert existingRoot == null;
         addToGraphs(root, set(reactiveGraph));
     }
 
     private <R> void registerPath(Reactive.Receiver<R> receiver, Reactive.Provider<R> provider) {
         paths.computeIfAbsent(receiver, p -> new HashSet<>()).add(provider);
-
-        Set<ReactiveGraph> receiverGraphs = reactiveGraphMembership.get(receiver);
-        if (reactiveGraphRoots.contains(receiver)) {
-            assert receiverGraphs.size() == 1;
-            propagateReactiveGraphs(provider, receiverGraphs);
-            // checkFinished(receiverGraphs);  // TODO: See below
-        } else {
-            if (receiverGraphs != null) {
-                propagateReactiveGraphs(provider, receiverGraphs);
-                // checkFinished(receiverGraphs); // TODO: In case a root connects to an already complete graph it should terminate straight away - we need to check for that which means we need to check eagerly here. Except we can't do this or we'll terminate straight away.
-            }
-        }
+        // We could be learning about a new receiver or provider or both.
+        // Propagate any graphs the receiver belongs to to the provider.
+        propagateReactiveGraphs(receiver);
     }
 
-    private <R> void propagateReactiveGraphs(Reactive.Provider<R> provider, Set<ReactiveGraph> reactiveGraphs) {
-        if (addToGraphs(provider, reactiveGraphs)) {
-            Set<Reactive.Provider<?>> children = paths.getOrDefault(provider, set());
-            children.forEach(child -> {
-                propagateReactiveGraphs(child, reactiveGraphs);
+    private void propagateReactiveGraphs(Reactive reactive) {
+        Set<ReactiveGraph> toPropagate;
+        if (reactiveGraphRoots.containsKey(reactive)) toPropagate = set(reactiveGraphRoots.get(reactive));
+        else toPropagate = reactiveGraphMembership.getOrDefault(reactive, set());
+        if (!toPropagate.isEmpty()) {
+            Set<Reactive.Provider<?>> providers = paths.getOrDefault(reactive, set());
+            providers.forEach(child -> {
+                // checkFinished(receiverGraphs); // TODO: In case a root connects to an already complete graph it should terminate straight away - we need to check for that which means we need to check eagerly here. Except we can't do this or we'll terminate straight away.
+                if (addToGraphs(child, toPropagate)) propagateReactiveGraphs(child);
             });
         }
     }
@@ -143,7 +138,7 @@ public class Monitor extends Actor<Monitor> {
 
     void checkFinished(ReactiveGraph reactiveGraph) {
         // TODO: Include that the root must be pulling
-        if (reactiveGraph.nestedRootsFinished(reactiveGraphRoots, finishedReactiveGraphRoots)
+        if (reactiveGraph.nestedRootsFinished(reactiveGraphRoots.keySet(), finishedReactiveGraphRoots)
                 && reactiveGraph.sourcesFinished(sources, finishedSources)
                 && reactiveGraph.activeAnswers(reactiveAnswers) == 0
                 && reactiveGraph.activeFrontiers(reactiveFrontiers) == 0) {

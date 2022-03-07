@@ -143,6 +143,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
                 if (!answerFound) {
                     monitor().createAnswer(this);
                     receiverRegistry().receiver().receive(this, bounds);
+                    monitor().rootFinished(this);
                 }
             }
         }
