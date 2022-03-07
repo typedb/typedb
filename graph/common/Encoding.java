@@ -936,13 +936,11 @@ public class Encoding {
 
                 SNAPSHOT(0),
                 VERTEX_COUNT(1),
-                VERTEX_COUNT_TRANSITIVE(2),
-                HAS_TYPE_EDGE_COUNT(3),
-                HAS_EDGE_COUNT(4),
-                MISCOUNT(100),
-                TX_COMMITTED_ID(200);
+                HAS_TYPE_EDGE_COUNT(2),
+                MISCOUNT(50),
+                TXN_COMMITTED_ID(100);
 
-                public static final int LENGTH = 2;
+                static final int LENGTH = 2;
 
                 private final ByteArray bytes;
 

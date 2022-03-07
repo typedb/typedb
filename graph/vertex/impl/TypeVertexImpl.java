@@ -158,11 +158,11 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     @Override
     public Label properLabel() {
-        if (properLabel == null) computeProperLabel();
+        if (properLabel == null) setProperLabel();
         return properLabel;
     }
 
-    void computeProperLabel() {
+    void setProperLabel() {
         this.properLabel = Label.of(label, scope);
     }
 
@@ -295,7 +295,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             assert !isDeleted();
             graph.update(this, this.label, scope, label, scope);
             this.label = label;
-            computeProperLabel();
+            setProperLabel();
         }
 
         @Override
@@ -303,7 +303,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             assert !isDeleted();
             graph.update(this, label, this.scope, label, scope);
             this.scope = scope;
-            computeProperLabel();
+            setProperLabel();
         }
 
         @Override
@@ -446,7 +446,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             graph.storage().deleteUntracked(IndexIID.Type.Label.of(this.label, scope));
             graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope), iid.bytes());
             this.label = label;
-            computeProperLabel();
+            setProperLabel();
         }
 
         @Override
@@ -457,7 +457,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             graph.storage().deleteUntracked(IndexIID.Type.Label.of(label, this.scope));
             graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope), iid.bytes());
             this.scope = scope;
-            computeProperLabel();
+            setProperLabel();
         }
 
         @Override

@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.graph.common;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.Bytes;
+import com.vaticle.typedb.core.graph.common.Encoding.Metadata.Statistics;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
@@ -47,39 +48,39 @@ public class StatisticsKey implements Storage.Key {
 
     public static StatisticsKey txnCommitted(long txnID) {
         return new StatisticsKey(join(
-                Encoding.Metadata.Statistics.Prefix.TX_COMMITTED_ID.bytes(),
+                Statistics.Prefix.TXN_COMMITTED_ID.bytes(),
                 ByteArray.encodeLong(txnID)
         ));
     }
 
     public static Prefix<StatisticsKey> txnCommittedPrefix() {
-        return new Prefix<>(Encoding.Metadata.Statistics.Prefix.TX_COMMITTED_ID.bytes(), Partition.METADATA, StatisticsKey::new);
+        return new Prefix<>(Statistics.Prefix.TXN_COMMITTED_ID.bytes(), Partition.METADATA, StatisticsKey::new);
     }
 
     public static StatisticsKey vertexCount(VertexIID.Type typeIID) {
         return new StatisticsKey(join(
-                Encoding.Metadata.Statistics.Prefix.VERTEX_COUNT.bytes(),
+                Statistics.Prefix.VERTEX_COUNT.bytes(),
                 typeIID.bytes()
         ));
     }
 
     public static StatisticsKey hasEdgeCount(VertexIID.Type thingTypeIID, VertexIID.Type attTypeIID) {
         return new StatisticsKey(join(
-                Encoding.Metadata.Statistics.Prefix.HAS_TYPE_EDGE_COUNT.bytes(),
+                Statistics.Prefix.HAS_TYPE_EDGE_COUNT.bytes(),
                 thingTypeIID.bytes(),
                 attTypeIID.bytes()
         ));
     }
 
     public static StatisticsKey snapshot() {
-        return new StatisticsKey(Encoding.Metadata.Statistics.Prefix.SNAPSHOT.bytes());
+        return new StatisticsKey(Statistics.Prefix.SNAPSHOT.bytes());
     }
 
     public static class MisCount extends StatisticsKey {
 
         private MisCount(ByteArray bytes) {
             super(bytes);
-            assert bytes.hasPrefix(Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes());
+            assert bytes.hasPrefix(Statistics.Prefix.MISCOUNT.bytes());
         }
 
         private static MisCount of(ByteArray bytes) {
@@ -87,35 +88,35 @@ public class StatisticsKey implements Storage.Key {
         }
 
         public static Prefix<MisCount> prefix() {
-            return new Prefix<>(Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes(), Partition.METADATA, MisCount::of);
+            return new Prefix<>(Statistics.Prefix.MISCOUNT.bytes(), Partition.METADATA, MisCount::of);
         }
 
         private byte infix() {
-            return bytes().get(Encoding.Metadata.Statistics.Prefix.LENGTH + Bytes.LONG_SIZE);
+            return bytes().get(Statistics.Prefix.LENGTH + Bytes.LONG_SIZE);
         }
 
         public boolean isAttrConditionalOvercount() {
-            return infix() == Encoding.Metadata.Statistics.Infix.CONDITIONAL_OVERCOUNT_ATTRIBUTE.key();
+            return infix() == Statistics.Infix.CONDITIONAL_OVERCOUNT_ATTRIBUTE.key();
         }
 
         public boolean isAttrConditionalUndercount() {
             return infix() ==
-                    Encoding.Metadata.Statistics.Infix.CONDITIONAL_UNDERCOUNT_ATTRIBUTE.key();
+                    Statistics.Infix.CONDITIONAL_UNDERCOUNT_ATTRIBUTE.key();
         }
 
         public boolean isHasConditionalOvercount() {
-            return infix() == Encoding.Metadata.Statistics.Infix.CONDITIONAL_OVERCOUNT_HAS.key();
+            return infix() == Statistics.Infix.CONDITIONAL_OVERCOUNT_HAS.key();
         }
 
         public boolean isHasConditionalUndercount() {
-            return infix() == Encoding.Metadata.Statistics.Infix.CONDITIONAL_UNDERCOUNT_HAS.key();
+            return infix() == Statistics.Infix.CONDITIONAL_UNDERCOUNT_HAS.key();
         }
 
         public VertexIID.Attribute<?> attributeMiscounted() {
             assert isAttrConditionalOvercount() || isAttrConditionalUndercount();
             return VertexIID.Attribute.extract(
                     this.bytes(),
-                    Encoding.Metadata.Statistics.Prefix.LENGTH + Bytes.LONG_SIZE + Encoding.Metadata.Statistics.Infix.LENGTH
+                    Statistics.Prefix.LENGTH + Bytes.LONG_SIZE + Statistics.Infix.LENGTH
             );
         }
 
@@ -123,40 +124,40 @@ public class StatisticsKey implements Storage.Key {
             assert isHasConditionalOvercount() || isHasConditionalUndercount();
             VertexIID.Thing owner = VertexIID.Thing.extract(
                     this.bytes(),
-                    Encoding.Metadata.Statistics.Prefix.LENGTH + Bytes.LONG_SIZE + Encoding.Metadata.Statistics.Infix.LENGTH
+                    Statistics.Prefix.LENGTH + Bytes.LONG_SIZE + Statistics.Infix.LENGTH
             );
             return new Pair<>(
                     owner,
                     VertexIID.Attribute.extract(
                             this.bytes(),
-                            Encoding.Metadata.Statistics.Prefix.LENGTH + Bytes.LONG_SIZE + Encoding.Metadata.Statistics.Infix.LENGTH + owner.bytes().length()
+                            Statistics.Prefix.LENGTH + Bytes.LONG_SIZE + Statistics.Infix.LENGTH + owner.bytes().length()
                     )
             );
         }
 
         public static MisCount attrConditionalOvercount(long txnID, VertexIID.Attribute<?> attIID) {
             return new MisCount(join(
-                    Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes(),
+                    Statistics.Prefix.MISCOUNT.bytes(),
                     ByteArray.encodeLong(txnID),
-                    Encoding.Metadata.Statistics.Infix.CONDITIONAL_OVERCOUNT_ATTRIBUTE.bytes(),
+                    Statistics.Infix.CONDITIONAL_OVERCOUNT_ATTRIBUTE.bytes(),
                     attIID.bytes()
             ));
         }
 
         public static MisCount attrConditionalUndercount(long txnID, VertexIID.Attribute<?> attIID) {
             return new MisCount(join(
-                    Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes(),
+                    Statistics.Prefix.MISCOUNT.bytes(),
                     ByteArray.encodeLong(txnID),
-                    Encoding.Metadata.Statistics.Infix.CONDITIONAL_UNDERCOUNT_ATTRIBUTE.bytes(),
+                    Statistics.Infix.CONDITIONAL_UNDERCOUNT_ATTRIBUTE.bytes(),
                     attIID.bytes()
             ));
         }
 
         public static MisCount hasConditionalOvercount(long txnID, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
             return new MisCount(join(
-                    Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes(),
+                    Statistics.Prefix.MISCOUNT.bytes(),
                     ByteArray.encodeLong(txnID),
-                    Encoding.Metadata.Statistics.Infix.CONDITIONAL_OVERCOUNT_HAS.bytes(),
+                    Statistics.Infix.CONDITIONAL_OVERCOUNT_HAS.bytes(),
                     thingIID.bytes(),
                     attIID.bytes()
             ));
@@ -164,9 +165,9 @@ public class StatisticsKey implements Storage.Key {
 
         public static MisCount hasConditionalUndercount(long txnID, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
             return new MisCount(join(
-                    Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes(),
+                    Statistics.Prefix.MISCOUNT.bytes(),
                     ByteArray.encodeLong(txnID),
-                    Encoding.Metadata.Statistics.Infix.CONDITIONAL_UNDERCOUNT_HAS.bytes(),
+                    Statistics.Infix.CONDITIONAL_UNDERCOUNT_HAS.bytes(),
                     thingIID.bytes(),
                     attIID.bytes()
             ));
