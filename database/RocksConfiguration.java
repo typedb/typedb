@@ -157,7 +157,6 @@ public class RocksConfiguration {
             options.setStatsDumpPeriodSec(logStatisticsPeriodSec);
         }
 
-
         /*
           ######## Column Family Configuration ########
           Each column family maintains a separate LSM tree, memtables, compaction, compression options, etc.
@@ -218,7 +217,7 @@ public class RocksConfiguration {
             return options;
         }
 
-        org.rocksdb.ColumnFamilyOptions statisticsCFOptions() {
+        org.rocksdb.ColumnFamilyOptions metadataCFOptions() {
             org.rocksdb.ColumnFamilyOptions options = new org.rocksdb.ColumnFamilyOptions();
             readOptimisedWriteBuffers(options);
             configureSST(options);

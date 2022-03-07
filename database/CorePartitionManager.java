@@ -32,13 +32,12 @@ import java.util.Set;
 import java.util.stream.IntStream;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
-import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.DEFAULT;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.FIXED_START_EDGE;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.OPTIMISATION_EDGE;
-import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.STATISTICS;
+import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.METADATA;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.VARIABLE_START_EDGE;
 
 public abstract class CorePartitionManager {
@@ -102,13 +101,13 @@ public abstract class CorePartitionManager {
         private static final int VARIABLE_START_EDGE_HANDLE_INDEX = 1;
         private static final int FIXED_START_EDGE_HANDLE_INDEX = 2;
         private static final int OPTIMISATION_EDGE_HANDLE_INDEX = 3;
-        private static final int STATISTICS_HANDLE_INDEX = 4;
+        private static final int METADATA_HANDLE_INDEX = 4;
 
         protected final ColumnFamilyHandle defaultHandle;
         protected final ColumnFamilyHandle variableStartEdgeHandle;
         protected final ColumnFamilyHandle fixedStartEdgeHandle;
         protected final ColumnFamilyHandle optimisationEdgeHandle;
-        protected final ColumnFamilyHandle statisticsHandle;
+        protected final ColumnFamilyHandle metadataHandle;
 
         protected Data(List<ColumnFamilyDescriptor> descriptors, List<ColumnFamilyHandle> handles) {
             super(descriptors, handles);
@@ -116,7 +115,7 @@ public abstract class CorePartitionManager {
             variableStartEdgeHandle = handles.get(VARIABLE_START_EDGE_HANDLE_INDEX);
             fixedStartEdgeHandle = handles.get(FIXED_START_EDGE_HANDLE_INDEX);
             optimisationEdgeHandle = handles.get(OPTIMISATION_EDGE_HANDLE_INDEX);
-            statisticsHandle = handles.get(STATISTICS_HANDLE_INDEX);
+            metadataHandle = handles.get(METADATA_HANDLE_INDEX);
         }
 
         static List<ColumnFamilyDescriptor> descriptors(RocksConfiguration.Data configuration) {
@@ -137,9 +136,9 @@ public abstract class CorePartitionManager {
                     OPTIMISATION_EDGE.encoding().partitionName().get().getBytes(),
                     configuration.optimisationEdgeCFOptions()
             );
-            descriptors[STATISTICS_HANDLE_INDEX] = new ColumnFamilyDescriptor(
-                    STATISTICS.encoding().partitionName().get().getBytes(),
-                    configuration.statisticsCFOptions()
+            descriptors[METADATA_HANDLE_INDEX] = new ColumnFamilyDescriptor(
+                    METADATA.encoding().partitionName().get().getBytes(),
+                    configuration.metadataCFOptions()
             );
             return Arrays.asList(descriptors);
         }
@@ -155,8 +154,8 @@ public abstract class CorePartitionManager {
                     return fixedStartEdgeHandle;
                 case OPTIMISATION_EDGE:
                     return optimisationEdgeHandle;
-                case STATISTICS:
-                    return statisticsHandle;
+                case METADATA:
+                    return metadataHandle;
                 default:
                     throw TypeDBException.of(ILLEGAL_STATE);
             }
@@ -164,7 +163,7 @@ public abstract class CorePartitionManager {
 
         @Override
         Set<Key.Partition> partitions() {
-            return set(DEFAULT, VARIABLE_START_EDGE, FIXED_START_EDGE, OPTIMISATION_EDGE, STATISTICS);
+            return set(DEFAULT, VARIABLE_START_EDGE, FIXED_START_EDGE, OPTIMISATION_EDGE, METADATA);
         }
     }
 }

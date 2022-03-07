@@ -105,7 +105,7 @@ public interface Storage {
             VARIABLE_START_EDGE(Encoding.Partition.VARIABLE_START_EDGE, null),
             FIXED_START_EDGE(Encoding.Partition.FIXED_START_EDGE, VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.DEFAULT_LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH),
             OPTIMISATION_EDGE(Encoding.Partition.OPTIMISATION_EDGE, VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.RolePlayer.LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH),
-            STATISTICS(Encoding.Partition.STATISTICS, null);
+            METADATA(Encoding.Partition.METADATA, null);
 
             private final Encoding.Partition encoding;
             private final Integer fixedStartBytes;
@@ -119,8 +119,8 @@ public interface Storage {
                     return FIXED_START_EDGE;
                 } else if (ID == Encoding.Partition.OPTIMISATION_EDGE.ID()) {
                     return OPTIMISATION_EDGE;
-                } else if (ID == Encoding.Partition.STATISTICS.ID()) {
-                    return STATISTICS;
+                } else if (ID == Encoding.Partition.METADATA.ID()) {
+                    return METADATA;
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }

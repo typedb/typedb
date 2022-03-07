@@ -27,11 +27,12 @@ import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 
 public class StatisticsKey implements Storage.Key {
 
-    private static final Partition PARTITION = Partition.STATISTICS;
+    private static final Partition PARTITION = Partition.METADATA;
 
     private final ByteArray bytes;
 
     private StatisticsKey(ByteArray bytes) {
+        assert bytes.hasPrefix(Encoding.Prefix.METADATA_STATISTICS.bytes());
         this.bytes = bytes;
     }
 
@@ -49,6 +50,10 @@ public class StatisticsKey implements Storage.Key {
                 Encoding.Metadata.Statistics.Prefix.TX_COMMITTED_ID.bytes(),
                 ByteArray.encodeLong(txnID)
         ));
+    }
+
+    public static Prefix<StatisticsKey> txnCommittedPrefix() {
+        return new Prefix<>(Encoding.Metadata.Statistics.Prefix.TX_COMMITTED_ID.bytes(), Partition.METADATA, StatisticsKey::new);
     }
 
     public static StatisticsKey vertexCount(VertexIID.Type typeIID) {
@@ -74,15 +79,15 @@ public class StatisticsKey implements Storage.Key {
 
         private MisCount(ByteArray bytes) {
             super(bytes);
+            assert bytes.hasPrefix(Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes());
         }
 
         private static MisCount of(ByteArray bytes) {
-            assert bytes.hasPrefix(Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes());
             return new MisCount(bytes);
         }
 
         public static Prefix<MisCount> prefix() {
-            return new Prefix<>(Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes(), Partition.STATISTICS, MisCount::of);
+            return new Prefix<>(Encoding.Metadata.Statistics.Prefix.MISCOUNT.bytes(), Partition.METADATA, MisCount::of);
         }
 
         private byte infix() {

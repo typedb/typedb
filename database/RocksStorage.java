@@ -461,7 +461,7 @@ public abstract class RocksStorage implements Storage {
         @Override
         public void commit() throws RocksDBException {
             if (!hasWrite) {
-                // guarantee at least 1 write per tx to ensure we get a snapshotEnd greater than the start
+                // guarantee at least 1 write per tx to ensure we get a snapshotEnd greater than the snapshotStart
                 rocksTransaction.putUntracked(
                         partitionMgr.get(Partition.DEFAULT),
                         TRANSACTION_DUMMY_WRITE.bytes().getBytes(),

@@ -463,14 +463,14 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                         .map(keyValue -> newPersistedEdge(EdgeViewIID.Thing.of(keyValue.key().bytes())));
                 FunctionalIterator<ThingEdge> bufferedIterator = iterateBufferedViews(encoding, lookahead)
                         .map(ThingEdge.View::edge);
-                return link(bufferedIterator, storageIterator).distinct(); // note: has edges may exist and be buffered
+                return link(bufferedIterator, storageIterator).distinct(); // note: has edges can be persisted and buffered
             }
 
             Forwardable<EDGE_VIEW, Order.Asc> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
                 assert encoding != ROLEPLAYER || lookahead.length >= 1;
                 Forwardable<EDGE_VIEW, Order.Asc> storageIter = iteratePersistedViews(encoding, lookahead);
                 Forwardable<EDGE_VIEW, Order.Asc> bufferedIter = iterateBufferedViews(encoding, lookahead);
-                return bufferedIter.merge(storageIter).distinct(); // note: has edges may exist and be buffered
+                return bufferedIter.merge(storageIter).distinct(); // note: has edges can be persisted and buffered
             }
 
             @Override
