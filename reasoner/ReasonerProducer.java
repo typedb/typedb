@@ -151,6 +151,7 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
             this.onDone = onDone;
             this.groupName = groupName;
             this.isPulling = false;
+            monitorRef().forkFrontier(1, this);
         }
 
         public void pull() {

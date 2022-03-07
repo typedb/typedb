@@ -87,11 +87,11 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
             super(driver, controller, monitorRef, bounds, plan, name);
             this.filter = filter;
             this.reasonerEntryPoint = reasonerEntryPoint;
-            monitor().registerRoot(driver(), reasonerEntryPoint);
         }
 
         @Override
         public void setUp() {
+            monitor().registerRoot(driver(), reasonerEntryPoint);
             super.setUp();
             outlet().publishTo(reasonerEntryPoint);
             new CompoundStream<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, monitor(), name())

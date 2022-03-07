@@ -97,7 +97,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     private void onNewReceiver() {
         if (receiverRegistry().size() > 1) {
             if (bufferSet.size() > 0) monitor().createAnswer(bufferSet.size(), this);  // New receiver, so any answer in the buffer will be dispatched there at some point
-            monitor().reportPathJoin(this);
+            monitor().joinFrontiers(this);
         }
     }
 

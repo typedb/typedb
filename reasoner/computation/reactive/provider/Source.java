@@ -34,6 +34,7 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
         this.iteratorSupplier = iteratorSupplier;
         this.exhausted = false;
         monitor().registerSource(this);
+        monitor().joinFrontiers(this);
     }
 
     public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier,

@@ -23,8 +23,10 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
+import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,6 +107,10 @@ public final class Tracer {
         addMessage(simpleClassId(root), monitor.name(), defaultTrace, EdgeType.ROOT, "reg_root");
     }
 
+    public <R> void rootFinished(Receiver.Finishable<R> root, Actor.Driver<Monitor> monitor) {
+        addMessage(simpleClassId(root), monitor.name(), defaultTrace, EdgeType.ROOT_FINISH, "root_finished");
+    }
+
     public <R> void registerPath(Receiver<R> receiver, @Nullable Provider<R> provider, Actor.Driver<Monitor> monitor) {
         String providerName;
         if (provider == null) providerName = "entry";  // TODO: Prevent provider from ever being null
@@ -116,8 +122,8 @@ public final class Tracer {
         addMessage(simpleClassId(source), monitor.name(), defaultTrace, EdgeType.SOURCE, "reg_source");
     }
 
-    public <R> void sourceFinished(Provider<R> provider, Actor.Driver<Monitor> monitor) {
-        addMessage(simpleClassId(provider), monitor.name(), defaultTrace, EdgeType.SOURCE_FINISH, "source_finished");
+    public <R> void sourceFinished(Source<R> source, Actor.Driver<Monitor> monitor) {
+        addMessage(simpleClassId(source), monitor.name(), defaultTrace, EdgeType.SOURCE_FINISH, "source_finished");
     }
 
     public <R> void createAnswer(int numCreated, Provider<R> provider, Actor.Driver<Monitor> monitor) {
@@ -126,6 +132,14 @@ public final class Tracer {
 
     public <R> void consumeAnswer(Receiver<R> receiver, Actor.Driver<Monitor> monitor) {
         addMessage(simpleClassId(receiver), monitor.name(), defaultTrace, EdgeType.CONSUME, "consume");
+    }
+
+    public void forkFrontier(int numForks, Reactive forker, Actor.Driver<Monitor> monitor) {
+        addMessage(simpleClassId(forker), monitor.name(), defaultTrace, EdgeType.FORK, "fork" + numForks);
+    }
+
+    public void joinFrontier(Reactive joiner, Actor.Driver<Monitor> monitor) {
+        addMessage(simpleClassId(joiner), monitor.name(), defaultTrace, EdgeType.JOIN, "join");
     }
 
     private static String simpleClassId(Object obj) {
@@ -270,11 +284,14 @@ public final class Tracer {
         PULL("blue"),
         RECEIVE("green"),
         ROOT("black"),
+        ROOT_FINISH("brown"),
         REGISTER("orange"),
         SOURCE("purple"),
         SOURCE_FINISH("brown"),
         CREATE("cyan"),
-        CONSUME("red");
+        CONSUME("red"),
+        FORK("yellow"),
+        JOIN("pink");
 
         private final String colour;
 

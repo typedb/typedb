@@ -93,6 +93,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             requestConnection(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
             negation = new NegationReactive(monitor(), name(), bounds);
+            monitor().registerRoot(driver(), negation);
             endpoint.publishTo(negation);
             negation.publishTo(outlet());
         }
@@ -103,7 +104,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 //            done = true;
             assert finishable == negation;
             finishable.onFinished();
-            monitor().syncAndReportPathJoin(negation);
+            monitor().joinFrontiers2(negation);
         }
 
         private static class NegationReactive extends SingleReceiverStream<ConceptMap, ConceptMap> implements Reactive.Receiver.Finishable<ConceptMap> {
@@ -117,7 +118,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
                 this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
                 this.bounds = bounds;
                 this.answerFound = false;
-                monitor().registerSource(this);
+                monitor().forkFrontier(1, this);
             }
 
             @Override
@@ -134,7 +135,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
                 super.receive(provider, packet);
                 answerFound = true;
-                monitor().sourceFinished(this);
+                monitor().rootFinished(this);
             }
 
             @Override
