@@ -94,6 +94,7 @@ public abstract class Processor<INPUT, OUTPUT,
         assert !done;
         Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
         applyConnectionTransforms(connection.transformations(), outlet(), createProvidingEndpoint(connection));
+        monitor().registerPath(connection, outlet());
         if (isTerminated()) return;
         connectionBuilder.receivingProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
