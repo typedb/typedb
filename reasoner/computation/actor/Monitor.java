@@ -74,18 +74,20 @@ public class Monitor extends Actor<Monitor> {
         }
     }
 
-    void addToGraphs(Reactive reactive, Set<ReactiveGraph> reactiveGraphs) {
+    boolean addToGraphs(Reactive reactive, Set<ReactiveGraph> reactiveGraphs) {
         Set<ReactiveGraph> providerGraphs = reactiveGraphMembership.computeIfAbsent(reactive, r -> new HashSet<>());
-        providerGraphs.addAll(reactiveGraphs);
+        boolean newGraphs = providerGraphs.addAll(reactiveGraphs);
         reactiveGraphs.forEach(g -> g.reactives.add(reactive));
+        return newGraphs;
     }
 
     private <R> void propagateReactiveGraphs(Reactive.Provider<R> provider, Set<ReactiveGraph> parentGraphs) {
         Set<Reactive.Provider<?>> children = paths.get(provider);
         if (children != null) {
             children.forEach(child -> {
-                addToGraphs(child, parentGraphs);
-                propagateReactiveGraphs(child, parentGraphs);
+                if (addToGraphs(child, parentGraphs)) {
+                    propagateReactiveGraphs(child, parentGraphs);
+                }
             });
         }
     }
@@ -96,7 +98,7 @@ public class Monitor extends Actor<Monitor> {
 
     private <R> void sourceFinished(Reactive.Provider<R> source) {
         finishedSources.add(source);
-        checkFinished(reactiveGraphMembership.get(source));
+        checkFinished(reactiveGraphMembership.getOrDefault(source, set()));
     }
 
     private <R> void createAnswer(int numCreated, Reactive.Provider<R> provider) {

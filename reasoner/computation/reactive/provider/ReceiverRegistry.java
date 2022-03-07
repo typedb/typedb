@@ -33,13 +33,11 @@ public abstract class ReceiverRegistry<R> {
     public static class SingleReceiverRegistry<R> extends ReceiverRegistry<R> {
 
         private final Reactive.Provider<R> provider;
-        private final Monitor.MonitorRef monitor;
         private boolean isPulling;
         private Reactive.Receiver<R> receiver;
 
         public SingleReceiverRegistry(Reactive.Provider<R> provider, Reactive.Receiver<R> receiver, Monitor.MonitorRef monitor) {
             this.provider = provider;
-            this.monitor = monitor;
             this.isPulling = false;
             addReceiver(receiver);
         }
@@ -47,7 +45,6 @@ public abstract class ReceiverRegistry<R> {
         public SingleReceiverRegistry(Reactive.Provider<R> provider, Monitor.MonitorRef monitor) {
             this.provider = provider;
             this.receiver = null;
-            this.monitor = monitor;
             this.isPulling = false;
         }
 
@@ -81,13 +78,11 @@ public abstract class ReceiverRegistry<R> {
     public static class MultiReceiverRegistry<R> extends ReceiverRegistry<R> {
 
         private final Reactive.Provider<R> provider;
-        private final Monitor.MonitorRef monitor;
         private final Set<Reactive.Receiver<R>> receivers;
         private final Set<Reactive.Receiver<R>> pullingReceivers;
 
         public MultiReceiverRegistry(Reactive.Provider<R> provider, Monitor.MonitorRef monitor) {
             this.provider = provider;
-            this.monitor = monitor;
             this.receivers = new HashSet<>();
             this.pullingReceivers = new HashSet<>();
         }

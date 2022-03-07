@@ -78,6 +78,7 @@ public class RootDisjunctionController
             super(driver, controller, monitorRef, disjunction, bounds, name);
             this.filter = filter;
             this.reasonerEntryPoint = reasonerEntryPoint;
+            monitor().registerRoot(driver(), reasonerEntryPoint);
         }
 
         @Override
