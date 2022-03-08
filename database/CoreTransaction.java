@@ -310,43 +310,23 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
          * let inform the graph by confirming whether the RocksDB commit was successful
          * or not.
          */
-//        private static CoreDatabase.IsolationManager.LimitedQueue<Long> preStorageCommitTime = new CoreDatabase.IsolationManager.LimitedQueue<>(1000);
-//        private static CoreDatabase.IsolationManager.LimitedQueue<Long> validatedAndMetadataTime = new CoreDatabase.IsolationManager.LimitedQueue<>(1000);
-//        private static CoreDatabase.IsolationManager.LimitedQueue<Long> commitTime = new CoreDatabase.IsolationManager.LimitedQueue<>(1000);
-//        private static AtomicLong commits = new AtomicLong(0);
         @Override
         public void commit() {
             if (isOpen.compareAndSet(true, false)) {
                 try {
-//                    Instant start = Instant.now();
                     if (type().isRead()) throw TypeDBException.of(ILLEGAL_COMMIT);
                     else if (graphMgr.schema().isModified()) throw TypeDBException.of(SESSION_DATA_VIOLATION);
 
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
 
-//                    Instant preStorageCommit = Instant.now();
-
                     Set<CoreTransaction.Data> concurrent = session.database().isolationMgr().validateConcurrentAndStartCommit(this);
                     session.database().statisticsCompensator().writeMetadata(this, concurrent);
-//                    Instant validatedAndMetadata = Instant.now();
                     dataStorage.commit();
                     session.database().isolationMgr().commitSucceeded(this);
-//                    Instant end = Instant.now();
-//                    preStorageCommitTime.add(Duration.between(start, preStorageCommit).toNanos());
-//                    validatedAndMetadataTime.add(Duration.between(preStorageCommit, validatedAndMetadata).toNanos());
-//                    commitTime.add(Duration.between(validatedAndMetadata, end).toNanos());
-//                    long commitsTotal = commits.incrementAndGet();
-//                    if (commitsTotal % 1_000 == 0) {
-//                        LOG.info("Mean time in pre storage commit commit (ns) : " + mean(preStorageCommitTime));
-//                        LOG.info("Mean time in validation and metadata (ns) : " + mean(validatedAndMetadataTime));
-//                        LOG.info("Mean time in storage commit and commitSucceeded (ns) : " + mean(commitTime));
-//                        LOG.info("IsolationMgr closed (ns) : " + mean(isolatMgrClosed));
-//                        LOG.info("Compensate time (ns) : " + mean(mayCompensate));
-//                    }
-                    session.database().statisticsCompensator().mayCompensate(this);
+                    session.database().statisticsCompensator().committed(this);
                 } catch (RocksDBException e) {
-                    rollback();
+                    delete();
                     throw TypeDBException.of(e);
                 } finally {
                     closeResources();
@@ -355,13 +335,6 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             } else {
                 throw TypeDBException.of(TRANSACTION_CLOSED);
             }
-        }
-
-        @Override
-        public void delete() {
-            assert !isOpen.get();
-            graphMgr.data().clear();
-            session.database().statisticsCompensator().delete(this);
         }
 
         @Override
@@ -384,6 +357,13 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         void notifyClosed() {
             if (type().isWrite()) session.database().isolationMgr().closed(this);
             super.notifyClosed();
+        }
+
+        @Override
+        public void delete() {
+            assert !isOpen.get();
+            graphMgr.data().clear();
+            session.database().statisticsCompensator().deleted(this);
         }
 
         @Override

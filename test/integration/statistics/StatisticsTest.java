@@ -159,7 +159,7 @@ public class StatisticsTest {
                 txn.commit();
             }
 
-            databaseMgr.databases.get(database).statisticsCompensator().forceCompensate().get();
+            databaseMgr.databases.get(database).statisticsCompensator().submitCompensate().get();
 
             try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
@@ -190,7 +190,7 @@ public class StatisticsTest {
                 txn.commit();
             }
 
-            databaseMgr.databases.get(database).statisticsCompensator().forceCompensate().get();
+            databaseMgr.databases.get(database).statisticsCompensator().submitCompensate().get();
 
             try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
@@ -226,7 +226,7 @@ public class StatisticsTest {
                 txn.commit();
             }
 
-            databaseMgr.databases.get(database).statisticsCompensator().forceCompensate().get();
+            databaseMgr.databases.get(database).statisticsCompensator().submitCompensate().get();
 
             try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 ThingGraph.Statistics statistics = txn.graphMgr.data().stats();

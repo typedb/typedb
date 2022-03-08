@@ -53,7 +53,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -480,58 +479,12 @@ public class CoreDatabase implements TypeDB.Database {
             commitStates.put(transaction, CommitState.OPEN);
         }
 
-        public static class LimitedQueue<E> extends LinkedList<E> {
-
-            private int limit;
-
-            public LimitedQueue(int limit) {
-                this.limit = limit;
-            }
-
-            @Override
-            public synchronized boolean add(E o) {
-                boolean added = super.add(o);
-                while (added && size() > limit) {
-                    super.remove();
-                }
-                return added;
-            }
-        }
-
-        static double mean(List<? extends Number> list) {
-            long total = 0;
-            for (Number l : list) {
-                total += l.longValue();
-            }
-            return (double)total / list.size();
-        }
-
-//        LimitedQueue<Long> commitTimeNanos = new LimitedQueue<>(1_000);
-//        LimitedQueue<Long>  mayViolateNanos =  new LimitedQueue<>(1_000);
-//        LimitedQueue<Long> validationNanos = new LimitedQueue<>(1_000);
-//        LimitedQueue<Integer>  concurrent =  new LimitedQueue<>(1_000);
-//        long count = 0;
         public Set<CoreTransaction.Data> validateConcurrentAndStartCommit(CoreTransaction.Data txn) {
             Set<CoreTransaction.Data> transactions;
             synchronized (this) {
-//                Instant start = Instant.now();
                 transactions = mayCommitConcurrently(txn);
-//                Instant txns = Instant.now();
                 transactions.forEach(other -> validateIsolation(txn, other));
-//                Instant validation = Instant.now();
                 commitStates.put(txn, CommitState.COMMITTING);
-//                Instant end = Instant.now();
-//                commitTimeNanos.add(Duration.between(start, end).toNanos());
-//                mayViolateNanos.add(Duration.between(start, txns).toNanos());
-//                validationNanos.add(Duration.between(txns, validation).toNanos());
-//                concurrent.add(transactions.size());
-//                count++;
-//                if (count % 1_000 == 0) {
-//                    LOG.warn("Mean synchronized nanos: " + mean(commitTimeNanos));
-//                    LOG.warn("Mean get mayViolateIsolation nanos: " + mean(mayViolateNanos));
-//                    LOG.warn("Mean validation nanos: " + mean(validationNanos));
-//                    LOG.warn("Mean validated transactions: " + mean(concurrent));
-//                }
             }
             return transactions;
         }
@@ -549,8 +502,8 @@ public class CoreDatabase implements TypeDB.Database {
         public void commitSucceeded(CoreTransaction.Data txn) {
             assert commitStates.get(txn) == CommitState.COMMITTING && txn.snapshotEnd().isPresent();
             commitStates.put(txn, CommitState.COMMITTED);
-            commitTimeline.compute(txn.snapshotEnd().get(), (snapshot, committed) ->{
-                if (committed == null)  committed = new HashSet<>();
+            commitTimeline.compute(txn.snapshotEnd().get(), (snapshot, committed) -> {
+                if (committed == null) committed = new HashSet<>();
                 committed.add(txn);
                 return committed;
             });
@@ -599,6 +552,212 @@ public class CoreDatabase implements TypeDB.Database {
 
         public long committedEventCount() {
             return iterate(commitStates.values()).filter(s -> s == CommitState.COMMITTED).count();
+        }
+    }
+
+    class StatisticsCompensator {
+
+        private final ExecutorService compensateExecutor;
+        private final ConcurrentSet<Long> deletableTransactionIDs;
+        private CoreSession.Data session;
+
+        StatisticsCompensator() {
+            compensateExecutor = Executors.newSingleThreadExecutor(NamedThreadFactory.create(name + "::statistics-compensator"));
+            deletableTransactionIDs = new ConcurrentSet<>();
+        }
+
+        public void initialise() {
+            session = createAndOpenSession(DATA, new Options.Session()).asData();
+        }
+
+        public void initialiseAndCompensate() {
+            initialise();
+            LOG.debug("Refreshing statistics.");
+            compensate();
+            deleteCompensationMetadata();
+            LOG.debug("Statistics are up to date.");
+            if (LOG.isDebugEnabled()) logStatisticsSummary();
+        }
+
+        private void logStatisticsSummary() {
+            try (CoreTransaction.Data txn = session.transaction(READ)) {
+                LOG.debug("Total 'thing' count: " +
+                        txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootThingType())
+                );
+                long hasCount = 0;
+                NavigableSet<TypeVertex> allTypes = txn.graphMgr.schema().getSubtypes(txn.graphMgr.schema().rootThingType());
+                Set<TypeVertex> attributes = txn.graphMgr.schema().getSubtypes(txn.graphMgr.schema().rootAttributeType());
+                for (TypeVertex attr : attributes) {
+                    hasCount += txn.graphMgr.data().stats().hasEdgeSum(allTypes, attr);
+                }
+                LOG.debug("Total 'role' count: " +
+                        txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootRoleType())
+                );
+                LOG.debug("Total 'has' count: " + hasCount);
+            }
+        }
+
+        private void deleteCompensationMetadata() {
+            try (CoreTransaction.Data txn = session.transaction(WRITE)) {
+                txn.dataStorage.iterate(StatisticsKey.txnCommittedPrefix()).forEachRemaining(kv ->
+                        txn.dataStorage.deleteUntracked(kv.key())
+                );
+                txn.commit();
+            }
+        }
+
+        private boolean mayMiscount(CoreTransaction.Data transaction) {
+            return !transaction.graphMgr.data().attributesCreated().isEmpty() ||
+                    !transaction.graphMgr.data().attributesDeleted().isEmpty() ||
+                    !transaction.graphMgr.data().hasEdgeCreated().isEmpty() ||
+                    !transaction.graphMgr.data().hasEdgeDeleted().isEmpty();
+        }
+
+        void committed(CoreTransaction.Data transaction) {
+            if (mayMiscount(transaction)) submitCompensate();
+        }
+
+        void deleted(CoreTransaction.Data transaction) {
+            deletableTransactionIDs.add(transaction.id);
+        }
+
+        public CompletableFuture<Void> submitCompensate() {
+            return CompletableFuture.runAsync(this::compensate, compensateExecutor);
+        }
+
+        /**
+         * Scan through all attributes that may need to be compensated (eg. have been over/under counted),
+         * and compensate them if we have enough information to do so.
+         *
+         * If find this is doing too much scanning and not enough compensation, we can use the dependenciesCache
+         * to only scan sub-regions of the miscount entries by prefix. It already appears to run rarely however!
+         */
+        private void compensate() {
+            Set<Long> openTxnIDs = iterate(isolationMgr.getUncommitted()).map(txn -> txn.id).toSet();
+            try (CoreTransaction.Data txn = session.transaction(WRITE)) {
+                boolean[] updated = new boolean[]{false};
+                txn.dataStorage.iterate(StatisticsKey.MisCount.prefix()).forEachRemaining(kv -> {
+                    Set<Long> misCountDependedTxnIDs = kv.value().decodeLongSet();
+                    if (containsCommittedTxn(misCountDependedTxnIDs, txn.dataStorage)) {
+                        compensateMiscount(txn, kv.key());
+                        txn.dataStorage.deleteUntracked(kv.key());
+                        updated[0] = true;
+                    } else if (!containsOpenTxn(misCountDependedTxnIDs, openTxnIDs)) {
+                        txn.dataStorage.deleteUntracked(kv.key());
+                        updated[0] = true;
+                    }
+                });
+                if (updated[0]) {
+                    txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
+                    for (Long txnID : deletableTransactionIDs) {
+                        txn.dataStorage.deleteUntracked(StatisticsKey.txnCommitted(txnID));
+                        deletableTransactionIDs.remove(txnID);
+                    }
+                    txn.commit();
+                }
+            }
+        }
+
+        private void compensateMiscount(CoreTransaction.Data txn, StatisticsKey.MisCount miscount) {
+            if (miscount.isAttrConditionalOvercount()) {
+                VertexIID.Type type = miscount.attributeMiscounted().type();
+                txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(-1));
+            } else if (miscount.isAttrConditionalUndercount()) {
+                VertexIID.Type type = miscount.attributeMiscounted().type();
+                txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(1));
+            } else if (miscount.isHasConditionalOvercount()) {
+                Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = miscount.hasMiscounted();
+                txn.dataStorage.mergeUntracked(
+                        StatisticsKey.hasEdgeCount(has.first().type(), has.second().type()),
+                        encodeLong(-1)
+                );
+            } else if (miscount.isHasConditionalUndercount()) {
+                Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = miscount.hasMiscounted();
+                txn.dataStorage.mergeUntracked(
+                        StatisticsKey.hasEdgeCount(has.first().type(), has.second().type()),
+                        encodeLong(1)
+                );
+            }
+        }
+
+        private boolean containsCommittedTxn(Set<Long> compensationConditions, RocksStorage.Data dataStorage) {
+            for (Long txnID : compensationConditions) {
+                if (dataStorage.get(StatisticsKey.txnCommitted(txnID)) != null) return true;
+            }
+            return false;
+        }
+
+        private boolean containsOpenTxn(Set<Long> txnIDs, Set<Long> openTxnIDs) {
+            return iterate(txnIDs).anyMatch(openTxnIDs::contains);
+        }
+
+        void close() {
+            session.close();
+            compensateExecutor.shutdownNow();
+            try {
+                // TODO
+                compensateExecutor.awaitTermination(1000, MILLISECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void writeMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
+            recordMiscounts(txn, concurrentTxn);
+            txn.dataStorage.putUntracked(StatisticsKey.txnCommitted(txn.id));
+        }
+
+        private void recordMiscounts(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
+            Map<AttributeVertex.Write<?>, Set<Long>> attrOvercountDependencies = new HashMap<>();
+            Map<AttributeVertex.Write<?>, Set<Long>> attrUndercountDependencies = new HashMap<>();
+            Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
+            Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasUndercountDependencies = new HashMap<>();
+            for (CoreTransaction.Data concurrent : concurrentTxn) {
+                if (!txn.graphMgr.data().attributesCreated().isEmpty() && !concurrent.graphMgr.data().attributesCreated().isEmpty()) {
+                    iterate(txn.graphMgr.data().attributesCreated()).filter(concurrent.graphMgr.data().attributesCreated()::contains)
+                            .forEachRemaining(attribute -> {
+                                        attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id);
+                                    }
+                            );
+                }
+                if (!txn.graphMgr.data().attributesDeleted().isEmpty() && !concurrent.graphMgr.data().attributesDeleted().isEmpty()) {
+                    iterate(txn.graphMgr.data().attributesDeleted()).filter(concurrent.graphMgr.data().attributesDeleted()::contains)
+                            .forEachRemaining(attribute -> {
+                                attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id);
+                            });
+                }
+                if (!txn.graphMgr.data().hasEdgeCreated().isEmpty() && !concurrent.graphMgr.data().hasEdgeCreated().isEmpty()) {
+                    iterate(txn.graphMgr.data().hasEdgeCreated()).filter(concurrent.graphMgr.data().hasEdgeCreated()::contains)
+                            .forEachRemaining(edge -> {
+                                hasOvercountDependencies.computeIfAbsent(
+                                        pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
+                                        (key) -> new HashSet<>()
+                                ).add(concurrent.id);
+                            });
+                }
+                if (!txn.graphMgr.data().hasEdgeDeleted().isEmpty() && !concurrent.graphMgr.data().hasEdgeDeleted().isEmpty()) {
+                    iterate(txn.graphMgr.data().hasEdgeDeleted()).filter(concurrent.graphMgr.data().hasEdgeDeleted()::contains)
+                            .forEachRemaining(edge -> {
+                                hasUndercountDependencies.computeIfAbsent(
+                                        pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
+                                        (key) -> new HashSet<>()
+                                ).add(concurrent.id);
+                            });
+                }
+            }
+
+            attrOvercountDependencies.forEach((attr, txs) ->
+                    txn.dataStorage.putUntracked(StatisticsKey.MisCount.attrConditionalOvercount(txn.id, attr.iid()), encodeLongSet(txs))
+            );
+            attrUndercountDependencies.forEach((attr, txs) ->
+                    txn.dataStorage.putUntracked(StatisticsKey.MisCount.attrConditionalUndercount(txn.id, attr.iid()), encodeLongSet(txs))
+            );
+            hasOvercountDependencies.forEach((has, txs) ->
+                    txn.dataStorage.putUntracked(StatisticsKey.MisCount.hasConditionalOvercount(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
+            );
+            hasUndercountDependencies.forEach((has, txs) ->
+                    txn.dataStorage.putUntracked(StatisticsKey.MisCount.hasConditionalUndercount(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
+            );
         }
     }
 
@@ -654,220 +813,6 @@ public class CoreDatabase implements TypeDB.Database {
 
         private void close() {
             schemaStorage.closeResources();
-        }
-    }
-
-    class StatisticsCompensator {
-
-        private final ExecutorService executor;
-        private final ConcurrentMap<CoreTransaction.Data, Set<CoreTransaction.Data>> dependencies;
-        private final ConcurrentSet<Long> deletableTxnID;
-        private CoreSession.Data session;
-
-        StatisticsCompensator() {
-            executor = Executors.newSingleThreadExecutor(NamedThreadFactory.create(name + "::statistics-compensator"));
-            dependencies = new ConcurrentHashMap<>();
-            this.deletableTxnID = new ConcurrentSet<>();
-        }
-
-        public void initialise() {
-            session = createAndOpenSession(DATA, new Options.Session()).asData();
-        }
-
-        public void initialiseAndCompensate() {
-            initialise();
-            LOG.debug("Refreshing statistics.");
-            compensate();
-            deleteAllTxnIDs();
-            LOG.debug("Statistics are up to date.");
-            if (LOG.isDebugEnabled()) {
-                logStatisticsSummary();
-            }
-        }
-
-        private void logStatisticsSummary() {
-            try (CoreTransaction.Data txn = session.transaction(READ)) {
-                LOG.debug("Total 'thing' count: " +
-                        txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootThingType())
-                );
-                long hasCount = 0;
-                NavigableSet<TypeVertex> allTypes = txn.graphMgr.schema().getSubtypes(txn.graphMgr.schema().rootThingType());
-                Set<TypeVertex> attributes = txn.graphMgr.schema().getSubtypes(txn.graphMgr.schema().rootAttributeType());
-                for (TypeVertex attr : attributes) {
-                    hasCount += txn.graphMgr.data().stats().hasEdgeSum(allTypes, attr);
-                }
-                LOG.debug("Total 'role' count: " +
-                        txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootRoleType())
-                );
-                LOG.debug("Total 'has' count: " + hasCount);
-            }
-        }
-
-        private void deleteAllTxnIDs() {
-            try (CoreTransaction.Data txn = session.transaction(WRITE)) {
-                txn.dataStorage.iterate(StatisticsKey.txnCommittedPrefix()).forEachRemaining(kv -> {
-                    txn.dataStorage.deleteUntracked(kv.key());
-                });
-                txn.commit();
-            }
-        }
-
-        public CompletableFuture<Void> mayCompensate(CoreTransaction.Data transaction) {
-            if (dependencies.containsKey(transaction)) {
-                return CompletableFuture.runAsync(() -> compensate(), executor);
-            } else {
-                return CompletableFuture.completedFuture(null);
-            }
-        }
-
-        public CompletableFuture<Void> forceCompensate() {
-            return CompletableFuture.runAsync(() -> compensate(), executor);
-        }
-
-        public void delete(CoreTransaction.Data data) {
-            dependencies.forEach((txn, deps) -> {
-                if (deps.contains(data)) dependencies.compute(txn, (t, ds) -> {
-                    ds.remove(data);
-                    if (ds.isEmpty()) return null;
-                    else return ds;
-                });
-            });
-            deletableTxnID.add(data.id);
-        }
-
-        private void compensate() {
-            Set<Long> uncommittedIDs = iterate(isolationMgr.getUncommitted()).map(txn -> txn.id).toSet();
-            try (CoreTransaction.Data txn = session.transaction(WRITE)) {
-                boolean[] updated = new boolean[]{false};
-                txn.dataStorage.iterate(StatisticsKey.MisCount.prefix()).forEachRemaining(kv -> {
-                    Set<Long> conditions = kv.value().decodeLongSet();
-                    if (anyCommitted(conditions, txn.dataStorage)) {
-                        txn.dataStorage.deleteUntracked(kv.key());
-                        if (kv.key().isAttrConditionalOvercount()) {
-                            VertexIID.Attribute<?> attribute = kv.key().attributeMiscounted();
-                            VertexIID.Type type = attribute.type();
-                            txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(-1));
-                        } else if (kv.key().isAttrConditionalUndercount()) {
-                            VertexIID.Attribute<?> attribute = kv.key().attributeMiscounted();
-                            VertexIID.Type type = attribute.type();
-                            txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(1));
-                        } else if (kv.key().isHasConditionalOvercount()) {
-                            Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = kv.key().hasMiscounted();
-                            txn.dataStorage.mergeUntracked(
-                                    StatisticsKey.hasEdgeCount(has.first().type(), has.second().type()),
-                                    encodeLong(-1)
-                            );
-                        } else if (kv.key().isHasConditionalUndercount()) {
-                            Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = kv.key().hasMiscounted();
-                            txn.dataStorage.mergeUntracked(
-                                    StatisticsKey.hasEdgeCount(has.first().type(), has.second().type()),
-                                    encodeLong(1)
-                            );
-                        }
-                        updated[0] = true;
-                    } else if (iterate(conditions).noneMatch(uncommittedIDs::contains)) {
-                        txn.dataStorage.deleteUntracked(kv.key());
-                        updated[0] = true;
-                    }
-                });
-                if (updated[0]) {
-                    txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
-                    for (Long txnID : deletableTxnID) {
-                        txn.dataStorage.deleteUntracked(StatisticsKey.txnCommitted(txnID));
-                        deletableTxnID.remove(txnID);
-                    }
-                    txn.commit();
-                }
-            }
-        }
-
-        private boolean anyCommitted(Set<Long> txnIDs, RocksStorage.Data dataStorage) {
-            for (Long txnID : txnIDs) {
-                if (dataStorage.get(StatisticsKey.txnCommitted(txnID)) != null) return true;
-            }
-            return false;
-        }
-
-        void close() {
-            session.close();
-            executor.shutdownNow();
-            try {
-                // TODO
-                executor.awaitTermination(1000, MILLISECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        public void writeMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
-            recordMiscountDependencies(txn, concurrentTxn);
-            txn.dataStorage.putUntracked(StatisticsKey.txnCommitted(txn.id));
-        }
-
-        private void recordMiscountDependencies(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
-            Set<CoreTransaction.Data> txnDependencies = new HashSet<>();
-            Map<AttributeVertex.Write<?>, Set<Long>> attrOvercountDependencies = new HashMap<>();
-            Map<AttributeVertex.Write<?>, Set<Long>> attrUndercountDependencies = new HashMap<>();
-            Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
-            Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasUndercountDependencies = new HashMap<>();
-            for (CoreTransaction.Data concurrent : concurrentTxn) {
-                if (!txn.graphMgr.data().attributesCreated().isEmpty() && !concurrent.graphMgr.data().attributesCreated().isEmpty()) {
-                    iterate(txn.graphMgr.data().attributesCreated()).filter(concurrent.graphMgr.data().attributesCreated()::contains)
-                            .forEachRemaining(attribute -> {
-                                        attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id);
-                                        txnDependencies.add(concurrent);
-                                    }
-                            );
-                }
-                if (!txn.graphMgr.data().attributesDeleted().isEmpty() && !concurrent.graphMgr.data().attributesDeleted().isEmpty()) {
-                    iterate(txn.graphMgr.data().attributesDeleted()).filter(concurrent.graphMgr.data().attributesDeleted()::contains)
-                            .forEachRemaining(attribute -> {
-                                attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id);
-                                txnDependencies.add(concurrent);
-                            });
-                }
-                if (!txn.graphMgr.data().hasEdgeCreated().isEmpty() && !concurrent.graphMgr.data().hasEdgeCreated().isEmpty()) {
-                    iterate(txn.graphMgr.data().hasEdgeCreated()).filter(concurrent.graphMgr.data().hasEdgeCreated()::contains)
-                            .forEachRemaining(edge -> {
-                                hasOvercountDependencies.computeIfAbsent(
-                                        pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
-                                        (key) -> new HashSet<>()
-                                ).add(concurrent.id);
-                                txnDependencies.add(concurrent);
-                            });
-                }
-                if (!txn.graphMgr.data().hasEdgeDeleted().isEmpty() && !concurrent.graphMgr.data().hasEdgeDeleted().isEmpty()) {
-                    iterate(txn.graphMgr.data().hasEdgeDeleted()).filter(concurrent.graphMgr.data().hasEdgeDeleted()::contains)
-                            .forEachRemaining(edge -> {
-                                hasUndercountDependencies.computeIfAbsent(
-                                        pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
-                                        (key) -> new HashSet<>()
-                                ).add(concurrent.id);
-                                txnDependencies.add(concurrent);
-                            });
-                }
-            }
-
-            attrOvercountDependencies.forEach((attr, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.MisCount.attrConditionalOvercount(txn.id, attr.iid()), encodeLongSet(txs))
-            );
-            attrUndercountDependencies.forEach((attr, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.MisCount.attrConditionalUndercount(txn.id, attr.iid()), encodeLongSet(txs))
-            );
-            hasOvercountDependencies.forEach((has, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.MisCount.hasConditionalOvercount(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
-            );
-            hasUndercountDependencies.forEach((has, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.MisCount.hasConditionalUndercount(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
-            );
-
-            txnDependencies.forEach(dependency -> {
-                dependencies.compute(txn, (t, deps) -> {
-                    if (deps == null) deps = new HashSet<>();
-                    deps.add(dependency);
-                    return deps;
-                });
-            });
         }
     }
 
