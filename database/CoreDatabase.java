@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -479,16 +480,40 @@ public class CoreDatabase implements TypeDB.Database {
             commitStates.put(transaction, CommitState.OPEN);
         }
 
-        long commitTimeNanos = 0;
-        long mayViolateNanos = 0;
-        long validationNanos = 0;
-        long concurrent = 0;
-        long commits = 0;
+        public static class LimitedQueue<E> extends LinkedList<E> {
 
+            private int limit;
+
+            public LimitedQueue(int limit) {
+                this.limit = limit;
+            }
+
+            @Override
+            public synchronized boolean add(E o) {
+                boolean added = super.add(o);
+                while (added && size() > limit) {
+                    super.remove();
+                }
+                return added;
+            }
+        }
+
+        static double mean(List<? extends Number> list) {
+            long total = 0;
+            for (Number l : list) {
+                total += l.longValue();
+            }
+            return (double)total / list.size();
+        }
+
+//        LimitedQueue<Long> commitTimeNanos = new LimitedQueue<>(1_000);
+//        LimitedQueue<Long>  mayViolateNanos =  new LimitedQueue<>(1_000);
+//        LimitedQueue<Long> validationNanos = new LimitedQueue<>(1_000);
+//        LimitedQueue<Integer>  concurrent =  new LimitedQueue<>(1_000);
+//        long count = 0;
         public Set<CoreTransaction.Data> validateConcurrentAndStartCommit(CoreTransaction.Data txn) {
             Set<CoreTransaction.Data> transactions;
             synchronized (this) {
-//                commits++;
 //                Instant start = Instant.now();
                 transactions = mayCommitConcurrently(txn);
 //                Instant txns = Instant.now();
@@ -496,15 +521,16 @@ public class CoreDatabase implements TypeDB.Database {
 //                Instant validation = Instant.now();
                 commitStates.put(txn, CommitState.COMMITTING);
 //                Instant end = Instant.now();
-//                commitTimeNanos += Duration.between(start, end).toNanos();
-//                mayViolateNanos += Duration.between(start, txns).toNanos();
-//                validationNanos += Duration.between(txns, validation).toNanos();
-//                concurrent += transactions.size();
-//                if (commits % 1000 == 0) {
-//                    LOG.warn("Mean synchronized nanos: " + (commitTimeNanos / (double) commits));
-//                    LOG.warn("Mean get mayViolateIsolation nanos: " + (mayViolateNanos / (double) commits));
-//                    LOG.warn("Mean validation nanos: " + (validationNanos / (double) commits));
-//                    LOG.warn("Mean validated transactions: " + (concurrent / (double) commits));
+//                commitTimeNanos.add(Duration.between(start, end).toNanos());
+//                mayViolateNanos.add(Duration.between(start, txns).toNanos());
+//                validationNanos.add(Duration.between(txns, validation).toNanos());
+//                concurrent.add(transactions.size());
+//                count++;
+//                if (count % 1_000 == 0) {
+//                    LOG.warn("Mean synchronized nanos: " + mean(commitTimeNanos));
+//                    LOG.warn("Mean get mayViolateIsolation nanos: " + mean(mayViolateNanos));
+//                    LOG.warn("Mean validation nanos: " + mean(validationNanos));
+//                    LOG.warn("Mean validated transactions: " + mean(concurrent));
 //                }
             }
             return transactions;
@@ -523,7 +549,11 @@ public class CoreDatabase implements TypeDB.Database {
         public void commitSucceeded(CoreTransaction.Data txn) {
             assert commitStates.get(txn) == CommitState.COMMITTING && txn.snapshotEnd().isPresent();
             commitStates.put(txn, CommitState.COMMITTED);
-            commitTimeline.computeIfAbsent(txn.snapshotEnd().get(), (key) -> new HashSet<>()).add(txn);
+            commitTimeline.compute(txn.snapshotEnd().get(), (snapshot, committed) ->{
+                if (committed == null)  committed = new HashSet<>();
+                committed.add(txn);
+                return committed;
+            });
         }
 
         public void closed(CoreTransaction.Data txn) {
@@ -545,11 +575,6 @@ public class CoreDatabase implements TypeDB.Database {
                     .toSet();
         }
 
-        // visible for testing
-        public long committedEventCount() {
-            return iterate(commitStates.values()).filter(s -> s == CommitState.COMMITTED).count();
-        }
-
         private void cleanupCommitted() {
             if (cleanupRunning.compareAndSet(false, true)) {
                 Optional<Long> oldestUncommittedSnapshot = oldestUncommittedSnapshot();
@@ -558,7 +583,7 @@ public class CoreDatabase implements TypeDB.Database {
                 else clearable = commitTimeline.headMap(oldestUncommittedSnapshot.get());
                 iterate(clearable.values()).flatMap(Iterators::iterate)
                         .forEachRemaining(txn -> {
-                            txn.cleanUp();
+                            txn.delete();
                             commitStates.remove(txn);
                         });
                 clearable.clear();
@@ -570,6 +595,10 @@ public class CoreDatabase implements TypeDB.Database {
             return iterate(commitStates.entrySet())
                     .filter(e -> e.getValue() == CommitState.OPEN || e.getValue() == CommitState.COMMITTING)
                     .map(e -> e.getKey().snapshotStart()).stream().min(Comparator.naturalOrder());
+        }
+
+        public long committedEventCount() {
+            return iterate(commitStates.values()).filter(s -> s == CommitState.COMMITTED).count();
         }
     }
 
@@ -619,12 +648,12 @@ public class CoreDatabase implements TypeDB.Database {
 
         private void mayClose() {
             if (borrowerCount == 0 && invalidated) {
-                schemaStorage.close();
+                schemaStorage.closeResources();
             }
         }
 
         private void close() {
-            schemaStorage.close();
+            schemaStorage.closeResources();
         }
     }
 
@@ -695,7 +724,7 @@ public class CoreDatabase implements TypeDB.Database {
             return CompletableFuture.runAsync(() -> compensate(), executor);
         }
 
-        public void cleanUp(CoreTransaction.Data data) {
+        public void delete(CoreTransaction.Data data) {
             dependencies.forEach((txn, deps) -> {
                 if (deps.contains(data)) dependencies.compute(txn, (t, ds) -> {
                     ds.remove(data);

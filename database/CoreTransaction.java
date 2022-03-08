@@ -37,6 +37,8 @@ import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typedb.core.traversal.TraversalCache;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.rocksdb.RocksDBException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.Set;
@@ -50,6 +52,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 
 public abstract class CoreTransaction implements TypeDB.Transaction {
+
+    private static final Logger LOG = LoggerFactory.getLogger(CoreTransaction.class);
 
     protected final CoreSession session;
     protected final Context.Transaction context;
@@ -119,9 +123,9 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            // TODO: this should call `doClose()` which is then also called from `commit()`
             closeResources();
             notifyClosed();
+            delete();
         }
     }
 
@@ -227,9 +231,9 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                 } catch (RocksDBException e) {
                     throw TypeDBException.of(e);
                 } finally {
-                    cleanUp();
                     closeResources();
                     notifyClosed();
+                    delete();
                 }
             } else {
                 throw TypeDBException.of(TRANSACTION_CLOSED);
@@ -248,12 +252,13 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
         @Override
         protected void closeResources() {
-            schemaStorage.close();
-            dataStorage.close();
+            schemaStorage.closeResources();
+            dataStorage.closeResources();
         }
 
         @Override
-        public void cleanUp() {
+        public void delete() {
+            assert !isOpen.get();
             graphMgr.clear();
         }
     }
@@ -305,20 +310,41 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
          * let inform the graph by confirming whether the RocksDB commit was successful
          * or not.
          */
+//        private static CoreDatabase.IsolationManager.LimitedQueue<Long> preStorageCommitTime = new CoreDatabase.IsolationManager.LimitedQueue<>(1000);
+//        private static CoreDatabase.IsolationManager.LimitedQueue<Long> validatedAndMetadataTime = new CoreDatabase.IsolationManager.LimitedQueue<>(1000);
+//        private static CoreDatabase.IsolationManager.LimitedQueue<Long> commitTime = new CoreDatabase.IsolationManager.LimitedQueue<>(1000);
+//        private static AtomicLong commits = new AtomicLong(0);
         @Override
         public void commit() {
             if (isOpen.compareAndSet(true, false)) {
                 try {
+//                    Instant start = Instant.now();
                     if (type().isRead()) throw TypeDBException.of(ILLEGAL_COMMIT);
                     else if (graphMgr.schema().isModified()) throw TypeDBException.of(SESSION_DATA_VIOLATION);
 
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
 
+//                    Instant preStorageCommit = Instant.now();
+
                     Set<CoreTransaction.Data> concurrent = session.database().isolationMgr().validateConcurrentAndStartCommit(this);
                     session.database().statisticsCompensator().writeMetadata(this, concurrent);
+//                    Instant validatedAndMetadata = Instant.now();
                     dataStorage.commit();
                     session.database().isolationMgr().commitSucceeded(this);
+//                    Instant end = Instant.now();
+//                    preStorageCommitTime.add(Duration.between(start, preStorageCommit).toNanos());
+//                    validatedAndMetadataTime.add(Duration.between(preStorageCommit, validatedAndMetadata).toNanos());
+//                    commitTime.add(Duration.between(validatedAndMetadata, end).toNanos());
+//                    long commitsTotal = commits.incrementAndGet();
+//                    if (commitsTotal % 1_000 == 0) {
+//                        LOG.info("Mean time in pre storage commit commit (ns) : " + mean(preStorageCommitTime));
+//                        LOG.info("Mean time in validation and metadata (ns) : " + mean(validatedAndMetadataTime));
+//                        LOG.info("Mean time in storage commit and commitSucceeded (ns) : " + mean(commitTime));
+//                        LOG.info("IsolationMgr closed (ns) : " + mean(isolatMgrClosed));
+//                        LOG.info("Compensate time (ns) : " + mean(mayCompensate));
+//                    }
+                    session.database().statisticsCompensator().mayCompensate(this);
                 } catch (RocksDBException e) {
                     rollback();
                     throw TypeDBException.of(e);
@@ -332,9 +358,10 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         }
 
         @Override
-        public void cleanUp() {
+        public void delete() {
+            assert !isOpen.get();
             graphMgr.data().clear();
-            session.database().statisticsCompensator().cleanUp(this);
+            session.database().statisticsCompensator().delete(this);
         }
 
         @Override
@@ -350,15 +377,12 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         @Override
         protected void closeResources() {
             session.database().cacheUnborrow(cache);
-            dataStorage.close();
+            dataStorage.closeResources();
         }
 
         @Override
         void notifyClosed() {
-            if (type().isWrite()) {
-                session.database().isolationMgr().closed(this);
-                session.database().statisticsCompensator().mayCompensate(this);
-            }
+            if (type().isWrite()) session.database().isolationMgr().closed(this);
             super.notifyClosed();
         }
 
@@ -367,7 +391,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             return graphMgr.data().committedIIDs();
         }
 
-        public Long snapshotStart() {
+        public long snapshotStart() {
             return dataStorage.snapshotStart();
         }
 

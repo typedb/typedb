@@ -178,13 +178,16 @@ public abstract class RocksStorage implements Storage {
     }
 
     @Override
-    public void close() {
+    public void closeResources() {
         try {
             deleteCloseSchemaWriteLock.writeLock().lock();
             if (isOpen.compareAndSet(true, false)) {
                 iterators.parallelStream().forEach(RocksIterator::close);
+                iterators.clear();
                 recycledWithPrefixBloom.values().forEach(iters -> iters.forEach(AbstractImmutableNativeReference::close));
+                recycledWithPrefixBloom.clear();
                 recycled.values().forEach(iters -> iters.forEach(AbstractImmutableNativeReference::close));
+                recycled.clear();
                 rocksTransaction.close();
                 snapshot.close();
                 transactionOptions.close();
@@ -470,6 +473,13 @@ public abstract class RocksStorage implements Storage {
             }
             super.commit();
             snapshotEnd = database.rocksData.getLatestSequenceNumber();
+        }
+
+        @Override
+        public void clear() {
+            modifiedKeys.clear();
+            deletedKeys.clear();
+            exclusiveBytes.clear();
         }
 
         @Override

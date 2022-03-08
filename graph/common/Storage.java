@@ -57,7 +57,7 @@ public interface Storage {
 
     TypeDBException exception(Exception exception);
 
-    void close();
+    void closeResources();
 
     default boolean isSchema() {
         return false;
@@ -81,6 +81,8 @@ public interface Storage {
     }
 
     interface Data extends Storage {
+
+        void clear();
 
         KeyGenerator.Data dataKeyGenerator();
 
