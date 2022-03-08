@@ -39,6 +39,7 @@ import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.rocksdb.RocksDBException;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -273,7 +274,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             ThingGraph thingGraph = new ThingGraph(dataStorage, cache.typeGraph());
             graphMgr = new GraphManager(cache.typeGraph(), thingGraph);
 
-            if (type().isWrite()) session.database().isolationMgr().opened(id, dataStorage.snapshotStart());
+            if (type().isWrite()) session.database().isolationMgr().opened(this);
             initialise(graphMgr, cache.traversal(), cache.logic());
         }
 
@@ -314,10 +315,10 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
 
-                    session.database().isolationMgr().validateAndStartCommit(id, dataStorage.modificationRecord());
-                    session.database().statisticsCompensator().writeMetadata(this);
+                    Set<CoreTransaction.Data> concurrent = session.database().isolationMgr().validateConcurrentAndStartCommit(this);
+                    session.database().statisticsCompensator().writeMetadata(this, concurrent);
                     dataStorage.commit();
-                    session.database().isolationMgr().commitSucceeded(id, dataStorage.snapshotEnd().get());
+                    session.database().isolationMgr().commitSucceeded(this);
                 } catch (RocksDBException e) {
                     rollback();
                     throw TypeDBException.of(e);
@@ -355,7 +356,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         @Override
         void notifyClosed() {
             if (type().isWrite()) {
-                session.database().isolationMgr().closed(id);
+                session.database().isolationMgr().closed(this);
                 session.database().statisticsCompensator().mayCompensate(this);
             }
             super.notifyClosed();
