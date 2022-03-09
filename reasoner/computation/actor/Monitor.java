@@ -64,6 +64,7 @@ public class Monitor extends Actor<Monitor> {
     }
 
     private <R> void registerRoot(Driver<? extends Processor<R, ?, ?, ?>> processor, Reactive.Receiver.Finishable<R> root) {
+        if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the root, or a duplicate node will be created.
         RootNode rootNode = new RootNode(root);
         putNode(root, rootNode);
@@ -73,6 +74,7 @@ public class Monitor extends Actor<Monitor> {
     }
 
     private <R> void rootFinished(Reactive.Receiver.Finishable<R> root) {
+        if (terminated) return;
         RootNode rootNode = getNode(root).asRoot();
         rootNode.setFinished();
         rootNode.graph().setFinished();  // TODO: We can do without this if the rootNode informs the graph its finished.
@@ -80,6 +82,7 @@ public class Monitor extends Actor<Monitor> {
     }
 
     private <R> void registerSource(Reactive.Provider<R> source) {
+        if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the source, or a duplicate node will be created.
         assert reactiveNodes.get(source) == null;
         SourceNode sourceNode = new SourceNode();
@@ -87,12 +90,14 @@ public class Monitor extends Actor<Monitor> {
     }
 
     private <R> void sourceFinished(Source<R> source) {
+        if (terminated) return;
         ReactiveNode sourceNode = getNode(source);
         sourceNode.asSource().setFinished();
         sourceNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
     private <R> void registerPath(Reactive.Receiver<R> receiver, Reactive.Provider<R> provider) {
+        if (terminated) return;
         ReactiveNode receiverNode = reactiveNodes.computeIfAbsent(receiver, n -> new ReactiveNode());
         ReactiveNode providerNode = reactiveNodes.computeIfAbsent(provider, n -> new ReactiveNode());
         boolean isNew = receiverNode.addProvider(providerNode);
@@ -104,20 +109,24 @@ public class Monitor extends Actor<Monitor> {
     }
 
     private <R> void createAnswer(int numCreated, Reactive.Provider<R> provider) {
+        if (terminated) return;
         getOrCreateNode(provider).createAnswer(numCreated);
     }
 
     private <R> void consumeAnswer(Reactive.Receiver<R> receiver) {
+        if (terminated) return;
         ReactiveNode receiverNode = getOrCreateNode(receiver);
         receiverNode.consumeAnswer();
         receiverNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
     private void forkFrontier(int numForks, Reactive forker) {
+        if (terminated) return;
         getOrCreateNode(forker).forkFrontier(numForks);
     }
 
     private void joinFrontier(Reactive joiner) {
+        if (terminated) return;
         ReactiveNode joinerNode = getNode(joiner);
         joinerNode.joinFrontier();
         joinerNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
@@ -176,9 +185,11 @@ public class Monitor extends Actor<Monitor> {
         }
 
         void checkFinished() {
-            if (sourcesFinished() && activeAnswers() == 0 && activeFrontiers() == 0) {
-                setFinished();
-            }
+            if (sourcesFinished() && activeAnswers() == 0 && activeFrontiers() == 0) setFinished();
+        }
+
+        public Driver<? extends Processor<?, ?, ?, ?>> rootProcessor() {
+            return rootProcessor;
         }
     }
 
@@ -363,6 +374,9 @@ public class Monitor extends Actor<Monitor> {
         }
         LOG.error("Actor exception", e);
         registry.terminate(e);
+        reactiveNodes.values().forEach(node -> {
+            if (node.isRoot()) node.asRoot().graph().rootProcessor().execute(actor -> actor.exception(e));
+        });
     }
 
     public void terminate(Throwable cause) {
