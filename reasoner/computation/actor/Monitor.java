@@ -70,7 +70,7 @@ public class Monitor extends Actor<Monitor> {
         putNode(root, rootNode);
         ReactiveGraph reactiveGraph = new ReactiveGraph(processor, rootNode);
         rootNode.setGraph(reactiveGraph);
-        addToGraphs(rootNode, set(reactiveGraph));
+        rootNode.addToGraphs(set(reactiveGraph));
     }
 
     private <R> void rootFinished(Reactive.Receiver.Finishable<R> root) {
@@ -100,24 +100,7 @@ public class Monitor extends Actor<Monitor> {
         assert isNew;
         // We could be learning about a new receiver or provider or both.
         // Propagate any graphs the receiver belongs to to the provider.
-        propagateReactiveGraphs(getNode(receiver));
-    }
-
-    private void propagateReactiveGraphs(ReactiveNode reactiveNode) {
-        Set<ReactiveGraph> toPropagate;
-        if (reactiveNode.isRoot()) toPropagate = set(reactiveNode.asRoot().graph());
-        else toPropagate = reactiveNode.graphMemberships();
-        if (!toPropagate.isEmpty()) {
-            reactiveNode.providers().forEach(child -> {
-                // checkFinished(receiverGraphs); // TODO: In case a root connects to an already complete graph it should terminate straight away - we need to check for that which means we need to check eagerly here. Except we can't do this or we'll terminate straight away.
-                if (addToGraphs(child, toPropagate)) propagateReactiveGraphs(child);
-            });
-        }
-    }
-
-    boolean addToGraphs(ReactiveNode toAdd, Set<ReactiveGraph> reactiveGraphs) {
-        reactiveGraphs.forEach(g -> g.addReactiveNode(toAdd));
-        return toAdd.addGraphMemberships(reactiveGraphs);
+        receiverNode.propagateReactiveGraphs();
     }
 
     private <R> void createAnswer(int numCreated, Reactive.Provider<R> provider) {
@@ -282,6 +265,23 @@ public class Monitor extends Actor<Monitor> {
             throw TypeDBException.of(ILLEGAL_CAST);
         }
 
+        public void propagateReactiveGraphs() {
+            if (!graphsToPropagate().isEmpty()) {
+                providers().forEach(provider -> {
+                    // checkFinished(receiverGraphs); // TODO: In case a root connects to an already complete graph it should terminate straight away - we need to check for that which means we need to check eagerly here. Except we can't do this or we'll terminate straight away.
+                    if (provider.addToGraphs(graphsToPropagate())) provider.propagateReactiveGraphs();
+                });
+            }
+        }
+
+        protected Set<ReactiveGraph> graphsToPropagate() {
+            return graphMemberships();
+        }
+
+        public boolean addToGraphs(Set<ReactiveGraph> reactiveGraphs) {
+            reactiveGraphs.forEach(g -> g.addReactiveNode(this));
+            return addGraphMemberships(reactiveGraphs);
+        }
     }
 
     private static class SourceNode extends ReactiveNode {
@@ -336,13 +336,18 @@ public class Monitor extends Actor<Monitor> {
         }
 
         public void setGraph(ReactiveGraph reactiveGraph) {
-            assert reactiveGraph == null;
+            assert this.reactiveGraph == null;
             this.reactiveGraph = reactiveGraph;
         }
 
         public ReactiveGraph graph() {
             assert reactiveGraph != null;
             return reactiveGraph;
+        }
+
+        @Override
+        protected Set<ReactiveGraph> graphsToPropagate() {
+            return set(graph());
         }
     }
 
