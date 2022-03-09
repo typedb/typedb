@@ -44,12 +44,10 @@ public class Monitor extends Actor<Monitor> {
     private boolean terminated;
     // TODO: Reactive elements from inside other actors shouldn't have been sent here over an actor boundary.
     private final Map<Reactive, ReactiveNode> reactiveNodes;
-    private final Map<RootNode, ReactiveGraph> reactiveGraphs;  // TODO: Convert to a property inside RootNode
 
     public Monitor(Driver<Monitor> driver, Registry registry) {
         super(driver, Monitor.class.getSimpleName()); this.registry = registry;
         this.reactiveNodes = new HashMap<>();
-        this.reactiveGraphs = new HashMap<>();
     }
 
     private ReactiveNode getNode(Reactive reactive) {
@@ -71,9 +69,28 @@ public class Monitor extends Actor<Monitor> {
         RootNode rootNode = new RootNode(root);
         putNode(root, rootNode);
         ReactiveGraph reactiveGraph = new ReactiveGraph(processor, rootNode);
-        ReactiveGraph existingRoot = reactiveGraphs.put(rootNode, reactiveGraph);
-        assert existingRoot == null;
+        rootNode.setGraph(reactiveGraph);
         addToGraphs(rootNode, set(reactiveGraph));
+    }
+
+    private <R> void rootFinished(Reactive.Receiver.Finishable<R> root) {
+        RootNode rootNode = getNode(root).asRoot();
+        rootNode.setFinished();
+        rootNode.graph().setFinished();  // TODO: We can do without this if the rootNode informs the graph its finished.
+        rootNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
+    }
+
+    private <R> void registerSource(Reactive.Provider<R> source) {
+        // Note this MUST be called before any paths are registered to or from the source, or duplicates will be created.
+        assert reactiveNodes.get(source) == null;
+        SourceNode sourceNode = new SourceNode();
+        putNode(source, sourceNode);
+    }
+
+    private <R> void sourceFinished(Source<R> source) {
+        ReactiveNode sourceNode = getNode(source);
+        sourceNode.asSource().setFinished();
+        sourceNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
     private <R> void registerPath(Reactive.Receiver<R> receiver, Reactive.Provider<R> provider) {
@@ -88,7 +105,7 @@ public class Monitor extends Actor<Monitor> {
 
     private void propagateReactiveGraphs(ReactiveNode reactiveNode) {
         Set<ReactiveGraph> toPropagate;
-        if (reactiveNode.isRoot()) toPropagate = set(reactiveGraphs.get(reactiveNode.asRoot()));
+        if (reactiveNode.isRoot()) toPropagate = set(reactiveNode.asRoot().graph());
         else toPropagate = reactiveNode.graphMemberships();
         if (!toPropagate.isEmpty()) {
             reactiveNode.providers().forEach(child -> {
@@ -101,26 +118,6 @@ public class Monitor extends Actor<Monitor> {
     boolean addToGraphs(ReactiveNode toAdd, Set<ReactiveGraph> reactiveGraphs) {
         reactiveGraphs.forEach(g -> g.addReactiveNode(toAdd));
         return toAdd.addGraphMemberships(reactiveGraphs);
-    }
-
-    private <R> void registerSource(Reactive.Provider<R> source) {
-        // Note this MUST be called before any paths are registered to or from the source, or duplicates will be created.
-        assert reactiveNodes.get(source) == null;
-        SourceNode sourceNode = new SourceNode(source);
-        putNode(source, sourceNode);
-    }
-
-    private <R> void sourceFinished(Source<R> source) {
-        ReactiveNode sourceNode = getNode(source);
-        sourceNode.asSource().setFinished();
-        sourceNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
-    }
-
-    private <R> void rootFinished(Reactive.Receiver.Finishable<R> root) {
-        RootNode rootNode = getNode(root).asRoot();
-        rootNode.setFinished();
-        reactiveGraphs.get(rootNode).setFinished();  // TODO: We can do without this if the rootNode informs the graph its finished.
-        rootNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
     private <R> void createAnswer(int numCreated, Reactive.Provider<R> provider) {
@@ -290,10 +287,8 @@ public class Monitor extends Actor<Monitor> {
     private static class SourceNode extends ReactiveNode {
 
         private boolean finished;
-        private final Reactive source;
 
-        SourceNode(Reactive source) {
-            this.source = source;
+        SourceNode() {
             this.finished = false;
         }
 
@@ -319,9 +314,10 @@ public class Monitor extends Actor<Monitor> {
     private static class RootNode extends SourceNode {
 
         private final Reactive.Receiver.Finishable<?> root;
+        private ReactiveGraph reactiveGraph;
 
         RootNode(Reactive.Receiver.Finishable<?> root) {
-            super(root);
+            super();
             this.root = root;
         }
 
@@ -337,6 +333,16 @@ public class Monitor extends Actor<Monitor> {
         @Override
         public RootNode asRoot() {
             return this;
+        }
+
+        public void setGraph(ReactiveGraph reactiveGraph) {
+            assert reactiveGraph == null;
+            this.reactiveGraph = reactiveGraph;
+        }
+
+        public ReactiveGraph graph() {
+            assert reactiveGraph != null;
+            return reactiveGraph;
         }
     }
 
