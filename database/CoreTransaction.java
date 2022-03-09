@@ -321,7 +321,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     graphMgr.data().commit();
 
                     Set<CoreTransaction.Data> concurrent = session.database().isolationMgr().validateConcurrentAndStartCommit(this);
-                    session.database().statisticsCorrector().writeCorrectionMetadata(this, concurrent);
+                    session.database().statisticsCorrector().recordCorrectionMetadata(this, concurrent);
                     dataStorage.commit();
                     session.database().isolationMgr().commitSucceeded(this);
                     session.database().statisticsCorrector().committed(this);

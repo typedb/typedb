@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.common.collection.Pair;
-import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
@@ -64,7 +63,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -90,6 +88,7 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.D
 import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.singleThreaded;
 import static com.vaticle.typedb.core.graph.common.Encoding.ENCODING_VERSION;
 import static com.vaticle.typedb.core.graph.common.Encoding.System.ENCODING_VERSION_KEY;
 import static java.util.Comparator.reverseOrder;
@@ -557,13 +556,11 @@ public class CoreDatabase implements TypeDB.Database {
 
     class StatisticsCorrector {
 
-        private final ExecutorService executor;
         private final ConcurrentSet<Long> deletableTransactionIDs;
         private final AtomicBoolean isCorrectionQueued;
         private CoreSession.Data session;
 
         StatisticsCorrector() {
-            executor = Executors.newSingleThreadExecutor(NamedThreadFactory.create(name + "::statistics-compensator"));
             deletableTransactionIDs = new ConcurrentSet<>();
             this.isCorrectionQueued = new AtomicBoolean(false);
         }
@@ -574,7 +571,7 @@ public class CoreDatabase implements TypeDB.Database {
 
         public void initialiseAndCorrect() {
             initialise();
-            LOG.debug("Refreshing statistics.");
+            LOG.debug("Updating statistics.");
             correctMiscounts();
             deleteCorrectionMetadata();
             LOG.debug("Statistics are up to date.");
@@ -599,6 +596,10 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
+        void close() {
+            session.close();
+        }
+
         private void deleteCorrectionMetadata() {
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
                 txn.dataStorage.iterate(StatisticsKey.txnCommittedPrefix()).forEachRemaining(kv ->
@@ -616,7 +617,9 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         void committed(CoreTransaction.Data transaction) {
-            if (mayMiscount(transaction) && isCorrectionQueued.compareAndSet(false, true)) submitCorrection();
+            if (mayMiscount(transaction) && isCorrectionQueued.compareAndSet(false, true)) {
+                submitCorrection();
+            }
         }
 
         void deleted(CoreTransaction.Data transaction) {
@@ -624,7 +627,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         public CompletableFuture<Void> submitCorrection() {
-            return CompletableFuture.runAsync(this::correctMiscounts, executor);
+            return CompletableFuture.runAsync(this::correctMiscounts, singleThreaded());
         }
 
         /**
@@ -695,18 +698,7 @@ public class CoreDatabase implements TypeDB.Database {
             return iterate(txnIDs).noneMatch(openTxnIDs::contains);
         }
 
-        void close() {
-            session.close();
-            executor.shutdownNow();
-            try {
-                // TODO
-                executor.awaitTermination(1000, MILLISECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        public void writeCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
+        public void recordCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
             recordMiscounts(txn, concurrentTxn);
             txn.dataStorage.putUntracked(StatisticsKey.txnCommitted(txn.id));
         }
@@ -717,36 +709,37 @@ public class CoreDatabase implements TypeDB.Database {
             Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
             Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasUndercountDependencies = new HashMap<>();
             for (CoreTransaction.Data concurrent : concurrentTxn) {
+                // note: fail-fast if checks are much faster than using empty iterators (probably due to concurrent data structures)
                 if (!txn.graphMgr.data().attributesCreated().isEmpty() && !concurrent.graphMgr.data().attributesCreated().isEmpty()) {
                     iterate(txn.graphMgr.data().attributesCreated()).filter(concurrent.graphMgr.data().attributesCreated()::contains)
-                            .forEachRemaining(attribute -> {
-                                        attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id);
-                                    }
+                            .forEachRemaining(attribute ->
+                                    attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
+
                             );
                 }
                 if (!txn.graphMgr.data().attributesDeleted().isEmpty() && !concurrent.graphMgr.data().attributesDeleted().isEmpty()) {
                     iterate(txn.graphMgr.data().attributesDeleted()).filter(concurrent.graphMgr.data().attributesDeleted()::contains)
-                            .forEachRemaining(attribute -> {
-                                attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id);
-                            });
+                            .forEachRemaining(attribute ->
+                                    attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
+                            );
                 }
                 if (!txn.graphMgr.data().hasEdgeCreated().isEmpty() && !concurrent.graphMgr.data().hasEdgeCreated().isEmpty()) {
                     iterate(txn.graphMgr.data().hasEdgeCreated()).filter(concurrent.graphMgr.data().hasEdgeCreated()::contains)
-                            .forEachRemaining(edge -> {
-                                hasOvercountDependencies.computeIfAbsent(
-                                        pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
-                                        (key) -> new HashSet<>()
-                                ).add(concurrent.id);
-                            });
+                            .forEachRemaining(edge ->
+                                    hasOvercountDependencies.computeIfAbsent(
+                                            pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
+                                            (key) -> new HashSet<>()
+                                    ).add(concurrent.id)
+                            );
                 }
                 if (!txn.graphMgr.data().hasEdgeDeleted().isEmpty() && !concurrent.graphMgr.data().hasEdgeDeleted().isEmpty()) {
                     iterate(txn.graphMgr.data().hasEdgeDeleted()).filter(concurrent.graphMgr.data().hasEdgeDeleted()::contains)
-                            .forEachRemaining(edge -> {
-                                hasUndercountDependencies.computeIfAbsent(
-                                        pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
-                                        (key) -> new HashSet<>()
-                                ).add(concurrent.id);
-                            });
+                            .forEachRemaining(edge ->
+                                    hasUndercountDependencies.computeIfAbsent(
+                                            pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
+                                            (key) -> new HashSet<>()
+                                    ).add(concurrent.id)
+                            );
                 }
             }
 

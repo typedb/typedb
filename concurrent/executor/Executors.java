@@ -25,6 +25,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
@@ -51,6 +52,7 @@ public class Executors {
     private final ActorExecutorGroup actorExecutorService;
     private final NioEventLoopGroup networkExecutorService;
     private final ScheduledThreadPoolExecutor scheduledThreadPool;
+    private final ExecutorService singleThreadedExecutorService;
 
     private Executors(int parallelisation) {
         if (parallelisation <= 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
@@ -61,6 +63,7 @@ public class Executors {
         networkExecutorService = new NioEventLoopGroup(parallelisation, threadFactory(TYPEDB_CORE_NETWORK_THREAD_NAME));
         scheduledThreadPool = new ScheduledThreadPoolExecutor(TYPEDB_CORE_SCHEDULED_THREAD_SIZE,
                                                               threadFactory(TYPEDB_CORE_SCHEDULED_THREAD_NAME));
+        singleThreadedExecutorService = java.util.concurrent.Executors.newSingleThreadExecutor();
         scheduledThreadPool.setRemoveOnCancelPolicy(true);
     }
 
@@ -106,5 +109,10 @@ public class Executors {
     public static ScheduledThreadPoolExecutor scheduled() {
         assert isInitialised();
         return singleton.scheduledThreadPool;
+    }
+
+    public static ExecutorService singleThreaded() {
+        assert isInitialised();
+        return singleton.singleThreadedExecutorService;
     }
 }

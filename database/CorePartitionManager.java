@@ -36,8 +36,8 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.DEFAULT;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.FIXED_START_EDGE;
-import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.OPTIMISATION_EDGE;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.METADATA;
+import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.OPTIMISATION_EDGE;
 import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.VARIABLE_START_EDGE;
 
 public abstract class CorePartitionManager {
