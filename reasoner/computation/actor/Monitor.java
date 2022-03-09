@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 public class Monitor extends Actor<Monitor> {
@@ -42,155 +43,301 @@ public class Monitor extends Actor<Monitor> {
     private final Registry registry;
     private boolean terminated;
     // TODO: Reactive elements from inside other actors shouldn't have been sent here over an actor boundary.
-    private final Map<Reactive, Set<Reactive.Provider<?>>> paths;
-    private final Map<Reactive, Set<ReactiveGraph>> reactiveGraphMembership;
-    private final Map<Reactive, Integer> reactiveAnswers;
-    private final Map<Reactive, Integer> reactiveFrontiers;
-    private final Map<Reactive, ReactiveGraph> reactiveGraphRoots;
-    private final Set<Reactive> finishedReactiveGraphRoots;
-    private final Set<Reactive.Provider<?>> sources;
-    private final Set<Reactive.Provider<?>> finishedSources;
+    private final Map<Reactive, ReactiveNode> reactiveNodes;
+    private final Map<RootNode, ReactiveGraph> reactiveGraphs;  // TODO: Convert to a property inside RootNode
 
     public Monitor(Driver<Monitor> driver, Registry registry) {
         super(driver, Monitor.class.getSimpleName()); this.registry = registry;
-        this.paths = new HashMap<>();
-        this.reactiveGraphMembership = new HashMap<>();
-        this.reactiveAnswers = new HashMap<>();
-        this.reactiveFrontiers = new HashMap<>();
-        this.reactiveGraphRoots = new HashMap<>();
-        this.finishedReactiveGraphRoots = new HashSet<>();
-        this.sources = new HashSet<>();
-        this.finishedSources = new HashSet<>();
+        this.reactiveNodes = new HashMap<>();
+        this.reactiveGraphs = new HashMap<>();
+    }
+
+    private ReactiveNode getNode(Reactive reactive) {
+        return reactiveNodes.get(reactive);
+    }
+
+    private ReactiveNode getOrCreateNode(Reactive reactive) {
+        return reactiveNodes.computeIfAbsent(reactive, p -> new ReactiveNode());
+    }
+
+    private void putNode(Reactive reactive, ReactiveNode reactiveNode) {
+        ReactiveNode exists = reactiveNodes.put(reactive, reactiveNode);
+        assert exists == null;
     }
 
     private <R> void registerRoot(Driver<? extends Processor<R, ?, ?, ?>> processor, Reactive.Receiver.Finishable<R> root) {
         // We assume that this is called before the root has any connected paths registered
         // TODO: What if a new root is registered which shares paths with an already complete ReactiveGraph? It should be able to find all of its contained paths
-        ReactiveGraph reactiveGraph = new ReactiveGraph(processor, root);
-        ReactiveGraph existingRoot = reactiveGraphRoots.put(root, reactiveGraph);
+        RootNode rootNode = new RootNode(root);
+        putNode(root, rootNode);
+        ReactiveGraph reactiveGraph = new ReactiveGraph(processor, rootNode);
+        ReactiveGraph existingRoot = reactiveGraphs.put(rootNode, reactiveGraph);
         assert existingRoot == null;
-        addToGraphs(root, set(reactiveGraph));
+        addToGraphs(rootNode, set(reactiveGraph));
     }
 
     private <R> void registerPath(Reactive.Receiver<R> receiver, Reactive.Provider<R> provider) {
-        paths.computeIfAbsent(receiver, p -> new HashSet<>()).add(provider);
+        ReactiveNode receiverNode = reactiveNodes.computeIfAbsent(receiver, n -> new ReactiveNode());
+        ReactiveNode providerNode = reactiveNodes.computeIfAbsent(provider, n -> new ReactiveNode());
+        boolean isNew = receiverNode.addProvider(providerNode);
+        assert isNew;
         // We could be learning about a new receiver or provider or both.
         // Propagate any graphs the receiver belongs to to the provider.
-        propagateReactiveGraphs(receiver);
+        propagateReactiveGraphs(getNode(receiver));
     }
 
-    private void propagateReactiveGraphs(Reactive reactive) {
+    private void propagateReactiveGraphs(ReactiveNode reactiveNode) {
         Set<ReactiveGraph> toPropagate;
-        if (reactiveGraphRoots.containsKey(reactive)) toPropagate = set(reactiveGraphRoots.get(reactive));
-        else toPropagate = reactiveGraphMembership.getOrDefault(reactive, set());
+        if (reactiveNode.isRoot()) toPropagate = set(reactiveGraphs.get(reactiveNode.asRoot()));
+        else toPropagate = reactiveNode.graphMemberships();
         if (!toPropagate.isEmpty()) {
-            Set<Reactive.Provider<?>> providers = paths.getOrDefault(reactive, set());
-            providers.forEach(child -> {
+            reactiveNode.providers().forEach(child -> {
                 // checkFinished(receiverGraphs); // TODO: In case a root connects to an already complete graph it should terminate straight away - we need to check for that which means we need to check eagerly here. Except we can't do this or we'll terminate straight away.
                 if (addToGraphs(child, toPropagate)) propagateReactiveGraphs(child);
             });
         }
     }
 
-    boolean addToGraphs(Reactive toAdd, Set<ReactiveGraph> reactiveGraphs) {
-        Set<ReactiveGraph> providerGraphs = reactiveGraphMembership.computeIfAbsent(toAdd, r -> new HashSet<>());
-        reactiveGraphs.forEach(g -> g.reactives.add(toAdd));
-        return providerGraphs.addAll(reactiveGraphs);
+    boolean addToGraphs(ReactiveNode toAdd, Set<ReactiveGraph> reactiveGraphs) {
+        reactiveGraphs.forEach(g -> g.addReactiveNode(toAdd));
+        return toAdd.addGraphMemberships(reactiveGraphs);
     }
 
     private <R> void registerSource(Reactive.Provider<R> source) {
-        sources.add(source);
+        // Note this MUST be called before any paths are registered to or from the source, or duplicates will be created.
+        assert reactiveNodes.get(source) == null;
+        SourceNode sourceNode = new SourceNode(source);
+        putNode(source, sourceNode);
     }
 
     private <R> void sourceFinished(Source<R> source) {
-        finishedSources.add(source);
-        reactiveGraphMembership.getOrDefault(source, set()).forEach(this::checkFinished);
+        ReactiveNode sourceNode = getNode(source);
+        sourceNode.asSource().setFinished();
+        sourceNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
     private <R> void rootFinished(Reactive.Receiver.Finishable<R> root) {
-        finishedReactiveGraphRoots.add(root);
-        reactiveGraphMembership.getOrDefault(root, set()).forEach(this::checkFinished);
+        RootNode rootNode = getNode(root).asRoot();
+        rootNode.setFinished();
+        reactiveGraphs.get(rootNode).setFinished();  // TODO: We can do without this if the rootNode informs the graph its finished.
+        rootNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
     private <R> void createAnswer(int numCreated, Reactive.Provider<R> provider) {
-        reactiveAnswers.putIfAbsent(provider, 0);
-        reactiveAnswers.computeIfPresent(provider, (r, c) -> c + numCreated);
-        // TODO: We shouldn't check finished on creating an answer
-        reactiveGraphMembership.getOrDefault(provider, set()).forEach(this::checkFinished);
+        getOrCreateNode(provider).createAnswer(numCreated);
     }
 
     private <R> void consumeAnswer(Reactive.Receiver<R> receiver) {
-        reactiveAnswers.putIfAbsent(receiver, 0);
-        reactiveAnswers.computeIfPresent(receiver, (r, c) -> c - 1);
-        reactiveGraphMembership.getOrDefault(receiver, set()).forEach(this::checkFinished);
+        ReactiveNode receiverNode = getOrCreateNode(receiver);
+        receiverNode.consumeAnswer();
+        receiverNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
     private void forkFrontier(int numForks, Reactive forker) {
-        reactiveFrontiers.putIfAbsent(forker, 0);
-        reactiveFrontiers.computeIfPresent(forker, (r, c) -> c + numForks);
+        getOrCreateNode(forker).forkFrontier(numForks);
     }
 
     private void joinFrontier(Reactive joiner) {
-        reactiveFrontiers.putIfAbsent(joiner, 0);
-        reactiveFrontiers.computeIfPresent(joiner, (r, c) -> c - 1);
-        reactiveGraphMembership.getOrDefault(joiner, set()).forEach(this::checkFinished);
+        ReactiveNode joinerNode = getNode(joiner);
+        joinerNode.joinFrontier();
+        joinerNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
-    void checkFinished(ReactiveGraph reactiveGraph) {
-        // TODO: Include that the root must be pulling
-        if (reactiveGraph.nestedRootsFinished(reactiveGraphRoots.keySet(), finishedReactiveGraphRoots)
-                && reactiveGraph.sourcesFinished(sources, finishedSources)
-                && reactiveGraph.activeAnswers(reactiveAnswers) == 0
-                && reactiveGraph.activeFrontiers(reactiveFrontiers) == 0) {
-            reactiveGraph.setFinished();
-        }
-    }
-
-    private static class ReactiveGraph {
+    private static class ReactiveGraph {  // TODO: A graph can effectively be a source node within another graph
 
         private final Driver<? extends Processor<?, ?, ?, ?>> rootProcessor;
-        private final Reactive.Receiver.Finishable<?> root;
-        private final Set<Reactive> reactives;
+        private final RootNode rootNode;
+        private final Set<ReactiveNode> reactives;
+        private final Set<SourceNode> nestedSources;
+        private boolean finished;
 
-        ReactiveGraph(Driver<? extends Processor<?,?,?,?>> rootProcessor, Reactive.Receiver.Finishable<?> root) {
+        ReactiveGraph(Driver<? extends Processor<?,?,?,?>> rootProcessor, RootNode rootNode) {
             this.rootProcessor = rootProcessor;
-            this.root = root;
+            this.rootNode = rootNode;
             this.reactives = new HashSet<>();
+            this.nestedSources = new HashSet<>();
+            this.finished = false;
         }
 
         private void setFinished() {
-            rootProcessor.execute(actor -> actor.onFinished(root));
+            assert !finished;
+            rootProcessor.execute(actor -> actor.onFinished(rootNode.root()));
         }
 
-        private boolean nestedRootsFinished(Set<Reactive> reactiveGraphs,
-                                            Set<Reactive> finishedReactiveGraphRoots) {
-            Set<Reactive> unfinished = new HashSet<>(reactiveGraphs);
-            unfinished.retainAll(reactives);
-            unfinished.removeAll(finishedReactiveGraphRoots);
-            return unfinished.equals(set(root));
+        public void addReactiveNode(ReactiveNode toAdd) {
+//            assert !toAdd.equals(rootNode);
+            if (!toAdd.equals(rootNode)) {
+                if (toAdd.isSource()) nestedSources.add(toAdd.asSource());
+                else reactives.add(toAdd);
+            }
         }
 
-        private boolean sourcesFinished(Set<Reactive.Provider<?>> sources, Set<Reactive.Provider<?>> finishedSources) {
-            Set<Reactive> unfinished = new HashSet<>(sources);
-            unfinished.retainAll(reactives);
-            unfinished.removeAll(finishedSources);
-            return unfinished.isEmpty();
+        private boolean sourcesFinished() {
+            for (SourceNode nestedSource : nestedSources) if (!nestedSource.isFinished()) return false;
+            return true;
         }
 
-        int activeAnswers(Map<Reactive, Integer> reactiveAnswers) {
-            int count = 0;
-            for (Reactive reactive : reactives) count += reactiveAnswers.getOrDefault(reactive, 0);
+        long activeAnswers() {
+            long count = 0;
+            count += rootNode.answersConsumed();
+            for (ReactiveNode reactive : reactives) count += reactive.answersCreated() + reactive.answersConsumed();
+            for (SourceNode source : nestedSources) count += source.answersCreated();
             assert count >= 0;
             return count;
         }
 
-        int activeFrontiers(Map<Reactive, Integer> reactiveFrontiers) {
-            int count = 0;
-            for (Reactive reactive : reactives) count += reactiveFrontiers.getOrDefault(reactive, 0);
+        long activeFrontiers() {
+            long count = 0;
+            count += rootNode.frontierForks();
+            for (ReactiveNode reactive : reactives) count += reactive.frontierForks() + reactive.frontierJoins();
+            for (SourceNode source : nestedSources) count += source.frontierJoins();
             assert count >= 0;
             return count;
         }
 
+        void checkFinished() {
+            // TODO: Include that the root must be pulling
+            if (sourcesFinished() && activeAnswers() == 0 && activeFrontiers() == 0) {
+                setFinished();
+            }
+        }
+    }
+
+    private static class ReactiveNode {
+
+        private final Set<ReactiveGraph> graphMemberships;
+        private final Set<ReactiveNode> providers;
+        private long answersCreated;
+        private long answersConsumed;
+        private long frontierForks;
+        private long frontierJoins;
+
+        ReactiveNode() {
+            this.graphMemberships = new HashSet<>();
+            this.providers = new HashSet<>();
+            this.answersCreated = 0;
+            this.answersConsumed = 0;
+            this.frontierForks = 0;
+            this.frontierJoins = 0;
+        }
+
+        public long answersCreated() {
+            return answersCreated;
+        }
+
+        public long answersConsumed() {
+            return answersConsumed;
+        }
+
+        public long frontierJoins() {
+            return frontierJoins;
+        }
+
+        public long frontierForks() {
+            return frontierForks;
+        }
+
+        protected void createAnswer(int numCreated) {
+            answersCreated += numCreated;
+        }
+
+        protected void consumeAnswer() {
+            answersConsumed -= 1;
+        }
+
+        public void forkFrontier(int numForks) {
+            frontierForks += numForks;
+        }
+
+        public void joinFrontier() {
+            frontierJoins -= 1;
+        }
+
+        public Set<ReactiveNode> providers() {
+            return providers;
+        }
+
+        public boolean addProvider(ReactiveNode providerNode) {
+            return providers.add(providerNode);
+        }
+
+        public Set<ReactiveGraph> graphMemberships() {
+            return graphMemberships;
+        }
+
+        public boolean addGraphMemberships(Set<ReactiveGraph> reactiveGraphs) {
+            return graphMemberships.addAll(reactiveGraphs);
+        }
+
+        public boolean isRoot() {
+            return false;
+        }
+
+        public RootNode asRoot() {
+            throw TypeDBException.of(ILLEGAL_CAST);
+        }
+
+        public boolean isSource() {
+            return false;
+        }
+
+        public SourceNode asSource() {
+            throw TypeDBException.of(ILLEGAL_CAST);
+        }
+
+    }
+
+    private static class SourceNode extends ReactiveNode {
+
+        private boolean finished;
+        private final Reactive source;
+
+        SourceNode(Reactive source) {
+            this.source = source;
+            this.finished = false;
+        }
+
+        public boolean isFinished() {
+            return finished;
+        }
+
+        protected void setFinished() {
+            finished = true;
+        }
+
+        @Override
+        public boolean isSource() {
+            return true;
+        }
+
+        @Override
+        public SourceNode asSource() {
+            return this;
+        }
+    }
+
+    private static class RootNode extends SourceNode {
+
+        private final Reactive.Receiver.Finishable<?> root;
+
+        RootNode(Reactive.Receiver.Finishable<?> root) {
+            super(root);
+            this.root = root;
+        }
+
+        public Reactive.Receiver.Finishable<?> root() {
+            return root;
+        }
+
+        @Override
+        public boolean isRoot() {
+            return true;
+        }
+
+        @Override
+        public RootNode asRoot() {
+            return this;
+        }
     }
 
     @Override
@@ -202,7 +349,7 @@ public class Monitor extends Actor<Monitor> {
                 registry.terminate(e);
                 return;
             } else {
-                LOG.debug("Monitor   interrupted by TypeDB exception: {}", e.getMessage());
+                LOG.debug("Monitor interrupted by TypeDB exception: {}", e.getMessage());
             }
         }
         LOG.error("Actor exception", e);

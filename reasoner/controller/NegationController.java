@@ -94,6 +94,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             requestConnection(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
             negation = new NegationReactive(monitor(), name(), bounds);
             monitor().registerRoot(driver(), negation);
+            monitor().forkFrontier(1, negation);
+            monitor().joinFrontiers(negation);
             endpoint.publishTo(negation);
             negation.publishTo(outlet());
         }
@@ -118,7 +120,6 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
                 this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
                 this.bounds = bounds;
                 this.answerFound = false;
-                monitor().forkFrontier(1, this);
             }
 
             @Override

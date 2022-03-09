@@ -22,12 +22,13 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.rocks.RocksSession;
@@ -132,18 +133,15 @@ public class ResolutionTest {
             try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }", transaction.logic());
                 Registry registry = transaction.reasoner().controllerRegistry();
-                LinkedBlockingQueue<ConceptMap> responses = new LinkedBlockingQueue<>();
-                LinkedBlockingQueue<Throwable> exceptions = new LinkedBlockingQueue<>();
-
-                EntryPoint reasonerEntryPoint = new EntryPoint(registry.monitor(), responses::add, exceptions::add, l -> {}, "EntryPoint");
+                AnswerProducer answerProducer = new AnswerProducer();
                 try {
-                    registry.createRootConjunctionController(conjunctionPattern, new HashSet<>(), reasonerEntryPoint);
+                    registry.createRootConjunctionController(conjunctionPattern, new HashSet<>(), answerProducer);
                 } catch (TypeDBException e) {
                     fail();
                 }
                 Exception e = new RuntimeException();
                 registry.terminate(e);
-                Throwable receivedException = exceptions.poll(100, TimeUnit.MILLISECONDS);
+                Throwable receivedException = answerProducer.exceptions().poll(100, TimeUnit.MILLISECONDS);
                 assertEquals(TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, e), receivedException);
             }
         }
@@ -477,32 +475,55 @@ public class ResolutionTest {
         return transaction;
     }
 
-    private static class AnswerProducer {
+    private static class AnswerProducer implements ReasonerConsumer {
 
         public LinkedBlockingQueue<ConceptMap> responses;
         public LinkedBlockingQueue<Throwable> exceptions;
         public AtomicBoolean doneReceived;
-        public EntryPoint entryPoint;
+        private Actor.Driver<? extends Processor<?, ?, ?, ?>> rootProcessor;
+        private boolean pullOnSet;
 
-        AnswerProducer(Monitor.MonitorRef monitor) {
+        AnswerProducer() {
             responses = new LinkedBlockingQueue<>();
             exceptions = new LinkedBlockingQueue<>();
             doneReceived = new AtomicBoolean(false);
-            entryPoint = new EntryPoint(monitor, this::onAnswer, exceptions::add, this::receivedDone, "EntryPoint");
+            pullOnSet = false;
         }
 
-        void onAnswer(ConceptMap answer) {
+        void getNextAnswer() {
+            if (rootProcessor != null) pull();
+            else pullOnSet = true;
+        }
+
+        private void pull() {
+            rootProcessor.execute(actor -> actor.pull());
+        }
+
+        @Override
+        public void setRootProcessor(Actor.Driver<? extends Processor<?, ?, ?, ?>> rootProcessor) {
+            this.rootProcessor = rootProcessor;
+            if (pullOnSet) pull();
+        }
+
+        @Override
+        public void receiveAnswer(ConceptMap answer) {
             assertFalse(doneReceived.get());
             responses.add(answer);
             getNextAnswer();
         }
 
-        void getNextAnswer() {
-            entryPoint.pull();
+        @Override
+        public void answersFinished() {
+            doneReceived.set(true);
         }
 
-        void receivedDone(Boolean bool) {
-            doneReceived.set(true);
+        @Override
+        public void exception(Throwable e) {
+            exceptions.add(e);
+        }
+
+        public LinkedBlockingQueue<Throwable> exceptions() {
+            return exceptions;
         }
     }
 
@@ -514,15 +535,15 @@ public class ResolutionTest {
             Tracer.get().startDefaultTrace();
         }
         Registry registry = transaction.reasoner().controllerRegistry();
-        AnswerProducer ans = new AnswerProducer(registry.monitor());
-        ans.getNextAnswer();
+        AnswerProducer answerProducer = new AnswerProducer();
+        answerProducer.getNextAnswer();
         try {
-             registry.createRootDisjunctionController(disjunction, filter, ans.entryPoint);
+             registry.createRootDisjunctionController(disjunction, filter, answerProducer);
         } catch (TypeDBException e) {
             fail();
             return;
         }
-        assertResponses(ans.responses, filter, answerCount, explainableAnswers, ans.doneReceived);
+        assertResponses(answerProducer.responses, filter, answerCount, explainableAnswers, answerProducer.doneReceived);
     }
 
     private void createRootAndAssertResponses(RocksTransaction transaction, Conjunction conjunction, long answerCount,
@@ -535,15 +556,15 @@ public class ResolutionTest {
         Set<Identifier.Variable.Retrievable> filter = new HashSet<>();
         iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName).map(Identifier.Variable::asName)
                 .forEachRemaining(filter::add);
-        AnswerProducer ans = new AnswerProducer(registry.monitor());
-        ans.getNextAnswer();
+        AnswerProducer answerProducer = new AnswerProducer();
+        answerProducer.getNextAnswer();
         try {
-            registry.createRootConjunctionController(conjunction, filter, ans.entryPoint);
+            registry.createRootConjunctionController(conjunction, filter, answerProducer);
         } catch (TypeDBException e) {
             fail();
             return;
         }
-        assertResponses(ans.responses, filter, answerCount, explainableAnswers, ans.doneReceived);
+        assertResponses(answerProducer.responses, filter, answerCount, explainableAnswers, answerProducer.doneReceived);
     }
 
     private void assertResponses(LinkedBlockingQueue<ConceptMap> responses, Set<Identifier.Variable.Retrievable> filter,

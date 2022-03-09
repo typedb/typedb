@@ -40,6 +40,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
@@ -72,6 +73,10 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     public abstract void setUp();
+
+    public void pull() {
+        throw TypeDBException.of(ILLEGAL_OPERATION);
+    }
 
     protected void setOutlet(Reactive.Stream<OUTPUT,OUTPUT> outlet) {
         this.outlet = outlet;

@@ -19,29 +19,25 @@ package com.vaticle.typedb.core.reasoner;
 
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.Sink;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.EntryPoint;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
-import com.vaticle.typedb.core.reasoner.utils.Tracer.Trace;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 @ThreadSafe
-public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename to MatchProducer and create abstract supertype
+public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer { // TODO: Rename to MatchProducer and create abstract supertype
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
@@ -49,9 +45,10 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     private final Options.Query options;
     private final Registry controllerRegistry;
     private final ExplainablesManager explainablesManager;
-    private final EntryPoint reasonerEntryPoint;
     private boolean done;
     private Queue<ConceptMap> queue;
+    private Actor.Driver<? extends Processor<?, ?, ?, ?>> rootProcessor;
+    private boolean isPulling;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
@@ -62,9 +59,8 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.queue = null;
         this.done = false;
         this.required = new AtomicInteger();
-        this.reasonerEntryPoint = new EntryPoint(controllerRegistry.monitor(), this::receiveAnswer, this::exception,
-                                                 this::answersFinished, conjunction.toString());  // TODO Try wrapping the root processor in an entrypoint object, which is still a reactive
-        this.controllerRegistry.createRootConjunctionController(conjunction, filter, reasonerEntryPoint);
+        this.isPulling = false;
+        this.controllerRegistry.createRootConjunctionController(conjunction, filter, this);
         if (options.traceInference()) {
             Tracer.initialise(options.logsDir());
             Tracer.get().startDefaultTrace();
@@ -79,9 +75,8 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         this.queue = null;
         this.done = false;
         this.required = new AtomicInteger();
-        this.reasonerEntryPoint = new EntryPoint(controllerRegistry.monitor(), this::receiveAnswer, this::exception,
-                                                 this::answersFinished, disjunction.toString());
-        this.controllerRegistry.createRootDisjunctionController(disjunction, filter, reasonerEntryPoint);
+        this.isPulling = false;
+        this.controllerRegistry.createRootDisjunctionController(disjunction, filter, this);
         if (options.traceInference()) {
             Tracer.initialise(options.logsDir());
             Tracer.get().startDefaultTrace();
@@ -89,25 +84,41 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     }
 
     @Override
-    public synchronized void produce(Queue<ConceptMap> queue, int request, Executor executor) {
-        assert this.queue == null || this.queue == queue;
-        this.queue = queue;
-        required.addAndGet(request);
-        reasonerEntryPoint.pull();  // TODO: Consider making this class implement Receiver and providing it to pull()
+    public void setRootProcessor(Actor.Driver<? extends Processor<?, ?, ?, ?>> rootProcessor) {
+        this.rootProcessor = rootProcessor;
+        if (required.get() > 0) pull();
     }
 
-    private void receiveAnswer(ConceptMap answer) {
+    @Override
+    public synchronized void produce(Queue<ConceptMap> queue, int request, Executor executor) {
+        assert this.queue == null || this.queue == queue;
+        assert request > 0;
+        this.queue = queue;
+        required.addAndGet(request);
+        if (!isPulling) pull();
+    }
+
+    @Override
+    public void receiveAnswer(ConceptMap answer) {
+        isPulling = false;
         // if (options.traceInference()) Tracer.get().finishDefaultTrace();
         if (options.explain() && !answer.explainables().isEmpty()) {
             explainablesManager.setAndRecordExplainables(answer);
         }
         queue.put(answer);
-        if (required.decrementAndGet() > 0) reasonerEntryPoint.pull();
+        if (required.decrementAndGet() > 0) pull();
     }
 
-    // note: root resolver calls this single-threaded, so is threads safe
+    private void pull() {
+        if (rootProcessor != null) {
+            isPulling = true;
+            rootProcessor.execute(actor -> actor.pull());
+        }
+    }
 
-    private void answersFinished(Boolean aVoid) {  // TODO: Is there a nicer way? Use a runnable
+    @Override
+    public void answersFinished() {
+        // note: root resolver calls this single-threaded, so is thread safe
         LOG.trace("All answers found.");
 //        if (options.traceInference()) Tracer.get().finishDefaultTrace();
         finish();
@@ -120,7 +131,8 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
         required.set(0);
     }
 
-    private void exception(Throwable e) {
+    @Override
+    public void exception(Throwable e) {
         // TODO: Should this mirror finish()?
         if (!done) {
             done = true;
@@ -132,68 +144,6 @@ public class ReasonerProducer implements Producer<ConceptMap> { // TODO: Rename 
     @Override
     public void recycle() {
 
-    }
-
-    public static class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Finishable<ConceptMap> {  // TODO: Consider collapsing Sink and EntryPoint into ReasonerProducer
-
-        private final Consumer<ConceptMap> answerConsumer;
-        private final Consumer<Throwable> exceptionConsumer;
-        private final Consumer<Boolean> onDone;
-        private final String groupName;
-        private final UUID traceId = UUID.randomUUID();
-        private boolean isPulling;
-        private int traceCounter = 0;
-
-        public EntryPoint(Monitor.MonitorRef monitorRef, Consumer<ConceptMap> answerConsumer, Consumer<Throwable> exceptionConsumer, Consumer<Boolean> onDone, String groupName) {
-            super(monitorRef);
-            this.answerConsumer = answerConsumer;
-            this.exceptionConsumer = exceptionConsumer;
-            this.onDone = onDone;
-            this.groupName = groupName;
-            this.isPulling = false;
-            monitorRef().forkFrontier(1, this);
-        }
-
-        public void pull() {
-            isPulling = true;
-            providerRegistry().pullAll();
-        }
-
-        @Override
-        public void receive(@Nullable Provider<ConceptMap> provider, ConceptMap packet) {
-            super.receive(provider, packet);
-            isPulling = false;
-            answerConsumer.accept(packet);
-            monitorRef().consumeAnswer(this);
-        }
-
-        @Override
-        public void subscribeTo(Provider<ConceptMap> provider) {
-            super.subscribeTo(provider);
-            if (isPulling) providerRegistry().pull(provider);
-        }
-
-        @Override
-        public String groupName() {
-            return groupName;
-        }
-
-        public Trace trace(){
-            return Trace.create(traceId, traceCounter);
-        }
-
-        public void exception(Throwable e) {
-            exceptionConsumer.accept(e);
-        }
-
-        public boolean isPulling() {
-            return isPulling;
-        }
-
-        @Override
-        public void onFinished() {
-            onDone.accept(true);
-        }
     }
 
 }

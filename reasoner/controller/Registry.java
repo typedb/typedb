@@ -33,7 +33,7 @@ import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
-import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
+import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
@@ -124,28 +124,26 @@ public class Registry {
         }
     }
 
-    public Actor.Driver<RootConjunctionController> createRootConjunctionController(Conjunction conjunction,
-                                                                                   Set<Variable.Retrievable> filter,
-                                                                                   EntryPoint reasonerEntryPoint) {
+    public void createRootConjunctionController(Conjunction conjunction, Set<Variable.Retrievable> filter,
+                                                ReasonerConsumer reasonerConsumer) {
         LOG.debug("Creating Root Conjunction for: '{}'", conjunction);
         Actor.Driver<RootConjunctionController> controller =
                 Actor.driver(driver -> new RootConjunctionController(driver, conjunction, filter, executorService,
-                                                                     monitorRef, this, reasonerEntryPoint), executorService);
+                                                                     monitorRef, this, reasonerConsumer), executorService);
         controller.execute(RootConjunctionController::setUpUpstreamProviders);
         controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));
         // TODO: Consider exception handling
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-        return controller;
     }
 
     public Actor.Driver<RootDisjunctionController> createRootDisjunctionController(Disjunction disjunction,
                                                                                    Set<Variable.Retrievable> filter,
-                                                                                   EntryPoint reasonerEntryPoint) {
+                                                                                   ReasonerConsumer reasonerConsumer) {
         LOG.debug("Creating Root Disjunction for: '{}'", disjunction);
         Actor.Driver<RootDisjunctionController> controller =
                 Actor.driver(driver -> new RootDisjunctionController(driver, disjunction, filter, executorService,
-                                                                     monitorRef, this, reasonerEntryPoint), executorService);
+                                                                     monitorRef, this, reasonerConsumer), executorService);
         controller.execute(RootDisjunctionController::setUpUpstreamProviders);
         controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));
         // TODO: Consider exception handling

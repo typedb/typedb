@@ -21,7 +21,8 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.ReasonerProducer.EntryPoint;
+import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
+import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.EntryPoint;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream;
@@ -34,22 +35,22 @@ public class RootDisjunctionController
         extends DisjunctionController<RootDisjunctionController.RootDisjunctionProcessor, RootDisjunctionController> {
     private final Set<Identifier.Variable.Retrievable> filter;
     private final Monitor.MonitorRef monitorRef;
-    private final EntryPoint reasonerEndpoint;
+    private final ReasonerConsumer reasonerConsumer;
 
     public RootDisjunctionController(Driver<RootDisjunctionController> driver, Disjunction disjunction,
                                      Set<Identifier.Variable.Retrievable> filter, ActorExecutorGroup executorService,
                                      Monitor.MonitorRef monitorRef, Registry registry,
-                                     EntryPoint reasonerEndpoint) {
+                                     ReasonerConsumer reasonerConsumer) {
         super(driver, disjunction, executorService, registry);
         this.filter = filter;
         this.monitorRef = monitorRef;
-        this.reasonerEndpoint = reasonerEndpoint;
+        this.reasonerConsumer = reasonerConsumer;
     }
 
     @Override
     protected Function<Driver<RootDisjunctionProcessor>, RootDisjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new RootDisjunctionProcessor(
-                driver, driver(), monitorRef, disjunction, bounds, filter, reasonerEndpoint,
+                driver, driver(), monitorRef, disjunction, bounds, filter, reasonerConsumer,
                 RootDisjunctionProcessor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
         );
     }
@@ -62,29 +63,35 @@ public class RootDisjunctionController
     @Override
     protected void exception(Throwable e) {
         super.exception(e);
-        reasonerEndpoint.exception(e);
+        reasonerConsumer.exception(e);
     }
 
     protected static class RootDisjunctionProcessor
             extends DisjunctionController.DisjunctionProcessor<RootDisjunctionController, RootDisjunctionProcessor> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
-        private final EntryPoint reasonerEntryPoint;
+        private final ReasonerConsumer reasonerConsumer;
+        private EntryPoint reasonerEntryPoint;
 
         protected RootDisjunctionProcessor(Driver<RootDisjunctionProcessor> driver,
                                            Driver<RootDisjunctionController> controller, Monitor.MonitorRef monitorRef, Disjunction disjunction,
                                            ConceptMap bounds, Set<Identifier.Variable.Retrievable> filter,
-                                           EntryPoint reasonerEntryPoint, String name) {
+                                           ReasonerConsumer reasonerConsumer, String name) {
             super(driver, controller, monitorRef, disjunction, bounds, name);
             this.filter = filter;
-            this.reasonerEntryPoint = reasonerEntryPoint;
+            this.reasonerConsumer = reasonerConsumer;
         }
 
         @Override
         public void setUp() {
-            monitor().registerRoot(driver(), reasonerEntryPoint);
             super.setUp();
+            reasonerEntryPoint = new EntryPoint(driver(), monitor(), reasonerConsumer, name());
             outlet().publishTo(reasonerEntryPoint);
+        }
+
+        @Override
+        public void pull() {
+            reasonerEntryPoint.pull();
         }
 
         @Override
