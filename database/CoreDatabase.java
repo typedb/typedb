@@ -559,11 +559,13 @@ public class CoreDatabase implements TypeDB.Database {
 
         private final ExecutorService executor;
         private final ConcurrentSet<Long> deletableTransactionIDs;
+        private final AtomicBoolean isCorrectionQueued;
         private CoreSession.Data session;
 
         StatisticsCorrector() {
             executor = Executors.newSingleThreadExecutor(NamedThreadFactory.create(name + "::statistics-compensator"));
             deletableTransactionIDs = new ConcurrentSet<>();
+            this.isCorrectionQueued = new AtomicBoolean(false);
         }
 
         public void initialise() {
@@ -614,7 +616,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         void committed(CoreTransaction.Data transaction) {
-            if (mayMiscount(transaction)) submitCorrection();
+            if (mayMiscount(transaction) && isCorrectionQueued.compareAndSet(false, true)) submitCorrection();
         }
 
         void deleted(CoreTransaction.Data transaction) {
@@ -630,6 +632,7 @@ public class CoreDatabase implements TypeDB.Database {
          * and correct them if we have enough information to do so.
          */
         private void correctMiscounts() {
+            isCorrectionQueued.set(false);
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
                 boolean[] modified = new boolean[]{false};
                 boolean[] miscountCorrected = new boolean[]{false};
