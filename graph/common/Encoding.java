@@ -937,7 +937,7 @@ public class Encoding {
                 SNAPSHOT(0),
                 VERTEX_COUNT(1),
                 HAS_TYPE_EDGE_COUNT(2),
-                MISCOUNT(50),
+                MISCOUNTABLE(50),
                 TXN_COMMITTED_ID(100);
 
                 static final int LENGTH = 2;
@@ -957,10 +957,10 @@ public class Encoding {
             }
 
             enum Infix {
-                CONDITIONAL_OVERCOUNT_ATTRIBUTE(0),
-                CONDITIONAL_UNDERCOUNT_ATTRIBUTE(1),
-                CONDITIONAL_OVERCOUNT_HAS(10),
-                CONDITIONAL_UNDERCOUNT_HAS(11);
+                ATTRIBUTE_OVERCOUNTABLE(0),
+                ATTRIBUTE_UNDERCOUNTABLE(1),
+                HAS_OVERCOUNTABLE(10),
+                HAS_UNDERCOUNTABLE(11);
 
                 public static final int LENGTH = 1;
 

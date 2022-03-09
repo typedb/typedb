@@ -76,52 +76,52 @@ public class StatisticsKey implements Storage.Key {
         return new StatisticsKey(Statistics.Prefix.SNAPSHOT.bytes());
     }
 
-    public static class MisCount extends StatisticsKey {
+    public static class Miscountable extends StatisticsKey {
 
-        private MisCount(ByteArray bytes) {
+        private Miscountable(ByteArray bytes) {
             super(bytes);
-            assert bytes.hasPrefix(Statistics.Prefix.MISCOUNT.bytes());
+            assert bytes.hasPrefix(Statistics.Prefix.MISCOUNTABLE.bytes());
         }
 
-        private static MisCount of(ByteArray bytes) {
-            return new MisCount(bytes);
+        private static Miscountable of(ByteArray bytes) {
+            return new Miscountable(bytes);
         }
 
-        public static Prefix<MisCount> prefix() {
-            return new Prefix<>(Statistics.Prefix.MISCOUNT.bytes(), Partition.METADATA, MisCount::of);
+        public static Prefix<Miscountable> prefix() {
+            return new Prefix<>(Statistics.Prefix.MISCOUNTABLE.bytes(), Partition.METADATA, Miscountable::of);
         }
 
         private byte infix() {
             return bytes().get(Statistics.Prefix.LENGTH + Bytes.LONG_SIZE);
         }
 
-        public boolean isAttrConditionalOvercount() {
-            return infix() == Statistics.Infix.CONDITIONAL_OVERCOUNT_ATTRIBUTE.key();
+        public boolean isOvercountableAttr() {
+            return infix() == Statistics.Infix.ATTRIBUTE_OVERCOUNTABLE.key();
         }
 
-        public boolean isAttrConditionalUndercount() {
+        public boolean isUndercountableAttr() {
             return infix() ==
-                    Statistics.Infix.CONDITIONAL_UNDERCOUNT_ATTRIBUTE.key();
+                    Statistics.Infix.ATTRIBUTE_UNDERCOUNTABLE.key();
         }
 
-        public boolean isHasConditionalOvercount() {
-            return infix() == Statistics.Infix.CONDITIONAL_OVERCOUNT_HAS.key();
+        public boolean isOvercountableHas() {
+            return infix() == Statistics.Infix.HAS_OVERCOUNTABLE.key();
         }
 
-        public boolean isHasConditionalUndercount() {
-            return infix() == Statistics.Infix.CONDITIONAL_UNDERCOUNT_HAS.key();
+        public boolean isUndercountableHas() {
+            return infix() == Statistics.Infix.HAS_UNDERCOUNTABLE.key();
         }
 
-        public VertexIID.Attribute<?> attributeMiscounted() {
-            assert isAttrConditionalOvercount() || isAttrConditionalUndercount();
+        public VertexIID.Attribute<?> getMiscountableAttribute() {
+            assert isOvercountableAttr() || isUndercountableAttr();
             return VertexIID.Attribute.extract(
                     this.bytes(),
                     Statistics.Prefix.LENGTH + Bytes.LONG_SIZE + Statistics.Infix.LENGTH
             );
         }
 
-        public Pair<VertexIID.Thing, VertexIID.Attribute<?>> hasMiscounted() {
-            assert isHasConditionalOvercount() || isHasConditionalUndercount();
+        public Pair<VertexIID.Thing, VertexIID.Attribute<?>> getMiscountableHas() {
+            assert isOvercountableHas() || isUndercountableHas();
             VertexIID.Thing owner = VertexIID.Thing.extract(
                     this.bytes(),
                     Statistics.Prefix.LENGTH + Bytes.LONG_SIZE + Statistics.Infix.LENGTH
@@ -135,39 +135,39 @@ public class StatisticsKey implements Storage.Key {
             );
         }
 
-        public static MisCount attrConditionalOvercount(long txnID, VertexIID.Attribute<?> attIID) {
-            return new MisCount(join(
-                    Statistics.Prefix.MISCOUNT.bytes(),
+        public static Miscountable attrOvercountable(long txnID, VertexIID.Attribute<?> attIID) {
+            return new Miscountable(join(
+                    Statistics.Prefix.MISCOUNTABLE.bytes(),
                     ByteArray.encodeLong(txnID),
-                    Statistics.Infix.CONDITIONAL_OVERCOUNT_ATTRIBUTE.bytes(),
+                    Statistics.Infix.ATTRIBUTE_OVERCOUNTABLE.bytes(),
                     attIID.bytes()
             ));
         }
 
-        public static MisCount attrConditionalUndercount(long txnID, VertexIID.Attribute<?> attIID) {
-            return new MisCount(join(
-                    Statistics.Prefix.MISCOUNT.bytes(),
+        public static Miscountable attrUndercountable(long txnID, VertexIID.Attribute<?> attIID) {
+            return new Miscountable(join(
+                    Statistics.Prefix.MISCOUNTABLE.bytes(),
                     ByteArray.encodeLong(txnID),
-                    Statistics.Infix.CONDITIONAL_UNDERCOUNT_ATTRIBUTE.bytes(),
+                    Statistics.Infix.ATTRIBUTE_UNDERCOUNTABLE.bytes(),
                     attIID.bytes()
             ));
         }
 
-        public static MisCount hasConditionalOvercount(long txnID, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
-            return new MisCount(join(
-                    Statistics.Prefix.MISCOUNT.bytes(),
+        public static Miscountable hasOvercountable(long txnID, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
+            return new Miscountable(join(
+                    Statistics.Prefix.MISCOUNTABLE.bytes(),
                     ByteArray.encodeLong(txnID),
-                    Statistics.Infix.CONDITIONAL_OVERCOUNT_HAS.bytes(),
+                    Statistics.Infix.HAS_OVERCOUNTABLE.bytes(),
                     thingIID.bytes(),
                     attIID.bytes()
             ));
         }
 
-        public static MisCount hasConditionalUndercount(long txnID, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
-            return new MisCount(join(
-                    Statistics.Prefix.MISCOUNT.bytes(),
+        public static Miscountable hasUndercountable(long txnID, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
+            return new Miscountable(join(
+                    Statistics.Prefix.MISCOUNTABLE.bytes(),
                     ByteArray.encodeLong(txnID),
-                    Statistics.Infix.CONDITIONAL_UNDERCOUNT_HAS.bytes(),
+                    Statistics.Infix.HAS_UNDERCOUNTABLE.bytes(),
                     thingIID.bytes(),
                     attIID.bytes()
             ));

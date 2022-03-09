@@ -110,7 +110,7 @@ public class CoreDatabase implements TypeDB.Database {
     private final StampedLock schemaLock;
     private final CoreDatabaseManager databaseMgr;
     private final IsolationManager isolationMgr;
-    private final StatisticsCompensator statisticsCompensator;
+    private final StatisticsCorrector statisticsCompensator;
     private final Factory.Session sessionFactory;
     private final AtomicInteger schemaLockWriteRequests;
     private final AtomicLong transactionID;
@@ -133,7 +133,7 @@ public class CoreDatabase implements TypeDB.Database {
         schemaLockWriteRequests = new AtomicInteger(0);
         transactionID = new AtomicLong(0);
         isolationMgr = new IsolationManager();
-        statisticsCompensator = new StatisticsCompensator();
+        statisticsCompensator = new StatisticsCorrector();
         rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
                 options().storageIndexCacheSize(), LOG.isDebugEnabled(), ROCKS_LOG_PERIOD);
         isOpen = new AtomicBoolean(false);
@@ -226,7 +226,7 @@ public class CoreDatabase implements TypeDB.Database {
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
         }
-        statisticsCompensator.initialiseAndCompensate();
+        statisticsCompensator.initialiseAndCorrect();
     }
 
     private void openData() {
@@ -362,7 +362,7 @@ public class CoreDatabase implements TypeDB.Database {
         return isolationMgr;
     }
 
-    StatisticsCompensator statisticsCompensator() {
+    StatisticsCorrector statisticsCorrector() {
         return statisticsCompensator;
     }
 
@@ -555,14 +555,14 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    class StatisticsCompensator {
+    class StatisticsCorrector {
 
-        private final ExecutorService compensateExecutor;
+        private final ExecutorService executor;
         private final ConcurrentSet<Long> deletableTransactionIDs;
         private CoreSession.Data session;
 
-        StatisticsCompensator() {
-            compensateExecutor = Executors.newSingleThreadExecutor(NamedThreadFactory.create(name + "::statistics-compensator"));
+        StatisticsCorrector() {
+            executor = Executors.newSingleThreadExecutor(NamedThreadFactory.create(name + "::statistics-compensator"));
             deletableTransactionIDs = new ConcurrentSet<>();
         }
 
@@ -570,11 +570,11 @@ public class CoreDatabase implements TypeDB.Database {
             session = createAndOpenSession(DATA, new Options.Session()).asData();
         }
 
-        public void initialiseAndCompensate() {
+        public void initialiseAndCorrect() {
             initialise();
             LOG.debug("Refreshing statistics.");
-            compensate();
-            deleteCompensationMetadata();
+            correctMiscounts();
+            deleteCorrectionMetadata();
             LOG.debug("Statistics are up to date.");
             if (LOG.isDebugEnabled()) logStatisticsSummary();
         }
@@ -597,7 +597,7 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        private void deleteCompensationMetadata() {
+        private void deleteCorrectionMetadata() {
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
                 txn.dataStorage.iterate(StatisticsKey.txnCommittedPrefix()).forEachRemaining(kv ->
                         txn.dataStorage.deleteUntracked(kv.key())
@@ -614,65 +614,66 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         void committed(CoreTransaction.Data transaction) {
-            if (mayMiscount(transaction)) submitCompensate();
+            if (mayMiscount(transaction)) submitCorrection();
         }
 
         void deleted(CoreTransaction.Data transaction) {
             deletableTransactionIDs.add(transaction.id);
         }
 
-        public CompletableFuture<Void> submitCompensate() {
-            return CompletableFuture.runAsync(this::compensate, compensateExecutor);
+        public CompletableFuture<Void> submitCorrection() {
+            return CompletableFuture.runAsync(this::correctMiscounts, executor);
         }
 
         /**
-         * Scan through all attributes that may need to be compensated (eg. have been over/under counted),
-         * and compensate them if we have enough information to do so.
-         *
-         * If find this is doing too much scanning and not enough compensation, we can use the dependenciesCache
-         * to only scan sub-regions of the miscount entries by prefix. It already appears to run rarely however!
+         * Scan through all attributes that may need to be corrected (eg. have been over/under counted),
+         * and correct them if we have enough information to do so.
          */
-        private void compensate() {
-            Set<Long> openTxnIDs = iterate(isolationMgr.getUncommitted()).map(txn -> txn.id).toSet();
+        private void correctMiscounts() {
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
-                boolean[] updated = new boolean[]{false};
-                txn.dataStorage.iterate(StatisticsKey.MisCount.prefix()).forEachRemaining(kv -> {
-                    Set<Long> misCountDependedTxnIDs = kv.value().decodeLongSet();
-                    if (containsCommittedTxn(misCountDependedTxnIDs, txn.dataStorage)) {
-                        compensateMiscount(txn, kv.key());
-                        txn.dataStorage.deleteUntracked(kv.key());
-                        updated[0] = true;
-                    } else if (!containsOpenTxn(misCountDependedTxnIDs, openTxnIDs)) {
-                        txn.dataStorage.deleteUntracked(kv.key());
-                        updated[0] = true;
+                boolean[] modified = new boolean[]{false};
+                boolean[] miscountCorrected = new boolean[]{false};
+                Set<Long> openTxnIDs = iterate(isolationMgr.getUncommitted()).map(t -> t.id).toSet();
+                txn.dataStorage.iterate(StatisticsKey.Miscountable.prefix()).forEachRemaining(kv -> {
+                    StatisticsKey.Miscountable item = kv.key();
+                    Set<Long> txnIDsCausingMiscount = kv.value().decodeLongSet();
+
+                    if (anyCommitted(txnIDsCausingMiscount, txn.dataStorage)) {
+                        correctMiscount(item, txn);
+                        miscountCorrected[0] = true;
+                        txn.dataStorage.deleteUntracked(item);
+                        modified[0] = true;
+                    } else if (noneOpen(txnIDsCausingMiscount, openTxnIDs)) {
+                        txn.dataStorage.deleteUntracked(item);
+                        modified[0] = true;
                     }
                 });
-                if (updated[0]) {
-                    txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
+                if (modified[0]) {
+                    if (miscountCorrected[0]) txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
                     for (Long txnID : deletableTransactionIDs) {
                         txn.dataStorage.deleteUntracked(StatisticsKey.txnCommitted(txnID));
-                        deletableTransactionIDs.remove(txnID);
                     }
+                    deletableTransactionIDs.clear();
                     txn.commit();
                 }
             }
         }
 
-        private void compensateMiscount(CoreTransaction.Data txn, StatisticsKey.MisCount miscount) {
-            if (miscount.isAttrConditionalOvercount()) {
-                VertexIID.Type type = miscount.attributeMiscounted().type();
+        private void correctMiscount(StatisticsKey.Miscountable miscount, CoreTransaction.Data txn) {
+            if (miscount.isOvercountableAttr()) {
+                VertexIID.Type type = miscount.getMiscountableAttribute().type();
                 txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(-1));
-            } else if (miscount.isAttrConditionalUndercount()) {
-                VertexIID.Type type = miscount.attributeMiscounted().type();
+            } else if (miscount.isUndercountableAttr()) {
+                VertexIID.Type type = miscount.getMiscountableAttribute().type();
                 txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(1));
-            } else if (miscount.isHasConditionalOvercount()) {
-                Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = miscount.hasMiscounted();
+            } else if (miscount.isOvercountableHas()) {
+                Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = miscount.getMiscountableHas();
                 txn.dataStorage.mergeUntracked(
                         StatisticsKey.hasEdgeCount(has.first().type(), has.second().type()),
                         encodeLong(-1)
                 );
-            } else if (miscount.isHasConditionalUndercount()) {
-                Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = miscount.hasMiscounted();
+            } else if (miscount.isUndercountableHas()) {
+                Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = miscount.getMiscountableHas();
                 txn.dataStorage.mergeUntracked(
                         StatisticsKey.hasEdgeCount(has.first().type(), has.second().type()),
                         encodeLong(1)
@@ -680,29 +681,29 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        private boolean containsCommittedTxn(Set<Long> compensationConditions, RocksStorage.Data dataStorage) {
-            for (Long txnID : compensationConditions) {
-                if (dataStorage.get(StatisticsKey.txnCommitted(txnID)) != null) return true;
+        private boolean anyCommitted(Set<Long> txnIDsToCheck, RocksStorage.Data storage) {
+            for (Long txnID : txnIDsToCheck) {
+                if (storage.get(StatisticsKey.txnCommitted(txnID)) != null) return true;
             }
             return false;
         }
 
-        private boolean containsOpenTxn(Set<Long> txnIDs, Set<Long> openTxnIDs) {
-            return iterate(txnIDs).anyMatch(openTxnIDs::contains);
+        private boolean noneOpen(Set<Long> txnIDs, Set<Long> openTxnIDs) {
+            return iterate(txnIDs).noneMatch(openTxnIDs::contains);
         }
 
         void close() {
             session.close();
-            compensateExecutor.shutdownNow();
+            executor.shutdownNow();
             try {
                 // TODO
-                compensateExecutor.awaitTermination(1000, MILLISECONDS);
+                executor.awaitTermination(1000, MILLISECONDS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
 
-        public void writeMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
+        public void writeCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
             recordMiscounts(txn, concurrentTxn);
             txn.dataStorage.putUntracked(StatisticsKey.txnCommitted(txn.id));
         }
@@ -747,16 +748,16 @@ public class CoreDatabase implements TypeDB.Database {
             }
 
             attrOvercountDependencies.forEach((attr, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.MisCount.attrConditionalOvercount(txn.id, attr.iid()), encodeLongSet(txs))
+                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.attrOvercountable(txn.id, attr.iid()), encodeLongSet(txs))
             );
             attrUndercountDependencies.forEach((attr, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.MisCount.attrConditionalUndercount(txn.id, attr.iid()), encodeLongSet(txs))
+                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.attrUndercountable(txn.id, attr.iid()), encodeLongSet(txs))
             );
             hasOvercountDependencies.forEach((has, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.MisCount.hasConditionalOvercount(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
+                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.hasOvercountable(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
             );
             hasUndercountDependencies.forEach((has, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.MisCount.hasConditionalUndercount(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
+                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.hasUndercountable(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
             );
         }
     }

@@ -321,10 +321,10 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     graphMgr.data().commit();
 
                     Set<CoreTransaction.Data> concurrent = session.database().isolationMgr().validateConcurrentAndStartCommit(this);
-                    session.database().statisticsCompensator().writeMetadata(this, concurrent);
+                    session.database().statisticsCorrector().writeCorrectionMetadata(this, concurrent);
                     dataStorage.commit();
                     session.database().isolationMgr().commitSucceeded(this);
-                    session.database().statisticsCompensator().committed(this);
+                    session.database().statisticsCorrector().committed(this);
                 } catch (RocksDBException e) {
                     delete();
                     throw TypeDBException.of(e);
@@ -363,7 +363,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         public void delete() {
             assert !isOpen.get();
             graphMgr.data().clear();
-            session.database().statisticsCompensator().deleted(this);
+            session.database().statisticsCorrector().deleted(this);
         }
 
         @Override
