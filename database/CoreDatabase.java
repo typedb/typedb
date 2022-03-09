@@ -103,19 +103,19 @@ public class CoreDatabase implements TypeDB.Database {
     private static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
     private static final int ROCKS_LOG_PERIOD = 300;
 
+    private final CoreDatabaseManager databaseMgr;
+    private final Factory.Session sessionFactory;
+    protected final String name;
+    protected final AtomicBoolean isOpen;
+    private final AtomicLong nextTransactionID;
+    private final AtomicInteger schemaLockWriteRequests;
+    private final StampedLock schemaLock;
+    protected final ConcurrentMap<UUID, Pair<CoreSession, Long>> sessions;
     protected final RocksConfiguration rocksConfiguration;
     protected final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     protected final KeyGenerator.Data.Persisted dataKeyGenerator;
-    protected final ConcurrentMap<UUID, Pair<CoreSession, Long>> sessions;
-    protected final String name;
-    protected final AtomicBoolean isOpen;
-    private final StampedLock schemaLock;
-    private final CoreDatabaseManager databaseMgr;
     private final IsolationManager isolationMgr;
     private final StatisticsCorrector statisticsCorrector;
-    private final Factory.Session sessionFactory;
-    private final AtomicInteger schemaLockWriteRequests;
-    private final AtomicLong nextTransactionID;
     protected OptimisticTransactionDB rocksSchema;
     protected OptimisticTransactionDB rocksData;
     protected CorePartitionManager.Schema rocksSchemaPartitionMgr;

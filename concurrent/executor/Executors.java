@@ -54,7 +54,7 @@ public class Executors {
     private final ActorExecutorGroup actorExecutorService;
     private final NioEventLoopGroup networkExecutorService;
     private final ScheduledThreadPoolExecutor scheduledThreadPool;
-    private final ExecutorService singleThreadedExecutorService;
+    private final ExecutorService singleThreadedService;
 
     private Executors(int parallelisation) {
         if (parallelisation <= 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
@@ -65,7 +65,7 @@ public class Executors {
         networkExecutorService = new NioEventLoopGroup(parallelisation, threadFactory(TYPEDB_CORE_NETWORK_THREAD_NAME));
         scheduledThreadPool = new ScheduledThreadPoolExecutor(TYPEDB_CORE_SCHEDULED_THREAD_SIZE,
                                                               threadFactory(TYPEDB_CORE_SCHEDULED_THREAD_NAME));
-        singleThreadedExecutorService = java.util.concurrent.Executors.newSingleThreadExecutor();
+        singleThreadedService = java.util.concurrent.Executors.newSingleThreadExecutor();
         scheduledThreadPool.setRemoveOnCancelPolicy(true);
     }
 
@@ -115,6 +115,6 @@ public class Executors {
 
     public static ExecutorService singleThreaded() {
         assert isInitialised();
-        return singleton.singleThreadedExecutorService;
+        return singleton.singleThreadedService;
     }
 }
