@@ -106,7 +106,6 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 //            done = true;
             assert finishable == negation;
             finishable.onFinished();
-            monitor().joinFrontiers2(negation);
         }
 
         private static class NegationReactive extends SingleReceiverStream<ConceptMap, ConceptMap> implements Reactive.Receiver.Finishable<ConceptMap> {

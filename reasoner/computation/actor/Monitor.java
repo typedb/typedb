@@ -64,8 +64,7 @@ public class Monitor extends Actor<Monitor> {
     }
 
     private <R> void registerRoot(Driver<? extends Processor<R, ?, ?, ?>> processor, Reactive.Receiver.Finishable<R> root) {
-        // We assume that this is called before the root has any connected paths registered
-        // TODO: What if a new root is registered which shares paths with an already complete ReactiveGraph? It should be able to find all of its contained paths
+        // Note this MUST be called before any paths are registered to or from the root, or a duplicate node will be created.
         RootNode rootNode = new RootNode(root);
         putNode(root, rootNode);
         ReactiveGraph reactiveGraph = new ReactiveGraph(processor, rootNode);
@@ -81,7 +80,7 @@ public class Monitor extends Actor<Monitor> {
     }
 
     private <R> void registerSource(Reactive.Provider<R> source) {
-        // Note this MUST be called before any paths are registered to or from the source, or duplicates will be created.
+        // Note this MUST be called before any paths are registered to or from the source, or a duplicate node will be created.
         assert reactiveNodes.get(source) == null;
         SourceNode sourceNode = new SourceNode();
         putNode(source, sourceNode);
@@ -101,6 +100,7 @@ public class Monitor extends Actor<Monitor> {
         // We could be learning about a new receiver or provider or both.
         // Propagate any graphs the receiver belongs to to the provider.
         receiverNode.propagateReactiveGraphs();
+        receiverNode.graphMemberships().forEach(ReactiveGraph::checkFinished);  // In case a root connects to an already complete graph it should terminate straight away  TODO: very inefficient
     }
 
     private <R> void createAnswer(int numCreated, Reactive.Provider<R> provider) {
@@ -141,11 +141,11 @@ public class Monitor extends Actor<Monitor> {
 
         private void setFinished() {
             assert !finished;
+            finished = true;
             rootProcessor.execute(actor -> actor.onFinished(rootNode.root()));
         }
 
         public void addReactiveNode(ReactiveNode toAdd) {
-//            assert !toAdd.equals(rootNode);
             if (!toAdd.equals(rootNode)) {
                 if (toAdd.isSource()) nestedSources.add(toAdd.asSource());
                 else reactives.add(toAdd);
@@ -176,7 +176,6 @@ public class Monitor extends Actor<Monitor> {
         }
 
         void checkFinished() {
-            // TODO: Include that the root must be pulling
             if (sourcesFinished() && activeAnswers() == 0 && activeFrontiers() == 0) {
                 setFinished();
             }
@@ -268,7 +267,6 @@ public class Monitor extends Actor<Monitor> {
         public void propagateReactiveGraphs() {
             if (!graphsToPropagate().isEmpty()) {
                 providers().forEach(provider -> {
-                    // checkFinished(receiverGraphs); // TODO: In case a root connects to an already complete graph it should terminate straight away - we need to check for that which means we need to check eagerly here. Except we can't do this or we'll terminate straight away.
                     if (provider.addToGraphs(graphsToPropagate())) provider.propagateReactiveGraphs();
                 });
             }
@@ -429,9 +427,6 @@ public class Monitor extends Actor<Monitor> {
             monitor.execute(actor -> actor.joinFrontier(joiner));
         }
 
-        public void joinFrontiers2(Reactive joiner) {
-            // TODO: The only usage shouldn't be needed
-        }
     }
 
 }
