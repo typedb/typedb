@@ -109,10 +109,10 @@ public class CoreDatabase implements TypeDB.Database {
     private final StampedLock schemaLock;
     private final CoreDatabaseManager databaseMgr;
     private final IsolationManager isolationMgr;
-    private final StatisticsCorrector statisticsCompensator;
+    private final StatisticsCorrector statisticsCorrector;
     private final Factory.Session sessionFactory;
     private final AtomicInteger schemaLockWriteRequests;
-    private final AtomicLong transactionID;
+    private final AtomicLong nextTransactionID;
     protected OptimisticTransactionDB rocksSchema;
     protected OptimisticTransactionDB rocksData;
     protected CorePartitionManager.Schema rocksSchemaPartitionMgr;
@@ -127,14 +127,14 @@ public class CoreDatabase implements TypeDB.Database {
         this.sessionFactory = sessionFactory;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
-        sessions = new ConcurrentHashMap<>();
-        schemaLock = new StampedLock();
-        schemaLockWriteRequests = new AtomicInteger(0);
-        transactionID = new AtomicLong(0);
         isolationMgr = new IsolationManager();
-        statisticsCompensator = new StatisticsCorrector();
+        statisticsCorrector = new StatisticsCorrector();
+        sessions = new ConcurrentHashMap<>();
         rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
                 options().storageIndexCacheSize(), LOG.isDebugEnabled(), ROCKS_LOG_PERIOD);
+        schemaLock = new StampedLock();
+        schemaLockWriteRequests = new AtomicInteger(0);
+        nextTransactionID = new AtomicLong(0);
         isOpen = new AtomicBoolean(false);
     }
 
@@ -168,7 +168,7 @@ public class CoreDatabase implements TypeDB.Database {
                 txn.commit();
             }
         }
-        statisticsCompensator.initialise();
+        statisticsCorrector.initialise();
     }
 
     private void openSchema() {
@@ -225,7 +225,7 @@ public class CoreDatabase implements TypeDB.Database {
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
         }
-        statisticsCompensator.initialiseAndCorrect();
+        statisticsCorrector.initialiseAndSynchronise();
     }
 
     private void openData() {
@@ -338,7 +338,7 @@ public class CoreDatabase implements TypeDB.Database {
     }
 
     long nextTransactionID() {
-        return transactionID.getAndIncrement();
+        return nextTransactionID.getAndIncrement();
     }
 
     protected Path directory() {
@@ -362,7 +362,7 @@ public class CoreDatabase implements TypeDB.Database {
     }
 
     StatisticsCorrector statisticsCorrector() {
-        return statisticsCompensator;
+        return statisticsCorrector;
     }
 
     /**
@@ -441,7 +441,7 @@ public class CoreDatabase implements TypeDB.Database {
      */
     protected void closeResources() {
         sessions.values().forEach(p -> p.first().close());
-        statisticsCompensator.close();
+        statisticsCorrector.close();
         cacheClose();
         rocksDataPartitionMgr.close();
         rocksData.close();
@@ -530,15 +530,15 @@ public class CoreDatabase implements TypeDB.Database {
         private void cleanupCommitted() {
             if (cleanupRunning.compareAndSet(false, true)) {
                 Optional<Long> oldestUncommittedSnapshot = oldestUncommittedSnapshot();
-                ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> clearable;
-                if (oldestUncommittedSnapshot.isEmpty()) clearable = commitTimeline;
-                else clearable = commitTimeline.headMap(oldestUncommittedSnapshot.get());
-                iterate(clearable.values()).flatMap(Iterators::iterate)
+                ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> deletable;
+                if (oldestUncommittedSnapshot.isEmpty()) deletable = commitTimeline;
+                else deletable = commitTimeline.headMap(oldestUncommittedSnapshot.get());
+                iterate(deletable.values()).flatMap(Iterators::iterate)
                         .forEachRemaining(txn -> {
                             txn.delete();
                             commitStates.remove(txn);
                         });
-                clearable.clear();
+                deletable.clear();
                 cleanupRunning.set(false);
             }
         }
@@ -569,9 +569,9 @@ public class CoreDatabase implements TypeDB.Database {
             session = createAndOpenSession(DATA, new Options.Session()).asData();
         }
 
-        public void initialiseAndCorrect() {
+        public void initialiseAndSynchronise() {
             initialise();
-            LOG.debug("Updating statistics.");
+            LOG.debug("Synchronising statistics.");
             correctMiscounts();
             deleteCorrectionMetadata();
             LOG.debug("Statistics are up to date.");
