@@ -33,6 +33,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 
 public class Executors {
 
+    public static final int SHUTDOWN_TIMEOUT_MS = 1000;
+
     public static int PARALLELISATION_FACTOR = -1;
 
     private static final Logger LOG = LoggerFactory.getLogger(Executors.class);

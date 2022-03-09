@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
@@ -63,11 +64,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
@@ -248,7 +251,7 @@ public class CoreDatabase implements TypeDB.Database {
 
     private void mayInitRocksDataLogger() {
         if (rocksConfiguration.isLoggingEnabled()) {
-            scheduledPropertiesLogger = Executors.newScheduledThreadPool(1);
+            scheduledPropertiesLogger = java.util.concurrent.Executors.newScheduledThreadPool(1);
             scheduledPropertiesLogger.scheduleAtFixedRate(
                     new RocksProperties.Logger(rocksData, rocksDataPartitionMgr.handles, name),
                     0, ROCKS_LOG_PERIOD, SECONDS
@@ -442,6 +445,14 @@ public class CoreDatabase implements TypeDB.Database {
     protected void closeResources() {
         sessions.values().forEach(p -> p.first().close());
         statisticsCorrector.close();
+        Optional<CompletableFuture<Void>> correction = statisticsCorrector.runningCorrection();
+        if (correction.isPresent()) {
+            try {
+                correction.get().get(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                LOG.warn("Statistics corrector was not fully shutdown");
+            }
+        }
         cacheClose();
         rocksDataPartitionMgr.close();
         rocksData.close();
@@ -498,7 +509,7 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        public void commitSucceeded(CoreTransaction.Data txn) {
+        public void committed(CoreTransaction.Data txn) {
             assert commitStates.get(txn) == CommitState.COMMITTING && txn.snapshotEnd().isPresent();
             commitStates.put(txn, CommitState.COMMITTED);
             commitTimeline.compute(txn.snapshotEnd().get(), (snapshot, committed) -> {
@@ -558,11 +569,13 @@ public class CoreDatabase implements TypeDB.Database {
 
         private final ConcurrentSet<Long> deletableTransactionIDs;
         private final AtomicBoolean isCorrectionQueued;
+        private AtomicReference<CompletableFuture<Void>> correctionFuture;
         private CoreSession.Data session;
 
         StatisticsCorrector() {
             deletableTransactionIDs = new ConcurrentSet<>();
-            this.isCorrectionQueued = new AtomicBoolean(false);
+            isCorrectionQueued = new AtomicBoolean(false);
+            correctionFuture = new AtomicReference<>();
         }
 
         public void initialise() {
@@ -627,7 +640,12 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         public CompletableFuture<Void> submitCorrection() {
-            return CompletableFuture.runAsync(this::correctMiscounts, singleThreaded());
+            correctionFuture.set(CompletableFuture.runAsync(this::correctMiscounts, singleThreaded()));
+            return correctionFuture.get();
+        }
+
+        public Optional<CompletableFuture<Void>> runningCorrection() {
+            return Optional.ofNullable(correctionFuture.get());
         }
 
         /**

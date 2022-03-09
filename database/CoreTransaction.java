@@ -323,7 +323,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     Set<CoreTransaction.Data> concurrent = session.database().isolationMgr().validateConcurrentAndStartCommit(this);
                     session.database().statisticsCorrector().recordCorrectionMetadata(this, concurrent);
                     dataStorage.commit();
-                    session.database().isolationMgr().commitSucceeded(this);
+                    session.database().isolationMgr().committed(this);
                     session.database().statisticsCorrector().committed(this);
                 } catch (RocksDBException e) {
                     delete();

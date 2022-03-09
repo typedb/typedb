@@ -519,10 +519,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         @Override
         public void delete() {
             if (deleted.compareAndSet(false, true)) {
-                ThingVertex.Write fromWritable = graph.convertToWritable(fromIID);
-                fromWritable.setModified();
-                ThingVertex.Write toWritable = graph.convertToWritable(toIID);
-                toWritable.setModified();
+                graph.convertToWritable(fromIID).setModified();
+                graph.convertToWritable(toIID).setModified();
                 graph.storage().deleteTracked(forward.iid());
                 graph.storage().deleteUntracked(backward.iid());
                 graph.edgeDeleted(this);
