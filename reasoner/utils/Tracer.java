@@ -130,8 +130,8 @@ public final class Tracer {
         addMessage(simpleClassId(source), monitor.name(), defaultTrace, EdgeType.SOURCE_FINISH, "source_finished");
     }
 
-    public <R> void createAnswer(int numCreated, Provider<R> provider, Actor.Driver<Monitor> monitor) {
-        addMessage(simpleClassId(provider), monitor.name(), defaultTrace, EdgeType.CREATE, "create" + numCreated);
+    public <R> void createAnswer(Provider<R> provider, Actor.Driver<Monitor> monitor) {
+        addMessage(simpleClassId(provider), monitor.name(), defaultTrace, EdgeType.CREATE, "create");
     }
 
     public <R> void consumeAnswer(Receiver<R> receiver, Actor.Driver<Monitor> monitor) {

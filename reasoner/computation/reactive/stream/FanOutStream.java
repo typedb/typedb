@@ -64,15 +64,14 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         providerRegistry().recordReceive(provider);
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
-            final int numCreated = receiverRegistry().size() - 1;
-            if (numCreated > 0) monitor().createAnswer(numCreated, this);  // We need to account for sending an answer to all receivers (-1 for the one we received), either now or when they next pull.
+            monitor().createAnswer(this);
             Set<Receiver<PACKET>> toSend = receiverRegistry().pullingReceivers();
             receiverRegistry().setNotPulling();
             toSend.forEach(this::send);
         } else {
             if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
-            monitor().consumeAnswer(this);  // When an answer is a duplicate then destroy it
         }
+        monitor().consumeAnswer(this);
     }
 
     @Override
@@ -94,17 +93,10 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         receiver.receive(this, bufferList.get(pos));
     }
 
-    private void onNewReceiver() {
-        if (receiverRegistry().size() > 1) {
-            if (bufferSet.size() > 0) monitor().createAnswer(bufferSet.size(), this);  // New receiver, so any answer in the buffer will be dispatched there at some point
-            monitor().joinFrontiers(this);
-        }
-    }
-
     @Override
     public void publishTo(Subscriber<PACKET> subscriber) {
         bufferPositions.putIfAbsent(subscriber, 0);
-        if (receiverRegistry().addReceiver(subscriber)) onNewReceiver();
+        receiverRegistry().addReceiver(subscriber);
         subscriber.subscribeTo(this);
     }
 
