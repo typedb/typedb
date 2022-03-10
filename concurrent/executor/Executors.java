@@ -43,6 +43,7 @@ public class Executors {
     private static final String TYPEDB_CORE_ASYNC_THREAD_2_NAME = "typedb-async-2";
     private static final String TYPEDB_CORE_NETWORK_THREAD_NAME = "typedb-network";
     private static final String TYPEDB_CORE_ACTOR_THREAD_NAME = "typedb-actor";
+    private static final String TYPEDB_CORE_SINGLE_THREADED_EXECUTOR_NAME = "typedb-single-threaded";
     private static final String TYPEDB_CORE_SCHEDULED_THREAD_NAME = "typedb-scheduled";
     private static final int TYPEDB_CORE_SCHEDULED_THREAD_SIZE = 1;
 
@@ -65,7 +66,7 @@ public class Executors {
         networkExecutorService = new NioEventLoopGroup(parallelisation, threadFactory(TYPEDB_CORE_NETWORK_THREAD_NAME));
         scheduledThreadPool = new ScheduledThreadPoolExecutor(TYPEDB_CORE_SCHEDULED_THREAD_SIZE,
                                                               threadFactory(TYPEDB_CORE_SCHEDULED_THREAD_NAME));
-        singleThreadedService = java.util.concurrent.Executors.newSingleThreadExecutor();
+        singleThreadedService = java.util.concurrent.Executors.newSingleThreadExecutor(threadFactory(TYPEDB_CORE_SINGLE_THREADED_EXECUTOR_NAME));
         scheduledThreadPool.setRemoveOnCancelPolicy(true);
     }
 

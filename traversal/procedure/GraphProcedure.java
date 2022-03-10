@@ -210,6 +210,21 @@ public class GraphProcedure implements PermutationProcedure {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        GraphProcedure that = (GraphProcedure) o;
+        return vertices.equals(that.vertices) && Arrays.equals(edges, that.edges) && startVertex().equals(that.startVertex());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(vertices, startVertex);
+        result = 31 * result + Arrays.hashCode(edges);
+        return result;
+    }
+
+    @Override
     public String toString() {
         StringBuilder str = new StringBuilder();
         str.append("Graph Procedure: {");
