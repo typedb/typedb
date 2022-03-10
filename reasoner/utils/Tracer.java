@@ -111,6 +111,10 @@ public final class Tracer {
         addMessage(simpleClassId(root), monitor.name(), defaultTrace, EdgeType.ROOT_FINISH, "root_finished");
     }
 
+    public <R> void finishRootNode(Receiver.Finishable<R> root, Actor.Driver<Monitor> monitor) {
+        addMessage(monitor.name(), simpleClassId(root), defaultTrace, EdgeType.ROOT_FINISH, "finished");
+    }
+
     public <R> void registerPath(Receiver<R> receiver, @Nullable Provider<R> provider, Actor.Driver<Monitor> monitor) {
         String providerName;
         if (provider == null) providerName = "entry";  // TODO: Prevent provider from ever being null

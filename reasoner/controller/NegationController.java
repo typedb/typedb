@@ -140,11 +140,9 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
             @Override
             public void onFinished() {
-                if (!answerFound) {
-                    monitor().createAnswer(this);
-                    receiverRegistry().receiver().receive(this, bounds);
-                    monitor().rootFinished(this);
-                }
+                assert !answerFound;
+                monitor().createAnswer(this);
+                receiverRegistry().receiver().receive(this, bounds);
             }
         }
 

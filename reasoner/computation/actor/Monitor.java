@@ -68,7 +68,7 @@ public class Monitor extends Actor<Monitor> {
         // Note this MUST be called before any paths are registered to or from the root, or a duplicate node will be created.
         RootNode rootNode = new RootNode(root);
         putNode(root, rootNode);
-        ReactiveGraph reactiveGraph = new ReactiveGraph(processor, rootNode);
+        ReactiveGraph reactiveGraph = new ReactiveGraph(processor, rootNode, driver());
         rootNode.setGraph(reactiveGraph);
         rootNode.addToGraphs(set(reactiveGraph));
     }
@@ -77,7 +77,6 @@ public class Monitor extends Actor<Monitor> {
         if (terminated) return;
         RootNode rootNode = getNode(root).asRoot();
         rootNode.setFinished();
-        rootNode.graph().setFinished();  // TODO: We can do without this if the rootNode informs the graph its finished.
         rootNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
@@ -136,21 +135,26 @@ public class Monitor extends Actor<Monitor> {
 
         private final Driver<? extends Processor<?, ?, ?, ?>> rootProcessor;
         private final RootNode rootNode;
+        private final Driver<Monitor> monitor;
         private final Set<ReactiveNode> reactives;
         private final Set<SourceNode> nestedSources;
         private boolean finished;
 
-        ReactiveGraph(Driver<? extends Processor<?,?,?,?>> rootProcessor, RootNode rootNode) {
+        ReactiveGraph(Driver<? extends Processor<?, ?, ?, ?>> rootProcessor, RootNode rootNode, Driver<Monitor> monitor) {
             this.rootProcessor = rootProcessor;
             this.rootNode = rootNode;
+            this.monitor = monitor;
             this.reactives = new HashSet<>();
             this.nestedSources = new HashSet<>();
             this.finished = false;
         }
 
         private void setFinished() {
-            assert !finished;
             finished = true;
+        }
+
+        private void finishRootNode() {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.finishRootNode(rootNode.root(), monitor));
             rootProcessor.execute(actor -> actor.onFinished(rootNode.root()));
         }
 
@@ -185,7 +189,11 @@ public class Monitor extends Actor<Monitor> {
         }
 
         void checkFinished() {
-            if (sourcesFinished() && activeAnswers() == 0 && activeFrontiers() == 0) setFinished();
+            if (!finished && sourcesFinished() && activeAnswers() == 0 && activeFrontiers() == 0) {
+                setFinished();
+                rootNode.setFinished();  // TODO: This duplication is why this graph and the root node should be the same object
+                finishRootNode();
+            }
         }
 
         public Driver<? extends Processor<?, ?, ?, ?>> rootProcessor() {
@@ -357,6 +365,12 @@ public class Monitor extends Actor<Monitor> {
         @Override
         protected Set<ReactiveGraph> graphsToPropagate() {
             return set(graph());
+        }
+
+        @Override
+        protected void setFinished() {
+            super.setFinished();
+            graph().setFinished();
         }
     }
 
