@@ -63,8 +63,8 @@ public class Registry {
     private final LogicManager logicMgr;
     private final Map<Concludable, Actor.Driver<ConcludableController>> concludableControllers;
     private final Map<Actor.Driver<ConcludableController>, Set<Concludable>> controllerConcludables;
-    private final ConcurrentMap<Rule, Actor.Driver<ConditionController>> ruleConditions;
-    private final ConcurrentMap<Rule, Actor.Driver<ConclusionController>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
+    private final Map<Rule, Actor.Driver<ConditionController>> ruleConditions;
+    private final Map<Rule, Actor.Driver<ConclusionController>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Set<Actor.Driver<? extends Controller<?, ?, ?, ?, ?>>> controllers;
     private final TraversalEngine traversalEngine;
     private final boolean resolutionTracing;
@@ -81,8 +81,8 @@ public class Registry {
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
-        this.concludableControllers = new HashMap<>();
-        this.controllerConcludables = new HashMap<>();
+        this.concludableControllers = new ConcurrentHashMap<>();
+        this.controllerConcludables = new ConcurrentHashMap<>();
         this.ruleConditions = new ConcurrentHashMap<>();
         this.ruleConclusions = new ConcurrentHashMap<>();
         this.controllers = new ConcurrentSet<>();
