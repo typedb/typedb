@@ -64,6 +64,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAU
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
 import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
+import static org.slf4j.Logger.ROOT_LOGGER_NAME;
 
 public class TypeDBServer implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBServer.class);
@@ -87,7 +88,7 @@ public class TypeDBServer implements AutoCloseable {
 
         verifyJavaVersion();
         verifyDataDir();
-        configureLogging();
+        configureLogging(this.logback, this.config);
         configureTracing();
 
         if (debug) logger().info("Running {} in debug mode.", name());
@@ -129,7 +130,7 @@ public class TypeDBServer implements AutoCloseable {
         }
     }
 
-    private void configureLogging() {
+    private static void configureLogging(CoreLogback logback, CoreConfig config) {
         logback.configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log());
         java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
@@ -278,12 +279,18 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     protected static void exportData(ServerSubcommand.Export subcmdExport) {
+        ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
+                .setLevel(ch.qos.logback.classic.Level.WARN);
+
         MigratorClient migrator = new MigratorClient(subcmdExport.port());
         boolean success = migrator.exportData(subcmdExport.database(), subcmdExport.file());
         System.exit(success ? 0 : 1);
     }
 
     protected static void importData(ServerSubcommand.Import subcmdImport) {
+        ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
+                .setLevel(ch.qos.logback.classic.Level.WARN);
+
         MigratorClient migrator = new MigratorClient(subcmdImport.port());
         boolean success = migrator.importData(subcmdImport.database(), subcmdImport.file());
         System.exit(success ? 0 : 1);
