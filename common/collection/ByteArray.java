@@ -53,7 +53,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         this.array = array;
     }
 
-    public static ByteArray.Base of(byte[] array) {
+    public static ByteArray of(byte[] array) {
         return new ByteArray.Base(array);
     }
 
@@ -128,13 +128,13 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         return Base64.getEncoder().encodeToString(getBytes());
     }
 
-    public static ByteArray.Base encodeString(String string, Charset encoding) {
+    public static ByteArray encodeString(String string, Charset encoding) {
         return of(string.getBytes(encoding));
     }
 
     public abstract String decodeString(Charset encoding);
 
-    public static ByteArray.Base encodeUnsignedShort(int num) {
+    public static ByteArray encodeUnsignedShort(int num) {
         byte[] bytes = new byte[SHORT_SIZE];
         bytes[1] = (byte) (num);
         bytes[0] = (byte) (num >> 8);
@@ -155,7 +155,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     public abstract int decodeInt();
 
-    public static ByteArray.Base encodeUUID(UUID uuid) {
+    public static ByteArray encodeUUID(UUID uuid) {
         ByteBuffer buffer = ByteBuffer.wrap(new byte[16]);
         buffer.putLong(uuid.getMostSignificantBits());
         buffer.putLong(uuid.getLeastSignificantBits());

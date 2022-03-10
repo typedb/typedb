@@ -19,6 +19,9 @@
 package com.vaticle.typedb.core.concept.thing;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 
@@ -36,12 +39,18 @@ public interface Relation extends Thing {
 
     void removePlayer(RoleType roleType, Thing player);
 
-    FunctionalIterator<? extends Thing> getPlayers(String roleType, String... roleTypes);
+    FunctionalIterator<Thing> getPlayers();
 
-    FunctionalIterator<? extends Thing> getPlayers(RoleType... roleTypes);
+    FunctionalIterator<Thing> getPlayers(String[] roleTypes);
+
+    FunctionalIterator<Thing> getPlayers(RoleType[] roleTypes);
+
+    Forwardable<Thing, Order.Asc> getPlayers(String roleType, String... roleTypes);
+
+    Forwardable<Thing, Order.Asc> getPlayers(RoleType roleType, RoleType... roleTypes);
 
     // TODO: This method should just return FunctionalIterator<Pair<RoleType, Thing>>
-    Map<? extends RoleType, ? extends List<? extends Thing>> getPlayersByRoleType();
+    Map<? extends RoleType, List<Thing>> getPlayersByRoleType();
 
     FunctionalIterator<? extends RoleType> getRelating();
 }
