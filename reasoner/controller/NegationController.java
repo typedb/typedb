@@ -95,7 +95,6 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             negation = new NegationReactive(monitor(), name(), bounds);
             monitor().registerRoot(driver(), negation);
             monitor().forkFrontier(1, negation);
-            monitor().joinFrontiers(negation);
             endpoint.publishTo(negation);
             negation.publishTo(outlet());
         }

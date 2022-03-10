@@ -142,10 +142,6 @@ public final class Tracer {
         addMessage(simpleClassId(forker), monitor.name(), defaultTrace, EdgeType.FORK, "fork" + numForks);
     }
 
-    public void joinFrontier(Reactive joiner, Actor.Driver<Monitor> monitor) {
-        addMessage(simpleClassId(joiner), monitor.name(), defaultTrace, EdgeType.JOIN, "join");
-    }
-
     private static String simpleClassId(Object obj) {
         return obj.getClass().getSimpleName() + simpleClassHashCode(obj);
     }
@@ -294,8 +290,7 @@ public final class Tracer {
         SOURCE_FINISH("brown"),
         CREATE("cyan"),
         CONSUME("red"),
-        FORK("yellow"),
-        JOIN("pink");
+        FORK("yellow");
 
         private final String colour;
 

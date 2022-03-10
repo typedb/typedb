@@ -122,13 +122,6 @@ public class Monitor extends Actor<Monitor> {
         getOrCreateNode(forker).forkFrontier(numForks);
     }
 
-    private void joinFrontier(Reactive joiner) {
-//        if (terminated) return;
-//        ReactiveNode joinerNode = getNode(joiner);
-//        joinerNode.joinFrontier();
-//        joinerNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
-    }
-
     private static class ReactiveGraph {  // TODO: A graph can effectively be a source node within another graph
 
         private final Driver<? extends Processor<?, ?, ?, ?>> rootProcessor;
@@ -448,11 +441,6 @@ public class Monitor extends Actor<Monitor> {
         public void forkFrontier(int numForks, Reactive forker) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.forkFrontier(numForks, forker, monitor));
             monitor.execute(actor -> actor.forkFrontier(numForks, forker));
-        }
-
-        public void joinFrontiers(Reactive joiner) {
-//            Tracer.getIfEnabled().ifPresent(tracer -> tracer.joinFrontier(joiner, monitor));
-//            monitor.execute(actor -> actor.joinFrontier(joiner));
         }
 
     }
