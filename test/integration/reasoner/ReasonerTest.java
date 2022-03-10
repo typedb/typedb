@@ -296,8 +296,8 @@ public class ReasonerTest {
                 String queryString = "match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;";
                 List<ConceptMap> q1Ans = txn.query().match(TypeQL.parseQuery(queryString).asMatch()).toList();
                 List<ConceptMap> q2Ans = txn.query().match(TypeQL.parseQuery(queryString).asMatch()).toList();
-                assertEquals(1, q1Ans.size());
-                assertEquals(1, q2Ans.size());
+                assertEquals(2, q1Ans.size());
+                assertEquals(2, q2Ans.size());
             }
         }
     }
