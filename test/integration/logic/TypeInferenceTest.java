@@ -136,7 +136,6 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
         assertTrue(disjunction.isCoherent());
-
         Map<String, Set<String>> expected = new HashMap<>() {{
             put("$_person", set("person"));
             put("$p", set());

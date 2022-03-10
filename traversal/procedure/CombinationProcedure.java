@@ -74,13 +74,11 @@ public class CombinationProcedure {
     }
 
     public Set<ProcedureEdge<?, ?>> forwardEdges(ProcedureVertex.Type vertex) {
-        assert forwardEdges.containsKey(vertex);
-        return forwardEdges.get(vertex);
+        return forwardEdges.getOrDefault(vertex, new HashSet<>());
     }
 
     public Set<ProcedureEdge<?, ?>> reverseEdges(ProcedureVertex.Type vertex) {
-        assert reverseEdges.containsKey(vertex);
-        return reverseEdges.get(vertex);
+        return reverseEdges.getOrDefault(vertex, new HashSet<>());
     }
 
     private void registerBFS(StructureVertex.Type start) {

@@ -72,7 +72,6 @@ public class CombinationFinder {
 
         for (CombinationProcedure procedure : procedures) {
             start(procedure);
-            if (procedure.vertices().size() == 1) continue;
             State state = State.CHANGED;
             while (state == State.CHANGED) {
                 state = forward(procedure);
