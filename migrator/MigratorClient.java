@@ -278,7 +278,6 @@ public class MigratorClient {
                 progressStr.append("\n");
                 long currentThings = prog.getAttributesCurrent() + prog.getEntitiesCurrent() + prog.getRelationsCurrent();
                 long things = prog.getAttributes() + prog.getEntities() + prog.getRelations();
-                progressStr.append("\n");
                 progressStr.append(String.format("Total: %d/%d (%.1f%%)", currentThings, things, 100.0 * currentThings / things));
                 return progressStr.toString();
             }

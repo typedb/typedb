@@ -42,8 +42,8 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
 
     @Override
     public void exportData(MigratorProto.Export.Req request, StreamObserver<MigratorProto.Export.Progress> responseObserver) {
-        DataExporter exporter = new DataExporter(databaseMgr, request.getDatabase(), Paths.get(request.getFilename()), version);
         try {
+            DataExporter exporter = new DataExporter(databaseMgr, request.getDatabase(), Paths.get(request.getFilename()), version);
             CompletableFuture<Void> migratorJob = CompletableFuture.runAsync(exporter::run);
             while (!migratorJob.isDone()) {
                 Thread.sleep(1000);
@@ -59,8 +59,9 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
 
     @Override
     public void importData(MigratorProto.Import.Req request, StreamObserver<MigratorProto.Import.Progress> responseObserver) {
-        DataImporter importer = new DataImporter(databaseMgr, request.getDatabase(), Paths.get(request.getFilename()), version);
+        DataImporter importer = null;
         try {
+            importer = new DataImporter(databaseMgr, request.getDatabase(), Paths.get(request.getFilename()), version);
             CompletableFuture<Void> migratorJob = CompletableFuture.runAsync(importer::run);
             while (!migratorJob.isDone()) {
                 Thread.sleep(1000);
@@ -72,7 +73,7 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
             LOG.error(e.getMessage(), e);
             responseObserver.onError(exception(e));
         } finally {
-            importer.close();
+            if (importer != null) importer.close();
         }
     }
 

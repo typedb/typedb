@@ -54,6 +54,7 @@ import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -171,7 +172,11 @@ public class DataImporter {
             for (int i = 0; i < parallelisation; i++) {
                 workers[i] = CompletableFuture.runAsync(() -> workerConstructor.apply(items).run(), importExecutor);
             }
-            CompletableFuture.allOf(workers).join();
+            try {
+                CompletableFuture.allOf(workers).join();
+            } catch (CompletionException exception) {
+                throw TypeDBException.of(exception);
+            }
         }
 
         private BlockingQueue<DataProto.Item> asyncItemReader() {

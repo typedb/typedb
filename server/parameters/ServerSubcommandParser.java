@@ -39,7 +39,7 @@ public class ServerSubcommandParser {
     private static void validateRequiredOptions(Set<OptionParser> requiredParsers, Set<Option> options) {
         requiredParsers.forEach(parser -> {
             if (iterate(options).noneMatch(option -> option.name().equals(parser.name()))) {
-                throw TypeDBException.of(CLI_OPTION_REQUIRED, parser.help());
+                throw TypeDBException.of(CLI_OPTION_REQUIRED, parser.name());
             }
         });
     }
