@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.migrator.data;
 
 import com.google.protobuf.Parser;
-import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
@@ -35,6 +34,7 @@ import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.migrator.MigratorProto;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,6 +89,7 @@ public class DataImporter {
     private final IDMapper idMapper;
     private final String version;
     private final Status status;
+    private final AtomicBoolean skippedRelations;
     private Checksum checksum;
 
     public DataImporter(TypeDB.DatabaseManager typedb, String database, Path dataFile, String version) {
@@ -101,6 +102,7 @@ public class DataImporter {
         this.importExecutor = Executors.newFixedThreadPool(parallelisation);
         this.readerExecutor = Executors.newSingleThreadExecutor();
         this.idMapper = new IDMapper(database);
+        this.skippedRelations = new AtomicBoolean(false);
         this.status = new Status();
     }
 
@@ -111,7 +113,7 @@ public class DataImporter {
             new ParallelImport(AttributesAndChecksum::new).executeImport();
             new ParallelImport(EntitiesAndOwnerships::new).executeImport();
             new ParallelImport(Relations::new).executeImport();
-            importSkippedRelations();
+            if (!relationsFinished()) importUnfinishedRelations();
             if (!checksum.verify(status)) throw TypeDBException.of(IMPORT_CHECKSUM_MISMATCH, checksum.mismatch(status));
             Instant end = Instant.now();
             LOG.info("Finished in: " + Duration.between(start, end).getSeconds() + " seconds");
@@ -400,18 +402,18 @@ public class DataImporter {
         @Override
         int importItem(DataProto.Item item) {
             if (item.getItemCase() == DataProto.Item.ItemCase.RELATION) {
+                int insertedCount;
                 Thing importedRelation = getImportedThing(item.getRelation().getId());
-                int insertedFacts;
                 if (importedRelation == null) {
-                    insertedFacts = tryCreateRelation(item.getRelation());
-                    if (insertedFacts > 0) {
-                        return insertedFacts + insertOwnerships(item.getRelation().getId(), item.getRelation().getAttributeList());
-                    } else return 0;
+                    insertedCount = tryCreateRelation(item.getRelation());
+                    if (insertedCount > 0) {
+                        return insertedCount + insertOwnerships(item.getRelation().getId(), item.getRelation().getAttributeList());
+                    }
                 } else if (isMarkedIncomplete(item.getRelation().getId())) {
-                    insertedFacts = tryExtendRelation(importedRelation.asRelation(), item.getRelation());
-                    return insertedFacts;
-                } else return 0;
-            } else return 0;
+                    return tryExtendRelation(importedRelation.asRelation(), item.getRelation());
+                }
+            }
+            return 0;
         }
 
         private int tryCreateRelation(DataProto.Item.Relation relationMsg) {
@@ -441,8 +443,11 @@ public class DataImporter {
                     rolesCreated++;
                 }
             }
-            if (relation == null) return 0;
-            else {
+            if (relation == null) {
+                // none of the players were present, so the relation was not created
+                skippedRelations.set(true);
+                return 0;
+            } else {
                 if (isIncomplete) markIncomplete(relationMsg.getId());
                 return 1 + rolesCreated;
             }
@@ -472,12 +477,20 @@ public class DataImporter {
         }
     }
 
-    private void importSkippedRelations() {
-        boolean loadedPartialRelations = true;
-        while (loadedPartialRelations) {
+    private boolean relationsFinished() {
+        return !skippedRelations.get() && !idMapper.containsIncomplete();
+    }
+
+    private void importUnfinishedRelations() {
+        boolean progressMade = true;
+        while (!relationsFinished() && progressMade) {
+            System.out.println("Loading relations");
+            skippedRelations.set(false);
             long imported = new ParallelImport(Relations::new).executeImport();
-            loadedPartialRelations = imported > 0;
+            progressMade = imported > 0;
         }
+
+        if (relationsFinished()) return;
 
         // Load all relations that are pure co-dependent cycles.
         // This must be done in one transaction
@@ -491,6 +504,7 @@ public class DataImporter {
                             imported = transaction.concepts().getRelationType(item.getRelation().getLabel()).create();
                             status.relationCount.incrementAndGet();
                             idMapper.putMapping(item.getRelation().getId(), imported.getIID());
+                            idMapper.markIncomplete(item.getRelation().getId());
 
                             for (DataProto.Item.OwnedAttribute ownership : item.getRelation().getAttributeList()) {
                                 Thing attribute = transaction.concepts().getThing(idMapper.getMapped(ownership.getId()));
@@ -522,6 +536,7 @@ public class DataImporter {
                                 }
                             }
                         });
+                        idMapper.markCompleted(item.getRelation().getId());
                     }
                 }
             } catch (IOException e) {
@@ -529,6 +544,8 @@ public class DataImporter {
             }
             transaction.commit();
         }
+
+        assert !idMapper.containsIncomplete();
     }
 
     private RoleType getRoleType(RelationType relationType, DataProto.Item.Relation.Role roleMsg) {
@@ -611,19 +628,27 @@ public class DataImporter {
             }
         }
 
-        public void markCompleted(String originalID) {
+        public boolean isMarkedIncomplete(String originalID) {
             ByteArray key = ByteArray.join(Prefix.ID_INCOMPLETE.bytes, encodeOriginalID(originalID));
             try {
-                storage.delete(key.getBytes());
+                return storage.get(key.getBytes()) != null;
             } catch (RocksDBException e) {
                 throw TypeDBException.of(e);
             }
         }
 
-        public boolean isMarkedIncomplete(String originalID) {
+        public boolean containsIncomplete() {
+            RocksIterator iterator = storage.newIterator();
+            iterator.seek(Prefix.ID_INCOMPLETE.bytes.getBytes());
+            boolean hasIncomplete = iterator.isValid() && ByteArray.of(iterator.key()).hasPrefix(Prefix.ID_INCOMPLETE.bytes);
+            iterator.close();
+            return hasIncomplete;
+        }
+
+        public void markCompleted(String originalID) {
             ByteArray key = ByteArray.join(Prefix.ID_INCOMPLETE.bytes, encodeOriginalID(originalID));
             try {
-                return storage.get(key.getBytes()) != null;
+                storage.delete(key.getBytes());
             } catch (RocksDBException e) {
                 throw TypeDBException.of(e);
             }
