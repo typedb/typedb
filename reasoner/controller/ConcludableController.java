@@ -134,10 +134,11 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         @Override
         public void setUp() {
             setOutlet(new FanOutStream<>(monitor(), name()));
-            boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
             FanInStream<ConceptMap> fanIn = fanIn(monitor(), name());
-            if (singleAnswerRequired) fanIn.buffer().findFirst().publishTo(outlet());  // TODO: Buffer not needed as we're feeding a BufferedFanOut as the outlet
-            else fanIn.buffer().publishTo(outlet());  // TODO: Buffer not needed as we're feeding a BufferedFanOut as the outlet
+//            boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
+//            if (singleAnswerRequired) fanIn.buffer().findFirst().publishTo(outlet());  // TODO: Buffer not needed as we're feeding a FanOut as the outlet which also buffers
+//            else fanIn.buffer().publishTo(outlet());  // TODO: Buffer not needed as we're feeding a FanOut as the outlet which also buffers
+            fanIn.buffer().publishTo(outlet());  // TODO: How do we do a find first optimisation and also know that we're done? This needs to be local to this processor because in general we couldn't call all upstream work done.
 
             Source.fromIteratorSupplier(traversalSuppplier, monitor(), name()).publishTo(fanIn);
 
