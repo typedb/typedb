@@ -151,12 +151,12 @@ build:
     test-behaviour-reasoner-value-predicate:
       image: vaticle-ubuntu-20.04
       command: bazel test //test/behaviour/reasoner/tests/value_predicate:test --test_output=streamed
+    test-behaviour-reasoner-recursion:
+      image: vaticle-ubuntu-20.04
+      command: bazel test //test/behaviour/reasoner/tests/recursion:test --test_output=streamed
 #    test-behaviour-reasoner-negation:
 #      image: vaticle-ubuntu-20.04
 #      command: bazel test //test/behaviour/reasoner/tests/negation:test --test_output=streamed
-#    test-behaviour-reasoner-recursion:
-#      image: vaticle-ubuntu-20.04
-#      command: bazel test //test/behaviour/reasoner/tests/recursion:test --test_output=streamed
 #    test-behaviour-reasoner-variable-roles:
 #      image: vaticle-ubuntu-20.04
 #      command: bazel test //test/behaviour/reasoner/tests/variable_roles:test --test_output=streamed
