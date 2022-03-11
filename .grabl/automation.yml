@@ -133,30 +133,30 @@ build:
     test-behaviour-reasoner-compound-queries:
       image: vaticle-ubuntu-20.04
       command: bazel test //test/behaviour/reasoner/tests/compound_queries:test --test_output=streamed
+    test-behaviour-reasoner-concept-inequality:
+      image: vaticle-ubuntu-20.04
+      command: bazel test //test/behaviour/reasoner/tests/concept_inequality:test --test_output=streamed
     test-behaviour-reasoner-relation-inference:
       image: vaticle-ubuntu-20.04
       command: bazel test //test/behaviour/reasoner/tests/relation_inference:test --test_output=streamed
     test-behaviour-reasoner-rule-interaction:
       image: vaticle-ubuntu-20.04
       command: bazel test //test/behaviour/reasoner/tests/rule_interaction:test --test_output=streamed
+    test-behaviour-reasoner-schema-queries:
+      image: vaticle-ubuntu-20.04
+      command: bazel test //test/behaviour/reasoner/tests/schema_queries:test --test_output=streamed
     test-behaviour-reasoner-type-hierarchy:
       image: vaticle-ubuntu-20.04
       command: bazel test //test/behaviour/reasoner/tests/type_hierarchy:test --test_output=streamed
-#    test-behaviour-reasoner-value-predicate:
-#      image: vaticle-ubuntu-20.04
-#      command: bazel test //test/behaviour/reasoner/tests/value_predicate:test --test_output=streamed
+    test-behaviour-reasoner-value-predicate:
+      image: vaticle-ubuntu-20.04
+      command: bazel test //test/behaviour/reasoner/tests/value_predicate:test --test_output=streamed
 #    test-behaviour-reasoner-negation:
 #      image: vaticle-ubuntu-20.04
 #      command: bazel test //test/behaviour/reasoner/tests/negation:test --test_output=streamed
 #    test-behaviour-reasoner-recursion:
 #      image: vaticle-ubuntu-20.04
 #      command: bazel test //test/behaviour/reasoner/tests/recursion:test --test_output=streamed
-#    test-behaviour-reasoner-schema-queries:
-#      image: vaticle-ubuntu-20.04
-#      command: bazel test //test/behaviour/reasoner/tests/schema_queries:test --test_output=streamed
-#    test-behaviour-reasoner-concept-inequality:
-#      image: vaticle-ubuntu-20.04
-#      command: bazel test //test/behaviour/reasoner/tests/concept_inequality:test --test_output=streamed
 #    test-behaviour-reasoner-variable-roles:
 #      image: vaticle-ubuntu-20.04
 #      command: bazel test //test/behaviour/reasoner/tests/variable_roles:test --test_output=streamed
