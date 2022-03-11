@@ -77,8 +77,10 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
                 monitor().forkFrontier(1, this);
                 monitor().consumeAnswer(this);
                 follower.publishTo(this);
-                providerRegistry().pull(leadingPublisher);  // Pull again on the leader in case the follower never produces an answer
-                providerRegistry().pull(follower);
+                if (receiverRegistry().isPulling()) {
+                    providerRegistry().pull(leadingPublisher);  // Pull again on the leader in case the follower never produces an answer  // TODO: Won't this infinitely re-pull?
+                    providerRegistry().pull(follower);
+                }
             }
         } else {
             receiverRegistry().setNotPulling();

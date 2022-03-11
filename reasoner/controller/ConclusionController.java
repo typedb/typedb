@@ -204,16 +204,20 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 monitor().consumeAnswer(this);
 
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive));
-                materialiserRegistry().pull(materialiserReactive);
-                providerRegistry().pull(provider);  // We need to pull on the condition again in case materialisation fails
+                if (receiverRegistry().isPulling()) {
+                    materialiserRegistry().pull(materialiserReactive);
+                    providerRegistry().pull(provider);  // We need to pull on the condition again in case materialisation fails
+                }
             }
 
             private void receiveMaterialisation(MaterialiserReactive provider, Map<Variable, Concept> packet) {
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
                 receiverRegistry().setNotPulling();
                 receiverRegistry().receiver().receive(this, packet);
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, provider));
-                provider.pull(receiverRegistry().receiver());  // We need to pull again so that the materialiser processor does a join of its own accord
+                if (receiverRegistry().isPulling()) {
+                    Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, provider));
+                    provider.pull(receiverRegistry().receiver());  // We need to pull again so that the materialiser processor does a join of its own accord
+                }
             }
         }
 

@@ -47,14 +47,14 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OU
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {
             receiverRegistry().setNotPulling();
-            // TODO: This can actually create more receive() calls to downstream than the number of pull()s it receives. Should buffer instead. Protected against by manually adding .buffer() after calls to flatMap
+            // This can actually create more receive() calls to downstream than the number of pulls it receives. Protect against by manually adding .buffer() after calls to flatMap
             transformed.forEachRemaining(t -> {
                 monitor().createAnswer(this);
                 receiverRegistry().receiver().receive(this, t);
             });
         } else {
-            if (receiverRegistry().isPulling()) providerRegistry().pull(provider);  // Automatic retry
+            if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
         }
-        monitor().consumeAnswer(this);  // Because we discarded the original packet and gained as many as are in the iterator
+        monitor().consumeAnswer(this);
     }
 }
