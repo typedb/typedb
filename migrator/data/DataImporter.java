@@ -86,7 +86,7 @@ public class DataImporter {
     private final int parallelisation;
 
     private final Path dataFile;
-    private final IDMapper idMapper;
+    private final IDMapper idTracker;
     private final String version;
     private final Status status;
     private final AtomicBoolean skippedRelations;
@@ -101,7 +101,7 @@ public class DataImporter {
         this.parallelisation = com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
         this.importExecutor = Executors.newFixedThreadPool(parallelisation);
         this.readerExecutor = Executors.newSingleThreadExecutor();
-        this.idMapper = new IDMapper(database);
+        this.idTracker = new IDMapper(database);
         this.skippedRelations = new AtomicBoolean(false);
         this.status = new Status();
     }
@@ -126,7 +126,7 @@ public class DataImporter {
 
     public void close() {
         session.close();
-        idMapper.close();
+        idTracker.close();
     }
 
     private void validateHeader() {
@@ -175,12 +175,12 @@ public class DataImporter {
         long executeImport() {
             long imported = 0;
             BlockingQueue<DataProto.Item> items = asyncItemReader();
-            CompletableFuture<Integer>[] workers = new CompletableFuture[parallelisation];
+            CompletableFuture<Long>[] workers = new CompletableFuture[parallelisation];
             for (int i = 0; i < parallelisation; i++) {
                 workers[i] = CompletableFuture.supplyAsync(() -> workerConstructor.apply(items).importItems(), importExecutor);
             }
             try {
-                for (CompletableFuture<Integer> worker : workers) {
+                for (CompletableFuture<Long> worker : workers) {
                     imported += worker.get();
                 }
             } catch (CompletionException | InterruptedException | ExecutionException exception) {
@@ -223,10 +223,10 @@ public class DataImporter {
             transaction = session.transaction(Arguments.Transaction.Type.WRITE);
         }
 
-        abstract int importItem(DataProto.Item item);
+        abstract long importItem(DataProto.Item item);
 
-        int importItems() {
-            int imported = 0;
+        long importItems() {
+            long imported = 0;
             int batchCount = 0;
             DataProto.Item item;
             try {
@@ -254,43 +254,41 @@ public class DataImporter {
             transaction.commit();
             transaction.committedIIDs().forEachRemaining(pair -> {
                 String originalID = bufferedToOriginalIds.get(pair.first());
-                idMapper.putMapping(originalID, pair.second());
-                if (incomplete.contains(originalID)) idMapper.markIncomplete(originalID);
+                idTracker.recordMapping(originalID, pair.second());
+                if (incomplete.contains(originalID)) idTracker.recordIncomplete(originalID);
             });
             bufferedToOriginalIds.clear();
             originalToBufferedIds.clear();
-            completed.forEach(idMapper::markCompleted);
+            completed.forEach(idTracker::deleteIncomplete);
         }
 
-        void recordCreated(ByteArray newIID, String originalID) {
-            assert !originalToBufferedIds.containsKey(originalID) && !idMapper.containsMapped(originalID);
+        void recordMapping(ByteArray newIID, String originalID) {
+            assert !originalToBufferedIds.containsKey(originalID) && !idTracker.containsMapped(originalID);
             bufferedToOriginalIds.put(newIID, originalID);
             originalToBufferedIds.put(originalID, newIID);
         }
 
-        void markIncomplete(String originalID) {
+        protected void recordAttributeMapping(ByteArray iid, String originalID) {
+            idTracker.recordMapping(originalID, iid);
+        }
+
+        void recordIncomplete(String originalID) {
             incomplete.add(originalID);
         }
 
-        void markComplete(String originalID) {
+        void recordCompleted(String originalID) {
             incomplete.remove(originalID);
             completed.add(originalID);
         }
 
-        boolean isMarkedIncomplete(String id) {
+        boolean isIncomplete(String id) {
             if (incomplete.contains(id)) return true;
-            else {
-                return idMapper.isMarkedIncomplete(id);
-            }
+            else return idTracker.isMarkedIncomplete(id);
         }
 
-        protected void recordAttributeCreated(ByteArray iid, String originalID) {
-            idMapper.putMapping(originalID, iid);
-        }
-
-        Thing getImportedThing(String originalID) {
+        Thing getMappedThing(String originalID) {
             ByteArray newIID;
-            if ((newIID = originalToBufferedIds.get(originalID)) == null && (newIID = idMapper.getMapped(originalID)) == null) {
+            if ((newIID = originalToBufferedIds.get(originalID)) == null && (newIID = idTracker.getMapped(originalID)) == null) {
                 return null;
             } else {
                 Thing thing = transaction.concepts().getThing(newIID);
@@ -299,17 +297,17 @@ public class DataImporter {
             }
         }
 
-        int insertOwnerships(String originalID, List<DataProto.Item.OwnedAttribute> ownerships) {
-            Thing owner = getImportedThing(originalID);
-            int count = 0;
+        int importOwnerships(String originalID, List<DataProto.Item.OwnedAttribute> ownerships) {
+            Thing owner = getMappedThing(originalID);
+            int imported = 0;
             for (DataProto.Item.OwnedAttribute ownership : ownerships) {
-                Thing attrThing = getImportedThing(ownership.getId());
+                Thing attrThing = getMappedThing(ownership.getId());
                 assert attrThing != null;
                 owner.setHas(attrThing.asAttribute());
-                count++;
+                imported++;
             }
-            status.ownershipCount.addAndGet(count);
-            return count;
+            status.ownershipCount.addAndGet(imported);
+            return imported;
         }
     }
 
@@ -320,7 +318,7 @@ public class DataImporter {
         }
 
         @Override
-        int importItem(DataProto.Item item) {
+        long importItem(DataProto.Item item) {
             switch (item.getItemCase()) {
                 case ATTRIBUTE:
                     insertAttribute(transaction, item.getAttribute());
@@ -360,7 +358,7 @@ public class DataImporter {
                 default:
                     throw TypeDBException.of(INVALID_DATA);
             }
-            recordAttributeCreated(attribute.getIID(), attrMsg.getId());
+            recordAttributeMapping(attribute.getIID(), attrMsg.getId());
             status.attributeCount.incrementAndGet();
         }
     }
@@ -372,13 +370,13 @@ public class DataImporter {
         }
 
         @Override
-        int importItem(DataProto.Item item) {
+        long importItem(DataProto.Item item) {
             switch (item.getItemCase()) {
                 case ENTITY:
                     insertEntity(transaction, item.getEntity());
-                    return 1 + insertOwnerships(item.getEntity().getId(), item.getEntity().getAttributeList());
+                    return 1 + importOwnerships(item.getEntity().getId(), item.getEntity().getAttributeList());
                 case ATTRIBUTE:
-                    return insertOwnerships(item.getAttribute().getId(), item.getAttribute().getAttributeList());
+                    return importOwnerships(item.getAttribute().getId(), item.getAttribute().getAttributeList());
                 default:
                     return 0;
             }
@@ -388,7 +386,7 @@ public class DataImporter {
             EntityType type = transaction.concepts().getEntityType(msg.getLabel());
             if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, msg.getLabel());
             Entity entity = type.create();
-            recordCreated(entity.getIID(), msg.getId());
+            recordMapping(entity.getIID(), msg.getId());
             status.entityCount.incrementAndGet();
         }
     }
@@ -400,16 +398,16 @@ public class DataImporter {
         }
 
         @Override
-        int importItem(DataProto.Item item) {
+        long importItem(DataProto.Item item) {
             if (item.getItemCase() == DataProto.Item.ItemCase.RELATION) {
                 int insertedCount;
-                Thing importedRelation = getImportedThing(item.getRelation().getId());
+                Thing importedRelation = getMappedThing(item.getRelation().getId());
                 if (importedRelation == null) {
                     insertedCount = tryCreateRelation(item.getRelation());
                     if (insertedCount > 0) {
-                        return insertedCount + insertOwnerships(item.getRelation().getId(), item.getRelation().getAttributeList());
+                        return insertedCount + importOwnerships(item.getRelation().getId(), item.getRelation().getAttributeList());
                     }
-                } else if (isMarkedIncomplete(item.getRelation().getId())) {
+                } else if (isIncomplete(item.getRelation().getId())) {
                     return tryExtendRelation(importedRelation.asRelation(), item.getRelation());
                 }
             }
@@ -426,7 +424,7 @@ public class DataImporter {
             for (DataProto.Item.Relation.Role roleMsg : relationMsg.getRoleList()) {
                 RoleType roleType = null;
                 for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
-                    Thing player = getImportedThing(playerMessage.getId());
+                    Thing player = getMappedThing(playerMessage.getId());
                     if (player == null) {
                         isIncomplete = true;
                         continue;
@@ -435,11 +433,10 @@ public class DataImporter {
                     if (roleType == null) roleType = getRoleType(relationType, roleMsg);
                     if (relation == null) {
                         relation = relationType.create();
-                        recordCreated(relation.getIID(), relationMsg.getId());
                         status.relationCount.incrementAndGet();
+                        recordMapping(relation.getIID(), relationMsg.getId());
                     }
                     relation.addPlayer(roleType, player);
-                    status.roleCount.incrementAndGet();
                     rolesCreated++;
                 }
             }
@@ -448,19 +445,20 @@ public class DataImporter {
                 skippedRelations.set(true);
                 return 0;
             } else {
-                if (isIncomplete) markIncomplete(relationMsg.getId());
+                status.roleCount.addAndGet(rolesCreated);
+                if (isIncomplete) recordIncomplete(relationMsg.getId());
                 return 1 + rolesCreated;
             }
         }
 
         private int tryExtendRelation(Relation relation, DataProto.Item.Relation relationMsg) {
-            assert idMapper.getMapped(relationMsg.getId()).equals(relation.getIID()) && isMarkedIncomplete(relationMsg.getId());
+            assert idTracker.getMapped(relationMsg.getId()).equals(relation.getIID()) && isIncomplete(relationMsg.getId());
             int rolesCreated = 0;
             boolean stillIncomplete = false;
             for (DataProto.Item.Relation.Role roleMsg : relationMsg.getRoleList()) {
                 RoleType roleType = null;
                 for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
-                    Thing player = getImportedThing(playerMessage.getId());
+                    Thing player = getMappedThing(playerMessage.getId());
                     if (player == null) {
                         stillIncomplete = true;
                         continue;
@@ -468,23 +466,22 @@ public class DataImporter {
                     if (roleType == null) roleType = getRoleType(relation.getType(), roleMsg);
                     if (relation.getPlayers(roleType).findFirst(player).isPresent()) continue;
                     relation.addPlayer(roleType, player);
-                    status.roleCount.incrementAndGet();
                     rolesCreated++;
                 }
             }
-            if (!stillIncomplete) markComplete(relationMsg.getId());
+            if (!stillIncomplete) recordCompleted(relationMsg.getId());
+            status.roleCount.addAndGet(rolesCreated);
             return rolesCreated;
         }
     }
 
     private boolean relationsFinished() {
-        return !skippedRelations.get() && !idMapper.containsIncomplete();
+        return !skippedRelations.get() && !idTracker.containsIncomplete();
     }
 
     private void importUnfinishedRelations() {
         boolean progressMade = true;
         while (!relationsFinished() && progressMade) {
-            System.out.println("Loading relations");
             skippedRelations.set(false);
             long imported = new ParallelImport(Relations::new).executeImport();
             progressMade = imported > 0;
@@ -492,22 +489,21 @@ public class DataImporter {
 
         if (relationsFinished()) return;
 
-        // Load all relations that are pure co-dependent cycles.
-        // This must be done in one transaction
+        // Load all relations that are pure co-dependent cycles, which must be loaded in one transaction
         try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
             try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(dataFile))) {
                 DataProto.Item item;
                 while ((item = ITEM_PARSER.parseDelimitedFrom(inputStream)) != null) {
                     if (item.getItemCase() == DataProto.Item.ItemCase.RELATION) {
-                        Thing imported = transaction.concepts().getThing(idMapper.getMapped(item.getRelation().getId()));
+                        Thing imported = transaction.concepts().getThing(idTracker.getMapped(item.getRelation().getId()));
                         if (imported == null) {
                             imported = transaction.concepts().getRelationType(item.getRelation().getLabel()).create();
                             status.relationCount.incrementAndGet();
-                            idMapper.putMapping(item.getRelation().getId(), imported.getIID());
-                            idMapper.markIncomplete(item.getRelation().getId());
+                            idTracker.recordMapping(item.getRelation().getId(), imported.getIID());
+                            idTracker.recordIncomplete(item.getRelation().getId());
 
                             for (DataProto.Item.OwnedAttribute ownership : item.getRelation().getAttributeList()) {
-                                Thing attribute = transaction.concepts().getThing(idMapper.getMapped(ownership.getId()));
+                                Thing attribute = transaction.concepts().getThing(idTracker.getMapped(ownership.getId()));
                                 assert attribute != null;
                                 imported.setHas(attribute.asAttribute());
                                 status.ownershipCount.incrementAndGet();
@@ -522,13 +518,13 @@ public class DataImporter {
             try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(dataFile))) {
                 DataProto.Item item;
                 while ((item = ITEM_PARSER.parseDelimitedFrom(inputStream)) != null) {
-                    if (item.getItemCase() == DataProto.Item.ItemCase.RELATION && idMapper.isMarkedIncomplete(item.getRelation().getId())) {
-                        Relation relation = transaction.concepts().getThing(idMapper.getMapped(item.getRelation().getId())).asRelation();
+                    if (item.getItemCase() == DataProto.Item.ItemCase.RELATION && idTracker.isMarkedIncomplete(item.getRelation().getId())) {
+                        Relation relation = transaction.concepts().getThing(idTracker.getMapped(item.getRelation().getId())).asRelation();
                         RelationType relationType = relation.asRelation().getType();
                         item.getRelation().getRoleList().forEach(roleMsg -> {
                             RoleType roleType = getRoleType(relationType, roleMsg);
                             for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
-                                Thing player = transaction.concepts().getThing(idMapper.getMapped(playerMessage.getId()));
+                                Thing player = transaction.concepts().getThing(idTracker.getMapped(playerMessage.getId()));
                                 if (player == null) throw TypeDBException.of(PLAYER_NOT_FOUND, relationType.getLabel());
                                 else if (!relation.asRelation().getPlayers(roleType).findFirst(player).isPresent()) {
                                     relation.addPlayer(roleType, player);
@@ -536,7 +532,7 @@ public class DataImporter {
                                 }
                             }
                         });
-                        idMapper.markCompleted(item.getRelation().getId());
+                        idTracker.deleteIncomplete(item.getRelation().getId());
                     }
                 }
             } catch (IOException e) {
@@ -545,7 +541,7 @@ public class DataImporter {
             transaction.commit();
         }
 
-        assert !idMapper.containsIncomplete();
+        assert !idTracker.containsIncomplete();
     }
 
     private RoleType getRoleType(RelationType relationType, DataProto.Item.Relation.Role roleMsg) {
@@ -593,7 +589,7 @@ public class DataImporter {
             }
         }
 
-        public void putMapping(String originalID, ByteArray newID) {
+        public void recordMapping(String originalID, ByteArray newID) {
             ByteArray originalIDEncoded = encodeOriginalID(originalID);
             ByteArray mappingKey = ByteArray.join(Prefix.ID_MAPPING.bytes, originalIDEncoded);
             try {
@@ -619,7 +615,7 @@ public class DataImporter {
             return getMapped(originalID) != null;
         }
 
-        public void markIncomplete(String originalID) {
+        public void recordIncomplete(String originalID) {
             ByteArray key = ByteArray.join(Prefix.ID_INCOMPLETE.bytes, encodeOriginalID(originalID));
             try {
                 storage.put(key.getBytes(), new byte[0]);
@@ -645,7 +641,7 @@ public class DataImporter {
             return hasIncomplete;
         }
 
-        public void markCompleted(String originalID) {
+        public void deleteIncomplete(String originalID) {
             ByteArray key = ByteArray.join(Prefix.ID_INCOMPLETE.bytes, encodeOriginalID(originalID));
             try {
                 storage.delete(key.getBytes());
