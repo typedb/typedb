@@ -72,7 +72,7 @@ public class Monitor extends Actor<Monitor> {
         rootNode.setGraph(reactiveGraph);
     }
 
-    private <R> void rootFinished(Reactive.Receiver.Finishable<R> root) {
+    private <R> void rootFinalised(Reactive.Receiver.Finishable<R> root) {
         if (terminated) return;
         RootNode rootNode = getNode(root).asRoot();
         rootNode.setFinished();
@@ -180,11 +180,7 @@ public class Monitor extends Actor<Monitor> {
         }
 
         void checkFinished() {
-            if (!finished && sourcesFinished() && activeAnswers() == 0 && activeFrontiers() == 0) {
-                setFinished();
-                rootNode.setFinished();  // TODO: This duplication is why this graph and the root node should be the same object
-                finishRootNode();
-            }
+            if (!finished && sourcesFinished() && activeAnswers() == 0 && activeFrontiers() == 0) finishRootNode();
         }
 
         public Driver<? extends Processor<?, ?, ?, ?>> rootProcessor() {
@@ -408,9 +404,9 @@ public class Monitor extends Actor<Monitor> {
             monitor.execute(actor -> actor.registerRoot(processor, root));
         }
 
-        public <R> void rootFinished(Reactive.Receiver.Finishable<R> root) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.rootFinished(root, monitor));
-            monitor.execute(actor -> actor.rootFinished(root));
+        public <R> void rootFinalised(Reactive.Receiver.Finishable<R> root) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.rootFinalised(root, monitor));
+            monitor.execute(actor -> actor.rootFinalised(root));
         }
 
         public <R> void registerPath(Reactive.Receiver<R> receiver, @Nullable Reactive.Provider<R> provider) {

@@ -87,5 +87,6 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Fi
     @Override
     public void onFinished() {
         reasonerConsumer.answersFinished();
+        monitorRef().rootFinalised(this);
     }
 }

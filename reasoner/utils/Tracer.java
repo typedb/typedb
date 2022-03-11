@@ -107,8 +107,8 @@ public final class Tracer {
         addMessage(simpleClassId(root), monitor.name(), defaultTrace, EdgeType.ROOT, "reg_root");
     }
 
-    public <R> void rootFinished(Receiver.Finishable<R> root, Actor.Driver<Monitor> monitor) {
-        addMessage(simpleClassId(root), monitor.name(), defaultTrace, EdgeType.ROOT_FINISH, "root_finished");
+    public <R> void rootFinalised(Receiver.Finishable<R> root, Actor.Driver<Monitor> monitor) {
+        addMessage(simpleClassId(root), monitor.name(), defaultTrace, EdgeType.ROOT_FINALISED, "root_finished");
     }
 
     public <R> void finishRootNode(Receiver.Finishable<R> root, Actor.Driver<Monitor> monitor) {
@@ -285,6 +285,7 @@ public final class Tracer {
         RECEIVE("green"),
         ROOT("black"),
         ROOT_FINISH("brown"),
+        ROOT_FINALISED("pink"),
         REGISTER("orange"),
         SOURCE("purple"),
         SOURCE_FINISH("brown"),
