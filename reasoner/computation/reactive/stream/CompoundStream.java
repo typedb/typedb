@@ -19,8 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 
-import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.ArrayList;
@@ -41,10 +40,10 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
 
     public CompoundStream(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
                           BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
-                          Actor.Driver<Monitor> monitor, String groupName) {
-        super(monitor, groupName);
+                          Processor<?, ?, ?, ?> processor) {
+        super(processor);
         assert plan.size() > 0;
-        this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this, monitor);
+        this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this, processor);
         this.initialPacket = initialPacket;
         this.remainingPlan = new ArrayList<>(plan);
         this.leadingPublisher = spawnLeaderFunc.apply(this.remainingPlan.remove(0), initialPacket);
@@ -72,7 +71,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
                 if (remainingPlan.size() == 1) {
                     follower = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
                 } else {
-                    follower = new CompoundStream<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, monitor(), groupName()).buffer();
+                    follower = new CompoundStream<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, processor()).buffer();
                 }
                 publisherPackets.put(follower, mergedPacket);
                 monitor().execute(actor -> actor.forkFrontier(1, this));

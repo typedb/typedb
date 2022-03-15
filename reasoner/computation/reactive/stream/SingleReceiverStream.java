@@ -18,8 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
-import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.AbstractPublisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
@@ -30,8 +29,8 @@ public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublis
 
     private final ReceiverRegistry.SingleReceiverRegistry<OUTPUT> receiverRegistry;
 
-    protected SingleReceiverStream(Actor.Driver<Monitor> monitor, String groupName) {  // TODO: Do we need to initialise with publishers or should we always add dynamically?
-        super(monitor, groupName);
+    protected SingleReceiverStream(Processor<?, ?, ?, ?> processor) {
+        super(processor);
         this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(this);
     }
 

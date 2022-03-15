@@ -40,7 +40,7 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
         this.name = name;
     }
 
-    protected Driver<ACTOR> driver() {
+    public Driver<ACTOR> driver() {
         assert this.driver != null : ERROR_ACTOR_DRIVER_IS_NULL;
         return this.driver;
     }

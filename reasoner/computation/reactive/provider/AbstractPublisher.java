@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.DeduplicationStream;
@@ -32,56 +33,58 @@ import java.util.function.Function;
 
 public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Publisher<OUTPUT> {
 
-    private final Actor.Driver<Monitor> monitor;
-    private final String groupName;
+    private final Processor<?, ?, ?, ?> processor;
 
-    protected AbstractPublisher(Actor.Driver<Monitor> monitor, String groupName) {
-        this.monitor = monitor;
-        this.groupName = groupName;
+    protected AbstractPublisher(Processor<?, ?, ?, ?> processor) {
+        this.processor = processor;
     }
 
     protected abstract ReceiverRegistry<OUTPUT> receiverRegistry();
 
     protected Actor.Driver<Monitor> monitor() {
-        return monitor;
+        return processor.monitor();
+    }
+
+    protected Processor<?, ?, ?, ?> processor() {
+        return processor;
     }
 
     @Override
     public String groupName() {
-        return groupName;
+        return processor().name();
     }
 
     @Override
     public Stream<OUTPUT,OUTPUT> findFirst() {
-        FindFirstStream<OUTPUT> findFirst = new FindFirstStream<>(this, monitor, groupName());
+        FindFirstStream<OUTPUT> findFirst = new FindFirstStream<>(this, processor());
         publishTo(findFirst);
         return findFirst;
     }
 
     @Override
     public <R> Stream<OUTPUT, R> map(Function<OUTPUT, R> function) {
-        MapStream<OUTPUT, R> map = new MapStream<>(this, function, monitor(), groupName());
+        MapStream<OUTPUT, R> map = new MapStream<>(this, function, processor());
         publishTo(map);
         return map;
     }
 
     @Override
     public <R> Stream<OUTPUT,R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
-        FlatMapStream<OUTPUT, R> flatMap = new FlatMapStream<>(this, function, monitor(), groupName());
+        FlatMapStream<OUTPUT, R> flatMap = new FlatMapStream<>(this, function, processor());
         publishTo(flatMap);
         return flatMap;
     }
 
     @Override
     public Stream<OUTPUT, OUTPUT> buffer() {
-        BufferedStream<OUTPUT> buffer = new BufferedStream<>(this, monitor(), groupName());
+        BufferedStream<OUTPUT> buffer = new BufferedStream<>(this, processor());
         publishTo(buffer);
         return buffer;
     }
 
     @Override
     public Stream<OUTPUT,OUTPUT> deduplicate() {
-        DeduplicationStream<OUTPUT> dedup = new DeduplicationStream<>(this, monitor(), groupName());
+        DeduplicationStream<OUTPUT> dedup = new DeduplicationStream<>(this, processor());
         publishTo(dedup);
         return dedup;
     }

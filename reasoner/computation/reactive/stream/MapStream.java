@@ -18,8 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
-import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.function.Function;
@@ -29,11 +28,10 @@ public class MapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT
     private final Function<INPUT, OUTPUT> mappingFunc;
     private final ProviderRegistry.SingleProviderRegistry<INPUT> providerRegistry;
 
-    public MapStream(Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, Actor.Driver<Monitor> monitor,
-                     String groupName) {
-        super(monitor, groupName);
+    public MapStream(Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, Processor<?, ?, ?, ?> processor) {
+        super(processor);
         this.mappingFunc = mappingFunc;
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, monitor);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, processor);
     }
 
     @Override

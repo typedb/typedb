@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.receiver;
 
-import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
@@ -29,12 +27,11 @@ import java.util.Map;
 
 public abstract class ProviderRegistry<R> {
 
-    private Actor.Driver<? extends Processor<?, ?, ?, ?>> processor;
-    protected final Actor.Driver<Monitor> monitor;
+    protected final Processor<?, ?, ?, ?> processor;
     protected final Reactive.Receiver<R> receiver;
 
-    protected ProviderRegistry(Reactive.Receiver<R> receiver, Actor.Driver<Monitor> monitor) {
-        this.monitor = monitor;
+    protected ProviderRegistry(Reactive.Receiver<R> receiver, Processor<?, ?, ?, ?> processor) {
+        this.processor = processor;
         this.receiver = receiver;
     }
 
@@ -57,7 +54,7 @@ public abstract class ProviderRegistry<R> {
 
     protected void pullProvider(Reactive.Provider<R> provider, boolean async) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
-        if (async) processor.execute(actor -> actor.pull(provider, receiver));
+        if (async) processor.driver().execute(actor -> actor.pull(provider, receiver));
         else provider.pull(receiver);
     }
 
@@ -67,14 +64,14 @@ public abstract class ProviderRegistry<R> {
         private boolean isPulling;
 
         public SingleProviderRegistry(Reactive.Provider.Publisher<R> provider, Reactive.Receiver<R> receiver,
-                                      Actor.Driver<Monitor> monitor) {
-            super(receiver, monitor);
+                                      Processor<?, ?, ?, ?> processor) {
+            super(receiver, processor);
             this.isPulling = false;
             add(provider);
         }
 
-        public SingleProviderRegistry(Reactive.Receiver<R> receiver, Actor.Driver<Monitor> monitor) {
-            super(receiver, monitor);
+        public SingleProviderRegistry(Reactive.Receiver<R> receiver, Processor<?, ?, ?, ?> processor) {
+            super(receiver, processor);
             this.provider = null;
             this.isPulling = false;
         }
@@ -83,7 +80,7 @@ public abstract class ProviderRegistry<R> {
         public void add(Reactive.Provider<R> provider) {
             assert provider != null;
             assert this.provider == null || provider == this.provider;  // TODO: Tighten this to allow adding only once
-            if (this.provider == null) monitor.execute(actor -> actor.registerPath(receiver, provider));
+            if (this.provider == null) processor.monitor().execute(actor -> actor.registerPath(receiver, provider));
             this.provider = provider;
         }
 
@@ -121,8 +118,8 @@ public abstract class ProviderRegistry<R> {
 
         private final Map<Reactive.Provider<R>, Boolean> providerPullState;
 
-        public MultiProviderRegistry(Reactive.Receiver<R> receiver, Actor.Driver<Monitor> monitor) {
-            super(receiver, monitor);
+        public MultiProviderRegistry(Reactive.Receiver<R> receiver, Processor<?, ?, ?, ?> processor) {
+            super(receiver, processor);
             this.providerPullState = new HashMap<>();
         }
 
@@ -130,7 +127,7 @@ public abstract class ProviderRegistry<R> {
         public void add(Reactive.Provider<R> provider) {
             assert provider != null;
             if (providerPullState.putIfAbsent(provider, false) == null) {
-                monitor.execute(actor -> actor.registerPath(receiver, provider));
+                processor.monitor().execute(actor -> actor.registerPath(receiver, provider));
             }
         }
 

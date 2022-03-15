@@ -19,8 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 
 import java.util.function.Supplier;
 
@@ -30,16 +29,16 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
     private boolean exhausted;
     private FunctionalIterator<PACKET> iterator;
 
-    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, Actor.Driver<Monitor> monitor, String groupName) {
-        super(monitor, groupName);
+    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, Processor<?, ?, ?, ?> processor) {
+        super(processor);
         this.iteratorSupplier = iteratorSupplier;
         this.exhausted = false;
         monitor().execute(actor -> actor.registerSource(this));
     }
 
     public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier,
-                                                             Actor.Driver<Monitor> monitor, String groupName) {
-        return new Source<>(iteratorSupplier, monitor, groupName);
+                                                             Processor<?, ?, ?, ?> processor) {
+        return new Source<>(iteratorSupplier, processor);
     }
 
     @Override

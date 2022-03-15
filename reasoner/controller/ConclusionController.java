@@ -103,10 +103,10 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         @Override
         public void setUp() {
-            setOutlet(new FanOutStream<>(monitor(), name()));
+            setOutlet(new FanOutStream<>(this));
             InletEndpoint<Either<ConceptMap, Materialisation>> conditionEndpoint = createReceivingEndpoint();
             mayRequestCondition(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
-            ConclusionReactive conclusionReactive = new ConclusionReactive(name(), monitor());
+            ConclusionReactive conclusionReactive = new ConclusionReactive(this);
             conditionEndpoint.map(a -> a.first()).publishTo(conclusionReactive);
             conclusionReactive.publishTo(outlet());
         }
@@ -158,9 +158,9 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerRegistry;
             private ProviderRegistry.MultiProviderRegistry<Map<Variable, Concept>> materialiserRegistry;
 
-            protected ConclusionReactive(String groupName, Driver<Monitor> monitor) {
-                super(monitor, groupName);
-                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
+            protected ConclusionReactive(Processor<?, ?, ?, ?> processor) {
+                super(processor);
+                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
                 this.materialiserRegistry = null;
             }
 
@@ -168,7 +168,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             public void publishTo(Subscriber<Map<Variable, Concept>> subscriber) {
                 super.publishTo(subscriber);
                 // We need to wait until the receiver has been given before we can create the materialiser registry
-                this.materialiserRegistry = new ProviderRegistry.MultiProviderRegistry<>(receiverRegistry().receiver(), monitor());
+                this.materialiserRegistry = new ProviderRegistry.MultiProviderRegistry<>(receiverRegistry().receiver(), processor());
             }
 
             @Override
@@ -195,7 +195,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
                 Stream<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
-                MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, monitor(), groupName());
+                MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, processor());
                 materialiserRegistry().add(materialiserReactive);
                 op.publishTo(materialiserReactive);
                 materialiserReactive.sendTo(receiverRegistry().receiver());
@@ -227,10 +227,10 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             private final ConclusionReactive parent;
             private final ProviderRegistry.SingleProviderRegistry<Map<Variable, Concept>> providerRegistry;
 
-            public MaterialiserReactive(ConclusionReactive parent, Driver<Monitor> monitor, String groupName) {
-                super(monitor, groupName);
+            public MaterialiserReactive(ConclusionReactive parent, Processor<?, ?, ?, ?> processor) {
+                super(processor);
                 this.parent = parent;
-                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
+                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
             }
 
             @Override

@@ -19,9 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.receiver;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
@@ -37,14 +35,13 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Fi
     private boolean isPulling;
     private int traceCounter = 0;
 
-    public EntryPoint(Actor.Driver<? extends Processor<ConceptMap, ?, ?, ?>> processor, Actor.Driver<Monitor> monitor,
-                      ReasonerConsumer reasonerConsumer, String groupName) {
-        super(monitor);
+    public EntryPoint(Processor<ConceptMap, ?, ?, ?> processor, ReasonerConsumer reasonerConsumer, String groupName) {
+        super(processor);
         this.reasonerConsumer = reasonerConsumer;
         this.groupName = groupName;
         this.isPulling = false;
-        reasonerConsumer.setRootProcessor(processor);
-        monitor().execute(actor -> actor.registerRoot(processor, this));
+        reasonerConsumer.setRootProcessor(processor.driver());
+        monitor().execute(actor -> actor.registerRoot(processor.driver(), this));
         monitor().execute(actor -> actor.forkFrontier(1, this));
     }
 

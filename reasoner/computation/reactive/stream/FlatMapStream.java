@@ -19,8 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.function.Function;
@@ -31,10 +30,10 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OU
     private final ProviderRegistry.SingleProviderRegistry<INPUT> providerRegistry;
 
     public FlatMapStream(Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
-                         Actor.Driver<Monitor> monitor, String groupName) {
-        super(monitor, groupName);
+                         Processor<?, ?, ?, ?> processor) {
+        super(processor);
         this.transform = transform;
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, monitor);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, processor);
     }
 
     @Override

@@ -130,14 +130,14 @@ public abstract class Processor<INPUT, OUTPUT,
 
     protected OutletEndpoint<OUTPUT> createProvidingEndpoint(Connection<OUTPUT, ?, PROCESSOR> connection) {
         assert !done;
-        OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection, monitor(), name());
+        OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection, this);
         providingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
 
     protected InletEndpoint<INPUT> createReceivingEndpoint() {
         assert !done;
-        InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId(), monitor(), name());
+        InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId(), this);
         receivingEndpoints.put(endpoint.id(), endpoint);
         return endpoint;
     }
@@ -198,11 +198,11 @@ public abstract class Processor<INPUT, OUTPUT,
         private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
         private boolean ready;
 
-        public InletEndpoint(long id, Driver<Monitor> monitor, String groupName) {
-            super(monitor, groupName);
+        public InletEndpoint(long id, Processor<?, ?, ?, ?> processor) {
+            super(processor);
             this.id = id;
             this.ready = false;
-            this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
+            this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
         }
 
         private ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
@@ -244,15 +244,15 @@ public abstract class Processor<INPUT, OUTPUT,
      */
     public static class OutletEndpoint<PACKET> implements Subscriber<PACKET>, Provider<PACKET> {
 
+        private final Processor<?, ?, ?, ?> processor;
         private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
         private final ReceiverRegistry.SingleReceiverRegistry<PACKET> receiverRegistry;
         private final long id;
-        private final String groupName;
 
-        public OutletEndpoint(Connection<PACKET, ?, ?> connection, Driver<Monitor> monitor, String groupName) {
-            this.groupName = groupName;
+        public OutletEndpoint(Connection<PACKET, ?, ?> connection, Processor<?, ?, ?, ?> processor) {
+            this.processor = processor;
             this.id = connection.providerEndpointId();
-            this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
+            this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
             this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(this, connection);
         }
 
@@ -270,7 +270,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
         @Override
         public String groupName() {
-            return groupName;
+            return processor.name();
         }
 
         @Override

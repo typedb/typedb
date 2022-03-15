@@ -89,10 +89,10 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
         @Override
         public void setUp() {
-            setOutlet(new FanOutStream<>(monitor(), name()));
+            setOutlet(new FanOutStream<>(this));
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             requestConnection(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
-            negation = new NegationReactive(monitor(), name(), bounds);
+            negation = new NegationReactive(this, bounds);
             monitor().execute(actor -> actor.registerRoot(driver(), negation));
             monitor().execute(actor -> actor.forkFrontier(1, negation));
             endpoint.publishTo(negation);
@@ -113,9 +113,9 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             private final ConceptMap bounds;
             private boolean answerFound;
 
-            protected NegationReactive(Driver<Monitor> monitor, String groupName, ConceptMap bounds) {
-                super(monitor, groupName);
-                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
+            protected NegationReactive(Processor<?, ?, ?, ?> processor, ConceptMap bounds) {
+                super(processor);
+                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
                 this.bounds = bounds;
                 this.answerFound = false;
             }

@@ -18,8 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
-import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.AbstractPublisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
@@ -41,12 +40,12 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     private final ProviderRegistry<PACKET> providerRegistry;
     private final ReceiverRegistry.MultiReceiverRegistry<PACKET> receiverRegistry;
 
-    public FanOutStream(Actor.Driver<Monitor> monitor, String groupName) {
-        super(monitor, groupName);
+    public FanOutStream(Processor<?, ?, ?, ?> processor) {
+        super(processor);
         this.bufferSet = new HashSet<>();
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
         this.receiverRegistry = new ReceiverRegistry.MultiReceiverRegistry<>(this);
     }
 

@@ -18,17 +18,16 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
-import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
     private final ProviderRegistry.MultiProviderRegistry<PACKET> providerRegistry;
 
-    protected FanInStream(Actor.Driver<Monitor> monitor, String groupName) {
-        super(monitor, groupName);
-        this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this, monitor);
+    protected FanInStream(Processor<?, ?, ?, ?> processor) {
+        super(processor);
+        this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this, processor);
     }
 
     @Override
@@ -36,8 +35,8 @@ public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
         return providerRegistry;
     }
 
-    public static <T> FanInStream<T> fanIn(Actor.Driver<Monitor> monitor, String groupName) {
-        return new FanInStream<>(monitor, groupName);
+    public static <T> FanInStream<T> fanIn(Processor<?, ?, ?, ?> processor) {
+        return new FanInStream<>(processor);
     }
 
     @Override

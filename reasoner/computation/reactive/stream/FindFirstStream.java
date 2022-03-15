@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 public class FindFirstStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
@@ -27,9 +28,9 @@ public class FindFirstStream<PACKET> extends SingleReceiverStream<PACKET, PACKET
     private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
     private boolean packetFound;
 
-    public FindFirstStream(Publisher<PACKET> publisher, Actor.Driver<Monitor> monitor, String groupName) {
-        super(monitor, groupName);
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, monitor);
+    public FindFirstStream(Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
+        super(processor);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, processor);
         this.packetFound = false;
     }
 
