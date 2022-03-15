@@ -723,9 +723,9 @@ public class CoreDatabase implements TypeDB.Database {
 
         private void recordMiscounts(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
             Map<AttributeVertex.Write<?>, Set<Long>> attrOvercountDependencies = new HashMap<>();
-            Map<AttributeVertex.Write<?>, Set<Long>> attrUndercountDependencies = new HashMap<>();
+            Map<AttributeVertex<?>, Set<Long>> attrUndercountDependencies = new HashMap<>();
             Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
-            Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasUndercountDependencies = new HashMap<>();
+            Map<Pair<ThingVertex, AttributeVertex<?>>, Set<Long>> hasUndercountDependencies = new HashMap<>();
             for (CoreTransaction.Data concurrent : concurrentTxn) {
                 // note: fail-fast if checks are much faster than using empty iterators (probably due to concurrent data structures)
                 if (!txn.graphMgr.data().attributesCreated().isEmpty() && !concurrent.graphMgr.data().attributesCreated().isEmpty()) {
@@ -754,7 +754,7 @@ public class CoreDatabase implements TypeDB.Database {
                     iterate(txn.graphMgr.data().hasEdgeDeleted()).filter(concurrent.graphMgr.data().hasEdgeDeleted()::contains)
                             .forEachRemaining(edge ->
                                     hasUndercountDependencies.computeIfAbsent(
-                                            pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
+                                            pair(edge.from(), edge.to().asAttribute()),
                                             (key) -> new HashSet<>()
                                     ).add(concurrent.id)
                             );

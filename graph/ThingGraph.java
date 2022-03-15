@@ -79,7 +79,7 @@ public class ThingGraph {
     private final Map<VertexIID.Thing, VertexIID.Thing> committedIIDs;
     private final Statistics statistics;
     private final ConcurrentSet<AttributeVertex.Write<?>> attributesCreated;
-    private final ConcurrentSet<AttributeVertex.Write<?>> attributesDeleted;
+    private final ConcurrentSet<AttributeVertex<?>> attributesDeleted;
     private final ConcurrentSet<ThingEdge> hasEdgeCreated;
     private final ConcurrentSet<ThingEdge> hasEdgeDeleted;
     private boolean isModified;
@@ -502,7 +502,7 @@ public class ThingGraph {
         return attributesCreated;
     }
 
-    public Set<AttributeVertex.Write<?>> attributesDeleted() {
+    public Set<AttributeVertex<?>> attributesDeleted() {
         return attributesDeleted;
     }
 

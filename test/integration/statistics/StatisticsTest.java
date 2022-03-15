@@ -91,7 +91,7 @@ public class StatisticsTest {
                 }
             }
 
-            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                 ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
 
                 assertEquals(batches * 3, statistics.thingVertexCount(Label.of("person")));
@@ -121,7 +121,7 @@ public class StatisticsTest {
                         "$r (employer: $c);"));
                 txn.commit();
             }
-            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                 ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
 
                 assertEquals(batches * 3 - 1, statistics.thingVertexCount(Label.of("person")));
@@ -153,19 +153,46 @@ public class StatisticsTest {
             for (int i = 0; i < batches; i++) transactions.add(session.transaction(Arguments.Transaction.Type.WRITE));
             for (int i = 0; i < batches; i++) {
                 CoreTransaction txn = transactions.get(i);
-                txn.query().insert(TypeQL.parseQuery("insert " +
-                        "$x isa person, has name 'Alice';"
-                ));
+                txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Alice';"));
                 txn.commit();
             }
 
             databaseMgr.databases.get(database).statisticsCorrector().submitCorrection().get();
 
-            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                 ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
                 assertEquals(batches, statistics.thingVertexCount(Label.of("person")));
                 assertEquals(batches, statistics.hasEdgeCount(Label.of("person"), Label.of("name")));
                 assertEquals(1, statistics.thingVertexCount(Label.of("name")));
+            }
+        }
+    }
+
+    @Test
+    public void concurrent_attribute_deletes_are_corrected() throws InterruptedException, ExecutionException {
+        int batches = 10;
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            // insert data
+            for (int i = 0; i < batches; i++) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'John';"));
+                    txn.commit();
+                }
+            }
+
+            List<CoreTransaction> transactions = new ArrayList<>();
+            for (int i = 0; i < batches; i++) transactions.add(session.transaction(Arguments.Transaction.Type.WRITE));
+            for (int i = 0; i < batches; i++) {
+                CoreTransaction txn = transactions.get(i);
+                txn.query().delete(TypeQL.parseQuery("match $n 'John' isa name; delete $n isa name;"));
+                txn.commit();
+            }
+
+            databaseMgr.databases.get(database).statisticsCorrector().submitCorrection().get();
+
+            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
+                assertEquals(0, statistics.thingVertexCount(Label.of("name")));
             }
         }
     }
@@ -192,11 +219,44 @@ public class StatisticsTest {
 
             databaseMgr.databases.get(database).statisticsCorrector().submitCorrection().get();
 
-            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                 ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
                 assertEquals(1, statistics.thingVertexCount(Label.of("person")));
                 assertEquals(2, statistics.hasEdgeCount(Label.of("person"), Label.of("name")));
                 assertEquals(2, statistics.thingVertexCount(Label.of("name")));
+            }
+        }
+    }
+
+    @Test
+    public void concurrent_has_deletes_are_corrected() throws InterruptedException, ExecutionException {
+        int batches = 10;
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            // insert data
+            for (int i = 0; i < batches; i++) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'John';"));
+                    txn.commit();
+                }
+            }
+
+            List<CoreTransaction> transactions = new ArrayList<>();
+            for (int i = 0; i < batches; i++) transactions.add(session.transaction(Arguments.Transaction.Type.WRITE));
+            for (int i = 0; i < batches; i++) {
+                CoreTransaction txn = transactions.get(i);
+                txn.query().delete(TypeQL.parseQuery(
+                        "match $p isa person, has name $n; $n 'John'; delete $p has $n;"
+                ));
+                txn.commit();
+            }
+
+            databaseMgr.databases.get(database).statisticsCorrector().submitCorrection().get();
+
+            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
+                assertEquals(10, statistics.thingVertexCount(Label.of("person")));
+                assertEquals(1, statistics.thingVertexCount(Label.of("name")));
+                assertEquals(0, statistics.hasEdgeCount(Label.of("person"), Label.of("name")));
             }
         }
     }
@@ -228,7 +288,7 @@ public class StatisticsTest {
 
             databaseMgr.databases.get(database).statisticsCorrector().submitCorrection().get();
 
-            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                 ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
                 assertEquals(1, statistics.thingVertexCount(Label.of("nickname")));
                 assertEquals(1, statistics.hasEdgeCount(Label.of("nickname"), Label.of("nickname")));
