@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
 import com.vaticle.typedb.core.graph.ThingGraph;
+import com.vaticle.typedb.core.graph.common.StatisticsKey;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
@@ -38,6 +39,7 @@ import java.util.concurrent.ExecutionException;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
 
 public class StatisticsTest {
 
@@ -355,8 +357,29 @@ public class StatisticsTest {
 
     @Test
     public void reboot_counts_correct() {
+        int batches = 1000;
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            List<CoreTransaction> transactions = new ArrayList<>();
+            for (int i = 0; i < batches; i++) transactions.add(session.transaction(Arguments.Transaction.Type.WRITE));
+            for (int i = 0; i < batches; i++) {
+                CoreTransaction txn = transactions.get(i);
+                txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Alice';"));
+                txn.commit();
+            }
+        }
+        databaseMgr.close();
+        databaseMgr = CoreDatabaseManager.open(options);
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                ThingGraph.Statistics statistics = txn.graphMgr.data().stats();
+                assertEquals(batches, statistics.thingVertexCount(Label.of("person")));
+                assertEquals(batches, statistics.hasEdgeCount(Label.of("person"), Label.of("name")));
+                assertEquals(1, statistics.thingVertexCount(Label.of("name")));
 
-        // TODO
-
+                // we expect 1 txn ID to be committed from the background cleanup transaction
+                assertEquals(1, txn.graphMgr.data().storage().iterate(StatisticsKey.txnCommittedPrefix()).count());
+                assertFalse(txn.graphMgr.data().storage().iterate(StatisticsKey.Miscountable.prefix()).first().isPresent());
+            }
+        }
     }
 }
