@@ -78,6 +78,10 @@ public abstract class Processor<INPUT, OUTPUT,
         throw TypeDBException.of(ILLEGAL_OPERATION);
     }
 
+    public <PACKET> void pull(Reactive.Provider<PACKET> provider, Reactive.Receiver<PACKET> receiver) {
+        provider.pull(receiver);
+    }
+
     protected void setOutlet(Reactive.Stream<OUTPUT,OUTPUT> outlet) {
         this.outlet = outlet;
     }

@@ -69,7 +69,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
             receiverRegistry().setNotPulling();
             toSend.forEach(this::send);
         } else {
-            if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
+            if (receiverRegistry().isPulling()) providerRegistry().retry(provider);
         }
         monitor().consumeAnswer(this);
     }

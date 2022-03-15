@@ -18,7 +18,9 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.receiver;
 
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
@@ -26,34 +28,54 @@ import java.util.HashMap;
 import java.util.Map;
 
 public abstract class ProviderRegistry<R> {
+
+    private final Actor.Driver<? extends Processor<?, ?, ?, ?>> processor;
+    protected final Monitor.MonitorRef monitor;
+    protected final Reactive.Receiver<R> receiver;
+
+    protected ProviderRegistry(Reactive.Receiver<R> receiver, Monitor.MonitorRef monitor) {
+        this.monitor = monitor;
+        this.receiver = receiver;
+    }
+
     // TODO: Consider managing whether to pull on upstreams by telling the manager whether we are pulling or not
     public abstract void add(Reactive.Provider<R> provider);
-
-    public abstract void pull(Reactive.Provider<R> provider);
 
     public abstract void pullAll();
 
     public abstract void recordReceive(Reactive.Provider<R> provider);
 
+    public void pull(Reactive.Provider<R> provider) {
+        pull(provider, false);
+    }
+
+    public void retry(Reactive.Provider<R> provider) {
+        pull(provider, true);
+    }
+
+    protected abstract void pull(Reactive.Provider<R> provider, boolean async);
+
+    protected void pullProvider(Reactive.Provider<R> provider, boolean async) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
+        if (async) processor.execute(actor -> actor.pull(provider, receiver));
+        else provider.pull(receiver);
+    }
+
     public static class SingleProviderRegistry<R> extends ProviderRegistry<R> {
 
-        private final Reactive.Receiver<R> receiver;
         private Reactive.Provider<R> provider;
         private boolean isPulling;
-        private final Monitor.MonitorRef monitor;
 
         public SingleProviderRegistry(Reactive.Provider.Publisher<R> provider, Reactive.Receiver<R> receiver,
                                       Monitor.MonitorRef monitor) {
-            this.receiver = receiver;
-            this.monitor = monitor;
+            super(receiver, monitor);
             this.isPulling = false;
             add(provider);
         }
 
         public SingleProviderRegistry(Reactive.Receiver<R> receiver, Monitor.MonitorRef monitor) {
+            super(receiver, monitor);
             this.provider = null;
-            this.receiver = receiver;
-            this.monitor = monitor;
             this.isPulling = false;
         }
 
@@ -71,12 +93,12 @@ public abstract class ProviderRegistry<R> {
         }
 
         @Override
-        public void pull(Reactive.Provider<R> provider) {
+        public void pull(Reactive.Provider<R> provider, boolean async) {
             assert this.provider != null;
             assert this.provider == provider;
             if (!isPulling()) {
                 setPulling(true);
-                pullProvider();
+                pullProvider(provider, async);
             }
         }
 
@@ -88,12 +110,6 @@ public abstract class ProviderRegistry<R> {
             isPulling = pulling;
         }
 
-        private void pullProvider() {
-            assert this.provider != null;
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
-            provider.pull(receiver);
-        }
-
         @Override
         public void recordReceive(Reactive.Provider<R> provider) {
             assert this.provider == provider;
@@ -103,14 +119,11 @@ public abstract class ProviderRegistry<R> {
 
     public static class MultiProviderRegistry<R> extends ProviderRegistry<R> {
 
-        private final Monitor.MonitorRef monitor;
-        private final Reactive.Receiver<R> receiver;
         private final Map<Reactive.Provider<R>, Boolean> providerPullState;
 
         public MultiProviderRegistry(Reactive.Receiver<R> receiver, Monitor.MonitorRef monitor) {
-            this.monitor = monitor;
+            super(receiver, monitor);
             this.providerPullState = new HashMap<>();
-            this.receiver = receiver;
         }
 
         @Override
@@ -130,11 +143,11 @@ public abstract class ProviderRegistry<R> {
         }
 
         @Override
-        public void pull(Reactive.Provider<R> provider) {
+        public void pull(Reactive.Provider<R> provider, boolean async) {
             assert providerPullState.containsKey(provider);
             if (!isPulling(provider)) {
                 setPulling(provider, true);
-                pullProvider(provider);
+                pullProvider(provider, async);
             }
         }
 
@@ -146,12 +159,6 @@ public abstract class ProviderRegistry<R> {
         private void setPulling(Reactive.Provider<R> provider, boolean isPulling) {
             assert providerPullState.containsKey(provider);
             providerPullState.put(provider, isPulling);
-        }
-
-        private void pullProvider(Reactive.Provider<R> provider) {
-            assert providerPullState.containsKey(provider);
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
-            provider.pull(receiver);
         }
 
         public int size() {
