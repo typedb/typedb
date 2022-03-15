@@ -43,7 +43,7 @@ public class Executors {
     private static final String TYPEDB_CORE_ASYNC_THREAD_2_NAME = "typedb-async-2";
     private static final String TYPEDB_CORE_NETWORK_THREAD_NAME = "typedb-network";
     private static final String TYPEDB_CORE_ACTOR_THREAD_NAME = "typedb-actor";
-    private static final String TYPEDB_CORE_SINGLE_THREADED_EXECUTOR_NAME = "typedb-single-threaded";
+    private static final String TYPEDB_CORE_SERIAL_THREAD_NAME = "typedb-serial";
     private static final String TYPEDB_CORE_SCHEDULED_THREAD_NAME = "typedb-scheduled";
     private static final int TYPEDB_CORE_SCHEDULED_THREAD_SIZE = 1;
 
@@ -55,7 +55,7 @@ public class Executors {
     private final ActorExecutorGroup actorExecutorService;
     private final NioEventLoopGroup networkExecutorService;
     private final ScheduledThreadPoolExecutor scheduledThreadPool;
-    private final ExecutorService singleThreadedService;
+    private final ExecutorService serialService;
 
     private Executors(int parallelisation) {
         if (parallelisation <= 0) throw TypeDBException.of(ILLEGAL_ARGUMENT);
@@ -66,7 +66,7 @@ public class Executors {
         networkExecutorService = new NioEventLoopGroup(parallelisation, threadFactory(TYPEDB_CORE_NETWORK_THREAD_NAME));
         scheduledThreadPool = new ScheduledThreadPoolExecutor(TYPEDB_CORE_SCHEDULED_THREAD_SIZE,
                                                               threadFactory(TYPEDB_CORE_SCHEDULED_THREAD_NAME));
-        singleThreadedService = java.util.concurrent.Executors.newSingleThreadExecutor(threadFactory(TYPEDB_CORE_SINGLE_THREADED_EXECUTOR_NAME));
+        serialService = java.util.concurrent.Executors.newSingleThreadExecutor(threadFactory(TYPEDB_CORE_SERIAL_THREAD_NAME));
         scheduledThreadPool.setRemoveOnCancelPolicy(true);
     }
 
@@ -114,8 +114,8 @@ public class Executors {
         return singleton.scheduledThreadPool;
     }
 
-    public static ExecutorService singleThreaded() {
+    public static ExecutorService serial() {
         assert isInitialised();
-        return singleton.singleThreadedService;
+        return singleton.serialService;
     }
 }

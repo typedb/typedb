@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -256,13 +257,14 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
     }
 
     @Override
-    public Optional<Long> sum(Function<T, Long> toLong) {
+    public <U> Optional<U> reduce(U initialAccumulator, BiFunction<T, U, U> accumulate) {
         if (!hasNext()) return Optional.empty();
-        long sum = 0;
-        while(hasNext()) {
-            sum += toLong.apply(next());
+        U acc = initialAccumulator;
+        while (hasNext()) {
+            T value = next();
+            acc = accumulate.apply(value, acc);
         }
-        return Optional.of(sum);
+        return Optional.of(acc);
     }
 
     @Override

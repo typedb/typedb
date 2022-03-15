@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -87,7 +88,7 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
     long count();
 
-    Optional<Long> sum(Function<T, Long> toLong);
+    <U> Optional<U> reduce(U initialAcc, BiFunction<T, U, U> accumulate);
 
     FunctionalIterator<T> onConsumed(Runnable function);
 

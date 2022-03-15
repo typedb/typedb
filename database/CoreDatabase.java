@@ -92,7 +92,7 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.D
 import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
-import static com.vaticle.typedb.core.concurrent.executor.Executors.singleThreaded;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.serial;
 import static com.vaticle.typedb.core.graph.common.Encoding.ENCODING_VERSION;
 import static com.vaticle.typedb.core.graph.common.Encoding.System.ENCODING_VERSION_KEY;
 import static java.util.Comparator.reverseOrder;
@@ -229,7 +229,7 @@ public class CoreDatabase implements TypeDB.Database {
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
         }
-        statisticsCorrector.initialiseAndCorrect();
+        statisticsCorrector.initialiseAndCleanUp();
     }
 
     private void openData() {
@@ -592,12 +592,12 @@ public class CoreDatabase implements TypeDB.Database {
             isOpen.set(true);
         }
 
-        void initialiseAndCorrect() {
+        void initialiseAndCleanUp() {
             initialise();
-            LOG.debug("Resuming statistics.");
+            LOG.debug("Cleaning up statistics.");
             correctMiscounts();
             deleteCorrectionMetadata();
-            LOG.debug("Statistics are up to date.");
+            LOG.debug("Statistics are ready and up to date.");
             if (LOG.isDebugEnabled()) logSummary();
         }
 
@@ -637,7 +637,7 @@ public class CoreDatabase implements TypeDB.Database {
         CompletableFuture<Void> submitCorrection() {
             CompletableFuture<Void> correction = CompletableFuture.runAsync(() -> {
                 if (correctionRequired.compareAndSet(true, false)) this.correctMiscounts();
-            }, singleThreaded());
+            }, serial());
             correction.thenRun(() -> corrections.remove(correction));
             corrections.add(correction);
             return correction;
