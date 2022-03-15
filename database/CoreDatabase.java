@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
 import com.vaticle.typedb.core.graph.common.StatisticsKey;
 import com.vaticle.typedb.core.graph.common.Storage;
+import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
@@ -722,43 +723,27 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         private void recordMiscounts(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
-            Map<AttributeVertex.Write<?>, Set<Long>> attrOvercountDependencies = new HashMap<>();
+            Map<AttributeVertex<?>, Set<Long>> attrOvercountDependencies = new HashMap<>();
             Map<AttributeVertex<?>, Set<Long>> attrUndercountDependencies = new HashMap<>();
-            Map<Pair<ThingVertex.Write, AttributeVertex.Write<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
+            Map<Pair<ThingVertex, AttributeVertex<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
             Map<Pair<ThingVertex, AttributeVertex<?>>, Set<Long>> hasUndercountDependencies = new HashMap<>();
             for (CoreTransaction.Data concurrent : concurrentTxn) {
-                // note: fail-fast if checks are much faster than using empty iterators (probably due to concurrent data structures)
-                if (!txn.graphMgr.data().attributesCreated().isEmpty() && !concurrent.graphMgr.data().attributesCreated().isEmpty()) {
-                    iterate(txn.graphMgr.data().attributesCreated()).filter(concurrent.graphMgr.data().attributesCreated()::contains)
-                            .forEachRemaining(attribute ->
-                                    attrOvercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
-
-                            );
-                }
-                if (!txn.graphMgr.data().attributesDeleted().isEmpty() && !concurrent.graphMgr.data().attributesDeleted().isEmpty()) {
-                    iterate(txn.graphMgr.data().attributesDeleted()).filter(concurrent.graphMgr.data().attributesDeleted()::contains)
-                            .forEachRemaining(attribute ->
-                                    attrUndercountDependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(concurrent.id)
-                            );
-                }
-                if (!txn.graphMgr.data().hasEdgeCreated().isEmpty() && !concurrent.graphMgr.data().hasEdgeCreated().isEmpty()) {
-                    iterate(txn.graphMgr.data().hasEdgeCreated()).filter(concurrent.graphMgr.data().hasEdgeCreated()::contains)
-                            .forEachRemaining(edge ->
-                                    hasOvercountDependencies.computeIfAbsent(
-                                            pair(edge.from().asWrite(), edge.to().asAttribute().asWrite()),
-                                            (key) -> new HashSet<>()
-                                    ).add(concurrent.id)
-                            );
-                }
-                if (!txn.graphMgr.data().hasEdgeDeleted().isEmpty() && !concurrent.graphMgr.data().hasEdgeDeleted().isEmpty()) {
-                    iterate(txn.graphMgr.data().hasEdgeDeleted()).filter(concurrent.graphMgr.data().hasEdgeDeleted()::contains)
-                            .forEachRemaining(edge ->
-                                    hasUndercountDependencies.computeIfAbsent(
-                                            pair(edge.from(), edge.to().asAttribute()),
-                                            (key) -> new HashSet<>()
-                                    ).add(concurrent.id)
-                            );
-                }
+                buildAttrDependencies(
+                        txn.graphMgr.data().attributesCreated(), concurrent.graphMgr.data().attributesCreated(),
+                        concurrent.id, attrOvercountDependencies
+                );
+                buildAttrDependencies(
+                        txn.graphMgr.data().attributesDeleted(), concurrent.graphMgr.data().attributesDeleted(),
+                        concurrent.id, attrUndercountDependencies
+                );
+                buildHasEdgeDependencies(
+                        txn.graphMgr.data().hasEdgeCreated(), concurrent.graphMgr.data().hasEdgeCreated(),
+                        concurrent.id, hasOvercountDependencies
+                );
+                buildHasEdgeDependencies(
+                        txn.graphMgr.data().hasEdgeDeleted(), concurrent.graphMgr.data().hasEdgeDeleted(),
+                        concurrent.id, hasUndercountDependencies
+                );
             }
 
             attrOvercountDependencies.forEach((attr, txs) ->
@@ -773,6 +758,27 @@ public class CoreDatabase implements TypeDB.Database {
             hasUndercountDependencies.forEach((has, txs) ->
                     txn.dataStorage.putUntracked(StatisticsKey.Miscountable.hasUndercountable(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
             );
+        }
+
+        private void buildAttrDependencies(Set<? extends AttributeVertex<?>> attrs1, Set<? extends AttributeVertex<?>> attrs2, long dependency, Map<AttributeVertex<?>, Set<Long>> dependencies) {
+            // note: fail-fast if checks are much faster than using empty iterators (due to concurrent data structures)
+            if (!attrs1.isEmpty() && !attrs2.isEmpty()) {
+                iterate(attrs1).filter(attrs2::contains).forEachRemaining(attribute ->
+                        dependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(dependency)
+                );
+            }
+        }
+
+        private void buildHasEdgeDependencies(Set<ThingEdge> hasEdge1, Set<ThingEdge> hasEdge2, long dependency, Map<Pair<ThingVertex, AttributeVertex<?>>, Set<Long>> dependencies) {
+            // note: fail-fast if checks are much faster than using empty iterators (due to concurrent data structures)
+            if (!hasEdge1.isEmpty() && !hasEdge2.isEmpty()) {
+                iterate(hasEdge1).filter(hasEdge2::contains).forEachRemaining(edge ->
+                        dependencies.computeIfAbsent(
+                                pair(edge.from(), edge.to().asAttribute()),
+                                (key) -> new HashSet<>()
+                        ).add(dependency)
+                );
+            }
         }
     }
 
