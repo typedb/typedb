@@ -106,8 +106,6 @@ public interface TypeDB {
 
         void close();
 
-        void delete();
-
         FunctionalIterator<Pair<ByteArray, ByteArray>> committedIIDs();
     }
 }

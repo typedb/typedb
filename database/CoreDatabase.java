@@ -77,7 +77,7 @@ import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
-import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongSet;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongs;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INCOMPATIBLE_ENCODING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.ROCKS_LOGGER_SHUTDOWN_FAILED;
@@ -665,7 +665,7 @@ public class CoreDatabase implements TypeDB.Database {
                 Set<Long> openTxnIDs = isolationMgr.getNotCommitted().map(t -> t.id).toSet();
                 txn.dataStorage.iterate(StatisticsKey.Miscountable.prefix()).forEachRemaining(kv -> {
                     StatisticsKey.Miscountable item = kv.key();
-                    Set<Long> txnIDsCausingMiscount = kv.value().decodeLongSet();
+                    List<Long> txnIDsCausingMiscount = kv.value().decodeLongs();
 
                     if (anyCommitted(txnIDsCausingMiscount, txn.dataStorage)) {
                         correctMiscount(item, txn);
@@ -710,14 +710,14 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        private boolean anyCommitted(Set<Long> txnIDsToCheck, RocksStorage.Data storage) {
+        private boolean anyCommitted(List<Long> txnIDsToCheck, RocksStorage.Data storage) {
             for (Long txnID : txnIDsToCheck) {
                 if (storage.get(StatisticsKey.txnCommitted(txnID)) != null) return true;
             }
             return false;
         }
 
-        private boolean noneOpen(Set<Long> txnIDs, Set<Long> openTxnIDs) {
+        private boolean noneOpen(List<Long> txnIDs, Set<Long> openTxnIDs) {
             return iterate(txnIDs).noneMatch(openTxnIDs::contains);
         }
 
@@ -727,10 +727,10 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         private void recordMiscounts(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
-            Map<AttributeVertex<?>, Set<Long>> attrOvercountDependencies = new HashMap<>();
-            Map<AttributeVertex<?>, Set<Long>> attrUndercountDependencies = new HashMap<>();
-            Map<Pair<ThingVertex, AttributeVertex<?>>, Set<Long>> hasOvercountDependencies = new HashMap<>();
-            Map<Pair<ThingVertex, AttributeVertex<?>>, Set<Long>> hasUndercountDependencies = new HashMap<>();
+            Map<AttributeVertex<?>, List<Long>> attrOvercountDependencies = new HashMap<>();
+            Map<AttributeVertex<?>, List<Long>> attrUndercountDependencies = new HashMap<>();
+            Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> hasOvercountDependencies = new HashMap<>();
+            Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> hasUndercountDependencies = new HashMap<>();
             for (CoreTransaction.Data concurrent : concurrentTxn) {
                 buildAttrDependencies(
                         txn.graphMgr.data().attributesCreated(), concurrent.graphMgr.data().attributesCreated(),
@@ -751,35 +751,35 @@ public class CoreDatabase implements TypeDB.Database {
             }
 
             attrOvercountDependencies.forEach((attr, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.attrOvercount(txn.id, attr.iid()), encodeLongSet(txs))
+                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.attrOvercount(txn.id, attr.iid()), encodeLongs(txs))
             );
             attrUndercountDependencies.forEach((attr, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.attrUndercount(txn.id, attr.iid()), encodeLongSet(txs))
+                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.attrUndercount(txn.id, attr.iid()), encodeLongs(txs))
             );
             hasOvercountDependencies.forEach((has, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.hasEdgeOvercount(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
+                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.hasEdgeOvercount(txn.id, has.first().iid(), has.second().iid()), encodeLongs(txs))
             );
             hasUndercountDependencies.forEach((has, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.hasEdgeUndercount(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
+                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.hasEdgeUndercount(txn.id, has.first().iid(), has.second().iid()), encodeLongs(txs))
             );
         }
 
-        private void buildAttrDependencies(Set<? extends AttributeVertex<?>> attrs1, Set<? extends AttributeVertex<?>> attrs2, long dependency, Map<AttributeVertex<?>, Set<Long>> dependencies) {
+        private void buildAttrDependencies(Set<? extends AttributeVertex<?>> attrs1, Set<? extends AttributeVertex<?>> attrs2, long dependency, Map<AttributeVertex<?>, List<Long>> dependencies) {
             // note: fail-fast if checks are much faster than using empty iterators (due to concurrent data structures)
             if (!attrs1.isEmpty() && !attrs2.isEmpty()) {
                 iterate(attrs1).filter(attrs2::contains).forEachRemaining(attribute ->
-                        dependencies.computeIfAbsent(attribute, (key) -> new HashSet<>()).add(dependency)
+                        dependencies.computeIfAbsent(attribute, (key) -> new ArrayList<>()).add(dependency)
                 );
             }
         }
 
-        private void buildHasEdgeDependencies(Set<ThingEdge> hasEdge1, Set<ThingEdge> hasEdge2, long dependency, Map<Pair<ThingVertex, AttributeVertex<?>>, Set<Long>> dependencies) {
+        private void buildHasEdgeDependencies(Set<ThingEdge> hasEdge1, Set<ThingEdge> hasEdge2, long dependency, Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> dependencies) {
             // note: fail-fast if checks are much faster than using empty iterators (due to concurrent data structures)
             if (!hasEdge1.isEmpty() && !hasEdge2.isEmpty()) {
                 iterate(hasEdge1).filter(hasEdge2::contains).forEachRemaining(edge ->
                         dependencies.computeIfAbsent(
                                 pair(edge.from(), edge.to().asAttribute()),
-                                (key) -> new HashSet<>()
+                                (key) -> new ArrayList<>()
                         ).add(dependency)
                 );
             }

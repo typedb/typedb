@@ -28,10 +28,12 @@ import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -281,7 +283,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(decodeSortedAsLong()), timeZoneID);
     }
 
-    public static ByteArray encodeLongSet(Set<Long> longs) {
+    public static ByteArray encodeLongs(List<Long> longs) {
         ByteArray[] encoded = new ByteArray[longs.size()];
         Iterator<Long> iterator = longs.iterator();
         int i = 0;
@@ -293,9 +295,9 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         return join(encoded);
     }
 
-    public Set<Long> decodeLongSet() {
+    public List<Long> decodeLongs() {
         assert length() % LONG_SIZE == 0;
-        Set<Long> longs = new HashSet<>();
+        List<Long> longs = new ArrayList<>(length() / LONG_SIZE);
         for (int i = 0; i < length(); i += LONG_SIZE) {
             longs.add(view(i, i + LONG_SIZE).decodeLong());
         }

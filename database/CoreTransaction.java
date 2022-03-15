@@ -133,6 +133,8 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         session.closed(this);
     }
 
+    abstract void delete();
+
     protected abstract void closeResources();
 
     boolean isSchema() {
