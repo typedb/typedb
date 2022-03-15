@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 
 import java.util.HashSet;
@@ -36,13 +35,13 @@ public abstract class ReceiverRegistry<R> {
         private boolean isPulling;
         private Reactive.Receiver<R> receiver;
 
-        public SingleReceiverRegistry(Reactive.Provider<R> provider, Reactive.Receiver<R> receiver, Monitor.MonitorRef monitor) {
+        public SingleReceiverRegistry(Reactive.Provider<R> provider, Reactive.Receiver<R> receiver) {
             this.provider = provider;
             this.isPulling = false;
             addReceiver(receiver);
         }
 
-        public SingleReceiverRegistry(Reactive.Provider<R> provider, Monitor.MonitorRef monitor) {
+        public SingleReceiverRegistry(Reactive.Provider<R> provider) {
             this.provider = provider;
             this.receiver = null;
             this.isPulling = false;
@@ -81,7 +80,7 @@ public abstract class ReceiverRegistry<R> {
         private final Set<Reactive.Receiver<R>> receivers;
         private final Set<Reactive.Receiver<R>> pullingReceivers;
 
-        public MultiReceiverRegistry(Reactive.Provider<R> provider, Monitor.MonitorRef monitor) {
+        public MultiReceiverRegistry(Reactive.Provider<R> provider) {
             this.provider = provider;
             this.receivers = new HashSet<>();
             this.pullingReceivers = new HashSet<>();

@@ -58,9 +58,9 @@ public abstract class Processor<INPUT, OUTPUT,
     private long endpointId;
     private boolean terminated;
     protected boolean done;
-    private final Monitor.MonitorRef monitorRef;
+    private final Driver<Monitor> monitor;
 
-    protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, Monitor.MonitorRef monitorRef,
+    protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, Driver<Monitor> monitor,
                         String name) {
         super(driver, name);
         this.controller = controller;
@@ -69,7 +69,7 @@ public abstract class Processor<INPUT, OUTPUT,
         this.providingEndpoints = new HashMap<>();
         this.upstreamConnections = new HashSet<>();
         this.done = false;
-        this.monitorRef = monitorRef;
+        this.monitor = monitor;
     }
 
     public abstract void setUp();
@@ -103,7 +103,7 @@ public abstract class Processor<INPUT, OUTPUT,
         assert !done;
         Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
         applyConnectionTransforms(connection.transformations(), outlet(), createProvidingEndpoint(connection));
-        monitor().registerPath(connection, outlet());
+        monitor().execute(actor -> actor.registerPath(connection, outlet()));
         if (isTerminated()) return;
         connectionBuilder.receivingProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
@@ -152,8 +152,8 @@ public abstract class Processor<INPUT, OUTPUT,
         receivingEndpoints.get(subEndpointId).receive(provider, packet);
     }
 
-    public Monitor.MonitorRef monitor() {
-        return monitorRef;
+    public Driver<Monitor> monitor() {
+        return monitor;
     }
 
     protected boolean isPulling() {
@@ -198,7 +198,7 @@ public abstract class Processor<INPUT, OUTPUT,
         private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
         private boolean ready;
 
-        public InletEndpoint(long id, Monitor.MonitorRef monitor, String groupName) {
+        public InletEndpoint(long id, Driver<Monitor> monitor, String groupName) {
             super(monitor, groupName);
             this.id = id;
             this.ready = false;
@@ -249,11 +249,11 @@ public abstract class Processor<INPUT, OUTPUT,
         private final long id;
         private final String groupName;
 
-        public OutletEndpoint(Connection<PACKET, ?, ?> connection, Monitor.MonitorRef monitor, String groupName) {
+        public OutletEndpoint(Connection<PACKET, ?, ?> connection, Driver<Monitor> monitor, String groupName) {
             this.groupName = groupName;
             this.id = connection.providerEndpointId();
             this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
-            this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(this, connection, monitor);
+            this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(this, connection);
         }
 
         private ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {

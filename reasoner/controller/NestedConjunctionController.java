@@ -33,12 +33,12 @@ import java.util.function.Function;
 
 public class NestedConjunctionController extends ConjunctionController<ConceptMap, NestedConjunctionController, NestedConjunctionController.NestedConjunctionProcessor> {
 
-    private final Monitor.MonitorRef monitorRef;
+    private final Driver<Monitor> monitor;
 
     public NestedConjunctionController(Driver<NestedConjunctionController> driver, Conjunction conjunction,
-                                       ActorExecutorGroup executorService, Monitor.MonitorRef monitorRef, Registry registry) {
+                                       ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry) {
         super(driver, conjunction, executorService, registry);
-        this.monitorRef = monitorRef;
+        this.monitor = monitor;
     }
 
     @Override
@@ -52,7 +52,7 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
     protected Function<Driver<NestedConjunctionController.NestedConjunctionProcessor>,
             NestedConjunctionController.NestedConjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new NestedConjunctionProcessor(
-                driver, driver(), monitorRef, bounds, plan(),
+                driver, driver(), monitor, bounds, plan(),
                 NestedConjunctionProcessor.class.getSimpleName() + "(pattern: " + conjunction + ", bounds: " + bounds + ")"
         );
     }
@@ -66,9 +66,9 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
 
         protected NestedConjunctionProcessor(Driver<NestedConjunctionProcessor> driver,
                                              Driver<NestedConjunctionController> controller,
-                                             Monitor.MonitorRef monitorRef, ConceptMap bounds, List<Resolvable<?>> plan,
+                                             Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
                                              String name) {
-            super(driver, controller, monitorRef, bounds, plan, name);
+            super(driver, controller, monitor, bounds, plan, name);
         }
 
         @Override

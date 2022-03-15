@@ -50,15 +50,15 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
     private final Map<Conclusion, Driver<ConclusionController>> conclusionControllers;
     private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
     private final Set<Variable.Retrievable> unboundVars;
-    private final Monitor.MonitorRef monitorRef;
+    private final Driver<Monitor> monitor;
     private final Registry registry;
     private final Concludable concludable;
 
     public ConcludableController(Driver<ConcludableController> driver, Concludable concludable,
-                                 ActorExecutorGroup executorService, Monitor.MonitorRef monitorRef, Registry registry) {
+                                 ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry) {
         super(driver, executorService, registry,
               ConcludableController.class.getSimpleName() + "(pattern: " + concludable + ")");
-        this.monitorRef = monitorRef;
+        this.monitor = monitor;
         this.registry = registry;
         this.concludable = concludable;
         this.unboundVars = unboundVars();
@@ -95,7 +95,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular
         //  concludable. They should be filtered before being passed to the concludableProcessor's constructor
         return driver -> new ConcludableProcessor(
-                driver, driver(), monitorRef, bounds, unboundVars, conclusionUnifiers,
+                driver, driver(), monitor, bounds, unboundVars, conclusionUnifiers,
                 () -> Traversal.traversalIterator(registry, concludable.pattern(), bounds),
                 ConcludableProcessor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
         );
@@ -119,11 +119,11 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         private final Set<ConclusionRequest> requestedConnections;
 
         public ConcludableProcessor(Driver<ConcludableProcessor> driver, Driver<ConcludableController> controller,
-                                    Monitor.MonitorRef monitorRef, ConceptMap bounds,
+                                    Driver<Monitor> monitor, ConceptMap bounds,
                                     Set<Variable.Retrievable> unboundVars,
                                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier, String name) {
-            super(driver, controller, monitorRef, name);
+            super(driver, controller, monitor, name);
             this.bounds = bounds;
             this.unboundVars = unboundVars;
             this.conclusionUnifiers = conclusionUnifiers;

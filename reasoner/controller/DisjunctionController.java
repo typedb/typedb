@@ -83,9 +83,9 @@ public abstract class DisjunctionController<
         private final ConceptMap bounds;
 
         protected DisjunctionProcessor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller,
-                                       Monitor.MonitorRef monitorRef, Disjunction disjunction, ConceptMap bounds,
+                                       Driver<Monitor> monitor, Disjunction disjunction, ConceptMap bounds,
                                        String name) {
-            super(driver, controller, monitorRef, name);
+            super(driver, controller, monitor, name);
             this.disjunction = disjunction;
             this.bounds = bounds;
         }

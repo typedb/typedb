@@ -29,11 +29,11 @@ import java.util.Map;
 
 public abstract class ProviderRegistry<R> {
 
-    private final Actor.Driver<? extends Processor<?, ?, ?, ?>> processor;
-    protected final Monitor.MonitorRef monitor;
+    private Actor.Driver<? extends Processor<?, ?, ?, ?>> processor;
+    protected final Actor.Driver<Monitor> monitor;
     protected final Reactive.Receiver<R> receiver;
 
-    protected ProviderRegistry(Reactive.Receiver<R> receiver, Monitor.MonitorRef monitor) {
+    protected ProviderRegistry(Reactive.Receiver<R> receiver, Actor.Driver<Monitor> monitor) {
         this.monitor = monitor;
         this.receiver = receiver;
     }
@@ -67,13 +67,13 @@ public abstract class ProviderRegistry<R> {
         private boolean isPulling;
 
         public SingleProviderRegistry(Reactive.Provider.Publisher<R> provider, Reactive.Receiver<R> receiver,
-                                      Monitor.MonitorRef monitor) {
+                                      Actor.Driver<Monitor> monitor) {
             super(receiver, monitor);
             this.isPulling = false;
             add(provider);
         }
 
-        public SingleProviderRegistry(Reactive.Receiver<R> receiver, Monitor.MonitorRef monitor) {
+        public SingleProviderRegistry(Reactive.Receiver<R> receiver, Actor.Driver<Monitor> monitor) {
             super(receiver, monitor);
             this.provider = null;
             this.isPulling = false;
@@ -83,7 +83,7 @@ public abstract class ProviderRegistry<R> {
         public void add(Reactive.Provider<R> provider) {
             assert provider != null;
             assert this.provider == null || provider == this.provider;  // TODO: Tighten this to allow adding only once
-            if (this.provider == null) monitor.registerPath(receiver, provider);
+            if (this.provider == null) monitor.execute(actor -> actor.registerPath(receiver, provider));
             this.provider = provider;
         }
 
@@ -121,7 +121,7 @@ public abstract class ProviderRegistry<R> {
 
         private final Map<Reactive.Provider<R>, Boolean> providerPullState;
 
-        public MultiProviderRegistry(Reactive.Receiver<R> receiver, Monitor.MonitorRef monitor) {
+        public MultiProviderRegistry(Reactive.Receiver<R> receiver, Actor.Driver<Monitor> monitor) {
             super(receiver, monitor);
             this.providerPullState = new HashMap<>();
         }
@@ -129,7 +129,9 @@ public abstract class ProviderRegistry<R> {
         @Override
         public void add(Reactive.Provider<R> provider) {
             assert provider != null;
-            if (providerPullState.putIfAbsent(provider, false) == null) monitor.registerPath(receiver, provider);
+            if (providerPullState.putIfAbsent(provider, false) == null) {
+                monitor.execute(actor -> actor.registerPath(receiver, provider));
+            }
         }
 
         @Override

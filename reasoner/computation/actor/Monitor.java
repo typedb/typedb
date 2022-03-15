@@ -63,7 +63,8 @@ public class Monitor extends Actor<Monitor> {
         assert exists == null;
     }
 
-    private <R> void registerRoot(Driver<? extends Processor<R, ?, ?, ?>> processor, Reactive.Receiver.Finishable<R> root) {
+    public <R> void registerRoot(Driver<? extends Processor<R, ?, ?, ?>> processor, Reactive.Receiver.Finishable<R> root) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerRoot(root, driver()));
         if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the root, or a duplicate node will be created.
         RootNode rootNode = new RootNode(root);
@@ -72,14 +73,16 @@ public class Monitor extends Actor<Monitor> {
         rootNode.setGraph(reactiveGraph);
     }
 
-    private <R> void rootFinalised(Reactive.Receiver.Finishable<R> root) {
+    public <R> void rootFinalised(Reactive.Receiver.Finishable<R> root) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.rootFinalised(root, driver()));
         if (terminated) return;
         RootNode rootNode = getNode(root).asRoot();
         rootNode.setFinished();
         rootNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
-    private <R> void registerSource(Reactive.Provider<R> source) {
+    public <R> void registerSource(Reactive.Provider<R> source) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerSource(source, driver()));
         if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the source, or a duplicate node will be created.
         assert reactiveNodes.get(source) == null;
@@ -87,14 +90,16 @@ public class Monitor extends Actor<Monitor> {
         putNode(source, sourceNode);
     }
 
-    private <R> void sourceFinished(Source<R> source) {
+    public <R> void sourceFinished(Source<R> source) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.sourceFinished(source, driver()));
         if (terminated) return;
         ReactiveNode sourceNode = getNode(source);
         sourceNode.asSource().setFinished();
         sourceNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
-    private <R> void registerPath(Reactive.Receiver<R> receiver, Reactive.Provider<R> provider) {
+    public <R> void registerPath(Reactive.Receiver<R> receiver, Reactive.Provider<R> provider) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerPath(receiver, provider, driver()));
         if (terminated) return;
         ReactiveNode receiverNode = reactiveNodes.computeIfAbsent(receiver, n -> new ReactiveNode());
         ReactiveNode providerNode = reactiveNodes.computeIfAbsent(provider, n -> new ReactiveNode());
@@ -105,19 +110,22 @@ public class Monitor extends Actor<Monitor> {
         receiverNode.graphMemberships().forEach(ReactiveGraph::checkFinished);  // In case a root connects to an already complete graph it should terminate straight away  TODO: very inefficient
     }
 
-    private <R> void createAnswer(Reactive.Provider<R> provider) {
+    public <R> void createAnswer(Reactive.Provider<R> provider) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.createAnswer(provider, driver()));
         if (terminated) return;
         getOrCreateNode(provider).createAnswer();
     }
 
-    private <R> void consumeAnswer(Reactive.Receiver<R> receiver) {
+    public <R> void consumeAnswer(Reactive.Receiver<R> receiver) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.consumeAnswer(receiver, driver()));
         if (terminated) return;
         ReactiveNode receiverNode = getOrCreateNode(receiver);
         receiverNode.consumeAnswer();
         receiverNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
-    private void forkFrontier(int numForks, Reactive forker) {
+    public void forkFrontier(int numForks, Reactive forker) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.forkFrontier(numForks, forker, driver()));
         if (terminated) return;
         getOrCreateNode(forker).forkFrontier(numForks);
     }
@@ -389,56 +397,6 @@ public class Monitor extends Actor<Monitor> {
     public void terminate(Throwable cause) {
         LOG.debug("Actor terminated.", cause);
         this.terminated = true;
-    }
-
-    public static class MonitorRef {  // TODO: Rename to MonitorWrapper
-
-        private final Driver<Monitor> monitor;
-
-        public MonitorRef(Driver<Monitor> monitor) {
-            this.monitor = monitor;
-        }
-
-        public <R> void registerRoot(Driver<? extends Processor<R, ?, ?, ?>> processor, Reactive.Receiver.Finishable<R> root) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerRoot(root, monitor));
-            monitor.execute(actor -> actor.registerRoot(processor, root));
-        }
-
-        public <R> void rootFinalised(Reactive.Receiver.Finishable<R> root) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.rootFinalised(root, monitor));
-            monitor.execute(actor -> actor.rootFinalised(root));
-        }
-
-        public <R> void registerPath(Reactive.Receiver<R> receiver, @Nullable Reactive.Provider<R> provider) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerPath(receiver, provider, monitor));
-            monitor.execute(actor -> actor.registerPath(receiver, provider));
-        }
-
-        public <R> void registerSource(Reactive.Provider<R> source) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerSource(source, monitor));
-            monitor.execute(actor -> actor.registerSource(source));
-        }
-
-        public <R> void sourceFinished(Source<R> source) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.sourceFinished(source, monitor));
-            monitor.execute(actor -> actor.sourceFinished(source));
-        }
-
-        public <R> void createAnswer(Reactive.Provider<R> provider) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.createAnswer(provider, monitor));
-            monitor.execute(actor -> actor.createAnswer(provider));
-        }
-
-        public <R> void consumeAnswer(Reactive.Receiver<R> receiver) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.consumeAnswer(receiver, monitor));
-            monitor.execute(actor -> actor.consumeAnswer(receiver));
-        }
-
-        public void forkFrontier(int numForks, Reactive forker) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.forkFrontier(numForks, forker, monitor));
-            monitor.execute(actor -> actor.forkFrontier(numForks, forker));
-        }
-
     }
 
 }

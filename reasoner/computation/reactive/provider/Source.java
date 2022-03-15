@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 
 import java.util.function.Supplier;
@@ -29,15 +30,15 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
     private boolean exhausted;
     private FunctionalIterator<PACKET> iterator;
 
-    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, Monitor.MonitorRef monitor, String groupName) {
+    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, Actor.Driver<Monitor> monitor, String groupName) {
         super(monitor, groupName);
         this.iteratorSupplier = iteratorSupplier;
         this.exhausted = false;
-        monitor().registerSource(this);
+        monitor().execute(actor -> actor.registerSource(this));
     }
 
     public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier,
-                                                             Monitor.MonitorRef monitor, String groupName) {
+                                                             Actor.Driver<Monitor> monitor, String groupName) {
         return new Source<>(iteratorSupplier, monitor, groupName);
     }
 
@@ -48,11 +49,11 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
         if (!exhausted) {
             if (iterator == null) iterator = iteratorSupplier.get();
             if (iterator.hasNext()) {
-                monitor().createAnswer(this);
+                monitor().execute(actor -> actor.createAnswer(this));
                 receiver.receive(this, iterator.next());
             } else {
                 exhausted = true;
-                monitor().sourceFinished(this);
+                monitor().execute(actor -> actor.sourceFinished(this));
             }
         }
     }

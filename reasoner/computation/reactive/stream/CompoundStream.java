@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
@@ -40,7 +41,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
 
     public CompoundStream(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
                           BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
-                          Monitor.MonitorRef monitor, String groupName) {
+                          Actor.Driver<Monitor> monitor, String groupName) {
         super(monitor, groupName);
         assert plan.size() > 0;
         this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this, monitor);
@@ -74,8 +75,8 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
                     follower = new CompoundStream<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, monitor(), groupName()).buffer();
                 }
                 publisherPackets.put(follower, mergedPacket);
-                monitor().forkFrontier(1, this);
-                monitor().consumeAnswer(this);
+                monitor().execute(actor -> actor.forkFrontier(1, this));
+                monitor().execute(actor -> actor.consumeAnswer(this));
                 follower.publishTo(this);
                 if (receiverRegistry().isPulling()) {
                     providerRegistry().retry(leadingPublisher);  // Retry the leader in case the follower never produces an answer

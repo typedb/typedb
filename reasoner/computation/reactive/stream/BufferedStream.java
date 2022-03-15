@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
@@ -28,7 +29,7 @@ public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET>
     private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
     private final Stack<PACKET> stack;
 
-    public BufferedStream(Publisher<PACKET> publisher, Monitor.MonitorRef monitor, String groupName) {
+    public BufferedStream(Publisher<PACKET> publisher, Actor.Driver<Monitor> monitor, String groupName) {
         super(monitor, groupName);
         this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, monitor);
         this.stack = new Stack<>();

@@ -34,23 +34,23 @@ import java.util.function.Function;
 public class RootDisjunctionController
         extends DisjunctionController<RootDisjunctionController.RootDisjunctionProcessor, RootDisjunctionController> {
     private final Set<Identifier.Variable.Retrievable> filter;
-    private final Monitor.MonitorRef monitorRef;
+    private final Driver<Monitor> monitor;
     private final ReasonerConsumer reasonerConsumer;
 
     public RootDisjunctionController(Driver<RootDisjunctionController> driver, Disjunction disjunction,
                                      Set<Identifier.Variable.Retrievable> filter, ActorExecutorGroup executorService,
-                                     Monitor.MonitorRef monitorRef, Registry registry,
+                                     Driver<Monitor> monitor, Registry registry,
                                      ReasonerConsumer reasonerConsumer) {
         super(driver, disjunction, executorService, registry);
         this.filter = filter;
-        this.monitorRef = monitorRef;
+        this.monitor = monitor;
         this.reasonerConsumer = reasonerConsumer;
     }
 
     @Override
     protected Function<Driver<RootDisjunctionProcessor>, RootDisjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new RootDisjunctionProcessor(
-                driver, driver(), monitorRef, disjunction, bounds, filter, reasonerConsumer,
+                driver, driver(), monitor, disjunction, bounds, filter, reasonerConsumer,
                 RootDisjunctionProcessor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
         );
     }
@@ -74,10 +74,10 @@ public class RootDisjunctionController
         private EntryPoint reasonerEntryPoint;
 
         protected RootDisjunctionProcessor(Driver<RootDisjunctionProcessor> driver,
-                                           Driver<RootDisjunctionController> controller, Monitor.MonitorRef monitorRef, Disjunction disjunction,
+                                           Driver<RootDisjunctionController> controller, Driver<Monitor> monitor, Disjunction disjunction,
                                            ConceptMap bounds, Set<Identifier.Variable.Retrievable> filter,
                                            ReasonerConsumer reasonerConsumer, String name) {
-            super(driver, controller, monitorRef, disjunction, bounds, name);
+            super(driver, controller, monitor, disjunction, bounds, name);
             this.filter = filter;
             this.reasonerConsumer = reasonerConsumer;
         }

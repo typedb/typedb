@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.AbstractPublisher;
@@ -40,13 +41,13 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     private final ProviderRegistry<PACKET> providerRegistry;
     private final ReceiverRegistry.MultiReceiverRegistry<PACKET> receiverRegistry;
 
-    public FanOutStream(Monitor.MonitorRef monitor, String groupName) {
+    public FanOutStream(Actor.Driver<Monitor> monitor, String groupName) {
         super(monitor, groupName);
         this.bufferSet = new HashSet<>();
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
         this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
-        this.receiverRegistry = new ReceiverRegistry.MultiReceiverRegistry<>(this, monitor);
+        this.receiverRegistry = new ReceiverRegistry.MultiReceiverRegistry<>(this);
     }
 
     @Override
@@ -64,14 +65,14 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         providerRegistry().recordReceive(provider);
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
-            monitor().createAnswer(this);
+            monitor().execute(actor -> actor.createAnswer(this));
             Set<Receiver<PACKET>> toSend = receiverRegistry().pullingReceivers();
             receiverRegistry().setNotPulling();
             toSend.forEach(this::send);
         } else {
             if (receiverRegistry().isPulling()) providerRegistry().retry(provider);
         }
-        monitor().consumeAnswer(this);
+        monitor().execute(actor -> actor.consumeAnswer(this));
     }
 
     @Override

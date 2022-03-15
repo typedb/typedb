@@ -37,23 +37,23 @@ import java.util.function.Function;
 
 public class RootConjunctionController extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.RootConjunctionProcessor> {
     private final Set<Identifier.Variable.Retrievable> filter;
-    private final Monitor.MonitorRef monitorRef;
+    private final Driver<Monitor> monitor;
     private final ReasonerConsumer reasonerConsumer;
 
     public RootConjunctionController(Driver<RootConjunctionController> driver, Conjunction conjunction,
                                      Set<Identifier.Variable.Retrievable> filter, ActorExecutorGroup executorService,
-                                     Monitor.MonitorRef monitorRef, Registry registry,
+                                     Driver<Monitor> monitor, Registry registry,
                                      ReasonerConsumer reasonerConsumer) {
         super(driver, conjunction, executorService, registry);
         this.filter = filter;
-        this.monitorRef = monitorRef;
+        this.monitor = monitor;
         this.reasonerConsumer = reasonerConsumer;
     }
 
     @Override
     protected Function<Driver<RootConjunctionProcessor>, RootConjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new RootConjunctionProcessor(
-                driver, driver(), monitorRef, bounds, plan(), filter, reasonerConsumer,
+                driver, driver(), monitor, bounds, plan(), filter, reasonerConsumer,
                 RootConjunctionProcessor.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
         );
     }
@@ -83,11 +83,11 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         private final ReasonerConsumer reasonerConsumer;
 
         protected RootConjunctionProcessor(Driver<RootConjunctionProcessor> driver,
-                                           Driver<RootConjunctionController> controller, Monitor.MonitorRef monitorRef,
+                                           Driver<RootConjunctionController> controller, Driver<Monitor> monitor,
                                            ConceptMap bounds, List<Resolvable<?>> plan,
                                            Set<Identifier.Variable.Retrievable> filter,
                                            ReasonerConsumer reasonerConsumer, String name) {
-            super(driver, controller, monitorRef, bounds, plan, name);
+            super(driver, controller, monitor, bounds, plan, name);
             this.filter = filter;
             this.reasonerConsumer = reasonerConsumer;
         }

@@ -131,9 +131,9 @@ public abstract class ConjunctionController<OUTPUT,
         protected final List<Resolvable<?>> plan;
 
         protected ConjunctionProcessor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller,
-                                       Monitor.MonitorRef monitorRef, ConceptMap bounds, List<Resolvable<?>> plan,
+                                       Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
                                        String name) {
-            super(driver, controller, monitorRef, name);
+            super(driver, controller, monitor, name);
             this.bounds = bounds;
             this.plan = plan;
         }
@@ -163,7 +163,8 @@ public abstract class ConjunctionController<OUTPUT,
         static class RetrievableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
                 extends Request<Retrievable, ConceptMap, RetrievableController, ConceptMap, P, C, RetrievableRequest<P, C>> {
 
-            public RetrievableRequest(Driver<P> recProcessor, long recEndpointId, Retrievable provControllerId, ConceptMap provProcessorId) {
+            public RetrievableRequest(Driver<P> recProcessor, long recEndpointId, Retrievable provControllerId,
+                                      ConceptMap provProcessorId) {
                 super(recProcessor, recEndpointId, provControllerId, provProcessorId);
             }
 
@@ -180,7 +181,8 @@ public abstract class ConjunctionController<OUTPUT,
         static class ConcludableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
                 extends Request<Concludable, ConceptMap, ConcludableController, ConceptMap, P, C, ConcludableRequest<P, C>> {
 
-            public ConcludableRequest(Driver<P> recProcessor, long recEndpointId, Concludable provControllerId, ConceptMap provProcessorId) {
+            public ConcludableRequest(Driver<P> recProcessor, long recEndpointId, Concludable provControllerId,
+                                      ConceptMap provProcessorId) {
                 super(recProcessor, recEndpointId, provControllerId, provProcessorId);
             }
 

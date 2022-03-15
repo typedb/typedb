@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
@@ -29,7 +30,7 @@ public class DeduplicationStream<PACKET> extends SingleReceiverStream<PACKET, PA
     private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
     private final Set<PACKET> deduplicationSet;
 
-    public DeduplicationStream(Publisher<PACKET> publisher, Monitor.MonitorRef monitor, String groupName) {
+    public DeduplicationStream(Publisher<PACKET> publisher, Actor.Driver<Monitor> monitor, String groupName) {
         super(monitor, groupName);
         this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, monitor);
         this.deduplicationSet = new HashSet<>();
@@ -49,7 +50,7 @@ public class DeduplicationStream<PACKET> extends SingleReceiverStream<PACKET, PA
         } else {
             assert receiverRegistry().isPulling();
             if (receiverRegistry().isPulling()) providerRegistry().retry(provider);
-            monitor().consumeAnswer(this);
+            monitor().execute(actor -> actor.consumeAnswer(this));
         }
     }
 }

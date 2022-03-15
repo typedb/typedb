@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
@@ -25,7 +26,7 @@ public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
     private final ProviderRegistry.MultiProviderRegistry<PACKET> providerRegistry;
 
-    protected FanInStream(Monitor.MonitorRef monitor, String groupName) {
+    protected FanInStream(Actor.Driver<Monitor> monitor, String groupName) {
         super(monitor, groupName);
         this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this, monitor);
     }
@@ -35,7 +36,7 @@ public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
         return providerRegistry;
     }
 
-    public static <T> FanInStream<T> fanIn(Monitor.MonitorRef monitor, String groupName) {
+    public static <T> FanInStream<T> fanIn(Actor.Driver<Monitor> monitor, String groupName) {
         return new FanInStream<>(monitor, groupName);
     }
 
@@ -49,6 +50,6 @@ public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
     public void finaliseProviders() {
         assert monitor() != null;
         final int numForks = providerRegistry().size() - 1;
-        if (numForks > 0) monitor().forkFrontier(numForks, this);
+        if (numForks > 0) monitor().execute(actor -> actor.forkFrontier(numForks, this));
     }
 }

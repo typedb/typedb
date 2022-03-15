@@ -44,16 +44,16 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         ConclusionController.ConclusionProcessor, ConclusionController> {
     private final Rule.Conclusion conclusion;
     private final Driver<MaterialiserController> materialiserController;
-    private final Monitor.MonitorRef monitorRef;
+    private final Driver<Monitor> monitor;
     private Driver<ConditionController> conditionController;
 
     public ConclusionController(Driver<ConclusionController> driver, String name, Rule.Conclusion conclusion,
                                 ActorExecutorGroup executorService, Driver<MaterialiserController> materialiserController,
-                                Monitor.MonitorRef monitorRef, Registry registry) {
+                                Driver<Monitor> monitor, Registry registry) {
         super(driver, executorService, registry, name);
         this.conclusion = conclusion;
         this.materialiserController = materialiserController;
-        this.monitorRef = monitorRef;
+        this.monitor = monitor;
     }
 
     @Override
@@ -64,7 +64,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
     @Override
     protected Function<Driver<ConclusionProcessor>, ConclusionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new ConclusionProcessor(
-                driver, driver(), monitorRef, this.conclusion.rule(), bounds, registry().conceptManager(),
+                driver, driver(), monitor, this.conclusion.rule(), bounds, registry().conceptManager(),
                 ConclusionProcessor.class.getSimpleName() + "(pattern: " + conclusion + ", bounds: " + bounds + ")"
         );
     }
@@ -91,9 +91,9 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         private final Set<MaterialiserRequest> materialiserRequests;
 
         protected ConclusionProcessor(Driver<ConclusionProcessor> driver,
-                                      Driver<ConclusionController> controller, Monitor.MonitorRef monitorRef, Rule rule,
+                                      Driver<ConclusionController> controller, Driver<Monitor> monitor, Rule rule,
                                       ConceptMap bounds, ConceptManager conceptManager, String name) {
-            super(driver, controller, monitorRef, name);
+            super(driver, controller, monitor, name);
             this.rule = rule;
             this.bounds = bounds;
             this.conceptManager = conceptManager;
@@ -158,7 +158,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerRegistry;
             private ProviderRegistry.MultiProviderRegistry<Map<Variable, Concept>> materialiserRegistry;
 
-            protected ConclusionReactive(String groupName, Monitor.MonitorRef monitor) {
+            protected ConclusionReactive(String groupName, Driver<Monitor> monitor) {
                 super(monitor, groupName);
                 this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
                 this.materialiserRegistry = null;
@@ -200,8 +200,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 op.publishTo(materialiserReactive);
                 materialiserReactive.sendTo(receiverRegistry().receiver());
 
-                monitor().forkFrontier(1, this);
-                monitor().consumeAnswer(this);
+                monitor().execute(actor -> actor.forkFrontier(1, this));
+                monitor().execute(actor -> actor.consumeAnswer(this));
 
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive));
                 if (receiverRegistry().isPulling()) {
@@ -227,7 +227,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             private final ConclusionReactive parent;
             private final ProviderRegistry.SingleProviderRegistry<Map<Variable, Concept>> providerRegistry;
 
-            public MaterialiserReactive(ConclusionReactive parent, Monitor.MonitorRef monitor, String groupName) {
+            public MaterialiserReactive(ConclusionReactive parent, Driver<Monitor> monitor, String groupName) {
                 super(monitor, groupName);
                 this.parent = parent;
                 this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);

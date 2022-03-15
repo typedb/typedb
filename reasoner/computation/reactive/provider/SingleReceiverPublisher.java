@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 
@@ -25,9 +26,9 @@ public abstract class SingleReceiverPublisher<OUTPUT> extends AbstractPublisher<
 
     protected ReceiverRegistry.SingleReceiverRegistry<OUTPUT> receiverRegistry;
 
-    protected SingleReceiverPublisher(Monitor.MonitorRef monitor, String groupName) {
+    protected SingleReceiverPublisher(Actor.Driver<Monitor> monitor, String groupName) {
         super(monitor, groupName);
-        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(this, monitor);
+        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(this);
     }
 
     @Override

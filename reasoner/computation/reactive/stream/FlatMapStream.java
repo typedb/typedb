@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
@@ -30,7 +31,7 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OU
     private final ProviderRegistry.SingleProviderRegistry<INPUT> providerRegistry;
 
     public FlatMapStream(Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
-                         Monitor.MonitorRef monitor, String groupName) {
+                         Actor.Driver<Monitor> monitor, String groupName) {
         super(monitor, groupName);
         this.transform = transform;
         this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, monitor);
@@ -49,12 +50,12 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OU
             receiverRegistry().setNotPulling();
             // This can actually create more receive() calls to downstream than the number of pulls it receives. Protect against by manually adding .buffer() after calls to flatMap
             transformed.forEachRemaining(t -> {
-                monitor().createAnswer(this);
+                monitor().execute(actor -> actor.createAnswer(this));
                 receiverRegistry().receiver().receive(this, t);
             });
         } else {
             if (receiverRegistry().isPulling()) providerRegistry().retry(provider);
         }
-        monitor().consumeAnswer(this);
+        monitor().execute(actor -> actor.consumeAnswer(this));
     }
 }

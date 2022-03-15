@@ -35,14 +35,14 @@ import java.util.function.Function;
 public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.NegationProcessor, NegationController> {
 
     private final Negated negated;
-    private final Monitor.MonitorRef monitorRef;
+    private final Driver<Monitor> monitor;
     private Driver<NestedDisjunctionController> disjunctionContoller;
 
     public NegationController(Driver<NegationController> driver, Negated negated, ActorExecutorGroup executorService,
-                              Monitor.MonitorRef monitorRef, Registry registry) {
+                              Driver<Monitor> monitor, Registry registry) {
         super(driver, executorService, registry, NegationController.class.getSimpleName() + "(pattern:" + negated + ")");
         this.negated = negated;
-        this.monitorRef = monitorRef;
+        this.monitor = monitor;
     }
 
     @Override
@@ -55,7 +55,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
     @Override
     protected Function<Driver<NegationProcessor>, NegationProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new NegationProcessor(
-                driver, driver(), monitorRef, negated, bounds,
+                driver, driver(), monitor, negated, bounds,
                 NegationProcessor.class.getSimpleName() + "(pattern: " + negated + ", bounds: " + bounds + ")"
         );
     }
@@ -76,8 +76,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         private NegationReactive negation;
 
         protected NegationProcessor(Driver<NegationProcessor> driver, Driver<NegationController> controller,
-                                    Monitor.MonitorRef monitorRef, Negated negated, ConceptMap bounds, String name) {
-            super(driver, controller, monitorRef, name);
+                                    Driver<Monitor> monitor, Negated negated, ConceptMap bounds, String name) {
+            super(driver, controller, monitor, name);
             this.negated = negated;
             this.bounds = bounds;
         }
@@ -93,8 +93,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             requestConnection(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
             negation = new NegationReactive(monitor(), name(), bounds);
-            monitor().registerRoot(driver(), negation);
-            monitor().forkFrontier(1, negation);
+            monitor().execute(actor -> actor.registerRoot(driver(), negation));
+            monitor().execute(actor -> actor.forkFrontier(1, negation));
             endpoint.publishTo(negation);
             negation.publishTo(outlet());
         }
@@ -113,7 +113,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             private final ConceptMap bounds;
             private boolean answerFound;
 
-            protected NegationReactive(Monitor.MonitorRef monitor, String groupName, ConceptMap bounds) {
+            protected NegationReactive(Driver<Monitor> monitor, String groupName, ConceptMap bounds) {
                 super(monitor, groupName);
                 this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, monitor);
                 this.bounds = bounds;
@@ -134,15 +134,15 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
                 super.receive(provider, packet);
                 answerFound = true;
-                monitor().rootFinalised(this);
+                monitor().execute(actor -> actor.rootFinalised(this));
             }
 
             @Override
             public void onFinished() {
                 assert !answerFound;
-                monitor().createAnswer(this);
+                monitor().execute(actor -> actor.createAnswer(this));
                 receiverRegistry().receiver().receive(this, bounds);
-                monitor().rootFinalised(this);
+                monitor().execute(actor -> actor.rootFinalised(this));
             }
         }
 

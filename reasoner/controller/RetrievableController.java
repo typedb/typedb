@@ -36,14 +36,14 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
         RetrievableController.RetrievableProcessor, RetrievableController> {
 
     private final Retrievable retrievable;
-    private final Monitor.MonitorRef monitorRef;
+    private final Driver<Monitor> monitor;
     private final Registry registry;
 
     public RetrievableController(Driver<RetrievableController> driver, String name, Retrievable retrievable,
-                                 ActorExecutorGroup executorService, Monitor.MonitorRef monitorRef, Registry registry) {
+                                 ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry) {
         super(driver, executorService, registry, name);
         this.retrievable = retrievable;
-        this.monitorRef = monitorRef;
+        this.monitor = monitor;
         this.registry = registry;
     }
 
@@ -55,7 +55,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     @Override
     protected Function<Driver<RetrievableProcessor>, RetrievableProcessor> createProcessorFunc(ConceptMap conceptMap) {
         return driver -> new RetrievableProcessor(
-                driver, driver(), monitorRef, () -> Traversal.traversalIterator(registry, retrievable.pattern(), conceptMap),
+                driver, driver(), monitor, () -> Traversal.traversalIterator(registry, retrievable.pattern(), conceptMap),
                 RetrievableProcessor.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ", bounds: " + conceptMap.toString() + ")"
         );
     }
@@ -70,9 +70,9 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
 
         protected RetrievableProcessor(Driver<RetrievableProcessor> driver, Driver<RetrievableController> controller,
-                                       Monitor.MonitorRef monitorRef,
+                                       Driver<Monitor> monitor,
                                        Supplier<FunctionalIterator<ConceptMap>> traversalSupplier, String name) {
-            super(driver, controller, monitorRef, name);
+            super(driver, controller, monitor, name);
             this.traversalSupplier = traversalSupplier;
         }
 

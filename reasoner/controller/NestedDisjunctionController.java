@@ -28,18 +28,18 @@ import java.util.function.Function;
 public class NestedDisjunctionController
         extends DisjunctionController<NestedDisjunctionController.NestedDisjunctionProcessor, NestedDisjunctionController>{
 
-    private final Monitor.MonitorRef monitorRef;
+    private final Driver<Monitor> monitor;
 
     public NestedDisjunctionController(Driver<NestedDisjunctionController> driver, Disjunction disjunction,
-                                       ActorExecutorGroup executorService, Monitor.MonitorRef monitorRef, Registry registry) {
+                                       ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry) {
         super(driver, disjunction, executorService, registry);
-        this.monitorRef = monitorRef;
+        this.monitor = monitor;
     }
 
     @Override
     protected Function<Driver<NestedDisjunctionProcessor>, NestedDisjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new NestedDisjunctionProcessor(
-                driver, driver(), monitorRef, disjunction, bounds,
+                driver, driver(), monitor, disjunction, bounds,
                 NestedDisjunctionProcessor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
         );
     }
@@ -53,9 +53,9 @@ public class NestedDisjunctionController
             extends DisjunctionController.DisjunctionProcessor<NestedDisjunctionController, NestedDisjunctionProcessor> {
 
         protected NestedDisjunctionProcessor(Driver<NestedDisjunctionProcessor> driver,
-                                             Driver<NestedDisjunctionController> controller,
-                                             Monitor.MonitorRef monitorRef, Disjunction disjunction, ConceptMap bounds, String name) {
-            super(driver, controller, monitorRef, disjunction, bounds, name);
+                                             Driver<NestedDisjunctionController> controller, Driver<Monitor> monitor,
+                                             Disjunction disjunction, ConceptMap bounds, String name) {
+            super(driver, controller, monitor, disjunction, bounds, name);
         }
     }
 }

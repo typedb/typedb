@@ -37,15 +37,15 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Fi
     private boolean isPulling;
     private int traceCounter = 0;
 
-    public EntryPoint(Actor.Driver<? extends Processor<ConceptMap, ?, ?, ?>> processor, Monitor.MonitorRef monitorRef,
+    public EntryPoint(Actor.Driver<? extends Processor<ConceptMap, ?, ?, ?>> processor, Actor.Driver<Monitor> monitor,
                       ReasonerConsumer reasonerConsumer, String groupName) {
-        super(monitorRef);
+        super(monitor);
         this.reasonerConsumer = reasonerConsumer;
         this.groupName = groupName;
         this.isPulling = false;
         reasonerConsumer.setRootProcessor(processor);
-        monitorRef().registerRoot(processor, this);
-        monitorRef().forkFrontier(1, this);
+        monitor().execute(actor -> actor.registerRoot(processor, this));
+        monitor().execute(actor -> actor.forkFrontier(1, this));
     }
 
     public void pull() {
@@ -58,7 +58,7 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Fi
         super.receive(provider, packet);
         isPulling = false;
         reasonerConsumer.receiveAnswer(packet);
-        monitorRef().consumeAnswer(this);
+        monitor().execute(actor -> actor.consumeAnswer(this));
     }
 
     @Override
@@ -87,6 +87,6 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Fi
     @Override
     public void onFinished() {
         reasonerConsumer.answersFinished();
-        monitorRef().rootFinalised(this);
+        monitor().execute(actor -> actor.rootFinalised(this));
     }
 }

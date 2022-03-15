@@ -36,13 +36,13 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
     // TODO: It would be better not to use Either, since this class only ever outputs a ConceptMap
 
     private final Rule.Condition condition;
-    private final Monitor.MonitorRef monitorRef;
+    private final Driver<Monitor> monitor;
 
     public ConditionController(Driver<ConditionController> driver, Rule.Condition condition,
-                               ActorExecutorGroup executorService, Monitor.MonitorRef monitorRef, Registry registry) {
+                               ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry) {
         super(driver, condition.conjunction(), executorService, registry);
         this.condition = condition;
-        this.monitorRef = monitorRef;
+        this.monitor = monitor;
     }
 
     @Override
@@ -53,7 +53,7 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
     @Override
     protected Function<Driver<ConditionController.ConditionProcessor>, ConditionController.ConditionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new ConditionProcessor(
-                driver, driver(), monitorRef, bounds, plan(),
+                driver, driver(), monitor, bounds, plan(),
                 ConditionProcessor.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
         );
     }
@@ -65,8 +65,8 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
 
     protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<Either<ConceptMap, Materialisation>, ConditionController, ConditionProcessor>{
         protected ConditionProcessor(Driver<ConditionProcessor> driver, Driver<ConditionController> controller,
-                                     Monitor.MonitorRef monitorRef, ConceptMap bounds, List<Resolvable<?>> plan, String name) {
-            super(driver, controller, monitorRef, bounds, plan, name);
+                                     Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan, String name) {
+            super(driver, controller, monitor, bounds, plan, name);
         }
 
         @Override
