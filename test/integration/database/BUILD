@@ -54,6 +54,27 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
+    name = "test-isolation",
+    srcs = ["IsolationTest.java"],
+    test_class = "com.vaticle.typedb.core.database.IsolationTest",
+    native_libraries_deps = [
+        # Internal dependencies
+        "//:typedb",
+        "//database:database",
+        "//common:common",
+        "//concept:concept",
+        "//logic:logic",
+    ],
+    deps = [
+        "//test/integration/util:util",
+
+        # External dependencies from Vaticle
+        "@vaticle_typeql_lang_java//:typeql-lang",
+    ],
+    size = "large",
+)
+
+host_compatible_java_test(
     name = "test-rocks-iterator",
     srcs = ["RocksIteratorTest.java"],
     test_class = "com.vaticle.typedb.core.database.RocksIteratorTest",

@@ -464,13 +464,13 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    public static class IsolationManager {
+    static class IsolationManager {
 
         private final ConcurrentMap<CoreTransaction.Data, CommitState> commitStates;
         private final ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> commitTimeline;
         private final AtomicBoolean cleanupRunning;
 
-        enum CommitState {OPEN, COMMITTING, COMMITTED}
+        private enum CommitState {OPEN, COMMITTING, COMMITTED}
 
         IsolationManager() {
             this.cleanupRunning = new AtomicBoolean(false);
@@ -482,7 +482,7 @@ public class CoreDatabase implements TypeDB.Database {
             commitStates.put(transaction, CommitState.OPEN);
         }
 
-        public Set<CoreTransaction.Data> validateConcurrentAndStartCommit(CoreTransaction.Data txn) {
+        Set<CoreTransaction.Data> validateConcurrentAndStartCommit(CoreTransaction.Data txn) {
             Set<CoreTransaction.Data> transactions;
             synchronized (this) {
                 transactions = mayCommitConcurrently(txn);
@@ -490,6 +490,14 @@ public class CoreDatabase implements TypeDB.Database {
                 commitStates.put(txn, CommitState.COMMITTING);
             }
             return transactions;
+        }
+
+        private Set<CoreTransaction.Data> mayCommitConcurrently(CoreTransaction.Data txn) {
+            return iterate(commitStates.entrySet())
+                    .filter(e -> e.getValue() == CommitState.COMMITTING ||
+                            (e.getValue() == CommitState.COMMITTED && e.getKey().snapshotEnd().get() > txn.snapshotStart()))
+                    .map(Map.Entry::getKey)
+                    .toSet();
         }
 
         private void validateIsolation(CoreTransaction.Data txn, CoreTransaction.Data mayConflict) {
@@ -502,7 +510,7 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        public void committed(CoreTransaction.Data txn) {
+        void committed(CoreTransaction.Data txn) {
             assert commitStates.get(txn) == CommitState.COMMITTING && txn.snapshotEnd().isPresent();
             commitStates.put(txn, CommitState.COMMITTED);
             commitTimeline.compute(txn.snapshotEnd().get(), (snapshot, committed) -> {
@@ -512,23 +520,9 @@ public class CoreDatabase implements TypeDB.Database {
             });
         }
 
-        public void closed(CoreTransaction.Data txn) {
+        void closed(CoreTransaction.Data txn) {
             if (commitStates.get(txn) != CommitState.COMMITTED) commitStates.remove(txn);
             cleanupCommitted();
-        }
-
-        Set<CoreTransaction.Data> getUncommitted() {
-            return iterate(commitStates.entrySet())
-                    .filter(e -> e.getValue() == CommitState.OPEN || e.getValue() == CommitState.COMMITTING)
-                    .map(Map.Entry::getKey).toSet();
-        }
-
-        private Set<CoreTransaction.Data> mayCommitConcurrently(CoreTransaction.Data txn) {
-            return iterate(commitStates.entrySet())
-                    .filter(e -> e.getValue() == CommitState.COMMITTING ||
-                            (e.getValue() == CommitState.COMMITTED && e.getKey().snapshotEnd().get() > txn.snapshotStart()))
-                    .map(Map.Entry::getKey)
-                    .toSet();
         }
 
         private void cleanupCommitted() {
@@ -553,7 +547,13 @@ public class CoreDatabase implements TypeDB.Database {
                     .map(e -> e.getKey().snapshotStart()).stream().min(Comparator.naturalOrder());
         }
 
-        public long committedEventCount() {
+        Set<CoreTransaction.Data> getUncommitted() {
+            return iterate(commitStates.entrySet())
+                    .filter(e -> e.getValue() == CommitState.OPEN || e.getValue() == CommitState.COMMITTING)
+                    .map(Map.Entry::getKey).toSet();
+        }
+
+        long committedEventCount() {
             return iterate(commitStates.values()).filter(s -> s == CommitState.COMMITTED).count();
         }
     }
@@ -589,12 +589,12 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        public void initialise() {
+        void initialise() {
             session = createAndOpenSession(DATA, new Options.Session()).asData();
             isOpen.set(true);
         }
 
-        public void initialiseAndCorrect() {
+        void initialiseAndCorrect() {
             initialise();
             LOG.debug("Resuming statistics.");
             correctMiscounts();
@@ -723,7 +723,7 @@ public class CoreDatabase implements TypeDB.Database {
             return iterate(txnIDs).noneMatch(openTxnIDs::contains);
         }
 
-        public void recordCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
+        void recordCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
             recordMiscounts(txn, concurrentTxn);
             txn.dataStorage.putUntracked(StatisticsKey.txnCommitted(txn.id));
         }

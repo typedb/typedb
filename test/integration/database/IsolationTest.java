@@ -17,14 +17,12 @@
  */
 
 
-package com.vaticle.typedb.core.test.integration;
+package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
-import com.vaticle.typedb.core.database.CoreDatabaseManager;
-import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
@@ -44,7 +42,7 @@ import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 
-public class ConsistencyTest {
+public class IsolationTest {
 
     private static final String database = "isolation-test";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
@@ -62,11 +60,11 @@ public class ConsistencyTest {
         try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 txn.query().define(TypeQL.parseQuery("define " +
-                                                            "person sub entity, owns name, plays friendship:friend;" +
-                                                            "friendship sub relation, relates friend;" +
-                                                            "name sub attribute, value string;" +
-                                                            "company sub entity, owns address @key;" +
-                                                            "address sub attribute, value string;").asDefine());
+                        "person sub entity, owns name, plays friendship:friend;" +
+                        "friendship sub relation, relates friend;" +
+                        "name sub attribute, value string;" +
+                        "company sub entity, owns address @key;" +
+                        "address sub attribute, value string;").asDefine());
                 txn.commit();
             }
         }
@@ -316,7 +314,7 @@ public class ConsistencyTest {
             TypeDB.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
             TypeDB.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
             txn1.query().insert(TypeQL.parseQuery("match $x isa person, has name 'Bob'; $y isa person, has name 'Alice'; " +
-                                                         "insert $f (friend: $x, friend: $y) isa friendship;"));
+                    "insert $f (friend: $x, friend: $y) isa friendship;"));
             txn2.query().delete(TypeQL.parseQuery("match $x isa person, has name 'Bob'; delete $x isa person;"));
             txn1.commit();
             try {
@@ -363,7 +361,7 @@ public class ConsistencyTest {
 
             TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE);
             txn.query().insert(TypeQL.parseQuery("match $x isa person, has name 'Bob'; $y isa person, has name 'Alice'; " +
-                                                        "insert $f (friend: $x, friend: $y) isa friendship;"));
+                    "insert $f (friend: $x, friend: $y) isa friendship;"));
             txn.commit();
             assertEquals(0, session.database().isolationMgr().committedEventCount());
         }

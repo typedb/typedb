@@ -61,27 +61,6 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-consistency",
-    srcs = ["ConsistencyTest.java"],
-    test_class = "com.vaticle.typedb.core.test.integration.ConsistencyTest",
-    native_libraries_deps = [
-        # Internal dependencies
-        "//:typedb",
-        "//database:database",
-        "//common:common",
-        "//concept:concept",
-        "//logic:logic",
-    ],
-    deps = [
-        "//test/integration/util:util",
-
-        # External dependencies from Vaticle
-        "@vaticle_typeql_lang_java//:typeql-lang",
-    ],
-    size = "large",
-)
-
-host_compatible_java_test(
     name = "test-attribute-string",
     srcs = ["StringAttributeTest.java"],
     test_class = "com.vaticle.typedb.core.test.integration.StringAttributeTest",
