@@ -62,6 +62,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -71,7 +72,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
@@ -229,7 +229,7 @@ public class CoreDatabase implements TypeDB.Database {
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
         }
-        statisticsCorrector.initialiseAndSynchronise();
+        statisticsCorrector.initialiseAndCorrect();
     }
 
     private void openData() {
@@ -446,14 +446,6 @@ public class CoreDatabase implements TypeDB.Database {
     protected void closeResources() {
         sessions.values().forEach(p -> p.first().close());
         statisticsCorrector.close();
-        Optional<CompletableFuture<Void>> correction = statisticsCorrector.runningCorrection();
-        if (correction.isPresent()) {
-            try {
-                correction.get().get(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                LOG.warn("Statistics corrector was not fully shutdown");
-            }
-        }
         cacheClose();
         rocksDataPartitionMgr.close();
         rocksData.close();
@@ -569,30 +561,58 @@ public class CoreDatabase implements TypeDB.Database {
     class StatisticsCorrector {
 
         private final ConcurrentSet<Long> deletableTransactionIDs;
-        private final AtomicBoolean isCorrectionQueued;
-        private AtomicReference<CompletableFuture<Void>> correctionFuture;
+        private final AtomicBoolean isOpen;
+        private final AtomicBoolean correctionRequired;
+        private final ConcurrentSet<CompletableFuture<Void>> corrections;
         private CoreSession.Data session;
 
         StatisticsCorrector() {
             deletableTransactionIDs = new ConcurrentSet<>();
-            isCorrectionQueued = new AtomicBoolean(false);
-            correctionFuture = new AtomicReference<>();
+            isOpen = new AtomicBoolean(false);
+            corrections = new ConcurrentSet<>();
+            correctionRequired = new AtomicBoolean(false);
+        }
+
+        void close() {
+            if (isOpen.compareAndSet(false, true)) {
+                session.close();
+                try {
+                    correctionRequired.set(false);
+                    for (CompletableFuture<Void> correction : corrections) {
+                        boolean cancelled = correction.cancel(false);
+                        if (cancelled) corrections.remove(correction);
+                        else correction.get(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
+                    }
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    LOG.warn("Statistics corrector did not shut down in time.");
+                }
+            }
         }
 
         public void initialise() {
             session = createAndOpenSession(DATA, new Options.Session()).asData();
+            isOpen.set(true);
         }
 
-        public void initialiseAndSynchronise() {
+        public void initialiseAndCorrect() {
             initialise();
-            LOG.debug("Synchronising statistics.");
+            LOG.debug("Resuming statistics.");
             correctMiscounts();
             deleteCorrectionMetadata();
             LOG.debug("Statistics are up to date.");
-            if (LOG.isDebugEnabled()) logStatisticsSummary();
+            if (LOG.isDebugEnabled()) logSummary();
         }
 
-        private void logStatisticsSummary() {
+        private void deleteCorrectionMetadata() {
+            try (CoreTransaction.Data txn = session.transaction(WRITE)) {
+                txn.dataStorage.iterate(StatisticsKey.txnCommittedPrefix()).forEachRemaining(kv ->
+                        txn.dataStorage.deleteUntracked(kv.key())
+                );
+                txn.commit();
+            }
+        }
+
+        private void logSummary() {
             try (CoreTransaction.Data txn = session.transaction(READ)) {
                 LOG.debug("Total 'thing' count: " +
                         txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootThingType())
@@ -610,17 +630,19 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        void close() {
-            session.close();
+        void committed(CoreTransaction.Data transaction) {
+            if (mayMiscount(transaction) && correctionRequired.compareAndSet(false, true)) {
+                submitCorrection();
+            }
         }
 
-        private void deleteCorrectionMetadata() {
-            try (CoreTransaction.Data txn = session.transaction(WRITE)) {
-                txn.dataStorage.iterate(StatisticsKey.txnCommittedPrefix()).forEachRemaining(kv ->
-                        txn.dataStorage.deleteUntracked(kv.key())
-                );
-                txn.commit();
-            }
+        CompletableFuture<Void> submitCorrection() {
+            CompletableFuture<Void> correction = CompletableFuture.runAsync(() -> {
+                if (correctionRequired.compareAndSet(true, false)) this.correctMiscounts();
+            }, singleThreaded());
+            correction.thenRun(() -> corrections.remove(correction));
+            corrections.add(correction);
+            return correction;
         }
 
         private boolean mayMiscount(CoreTransaction.Data transaction) {
@@ -630,23 +652,8 @@ public class CoreDatabase implements TypeDB.Database {
                     !transaction.graphMgr.data().hasEdgeDeleted().isEmpty();
         }
 
-        void committed(CoreTransaction.Data transaction) {
-            if (mayMiscount(transaction) && isCorrectionQueued.compareAndSet(false, true)) {
-                submitCorrection();
-            }
-        }
-
         void deleted(CoreTransaction.Data transaction) {
             deletableTransactionIDs.add(transaction.id);
-        }
-
-        public CompletableFuture<Void> submitCorrection() {
-            correctionFuture.set(CompletableFuture.runAsync(this::correctMiscounts, singleThreaded()));
-            return correctionFuture.get();
-        }
-
-        public Optional<CompletableFuture<Void>> runningCorrection() {
-            return Optional.ofNullable(correctionFuture.get());
         }
 
         /**
@@ -654,7 +661,6 @@ public class CoreDatabase implements TypeDB.Database {
          * and correct them if we have enough information to do so.
          */
         private void correctMiscounts() {
-            isCorrectionQueued.set(false);
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
                 boolean[] modified = new boolean[]{false};
                 boolean[] miscountCorrected = new boolean[]{false};
