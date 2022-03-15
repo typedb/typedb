@@ -118,25 +118,6 @@ public class Encoding {
 
     public interface Direction {
 
-        enum Adjacency implements Direction {
-            OUT(true),
-            IN(false);
-
-            private final boolean isOut;
-
-            Adjacency(boolean isOut) {
-                this.isOut = isOut;
-            }
-
-            public boolean isOut() {
-                return isOut;
-            }
-
-            public boolean isIn() {
-                return !isOut;
-            }
-        }
-
         enum Edge implements Direction {
             FORWARD(true),
             BACKWARD(false);
@@ -266,6 +247,9 @@ public class Encoding {
      * two objects in the database, and must not overlap with each other.
      *
      * The size of a prefix is 1 signed byte; i.e. min-value = -128 and max-value = 127.
+     *
+     * TODO: these should be scoped to be within a section of the encoding.
+     * For example, Edge and Property should have their own Infixes.
      */
     public enum Infix {
         PROPERTY_LABEL(0),
@@ -935,10 +919,10 @@ public class Encoding {
             enum Prefix {
 
                 SNAPSHOT(0),
-                VERTEX_COUNT(1),
-                HAS_TYPE_EDGE_COUNT(2),
+                VERTEX_COUNT(10),
+                HAS_EDGE_COUNT(20),
                 MISCOUNTABLE(50),
-                TXN_COMMITTED_ID(100);
+                TXN_COMMITTED_ID(60);
 
                 static final int LENGTH = 2;
 
@@ -957,10 +941,10 @@ public class Encoding {
             }
 
             enum Infix {
-                ATTRIBUTE_OVERCOUNTABLE(0),
-                ATTRIBUTE_UNDERCOUNTABLE(1),
-                HAS_OVERCOUNTABLE(10),
-                HAS_UNDERCOUNTABLE(11);
+                ATTRIBUTE_OVERCOUNT(0),
+                ATTRIBUTE_UNDERCOUNT(1),
+                HAS_EDGE_OVERCOUNT(10),
+                HAS_EDGE_UNDERCOUNT(11);
 
                 public static final int LENGTH = 1;
 

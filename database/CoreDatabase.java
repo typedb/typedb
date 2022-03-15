@@ -689,19 +689,19 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         private void correctMiscount(StatisticsKey.Miscountable miscount, CoreTransaction.Data txn) {
-            if (miscount.isOvercountableAttr()) {
+            if (miscount.isAttrOvertcount()) {
                 VertexIID.Type type = miscount.getMiscountableAttribute().type();
                 txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(-1));
-            } else if (miscount.isUndercountableAttr()) {
+            } else if (miscount.isAttrUndercount()) {
                 VertexIID.Type type = miscount.getMiscountableAttribute().type();
                 txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(1));
-            } else if (miscount.isOvercountableHas()) {
+            } else if (miscount.isHasEdgeOvercount()) {
                 Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = miscount.getMiscountableHas();
                 txn.dataStorage.mergeUntracked(
                         StatisticsKey.hasEdgeCount(has.first().type(), has.second().type()),
                         encodeLong(-1)
                 );
-            } else if (miscount.isUndercountableHas()) {
+            } else if (miscount.isHasEdgeUndercount()) {
                 Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = miscount.getMiscountableHas();
                 txn.dataStorage.mergeUntracked(
                         StatisticsKey.hasEdgeCount(has.first().type(), has.second().type()),
@@ -751,16 +751,16 @@ public class CoreDatabase implements TypeDB.Database {
             }
 
             attrOvercountDependencies.forEach((attr, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.attrOvercountable(txn.id, attr.iid()), encodeLongSet(txs))
+                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.attrOvercount(txn.id, attr.iid()), encodeLongSet(txs))
             );
             attrUndercountDependencies.forEach((attr, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.attrUndercountable(txn.id, attr.iid()), encodeLongSet(txs))
+                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.attrUndercount(txn.id, attr.iid()), encodeLongSet(txs))
             );
             hasOvercountDependencies.forEach((has, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.hasOvercountable(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
+                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.hasEdgeOvercount(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
             );
             hasUndercountDependencies.forEach((has, txs) ->
-                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.hasUndercountable(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
+                    txn.dataStorage.putUntracked(StatisticsKey.Miscountable.hasEdgeUndercount(txn.id, has.first().iid(), has.second().iid()), encodeLongSet(txs))
             );
         }
 

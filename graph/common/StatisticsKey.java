@@ -37,6 +37,7 @@ public class StatisticsKey implements Storage.Key {
         this.bytes = bytes;
     }
 
+    @Override
     public ByteArray bytes() {
         return bytes;
     }
@@ -44,6 +45,25 @@ public class StatisticsKey implements Storage.Key {
     @Override
     public Partition partition() {
         return PARTITION;
+    }
+
+    public static StatisticsKey vertexCount(VertexIID.Type typeIID) {
+        return new StatisticsKey(join(
+                Statistics.Prefix.VERTEX_COUNT.bytes(),
+                typeIID.bytes()
+        ));
+    }
+
+    public static StatisticsKey hasEdgeCount(VertexIID.Type thingTypeIID, VertexIID.Type attTypeIID) {
+        return new StatisticsKey(join(
+                Statistics.Prefix.HAS_EDGE_COUNT.bytes(),
+                thingTypeIID.bytes(),
+                attTypeIID.bytes()
+        ));
+    }
+
+    public static StatisticsKey snapshot() {
+        return new StatisticsKey(Statistics.Prefix.SNAPSHOT.bytes());
     }
 
     public static StatisticsKey txnCommitted(long txnID) {
@@ -57,25 +77,6 @@ public class StatisticsKey implements Storage.Key {
         return new Prefix<>(Statistics.Prefix.TXN_COMMITTED_ID.bytes(), Partition.METADATA, StatisticsKey::new);
     }
 
-    public static StatisticsKey vertexCount(VertexIID.Type typeIID) {
-        return new StatisticsKey(join(
-                Statistics.Prefix.VERTEX_COUNT.bytes(),
-                typeIID.bytes()
-        ));
-    }
-
-    public static StatisticsKey hasEdgeCount(VertexIID.Type thingTypeIID, VertexIID.Type attTypeIID) {
-        return new StatisticsKey(join(
-                Statistics.Prefix.HAS_TYPE_EDGE_COUNT.bytes(),
-                thingTypeIID.bytes(),
-                attTypeIID.bytes()
-        ));
-    }
-
-    public static StatisticsKey snapshot() {
-        return new StatisticsKey(Statistics.Prefix.SNAPSHOT.bytes());
-    }
-
     public static class Miscountable extends StatisticsKey {
 
         private Miscountable(ByteArray bytes) {
@@ -83,37 +84,71 @@ public class StatisticsKey implements Storage.Key {
             assert bytes.hasPrefix(Statistics.Prefix.MISCOUNTABLE.bytes());
         }
 
-        private static Miscountable of(ByteArray bytes) {
-            return new Miscountable(bytes);
+        public static Prefix<Miscountable> prefix() {
+            return new Prefix<>(Statistics.Prefix.MISCOUNTABLE.bytes(), Partition.METADATA, Miscountable::new);
         }
 
-        public static Prefix<Miscountable> prefix() {
-            return new Prefix<>(Statistics.Prefix.MISCOUNTABLE.bytes(), Partition.METADATA, Miscountable::of);
+        public static Miscountable attrOvercount(long txnID, VertexIID.Attribute<?> attIID) {
+            return new Miscountable(join(
+                    Statistics.Prefix.MISCOUNTABLE.bytes(),
+                    ByteArray.encodeLong(txnID),
+                    Statistics.Infix.ATTRIBUTE_OVERCOUNT.bytes(),
+                    attIID.bytes()
+            ));
+        }
+
+        public static Miscountable attrUndercount(long txnID, VertexIID.Attribute<?> attIID) {
+            return new Miscountable(join(
+                    Statistics.Prefix.MISCOUNTABLE.bytes(),
+                    ByteArray.encodeLong(txnID),
+                    Statistics.Infix.ATTRIBUTE_UNDERCOUNT.bytes(),
+                    attIID.bytes()
+            ));
+        }
+
+        public static Miscountable hasEdgeOvercount(long txnID, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
+            return new Miscountable(join(
+                    Statistics.Prefix.MISCOUNTABLE.bytes(),
+                    ByteArray.encodeLong(txnID),
+                    Statistics.Infix.HAS_EDGE_OVERCOUNT.bytes(),
+                    thingIID.bytes(),
+                    attIID.bytes()
+            ));
+        }
+
+        public static Miscountable hasEdgeUndercount(long txnID, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
+            return new Miscountable(join(
+                    Statistics.Prefix.MISCOUNTABLE.bytes(),
+                    ByteArray.encodeLong(txnID),
+                    Statistics.Infix.HAS_EDGE_UNDERCOUNT.bytes(),
+                    thingIID.bytes(),
+                    attIID.bytes()
+            ));
+        }
+
+        public boolean isAttrOvertcount() {
+            return infix() == Statistics.Infix.ATTRIBUTE_OVERCOUNT.key();
+        }
+
+        public boolean isAttrUndercount() {
+            return infix() ==
+                    Statistics.Infix.ATTRIBUTE_UNDERCOUNT.key();
+        }
+
+        public boolean isHasEdgeOvercount() {
+            return infix() == Statistics.Infix.HAS_EDGE_OVERCOUNT.key();
+        }
+
+        public boolean isHasEdgeUndercount() {
+            return infix() == Statistics.Infix.HAS_EDGE_UNDERCOUNT.key();
         }
 
         private byte infix() {
             return bytes().get(Statistics.Prefix.LENGTH + Bytes.LONG_SIZE);
         }
 
-        public boolean isOvercountableAttr() {
-            return infix() == Statistics.Infix.ATTRIBUTE_OVERCOUNTABLE.key();
-        }
-
-        public boolean isUndercountableAttr() {
-            return infix() ==
-                    Statistics.Infix.ATTRIBUTE_UNDERCOUNTABLE.key();
-        }
-
-        public boolean isOvercountableHas() {
-            return infix() == Statistics.Infix.HAS_OVERCOUNTABLE.key();
-        }
-
-        public boolean isUndercountableHas() {
-            return infix() == Statistics.Infix.HAS_UNDERCOUNTABLE.key();
-        }
-
         public VertexIID.Attribute<?> getMiscountableAttribute() {
-            assert isOvercountableAttr() || isUndercountableAttr();
+            assert isAttrOvertcount() || isAttrUndercount();
             return VertexIID.Attribute.extract(
                     this.bytes(),
                     Statistics.Prefix.LENGTH + Bytes.LONG_SIZE + Statistics.Infix.LENGTH
@@ -121,7 +156,7 @@ public class StatisticsKey implements Storage.Key {
         }
 
         public Pair<VertexIID.Thing, VertexIID.Attribute<?>> getMiscountableHas() {
-            assert isOvercountableHas() || isUndercountableHas();
+            assert isHasEdgeOvercount() || isHasEdgeUndercount();
             VertexIID.Thing owner = VertexIID.Thing.extract(
                     this.bytes(),
                     Statistics.Prefix.LENGTH + Bytes.LONG_SIZE + Statistics.Infix.LENGTH
@@ -133,44 +168,6 @@ public class StatisticsKey implements Storage.Key {
                             Statistics.Prefix.LENGTH + Bytes.LONG_SIZE + Statistics.Infix.LENGTH + owner.bytes().length()
                     )
             );
-        }
-
-        public static Miscountable attrOvercountable(long txnID, VertexIID.Attribute<?> attIID) {
-            return new Miscountable(join(
-                    Statistics.Prefix.MISCOUNTABLE.bytes(),
-                    ByteArray.encodeLong(txnID),
-                    Statistics.Infix.ATTRIBUTE_OVERCOUNTABLE.bytes(),
-                    attIID.bytes()
-            ));
-        }
-
-        public static Miscountable attrUndercountable(long txnID, VertexIID.Attribute<?> attIID) {
-            return new Miscountable(join(
-                    Statistics.Prefix.MISCOUNTABLE.bytes(),
-                    ByteArray.encodeLong(txnID),
-                    Statistics.Infix.ATTRIBUTE_UNDERCOUNTABLE.bytes(),
-                    attIID.bytes()
-            ));
-        }
-
-        public static Miscountable hasOvercountable(long txnID, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
-            return new Miscountable(join(
-                    Statistics.Prefix.MISCOUNTABLE.bytes(),
-                    ByteArray.encodeLong(txnID),
-                    Statistics.Infix.HAS_OVERCOUNTABLE.bytes(),
-                    thingIID.bytes(),
-                    attIID.bytes()
-            ));
-        }
-
-        public static Miscountable hasUndercountable(long txnID, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
-            return new Miscountable(join(
-                    Statistics.Prefix.MISCOUNTABLE.bytes(),
-                    ByteArray.encodeLong(txnID),
-                    Statistics.Infix.HAS_UNDERCOUNTABLE.bytes(),
-                    thingIID.bytes(),
-                    attIID.bytes()
-            ));
         }
     }
 }

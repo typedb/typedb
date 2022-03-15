@@ -231,8 +231,6 @@ public class DataImporter {
                     count += importItem(item);
                 }
                 commitBatch();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
