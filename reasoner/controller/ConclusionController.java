@@ -200,8 +200,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 op.publishTo(materialiserReactive);
                 materialiserReactive.sendTo(receiverRegistry().receiver());
 
-                monitor().execute(actor -> actor.forkFrontier(1, this));
-                monitor().execute(actor -> actor.consumeAnswer(this));
+                processor().monitor().execute(actor -> actor.forkFrontier(1, this));
+                processor().monitor().execute(actor -> actor.consumeAnswer(this));
 
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive));
                 if (receiverRegistry().isPulling()) {

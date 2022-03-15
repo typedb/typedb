@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.receiver;
 
-import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
@@ -38,8 +36,8 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET> {
         return providerRegistry;
     }
 
-    protected Actor.Driver<Monitor> monitor() {
-        return processor.monitor();
+    protected Processor<?, ?, ?, ?> processor() {
+        return processor;
     }
 
     @Override

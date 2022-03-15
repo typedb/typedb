@@ -95,7 +95,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         @Override
         public void setUp() {
             super.setUp();
-            reasonerEntryPoint = new EntryPoint(this, reasonerConsumer, name());
+            reasonerEntryPoint = new EntryPoint(this, reasonerConsumer);
             outlet().publishTo(reasonerEntryPoint);
             new CompoundStream<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, this)
                     .buffer()

@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
-import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
@@ -47,7 +45,7 @@ public class FindFirstStream<PACKET> extends SingleReceiverStream<PACKET, PACKET
             receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
         } else {
-            monitor().execute(actor -> actor.consumeAnswer(this));
+            processor().monitor().execute(actor -> actor.consumeAnswer(this));
         }
     }
 

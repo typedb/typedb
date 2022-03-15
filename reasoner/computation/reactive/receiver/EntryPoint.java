@@ -29,20 +29,18 @@ import java.util.UUID;
 
 public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Finishable<ConceptMap> {
 
-    private final String groupName;
     private final UUID traceId = UUID.randomUUID();
     private final ReasonerConsumer reasonerConsumer;
     private boolean isPulling;
     private int traceCounter = 0;
 
-    public EntryPoint(Processor<ConceptMap, ?, ?, ?> processor, ReasonerConsumer reasonerConsumer, String groupName) {
+    public EntryPoint(Processor<ConceptMap, ?, ?, ?> processor, ReasonerConsumer reasonerConsumer) {
         super(processor);
         this.reasonerConsumer = reasonerConsumer;
-        this.groupName = groupName;
         this.isPulling = false;
         reasonerConsumer.setRootProcessor(processor.driver());
-        monitor().execute(actor -> actor.registerRoot(processor.driver(), this));
-        monitor().execute(actor -> actor.forkFrontier(1, this));
+        processor().monitor().execute(actor -> actor.registerRoot(processor.driver(), this));
+        processor().monitor().execute(actor -> actor.forkFrontier(1, this));
     }
 
     public void pull() {
@@ -55,7 +53,7 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Fi
         super.receive(provider, packet);
         isPulling = false;
         reasonerConsumer.receiveAnswer(packet);
-        monitor().execute(actor -> actor.consumeAnswer(this));
+        processor().monitor().execute(actor -> actor.consumeAnswer(this));
     }
 
     @Override
@@ -65,8 +63,8 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Fi
     }
 
     @Override
-    public String groupName() {
-        return groupName;
+    public String tracingGroupName() {
+        return processor().name();
     }
 
     public Tracer.Trace trace() {
@@ -84,6 +82,6 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Fi
     @Override
     public void onFinished() {
         reasonerConsumer.answersFinished();
-        monitor().execute(actor -> actor.rootFinalised(this));
+        processor().monitor().execute(actor -> actor.rootFinalised(this));
     }
 }

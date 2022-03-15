@@ -269,7 +269,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public String groupName() {
+        public String tracingGroupName() {
             return processor.name();
         }
 

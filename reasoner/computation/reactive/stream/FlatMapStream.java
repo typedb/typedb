@@ -49,12 +49,12 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OU
             receiverRegistry().setNotPulling();
             // This can actually create more receive() calls to downstream than the number of pulls it receives. Protect against by manually adding .buffer() after calls to flatMap
             transformed.forEachRemaining(t -> {
-                monitor().execute(actor -> actor.createAnswer(this));
+                processor().monitor().execute(actor -> actor.createAnswer(this));
                 receiverRegistry().receiver().receive(this, t);
             });
         } else {
             if (receiverRegistry().isPulling()) providerRegistry().retry(provider);
         }
-        monitor().execute(actor -> actor.consumeAnswer(this));
+        processor().monitor().execute(actor -> actor.consumeAnswer(this));
     }
 }

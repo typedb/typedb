@@ -24,7 +24,7 @@ import java.util.function.Function;
 
 public interface Reactive {
 
-    String groupName();
+    String tracingGroupName();
 
     interface Provider<R> extends Reactive {
 

@@ -74,8 +74,8 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
                     follower = new CompoundStream<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, processor()).buffer();
                 }
                 publisherPackets.put(follower, mergedPacket);
-                monitor().execute(actor -> actor.forkFrontier(1, this));
-                monitor().execute(actor -> actor.consumeAnswer(this));
+                processor().monitor().execute(actor -> actor.forkFrontier(1, this));
+                processor().monitor().execute(actor -> actor.consumeAnswer(this));
                 follower.publishTo(this);
                 if (receiverRegistry().isPulling()) {
                     providerRegistry().retry(leadingPublisher);  // Retry the leader in case the follower never produces an answer

@@ -49,7 +49,7 @@ public class DeduplicationStream<PACKET> extends SingleReceiverStream<PACKET, PA
         } else {
             assert receiverRegistry().isPulling();
             if (receiverRegistry().isPulling()) providerRegistry().retry(provider);
-            monitor().execute(actor -> actor.consumeAnswer(this));
+            processor().monitor().execute(actor -> actor.consumeAnswer(this));
         }
     }
 }

@@ -85,7 +85,7 @@ public class RootDisjunctionController
         @Override
         public void setUp() {
             super.setUp();
-            reasonerEntryPoint = new EntryPoint(this, reasonerConsumer, name());
+            reasonerEntryPoint = new EntryPoint(this, reasonerConsumer);
             outlet().publishTo(reasonerEntryPoint);
         }
 

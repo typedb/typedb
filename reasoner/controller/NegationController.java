@@ -134,15 +134,15 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
                 super.receive(provider, packet);
                 answerFound = true;
-                monitor().execute(actor -> actor.rootFinalised(this));
+                processor().monitor().execute(actor -> actor.rootFinalised(this));
             }
 
             @Override
             public void onFinished() {
                 assert !answerFound;
-                monitor().execute(actor -> actor.createAnswer(this));
+                processor().monitor().execute(actor -> actor.createAnswer(this));
                 receiverRegistry().receiver().receive(this, bounds);
-                monitor().execute(actor -> actor.rootFinalised(this));
+                processor().monitor().execute(actor -> actor.rootFinalised(this));
             }
         }
 

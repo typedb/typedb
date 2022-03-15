@@ -32,7 +32,7 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
     private final long recEndpointId;
     private final long provEndpointId;
     private final List<Function<PACKET, PACKET>> transforms;
-    private final String groupName;
+    private final String tracingGroupName;
 
     /**
      * Connects a processor outlet (upstream, publishing) to another processor's inlet (downstream, subscribing)
@@ -44,12 +44,12 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
         this.recEndpointId = recEndpointId;
         this.provEndpointId = provEndpointId;
         this.transforms = transforms;
-        this.groupName = Connection.class.getSimpleName() + "@" + System.identityHashCode(this);
+        this.tracingGroupName = Connection.class.getSimpleName() + "@" + System.identityHashCode(this);
     }
 
     @Override
-    public String groupName() {
-        return groupName;
+    public String tracingGroupName() {
+        return tracingGroupName;
     }
 
     @Override

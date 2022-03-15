@@ -85,22 +85,22 @@ public final class Tracer {
         if (receiver == null) receiverString = "root";
         else {
             receiverString = simpleClassId(receiver);
-            addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
+            addNodeGroup(simpleClassId(receiver), receiver.tracingGroupName(), defaultTrace);
         }
         addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
-        addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
+        addNodeGroup(simpleClassId(provider), provider.tracingGroupName(), defaultTrace);
     }
 
     public synchronized <INPUT, OUTPUT> void receive(Provider<OUTPUT> provider, Receiver<INPUT> receiver, OUTPUT packet) {
         addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
-        addNodeGroup(simpleClassId(receiver), receiver.groupName(), defaultTrace);
-        addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
+        addNodeGroup(simpleClassId(receiver), receiver.tracingGroupName(), defaultTrace);
+        addNodeGroup(simpleClassId(provider), provider.tracingGroupName(), defaultTrace);
     }
 
     public synchronized <PACKET> void receive(Processor.OutletEndpoint<PACKET> provider,
                                               Connection<PACKET, ?, ?> receiver, PACKET packet) {
         addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
-        addNodeGroup(simpleClassId(provider), provider.groupName(), defaultTrace);
+        addNodeGroup(simpleClassId(provider), provider.tracingGroupName(), defaultTrace);
     }
 
     public <R> void registerRoot(Receiver.Finishable<R> root, Actor.Driver<Monitor> monitor) {
