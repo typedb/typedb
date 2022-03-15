@@ -57,7 +57,7 @@ public interface Storage {
 
     TypeDBException exception(Exception exception);
 
-    void closeResources();
+    void close();
 
     default boolean isSchema() {
         return false;

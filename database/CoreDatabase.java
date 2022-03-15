@@ -23,6 +23,7 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -62,7 +63,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -470,7 +470,7 @@ public class CoreDatabase implements TypeDB.Database {
         private final ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> commitTimeline;
         private final AtomicBoolean cleanupRunning;
 
-        private enum CommitState {OPEN, COMMITTING, COMMITTED}
+        private enum CommitState {UNCOMMITTED, COMMITTING, COMMITTED}
 
         IsolationManager() {
             this.cleanupRunning = new AtomicBoolean(false);
@@ -479,7 +479,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         void opened(CoreTransaction.Data transaction) {
-            commitStates.put(transaction, CommitState.OPEN);
+            commitStates.put(transaction, CommitState.UNCOMMITTED);
         }
 
         Set<CoreTransaction.Data> validateConcurrentAndStartCommit(CoreTransaction.Data txn) {
@@ -527,7 +527,7 @@ public class CoreDatabase implements TypeDB.Database {
 
         private void cleanupCommitted() {
             if (cleanupRunning.compareAndSet(false, true)) {
-                Optional<Long> oldestUncommittedSnapshot = oldestUncommittedSnapshot();
+                Optional<Long> oldestUncommittedSnapshot = oldestNotCommittedSnapshot();
                 ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> deletable;
                 if (oldestUncommittedSnapshot.isEmpty()) deletable = commitTimeline;
                 else deletable = commitTimeline.headMap(oldestUncommittedSnapshot.get());
@@ -541,16 +541,14 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        private Optional<Long> oldestUncommittedSnapshot() {
-            return iterate(commitStates.entrySet())
-                    .filter(e -> e.getValue() == CommitState.OPEN || e.getValue() == CommitState.COMMITTING)
-                    .map(e -> e.getKey().snapshotStart()).stream().min(Comparator.naturalOrder());
+        private Optional<Long> oldestNotCommittedSnapshot() {
+            return getNotCommitted().map(CoreTransaction.Data::snapshotStart).stream().min(Comparator.naturalOrder());
         }
 
-        Set<CoreTransaction.Data> getUncommitted() {
+        FunctionalIterator<CoreTransaction.Data> getNotCommitted() {
             return iterate(commitStates.entrySet())
-                    .filter(e -> e.getValue() == CommitState.OPEN || e.getValue() == CommitState.COMMITTING)
-                    .map(Map.Entry::getKey).toSet();
+                    .filter(e -> e.getValue() != CommitState.COMMITTED)
+                    .map(Map.Entry::getKey);
         }
 
         long committedEventCount() {
@@ -664,7 +662,7 @@ public class CoreDatabase implements TypeDB.Database {
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
                 boolean[] modified = new boolean[]{false};
                 boolean[] miscountCorrected = new boolean[]{false};
-                Set<Long> openTxnIDs = iterate(isolationMgr.getUncommitted()).map(t -> t.id).toSet();
+                Set<Long> openTxnIDs = isolationMgr.getNotCommitted().map(t -> t.id).toSet();
                 txn.dataStorage.iterate(StatisticsKey.Miscountable.prefix()).forEachRemaining(kv -> {
                     StatisticsKey.Miscountable item = kv.key();
                     Set<Long> txnIDsCausingMiscount = kv.value().decodeLongSet();
@@ -834,12 +832,12 @@ public class CoreDatabase implements TypeDB.Database {
 
         private void mayClose() {
             if (borrowerCount == 0 && invalidated) {
-                schemaStorage.closeResources();
+                schemaStorage.close();
             }
         }
 
         private void close() {
-            schemaStorage.closeResources();
+            schemaStorage.close();
         }
     }
 

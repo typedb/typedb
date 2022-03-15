@@ -177,7 +177,7 @@ public abstract class RocksStorage implements Storage {
     }
 
     @Override
-    public void closeResources() {
+    public void close() {
         try {
             deleteCloseSchemaWriteLock.writeLock().lock();
             if (isOpen.compareAndSet(true, false)) {

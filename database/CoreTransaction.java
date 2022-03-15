@@ -252,8 +252,8 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
         @Override
         protected void closeResources() {
-            schemaStorage.closeResources();
-            dataStorage.closeResources();
+            schemaStorage.close();
+            dataStorage.close();
         }
 
         @Override
@@ -350,7 +350,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         @Override
         protected void closeResources() {
             session.database().cacheUnborrow(cache);
-            dataStorage.closeResources();
+            dataStorage.close();
         }
 
         @Override
