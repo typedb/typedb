@@ -147,6 +147,10 @@ public class StatisticsKey implements Storage.Key {
             return bytes().get(Statistics.Prefix.LENGTH + Bytes.LONG_SIZE);
         }
 
+        public long getTxn() {
+            return bytes().view(Statistics.Prefix.LENGTH, Statistics.Prefix.LENGTH + Bytes.LONG_SIZE).decodeLong();
+        }
+
         public VertexIID.Attribute<?> getMiscountableAttribute() {
             assert isAttrOvertcount() || isAttrUndercount();
             return VertexIID.Attribute.extract(

@@ -694,7 +694,7 @@ public class CoreDatabase implements TypeDB.Database {
 
         private void correctMiscount(StatisticsKey.Miscountable miscount, CoreTransaction.Data txn) {
             if (miscount.isAttrOvertcount()) {
-                System.out.println("DECREMENTING attr overcount");
+                System.out.println("DECREMENTING attr overcount, attr from txn: " + miscount.getTxn());
                 VertexIID.Type type = miscount.getMiscountableAttribute().type();
                 txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(-1));
             } else if (miscount.isAttrUndercount()) {
