@@ -64,7 +64,7 @@ build:
     test-integration:
       image: vaticle-ubuntu-21.04
       command: |
-        bazel test //test/integration/database:test-statistics --test_output=streamed
+        bazel test //test/integration/database:test-statistics --test_output=streamed --notest_keep_going --runs_per_test=20
     test-behaviour-connection:
       image: vaticle-ubuntu-21.04
       command: |
