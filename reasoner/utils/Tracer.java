@@ -85,61 +85,61 @@ public final class Tracer {
         if (receiver == null) receiverString = "root";
         else {
             receiverString = simpleClassId(receiver);
-            addNodeGroup(simpleClassId(receiver), receiver.tracingGroupName(), defaultTrace);
+            addNodeGroup(simpleClassId(receiver), receiver.tracingGroupName().get(), defaultTrace);
         }
         addMessage(receiverString, simpleClassId(provider), defaultTrace, EdgeType.PULL, "pull");
-        addNodeGroup(simpleClassId(provider), provider.tracingGroupName(), defaultTrace);
+        addNodeGroup(simpleClassId(provider), provider.tracingGroupName().get(), defaultTrace);
     }
 
     public synchronized <INPUT, OUTPUT> void receive(Provider<OUTPUT> provider, Receiver<INPUT> receiver, OUTPUT packet) {
         addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
-        addNodeGroup(simpleClassId(receiver), receiver.tracingGroupName(), defaultTrace);
-        addNodeGroup(simpleClassId(provider), provider.tracingGroupName(), defaultTrace);
+        addNodeGroup(simpleClassId(receiver), receiver.tracingGroupName().get(), defaultTrace);
+        addNodeGroup(simpleClassId(provider), provider.tracingGroupName().get(), defaultTrace);
     }
 
     public synchronized <PACKET> void receive(Processor.OutletEndpoint<PACKET> provider,
                                               Connection<PACKET, ?, ?> receiver, PACKET packet) {
         addMessage(simpleClassId(provider), simpleClassId(receiver), defaultTrace, EdgeType.RECEIVE, packet.toString());
-        addNodeGroup(simpleClassId(provider), provider.tracingGroupName(), defaultTrace);
+        addNodeGroup(simpleClassId(provider), provider.tracingGroupName().get(), defaultTrace);
     }
 
     public <R> void registerRoot(Receiver.Finishable<R> root, Actor.Driver<Monitor> monitor) {
-        addMessage(simpleClassId(root), monitor.name(), defaultTrace, EdgeType.ROOT, "reg_root");
+        addMessage(simpleClassId(root), monitor.debugName().get(), defaultTrace, EdgeType.ROOT, "reg_root");
     }
 
     public <R> void rootFinalised(Receiver.Finishable<R> root, Actor.Driver<Monitor> monitor) {
-        addMessage(simpleClassId(root), monitor.name(), defaultTrace, EdgeType.ROOT_FINALISED, "root_finished");
+        addMessage(simpleClassId(root), monitor.debugName().get(), defaultTrace, EdgeType.ROOT_FINALISED, "root_finished");
     }
 
     public <R> void finishRootNode(Receiver.Finishable<R> root, Actor.Driver<Monitor> monitor) {
-        addMessage(monitor.name(), simpleClassId(root), defaultTrace, EdgeType.ROOT_FINISH, "finished");
+        addMessage(monitor.debugName().get(), simpleClassId(root), defaultTrace, EdgeType.ROOT_FINISH, "finished");
     }
 
     public <R> void registerPath(Receiver<R> receiver, @Nullable Provider<R> provider, Actor.Driver<Monitor> monitor) {
         String providerName;
         if (provider == null) providerName = "entry";  // TODO: Prevent provider from ever being null
         else providerName = simpleClassId(provider);
-        addMessage(simpleClassId(receiver), monitor.name(), defaultTrace, EdgeType.REGISTER, "reg_" + providerName);
+        addMessage(simpleClassId(receiver), monitor.debugName().get(), defaultTrace, EdgeType.REGISTER, "reg_" + providerName);
     }
 
     public <R> void registerSource(Provider<R> source, Actor.Driver<Monitor> monitor) {
-        addMessage(simpleClassId(source), monitor.name(), defaultTrace, EdgeType.SOURCE, "reg_source");
+        addMessage(simpleClassId(source), monitor.debugName().get(), defaultTrace, EdgeType.SOURCE, "reg_source");
     }
 
     public <R> void sourceFinished(Source<R> source, Actor.Driver<Monitor> monitor) {
-        addMessage(simpleClassId(source), monitor.name(), defaultTrace, EdgeType.SOURCE_FINISH, "source_finished");
+        addMessage(simpleClassId(source), monitor.debugName().get(), defaultTrace, EdgeType.SOURCE_FINISH, "source_finished");
     }
 
     public <R> void createAnswer(Provider<R> provider, Actor.Driver<Monitor> monitor) {
-        addMessage(simpleClassId(provider), monitor.name(), defaultTrace, EdgeType.CREATE, "create");
+        addMessage(simpleClassId(provider), monitor.debugName().get(), defaultTrace, EdgeType.CREATE, "create");
     }
 
     public <R> void consumeAnswer(Receiver<R> receiver, Actor.Driver<Monitor> monitor) {
-        addMessage(simpleClassId(receiver), monitor.name(), defaultTrace, EdgeType.CONSUME, "consume");
+        addMessage(simpleClassId(receiver), monitor.debugName().get(), defaultTrace, EdgeType.CONSUME, "consume");
     }
 
     public void forkFrontier(int numForks, Reactive forker, Actor.Driver<Monitor> monitor) {
-        addMessage(simpleClassId(forker), monitor.name(), defaultTrace, EdgeType.FORK, "fork" + numForks);
+        addMessage(simpleClassId(forker), monitor.debugName().get(), defaultTrace, EdgeType.FORK, "fork" + numForks);
     }
 
     private static String simpleClassId(Object obj) {

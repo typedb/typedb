@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.stream.CompoundStre
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class ConditionController extends ConjunctionController<Either<ConceptMap, Materialisation>, ConditionController, ConditionController.ConditionProcessor> {
     // TODO: It would be better not to use Either, since this class only ever outputs a ConceptMap
@@ -54,7 +55,7 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
     protected Function<Driver<ConditionController.ConditionProcessor>, ConditionController.ConditionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new ConditionProcessor(
                 driver, driver(), monitor, bounds, plan(),
-                ConditionProcessor.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
+                () -> ConditionProcessor.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
         );
     }
 
@@ -65,8 +66,9 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
 
     protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<Either<ConceptMap, Materialisation>, ConditionController, ConditionProcessor>{
         protected ConditionProcessor(Driver<ConditionProcessor> driver, Driver<ConditionController> controller,
-                                     Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan, String name) {
-            super(driver, controller, monitor, bounds, plan, name);
+                                     Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
+                                     Supplier<String> debugName) {
+            super(driver, controller, monitor, bounds, plan, debugName);
         }
 
         @Override

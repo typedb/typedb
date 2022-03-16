@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverStream;
 
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.NegationProcessor, NegationController> {
 
@@ -40,7 +41,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
     public NegationController(Driver<NegationController> driver, Negated negated, ActorExecutorGroup executorService,
                               Driver<Monitor> monitor, Registry registry) {
-        super(driver, executorService, registry, NegationController.class.getSimpleName() + "(pattern:" + negated + ")");
+        super(driver, executorService, registry,
+              () -> NegationController.class.getSimpleName() + "(pattern:" + negated + ")");
         this.negated = negated;
         this.monitor = monitor;
     }
@@ -56,7 +58,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
     protected Function<Driver<NegationProcessor>, NegationProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new NegationProcessor(
                 driver, driver(), monitor, negated, bounds,
-                NegationProcessor.class.getSimpleName() + "(pattern: " + negated + ", bounds: " + bounds + ")"
+                () -> NegationProcessor.class.getSimpleName() + "(pattern: " + negated + ", bounds: " + bounds + ")"
         );
     }
 
@@ -76,8 +78,9 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         private NegationReactive negation;
 
         protected NegationProcessor(Driver<NegationProcessor> driver, Driver<NegationController> controller,
-                                    Driver<Monitor> monitor, Negated negated, ConceptMap bounds, String name) {
-            super(driver, controller, monitor, name);
+                                    Driver<Monitor> monitor, Negated negated, ConceptMap bounds,
+                                    Supplier<String> debugName) {
+            super(driver, controller, monitor, debugName);
             this.negated = negated;
             this.bounds = bounds;
         }

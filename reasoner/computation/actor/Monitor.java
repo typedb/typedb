@@ -46,7 +46,7 @@ public class Monitor extends Actor<Monitor> {
     private final Map<Reactive, ReactiveNode> reactiveNodes;
 
     public Monitor(Driver<Monitor> driver, Registry registry) {
-        super(driver, Monitor.class.getSimpleName()); this.registry = registry;
+        super(driver, Monitor.class::getSimpleName); this.registry = registry;
         this.reactiveNodes = new HashMap<>();
     }
 

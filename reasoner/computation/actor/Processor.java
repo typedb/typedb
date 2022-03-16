@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -61,8 +62,8 @@ public abstract class Processor<INPUT, OUTPUT,
     private final Driver<Monitor> monitor;
 
     protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, Driver<Monitor> monitor,
-                        String name) {
-        super(driver, name);
+                        Supplier<String> debugName) {
+        super(driver, debugName);
         this.controller = controller;
         this.endpointId = 0;
         this.receivingEndpoints = new HashMap<>();
@@ -269,8 +270,8 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public String tracingGroupName() {
-            return processor.name();
+        public Supplier<String> tracingGroupName() {
+            return processor.debugName();
         }
 
         @Override

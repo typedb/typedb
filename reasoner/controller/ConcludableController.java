@@ -57,7 +57,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
     public ConcludableController(Driver<ConcludableController> driver, Concludable concludable,
                                  ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry) {
         super(driver, executorService, registry,
-              ConcludableController.class.getSimpleName() + "(pattern: " + concludable + ")");
+              () -> ConcludableController.class.getSimpleName() + "(pattern: " + concludable + ")");
         this.monitor = monitor;
         this.registry = registry;
         this.concludable = concludable;
@@ -97,7 +97,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         return driver -> new ConcludableProcessor(
                 driver, driver(), monitor, bounds, unboundVars, conclusionUnifiers,
                 () -> Traversal.traversalIterator(registry, concludable.pattern(), bounds),
-                ConcludableProcessor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
+                () -> ConcludableProcessor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
         );
     }
 
@@ -119,11 +119,11 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         private final Set<ConclusionRequest> requestedConnections;
 
         public ConcludableProcessor(Driver<ConcludableProcessor> driver, Driver<ConcludableController> controller,
-                                    Driver<Monitor> monitor, ConceptMap bounds,
-                                    Set<Variable.Retrievable> unboundVars,
+                                    Driver<Monitor> monitor, ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
-                                    Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier, String name) {
-            super(driver, controller, monitor, name);
+                                    Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
+                                    Supplier<String> debugName) {
+            super(driver, controller, monitor, debugName);
             this.bounds = bounds;
             this.unboundVars = unboundVars;
             this.conclusionUnifiers = conclusionUnifiers;

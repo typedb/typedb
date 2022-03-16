@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class RootDisjunctionController
         extends DisjunctionController<RootDisjunctionController.RootDisjunctionProcessor, RootDisjunctionController> {
@@ -51,7 +52,7 @@ public class RootDisjunctionController
     protected Function<Driver<RootDisjunctionProcessor>, RootDisjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new RootDisjunctionProcessor(
                 driver, driver(), monitor, disjunction, bounds, filter, reasonerConsumer,
-                RootDisjunctionProcessor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
+                () -> RootDisjunctionProcessor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
         );
     }
 
@@ -76,8 +77,8 @@ public class RootDisjunctionController
         protected RootDisjunctionProcessor(Driver<RootDisjunctionProcessor> driver,
                                            Driver<RootDisjunctionController> controller, Driver<Monitor> monitor, Disjunction disjunction,
                                            ConceptMap bounds, Set<Identifier.Variable.Retrievable> filter,
-                                           ReasonerConsumer reasonerConsumer, String name) {
-            super(driver, controller, monitor, disjunction, bounds, name);
+                                           ReasonerConsumer reasonerConsumer, Supplier<String> debugName) {
+            super(driver, controller, monitor, disjunction, bounds, debugName);
             this.filter = filter;
             this.reasonerConsumer = reasonerConsumer;
         }

@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
@@ -48,8 +49,8 @@ public abstract class Controller<
     protected final Map<PROC_ID, Actor.Driver<PROCESSOR>> processors;
 
     protected Controller(Driver<CONTROLLER> driver, ActorExecutorGroup executorService, Registry registry,
-                         String name) {
-        super(driver, name);
+                         Supplier<String> debugName) {
+        super(driver, debugName);
         this.executorService = executorService;
         this.processors = new HashMap<>();
         this.terminated = false;

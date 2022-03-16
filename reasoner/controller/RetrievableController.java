@@ -39,9 +39,10 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     private final Driver<Monitor> monitor;
     private final Registry registry;
 
-    public RetrievableController(Driver<RetrievableController> driver, String name, Retrievable retrievable,
+    public RetrievableController(Driver<RetrievableController> driver, Retrievable retrievable,
                                  ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry) {
-        super(driver, executorService, registry, name);
+        super(driver, executorService, registry,
+              () -> RetrievableController.class.getSimpleName() + "(pattern: " + retrievable + ")");
         this.retrievable = retrievable;
         this.monitor = monitor;
         this.registry = registry;
@@ -56,7 +57,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     protected Function<Driver<RetrievableProcessor>, RetrievableProcessor> createProcessorFunc(ConceptMap conceptMap) {
         return driver -> new RetrievableProcessor(
                 driver, driver(), monitor, () -> Traversal.traversalIterator(registry, retrievable.pattern(), conceptMap),
-                RetrievableProcessor.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ", bounds: " + conceptMap.toString() + ")"
+                () -> RetrievableProcessor.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ", bounds: " + conceptMap.toString() + ")"
         );
     }
 
@@ -71,8 +72,9 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
 
         protected RetrievableProcessor(Driver<RetrievableProcessor> driver, Driver<RetrievableController> controller,
                                        Driver<Monitor> monitor,
-                                       Supplier<FunctionalIterator<ConceptMap>> traversalSupplier, String name) {
-            super(driver, controller, monitor, name);
+                                       Supplier<FunctionalIterator<ConceptMap>> traversalSupplier,
+                                       Supplier<String> debugName) {
+            super(driver, controller, monitor, debugName);
             this.traversalSupplier = traversalSupplier;
         }
 

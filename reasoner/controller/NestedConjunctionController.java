@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.stream.CompoundStre
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class NestedConjunctionController extends ConjunctionController<ConceptMap, NestedConjunctionController, NestedConjunctionController.NestedConjunctionProcessor> {
 
@@ -53,7 +54,7 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
             NestedConjunctionController.NestedConjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new NestedConjunctionProcessor(
                 driver, driver(), monitor, bounds, plan(),
-                NestedConjunctionProcessor.class.getSimpleName() + "(pattern: " + conjunction + ", bounds: " + bounds + ")"
+                () -> NestedConjunctionProcessor.class.getSimpleName() + "(pattern: " + conjunction + ", bounds: " + bounds + ")"
         );
     }
 
@@ -67,8 +68,8 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
         protected NestedConjunctionProcessor(Driver<NestedConjunctionProcessor> driver,
                                              Driver<NestedConjunctionController> controller,
                                              Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
-                                             String name) {
-            super(driver, controller, monitor, bounds, plan, name);
+                                             Supplier<String> debugName) {
+            super(driver, controller, monitor, bounds, plan, debugName);
         }
 
         @Override

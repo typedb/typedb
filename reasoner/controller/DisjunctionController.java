@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -53,7 +54,7 @@ public abstract class DisjunctionController<
 
     protected DisjunctionController(Driver<CONTROLLER> driver, Disjunction disjunction, ActorExecutorGroup executorService, Registry registry) {
         super(driver, executorService, registry,
-              DisjunctionController.class.getSimpleName() + "(pattern:" + disjunction + ")");
+              () -> DisjunctionController.class.getSimpleName() + "(pattern:" + disjunction + ")");
         this.disjunction = disjunction;
         this.conjunctionControllers = new ArrayList<>();
     }
@@ -84,8 +85,8 @@ public abstract class DisjunctionController<
 
         protected DisjunctionProcessor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller,
                                        Driver<Monitor> monitor, Disjunction disjunction, ConceptMap bounds,
-                                       String name) {
-            super(driver, controller, monitor, name);
+                                       Supplier<String> debugName) {
+            super(driver, controller, monitor, debugName);
             this.disjunction = disjunction;
             this.bounds = bounds;
         }

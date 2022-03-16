@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class NestedDisjunctionController
         extends DisjunctionController<NestedDisjunctionController.NestedDisjunctionProcessor, NestedDisjunctionController>{
@@ -40,7 +41,7 @@ public class NestedDisjunctionController
     protected Function<Driver<NestedDisjunctionProcessor>, NestedDisjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new NestedDisjunctionProcessor(
                 driver, driver(), monitor, disjunction, bounds,
-                NestedDisjunctionProcessor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
+                () -> NestedDisjunctionProcessor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
         );
     }
 
@@ -54,8 +55,8 @@ public class NestedDisjunctionController
 
         protected NestedDisjunctionProcessor(Driver<NestedDisjunctionProcessor> driver,
                                              Driver<NestedDisjunctionController> controller, Driver<Monitor> monitor,
-                                             Disjunction disjunction, ConceptMap bounds, String name) {
-            super(driver, controller, monitor, disjunction, bounds, name);
+                                             Disjunction disjunction, ConceptMap bounds, Supplier<String> debugName) {
+            super(driver, controller, monitor, disjunction, bounds, debugName);
         }
     }
 }

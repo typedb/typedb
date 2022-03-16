@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>, PROV_PROCESSOR extends Processor<?, PACKET, ?, PROV_PROCESSOR>> implements Reactive.Provider<PACKET>, Reactive.Receiver<PACKET> {
 
@@ -32,7 +33,7 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
     private final long recEndpointId;
     private final long provEndpointId;
     private final List<Function<PACKET, PACKET>> transforms;
-    private final String tracingGroupName;
+    private final Supplier<String> tracingGroupName;
 
     /**
      * Connects a processor outlet (upstream, publishing) to another processor's inlet (downstream, subscribing)
@@ -44,11 +45,11 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
         this.recEndpointId = recEndpointId;
         this.provEndpointId = provEndpointId;
         this.transforms = transforms;
-        this.tracingGroupName = Connection.class.getSimpleName() + "@" + System.identityHashCode(this);
+        this.tracingGroupName = () -> Connection.class.getSimpleName() + "@" + System.identityHashCode(this);
     }
 
     @Override
-    public String tracingGroupName() {
+    public Supplier<String> tracingGroupName() {
         return tracingGroupName;
     }
 

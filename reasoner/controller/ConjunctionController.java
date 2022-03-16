@@ -41,6 +41,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -62,7 +63,7 @@ public abstract class ConjunctionController<OUTPUT,
     public ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction,
                                  ActorExecutorGroup executorService, Registry registry) {
         super(driver, executorService, registry,
-              ConjunctionController.class.getSimpleName() + "(pattern:" + conjunction + ")");
+              () -> ConjunctionController.class.getSimpleName() + "(pattern:" + conjunction + ")");
         this.conjunction = conjunction;
         this.resolvables = new HashSet<>();
         this.negateds = new HashSet<>();
@@ -132,8 +133,8 @@ public abstract class ConjunctionController<OUTPUT,
 
         protected ConjunctionProcessor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller,
                                        Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
-                                       String name) {
-            super(driver, controller, monitor, name);
+                                       Supplier<String> debugName) {
+            super(driver, controller, monitor, debugName);
             this.bounds = bounds;
             this.plan = plan;
         }

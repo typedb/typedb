@@ -34,6 +34,7 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class RootConjunctionController extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.RootConjunctionProcessor> {
     private final Set<Identifier.Variable.Retrievable> filter;
@@ -54,7 +55,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
     protected Function<Driver<RootConjunctionProcessor>, RootConjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
         return driver -> new RootConjunctionProcessor(
                 driver, driver(), monitor, bounds, plan(), filter, reasonerConsumer,
-                RootConjunctionProcessor.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
+                () -> RootConjunctionProcessor.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
         );
     }
 
@@ -86,8 +87,8 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
                                            Driver<RootConjunctionController> controller, Driver<Monitor> monitor,
                                            ConceptMap bounds, List<Resolvable<?>> plan,
                                            Set<Identifier.Variable.Retrievable> filter,
-                                           ReasonerConsumer reasonerConsumer, String name) {
-            super(driver, controller, monitor, bounds, plan, name);
+                                           ReasonerConsumer reasonerConsumer, Supplier<String> debugName) {
+            super(driver, controller, monitor, bounds, plan, debugName);
             this.filter = filter;
             this.reasonerConsumer = reasonerConsumer;
         }

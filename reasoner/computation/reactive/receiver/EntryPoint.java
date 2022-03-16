@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Finishable<ConceptMap> {
 
@@ -63,8 +64,8 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Fi
     }
 
     @Override
-    public String tracingGroupName() {
-        return processor().name();
+    public Supplier<String> tracingGroupName() {
+        return processor().debugName();
     }
 
     public Tracer.Trace trace() {

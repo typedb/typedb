@@ -21,10 +21,11 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public interface Reactive {
 
-    String tracingGroupName();
+    Supplier<String> tracingGroupName();
 
     interface Provider<R> extends Reactive {
 

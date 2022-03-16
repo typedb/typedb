@@ -33,6 +33,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.logic.Rule.Conclusion.materialise;
 
@@ -46,7 +47,7 @@ public class MaterialiserController extends Controller<Materialisable, Void, Eit
 
     public MaterialiserController(Driver<MaterialiserController> driver, ActorExecutorGroup executorService,
                                   Driver<Monitor> monitor, Registry registry, TraversalEngine traversalEng, ConceptManager conceptMgr) {
-        super(driver, executorService, registry, MaterialiserController.class.getSimpleName());
+        super(driver, executorService, registry, MaterialiserController.class::getSimpleName);
         this.monitor = monitor;
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
@@ -61,7 +62,7 @@ public class MaterialiserController extends Controller<Materialisable, Void, Eit
     protected Function<Driver<MaterialiserProcessor>, MaterialiserProcessor> createProcessorFunc(Materialisable materialisable) {
         return driver -> new MaterialiserProcessor(
                 driver, driver(), monitor, materialisable, traversalEng, conceptMgr,
-                MaterialiserProcessor.class.getSimpleName() + "(Materialisable: " + materialisable + ")"
+                () -> MaterialiserProcessor.class.getSimpleName() + "(Materialisable: " + materialisable + ")"
         );
     }
 
@@ -79,8 +80,9 @@ public class MaterialiserController extends Controller<Materialisable, Void, Eit
 
         protected MaterialiserProcessor(
                 Driver<MaterialiserProcessor> driver, Driver<MaterialiserController> controller,
-                Driver<Monitor> monitor, Materialisable materialisable, TraversalEngine traversalEng, ConceptManager conceptMgr, String name) {
-            super(driver, controller, monitor, name);
+                Driver<Monitor> monitor, Materialisable materialisable, TraversalEngine traversalEng,
+                ConceptManager conceptMgr, Supplier<String> debugName) {
+            super(driver, controller, monitor, debugName);
             this.materialisable = materialisable;
             this.traversalEng = traversalEng;
             this.conceptMgr = conceptMgr;

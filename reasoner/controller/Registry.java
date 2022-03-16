@@ -211,7 +211,7 @@ public class Registry {
     public ResolverView.FilteredRetrievable registerRetrievableController(Retrievable retrievable) {
         LOG.debug("Register RetrievableController: '{}'", retrievable.pattern());
         Actor.Driver<RetrievableController> controller = Actor.driver(
-                driver -> new RetrievableController(driver, "", retrievable, executorService, monitor, this), executorService);
+                driver -> new RetrievableController(driver, retrievable, executorService, monitor, this), executorService);
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return ResolverView.retrievable(controller, retrievable.retrieves());
@@ -239,7 +239,7 @@ public class Registry {
         LOG.debug("Register ConclusionController: '{}'", conclusion);
         Actor.Driver<ConclusionController> controller = ruleConclusions.computeIfAbsent(conclusion.rule(), r -> {
             Actor.Driver<ConclusionController> c = Actor.driver(
-                    driver -> new ConclusionController(driver, "", conclusion, executorService,
+                    driver -> new ConclusionController(driver, conclusion, executorService,
                                                        materialiserController, monitor, this), executorService);
             c.execute(ConclusionController::setUpUpstreamProviders);
             return c;
