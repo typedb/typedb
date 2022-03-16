@@ -367,7 +367,10 @@ public class StatisticsTest {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Alice';"));
                 txn.commit();
             }
-            System.out.println("ENDED BATCHES");
+            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                System.out.println("People: " + txn.graphMgr.data().stats().thingVertexTransitiveCount(Label.of("person")));
+                System.out.println("Name: " + txn.graphMgr.data().stats().thingVertexTransitiveCount(Label.of("name")));
+            }
         }
         databaseMgr.close();
         databaseMgr = CoreDatabaseManager.open(options);
