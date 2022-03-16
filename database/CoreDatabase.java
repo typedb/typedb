@@ -76,6 +76,7 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongs;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
@@ -480,17 +481,18 @@ public class CoreDatabase implements TypeDB.Database {
             commitStates.put(transaction, CommitState.UNCOMMITTED);
         }
 
-        Set<CoreTransaction.Data> validateConcurrentAndStartCommit(CoreTransaction.Data txn) {
+        Set<CoreTransaction.Data> validateOverlappingAndStartCommit(CoreTransaction.Data txn) {
             Set<CoreTransaction.Data> transactions;
             synchronized (this) {
-                transactions = mayCommitConcurrently(txn);
+                transactions = commitMayConflict(txn);
                 transactions.forEach(other -> validateIsolation(txn, other));
                 commitStates.put(txn, CommitState.COMMITTING);
             }
             return transactions;
         }
 
-        private Set<CoreTransaction.Data> mayCommitConcurrently(CoreTransaction.Data txn) {
+        private Set<CoreTransaction.Data> commitMayConflict(CoreTransaction.Data txn) {
+            if (!txn.dataStorage.hasTrackedWrite()) return set();
             return iterate(commitStates.entrySet())
                     .filter(e -> e.getValue() == CommitState.COMMITTING ||
                             (e.getValue() == CommitState.COMMITTED && e.getKey().snapshotEnd().get() > txn.snapshotStart()))
@@ -613,6 +615,7 @@ public class CoreDatabase implements TypeDB.Database {
                 for (CompletableFuture<Void> correction : corrections) {
                     correction.get(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
                 }
+                corrections.clear();
             } catch (InterruptedException | TimeoutException e) {
                 LOG.warn(STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT.message());
                 throw TypeDBException.of(e);
@@ -721,25 +724,25 @@ public class CoreDatabase implements TypeDB.Database {
             return iterate(txnIDs).noneMatch(openTxnIDs::contains);
         }
 
-        void recordCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
-            recordMiscounts(txn, concurrentTxn);
+        void recordCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> overlappingTxn) {
+            recordMiscounts(txn, overlappingTxn);
             txn.dataStorage.putUntracked(StatisticsKey.txnCommitted(txn.id));
         }
 
-        private void recordMiscounts(CoreTransaction.Data txn, Set<CoreTransaction.Data> concurrentTxn) {
+        private void recordMiscounts(CoreTransaction.Data txn, Set<CoreTransaction.Data> overlappingTxn) {
             Map<AttributeVertex<?>, List<Long>> attrOvercountDependencies = new HashMap<>();
             Map<AttributeVertex<?>, List<Long>> attrUndercountDependencies = new HashMap<>();
             Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> hasEdgeOvercountDependencies = new HashMap<>();
             Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> hasEdgeUndercountDependencies = new HashMap<>();
-            for (CoreTransaction.Data concurrent : concurrentTxn) {
-                buildAttrDependencies(attrOvercountDependencies, concurrent.id, txn.graphMgr.data().attributesCreated(),
-                        concurrent.graphMgr.data().attributesCreated());
-                buildAttrDependencies(attrUndercountDependencies, concurrent.id, txn.graphMgr.data().attributesDeleted(),
-                        concurrent.graphMgr.data().attributesDeleted());
-                buildHasEdgeDependencies(hasEdgeOvercountDependencies, concurrent.id, txn.graphMgr.data().hasEdgeCreated(),
-                        concurrent.graphMgr.data().hasEdgeCreated());
-                buildHasEdgeDependencies(hasEdgeUndercountDependencies, concurrent.id, txn.graphMgr.data().hasEdgeDeleted(),
-                        concurrent.graphMgr.data().hasEdgeDeleted());
+            for (CoreTransaction.Data overlapping : overlappingTxn) {
+                buildAttrDependencies(attrOvercountDependencies, overlapping.id, txn.graphMgr.data().attributesCreated(),
+                        overlapping.graphMgr.data().attributesCreated());
+                buildAttrDependencies(attrUndercountDependencies, overlapping.id, txn.graphMgr.data().attributesDeleted(),
+                        overlapping.graphMgr.data().attributesDeleted());
+                buildHasEdgeDependencies(hasEdgeOvercountDependencies, overlapping.id, txn.graphMgr.data().hasEdgeCreated(),
+                        overlapping.graphMgr.data().hasEdgeCreated());
+                buildHasEdgeDependencies(hasEdgeUndercountDependencies, overlapping.id, txn.graphMgr.data().hasEdgeDeleted(),
+                        overlapping.graphMgr.data().hasEdgeDeleted());
             }
 
             attrOvercountDependencies.forEach((attr, txs) -> txn.dataStorage.putUntracked(

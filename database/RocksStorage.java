@@ -504,15 +504,19 @@ public abstract class RocksStorage implements Storage {
             return Optional.ofNullable(snapshotEnd);
         }
 
-        public boolean modifyDeleteConflict(RocksStorage.Data otherStorage) {
+        boolean hasTrackedWrite() {
+            return !modifiedKeys.isEmpty() || !deletedKeys.isEmpty() || !exclusiveBytes.isEmpty();
+        }
+
+        boolean modifyDeleteConflict(RocksStorage.Data otherStorage) {
             return hasIntersection(modifiedKeys, otherStorage.deletedKeys);
         }
 
-        public boolean deleteModifyConflict(RocksStorage.Data otherStorage) {
+        boolean deleteModifyConflict(RocksStorage.Data otherStorage) {
             return hasIntersection(deletedKeys, otherStorage.modifiedKeys);
         }
 
-        public boolean exclusiveCreateConflict(RocksStorage.Data otherStorage) {
+        boolean exclusiveCreateConflict(RocksStorage.Data otherStorage) {
             return hasIntersection(exclusiveBytes, otherStorage.exclusiveBytes);
         }
     }

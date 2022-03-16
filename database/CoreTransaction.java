@@ -322,8 +322,8 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
 
-                    Set<CoreTransaction.Data> concurrent = session.database().isolationMgr().validateConcurrentAndStartCommit(this);
-                    session.database().statisticsCorrector().recordCorrectionMetadata(this, concurrent);
+                    Set<CoreTransaction.Data> overlapping = session.database().isolationMgr().validateOverlappingAndStartCommit(this);
+                    session.database().statisticsCorrector().recordCorrectionMetadata(this, overlapping);
                     dataStorage.commit();
                     session.database().isolationMgr().committed(this);
                     session.database().statisticsCorrector().committed(this);

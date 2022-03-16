@@ -655,6 +655,10 @@ public class ThingGraph {
             return types.mapToLong(this::thingVertexCount).max().orElse(0);
         }
 
+        public long thingVertexTransitiveCount(Label label) {
+            return thingVertexTransitiveCount(typeGraph.getType(label));
+        }
+
         public long thingVertexTransitiveCount(TypeVertex type) {
             return iterate(typeGraph.getSubtypes(type)).map(this::thingVertexCount).reduce(0L, Long::sum).orElse(0L);
         }

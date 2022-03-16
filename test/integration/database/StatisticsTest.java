@@ -357,7 +357,7 @@ public class StatisticsTest {
 
     @Test
     public void reboot_counts_correct() {
-        int batches = 1000;
+        int batches = 2000;
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             List<CoreTransaction> transactions = new ArrayList<>();
             for (int i = 0; i < batches; i++) transactions.add(session.transaction(Arguments.Transaction.Type.WRITE));
@@ -375,6 +375,7 @@ public class StatisticsTest {
                 assertEquals(batches, statistics.thingVertexCount(Label.of("person")));
                 assertEquals(batches, statistics.hasEdgeCount(Label.of("person"), Label.of("name")));
                 assertEquals(1, statistics.thingVertexCount(Label.of("name")));
+                assertEquals(batches + 1, statistics.thingVertexTransitiveCount(Label.of("thing")));
 
                 // we expect 1 txn ID to be committed from the background cleanup transaction
                 assertEquals(1, txn.graphMgr.data().storage().iterate(StatisticsKey.txnCommittedPrefix()).count());
