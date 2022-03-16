@@ -676,6 +676,7 @@ public class CoreDatabase implements TypeDB.Database {
                         txn.dataStorage.deleteUntracked(item);
                         modified[0] = true;
                     } else if (noneOpen(txnIDsCausingMiscount, openTxnIDs)) {
+                        System.out.println("REMOVING miscountable -- not required!!!");
                         txn.dataStorage.deleteUntracked(item);
                         modified[0] = true;
                     }
@@ -693,6 +694,7 @@ public class CoreDatabase implements TypeDB.Database {
 
         private void correctMiscount(StatisticsKey.Miscountable miscount, CoreTransaction.Data txn) {
             if (miscount.isAttrOvertcount()) {
+                System.out.println("DECREMENTING attr overcount");
                 VertexIID.Type type = miscount.getMiscountableAttribute().type();
                 txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(-1));
             } else if (miscount.isAttrUndercount()) {
