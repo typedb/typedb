@@ -357,7 +357,7 @@ public class StatisticsTest {
 
     @Test
     public void reboot_counts_correct() {
-        int batches = 300;
+        int batches = 500;
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             List<CoreTransaction> transactions = new ArrayList<>();
             System.out.println("STARTING BATCHES");
