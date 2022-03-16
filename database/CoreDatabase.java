@@ -80,9 +80,11 @@ import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongs;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INCOMPATIBLE_ENCODING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.ROCKS_LOGGER_SHUTDOWN_FAILED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.ROCKS_LOGGER_SHUTDOWN_TIMEOUT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ISOLATION_DELETE_MODIFY_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ISOLATION_EXCLUSIVE_CREATE_VIOLATION;
@@ -432,20 +434,16 @@ public class CoreDatabase implements TypeDB.Database {
         assert scheduledPropertiesLogger != null;
         try {
             scheduledPropertiesLogger.shutdown();
-            boolean terminated = scheduledPropertiesLogger.awaitTermination(5, SECONDS);
-            if (!terminated) throw TypeDBException.of(ROCKS_LOGGER_SHUTDOWN_FAILED);
+            boolean terminated = scheduledPropertiesLogger.awaitTermination(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
+            if (!terminated) throw TypeDBException.of(ROCKS_LOGGER_SHUTDOWN_TIMEOUT);
         } catch (InterruptedException e) {
             throw TypeDBException.of(e);
         }
     }
 
-    /**
-     * Responsible for committing the initial schema of a database.
-     * A different implementation of this class may override it.
-     */
     protected void closeResources() {
-        sessions.values().forEach(p -> p.first().close());
         statisticsCorrector.close();
+        sessions.values().forEach(p -> p.first().close());
         cacheClose();
         rocksDataPartitionMgr.close();
         rocksData.close();
@@ -559,37 +557,18 @@ public class CoreDatabase implements TypeDB.Database {
     class StatisticsCorrector {
 
         private final ConcurrentSet<Long> deletableTransactionIDs;
-        private final AtomicBoolean isOpen;
         private final AtomicBoolean correctionRequired;
         private final ConcurrentSet<CompletableFuture<Void>> corrections;
         private CoreSession.Data session;
 
         StatisticsCorrector() {
             deletableTransactionIDs = new ConcurrentSet<>();
-            isOpen = new AtomicBoolean(false);
             corrections = new ConcurrentSet<>();
             correctionRequired = new AtomicBoolean(false);
         }
 
-        void close() {
-            if (isOpen.compareAndSet(true, false)) {
-                session.close();
-                try {
-                    correctionRequired.set(false);
-                    for (CompletableFuture<Void> correction : corrections) {
-                        boolean cancelled = correction.cancel(false);
-                        if (cancelled) corrections.remove(correction);
-                        else correction.get(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
-                    }
-                } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    LOG.warn("Statistics corrector did not shut down in time.");
-                }
-            }
-        }
-
         void initialise() {
             session = createAndOpenSession(DATA, new Options.Session()).asData();
-            isOpen.set(true);
         }
 
         void initialiseAndCleanUp() {
@@ -625,6 +604,27 @@ public class CoreDatabase implements TypeDB.Database {
                         txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootRoleType())
                 );
                 LOG.debug("Total 'has' count: " + hasCount);
+            }
+        }
+
+        void close() {
+            try {
+                correctionRequired.set(false);
+                for (CompletableFuture<Void> correction : corrections) {
+                    correction.get(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
+                }
+            } catch (InterruptedException | TimeoutException e) {
+                LOG.warn(STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT.message());
+                throw TypeDBException.of(e);
+            } catch (ExecutionException e) {
+                if (!((e.getCause() instanceof TypeDBException) &&
+                        ((TypeDBException) e.getCause()).code().map(code ->
+                                code.equals(RESOURCE_CLOSED.code()) || code.equals(DATABASE_CLOSED.code())
+                        ).orElse(false))) {
+                    throw TypeDBException.of(e);
+                }
+            } finally {
+                session.close();
             }
         }
 

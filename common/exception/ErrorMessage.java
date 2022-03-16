@@ -168,8 +168,10 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Database(6, "Attempted to open a new session from the database '%s' that has been closed.");
         public static final Database DATABASE_NAME_RESERVED =
                 new Database(7, "Database name must not start with an underscore.");
-        public static final Database ROCKS_LOGGER_SHUTDOWN_FAILED =
-                new Database(8, "Could not shut down RocksDB properties logger thread.");
+        public static final Database ROCKS_LOGGER_SHUTDOWN_TIMEOUT =
+                new Database(8, "Background RocksDB properties logger shutdown timed out.");
+        public static final Database STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT =
+                new Database(9, "Background statistics corrector shutdowne timed out.");
 
         private static final String codePrefix = "DBS";
         private static final String messagePrefix = "Invalid Database Operation";
