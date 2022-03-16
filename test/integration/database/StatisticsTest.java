@@ -357,15 +357,17 @@ public class StatisticsTest {
 
     @Test
     public void reboot_counts_correct() {
-        int batches = 100;
+        int batches = 200;
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             List<CoreTransaction> transactions = new ArrayList<>();
+            System.out.println("STARTING BATCHES");
             for (int i = 0; i < batches; i++) transactions.add(session.transaction(Arguments.Transaction.Type.WRITE));
             for (int i = 0; i < batches; i++) {
                 CoreTransaction txn = transactions.get(i);
                 txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Alice';"));
                 txn.commit();
             }
+            System.out.println("ENDED BATCHES");
         }
         databaseMgr.close();
         databaseMgr = CoreDatabaseManager.open(options);

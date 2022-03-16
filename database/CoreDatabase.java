@@ -725,6 +725,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         void recordCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> overlappingTxn) {
+            System.out.println("RECORDING MISCOUNTS FOR ID: " + txn.id);
             recordMiscounts(txn, overlappingTxn);
             txn.dataStorage.putUntracked(StatisticsKey.txnCommitted(txn.id));
         }
@@ -745,9 +746,12 @@ public class CoreDatabase implements TypeDB.Database {
                         overlapping.graphMgr.data().hasEdgeDeleted());
             }
 
-            attrOvercountDependencies.forEach((attr, txs) -> txn.dataStorage.putUntracked(
-                    StatisticsKey.Miscountable.attrOvercount(txn.id, attr.iid()), encodeLongs(txs)
-            ));
+            attrOvercountDependencies.forEach((attr, txns) -> {
+                System.out.println("RECORDING DEPENDENCIES ATTROVERCOUNT: " + txns);
+                txn.dataStorage.putUntracked(
+                        StatisticsKey.Miscountable.attrOvercount(txn.id, attr.iid()), encodeLongs(txns)
+                );
+            });
             attrUndercountDependencies.forEach((attr, txs) -> txn.dataStorage.putUntracked(
                     StatisticsKey.Miscountable.attrUndercount(txn.id, attr.iid()), encodeLongs(txs)
             ));
