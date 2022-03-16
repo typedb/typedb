@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REVERSE_UNIFICATION_MISSING_CONCEPT;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Unifier {
 
@@ -295,7 +296,9 @@ public class Unifier {
             private boolean typesSatisfied(Variable id, Concept concept) {
                 if (types.containsKey(id)) {
                     assert concept.isType();
-                    return types.get(id).contains(concept.asType().getLabel());
+                    Set<Label> satisfyingTypes = new HashSet<>(types.get(id));
+                    satisfyingTypes.retainAll(iterate(concept.asType().getSupertypes()).map(Type::getLabel).toSet());
+                    return satisfyingTypes.size() > 0;
                 } else {
                     return true;
                 }
