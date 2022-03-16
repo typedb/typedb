@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveIdentifier;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.SingleReceiverPublisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
@@ -54,12 +55,14 @@ public abstract class Processor<INPUT, OUTPUT,
     private final Driver<CONTROLLER> controller;
     private final Map<Long, InletEndpoint<INPUT>> receivingEndpoints;
     private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
+    private final Driver<Monitor> monitor;
+    private final Map<Reactive.Identifier, Reactive> reactives;
     protected final Set<Connection<INPUT, ?, ?>> upstreamConnections;
     private Reactive.Stream<OUTPUT,OUTPUT> outlet;
     private long endpointId;
     private boolean terminated;
     protected boolean done;
-    private final Driver<Monitor> monitor;
+    private int reactiveCounter;
 
     protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, Driver<Monitor> monitor,
                         Supplier<String> debugName) {
@@ -71,6 +74,8 @@ public abstract class Processor<INPUT, OUTPUT,
         this.upstreamConnections = new HashSet<>();
         this.done = false;
         this.monitor = monitor;
+        this.reactives = new HashMap<>();
+        this.reactiveCounter = 0;
     }
 
     public abstract void setUp();
@@ -104,7 +109,7 @@ public abstract class Processor<INPUT, OUTPUT,
         assert !done;
         Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
         applyConnectionTransforms(connection.transformations(), outlet(), createProvidingEndpoint(connection));
-        monitor().execute(actor -> actor.registerPath(connection, outlet()));
+        monitor().execute(actor -> actor.registerPath(connection.identifier(), outlet().identifier()));
         if (isTerminated()) return;
         connectionBuilder.receivingProcessor().execute(actor -> actor.finaliseConnection(connection));
     }
@@ -161,7 +166,7 @@ public abstract class Processor<INPUT, OUTPUT,
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    protected void onFinished(Receiver.Finishable<?> finishable) {
+    protected void onFinished(Reactive.Identifier finishable) {
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
@@ -188,6 +193,13 @@ public abstract class Processor<INPUT, OUTPUT,
 
     public boolean isTerminated() {
         return terminated;
+    }
+
+    public Reactive.Identifier registerReactive(Reactive reactive) {
+        reactiveCounter += 1;
+        Reactive.Identifier identifier = new ReactiveIdentifier(driver(), reactive.getClass(), reactiveCounter);
+        reactives.put(identifier, reactive);
+        return identifier;
     }
 
     /**
@@ -245,6 +257,7 @@ public abstract class Processor<INPUT, OUTPUT,
      */
     public static class OutletEndpoint<PACKET> implements Subscriber<PACKET>, Provider<PACKET> {
 
+        private final Identifier reference;
         private final Processor<?, ?, ?, ?> processor;
         private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
         private final ReceiverRegistry.SingleReceiverRegistry<PACKET> receiverRegistry;
@@ -252,9 +265,15 @@ public abstract class Processor<INPUT, OUTPUT,
 
         public OutletEndpoint(Connection<PACKET, ?, ?> connection, Processor<?, ?, ?, ?> processor) {
             this.processor = processor;
+            this.reference = this.processor.registerReactive(this);
             this.id = connection.providerEndpointId();
             this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
             this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(this, connection);
+        }
+
+        @Override
+        public Identifier identifier() {
+            return reference;
         }
 
         private ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {

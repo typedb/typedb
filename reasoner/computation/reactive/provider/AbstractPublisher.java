@@ -32,10 +32,17 @@ import java.util.function.Supplier;
 
 public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Publisher<OUTPUT> {
 
+    private final Identifier identifier;
     private final Processor<?, ?, ?, ?> processor;
 
     protected AbstractPublisher(Processor<?, ?, ?, ?> processor) {
         this.processor = processor;
+        this.identifier = this.processor.registerReactive(this);
+    }
+
+    @Override
+    public Identifier identifier() {
+        return identifier;
     }
 
     protected abstract ReceiverRegistry<OUTPUT> receiverRegistry();

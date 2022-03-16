@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 
 public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Finishable<ConceptMap> {
 
+    private final Identifier identifier;
     private final UUID traceId = UUID.randomUUID();
     private final ReasonerConsumer reasonerConsumer;
     private boolean isPulling;
@@ -37,11 +38,17 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Fi
 
     public EntryPoint(Processor<ConceptMap, ?, ?, ?> processor, ReasonerConsumer reasonerConsumer) {
         super(processor);
+        this.identifier = processor.registerReactive(this);
         this.reasonerConsumer = reasonerConsumer;
         this.isPulling = false;
         reasonerConsumer.setRootProcessor(processor.driver());
-        processor().monitor().execute(actor -> actor.registerRoot(processor.driver(), this));
-        processor().monitor().execute(actor -> actor.forkFrontier(1, this));
+        processor().monitor().execute(actor -> actor.registerRoot(processor.driver(), identifier()));
+        processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
+    }
+
+    @Override
+    public Identifier identifier() {
+        return identifier;
     }
 
     public void pull() {
@@ -54,7 +61,7 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Fi
         super.receive(provider, packet);
         isPulling = false;
         reasonerConsumer.receiveAnswer(packet);
-        processor().monitor().execute(actor -> actor.consumeAnswer(this));
+        processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
     }
 
     @Override
@@ -83,6 +90,6 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Fi
     @Override
     public void onFinished() {
         reasonerConsumer.answersFinished();
-        processor().monitor().execute(actor -> actor.rootFinalised(this));
+        processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
     }
 }

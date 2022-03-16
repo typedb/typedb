@@ -64,14 +64,14 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         providerRegistry().recordReceive(provider);
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
-            processor().monitor().execute(actor -> actor.createAnswer(this));
+            processor().monitor().execute(actor -> actor.createAnswer(identifier()));
             Set<Receiver<PACKET>> toSend = receiverRegistry().pullingReceivers();
             receiverRegistry().setNotPulling();
             toSend.forEach(this::send);
         } else {
             if (receiverRegistry().isPulling()) providerRegistry().retry(provider);
         }
-        processor().monitor().execute(actor -> actor.consumeAnswer(this));
+        processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
     }
 
     @Override

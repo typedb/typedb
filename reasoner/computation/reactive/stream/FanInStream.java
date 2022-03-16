@@ -49,6 +49,6 @@ public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
     public void finaliseProviders() {
         assert processor().monitor() != null;
         final int numForks = providerRegistry().size() - 1;
-        if (numForks > 0) processor().monitor().execute(actor -> actor.forkFrontier(numForks, this));
+        if (numForks > 0) processor().monitor().execute(actor -> actor.forkFrontier(numForks, identifier()));
     }
 }

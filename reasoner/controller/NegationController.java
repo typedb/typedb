@@ -96,18 +96,18 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             requestConnection(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
             negation = new NegationReactive(this, bounds);
-            monitor().execute(actor -> actor.registerRoot(driver(), negation));
-            monitor().execute(actor -> actor.forkFrontier(1, negation));
+            monitor().execute(actor -> actor.registerRoot(driver(), negation.identifier()));
+            monitor().execute(actor -> actor.forkFrontier(1, negation.identifier()));
             endpoint.publishTo(negation);
             negation.publishTo(outlet());
         }
 
         @Override
-        protected void onFinished(Reactive.Receiver.Finishable<?> finishable) {
+        protected void onFinished(Reactive.Identifier finishable) {
             assert !done;
 //            done = true;
-            assert finishable == negation;
-            finishable.onFinished();
+            assert finishable == negation.identifier();
+            negation.onFinished();
         }
 
         private static class NegationReactive extends SingleReceiverStream<ConceptMap, ConceptMap> implements Reactive.Receiver.Finishable<ConceptMap> {
@@ -137,15 +137,15 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
                 super.receive(provider, packet);
                 answerFound = true;
-                processor().monitor().execute(actor -> actor.rootFinalised(this));
+                processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
             }
 
             @Override
             public void onFinished() {
                 assert !answerFound;
-                processor().monitor().execute(actor -> actor.createAnswer(this));
+                processor().monitor().execute(actor -> actor.createAnswer(identifier()));
                 receiverRegistry().receiver().receive(this, bounds);
-                processor().monitor().execute(actor -> actor.rootFinalised(this));
+                processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
             }
         }
 

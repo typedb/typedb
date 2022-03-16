@@ -80,7 +80,9 @@ public abstract class ProviderRegistry<R> {
         public void add(Reactive.Provider<R> provider) {
             assert provider != null;
             assert this.provider == null || provider == this.provider;  // TODO: Tighten this to allow adding only once
-            if (this.provider == null) processor.monitor().execute(actor -> actor.registerPath(receiver, provider));
+            if (this.provider == null) {
+                processor.monitor().execute(actor -> actor.registerPath(receiver.identifier(), provider.identifier()));
+            }
             this.provider = provider;
         }
 
@@ -127,7 +129,7 @@ public abstract class ProviderRegistry<R> {
         public void add(Reactive.Provider<R> provider) {
             assert provider != null;
             if (providerPullState.putIfAbsent(provider, false) == null) {
-                processor.monitor().execute(actor -> actor.registerPath(receiver, provider));
+                processor.monitor().execute(actor -> actor.registerPath(receiver.identifier(), provider.identifier()));
             }
         }
 

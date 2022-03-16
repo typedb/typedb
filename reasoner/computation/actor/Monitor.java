@@ -21,13 +21,11 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -42,28 +40,27 @@ public class Monitor extends Actor<Monitor> {
     private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
     private final Registry registry;
     private boolean terminated;
-    // TODO: Reactive elements from inside other actors shouldn't have been sent here over an actor boundary.
-    private final Map<Reactive, ReactiveNode> reactiveNodes;
+    private final Map<Reactive.Identifier, ReactiveNode> reactiveNodes;
 
     public Monitor(Driver<Monitor> driver, Registry registry) {
         super(driver, Monitor.class::getSimpleName); this.registry = registry;
         this.reactiveNodes = new HashMap<>();
     }
 
-    private ReactiveNode getNode(Reactive reactive) {
+    private ReactiveNode getNode(Reactive.Identifier reactive) {
         return reactiveNodes.get(reactive);
     }
 
-    private ReactiveNode getOrCreateNode(Reactive reactive) {
+    private ReactiveNode getOrCreateNode(Reactive.Identifier reactive) {
         return reactiveNodes.computeIfAbsent(reactive, p -> new ReactiveNode());
     }
 
-    private void putNode(Reactive reactive, ReactiveNode reactiveNode) {
+    private void putNode(Reactive.Identifier reactive, ReactiveNode reactiveNode) {
         ReactiveNode exists = reactiveNodes.put(reactive, reactiveNode);
         assert exists == null;
     }
 
-    public <R> void registerRoot(Driver<? extends Processor<R, ?, ?, ?>> processor, Reactive.Receiver.Finishable<R> root) {
+    public <R> void registerRoot(Driver<? extends Processor<R, ?, ?, ?>> processor, Reactive.Identifier root) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerRoot(root, driver()));
         if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the root, or a duplicate node will be created.
@@ -73,7 +70,7 @@ public class Monitor extends Actor<Monitor> {
         rootNode.setGraph(reactiveGraph);
     }
 
-    public <R> void rootFinalised(Reactive.Receiver.Finishable<R> root) {
+    public void rootFinalised(Reactive.Identifier root) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.rootFinalised(root, driver()));
         if (terminated) return;
         RootNode rootNode = getNode(root).asRoot();
@@ -81,7 +78,7 @@ public class Monitor extends Actor<Monitor> {
         rootNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
-    public <R> void registerSource(Reactive.Provider<R> source) {
+    public void registerSource(Reactive.Identifier source) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerSource(source, driver()));
         if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the source, or a duplicate node will be created.
@@ -90,7 +87,7 @@ public class Monitor extends Actor<Monitor> {
         putNode(source, sourceNode);
     }
 
-    public <R> void sourceFinished(Source<R> source) {
+    public void sourceFinished(Reactive.Identifier source) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.sourceFinished(source, driver()));
         if (terminated) return;
         ReactiveNode sourceNode = getNode(source);
@@ -98,7 +95,7 @@ public class Monitor extends Actor<Monitor> {
         sourceNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
-    public <R> void registerPath(Reactive.Receiver<R> receiver, Reactive.Provider<R> provider) {
+    public void registerPath(Reactive.Identifier receiver, Reactive.Identifier provider) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerPath(receiver, provider, driver()));
         if (terminated) return;
         ReactiveNode receiverNode = reactiveNodes.computeIfAbsent(receiver, n -> new ReactiveNode());
@@ -110,13 +107,13 @@ public class Monitor extends Actor<Monitor> {
         receiverNode.graphMemberships().forEach(ReactiveGraph::checkFinished);  // In case a root connects to an already complete graph it should terminate straight away  TODO: very inefficient
     }
 
-    public <R> void createAnswer(Reactive.Provider<R> provider) {
+    public void createAnswer(Reactive.Identifier provider) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.createAnswer(provider, driver()));
         if (terminated) return;
         getOrCreateNode(provider).createAnswer();
     }
 
-    public <R> void consumeAnswer(Reactive.Receiver<R> receiver) {
+    public void consumeAnswer(Reactive.Identifier receiver) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.consumeAnswer(receiver, driver()));
         if (terminated) return;
         ReactiveNode receiverNode = getOrCreateNode(receiver);
@@ -124,7 +121,7 @@ public class Monitor extends Actor<Monitor> {
         receiverNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
-    public void forkFrontier(int numForks, Reactive forker) {
+    public void forkFrontier(int numForks, Reactive.Identifier forker) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.forkFrontier(numForks, forker, driver()));
         if (terminated) return;
         getOrCreateNode(forker).forkFrontier(numForks);
@@ -242,8 +239,6 @@ public class Monitor extends Actor<Monitor> {
             frontiers += numForks;
         }
 
-        public void joinFrontier() {}
-
         public Set<ReactiveNode> providers() {
             return providers;
         }
@@ -330,15 +325,15 @@ public class Monitor extends Actor<Monitor> {
 
     private static class RootNode extends SourceNode {
 
-        private final Reactive.Receiver.Finishable<?> root;
+        private final Reactive.Identifier root;
         private ReactiveGraph reactiveGraph;
 
-        RootNode(Reactive.Receiver.Finishable<?> root) {
+        RootNode(Reactive.Identifier root) {
             super();
             this.root = root;
         }
 
-        public Reactive.Receiver.Finishable<?> root() {
+        public Reactive.Identifier root() {
             return root;
         }
 

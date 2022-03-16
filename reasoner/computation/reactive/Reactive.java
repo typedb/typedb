@@ -19,13 +19,18 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public interface Reactive {
 
     Supplier<String> tracingGroupName();
+
+    Identifier identifier();
 
     interface Provider<R> extends Reactive {
 
@@ -68,6 +73,12 @@ public interface Reactive {
     }
 
     interface Stream<INPUT, OUTPUT> extends Receiver.Subscriber<INPUT>, Provider.Publisher<OUTPUT> {
+
+    }
+
+    interface Identifier {
+
+        String toString();
 
     }
 

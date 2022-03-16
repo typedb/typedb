@@ -23,11 +23,13 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>, PROV_PROCESSOR extends Processor<?, PACKET, ?, PROV_PROCESSOR>> implements Reactive.Provider<PACKET>, Reactive.Receiver<PACKET> {
 
+    private final Identifier identifier;
     private final Actor.Driver<PROCESSOR> recProcessor;
     private final Actor.Driver<PROV_PROCESSOR> provProcessor;
     private final long recEndpointId;
@@ -40,6 +42,7 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
      */
     Connection(Actor.Driver<PROCESSOR> recProcessor, Actor.Driver<PROV_PROCESSOR> provProcessor, long recEndpointId,
                long provEndpointId, List<Function<PACKET, PACKET>> transforms) {
+        this.identifier = new Identifier(recProcessor, provProcessor, recEndpointId, provEndpointId);
         this.recProcessor = recProcessor;
         this.provProcessor = provProcessor;
         this.recEndpointId = recEndpointId;
@@ -51,6 +54,11 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
     @Override
     public Supplier<String> tracingGroupName() {
         return tracingGroupName;
+    }
+
+    @Override
+    public Connection.Identifier identifier() {
+        return identifier;
     }
 
     @Override
@@ -74,5 +82,46 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
 
     public List<Function<PACKET, PACKET>> transformations() {
         return transforms;
+    }
+
+    public static class Identifier implements Reactive.Identifier {
+
+        private final Actor.Driver<? extends Processor<?, ?, ?, ?>> recProcessor;
+        private final Actor.Driver<? extends Processor<?, ?, ?, ?>> provProcessor;
+        private final long recEndpointId;
+        private final long provEndpointId;
+
+        public Identifier(Actor.Driver<? extends Processor<?, ?, ?, ?>> recProcessor,
+                          Actor.Driver<? extends Processor<?, ?, ?, ?>> provProcessor, long recEndpointId,
+                          long provEndpointId) {
+            super();
+
+            this.recProcessor = recProcessor;
+            this.provProcessor = provProcessor;
+            this.recEndpointId = recEndpointId;
+            this.provEndpointId = provEndpointId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Identifier that = (Identifier) o;
+            return recEndpointId == that.recEndpointId &&
+                    provEndpointId == that.provEndpointId &&
+                    recProcessor.equals(that.recProcessor) &&
+                    provProcessor.equals(that.provProcessor);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(recProcessor, provProcessor, recEndpointId, provEndpointId);
+        }
+
+        @Override
+        public String toString() {
+            return recProcessor.debugName().get() + ":" + recEndpointId + "<->" + provProcessor.debugName().get() +
+                    ":" + provEndpointId;
+        }
     }
 }
