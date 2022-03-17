@@ -657,11 +657,12 @@ public class CoreDatabase implements TypeDB.Database {
          * and correct them if we have enough information to do so.
          */
         private void correctMiscounts() {
+            // note: take copy before open a snapshotted transaction
+            Set<Long> deletableTxnIDs = new HashSet<>(deletePendingDependencies);
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
                 boolean[] modified = new boolean[]{false};
                 boolean[] miscountCorrected = new boolean[]{false};
                 Set<Long> openTxnIDs = isolationMgr.getNotCommitted().map(t -> t.id).toSet();
-                Set<Long> deletableTxnIDs = new HashSet<>(deletePendingDependencies);
                 txn.dataStorage.iterate(StatisticsKey.Miscountable.prefix()).forEachRemaining(kv -> {
                     StatisticsKey.Miscountable item = kv.key();
                     List<Long> txnIDsCausingMiscount = kv.value().decodeLongs();
