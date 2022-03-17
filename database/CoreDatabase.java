@@ -685,9 +685,9 @@ public class CoreDatabase implements TypeDB.Database {
                 });
                 if (modified[0]) {
                     if (miscountCorrected[0]) txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
+                    System.out.println("Deleting IDs: " + deletableTransactionIDs);
                     for (Long txnID : deletableTransactionIDs) {
                         txn.dataStorage.deleteUntracked(StatisticsKey.txnCommitted(txnID));
-                        System.out.println("Deleting ID: " + txnID);
                     }
                     deletableTransactionIDs.clear();
                     txn.commit();
