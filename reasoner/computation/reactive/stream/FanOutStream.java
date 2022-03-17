@@ -80,8 +80,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         bufferPositions.putIfAbsent(receiver, 0);
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
-            assert receiverRegistry().isPulling();
-            providerRegistry().pullAll();
+            if (receiverRegistry().isPulling()) providerRegistry().pullAll();
         } else {
             send(receiver);
         }

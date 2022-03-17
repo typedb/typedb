@@ -47,7 +47,6 @@ public class DeduplicationStream<PACKET> extends SingleReceiverStream<PACKET, PA
             receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
         } else {
-            assert receiverRegistry().isPulling();
             if (receiverRegistry().isPulling()) providerRegistry().retry(provider);
             processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
         }
