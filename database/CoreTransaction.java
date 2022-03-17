@@ -361,6 +361,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         public void delete() {
             assert !isOpen.get();
             graphMgr.data().clear();
+            dataStorage.delete();
             session.database().statisticsCorrector().deleted(this);
         }
 

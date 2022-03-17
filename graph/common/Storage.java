@@ -82,8 +82,6 @@ public interface Storage {
 
     interface Data extends Storage {
 
-        void clear();
-
         KeyGenerator.Data dataKeyGenerator();
 
         void putTracked(Key key);

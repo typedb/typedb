@@ -708,13 +708,13 @@ public class CoreDatabase implements TypeDB.Database {
                 VertexIID.Type type = miscount.getMiscountableAttribute().type();
                 txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(1));
             } else if (miscount.isHasEdgeOvercount()) {
-                Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = miscount.getMiscountableHas();
+                Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = miscount.getMiscountableHasEdge();
                 txn.dataStorage.mergeUntracked(
                         StatisticsKey.hasEdgeCount(has.first().type(), has.second().type()),
                         encodeLong(-1)
                 );
             } else if (miscount.isHasEdgeUndercount()) {
-                Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = miscount.getMiscountableHas();
+                Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = miscount.getMiscountableHasEdge();
                 txn.dataStorage.mergeUntracked(
                         StatisticsKey.hasEdgeCount(has.first().type(), has.second().type()),
                         encodeLong(1)

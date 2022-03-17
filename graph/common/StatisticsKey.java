@@ -155,7 +155,7 @@ public class StatisticsKey implements Storage.Key {
             );
         }
 
-        public Pair<VertexIID.Thing, VertexIID.Attribute<?>> getMiscountableHas() {
+        public Pair<VertexIID.Thing, VertexIID.Attribute<?>> getMiscountableHasEdge() {
             assert isHasEdgeOvercount() || isHasEdgeUndercount();
             VertexIID.Thing owner = VertexIID.Thing.extract(
                     this.bytes(),

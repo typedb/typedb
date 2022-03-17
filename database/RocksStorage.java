@@ -475,7 +475,16 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public void clear() {
+        public void rollback() throws RocksDBException {
+            super.rollback();
+            clear();
+        }
+
+        void delete() {
+            clear();
+        }
+
+        private void clear() {
             modifiedKeys.clear();
             deletedKeys.clear();
             exclusiveBytes.clear();
