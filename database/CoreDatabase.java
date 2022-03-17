@@ -575,7 +575,7 @@ public class CoreDatabase implements TypeDB.Database {
 
         void initialiseAndCleanUp() {
             initialise();
-            LOG.debug("Cleaning up statistics.");
+            LOG.debug("Cleaning up statistics metadata.");
             correctMiscounts();
             deleteCorrectionMetadata();
             LOG.debug("Statistics are ready and up to date.");
@@ -633,12 +633,18 @@ public class CoreDatabase implements TypeDB.Database {
 
         void committed(CoreTransaction.Data transaction) {
             if (mayMiscount(transaction) && correctionRequired.compareAndSet(false, true)) {
-                CompletableFuture<Void> correction = CompletableFuture.runAsync(() -> {
-                    if (correctionRequired.compareAndSet(true, false)) this.correctMiscounts();
-                }, serial());
-                correction.thenRun(() -> corrections.remove(correction));
-                corrections.add(correction);
+                submitCorrection();
+
             }
+        }
+
+        CompletableFuture<Void> submitCorrection() {
+            CompletableFuture<Void> correction = CompletableFuture.runAsync(() -> {
+                if (correctionRequired.compareAndSet(true, false)) this.correctMiscounts();
+            }, serial());
+            correction.thenRun(() -> corrections.remove(correction));
+            corrections.add(correction);
+            return correction;
         }
 
         private boolean mayMiscount(CoreTransaction.Data transaction) {
@@ -673,7 +679,6 @@ public class CoreDatabase implements TypeDB.Database {
                         txn.dataStorage.deleteUntracked(item);
                         modified[0] = true;
                     } else if (noneOpen(txnIDsCausingMiscount, openTxnIDs)) {
-                        System.out.println("REMOVING miscountable -- not required, sourced txn: " + item.getTxn());
                         txn.dataStorage.deleteUntracked(item);
                         modified[0] = true;
                     } else {
@@ -681,7 +686,6 @@ public class CoreDatabase implements TypeDB.Database {
                     }
                 });
                 if (!deletableTxnIDs.isEmpty()) {
-                    System.out.println("Deleting IDs: " + deletableTxnIDs);
                     for (Long txnID : deletableTxnIDs) {
                         txn.dataStorage.deleteUntracked(StatisticsKey.txnCommitted(txnID));
                     }
@@ -697,7 +701,6 @@ public class CoreDatabase implements TypeDB.Database {
 
         private void correctMiscount(StatisticsKey.Miscountable miscount, CoreTransaction.Data txn) {
             if (miscount.isAttrOvertcount()) {
-                System.out.println("DECREMENTING attr overcount, attr from txn: " + miscount.getTxn());
                 VertexIID.Type type = miscount.getMiscountableAttribute().type();
                 txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(-1));
             } else if (miscount.isAttrUndercount()) {
@@ -750,12 +753,9 @@ public class CoreDatabase implements TypeDB.Database {
                         overlapping.graphMgr.data().hasEdgeDeleted());
             }
 
-            attrOvercountDependencies.forEach((attr, txns) -> {
-                System.out.println("RECORDING DEPENDENCIES ATTROVERCOUNT (txn id: " + txn.id + "): " + txns);
-                txn.dataStorage.putUntracked(
-                        StatisticsKey.Miscountable.attrOvercount(txn.id, attr.iid()), encodeLongs(txns)
-                );
-            });
+            attrOvercountDependencies.forEach((attr, txns) -> txn.dataStorage.putUntracked(
+                    StatisticsKey.Miscountable.attrOvercount(txn.id, attr.iid()), encodeLongs(txns)
+            ));
             attrUndercountDependencies.forEach((attr, txs) -> txn.dataStorage.putUntracked(
                     StatisticsKey.Miscountable.attrUndercount(txn.id, attr.iid()), encodeLongs(txs)
             ));
