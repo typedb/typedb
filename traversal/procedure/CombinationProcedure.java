@@ -74,11 +74,11 @@ public class CombinationProcedure {
     }
 
     public Set<ProcedureEdge<?, ?>> forwardEdges(ProcedureVertex.Type vertex) {
-        return forwardEdges.getOrDefault(vertex, new HashSet<>());
+        return forwardEdges.computeIfAbsent(vertex, (v) -> new HashSet<>());
     }
 
     public Set<ProcedureEdge<?, ?>> reverseEdges(ProcedureVertex.Type vertex) {
-        return reverseEdges.getOrDefault(vertex, new HashSet<>());
+        return reverseEdges.computeIfAbsent(vertex, (v) -> new HashSet<>());
     }
 
     private void registerBFS(StructureVertex.Type start) {

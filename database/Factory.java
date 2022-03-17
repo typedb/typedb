@@ -49,7 +49,7 @@ public interface Factory {
 
     interface TransactionData {
 
-        CoreTransaction.Data transaction(CoreSession.Data session, Arguments.Transaction.Type type,
+        CoreTransaction.Data transaction(long id, CoreSession.Data session, Arguments.Transaction.Type type,
                                          Options.Transaction options);
     }
 

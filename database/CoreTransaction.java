@@ -37,8 +37,6 @@ import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typedb.core.traversal.TraversalCache;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.rocksdb.RocksDBException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.Set;
@@ -52,8 +50,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 
 public abstract class CoreTransaction implements TypeDB.Transaction {
-
-    private static final Logger LOG = LoggerFactory.getLogger(CoreTransaction.class);
 
     protected final CoreSession session;
     protected final Context.Transaction context;
@@ -271,15 +267,15 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         private final CoreDatabase.Cache cache;
         final long id;
 
-        public Data(CoreSession.Data session, Arguments.Transaction.Type type,
+        public Data(long id, CoreSession.Data session, Arguments.Transaction.Type type,
                     Options.Transaction options, Factory.Storage storageFactory) {
             super(session, type, options);
 
-            id = session.database().nextTransactionID();
-            cache = session.database().cacheBorrow();
-            dataStorage = storageFactory.storageData(session.database(), this);
+            this.id = id;
+            this.cache = session.database().cacheBorrow();
+            this.dataStorage = storageFactory.storageData(session.database(), this);
             ThingGraph thingGraph = new ThingGraph(dataStorage, cache.typeGraph());
-            graphMgr = new GraphManager(cache.typeGraph(), thingGraph);
+            this.graphMgr = new GraphManager(cache.typeGraph(), thingGraph);
 
             if (type().isWrite()) session.database().isolationMgr().opened(this);
             initialise(graphMgr, cache.traversal(), cache.logic());
