@@ -168,8 +168,10 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Database(6, "Attempted to open a new session from the database '%s' that has been closed.");
         public static final Database DATABASE_NAME_RESERVED =
                 new Database(7, "Database name must not start with an underscore.");
-        public static final Database ROCKS_LOGGER_SHUTDOWN_FAILED =
-                new Database(8, "Could not shut down RocksDB properties logger thread.");
+        public static final Database ROCKS_LOGGER_SHUTDOWN_TIMEOUT =
+                new Database(8, "Background RocksDB properties logger shutdown timed out.");
+        public static final Database STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT =
+                new Database(9, "Background statistics corrector shutdowne timed out.");
 
         private static final String codePrefix = "DBS";
         private static final String messagePrefix = "Invalid Database Operation";
@@ -214,11 +216,11 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Transaction(7, "Attempted schema writes when transaction type does not allow.");
         public static final Transaction TRANSACTION_DATA_READ_VIOLATION =
                 new Transaction(8, "Attempted data writes when transaction type does not allow.");
-        public static final Transaction TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION =
+        public static final Transaction TRANSACTION_ISOLATION_MODIFY_DELETE_VIOLATION =
                 new Transaction(9, "The transaction modifies a key that is deleted in a concurrent transaction.");
-        public static final Transaction TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION =
+        public static final Transaction TRANSACTION_ISOLATION_DELETE_MODIFY_VIOLATION =
                 new Transaction(10, "The transaction deletes a key that is modified in concurrent transaction.");
-        public static final Transaction TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION =
+        public static final Transaction TRANSACTION_ISOLATION_EXCLUSIVE_CREATE_VIOLATION =
                 new Transaction(11, "The transaction fails to create a key that is created exclusively in a concurrent transaction.");
         public static final Transaction SESSION_DATA_VIOLATION =
                 new Transaction(12, "Attempted schema writes when session type does not allow.");

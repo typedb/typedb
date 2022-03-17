@@ -42,7 +42,7 @@ public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER exten
     State state;
     U last;
 
-    enum State {INIT, NOT_READY, FETCHED, COMPLETED}
+    private enum State {INIT, NOT_READY, FETCHED, COMPLETED}
 
     public MergeMappedIterator(FunctionalIterator<T> iterator, Function<T, ITER> mappingFn, ORDER order) {
         super(order);
@@ -186,6 +186,11 @@ public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER exten
         @Override
         public final SortedIterator.Forwardable<U, ORDER> merge(SortedIterator.Forwardable<U, ORDER> iterator) {
             return SortedIterators.Forwardable.merge(this, iterator);
+        }
+
+        @Override
+        public SortedIterator.Forwardable<U, ORDER> intersect(SortedIterator.Forwardable<U, ORDER> iterator) {
+            return SortedIterators.Forwardable.intersect(this, iterator);
         }
 
         @Override

@@ -76,7 +76,7 @@ public abstract class CoreSession implements TypeDB.Session {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(CoreSession.Data.class));
     }
 
-    abstract void remove(CoreTransaction transaction);
+    abstract void closed(CoreTransaction transaction);
 
     @Override
     public Arguments.Session.Type type() {
@@ -108,7 +108,7 @@ public abstract class CoreSession implements TypeDB.Session {
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
             transactions.keySet().parallelStream().forEach(CoreTransaction::close);
-            database().remove(this);
+            database().closed(this);
         }
     }
 
@@ -171,7 +171,7 @@ public abstract class CoreSession implements TypeDB.Session {
         }
 
         @Override
-        void remove(CoreTransaction transaction) {
+        void closed(CoreTransaction transaction) {
             transactions.remove(transaction);
             if (transaction.type().isWrite()) writeLock.unlock();
         }
@@ -220,7 +220,7 @@ public abstract class CoreSession implements TypeDB.Session {
         }
 
         @Override
-        void remove(CoreTransaction transaction) {
+        void closed(CoreTransaction transaction) {
             long lock = transactions.remove(transaction);
             if (transaction.type().isWrite()) {
                 assert lock != 0;

@@ -21,8 +21,8 @@ package com.vaticle.typedb.core.graph.adjacency.impl;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.graph.adjacency.TypeAdjacency;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
@@ -30,8 +30,8 @@ import com.vaticle.typedb.core.graph.edge.impl.TypeEdgeImpl;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.iterateSorted;
 
 public abstract class TypeEdgeIterator {
 

@@ -41,18 +41,16 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.NotThreadSafe;
 import java.util.Arrays;
-import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentNavigableMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 
+import static com.vaticle.typedb.common.collection.Collections.hasIntersection;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
@@ -184,8 +182,11 @@ public abstract class RocksStorage implements Storage {
             deleteCloseSchemaWriteLock.writeLock().lock();
             if (isOpen.compareAndSet(true, false)) {
                 iterators.parallelStream().forEach(RocksIterator::close);
+                iterators.clear();
                 recycledWithPrefixBloom.values().forEach(iters -> iters.forEach(AbstractImmutableNativeReference::close));
+                recycledWithPrefixBloom.clear();
                 recycled.values().forEach(iters -> iters.forEach(AbstractImmutableNativeReference::close));
+                recycled.clear();
                 rocksTransaction.close();
                 snapshot.close();
                 transactionOptions.close();
@@ -328,9 +329,6 @@ public abstract class RocksStorage implements Storage {
         }
 
         public void commit() throws RocksDBException {
-            // guarantee at least 1 write per tx
-            rocksTransaction.putUntracked(partitionMgr.get(Partition.DEFAULT), TRANSACTION_DUMMY_WRITE.bytes().getBytes(),
-                    ByteArray.empty().getBytes());
             // We disable RocksDB indexing of uncommitted writes, as we're only about to write and never again reading
             // TODO: We should benchmark this
             rocksTransaction.disableIndexing();
@@ -381,22 +379,23 @@ public abstract class RocksStorage implements Storage {
         private final CoreDatabase database;
         private final KeyGenerator.Data dataKeyGenerator;
 
-        private final ConcurrentNavigableMap<ByteArray, Boolean> modifiedKeys;
+        private final ConcurrentSkipListSet<ByteArray> modifiedKeys;
         private final ConcurrentSkipListSet<ByteArray> deletedKeys;
         private final ConcurrentSkipListSet<ByteArray> exclusiveBytes; // these are not real keys, just reserved bytes
         private final long snapshotStart;
         private volatile Long snapshotEnd;
+        private boolean hasWrite;
 
         public Data(CoreDatabase database, CoreTransaction transaction) {
             super(database.rocksData, database.rocksDataPartitionMgr, transaction);
             this.database = database;
             this.dataKeyGenerator = database.dataKeyGenerator();
             this.snapshotStart = snapshot.getSequenceNumber();
-            this.modifiedKeys = new ConcurrentSkipListMap<>();
+            this.modifiedKeys = new ConcurrentSkipListSet<>();
             this.deletedKeys = new ConcurrentSkipListSet<>();
             this.exclusiveBytes = new ConcurrentSkipListSet<>();
             this.snapshotEnd = null;
-            if (transaction.type().isWrite()) this.database.consistencyMgr().register(this);
+            this.hasWrite = false;
         }
 
         @Override
@@ -411,13 +410,8 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void putTracked(Key key, ByteArray value) {
-            putTracked(key, value, true);
-        }
-
-        @Override
-        public void putTracked(Key key, ByteArray value, boolean checkConsistency) {
             putUntracked(key, value);
-            trackModified(key.bytes(), checkConsistency);
+            trackModified(key.bytes());
         }
 
         @Override
@@ -437,6 +431,7 @@ public abstract class RocksStorage implements Storage {
             } finally {
                 deleteCloseSchemaWriteLock.readLock().unlock();
             }
+            hasWrite = true;
         }
 
         @Override
@@ -447,14 +442,15 @@ public abstract class RocksStorage implements Storage {
         }
 
         @Override
-        public void trackModified(ByteArray key) {
-            trackModified(key, true);
+        public void deleteUntracked(Key key) {
+            super.deleteUntracked(key);
+            hasWrite = true;
         }
 
         @Override
-        public void trackModified(ByteArray key, boolean checkConsistency) {
+        public void trackModified(ByteArray key) {
             assert isOpen();
-            this.modifiedKeys.put(key, checkConsistency);
+            this.modifiedKeys.add(key);
             this.deletedKeys.remove(key);
         }
 
@@ -466,16 +462,32 @@ public abstract class RocksStorage implements Storage {
 
         @Override
         public void commit() throws RocksDBException {
-            database.consistencyMgr().tryCommitOptimistically(this);
+            if (!hasWrite) {
+                // guarantee at least 1 write per tx to ensure we get a snapshotEnd greater than the snapshotStart
+                rocksTransaction.putUntracked(
+                        partitionMgr.get(Partition.DEFAULT),
+                        TRANSACTION_DUMMY_WRITE.bytes().getBytes(),
+                        ByteArray.empty().getBytes()
+                );
+            }
             super.commit();
             snapshotEnd = database.rocksData.getLatestSequenceNumber();
-            database.consistencyMgr().commitCompletely(this);
         }
 
         @Override
-        public void close() {
-            super.close();
-            if (transaction.type().isWrite()) database.consistencyMgr().closed(this);
+        public void rollback() throws RocksDBException {
+            super.rollback();
+            clear();
+        }
+
+        void delete() {
+            clear();
+        }
+
+        private void clear() {
+            modifiedKeys.clear();
+            deletedKeys.clear();
+            exclusiveBytes.clear();
         }
 
         @Override
@@ -490,30 +502,31 @@ public abstract class RocksStorage implements Storage {
             } finally {
                 deleteCloseSchemaWriteLock.readLock().unlock();
             }
+            hasWrite = true;
         }
 
-        public long snapshotStart() {
+        long snapshotStart() {
             return snapshotStart;
         }
 
-        public Optional<Long> snapshotEnd() {
+        Optional<Long> snapshotEnd() {
             return Optional.ofNullable(snapshotEnd);
         }
 
-        public NavigableSet<ByteArray> deletedKeys() {
-            return deletedKeys;
+        boolean hasTrackedWrite() {
+            return !modifiedKeys.isEmpty() || !deletedKeys.isEmpty() || !exclusiveBytes.isEmpty();
         }
 
-        public NavigableSet<ByteArray> modifiedKeys() {
-            return modifiedKeys.keySet();
+        boolean modifyDeleteConflict(RocksStorage.Data otherStorage) {
+            return hasIntersection(modifiedKeys, otherStorage.deletedKeys);
         }
 
-        public boolean isModifiedValidatedKey(ByteArray key) {
-            return modifiedKeys.getOrDefault(key, false);
+        boolean deleteModifyConflict(RocksStorage.Data otherStorage) {
+            return hasIntersection(deletedKeys, otherStorage.modifiedKeys);
         }
 
-        public NavigableSet<ByteArray> exclusiveBytes() {
-            return exclusiveBytes;
+        boolean exclusiveCreateConflict(RocksStorage.Data otherStorage) {
+            return hasIntersection(exclusiveBytes, otherStorage.exclusiveBytes);
         }
     }
 }

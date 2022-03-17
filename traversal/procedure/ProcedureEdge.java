@@ -172,6 +172,19 @@ public abstract class ProcedureEdge<
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ProcedureEdge<?, ?> that = (ProcedureEdge<?, ?>) o;
+        return order == that.order && direction == that.direction;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(order, direction);
+    }
+
+    @Override
     public String toString() {
         if (direction.isForward()) {
             return String.format("%s: (%s *--[%s]--> %s)", order, from.id(), symbol, to.id());

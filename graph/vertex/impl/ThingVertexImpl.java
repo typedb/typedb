@@ -240,7 +240,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        public AttributeVertex.Write<?> asAttribute() {
+        public AttributeVertexImpl.Write<?> asAttribute() {
             throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.Write.class));
         }
 

@@ -52,14 +52,14 @@ public class Encoding {
 
     public static final String ROCKS_DATA = "data";
     public static final String ROCKS_SCHEMA = "schema";
-    public static final int ENCODING_VERSION = 1;
+    public static final int ENCODING_VERSION = 2;
 
     public enum Partition {
         DEFAULT((short) 0, null),
         VARIABLE_START_EDGE((short) 1, ByteArray.encodeString("VARIABLE_START_EDGE", STRING_ENCODING)),
         FIXED_START_EDGE((short) 2, ByteArray.encodeString("FIXED_START_EDGE", STRING_ENCODING)),
         OPTIMISATION_EDGE((short) 3, ByteArray.encodeString("OPTIMISATION_EDGE", STRING_ENCODING)),
-        STATISTICS((short) 4, ByteArray.encodeString("STATISTICS", STRING_ENCODING));
+        METADATA((short) 4, ByteArray.encodeString("METADATA", STRING_ENCODING));
 
         private final short ID;
         // TODO: Remove partition name (See issue #6526)
@@ -103,8 +103,7 @@ public class Encoding {
     public enum Status {
         BUFFERED(0),
         COMMITTED(1),
-        PERSISTED(2),
-        IMMUTABLE(3);
+        PERSISTED(2);
 
         private final int status;
 
@@ -118,25 +117,6 @@ public class Encoding {
     }
 
     public interface Direction {
-
-        enum Adjacency implements Direction {
-            OUT(true),
-            IN(false);
-
-            private final boolean isOut;
-
-            Adjacency(boolean isOut) {
-                this.isOut = isOut;
-            }
-
-            public boolean isOut() {
-                return isOut;
-            }
-
-            public boolean isIn() {
-                return !isOut;
-            }
-        }
 
         enum Edge implements Direction {
             FORWARD(true),
@@ -161,7 +141,7 @@ public class Encoding {
     public enum PrefixType {
         SYSTEM,
         INDEX,
-        STATISTICS,
+        METADATA,
         TYPE,
         THING,
         RULE;
@@ -178,10 +158,7 @@ public class Encoding {
         // leave large open range for future indices
         INDEX_TYPE(20, PrefixType.INDEX),
         INDEX_RULE(21, PrefixType.INDEX),
-        STATISTICS_THINGS(60, PrefixType.STATISTICS),
-        STATISTICS_COUNT_JOB(61, PrefixType.STATISTICS),
-        STATISTICS_COUNTED(62, PrefixType.STATISTICS),
-        STATISTICS_SNAPSHOT(63, PrefixType.STATISTICS),
+        METADATA_STATISTICS(60, PrefixType.METADATA),
         VERTEX_THING_TYPE(100, PrefixType.TYPE),
         VERTEX_ENTITY_TYPE(110, PrefixType.TYPE),
         VERTEX_ATTRIBUTE_TYPE(111, PrefixType.TYPE),
@@ -197,10 +174,7 @@ public class Encoding {
                 pair(SYSTEM.key, SYSTEM),
                 pair(INDEX_TYPE.key, INDEX_TYPE),
                 pair(INDEX_RULE.key, INDEX_RULE),
-                pair(STATISTICS_THINGS.key, STATISTICS_THINGS),
-                pair(STATISTICS_COUNT_JOB.key, STATISTICS_COUNT_JOB),
-                pair(STATISTICS_COUNTED.key, STATISTICS_COUNTED),
-                pair(STATISTICS_SNAPSHOT.key, STATISTICS_SNAPSHOT),
+                pair(METADATA_STATISTICS.key, METADATA_STATISTICS),
                 pair(VERTEX_THING_TYPE.key, VERTEX_THING_TYPE),
                 pair(VERTEX_ENTITY_TYPE.key, VERTEX_ENTITY_TYPE),
                 pair(VERTEX_ATTRIBUTE_TYPE.key, VERTEX_ATTRIBUTE_TYPE),
@@ -218,7 +192,7 @@ public class Encoding {
         private final ByteArray bytes;
 
         Prefix(int key, PrefixType type) {
-            assert key < 200 : "The encoding range >= 200 is reserved for TypeDB Cluster.";
+            assert key < 180 : "The encoding range >= 180 is reserved for TypeDB Cluster.";
             this.key = unsignedByte(key);
             this.type = type;
             this.bytes = ByteArray.of(new byte[]{this.key});
@@ -246,8 +220,8 @@ public class Encoding {
             return type.equals(PrefixType.INDEX);
         }
 
-        public boolean isStatistics() {
-            return type.equals(PrefixType.STATISTICS);
+        public boolean isMetadata() {
+            return type.equals(PrefixType.METADATA);
         }
 
         public boolean isType() {
@@ -273,6 +247,9 @@ public class Encoding {
      * two objects in the database, and must not overlap with each other.
      *
      * The size of a prefix is 1 signed byte; i.e. min-value = -128 and max-value = 127.
+     *
+     * TODO: these should be scoped to be within a section of the encoding.
+     * For example, Edge and Property should have their own Infixes.
      */
     public enum Infix {
         PROPERTY_LABEL(0),
@@ -935,97 +912,57 @@ public class Encoding {
         }
     }
 
-    public interface Statistics {
+    public interface Metadata {
 
-        /**
-         * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
-         */
-        enum JobType {
-            ATTRIBUTE_VERTEX(0),
-            HAS_EDGE(1);
+        interface Statistics {
 
-            private final byte key;
-            private final ByteArray bytes;
+            enum Prefix {
 
-            JobType(int key) {
-                this.key = unsignedByte(key);
-                this.bytes = ByteArray.of(new byte[]{this.key});
-            }
+                SNAPSHOT(0),
+                VERTEX_COUNT(10),
+                HAS_EDGE_COUNT(20),
+                MISCOUNTABLE(50),
+                TXN_COMMITTED_ID(60);
 
-            public static JobType of(ByteArray key) {
-                if (key.length() == 1) {
-                    if (key.get(0) == ATTRIBUTE_VERTEX.key) return ATTRIBUTE_VERTEX;
-                    else if (key.get(0) == HAS_EDGE.key) return HAS_EDGE;
-                    else throw TypeDBException.of(UNRECOGNISED_VALUE);
+                static final int LENGTH = 2;
+
+                private final ByteArray bytes;
+
+                Prefix(int key) {
+                    this.bytes = ByteArray.join(
+                            Encoding.Prefix.METADATA_STATISTICS.bytes(),
+                            ByteArray.of(new byte[]{unsignedByte(key)})
+                    );
                 }
-                throw TypeDBException.of(UNRECOGNISED_VALUE);
-            }
 
-            public byte key() {
-                return key;
-            }
-
-            public ByteArray bytes() {
-                return bytes;
-            }
-        }
-
-        /**
-         * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
-         */
-        enum JobOperation {
-            CREATED(0),
-            DELETED(1);
-
-            private final byte key;
-            private final ByteArray bytes;
-
-            JobOperation(int key) {
-                this.key = unsignedByte(key);
-                this.bytes = ByteArray.of(new byte[]{this.key});
-            }
-
-            public static JobOperation of(ByteArray key) {
-                if (key.length() == 1) {
-                    if (key.get(0) == CREATED.key) return CREATED;
-                    else if (key.get(0) == DELETED.key) return DELETED;
-                    else throw TypeDBException.of(UNRECOGNISED_VALUE);
+                public ByteArray bytes() {
+                    return this.bytes;
                 }
-                throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
 
-            public byte key() {
-                return key;
-            }
+            enum Infix {
+                ATTRIBUTE_OVERCOUNT(0),
+                ATTRIBUTE_UNDERCOUNT(1),
+                HAS_EDGE_OVERCOUNT(10),
+                HAS_EDGE_UNDERCOUNT(11);
 
-            public ByteArray bytes() {
-                return bytes;
-            }
-        }
+                public static final int LENGTH = 1;
 
-        /**
-         * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
-         */
-        enum Infix {
-            VERTEX_COUNT(0),
-            VERTEX_TRANSITIVE_COUNT(1),
-            HAS_EDGE_COUNT(2),
-            HAS_EDGE_TOTAL_COUNT(3);
+                private final byte key;
+                private final ByteArray bytes;
 
-            private final byte key;
-            private final ByteArray bytes;
+                Infix(int key) {
+                    this.key = unsignedByte(key);
+                    this.bytes = ByteArray.of(new byte[]{this.key});
+                }
 
-            Infix(int key) {
-                this.key = unsignedByte(key);
-                this.bytes = ByteArray.of(new byte[]{this.key});
-            }
+                public ByteArray bytes() {
+                    return bytes;
+                }
 
-            public byte key() {
-                return key;
-            }
-
-            public ByteArray bytes() {
-                return bytes;
+                public byte key() {
+                    return key;
+                }
             }
         }
     }

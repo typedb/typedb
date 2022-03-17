@@ -288,7 +288,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         if (isRPCAlive.compareAndSet(true, false)) {
             if (isTransactionOpen.compareAndSet(true, false)) {
                 transaction.close();
-                sessionSvc.remove(this);
+                sessionSvc.closed(this);
             }
             if (scheduledTimeout != null) scheduledTimeout.cancel(false);
             responder.onCompleted();
@@ -299,7 +299,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         if (isRPCAlive.compareAndSet(true, false)) {
             if (isTransactionOpen.compareAndSet(true, false)) {
                 transaction.close();
-                sessionSvc.remove(this);
+                sessionSvc.closed(this);
             }
             if (scheduledTimeout != null) scheduledTimeout.cancel(false);
             responder.onError(ResponseBuilder.exception(error));

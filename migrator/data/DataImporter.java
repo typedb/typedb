@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -56,6 +57,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -80,8 +82,8 @@ public class DataImporter {
     private static final Parser<DataProto.Item> ITEM_PARSER = DataProto.Item.parser();
     private static final int BATCH_SIZE = 1000;
     private final TypeDB.Session session;
-    private final Executor importExecutor;
-    private final Executor readerExecutor;
+    private final ExecutorService importExecutor;
+    private final ExecutorService readerExecutor;
     private final int parallelisation;
 
     private final Path dataFile;
@@ -107,14 +109,19 @@ public class DataImporter {
 
     public void run() {
         try {
+            Instant start = Instant.now();
             validateHeader();
             new ParallelImport(AttributesAndChecksum::new).execute();
             new ParallelImport(EntitiesAndOwnerships::new).execute();
             new ParallelImport(CompleteRelations::new).execute();
             importSkippedRelations();
             if (!checksum.verify(status)) throw TypeDBException.of(IMPORT_CHECKSUM_MISMATCH, checksum.mismatch(status));
+            Instant end = Instant.now();
+            LOG.info("Finished in: " + Duration.between(start, end).getSeconds() + " seconds");
+            LOG.info("Imported: " + status.toString() );
         } finally {
-            LOG.info("Imported " + status.toString());
+            importExecutor.shutdownNow();
+            readerExecutor.shutdownNow();
         }
     }
 
@@ -224,7 +231,7 @@ public class DataImporter {
                     count += importItem(item);
                 }
                 commitBatch();
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             } finally {
                 transaction.close();
@@ -417,6 +424,7 @@ public class DataImporter {
                 if (relType == null) throw TypeDBException.of(TYPE_NOT_FOUND, msg.getLabel());
                 Relation importedRelation = relType.create();
                 idMapper.put(msg.getId(), importedRelation.getIID());
+                status.relationCount.incrementAndGet();
 
                 int ownershipCount = 0;
                 for (DataProto.Item.OwnedAttribute ownership : msg.getAttributeList()) {
@@ -436,7 +444,10 @@ public class DataImporter {
                     for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
                         Thing player = transaction.concepts().getThing(idMapper.get(playerMessage.getId()));
                         if (player == null) throw TypeDBException.of(PLAYER_NOT_FOUND, relType.getLabel());
-                        else relation.addPlayer(roleType, player);
+                        else {
+                            relation.addPlayer(roleType, player);
+                            status.roleCount.incrementAndGet();
+                        }
                     }
                 });
             });

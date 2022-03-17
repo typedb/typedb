@@ -116,6 +116,15 @@ public class SortedIterators {
             return new MergeMappedIterator.Forwardable<>(iterators, e -> e, order);
         }
 
+        @SafeVarargs
+        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> intersect(SortedIterator.Forwardable<T, ORDER> iterator, SortedIterator.Forwardable<T, ORDER>... iterators) {
+            return new IntersectForwardableIterator<>(list(list(iterators), iterator), iterator.order());
+        }
+
+        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> intersect(FunctionalIterator<SortedIterator.Forwardable<T, ORDER>> iterators, ORDER order) {
+            return new IntersectForwardableIterator<>(iterators.toList(), order);
+        }
+
         public static <T extends Comparable<? super T>, U extends Comparable<? super U>, ORDER extends SortedIterator.Order>
         SortedIterator.Forwardable<U, ORDER> mapSorted(ORDER order, SortedIterator.Forwardable<T, ?> iterator, Function<T, U> mappingFn, Function<U, T> reverseMappingFn) {
             return new MappedSortedIterator.Forwardable<>(iterator, mappingFn, reverseMappingFn, order);

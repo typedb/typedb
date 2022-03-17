@@ -21,8 +21,8 @@ package com.vaticle.typedb.core.graph.adjacency.impl;
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.graph.adjacency.TypeAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.TypeEdgeIterator.InEdgeIteratorImpl;
 import com.vaticle.typedb.core.graph.adjacency.impl.TypeEdgeIterator.OutEdgeIteratorImpl;
@@ -41,9 +41,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Predicate;
 
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 
 public abstract class TypeAdjacencyImpl<EDGE_VIEW extends TypeEdge.View<EDGE_VIEW>> implements TypeAdjacency {
 

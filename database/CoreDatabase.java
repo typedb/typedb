@@ -18,17 +18,26 @@
 
 package com.vaticle.typedb.core.database;
 
+import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.common.collection.Pair;
-import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
+import com.vaticle.typedb.core.graph.common.StatisticsKey;
 import com.vaticle.typedb.core.graph.common.Storage;
+import com.vaticle.typedb.core.graph.edge.ThingEdge;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.traversal.TraversalCache;
 import org.rocksdb.ColumnFamilyDescriptor;
@@ -43,41 +52,50 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
-import static com.vaticle.typedb.common.collection.Collections.hasIntersection;
+import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
+import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongs;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INCOMPATIBLE_ENCODING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.ROCKS_LOGGER_SHUTDOWN_FAILED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.ROCKS_LOGGER_SHUTDOWN_TIMEOUT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ISOLATION_DELETE_MODIFY_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ISOLATION_EXCLUSIVE_CREATE_VIOLATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ISOLATION_MODIFY_DELETE_VIOLATION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.DATA;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.serial;
 import static com.vaticle.typedb.core.graph.common.Encoding.ENCODING_VERSION;
 import static com.vaticle.typedb.core.graph.common.Encoding.System.ENCODING_VERSION_KEY;
 import static java.util.Comparator.reverseOrder;
@@ -89,23 +107,24 @@ public class CoreDatabase implements TypeDB.Database {
     private static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
     private static final int ROCKS_LOG_PERIOD = 300;
 
+    private final CoreDatabaseManager databaseMgr;
+    private final Factory.Session sessionFactory;
+    protected final String name;
+    protected final AtomicBoolean isOpen;
+    private final AtomicLong nextTransactionID;
+    private final AtomicInteger schemaLockWriteRequests;
+    private final StampedLock schemaLock;
+    protected final ConcurrentMap<UUID, Pair<CoreSession, Long>> sessions;
     protected final RocksConfiguration rocksConfiguration;
     protected final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     protected final KeyGenerator.Data.Persisted dataKeyGenerator;
-    protected final ConcurrentMap<UUID, Pair<CoreSession, Long>> sessions;
-    protected final String name;
-    protected final AtomicBoolean isOpen;
-    private final StampedLock schemaLock;
-    private final CoreDatabaseManager databaseMgr;
-    private final ConsistencyManager consistencyMgr;
-    private final AtomicInteger schemaLockWriteRequests;
-    private final Factory.Session sessionFactory;
+    private final IsolationManager isolationMgr;
+    private final StatisticsCorrector statisticsCorrector;
     protected OptimisticTransactionDB rocksSchema;
     protected OptimisticTransactionDB rocksData;
     protected CorePartitionManager.Schema rocksSchemaPartitionMgr;
     protected CorePartitionManager.Data rocksDataPartitionMgr;
     protected CoreSession.Data statisticsBackgroundCounterSession;
-    protected StatisticsBackgroundCounter statisticsBackgroundCounter;
     protected ScheduledExecutorService scheduledPropertiesLogger;
     private Cache cache;
 
@@ -115,12 +134,14 @@ public class CoreDatabase implements TypeDB.Database {
         this.sessionFactory = sessionFactory;
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
+        isolationMgr = new IsolationManager();
+        statisticsCorrector = new StatisticsCorrector();
         sessions = new ConcurrentHashMap<>();
-        schemaLock = new StampedLock();
-        schemaLockWriteRequests = new AtomicInteger(0);
-        consistencyMgr = new ConsistencyManager();
         rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
                 options().storageIndexCacheSize(), LOG.isDebugEnabled(), ROCKS_LOG_PERIOD);
+        schemaLock = new StampedLock();
+        schemaLockWriteRequests = new AtomicInteger(0);
+        nextTransactionID = new AtomicLong(0);
         isOpen = new AtomicBoolean(false);
     }
 
@@ -133,14 +154,12 @@ public class CoreDatabase implements TypeDB.Database {
 
         CoreDatabase database = new CoreDatabase(databaseMgr, name, sessionFactory);
         database.initialise();
-        database.statisticsBgCounterStart();
         return database;
     }
 
     static CoreDatabase loadAndOpen(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
         CoreDatabase database = new CoreDatabase(databaseMgr, name, sessionFactory);
         database.load();
-        database.statisticsBgCounterStart();
         return database;
     }
 
@@ -156,6 +175,7 @@ public class CoreDatabase implements TypeDB.Database {
                 txn.commit();
             }
         }
+        statisticsCorrector.initialise();
     }
 
     private void openSchema() {
@@ -212,6 +232,7 @@ public class CoreDatabase implements TypeDB.Database {
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
         }
+        statisticsCorrector.initialiseAndCleanUp();
     }
 
     private void openData() {
@@ -234,7 +255,7 @@ public class CoreDatabase implements TypeDB.Database {
 
     private void mayInitRocksDataLogger() {
         if (rocksConfiguration.isLoggingEnabled()) {
-            scheduledPropertiesLogger = Executors.newScheduledThreadPool(1);
+            scheduledPropertiesLogger = java.util.concurrent.Executors.newScheduledThreadPool(1);
             scheduledPropertiesLogger.scheduleAtFixedRate(
                     new RocksProperties.Logger(rocksData, rocksDataPartitionMgr.handles, name),
                     0, ROCKS_LOG_PERIOD, SECONDS
@@ -323,22 +344,8 @@ public class CoreDatabase implements TypeDB.Database {
         if (cache != null) cache.close();
     }
 
-    protected void statisticsBgCounterStart() {
-        assert statisticsBackgroundCounterSession == null;
-        assert statisticsBackgroundCounter == null;
-
-        statisticsBackgroundCounterSession = sessionFactory.sessionData(this, new Options.Session());
-        statisticsBackgroundCounter = new StatisticsBackgroundCounter(statisticsBackgroundCounterSession);
-    }
-
-    protected void statisticsBgCounterStop() {
-        assert statisticsBackgroundCounterSession != null;
-        assert statisticsBackgroundCounter != null;
-
-        statisticsBackgroundCounter.stop();
-        statisticsBackgroundCounter = null;
-        statisticsBackgroundCounterSession.close();
-        statisticsBackgroundCounterSession = null;
+    long nextTransactionID() {
+        return nextTransactionID.getAndIncrement();
     }
 
     protected Path directory() {
@@ -357,8 +364,12 @@ public class CoreDatabase implements TypeDB.Database {
         return dataKeyGenerator;
     }
 
-    public ConsistencyManager consistencyMgr() {
-        return consistencyMgr;
+    public IsolationManager isolationMgr() {
+        return isolationMgr;
+    }
+
+    StatisticsCorrector statisticsCorrector() {
+        return statisticsCorrector;
     }
 
     /**
@@ -406,7 +417,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    void remove(CoreSession session) {
+    void closed(CoreSession session) {
         if (session != statisticsBackgroundCounterSession) {
             long lock = sessions.remove(session.uuid()).second();
             if (session.type().isSchema()) schemaLock().unlockWrite(lock);
@@ -424,20 +435,16 @@ public class CoreDatabase implements TypeDB.Database {
         assert scheduledPropertiesLogger != null;
         try {
             scheduledPropertiesLogger.shutdown();
-            boolean terminated = scheduledPropertiesLogger.awaitTermination(5, SECONDS);
-            if (!terminated) throw TypeDBException.of(ROCKS_LOGGER_SHUTDOWN_FAILED);
+            boolean terminated = scheduledPropertiesLogger.awaitTermination(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
+            if (!terminated) throw TypeDBException.of(ROCKS_LOGGER_SHUTDOWN_TIMEOUT);
         } catch (InterruptedException e) {
             throw TypeDBException.of(e);
         }
     }
 
-    /**
-     * Responsible for committing the initial schema of a database.
-     * A different implementation of this class may override it.
-     */
     protected void closeResources() {
+        statisticsCorrector.close();
         sessions.values().forEach(p -> p.first().close());
-        statisticsBgCounterStop();
         cacheClose();
         rocksDataPartitionMgr.close();
         rocksData.close();
@@ -456,202 +463,332 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    /*
-    In the consistency manager, we aim to only completely synchronize on commit. However,
-    because we use multiple data structures, tracking and recording without synchronized is non-atomic. To avoid this,
-    we move records first, then delete them -- this means intermediate readers may see a storage in two states. We
-    avoid this causing issues by deduplicating into sets where otherwise we may have used iterators.
-    This is preferable to intermediate readers not seeing the storage at all, possibly causing consistency violations
-     */
-    public static class ConsistencyManager {
+    static class IsolationManager {
 
-        private final StorageTimeline storageTimeline;
+        private final ConcurrentMap<CoreTransaction.Data, CommitState> commitStates;
+        private final ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> commitTimeline;
+        private final AtomicBoolean cleanupRunning;
 
-        ConsistencyManager() {
-            this.storageTimeline = new StorageTimeline();
+        private enum CommitState {UNCOMMITTED, COMMITTING, COMMITTED}
+
+        IsolationManager() {
+            this.cleanupRunning = new AtomicBoolean(false);
+            this.commitStates = new ConcurrentHashMap<>();
+            this.commitTimeline = new ConcurrentSkipListMap<>();
         }
 
-        void register(RocksStorage.Data storage) {
-            storageTimeline.opened(storage);
+        void opened(CoreTransaction.Data transaction) {
+            commitStates.put(transaction, CommitState.UNCOMMITTED);
         }
 
-        public void closed(RocksStorage.Data storage) {
-            storageTimeline.closed(storage);
-        }
-
-        public void commitCompletely(RocksStorage.Data storage) {
-            storageTimeline.commitCompletely(storage);
-        }
-
-        void tryCommitOptimistically(RocksStorage.Data storage) {
-            assert storageTimeline.isUncommitted(storage);
-            Set<RocksStorage.Data> concurrent = storageTimeline.concurrentlyCommitted(storage);
+        Set<CoreTransaction.Data> validateOverlappingAndStartCommit(CoreTransaction.Data txn) {
+            Set<CoreTransaction.Data> transactions;
             synchronized (this) {
-                for (RocksStorage.Data committed : concurrent) {
-                    validateModifiedKeys(storage, committed);
-                    if (hasIntersection(storage.deletedKeys(), committed.modifiedKeys())) {
-                        throw TypeDBException.of(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION);
-                    } else if (hasIntersection(storage.exclusiveBytes(), committed.exclusiveBytes())) {
-                        throw TypeDBException.of(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION);
-                    }
-                }
-                storageTimeline.commitOptimistically(storage);
+                transactions = commitMayConflict(txn);
+                transactions.forEach(other -> validateIsolation(txn, other));
+                commitStates.put(txn, CommitState.COMMITTING);
+            }
+            return transactions;
+        }
+
+        private Set<CoreTransaction.Data> commitMayConflict(CoreTransaction.Data txn) {
+            if (!txn.dataStorage.hasTrackedWrite()) return set();
+            return iterate(commitStates.entrySet())
+                    .filter(e -> e.getValue() == CommitState.COMMITTING ||
+                            (e.getValue() == CommitState.COMMITTED && e.getKey().snapshotEnd().get() > txn.snapshotStart()))
+                    .map(Map.Entry::getKey)
+                    .toSet();
+        }
+
+        private void validateIsolation(CoreTransaction.Data txn, CoreTransaction.Data mayConflict) {
+            if (txn.dataStorage.modifyDeleteConflict(mayConflict.dataStorage)) {
+                throw TypeDBException.of(TRANSACTION_ISOLATION_MODIFY_DELETE_VIOLATION);
+            } else if (txn.dataStorage.deleteModifyConflict(mayConflict.dataStorage)) {
+                throw TypeDBException.of(TRANSACTION_ISOLATION_DELETE_MODIFY_VIOLATION);
+            } else if (txn.dataStorage.exclusiveCreateConflict(mayConflict.dataStorage)) {
+                throw TypeDBException.of(TRANSACTION_ISOLATION_EXCLUSIVE_CREATE_VIOLATION);
             }
         }
 
-        private void validateModifiedKeys(RocksStorage.Data storage, RocksStorage.Data committed) {
-            NavigableSet<ByteArray> active = storage.modifiedKeys();
-            NavigableSet<ByteArray> other = committed.deletedKeys();
-            if (active.isEmpty()) return;
-            ByteArray currentKey = active.first();
-            while (currentKey != null) {
-                ByteArray otherKey = other.ceiling(currentKey);
-                if (otherKey != null && otherKey.equals(currentKey)) {
-                    if (storage.isModifiedValidatedKey(currentKey)) {
-                        throw TypeDBException.of(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION);
-                    } else {
-                        otherKey = other.higher(currentKey);
-                    }
-                }
-                currentKey = otherKey;
-                NavigableSet<ByteArray> tmp = other;
-                other = active;
-                active = tmp;
+        void committed(CoreTransaction.Data txn) {
+            assert commitStates.get(txn) == CommitState.COMMITTING && txn.snapshotEnd().isPresent();
+            commitStates.put(txn, CommitState.COMMITTED);
+            commitTimeline.compute(txn.snapshotEnd().get(), (snapshot, committed) -> {
+                if (committed == null) committed = new HashSet<>();
+                committed.add(txn);
+                return committed;
+            });
+        }
+
+        void closed(CoreTransaction.Data txn) {
+            if (commitStates.get(txn) != CommitState.COMMITTED) commitStates.remove(txn);
+            cleanupCommitted();
+        }
+
+        private void cleanupCommitted() {
+            if (cleanupRunning.compareAndSet(false, true)) {
+                Optional<Long> oldestUncommittedSnapshot = oldestNotCommittedSnapshot();
+                ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> deletable;
+                if (oldestUncommittedSnapshot.isEmpty()) deletable = commitTimeline;
+                else deletable = commitTimeline.headMap(oldestUncommittedSnapshot.get());
+                iterate(deletable.values()).flatMap(Iterators::iterate)
+                        .forEachRemaining(txn -> {
+                            txn.delete();
+                            commitStates.remove(txn);
+                        });
+                deletable.clear();
+                cleanupRunning.set(false);
             }
         }
 
-        // visible for testing
-        public int committedEventCount() {
-            return storageTimeline.committedEventCount();
+        private Optional<Long> oldestNotCommittedSnapshot() {
+            return getNotCommitted().map(CoreTransaction.Data::snapshotStart).stream().min(Comparator.naturalOrder());
         }
 
-        private static class StorageTimeline {
+        FunctionalIterator<CoreTransaction.Data> getNotCommitted() {
+            return iterate(commitStates.entrySet())
+                    .filter(e -> e.getValue() != CommitState.COMMITTED)
+                    .map(Map.Entry::getKey);
+        }
 
-            private final ConcurrentNavigableMap<Long, ConcurrentMap<RocksStorage.Data, Event>> events;
-            private final ConcurrentMap<RocksStorage.Data, CommitState> commitState;
-            private final AtomicBoolean cleanupRunning;
+        long committedEventCount() {
+            return iterate(commitStates.values()).filter(s -> s == CommitState.COMMITTED).count();
+        }
+    }
 
-            enum Event {OPENED, COMMITTED}
+    class StatisticsCorrector {
 
-            enum CommitState {UNCOMMITTED, COMMITTING}
+        private final ConcurrentSet<CompletableFuture<Void>> corrections;
+        private final ConcurrentSet<Long> deletedTxnIDs;
+        private final AtomicBoolean correctionRequired;
+        private CoreSession.Data session;
 
-            private StorageTimeline() {
-                this.events = new ConcurrentSkipListMap<>();
-                this.commitState = new ConcurrentHashMap<>();
-                this.cleanupRunning = new AtomicBoolean(false);
-            }
+        StatisticsCorrector() {
+            corrections = new ConcurrentSet<>();
+            deletedTxnIDs = new ConcurrentSet<>();
+            correctionRequired = new AtomicBoolean(false);
+        }
 
-            void opened(RocksStorage.Data storage) {
-                events.computeIfAbsent(storage.snapshotStart(), (key) -> new ConcurrentHashMap<>()).put(storage, Event.OPENED);
-                commitState.put(storage, CommitState.UNCOMMITTED);
-            }
+        void initialise() {
+            session = createAndOpenSession(DATA, new Options.Session()).asData();
+        }
 
-            boolean isUncommitted(RocksStorage.Data storage) {
-                return commitState.containsKey(storage);
-            }
+        void initialiseAndCleanUp() {
+            initialise();
+            LOG.debug("Cleaning up statistics metadata.");
+            correctMiscounts();
+            deleteCorrectionMetadata();
+            LOG.debug("Statistics are ready and up to date.");
+            if (LOG.isDebugEnabled()) logSummary();
+        }
 
-            void commitOptimistically(RocksStorage.Data storage) {
-                commitState.put(storage, CommitState.COMMITTING);
-            }
-
-            void commitCompletely(RocksStorage.Data storage) {
-                assert commitState.get(storage) == CommitState.COMMITTING && storage.snapshotEnd().isPresent();
-                events.compute(storage.snapshotEnd().get(), (snapshot, events) -> {
-                    if (events == null) events = new ConcurrentHashMap<>();
-                    events.put(storage, Event.COMMITTED);
-                    return events;
-                });
-                commitState.remove(storage);
-            }
-
-            void closed(RocksStorage.Data storage) {
-                if (commitState.containsKey(storage)) {
-                    commitState.remove(storage);
-                    deleteOpenedEvent(storage);
-                } else {
-                    Map<RocksStorage.Data, Event> events = this.events.get(storage.snapshotEnd().get());
-                    if (events != null) {
-                        Event event = events.get(storage);
-                        assert event == null || event == Event.COMMITTED;
-                        if (events.get(storage) != null && isDeletable(storage)) {
-                            deleteCommittedEvent(storage);
-                            deleteOpenedEvent(storage);
-                        }
-                    }
-                    cleanupCommitted();
-                }
-            }
-
-            Set<RocksStorage.Data> concurrentlyCommitted(RocksStorage.Data storage) {
-                assert !storage.snapshotEnd().isPresent();
-                Set<RocksStorage.Data> concurrentCommitted = iterate(commitState.keySet())
-                        .filter(s -> commitState.get(s) == CommitState.COMMITTING).toSet();
-                events.tailMap(storage.snapshotStart() + 1).forEach((snapshot, events) -> {
-                    events.forEach((s, type) -> {
-                        if (type == Event.COMMITTED) concurrentCommitted.add(s);
-                    });
-                });
-                return concurrentCommitted;
-            }
-
-            private boolean isDeletable(RocksStorage.Data storage) {
-                assert storage.snapshotEnd().isPresent() || commitState.containsKey(storage);
-                if (commitState.containsKey(storage)) return false;
-                // check for: open transactions that were opened before this one was committed
-                Map<Long, ConcurrentMap<RocksStorage.Data, Event>> beforeCommitted = events.headMap(storage.snapshotEnd().get());
-                for (RocksStorage.Data uncommitted : commitState.keySet()) {
-                    ConcurrentMap<RocksStorage.Data, Event> events = beforeCommitted.get(uncommitted.snapshotStart());
-                    if (events != null && events.containsKey(uncommitted) && events.get(uncommitted) == Event.OPENED) {
-                        return false;
-                    }
-                }
-                return true;
-            }
-
-            private void deleteCommittedEvent(RocksStorage.Data storage) {
-                events.compute(storage.snapshotEnd().get(), (snapshot, events) -> {
-                    if (events != null) {
-                        events.remove(storage);
-                        if (!events.isEmpty()) return events;
-                    }
-                    return null;
-                });
-            }
-
-            private void deleteOpenedEvent(RocksStorage.Data storage) {
-                events.compute(storage.snapshotStart(), (snapshot, events) -> {
-                    if (events != null) {
-                        events.remove(storage);
-                        if (!events.isEmpty()) return events;
-                    }
-                    return null;
-                });
-            }
-
-            private void cleanupCommitted() {
-                if (cleanupRunning.compareAndSet(false, true)) {
-                    for (Map.Entry<Long, ConcurrentMap<RocksStorage.Data, Event>> entry : this.events.entrySet()) {
-                        Long snapshot = entry.getKey();
-                        ConcurrentMap<RocksStorage.Data, Event> events = entry.getValue();
-                        RocksStorage.Data other;
-                        for (Iterator<RocksStorage.Data> iter = events.keySet().iterator(); iter.hasNext(); ) {
-                            other = iter.next();
-                            if (other.snapshotEnd().isPresent() && isDeletable(other)) iter.remove();
-                        }
-                        if (events.isEmpty()) this.events.remove(snapshot);
-                    }
-                    cleanupRunning.set(false);
-                }
-            }
-
-            private int committedEventCount() {
-                Set<RocksStorage.Data> recorded = new HashSet<>();
-                this.events.forEach((snapshot, events) ->
-                        events.forEach((storage, type) -> {
-                            if (type == Event.COMMITTED) recorded.add(storage);
-                        })
+        private void deleteCorrectionMetadata() {
+            try (CoreTransaction.Data txn = session.transaction(WRITE)) {
+                txn.dataStorage.iterate(StatisticsKey.txnCommittedPrefix()).forEachRemaining(kv ->
+                        txn.dataStorage.deleteUntracked(kv.key())
                 );
-                return recorded.size();
+                txn.commit();
+            }
+        }
+
+        private void logSummary() {
+            try (CoreTransaction.Data txn = session.transaction(READ)) {
+                LOG.debug("Total 'thing' count: " +
+                        txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootThingType())
+                );
+                long hasCount = 0;
+                NavigableSet<TypeVertex> allTypes = txn.graphMgr.schema().getSubtypes(txn.graphMgr.schema().rootThingType());
+                Set<TypeVertex> attributes = txn.graphMgr.schema().getSubtypes(txn.graphMgr.schema().rootAttributeType());
+                for (TypeVertex attr : attributes) {
+                    hasCount += txn.graphMgr.data().stats().hasEdgeSum(allTypes, attr);
+                }
+                LOG.debug("Total 'role' count: " +
+                        txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootRoleType())
+                );
+                LOG.debug("Total 'has' count: " + hasCount);
+            }
+        }
+
+        void close() {
+            try {
+                correctionRequired.set(false);
+                for (CompletableFuture<Void> correction : corrections) {
+                    correction.get(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
+                }
+                corrections.clear();
+            } catch (InterruptedException | TimeoutException e) {
+                LOG.warn(STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT.message());
+                throw TypeDBException.of(e);
+            } catch (ExecutionException e) {
+                if (!((e.getCause() instanceof TypeDBException) &&
+                        ((TypeDBException) e.getCause()).code().map(code ->
+                                code.equals(RESOURCE_CLOSED.code()) || code.equals(DATABASE_CLOSED.code())
+                        ).orElse(false))) {
+                    throw TypeDBException.of(e);
+                }
+            } finally {
+                session.close();
+            }
+        }
+
+        void committed(CoreTransaction.Data transaction) {
+            if (mayMiscount(transaction) && correctionRequired.compareAndSet(false, true)) {
+                submitCorrection();
+
+            }
+        }
+
+        CompletableFuture<Void> submitCorrection() {
+            CompletableFuture<Void> correction = CompletableFuture.runAsync(() -> {
+                if (correctionRequired.compareAndSet(true, false)) this.correctMiscounts();
+            }, serial());
+            corrections.add(correction);
+            correction.thenRun(() -> corrections.remove(correction));
+            return correction;
+        }
+
+        private boolean mayMiscount(CoreTransaction.Data transaction) {
+            return !transaction.graphMgr.data().attributesCreated().isEmpty() ||
+                    !transaction.graphMgr.data().attributesDeleted().isEmpty() ||
+                    !transaction.graphMgr.data().hasEdgeCreated().isEmpty() ||
+                    !transaction.graphMgr.data().hasEdgeDeleted().isEmpty();
+        }
+
+        void deleted(CoreTransaction.Data transaction) {
+            deletedTxnIDs.add(transaction.id);
+        }
+
+        /**
+         * Scan through all attributes that may need to be corrected (eg. have been over/under counted),
+         * and correct them if we have enough information to do so.
+         */
+        private void correctMiscounts() {
+            // note: take copy before open a snapshotted transaction
+            Set<Long> deletableTxnIDs = new HashSet<>(deletedTxnIDs);
+            try (CoreTransaction.Data txn = session.transaction(WRITE)) {
+                boolean[] modified = new boolean[]{false};
+                boolean[] miscountCorrected = new boolean[]{false};
+                Set<Long> openTxnIDs = isolationMgr.getNotCommitted().map(t -> t.id).toSet();
+                txn.dataStorage.iterate(StatisticsKey.Miscountable.prefix()).forEachRemaining(kv -> {
+                    StatisticsKey.Miscountable item = kv.key();
+                    List<Long> txnIDsCausingMiscount = kv.value().decodeLongs();
+
+                    if (anyCommitted(txnIDsCausingMiscount, txn.dataStorage)) {
+                        correctMiscount(item, txn);
+                        miscountCorrected[0] = true;
+                        txn.dataStorage.deleteUntracked(item);
+                        modified[0] = true;
+                    } else if (noneOpen(txnIDsCausingMiscount, openTxnIDs)) {
+                        txn.dataStorage.deleteUntracked(item);
+                        modified[0] = true;
+                    } else {
+                        // transaction IDs causing miscount are not deletable
+                        deletableTxnIDs.removeAll(txnIDsCausingMiscount);
+                    }
+                });
+                if (!deletableTxnIDs.isEmpty()) {
+                    for (Long txnID : deletableTxnIDs) {
+                        txn.dataStorage.deleteUntracked(StatisticsKey.txnCommitted(txnID));
+                    }
+                    deletedTxnIDs.removeAll(deletableTxnIDs);
+                    modified[0] = true;
+                }
+                if (modified[0]) {
+                    if (miscountCorrected[0]) txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
+                    txn.commit();
+                }
+            }
+        }
+
+        private void correctMiscount(StatisticsKey.Miscountable miscount, CoreTransaction.Data txn) {
+            if (miscount.isAttrOvertcount()) {
+                VertexIID.Type type = miscount.getMiscountableAttribute().type();
+                txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(-1));
+            } else if (miscount.isAttrUndercount()) {
+                VertexIID.Type type = miscount.getMiscountableAttribute().type();
+                txn.dataStorage.mergeUntracked(StatisticsKey.vertexCount(type), encodeLong(1));
+            } else if (miscount.isHasEdgeOvercount()) {
+                Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = miscount.getMiscountableHasEdge();
+                txn.dataStorage.mergeUntracked(
+                        StatisticsKey.hasEdgeCount(has.first().type(), has.second().type()),
+                        encodeLong(-1)
+                );
+            } else if (miscount.isHasEdgeUndercount()) {
+                Pair<VertexIID.Thing, VertexIID.Attribute<?>> has = miscount.getMiscountableHasEdge();
+                txn.dataStorage.mergeUntracked(
+                        StatisticsKey.hasEdgeCount(has.first().type(), has.second().type()),
+                        encodeLong(1)
+                );
+            }
+        }
+
+        private boolean anyCommitted(List<Long> txnIDsToCheck, RocksStorage.Data storage) {
+            for (Long txnID : txnIDsToCheck) {
+                if (storage.get(StatisticsKey.txnCommitted(txnID)) != null) return true;
+            }
+            return false;
+        }
+
+        private boolean noneOpen(List<Long> txnIDs, Set<Long> openTxnIDs) {
+            return iterate(txnIDs).noneMatch(openTxnIDs::contains);
+        }
+
+        void recordCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> overlappingTxn) {
+            recordMiscountableCauses(txn, overlappingTxn);
+            txn.dataStorage.putUntracked(StatisticsKey.txnCommitted(txn.id));
+        }
+
+        private void recordMiscountableCauses(CoreTransaction.Data txn, Set<CoreTransaction.Data> overlappingTxn) {
+            Map<AttributeVertex<?>, List<Long>> attrOvercount = new HashMap<>();
+            Map<AttributeVertex<?>, List<Long>> attrUndercount = new HashMap<>();
+            Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> hasEdgeOvercount = new HashMap<>();
+            Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> hasEdgeUndercount = new HashMap<>();
+            for (CoreTransaction.Data overlapping : overlappingTxn) {
+                attrMiscountableCauses(attrOvercount, overlapping.id, txn.graphMgr.data().attributesCreated(),
+                        overlapping.graphMgr.data().attributesCreated());
+                attrMiscountableCauses(attrUndercount, overlapping.id, txn.graphMgr.data().attributesDeleted(),
+                        overlapping.graphMgr.data().attributesDeleted());
+                hasEdgeMiscountableCauses(hasEdgeOvercount, overlapping.id, txn.graphMgr.data().hasEdgeCreated(),
+                        overlapping.graphMgr.data().hasEdgeCreated());
+                hasEdgeMiscountableCauses(hasEdgeUndercount, overlapping.id, txn.graphMgr.data().hasEdgeDeleted(),
+                        overlapping.graphMgr.data().hasEdgeDeleted());
+            }
+
+            attrOvercount.forEach((attr, txns) -> txn.dataStorage.putUntracked(
+                    StatisticsKey.Miscountable.attrOvercount(txn.id, attr.iid()), encodeLongs(txns)
+            ));
+            attrUndercount.forEach((attr, txs) -> txn.dataStorage.putUntracked(
+                    StatisticsKey.Miscountable.attrUndercount(txn.id, attr.iid()), encodeLongs(txs)
+            ));
+            hasEdgeOvercount.forEach((has, txs) -> txn.dataStorage.putUntracked(
+                    StatisticsKey.Miscountable.hasEdgeOvercount(txn.id, has.first().iid(), has.second().iid()), encodeLongs(txs)
+            ));
+            hasEdgeUndercount.forEach((has, txs) -> txn.dataStorage.putUntracked(
+                    StatisticsKey.Miscountable.hasEdgeUndercount(txn.id, has.first().iid(), has.second().iid()), encodeLongs(txs)
+            ));
+        }
+
+        private void attrMiscountableCauses(Map<AttributeVertex<?>, List<Long>> miscountableCauses, long cause,
+                                            Set<? extends AttributeVertex<?>> attrs1,
+                                            Set<? extends AttributeVertex<?>> attrs2) {
+            // note: fail-fast if checks are much faster than using empty iterators (due to concurrent data structures)
+            if (!attrs1.isEmpty() && !attrs2.isEmpty()) {
+                iterate(attrs1).filter(attrs2::contains).forEachRemaining(attribute ->
+                        miscountableCauses.computeIfAbsent(attribute, (key) -> new ArrayList<>()).add(cause)
+                );
+            }
+        }
+
+        private void hasEdgeMiscountableCauses(Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> miscountableCauses,
+                                               long cause, Set<ThingEdge> hasEdge1, Set<ThingEdge> hasEdge2) {
+            // note: fail-fast if checks are much faster than using empty iterators (due to concurrent data structures)
+            if (!hasEdge1.isEmpty() && !hasEdge2.isEmpty()) {
+                iterate(hasEdge1).filter(hasEdge2::contains).forEachRemaining(edge ->
+                        miscountableCauses.computeIfAbsent(
+                                pair(edge.from(), edge.to().asAttribute()),
+                                (key) -> new ArrayList<>()
+                        ).add(cause)
+                );
             }
         }
     }
@@ -708,80 +845,6 @@ public class CoreDatabase implements TypeDB.Database {
 
         private void close() {
             schemaStorage.close();
-        }
-    }
-
-    public static class StatisticsBackgroundCounter {
-
-        private final CoreSession.Data session;
-        private final Thread thread;
-        private final Semaphore countJobNotifications;
-        private boolean isStopped;
-
-        StatisticsBackgroundCounter(CoreSession.Data session) {
-            this.session = session;
-            countJobNotifications = new Semaphore(0);
-            thread = NamedThreadFactory.create(session.database().name + "::statistics-background-counter")
-                    .newThread(this::countFn);
-            thread.start();
-        }
-
-        public void needsBackgroundCounting() {
-            countJobNotifications.release();
-        }
-
-        private void countFn() {
-            do {
-                try (CoreTransaction.Data tx = session.transaction(WRITE)) {
-                    boolean shouldRestart = tx.graphMgr.data().stats().processCountJobs();
-                    if (shouldRestart) countJobNotifications.release();
-                    tx.commit();
-                } catch (TypeDBException e) {
-                    if (e.code().isPresent() && e.code().get().equals(DATABASE_CLOSED.code())) {
-                        break;
-                    } else if (e.code().isPresent() && (
-                            e.code().get().equals(TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION.code()) ||
-                            e.code().get().equals(TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION.code()) ||
-                            e.code().get().equals(TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION.code())
-                    )) {
-                        countJobNotifications.release();
-                    } else {
-                        LOG.error("Background statistics counting received exception.", e);
-                        countJobNotifications.release();
-                    }
-                }
-                waitForCountJob();
-                mayHoldBackForSchemaSession();
-            } while (!isStopped);
-        }
-
-        private void waitForCountJob() {
-            try {
-                countJobNotifications.acquire();
-            } catch (InterruptedException e) {
-                throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
-            }
-            countJobNotifications.drainPermits();
-        }
-
-        private void mayHoldBackForSchemaSession() {
-            if (session.database().schemaLockWriteRequests.get() > 0) {
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
-                }
-            }
-        }
-
-        public void stop() {
-            try {
-                isStopped = true;
-                countJobNotifications.release();
-                thread.join();
-            } catch (InterruptedException e) {
-                throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
-            }
         }
     }
 

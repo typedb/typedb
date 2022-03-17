@@ -22,8 +22,8 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.graph.iid.InfixIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 
@@ -88,16 +88,12 @@ public interface Storage {
 
         void putTracked(Key key, ByteArray value);
 
-        void putTracked(Key key, ByteArray value, boolean checkConsistency);
-
         void deleteTracked(Key key);
 
         void mergeUntracked(Key key, ByteArray value);
 
         // TODO: investigate why replacing ByteArray with Key for tracking makes navigable set intersection super slow
         void trackModified(ByteArray key);
-
-        void trackModified(ByteArray key, boolean checkConsistency);
 
         void trackExclusiveBytes(ByteArray bytes);
     }
@@ -109,7 +105,7 @@ public interface Storage {
             VARIABLE_START_EDGE(Encoding.Partition.VARIABLE_START_EDGE, null),
             FIXED_START_EDGE(Encoding.Partition.FIXED_START_EDGE, VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.DEFAULT_LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH),
             OPTIMISATION_EDGE(Encoding.Partition.OPTIMISATION_EDGE, VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.RolePlayer.LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH),
-            STATISTICS(Encoding.Partition.STATISTICS, null);
+            METADATA(Encoding.Partition.METADATA, null);
 
             private final Encoding.Partition encoding;
             private final Integer fixedStartBytes;
@@ -123,8 +119,8 @@ public interface Storage {
                     return FIXED_START_EDGE;
                 } else if (ID == Encoding.Partition.OPTIMISATION_EDGE.ID()) {
                     return OPTIMISATION_EDGE;
-                } else if (ID == Encoding.Partition.STATISTICS.ID()) {
-                    return STATISTICS;
+                } else if (ID == Encoding.Partition.METADATA.ID()) {
+                    return METADATA;
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }

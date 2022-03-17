@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -253,6 +254,16 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
         for (; hasNext(); count++) next();
         recycle();
         return count;
+    }
+
+    @Override
+    public <ACC> ACC reduce(ACC initial, BiFunction<T, ACC, ACC> accumulate) {
+        ACC acc = initial;
+        while (hasNext()) {
+            T value = next();
+            acc = accumulate.apply(value, acc);
+        }
+        return acc;
     }
 
     @Override

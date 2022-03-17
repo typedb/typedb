@@ -34,7 +34,6 @@ public class LimitedSortedIterator<T extends Comparable<? super T>, ORDER extend
     final ITER iterator;
     T last;
 
-
     public LimitedSortedIterator(ITER iterator, long limit) {
         super(iterator.order());
         this.iterator = iterator;
@@ -89,6 +88,11 @@ public class LimitedSortedIterator<T extends Comparable<? super T>, ORDER extend
         @Override
         public final SortedIterator.Forwardable<T, ORDER> merge(SortedIterator.Forwardable<T, ORDER> iterator) {
             return SortedIterators.Forwardable.merge(this, iterator);
+        }
+
+        @Override
+        public SortedIterator.Forwardable<T, ORDER> intersect(SortedIterator.Forwardable<T, ORDER> iterator) {
+            return SortedIterators.Forwardable.intersect(this, iterator);
         }
 
         @Override

@@ -20,8 +20,8 @@ package com.vaticle.typedb.core.common.iterator;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.MergeMappedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -218,6 +219,16 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
         for (; hasNext(); count++) next();
         recycle();
         return count;
+    }
+
+    @Override
+    public <ACC> ACC reduce(ACC initial, BiFunction<T, ACC, ACC> accumulate) {
+        ACC acc = initial;
+        while (hasNext()) {
+            T value = next();
+            acc = accumulate.apply(value, acc);
+        }
+        return acc;
     }
 
     @Override

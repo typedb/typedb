@@ -18,22 +18,26 @@
 
 package com.vaticle.typedb.core.graph.common;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
-import com.vaticle.typedb.core.graph.common.Storage.Key;
+import com.vaticle.typedb.core.common.collection.Bytes;
+import com.vaticle.typedb.core.graph.common.Encoding.Metadata.Statistics;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 
-public class StatisticsKey implements Key {
+public class StatisticsKey implements Storage.Key {
 
-    private static final Partition PARTITION = Partition.STATISTICS;
+    private static final Partition PARTITION = Partition.METADATA;
 
     private final ByteArray bytes;
 
     private StatisticsKey(ByteArray bytes) {
+        assert bytes.hasPrefix(Encoding.Prefix.METADATA_STATISTICS.bytes());
         this.bytes = bytes;
     }
 
+    @Override
     public ByteArray bytes() {
         return bytes;
     }
@@ -45,88 +49,125 @@ public class StatisticsKey implements Key {
 
     public static StatisticsKey vertexCount(VertexIID.Type typeIID) {
         return new StatisticsKey(join(
-                Encoding.Prefix.STATISTICS_THINGS.bytes(),
-                typeIID.bytes(),
-                Encoding.Statistics.Infix.VERTEX_COUNT.bytes()
-        ));
-    }
-
-    public static StatisticsKey vertexTransitiveCount(VertexIID.Type typeIID) {
-        return new StatisticsKey(join(
-                Encoding.Prefix.STATISTICS_THINGS.bytes(),
-                typeIID.bytes(),
-                Encoding.Statistics.Infix.VERTEX_TRANSITIVE_COUNT.bytes()
+                Statistics.Prefix.VERTEX_COUNT.bytes(),
+                typeIID.bytes()
         ));
     }
 
     public static StatisticsKey hasEdgeCount(VertexIID.Type thingTypeIID, VertexIID.Type attTypeIID) {
         return new StatisticsKey(join(
-                Encoding.Prefix.STATISTICS_THINGS.bytes(),
+                Statistics.Prefix.HAS_EDGE_COUNT.bytes(),
                 thingTypeIID.bytes(),
-                Encoding.Statistics.Infix.HAS_EDGE_COUNT.bytes(),
                 attTypeIID.bytes()
         ));
     }
 
-    public static StatisticsKey hasEdgeTotalCount(VertexIID.Type thingTypeIID) {
-        return new StatisticsKey(join(
-                Encoding.Prefix.STATISTICS_THINGS.bytes(),
-                thingTypeIID.bytes(),
-                Encoding.Statistics.Infix.HAS_EDGE_TOTAL_COUNT.bytes()
-        ));
-    }
-
-
-    public static StatisticsKey attributeCounted(VertexIID.Attribute<?> attIID) {
-        return new StatisticsKey(join(Encoding.Prefix.STATISTICS_COUNTED.bytes(), attIID.bytes()));
-    }
-
-    public static StatisticsKey hasEdgeCounted(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
-        return new StatisticsKey(join(
-                Encoding.Prefix.STATISTICS_COUNTED.bytes(),
-                thingIID.bytes(),
-                Encoding.Statistics.Infix.HAS_EDGE_COUNT.bytes(),
-                attIID.bytes()
-        ));
-    }
-
     public static StatisticsKey snapshot() {
-        return new StatisticsKey(Encoding.Prefix.STATISTICS_SNAPSHOT.bytes());
+        return new StatisticsKey(Statistics.Prefix.SNAPSHOT.bytes());
     }
 
-    public static class CountJobKey extends StatisticsKey {
+    public static StatisticsKey txnCommitted(long txnID) {
+        return new StatisticsKey(join(
+                Statistics.Prefix.TXN_COMMITTED_ID.bytes(),
+                ByteArray.encodeLong(txnID)
+        ));
+    }
 
-        private CountJobKey(ByteArray key) {
-            super(key);
+    public static Prefix<StatisticsKey> txnCommittedPrefix() {
+        return new Prefix<>(Statistics.Prefix.TXN_COMMITTED_ID.bytes(), Partition.METADATA, StatisticsKey::new);
+    }
+
+    public static class Miscountable extends StatisticsKey {
+
+        private Miscountable(ByteArray bytes) {
+            super(bytes);
+            assert bytes.hasPrefix(Statistics.Prefix.MISCOUNTABLE.bytes());
         }
 
-        public static CountJobKey of(ByteArray bytes) {
-            assert bytes.get(0) == Encoding.Prefix.STATISTICS_COUNT_JOB.bytes().get(0) && (
-                    bytes.get(1) == Encoding.Statistics.JobType.ATTRIBUTE_VERTEX.bytes().get(0) ||
-                            bytes.get(1) == Encoding.Statistics.JobType.HAS_EDGE.bytes().get(0)
-            );
-            return new CountJobKey(bytes);
+        public static Prefix<Miscountable> prefix() {
+            return new Prefix<>(Statistics.Prefix.MISCOUNTABLE.bytes(), Partition.METADATA, Miscountable::new);
         }
 
-        public static Key.Prefix<CountJobKey> prefix() {
-            return new Key.Prefix<>(Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(), Partition.STATISTICS, CountJobKey::of);
-        }
-
-        public static StatisticsKey attribute(VertexIID.Attribute<?> attIID) {
-            return new StatisticsKey(join(
-                    Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(),
-                    Encoding.Statistics.JobType.ATTRIBUTE_VERTEX.bytes(),
+        public static Miscountable attrOvercount(long txnID, VertexIID.Attribute<?> attIID) {
+            return new Miscountable(join(
+                    Statistics.Prefix.MISCOUNTABLE.bytes(),
+                    ByteArray.encodeLong(txnID),
+                    Statistics.Infix.ATTRIBUTE_OVERCOUNT.bytes(),
                     attIID.bytes()
             ));
         }
 
-        public static StatisticsKey hasEdge(VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
-            return new StatisticsKey(join(
-                    Encoding.Prefix.STATISTICS_COUNT_JOB.bytes(),
-                    Encoding.Statistics.JobType.HAS_EDGE.bytes(),
+        public static Miscountable attrUndercount(long txnID, VertexIID.Attribute<?> attIID) {
+            return new Miscountable(join(
+                    Statistics.Prefix.MISCOUNTABLE.bytes(),
+                    ByteArray.encodeLong(txnID),
+                    Statistics.Infix.ATTRIBUTE_UNDERCOUNT.bytes(),
+                    attIID.bytes()
+            ));
+        }
+
+        public static Miscountable hasEdgeOvercount(long txnID, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
+            return new Miscountable(join(
+                    Statistics.Prefix.MISCOUNTABLE.bytes(),
+                    ByteArray.encodeLong(txnID),
+                    Statistics.Infix.HAS_EDGE_OVERCOUNT.bytes(),
                     thingIID.bytes(),
                     attIID.bytes()
             ));
+        }
+
+        public static Miscountable hasEdgeUndercount(long txnID, VertexIID.Thing thingIID, VertexIID.Attribute<?> attIID) {
+            return new Miscountable(join(
+                    Statistics.Prefix.MISCOUNTABLE.bytes(),
+                    ByteArray.encodeLong(txnID),
+                    Statistics.Infix.HAS_EDGE_UNDERCOUNT.bytes(),
+                    thingIID.bytes(),
+                    attIID.bytes()
+            ));
+        }
+
+        public boolean isAttrOvertcount() {
+            return infix() == Statistics.Infix.ATTRIBUTE_OVERCOUNT.key();
+        }
+
+        public boolean isAttrUndercount() {
+            return infix() ==
+                    Statistics.Infix.ATTRIBUTE_UNDERCOUNT.key();
+        }
+
+        public boolean isHasEdgeOvercount() {
+            return infix() == Statistics.Infix.HAS_EDGE_OVERCOUNT.key();
+        }
+
+        public boolean isHasEdgeUndercount() {
+            return infix() == Statistics.Infix.HAS_EDGE_UNDERCOUNT.key();
+        }
+
+        private byte infix() {
+            return bytes().get(Statistics.Prefix.LENGTH + Bytes.LONG_SIZE);
+        }
+
+        public VertexIID.Attribute<?> getMiscountableAttribute() {
+            assert isAttrOvertcount() || isAttrUndercount();
+            return VertexIID.Attribute.extract(
+                    this.bytes(),
+                    Statistics.Prefix.LENGTH + Bytes.LONG_SIZE + Statistics.Infix.LENGTH
+            );
+        }
+
+        public Pair<VertexIID.Thing, VertexIID.Attribute<?>> getMiscountableHasEdge() {
+            assert isHasEdgeOvercount() || isHasEdgeUndercount();
+            VertexIID.Thing owner = VertexIID.Thing.extract(
+                    this.bytes(),
+                    Statistics.Prefix.LENGTH + Bytes.LONG_SIZE + Statistics.Infix.LENGTH
+            );
+            return new Pair<>(
+                    owner,
+                    VertexIID.Attribute.extract(
+                            this.bytes(),
+                            Statistics.Prefix.LENGTH + Bytes.LONG_SIZE + Statistics.Infix.LENGTH + owner.bytes().length()
+                    )
+            );
         }
     }
 }

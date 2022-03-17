@@ -38,6 +38,8 @@ import com.vaticle.typedb.core.traversal.TraversalCache;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import org.rocksdb.RocksDBException;
 
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -109,23 +111,27 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         return logicMgr;
     }
 
+    public Reasoner reasoner() {
+        if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
+        return reasoner;
+    }
+
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
             closeResources();
+            notifyClosed();
+            delete();
         }
     }
 
-    public Reasoner reasoner() {
-        return reasoner;
+    void notifyClosed() {
+        session.closed(this);
     }
 
-    protected void closeResources() {
-        closeStorage();
-        session.remove(this);
-    }
+    abstract void delete();
 
-    abstract void closeStorage();
+    protected abstract void closeResources();
 
     boolean isSchema() {
         return false;
@@ -223,8 +229,9 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                 } catch (RocksDBException e) {
                     throw TypeDBException.of(e);
                 } finally {
-                    graphMgr.clear();
                     closeResources();
+                    notifyClosed();
+                    delete();
                 }
             } else {
                 throw TypeDBException.of(TRANSACTION_CLOSED);
@@ -242,9 +249,15 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         }
 
         @Override
-        void closeStorage() {
+        protected void closeResources() {
             schemaStorage.close();
             dataStorage.close();
+        }
+
+        @Override
+        public void delete() {
+            assert !isOpen.get();
+            graphMgr.clear();
         }
     }
 
@@ -252,16 +265,19 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
         protected final RocksStorage.Data dataStorage;
         private final CoreDatabase.Cache cache;
+        final long id;
 
         public Data(CoreSession.Data session, Arguments.Transaction.Type type,
                     Options.Transaction options, Factory.Storage storageFactory) {
             super(session, type, options);
 
-            cache = session.database().cacheBorrow();
-            dataStorage = storageFactory.storageData(session.database(), this);
+            this.id = session.database().nextTransactionID();
+            this.cache = session.database().cacheBorrow();
+            this.dataStorage = storageFactory.storageData(session.database(), this);
             ThingGraph thingGraph = new ThingGraph(dataStorage, cache.typeGraph());
-            graphMgr = new GraphManager(cache.typeGraph(), thingGraph);
+            this.graphMgr = new GraphManager(cache.typeGraph(), thingGraph);
 
+            if (type().isWrite()) session.database().isolationMgr().opened(this);
             initialise(graphMgr, cache.traversal(), cache.logic());
         }
 
@@ -301,14 +317,18 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
+
+                    Set<CoreTransaction.Data> overlapping = session.database().isolationMgr().validateOverlappingAndStartCommit(this);
+                    session.database().statisticsCorrector().recordCorrectionMetadata(this, overlapping);
                     dataStorage.commit();
-                    triggerStatisticBgCounter();
+                    session.database().isolationMgr().committed(this);
+                    session.database().statisticsCorrector().committed(this);
                 } catch (RocksDBException e) {
-                    rollback();
+                    delete();
                     throw TypeDBException.of(e);
                 } finally {
-                    graphMgr.data().clear();
                     closeResources();
+                    notifyClosed();
                 }
             } else {
                 throw TypeDBException.of(TRANSACTION_CLOSED);
@@ -326,9 +346,23 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         }
 
         @Override
-        void closeStorage() {
+        protected void closeResources() {
             session.database().cacheUnborrow(cache);
             dataStorage.close();
+        }
+
+        @Override
+        void notifyClosed() {
+            if (type().isWrite()) session.database().isolationMgr().closed(this);
+            super.notifyClosed();
+        }
+
+        @Override
+        public void delete() {
+            assert !isOpen.get();
+            graphMgr.data().clear();
+            dataStorage.delete();
+            session.database().statisticsCorrector().deleted(this);
         }
 
         @Override
@@ -336,14 +370,12 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             return graphMgr.data().committedIIDs();
         }
 
-        /**
-         * Responsible for triggering {@link CoreDatabase.StatisticsBackgroundCounter}, if necessary.
-         * A different implementation of this class may override it.
-         */
-        protected void triggerStatisticBgCounter() {
-            if (graphMgr.data().stats().needsBackgroundCounting()) {
-                session.database().statisticsBackgroundCounter.needsBackgroundCounting();
-            }
+        public long snapshotStart() {
+            return dataStorage.snapshotStart();
+        }
+
+        public Optional<Long> snapshotEnd() {
+            return dataStorage.snapshotEnd();
         }
     }
 }

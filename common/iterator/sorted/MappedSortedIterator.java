@@ -40,7 +40,7 @@ public class MappedSortedIterator<
     U next;
     U last;
 
-    enum State {EMPTY, FETCHED, COMPLETED}
+    private enum State {EMPTY, FETCHED, COMPLETED}
 
     public MappedSortedIterator(ITER source, Function<T, U> mappingFn, ORDER order) {
         super(order);
@@ -137,6 +137,11 @@ public class MappedSortedIterator<
         @Override
         public final SortedIterator.Forwardable<U, ORDER> merge(SortedIterator.Forwardable<U, ORDER> iterator) {
             return SortedIterators.Forwardable.merge(this, iterator);
+        }
+
+        @Override
+        public SortedIterator.Forwardable<U, ORDER> intersect(SortedIterator.Forwardable<U, ORDER> iterator) {
+            return SortedIterators.Forwardable.intersect(this, iterator);
         }
 
         @Override

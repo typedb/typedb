@@ -28,8 +28,11 @@ import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
@@ -276,6 +279,27 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     public LocalDateTime decodeSortedAsDateTime(ZoneId timeZoneID) {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(decodeSortedAsLong()), timeZoneID);
+    }
+
+    public static ByteArray encodeLongs(List<Long> longs) {
+        ByteArray[] encoded = new ByteArray[longs.size()];
+        Iterator<Long> iterator = longs.iterator();
+        int i = 0;
+        while (iterator.hasNext()) {
+            encoded[i] = encodeLong(iterator.next());
+            assert encoded[i].length() == LONG_SIZE;
+            i++;
+        }
+        return join(encoded);
+    }
+
+    public List<Long> decodeLongs() {
+        assert length() % LONG_SIZE == 0;
+        List<Long> longs = new ArrayList<>(length() / LONG_SIZE);
+        for (int i = 0; i < length(); i += LONG_SIZE) {
+            longs.add(view(i, i + LONG_SIZE).decodeLong());
+        }
+        return longs;
     }
 
     @Override
