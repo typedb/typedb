@@ -355,8 +355,8 @@ public class IsolationTest {
                     }
                 }));
             }
-
             CompletableFuture.allOf(workers.toArray(new CompletableFuture[0])).get();
+            session.database().statisticsCorrector().submitCorrection().get(); // guarantee background work has finished
             assertEquals(0, session.database().isolationMgr().committedEventCount());
 
             TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE);
