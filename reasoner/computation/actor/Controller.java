@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -65,28 +66,28 @@ public abstract class Controller<
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PROC_ID id);
 
-    public <PROV_CID, PROV_PROC_ID, REQ extends Processor.Request<PROV_CID, PROV_PROC_ID, PROV_C, INPUT, PROCESSOR, CONTROLLER, REQ>,
-            PROV_C extends Controller<PROV_PROC_ID, ?, INPUT, ?, PROV_C>> void findProviderForConnection(REQ req) {
-        Builder<PROV_PROC_ID, INPUT, ?, ?, ?> builder = req.getBuilder(asController());
+    public <PROV_CID, PROV_PID, REQ extends ProviderRequest<PROV_CID, PROV_PID, PROV_C, INPUT, PROCESSOR, CONTROLLER, REQ>,
+            PROV_C extends Controller<PROV_PID, ?, INPUT, ?, PROV_C>> void findProviderForRequest(REQ req) {
         if (isTerminated()) return;
-        builder.providerController().execute(actor -> actor.makeConnection(builder));
+        Connection.Builder<PROV_PID, INPUT, ?, ?, ?> builder = req.getConnectionBuilder(getThis());
+        builder.providerController().execute(actor -> actor.sendConnectionBuilder(builder));
     }
 
-    public abstract CONTROLLER asController();
+    public abstract CONTROLLER getThis();  // We need this because the processor can't access the controller actor from the driver when building a request
 
-    public void makeConnection(Builder<PROC_ID, OUTPUT, ?, ?, ?> connectionBuilder) {
+    public void sendConnectionBuilder(Connection.Builder<PROC_ID, OUTPUT, ?, ?, ?> connectionBuilder) {
         if (isTerminated()) return;
-        computeProcessorIfAbsent(connectionBuilder.providingProcessorId())
+        createProcessorIfAbsent(connectionBuilder.providerProcessorId())
                 .execute(actor -> actor.acceptConnection(connectionBuilder));
     }
 
-    public Driver<PROCESSOR> computeProcessorIfAbsent(PROC_ID id) {
+    public Driver<PROCESSOR> createProcessorIfAbsent(PROC_ID processorId) {
         // TODO: We can do subsumption in the subtypes here
-        return processors.computeIfAbsent(id, this::buildProcessor);
+        return processors.computeIfAbsent(processorId, this::createProcessor);
     }
 
-    private Actor.Driver<PROCESSOR> buildProcessor(PROC_ID id) {
-        if (isTerminated()) return null;
+    private Actor.Driver<PROCESSOR> createProcessor(PROC_ID id) {
+        if (isTerminated()) return null;  // TODO: Avoid returning null
         Driver<PROCESSOR> processor = Actor.driver(createProcessorFunc(id), executorService);
         processor.execute(Processor::setUp);
         return processor;
@@ -118,60 +119,65 @@ public abstract class Controller<
         return terminated;
     }
 
-    public static class Builder<PROV_PROC_ID, PACKET,
-            REQ extends Processor.Request<?, PROV_PROC_ID, PROV_CONTROLLER, PACKET, PROCESSOR, ?, REQ>,
+    public static abstract class ProviderRequest<
+            PROV_CID, PROV_PID, PROV_C extends Controller<?, ?, PACKET, ?, PROV_C>, PACKET,
             PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>,
-            PROV_CONTROLLER extends Controller<PROV_PROC_ID, ?, PACKET, ?, PROV_CONTROLLER>> {
+            CONTROLLER extends Controller<?, PACKET, ?, PROCESSOR, CONTROLLER>,
+            REQ extends ProviderRequest<PROV_CID, PROV_PID, PROV_C, PACKET, PROCESSOR, ?, REQ>> {
 
-        private final Driver<PROV_CONTROLLER> provController;
+        private final PROV_CID provControllerId;
         private final Driver<PROCESSOR> recProcessor;
         private final long recEndpointId;
         private final List<Function<PACKET, PACKET>> connectionTransforms;
-        private final PROV_PROC_ID provProcessorId;
+        private final PROV_PID provProcessorId;
 
-        public Builder(Driver<PROV_CONTROLLER> provController,
-                       Processor.Request<?, PROV_PROC_ID, PROV_CONTROLLER, PACKET, PROCESSOR, ?, REQ> connectionRequest) {
-            this.provController = provController;
-            this.recProcessor = connectionRequest.receivingProcessor();
-            this.recEndpointId = connectionRequest.receivingEndpointId();
-            this.connectionTransforms = connectionRequest.connectionTransforms();
-            this.provProcessorId = connectionRequest.providingProcessorId();
-        }
-
-        public Builder(Driver<PROV_CONTROLLER> provController, Driver<PROCESSOR> recProcessor, long recEndpointId,
-                       List<Function<PACKET, PACKET>> connectionTransforms, PROV_PROC_ID provProcessorId) {
-            this.provController = provController;
+        protected ProviderRequest(Driver<PROCESSOR> recProcessor, long recEndpointId, PROV_CID provControllerId,
+                                  PROV_PID provProcessorId) {
             this.recProcessor = recProcessor;
             this.recEndpointId = recEndpointId;
-            this.connectionTransforms = connectionTransforms;
+            this.provControllerId = provControllerId;
             this.provProcessorId = provProcessorId;
+            this.connectionTransforms = new ArrayList<>();
         }
 
-        public Driver<PROV_CONTROLLER> providerController() {
-            return provController;
-        }
-
-        public PROV_PROC_ID providingProcessorId(){
-            return provProcessorId;
-        }
+        public abstract Connection.Builder<PROV_PID, PACKET, REQ, PROCESSOR, ?> getConnectionBuilder(CONTROLLER controller);
 
         public Driver<PROCESSOR> receivingProcessor() {
             return recProcessor;
         }
 
-        public Builder<PROV_PROC_ID, PACKET, REQ, PROCESSOR, PROV_CONTROLLER> withMap(Function<PACKET, PACKET> function) {
-            ArrayList<Function<PACKET, PACKET>> newTransforms = new ArrayList<>(connectionTransforms);
-            newTransforms.add(function);
-            return new Builder<>(provController, recProcessor, recEndpointId, newTransforms, provProcessorId);
+        public PROV_CID providingControllerId() {
+            return provControllerId;
         }
 
-        public Builder<PROV_PROC_ID, PACKET, REQ, PROCESSOR, PROV_CONTROLLER> withNewProcessorId(PROV_PROC_ID newPID) {
-            return new Builder<>(provController, recProcessor, recEndpointId, connectionTransforms, newPID);
+        public PROV_PID providingProcessorId() {
+            return provProcessorId;
         }
 
-        public <PROV_PROCESSOR extends Processor<?, PACKET, ?, PROV_PROCESSOR>> Connection<PACKET, PROCESSOR,
-                PROV_PROCESSOR> build(Driver<PROV_PROCESSOR> pubProcessor, long pubEndpointId) {
-            return new Connection<>(recProcessor, pubProcessor, recEndpointId, pubEndpointId, connectionTransforms);
+        public long receivingEndpointId() {
+            return recEndpointId;
+        }
+
+        public List<Function<PACKET, PACKET>> connectionTransforms() {
+            return connectionTransforms;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            // TODO: be wary with request equality when conjunctions are involved
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ProviderRequest<?, ?, ?, ?, ?, ?, ?> request = (ProviderRequest<?, ?, ?, ?, ?, ?, ?>) o;
+            return recEndpointId == request.recEndpointId &&
+                    provControllerId.equals(request.provControllerId) &&
+                    recProcessor.equals(request.recProcessor) &&
+                    connectionTransforms.equals(request.connectionTransforms) &&
+                    provProcessorId.equals(request.provProcessorId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(provControllerId, recProcessor, recEndpointId, connectionTransforms, provProcessorId);
         }
     }
 }

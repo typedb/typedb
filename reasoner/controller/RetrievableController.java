@@ -62,7 +62,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     }
 
     @Override
-    public RetrievableController asController() {
+    public RetrievableController getThis() {
         return this;
     }
 

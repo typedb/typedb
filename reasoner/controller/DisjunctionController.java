@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -75,6 +76,21 @@ public abstract class DisjunctionController<
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
+    private static class NestedConjunctionRequest<P extends DisjunctionProcessor<C, P>, C extends DisjunctionController<P, C>>
+            extends ProviderRequest<Conjunction, ConceptMap, NestedConjunctionController, ConceptMap, P, C, NestedConjunctionRequest<P, C>> {
+
+        protected NestedConjunctionRequest(Driver<P> recProcessor, long recEndpointId, Conjunction provControllerId,
+                                           ConceptMap provProcessorId) {
+            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+        }
+
+        @Override
+        public Connection.Builder<ConceptMap, ConceptMap, NestedConjunctionRequest<P, C>, P, ?> getConnectionBuilder(C controller) {
+            return new Connection.Builder<>(controller.conjunctionProvider(providingControllerId()), this)
+                    .withMap(c -> merge(c, providingProcessorId()));
+        }
+    }
+
     protected static abstract class DisjunctionProcessor<
             CONTROLLER extends DisjunctionController<PROCESSOR, CONTROLLER>,
             PROCESSOR extends DisjunctionProcessor<CONTROLLER, PROCESSOR>>
@@ -101,7 +117,7 @@ public abstract class DisjunctionController<
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();
-                requestConnection(new NestedConjunctionRequest<>(driver(), endpoint.id(), conjunction, bounds.filter(retrievableConjunctionVars)));
+                requestProvider(new DisjunctionController.NestedConjunctionRequest<>(driver(), endpoint.id(), conjunction, bounds.filter(retrievableConjunctionVars)));
             }
             fanIn.finaliseProviders();
         }
@@ -111,19 +127,6 @@ public abstract class DisjunctionController<
             return fanIn.buffer();
         }
 
-        private static class NestedConjunctionRequest<P extends DisjunctionProcessor<C, P>, C extends DisjunctionController<P, C>>
-                extends Request<Conjunction, ConceptMap, NestedConjunctionController, ConceptMap, P, C, NestedConjunctionRequest<P, C>> {
-
-            protected NestedConjunctionRequest(Driver<P> recProcessor, long recEndpointId, Conjunction provControllerId,
-                                               ConceptMap provProcessorId) {
-                super(recProcessor, recEndpointId, provControllerId, provProcessorId);
-            }
-
-            @Override
-            public Builder<ConceptMap, ConceptMap, NestedConjunctionRequest<P, C>, P, ?> getBuilder(C controller) {
-                return new Builder<>(controller.conjunctionProvider(providingControllerId()), this)
-                        .withMap(c -> merge(c, providingProcessorId()));
-            }
-        }
     }
+
 }

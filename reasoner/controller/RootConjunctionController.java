@@ -60,7 +60,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
     }
 
     @Override
-    public RootConjunctionController asController() {
+    public RootConjunctionController getThis() {
         return this;
     }
 

@@ -32,12 +32,10 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -56,7 +54,7 @@ public abstract class Processor<INPUT, OUTPUT,
     private final Map<Long, InletEndpoint<INPUT>> receivingEndpoints;
     private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
     private final Driver<Monitor> monitor;
-    private final Map<Reactive.Identifier, Reactive> reactives;
+    private final Map<Reactive.Identifier, Reactive> reactives;  // TODO: Ever required?
     protected final Set<Connection<INPUT, ?, ?>> upstreamConnections;
     private Reactive.Stream<OUTPUT,OUTPUT> outlet;
     private long endpointId;
@@ -80,32 +78,31 @@ public abstract class Processor<INPUT, OUTPUT,
 
     public abstract void setUp();
 
+    protected void setOutlet(Reactive.Stream<OUTPUT,OUTPUT> outlet) {
+        this.outlet = outlet;
+    }
+
     public void pull() {
         throw TypeDBException.of(ILLEGAL_OPERATION);
     }
 
-    public <PACKET> void pull(Reactive.Provider<PACKET> provider, Reactive.Receiver<PACKET> receiver) {
+    public <PACKET> void retryPull(Reactive.Provider<PACKET> provider, Reactive.Receiver<PACKET> receiver) {  // TODO: Does making this static comform to actor model?
         provider.pull(receiver);
-    }
-
-    protected void setOutlet(Reactive.Stream<OUTPUT,OUTPUT> outlet) {
-        this.outlet = outlet;
     }
 
     public Reactive.Stream<OUTPUT,OUTPUT> outlet() {
         return outlet;
     }
 
-    protected <PROV_CID, PROV_PROC_ID,
-            REQ extends Request<PROV_CID, PROV_PROC_ID, PROV_C, INPUT, PROCESSOR, CONTROLLER, REQ>,
-            PROV_C extends Controller<PROV_PROC_ID, ?, INPUT, ?, PROV_C>
-            > void requestConnection(REQ req) {
+    protected <PROV_CID, PROV_PID,
+            REQ extends Controller.ProviderRequest<PROV_CID, PROV_PID, PROV_C, INPUT, PROCESSOR, CONTROLLER, REQ>,
+            PROV_C extends Controller<PROV_PID, ?, INPUT, ?, PROV_C>> void requestProvider(REQ req) {
         assert !done;
         if (isTerminated()) return;
-        controller.execute(actor -> actor.findProviderForConnection(req));
+        controller.execute(actor -> actor.findProviderForRequest(req));
     }
 
-    protected void acceptConnection(Controller.Builder<?, OUTPUT, ?, ?, ?> connectionBuilder) {
+    protected void acceptConnection(Connection.Builder<?, OUTPUT, ?, ?, ?> connectionBuilder) {
         assert !done;
         Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
         applyConnectionTransforms(connection.transformations(), outlet(), createProvidingEndpoint(connection));
@@ -310,68 +307,6 @@ public abstract class Processor<INPUT, OUTPUT,
             if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
         }
 
-    }
-
-    public static abstract class Request<
-            PROV_CID, PROV_PROC_ID, PROV_C extends Controller<?, ?, PACKET, ?, PROV_C>, PACKET,
-            PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>,
-            CONTROLLER extends Controller<?, PACKET, ?, PROCESSOR, CONTROLLER>,
-            REQ extends Request<PROV_CID, PROV_PROC_ID, PROV_C, PACKET, PROCESSOR, ?, REQ>> {
-
-        private final PROV_CID provControllerId;
-        private final Driver<PROCESSOR> recProcessor;
-        private final long recEndpointId;
-        private final List<Function<PACKET, PACKET>> connectionTransforms;
-        private final PROV_PROC_ID provProcessorId;
-
-        protected Request(Driver<PROCESSOR> recProcessor, long recEndpointId, PROV_CID provControllerId,
-                          PROV_PROC_ID provProcessorId) {
-            this.recProcessor = recProcessor;
-            this.recEndpointId = recEndpointId;
-            this.provControllerId = provControllerId;
-            this.provProcessorId = provProcessorId;
-            this.connectionTransforms = new ArrayList<>();
-        }
-
-        public abstract Controller.Builder<PROV_PROC_ID, PACKET, REQ, PROCESSOR, ?> getBuilder(CONTROLLER controller);
-
-        public Driver<PROCESSOR> receivingProcessor() {
-            return recProcessor;
-        }
-
-        public PROV_CID providingControllerId() {
-            return provControllerId;
-        }
-
-        public PROV_PROC_ID providingProcessorId() {
-            return provProcessorId;
-        }
-
-        public long receivingEndpointId() {
-            return recEndpointId;
-        }
-
-        public List<Function<PACKET, PACKET>> connectionTransforms() {
-            return connectionTransforms;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            // TODO: be wary with request equality when conjunctions are involved
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Request<?, ?, ?, ?, ?, ?, ?> request = (Request<?, ?, ?, ?, ?, ?, ?>) o;
-            return recEndpointId == request.recEndpointId &&
-                    provControllerId.equals(request.provControllerId) &&
-                    recProcessor.equals(request.recProcessor) &&
-                    connectionTransforms.equals(request.connectionTransforms) &&
-                    provProcessorId.equals(request.provProcessorId);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(provControllerId, recProcessor, recEndpointId, connectionTransforms, provProcessorId);
-        }
     }
 
 }

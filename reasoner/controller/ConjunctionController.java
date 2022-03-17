@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.answer.Mapping;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -124,6 +125,62 @@ public abstract class ConjunctionController<OUTPUT,
         return new ConceptMap(compounded);
     }
 
+    static class RetrievableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
+            extends ProviderRequest<Retrievable, ConceptMap, RetrievableController, ConceptMap, P, C, RetrievableRequest<P, C>> {
+
+        public RetrievableRequest(Driver<P> recProcessor, long recEndpointId, Retrievable provControllerId,
+                                  ConceptMap provProcessorId) {
+            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+        }
+
+        @Override
+        public Connection.Builder<ConceptMap, ConceptMap, RetrievableRequest<P, C>, P, ?> getConnectionBuilder(C controller) {
+            ResolverView.FilteredRetrievable controllerView = controller.retrievableProvider(providingControllerId());
+            ConceptMap newPID = providingProcessorId().filter(controllerView.filter());
+            return new Connection.Builder<>(controllerView.controller(), this)
+                    .withMap(c -> merge(c, providingProcessorId()))
+                    .withNewProcessorId(newPID);
+        }
+    }
+
+    static class ConcludableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
+            extends ProviderRequest<Concludable, ConceptMap, ConcludableController, ConceptMap, P, C, ConcludableRequest<P, C>> {
+
+        public ConcludableRequest(Driver<P> recProcessor, long recEndpointId, Concludable provControllerId,
+                                  ConceptMap provProcessorId) {
+            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+        }
+
+        @Override
+        public Connection.Builder<ConceptMap, ConceptMap, ConcludableRequest<P, C>, P, ?> getConnectionBuilder(C controller) {
+            ResolverView.MappedConcludable controllerView = controller.concludableProvider(providingControllerId());
+            Mapping mapping = Mapping.of(controllerView.mapping());
+            ConceptMap newPID = mapping.transform(providingProcessorId());
+            return new Connection.Builder<>(controllerView.controller(), this)
+                    .withMap(mapping::unTransform)
+                    .withNewProcessorId(newPID);
+        }
+    }
+
+    // TODO: Negated request or Negation?
+    static class NegatedRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
+            extends ProviderRequest<Negated, ConceptMap, NegationController, ConceptMap, P, C, NegatedRequest<P, C>> {
+
+        protected NegatedRequest(Driver<P> recProcessor, long recEndpointId, Negated provControllerId,
+                                 ConceptMap provProcessorId) {
+            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+        }
+
+        @Override
+        public Connection.Builder<ConceptMap, ConceptMap, NegatedRequest<P, C>, P, ?> getConnectionBuilder(C controller) {
+            ResolverView.FilteredNegation controllerView = controller.negationProvider(providingControllerId());
+            ConceptMap newPID = providingProcessorId().filter(controllerView.filter());
+            return new Connection.Builder<>(controllerView.controller(), this)
+                    .withMap(c -> merge(c, providingProcessorId()))
+                    .withNewProcessorId(newPID);
+        }
+    }
+
     protected static abstract class ConjunctionProcessor<OUTPUT,
             CONTROLLER extends ConjunctionController<OUTPUT, CONTROLLER, PROCESSOR>,
             PROCESSOR extends Processor<ConceptMap, OUTPUT, CONTROLLER, PROCESSOR>>
@@ -148,74 +205,20 @@ public abstract class ConjunctionController<OUTPUT,
             // TODO: Rethink this ugly structure for compound reactives
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             if (planElement.isRetrievable()) {
-                requestConnection(new RetrievableRequest<>(driver(), endpoint.id(), planElement.asRetrievable(),
-                                                           carriedBounds.filter(planElement.retrieves())));
+                requestProvider(new RetrievableRequest<>(driver(), endpoint.id(), planElement.asRetrievable(),
+                                                         carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isConcludable()) {
-                requestConnection(new ConcludableRequest<>(driver(), endpoint.id(), planElement.asConcludable(),
-                                                           carriedBounds.filter(planElement.retrieves())));
+                requestProvider(new ConcludableRequest<>(driver(), endpoint.id(), planElement.asConcludable(),
+                                                         carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isNegated()) {
-                requestConnection(new NegatedRequest<>(driver(), endpoint.id(), planElement.asNegated(),
-                                                       carriedBounds.filter(planElement.retrieves())));
+                requestProvider(new NegatedRequest<>(driver(), endpoint.id(), planElement.asNegated(),
+                                                     carriedBounds.filter(planElement.retrieves())));
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
             return endpoint;
         }
 
-        static class RetrievableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
-                extends Request<Retrievable, ConceptMap, RetrievableController, ConceptMap, P, C, RetrievableRequest<P, C>> {
-
-            public RetrievableRequest(Driver<P> recProcessor, long recEndpointId, Retrievable provControllerId,
-                                      ConceptMap provProcessorId) {
-                super(recProcessor, recEndpointId, provControllerId, provProcessorId);
-            }
-
-            @Override
-            public Builder<ConceptMap, ConceptMap, RetrievableRequest<P, C>, P, ?> getBuilder(C controller) {
-                ResolverView.FilteredRetrievable controllerView = controller.retrievableProvider(providingControllerId());
-                ConceptMap newPID = providingProcessorId().filter(controllerView.filter());
-                return new Builder<>(controllerView.controller(), this)
-                        .withMap(c -> merge(c, providingProcessorId()))
-                        .withNewProcessorId(newPID);
-            }
-        }
-
-        static class ConcludableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
-                extends Request<Concludable, ConceptMap, ConcludableController, ConceptMap, P, C, ConcludableRequest<P, C>> {
-
-            public ConcludableRequest(Driver<P> recProcessor, long recEndpointId, Concludable provControllerId,
-                                      ConceptMap provProcessorId) {
-                super(recProcessor, recEndpointId, provControllerId, provProcessorId);
-            }
-
-            @Override
-            public Builder<ConceptMap, ConceptMap, ConcludableRequest<P, C>, P, ?> getBuilder(C controller) {
-                ResolverView.MappedConcludable controllerView = controller.concludableProvider(providingControllerId());
-                Mapping mapping = Mapping.of(controllerView.mapping());
-                ConceptMap newPID = mapping.transform(providingProcessorId());
-                return new Builder<>(controllerView.controller(), this)
-                        .withMap(mapping::unTransform)
-                        .withNewProcessorId(newPID);
-            }
-        }
-
-        static class NegatedRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
-                extends Request<Negated, ConceptMap, NegationController, ConceptMap, P, C, NegatedRequest<P, C>> {
-
-            protected NegatedRequest(Driver<P> recProcessor, long recEndpointId, Negated provControllerId,
-                                     ConceptMap provProcessorId) {
-                super(recProcessor, recEndpointId, provControllerId, provProcessorId);
-            }
-
-            @Override
-            public Builder<ConceptMap, ConceptMap, NegatedRequest<P, C>, P, ?> getBuilder(C controller) {
-                ResolverView.FilteredNegation controllerView = controller.negationProvider(providingControllerId());
-                ConceptMap newPID = providingProcessorId().filter(controllerView.filter());
-                return new Builder<>(controllerView.controller(), this)
-                        .withMap(c -> merge(c, providingProcessorId()))
-                        .withNewProcessorId(newPID);
-            }
-        }
     }
 
 }

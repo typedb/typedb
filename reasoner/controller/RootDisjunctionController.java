@@ -57,7 +57,7 @@ public class RootDisjunctionController
     }
 
     @Override
-    public RootDisjunctionController asController() {
+    public RootDisjunctionController getThis() {
         return this;
     }
 

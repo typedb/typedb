@@ -46,7 +46,7 @@ public class NestedDisjunctionController
     }
 
     @Override
-    public NestedDisjunctionController asController() {
+    public NestedDisjunctionController getThis() {
         return this;
     }
 

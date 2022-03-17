@@ -22,12 +22,15 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>, PROV_PROCESSOR extends Processor<?, PACKET, ?, PROV_PROCESSOR>> implements Reactive.Provider<PACKET>, Reactive.Receiver<PACKET> {
+public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>,
+        PROV_PROCESSOR extends Processor<?, PACKET, ?, PROV_PROCESSOR>>
+        implements Reactive.Provider<PACKET>, Reactive.Receiver<PACKET> {
 
     private final Identifier identifier;
     private final Actor.Driver<PROCESSOR> recProcessor;
@@ -122,6 +125,63 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
         public String toString() {
             return recProcessor.debugName().get() + ":" + recEndpointId + "<->" + provProcessor.debugName().get() +
                     ":" + provEndpointId;
+        }
+    }
+
+    public static class Builder<PROV_PID, PACKET,
+            REQ extends Controller.ProviderRequest<?, PROV_PID, PROV_CONTROLLER, PACKET, PROCESSOR, ?, REQ>,
+            PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>,
+            PROV_CONTROLLER extends Controller<PROV_PID, ?, PACKET, ?, PROV_CONTROLLER>> {
+
+        private final Actor.Driver<PROV_CONTROLLER> provController;
+        private final Actor.Driver<PROCESSOR> recProcessor;
+        private final long recEndpointId;
+        private final List<Function<PACKET, PACKET>> connectionTransforms;
+        private final PROV_PID provProcessorId;
+
+        public Builder(Actor.Driver<PROV_CONTROLLER> provController,
+                       Controller.ProviderRequest<?, PROV_PID, PROV_CONTROLLER, PACKET, PROCESSOR, ?, REQ> providerRequest) {
+            this.provController = provController;
+            this.recProcessor = providerRequest.receivingProcessor();
+            this.recEndpointId = providerRequest.receivingEndpointId();
+            this.connectionTransforms = providerRequest.connectionTransforms();
+            this.provProcessorId = providerRequest.providingProcessorId();
+        }
+
+        public Builder(Actor.Driver<PROV_CONTROLLER> provController, Actor.Driver<PROCESSOR> recProcessor, long recEndpointId,
+                       List<Function<PACKET, PACKET>> connectionTransforms, PROV_PID provProcessorId) {
+            this.provController = provController;
+            this.recProcessor = recProcessor;
+            this.recEndpointId = recEndpointId;
+            this.connectionTransforms = connectionTransforms;
+            this.provProcessorId = provProcessorId;
+        }
+
+        public Actor.Driver<PROV_CONTROLLER> providerController() {
+            return provController;
+        }
+
+        public PROV_PID providerProcessorId(){
+            return provProcessorId;
+        }
+
+        public Actor.Driver<PROCESSOR> receivingProcessor() {
+            return recProcessor;
+        }
+
+        public Builder<PROV_PID, PACKET, REQ, PROCESSOR, PROV_CONTROLLER> withMap(Function<PACKET, PACKET> function) {
+            ArrayList<Function<PACKET, PACKET>> newTransforms = new ArrayList<>(connectionTransforms);
+            newTransforms.add(function);
+            return new Builder<>(provController, recProcessor, recEndpointId, newTransforms, provProcessorId);
+        }
+
+        public Builder<PROV_PID, PACKET, REQ, PROCESSOR, PROV_CONTROLLER> withNewProcessorId(PROV_PID newPID) {
+            return new Builder<>(provController, recProcessor, recEndpointId, connectionTransforms, newPID);
+        }
+
+        public <PROV_PROCESSOR extends Processor<?, PACKET, ?, PROV_PROCESSOR>> Connection<PACKET, PROCESSOR,
+                PROV_PROCESSOR> build(Actor.Driver<PROV_PROCESSOR> pubProcessor, long pubEndpointId) {
+            return new Connection<>(recProcessor, pubProcessor, recEndpointId, pubEndpointId, connectionTransforms);
         }
     }
 }

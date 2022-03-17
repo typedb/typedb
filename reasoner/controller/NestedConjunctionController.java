@@ -59,7 +59,7 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
     }
 
     @Override
-    public NestedConjunctionController asController() {
+    public NestedConjunctionController getThis() {
         return this;
     }
 

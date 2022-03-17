@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -106,8 +107,22 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
     }
 
     @Override
-    public ConcludableController asController() {
+    public ConcludableController getThis() {
         return this;
+    }
+
+    protected static class ConclusionRequest extends ProviderRequest<Conclusion, ConceptMap, ConclusionController,
+            Map<Variable, Concept>, ConcludableProcessor, ConcludableController, ConclusionRequest> {
+
+        public ConclusionRequest(Driver<ConcludableProcessor> recProcessor, long recEndpointId,
+                                 Conclusion provControllerId, ConceptMap provProcessorId) {
+            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+        }
+
+        @Override
+        public Connection.Builder<ConceptMap, Map<Variable, Concept>, ConclusionRequest, ConcludableProcessor, ?> getConnectionBuilder(ConcludableController controller) {
+            return new Connection.Builder<>(controller.conclusionProvider(providingControllerId()), this);
+        }
     }
 
     protected static class ConcludableProcessor extends Processor<Map<Variable, Concept>, ConceptMap, ConcludableController, ConcludableProcessor> {
@@ -159,22 +174,10 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         private void mayRequestConnection(ConclusionRequest conclusionRequest) {
             if (!requestedConnections.contains(conclusionRequest)) {
                 requestedConnections.add(conclusionRequest);
-                requestConnection(conclusionRequest);
+                requestProvider(conclusionRequest);
             }
         }
 
-        protected static class ConclusionRequest extends Request<Conclusion, ConceptMap, ConclusionController,
-                        Map<Variable, Concept>, ConcludableProcessor, ConcludableController, ConclusionRequest> {
-
-            public ConclusionRequest(Driver<ConcludableProcessor> recProcessor, long recEndpointId,
-                                     Conclusion provControllerId, ConceptMap provProcessorId) {
-                super(recProcessor, recEndpointId, provControllerId, provProcessorId);
-            }
-
-            @Override
-            public Builder<ConceptMap, Map<Variable, Concept>, ConclusionRequest, ConcludableProcessor, ?> getBuilder(ConcludableController controller) {
-                return new Builder<>(controller.conclusionProvider(providingControllerId()), this);
-            }
-        }
     }
+
 }

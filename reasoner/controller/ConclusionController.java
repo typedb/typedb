@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -71,7 +72,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
     }
 
     @Override
-    public ConclusionController asController() {
+    public ConclusionController getThis() {
         return this;
     }
 
@@ -81,6 +82,34 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
     private Driver<ConditionController> conditionController() {
         return conditionController;
+    }
+
+    protected static class ConditionRequest extends ProviderRequest<Rule.Condition, ConceptMap, ConditionController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController, ConditionRequest> {
+
+        public ConditionRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
+                                Rule.Condition provControllerId, ConceptMap provProcessorId) {
+            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+        }
+
+        @Override
+        public Connection.Builder<ConceptMap, Either<ConceptMap, Materialisation>, ConditionRequest, ConclusionProcessor, ?> getConnectionBuilder(ConclusionController controller) {
+            return new Connection.Builder<>(controller.conditionController(), this);
+        }
+
+    }
+
+    protected static class MaterialiserRequest extends ProviderRequest<Void, Materialisable, MaterialisationController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController, MaterialiserRequest> {
+
+        public MaterialiserRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
+                                   Void provControllerId, Materialisable provProcessorId) {
+            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+        }
+
+        @Override
+        public Connection.Builder<Materialisable, Either<ConceptMap, Materialisation>, MaterialiserRequest, ConclusionProcessor, ?> getConnectionBuilder(ConclusionController controller) {
+            return new Connection.Builder<>(controller.materialisationController(), this);
+        }
+
     }
 
     protected static class ConclusionProcessor extends Processor<Either<ConceptMap, Materialisation>, Map<Variable, Concept>, ConclusionController, ConclusionProcessor> {
@@ -113,45 +142,19 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         }
 
         private void mayRequestCondition(ConditionRequest conditionRequest) {
+            // TODO: Does this methods achieve anything?
             if (!conditionRequests.contains(conditionRequest)) {
                 conditionRequests.add(conditionRequest);
-                requestConnection(conditionRequest);
+                requestProvider(conditionRequest);
             }
         }
 
         private void mayRequestMaterialiser(MaterialiserRequest materialisationRequest) {
+            // TODO: Does this methods achieve anything?
             if (!materialisationRequests.contains(materialisationRequest)) {
                 materialisationRequests.add(materialisationRequest);
-                requestConnection(materialisationRequest);
+                requestProvider(materialisationRequest);
             }
-        }
-
-        protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap, ConditionController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController, ConditionRequest> {
-
-            public ConditionRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
-                                    Rule.Condition provControllerId, ConceptMap provProcessorId) {
-                super(recProcessor, recEndpointId, provControllerId, provProcessorId);
-            }
-
-            @Override
-            public Builder<ConceptMap, Either<ConceptMap, Materialisation>, ConditionRequest, ConclusionProcessor, ?> getBuilder(ConclusionController controller) {
-                return new Builder<>(controller.conditionController(), this);
-            }
-
-        }
-
-        protected static class MaterialiserRequest extends Request<Void, Materialisable, MaterialisationController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController, MaterialiserRequest> {
-
-            public MaterialiserRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
-                                       Void provControllerId, Materialisable provProcessorId) {
-                super(recProcessor, recEndpointId, provControllerId, provProcessorId);
-            }
-
-            @Override
-            public Builder<Materialisable, Either<ConceptMap, Materialisation>, MaterialiserRequest, ConclusionProcessor, ?> getBuilder(ConclusionController controller) {
-                return new Builder<>(controller.materialisationController(), this);
-            }
-
         }
 
         private class ConclusionReactive extends SingleReceiverStream<ConceptMap, Map<Variable, Concept>> {
@@ -196,7 +199,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
                 Stream<?, Map<Variable, Concept>> op = materialisationEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
-                MaterialiserReactive materialisationReactive = new MaterialiserReactive(this, processor());
+                MaterialisationReactive materialisationReactive = new MaterialisationReactive(this, processor());
                 materialisationRegistry().add(materialisationReactive);
                 op.publishTo(materialisationReactive);
                 materialisationReactive.sendTo(receiverRegistry().receiver());
@@ -211,7 +214,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 }
             }
 
-            private void receiveMaterialisation(MaterialiserReactive provider, Map<Variable, Concept> packet) {
+            private void receiveMaterialisation(MaterialisationReactive provider, Map<Variable, Concept> packet) {
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
                 materialisationRegistry().recordReceive(provider);
                 if (receiverRegistry().isPulling()) {
@@ -223,12 +226,12 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
         }
 
-        private class MaterialiserReactive extends SingleReceiverStream<Map<Variable, Concept>, Map<Variable, Concept>> {
+        private class MaterialisationReactive extends SingleReceiverStream<Map<Variable, Concept>, Map<Variable, Concept>> {
 
             private final ConclusionReactive parent;
             private final ProviderRegistry.SingleProviderRegistry<Map<Variable, Concept>> providerRegistry;
 
-            public MaterialiserReactive(ConclusionReactive parent, Processor<?, ?, ?, ?> processor) {
+            public MaterialisationReactive(ConclusionReactive parent, Processor<?, ?, ?, ?> processor) {
                 super(processor);
                 this.parent = parent;
                 this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);

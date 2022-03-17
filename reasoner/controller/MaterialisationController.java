@@ -68,7 +68,7 @@ public class MaterialisationController extends Controller<Materialisable, Void, 
     }
 
     @Override
-    public MaterialisationController asController() {
+    public MaterialisationController getThis() {
         return this;
     }
 

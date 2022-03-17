@@ -60,7 +60,7 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
     }
 
     @Override
-    public ConditionController asController() {
+    public ConditionController getThis() {
         return this;
     }
 

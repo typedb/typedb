@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -67,8 +68,22 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
     }
 
     @Override
-    public NegationController asController() {
+    public NegationController getThis() {
         return this;
+    }
+
+    protected static class DisjunctionRequest extends ProviderRequest<Disjunction, ConceptMap, NestedDisjunctionController,
+            ConceptMap, NegationProcessor, NegationController, DisjunctionRequest> {
+
+        protected DisjunctionRequest(Driver<NegationProcessor> recProcessor, long recEndpointId,
+                                     Disjunction provControllerId, ConceptMap provProcessorId) {
+            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+        }
+
+        @Override
+        public Connection.Builder<ConceptMap, ConceptMap, DisjunctionRequest, NegationProcessor, ?> getConnectionBuilder(NegationController controller) {
+            return new Connection.Builder<>(controller.disjunctionContoller(), this);
+        }
     }
 
     protected static class NegationProcessor extends Processor<ConceptMap, ConceptMap, NegationController, NegationProcessor> {
@@ -89,7 +104,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         public void setUp() {
             setOutlet(new FanOutStream<>(this));
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
-            requestConnection(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
+            requestProvider(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
             negation = new NegationReactive(this, bounds);
             monitor().execute(actor -> actor.registerRoot(driver(), negation.identifier()));
             monitor().execute(actor -> actor.forkFrontier(1, negation.identifier()));
@@ -144,19 +159,6 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             }
         }
 
-        protected static class DisjunctionRequest extends Request<Disjunction, ConceptMap, NestedDisjunctionController,
-                ConceptMap, NegationProcessor, NegationController, DisjunctionRequest> {
-
-            protected DisjunctionRequest(Driver<NegationProcessor> recProcessor, long recEndpointId,
-                                         Disjunction provControllerId, ConceptMap provProcessorId) {
-                super(recProcessor, recEndpointId, provControllerId, provProcessorId);
-            }
-
-            @Override
-            public Builder<ConceptMap, ConceptMap, DisjunctionRequest, NegationProcessor, ?> getBuilder(NegationController controller) {
-                return new Builder<>(controller.disjunctionContoller(), this);
-            }
-        }
     }
 
 }

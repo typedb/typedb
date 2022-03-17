@@ -53,7 +53,7 @@ public abstract class ProviderRegistry<R> {
 
     protected void pullProvider(Reactive.Provider<R> provider, boolean async) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver, provider));
-        if (async) processor.driver().execute(actor -> actor.pull(provider, receiver));
+        if (async) processor.driver().execute(actor -> actor.retryPull(provider, receiver));
         else provider.pull(receiver);
     }
 
