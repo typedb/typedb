@@ -734,60 +734,60 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         void recordCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> overlappingTxn) {
-            recordMiscounts(txn, overlappingTxn);
+            recordMiscountableCauses(txn, overlappingTxn);
             txn.dataStorage.putUntracked(StatisticsKey.txnCommitted(txn.id));
         }
 
-        private void recordMiscounts(CoreTransaction.Data txn, Set<CoreTransaction.Data> overlappingTxn) {
-            Map<AttributeVertex<?>, List<Long>> attrOvercountDependencies = new HashMap<>();
-            Map<AttributeVertex<?>, List<Long>> attrUndercountDependencies = new HashMap<>();
-            Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> hasEdgeOvercountDependencies = new HashMap<>();
-            Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> hasEdgeUndercountDependencies = new HashMap<>();
+        private void recordMiscountableCauses(CoreTransaction.Data txn, Set<CoreTransaction.Data> overlappingTxn) {
+            Map<AttributeVertex<?>, List<Long>> attrOvercount = new HashMap<>();
+            Map<AttributeVertex<?>, List<Long>> attrUndercount = new HashMap<>();
+            Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> hasEdgeOvercount = new HashMap<>();
+            Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> hasEdgeUndercount = new HashMap<>();
             for (CoreTransaction.Data overlapping : overlappingTxn) {
-                buildAttrDependencies(attrOvercountDependencies, overlapping.id, txn.graphMgr.data().attributesCreated(),
+                attrMiscountableCauses(attrOvercount, overlapping.id, txn.graphMgr.data().attributesCreated(),
                         overlapping.graphMgr.data().attributesCreated());
-                buildAttrDependencies(attrUndercountDependencies, overlapping.id, txn.graphMgr.data().attributesDeleted(),
+                attrMiscountableCauses(attrUndercount, overlapping.id, txn.graphMgr.data().attributesDeleted(),
                         overlapping.graphMgr.data().attributesDeleted());
-                buildHasEdgeDependencies(hasEdgeOvercountDependencies, overlapping.id, txn.graphMgr.data().hasEdgeCreated(),
+                hasEdgeMiscountableCauses(hasEdgeOvercount, overlapping.id, txn.graphMgr.data().hasEdgeCreated(),
                         overlapping.graphMgr.data().hasEdgeCreated());
-                buildHasEdgeDependencies(hasEdgeUndercountDependencies, overlapping.id, txn.graphMgr.data().hasEdgeDeleted(),
+                hasEdgeMiscountableCauses(hasEdgeUndercount, overlapping.id, txn.graphMgr.data().hasEdgeDeleted(),
                         overlapping.graphMgr.data().hasEdgeDeleted());
             }
 
-            attrOvercountDependencies.forEach((attr, txns) -> txn.dataStorage.putUntracked(
+            attrOvercount.forEach((attr, txns) -> txn.dataStorage.putUntracked(
                     StatisticsKey.Miscountable.attrOvercount(txn.id, attr.iid()), encodeLongs(txns)
             ));
-            attrUndercountDependencies.forEach((attr, txs) -> txn.dataStorage.putUntracked(
+            attrUndercount.forEach((attr, txs) -> txn.dataStorage.putUntracked(
                     StatisticsKey.Miscountable.attrUndercount(txn.id, attr.iid()), encodeLongs(txs)
             ));
-            hasEdgeOvercountDependencies.forEach((has, txs) -> txn.dataStorage.putUntracked(
+            hasEdgeOvercount.forEach((has, txs) -> txn.dataStorage.putUntracked(
                     StatisticsKey.Miscountable.hasEdgeOvercount(txn.id, has.first().iid(), has.second().iid()), encodeLongs(txs)
             ));
-            hasEdgeUndercountDependencies.forEach((has, txs) -> txn.dataStorage.putUntracked(
+            hasEdgeUndercount.forEach((has, txs) -> txn.dataStorage.putUntracked(
                     StatisticsKey.Miscountable.hasEdgeUndercount(txn.id, has.first().iid(), has.second().iid()), encodeLongs(txs)
             ));
         }
 
-        private void buildAttrDependencies(Map<AttributeVertex<?>, List<Long>> dependencies, long dependency,
-                                           Set<? extends AttributeVertex<?>> attrs1,
-                                           Set<? extends AttributeVertex<?>> attrs2) {
+        private void attrMiscountableCauses(Map<AttributeVertex<?>, List<Long>> miscountableCauses, long cause,
+                                            Set<? extends AttributeVertex<?>> attrs1,
+                                            Set<? extends AttributeVertex<?>> attrs2) {
             // note: fail-fast if checks are much faster than using empty iterators (due to concurrent data structures)
             if (!attrs1.isEmpty() && !attrs2.isEmpty()) {
                 iterate(attrs1).filter(attrs2::contains).forEachRemaining(attribute ->
-                        dependencies.computeIfAbsent(attribute, (key) -> new ArrayList<>()).add(dependency)
+                        miscountableCauses.computeIfAbsent(attribute, (key) -> new ArrayList<>()).add(cause)
                 );
             }
         }
 
-        private void buildHasEdgeDependencies(Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> dependencies,
-                                              long dependency, Set<ThingEdge> hasEdge1, Set<ThingEdge> hasEdge2) {
+        private void hasEdgeMiscountableCauses(Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> miscountableCauses,
+                                               long cause, Set<ThingEdge> hasEdge1, Set<ThingEdge> hasEdge2) {
             // note: fail-fast if checks are much faster than using empty iterators (due to concurrent data structures)
             if (!hasEdge1.isEmpty() && !hasEdge2.isEmpty()) {
                 iterate(hasEdge1).filter(hasEdge2::contains).forEachRemaining(edge ->
-                        dependencies.computeIfAbsent(
+                        miscountableCauses.computeIfAbsent(
                                 pair(edge.from(), edge.to().asAttribute()),
                                 (key) -> new ArrayList<>()
-                        ).add(dependency)
+                        ).add(cause)
                 );
             }
         }
