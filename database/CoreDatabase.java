@@ -642,8 +642,8 @@ public class CoreDatabase implements TypeDB.Database {
             CompletableFuture<Void> correction = CompletableFuture.runAsync(() -> {
                 if (correctionRequired.compareAndSet(true, false)) this.correctMiscounts();
             }, serial());
-            correction.thenRun(() -> corrections.remove(correction));
             corrections.add(correction);
+            correction.thenRun(() -> corrections.remove(correction));
             return correction;
         }
 
