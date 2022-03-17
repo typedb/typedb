@@ -684,6 +684,7 @@ public class CoreDatabase implements TypeDB.Database {
                     for (Long txnID : deletableTxnIDs) {
                         txn.dataStorage.deleteUntracked(StatisticsKey.txnCommitted(txnID));
                     }
+                    deletePendingDependencies.removeAll(deletableTxnIDs);
                     modified[0] = true;
                 }
                 if (modified[0]) {
