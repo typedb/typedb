@@ -558,14 +558,14 @@ public class CoreDatabase implements TypeDB.Database {
 
     class StatisticsCorrector {
 
-        private final ConcurrentSet<Long> deletableTransactionIDs;
-        private final AtomicBoolean correctionRequired;
         private final ConcurrentSet<CompletableFuture<Void>> corrections;
+        private final ConcurrentSet<Long> deletePendingDependencies;
+        private final AtomicBoolean correctionRequired;
         private CoreSession.Data session;
 
         StatisticsCorrector() {
-            deletableTransactionIDs = new ConcurrentSet<>();
             corrections = new ConcurrentSet<>();
+            deletePendingDependencies = new ConcurrentSet<>();
             correctionRequired = new AtomicBoolean(false);
         }
 
@@ -633,17 +633,12 @@ public class CoreDatabase implements TypeDB.Database {
 
         void committed(CoreTransaction.Data transaction) {
             if (mayMiscount(transaction) && correctionRequired.compareAndSet(false, true)) {
-                submitCorrection();
+                CompletableFuture<Void> correction = CompletableFuture.runAsync(() -> {
+                    if (correctionRequired.compareAndSet(true, false)) this.correctMiscounts();
+                }, serial());
+                correction.thenRun(() -> corrections.remove(correction));
+                corrections.add(correction);
             }
-        }
-
-        CompletableFuture<Void> submitCorrection() {
-            CompletableFuture<Void> correction = CompletableFuture.runAsync(() -> {
-                if (correctionRequired.compareAndSet(true, false)) this.correctMiscounts();
-            }, serial());
-            correction.thenRun(() -> corrections.remove(correction));
-            corrections.add(correction);
-            return correction;
         }
 
         private boolean mayMiscount(CoreTransaction.Data transaction) {
@@ -654,7 +649,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         void deleted(CoreTransaction.Data transaction) {
-            deletableTransactionIDs.add(transaction.id);
+            deletePendingDependencies.add(transaction.id);
         }
 
         /**
@@ -666,6 +661,7 @@ public class CoreDatabase implements TypeDB.Database {
                 boolean[] modified = new boolean[]{false};
                 boolean[] miscountCorrected = new boolean[]{false};
                 Set<Long> openTxnIDs = isolationMgr.getNotCommitted().map(t -> t.id).toSet();
+                Set<Long> deletableTxnIDs = new HashSet<>(deletePendingDependencies);
                 txn.dataStorage.iterate(StatisticsKey.Miscountable.prefix()).forEachRemaining(kv -> {
                     StatisticsKey.Miscountable item = kv.key();
                     List<Long> txnIDsCausingMiscount = kv.value().decodeLongs();
@@ -680,16 +676,18 @@ public class CoreDatabase implements TypeDB.Database {
                         txn.dataStorage.deleteUntracked(item);
                         modified[0] = true;
                     } else {
-                        System.out.println("SKIPPING miscountable for txn: " + item.getTxn());
+                        deletableTxnIDs.removeAll(txnIDsCausingMiscount);
                     }
                 });
-                if (modified[0]) {
-                    if (miscountCorrected[0]) txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
-                    System.out.println("Deleting IDs: " + deletableTransactionIDs);
-                    for (Long txnID : deletableTransactionIDs) {
+                if (!deletableTxnIDs.isEmpty()) {
+                    System.out.println("Deleting IDs: " + deletableTxnIDs);
+                    for (Long txnID : deletableTxnIDs) {
                         txn.dataStorage.deleteUntracked(StatisticsKey.txnCommitted(txnID));
                     }
-                    deletableTransactionIDs.clear();
+                    modified[0] = true;
+                }
+                if (modified[0]) {
+                    if (miscountCorrected[0]) txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
                     txn.commit();
                 }
             }
