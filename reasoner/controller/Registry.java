@@ -66,7 +66,7 @@ public class Registry {
     private final Set<Actor.Driver<? extends Controller<?, ?, ?, ?, ?>>> controllers;
     private final TraversalEngine traversalEngine;
     private final boolean resolutionTracing;
-    private final Actor.Driver<MaterialiserController> materialiserController;
+    private final Actor.Driver<MaterialisationController> materialisationController;
     private final AtomicBoolean terminated;
     private final Actor.Driver<Monitor> monitor;
     private Throwable terminationCause;
@@ -86,7 +86,7 @@ public class Registry {
         this.terminated = new AtomicBoolean(false);
         this.resolutionTracing = resolutionTracing;
         this.monitor = Actor.driver(driver -> new Monitor(driver, this), executorService);
-        this.materialiserController = Actor.driver(driver -> new MaterialiserController(
+        this.materialisationController = Actor.driver(driver -> new MaterialisationController(
                 driver, executorService, monitor, this, traversalEngine(), conceptManager()), executorService
         );
     }
@@ -115,7 +115,7 @@ public class Registry {
         if (terminated.compareAndSet(false, true)) {
             terminationCause = cause;
             controllers.forEach(actor -> actor.execute(r -> r.terminate(cause)));
-            materialiserController.execute(actor -> actor.terminate(cause));
+            materialisationController.execute(actor -> actor.terminate(cause));
             monitor.execute(actor -> actor.terminate(cause));
         }
     }
@@ -238,7 +238,7 @@ public class Registry {
         Actor.Driver<ConclusionController> controller = ruleConclusions.computeIfAbsent(conclusion.rule(), r -> {
             Actor.Driver<ConclusionController> c = Actor.driver(
                     driver -> new ConclusionController(driver, conclusion, executorService,
-                                                       materialiserController, monitor, this), executorService);
+                                                       materialisationController, monitor, this), executorService);
             c.execute(ConclusionController::setUpUpstreamProviders);
             return c;
         });

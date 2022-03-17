@@ -37,19 +37,18 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.logic.Rule.Conclusion.materialise;
 
-public class MaterialiserController extends Controller<Materialisable, Void, Either<ConceptMap, Materialisation>,
-        MaterialiserController.MaterialiserProcessor, MaterialiserController> {
+public class MaterialisationController extends Controller<Materialisable, Void, Either<ConceptMap, Materialisation>,
+        MaterialisationController.MaterialisationProcessor, MaterialisationController> {
     // TODO: Either here is just to match the input to ConclusionController, but this class only ever returns Materialisation
-    // TODO: Rename from Materialiser to Materialisation
 
     private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
     private final Driver<Monitor> monitor;
 
-    public MaterialiserController(Driver<MaterialiserController> driver, ActorExecutorGroup executorService,
-                                  Driver<Monitor> monitor, Registry registry, TraversalEngine traversalEng,
-                                  ConceptManager conceptMgr) {
-        super(driver, executorService, registry, MaterialiserController.class::getSimpleName);
+    public MaterialisationController(Driver<MaterialisationController> driver, ActorExecutorGroup executorService,
+                                     Driver<Monitor> monitor, Registry registry, TraversalEngine traversalEng,
+                                     ConceptManager conceptMgr) {
+        super(driver, executorService, registry, MaterialisationController.class::getSimpleName);
         this.monitor = monitor;
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
@@ -61,27 +60,27 @@ public class MaterialiserController extends Controller<Materialisable, Void, Eit
     }
 
     @Override
-    protected Function<Driver<MaterialiserProcessor>, MaterialiserProcessor> createProcessorFunc(Materialisable materialisable) {
-        return driver -> new MaterialiserProcessor(
+    protected Function<Driver<MaterialisationProcessor>, MaterialisationProcessor> createProcessorFunc(Materialisable materialisable) {
+        return driver -> new MaterialisationProcessor(
                 driver, driver(), monitor, materialisable, traversalEng, conceptMgr,
-                () -> MaterialiserProcessor.class.getSimpleName() + "(Materialisable: " + materialisable + ")"
+                () -> MaterialisationProcessor.class.getSimpleName() + "(Materialisable: " + materialisable + ")"
         );
     }
 
     @Override
-    public MaterialiserController asController() {
+    public MaterialisationController asController() {
         return this;
     }
 
-    public static class MaterialiserProcessor
-            extends Processor<Void, Either<ConceptMap, Materialisation>, MaterialiserController, MaterialiserProcessor> {
+    public static class MaterialisationProcessor
+            extends Processor<Void, Either<ConceptMap, Materialisation>, MaterialisationController, MaterialisationProcessor> {
 
         private final Materialisable materialisable;
         private final TraversalEngine traversalEng;
         private final ConceptManager conceptMgr;
 
-        protected MaterialiserProcessor(
-                Driver<MaterialiserProcessor> driver, Driver<MaterialiserController> controller,
+        protected MaterialisationProcessor(
+                Driver<MaterialisationProcessor> driver, Driver<MaterialisationController> controller,
                 Driver<Monitor> monitor, Materialisable materialisable, TraversalEngine traversalEng,
                 ConceptManager conceptMgr, Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);

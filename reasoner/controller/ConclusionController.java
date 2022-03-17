@@ -44,16 +44,16 @@ import java.util.function.Supplier;
 public class ConclusionController extends Controller<ConceptMap, Either<ConceptMap, Materialisation>, Map<Variable, Concept>,
         ConclusionController.ConclusionProcessor, ConclusionController> {
     private final Rule.Conclusion conclusion;
-    private final Driver<MaterialiserController> materialiserController;
+    private final Driver<MaterialisationController> materialisationController;
     private final Driver<Monitor> monitor;
     private Driver<ConditionController> conditionController;
 
     public ConclusionController(Driver<ConclusionController> driver, Rule.Conclusion conclusion,
-                                ActorExecutorGroup executorService, Driver<MaterialiserController> materialiserController,
+                                ActorExecutorGroup executorService, Driver<MaterialisationController> materialisationController,
                                 Driver<Monitor> monitor, Registry registry) {
         super(driver, executorService, registry, () -> ConclusionController.class.getSimpleName() + "(pattern: " + conclusion + ")");
         this.conclusion = conclusion;
-        this.materialiserController = materialiserController;
+        this.materialisationController = materialisationController;
         this.monitor = monitor;
     }
 
@@ -75,8 +75,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         return this;
     }
 
-    private Driver<MaterialiserController> materialiserController() {
-        return materialiserController;
+    private Driver<MaterialisationController> materialisationController() {
+        return materialisationController;
     }
 
     private Driver<ConditionController> conditionController() {
@@ -89,7 +89,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         private final ConceptMap bounds;
         private final ConceptManager conceptManager;
         private final Set<ConditionRequest> conditionRequests;
-        private final Set<MaterialiserRequest> materialiserRequests;
+        private final Set<MaterialiserRequest> materialisationRequests;
 
         protected ConclusionProcessor(Driver<ConclusionProcessor> driver,
                                       Driver<ConclusionController> controller, Driver<Monitor> monitor, Rule rule,
@@ -99,7 +99,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             this.bounds = bounds;
             this.conceptManager = conceptManager;
             this.conditionRequests = new HashSet<>();
-            this.materialiserRequests = new HashSet<>();
+            this.materialisationRequests = new HashSet<>();
         }
 
         @Override
@@ -119,10 +119,10 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
         }
 
-        private void mayRequestMaterialiser(MaterialiserRequest materialiserRequest) {
-            if (!materialiserRequests.contains(materialiserRequest)) {
-                materialiserRequests.add(materialiserRequest);
-                requestConnection(materialiserRequest);
+        private void mayRequestMaterialiser(MaterialiserRequest materialisationRequest) {
+            if (!materialisationRequests.contains(materialisationRequest)) {
+                materialisationRequests.add(materialisationRequest);
+                requestConnection(materialisationRequest);
             }
         }
 
@@ -140,7 +140,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         }
 
-        protected static class MaterialiserRequest extends Request<Void, Materialisable, MaterialiserController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController, MaterialiserRequest> {
+        protected static class MaterialiserRequest extends Request<Void, Materialisable, MaterialisationController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController, MaterialiserRequest> {
 
             public MaterialiserRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
                                        Void provControllerId, Materialisable provProcessorId) {
@@ -149,7 +149,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
             @Override
             public Builder<Materialisable, Either<ConceptMap, Materialisation>, MaterialiserRequest, ConclusionProcessor, ?> getBuilder(ConclusionController controller) {
-                return new Builder<>(controller.materialiserController(), this);
+                return new Builder<>(controller.materialisationController(), this);
             }
 
         }
@@ -157,19 +157,19 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         private class ConclusionReactive extends SingleReceiverStream<ConceptMap, Map<Variable, Concept>> {
 
             private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerRegistry;
-            private ProviderRegistry.MultiProviderRegistry<Map<Variable, Concept>> materialiserRegistry;
+            private ProviderRegistry.MultiProviderRegistry<Map<Variable, Concept>> materialisationRegistry;
 
             protected ConclusionReactive(Processor<?, ?, ?, ?> processor) {
                 super(processor);
                 this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
-                this.materialiserRegistry = null;
+                this.materialisationRegistry = null;
             }
 
             @Override
             public void publishTo(Subscriber<Map<Variable, Concept>> subscriber) {
                 super.publishTo(subscriber);
-                // We need to wait until the receiver has been given before we can create the materialiser registry
-                this.materialiserRegistry = new ProviderRegistry.MultiProviderRegistry<>(receiverRegistry().receiver(), processor());
+                // We need to wait until the receiver has been given before we can create the materialisation registry
+                this.materialisationRegistry = new ProviderRegistry.MultiProviderRegistry<>(receiverRegistry().receiver(), processor());
             }
 
             @Override
@@ -177,46 +177,46 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 return providerRegistry;
             }
 
-            protected ProviderRegistry.MultiProviderRegistry<Map<Variable, Concept>> materialiserRegistry() {
-                return materialiserRegistry;
+            protected ProviderRegistry.MultiProviderRegistry<Map<Variable, Concept>> materialisationRegistry() {
+                return materialisationRegistry;
             }
 
             @Override
             public void pull(Receiver<Map<Variable, Concept>> receiver) {
                 super.pull(receiver);
-                materialiserRegistry().pullAll();
+                materialisationRegistry().pullAll();
             }
 
             @Override
             public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
                 super.receive(provider, packet);
-                InletEndpoint<Either<ConceptMap, Materialisation>> materialiserEndpoint = createReceivingEndpoint();
+                InletEndpoint<Either<ConceptMap, Materialisation>> materialisationEndpoint = createReceivingEndpoint();
                 mayRequestMaterialiser(new MaterialiserRequest(
-                        driver(), materialiserEndpoint.id(), null,
+                        driver(), materialisationEndpoint.id(), null,
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
-                Stream<?, Map<Variable, Concept>> op = materialiserEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
-                MaterialiserReactive materialiserReactive = new MaterialiserReactive(this, processor());
-                materialiserRegistry().add(materialiserReactive);
-                op.publishTo(materialiserReactive);
-                materialiserReactive.sendTo(receiverRegistry().receiver());
+                Stream<?, Map<Variable, Concept>> op = materialisationEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
+                MaterialiserReactive materialisationReactive = new MaterialiserReactive(this, processor());
+                materialisationRegistry().add(materialisationReactive);
+                op.publishTo(materialisationReactive);
+                materialisationReactive.sendTo(receiverRegistry().receiver());
 
                 processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
                 processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
 
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialiserReactive));
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialisationReactive));
                 if (receiverRegistry().isPulling()) {
-                    materialiserRegistry().pull(materialiserReactive);
+                    materialisationRegistry().pull(materialisationReactive);
                     providerRegistry().retry(provider);  // We need to retry the condition again in case materialisation fails
                 }
             }
 
             private void receiveMaterialisation(MaterialiserReactive provider, Map<Variable, Concept> packet) {
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
-                materialiserRegistry().recordReceive(provider);
+                materialisationRegistry().recordReceive(provider);
                 if (receiverRegistry().isPulling()) {
                     Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, provider));
-                    materialiserRegistry().retry(provider);  // We need to retry so that the materialiser does a join
+                    materialisationRegistry().retry(provider);  // We need to retry so that the materialisation does a join
                 }
                 receiverRegistry().setNotPulling();
                 receiverRegistry().receiver().receive(this, packet);
