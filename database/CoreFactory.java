@@ -87,8 +87,8 @@ public final class CoreFactory implements Factory {
 
     private synchronized Factory.TransactionData transactionDataFactory() {
         if (transactionDataFactory == null) {
-            transactionDataFactory = (id, session, type, options) ->
-                    new CoreTransaction.Data(id, session, type, options, storageFactory());
+            transactionDataFactory = (session, type, options) ->
+                    new CoreTransaction.Data(session, type, options, storageFactory());
         }
         return transactionDataFactory;
     }

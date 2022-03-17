@@ -214,7 +214,7 @@ public abstract class CoreSession implements TypeDB.Session {
                     throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
                 }
             }
-            CoreTransaction.Data transaction = txDataFactory.transaction(database().nextTransactionID(), this, type, options);
+            CoreTransaction.Data transaction = txDataFactory.transaction(this, type, options);
             transactions.put(transaction, lock);
             return transaction;
         }

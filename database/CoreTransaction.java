@@ -267,11 +267,11 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         private final CoreDatabase.Cache cache;
         final long id;
 
-        public Data(long id, CoreSession.Data session, Arguments.Transaction.Type type,
+        public Data(CoreSession.Data session, Arguments.Transaction.Type type,
                     Options.Transaction options, Factory.Storage storageFactory) {
             super(session, type, options);
 
-            this.id = id;
+            this.id = session.database().nextTransactionID();
             this.cache = session.database().cacheBorrow();
             this.dataStorage = storageFactory.storageData(session.database(), this);
             ThingGraph thingGraph = new ThingGraph(dataStorage, cache.typeGraph());
