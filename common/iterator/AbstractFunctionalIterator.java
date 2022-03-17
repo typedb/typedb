@@ -20,8 +20,8 @@ package com.vaticle.typedb.core.common.iterator;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.MergeMappedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
 import java.util.ArrayList;
 import java.util.HashSet;

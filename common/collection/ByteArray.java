@@ -31,10 +31,8 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
