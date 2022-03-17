@@ -360,16 +360,11 @@ public class StatisticsTest {
         int batches = 500;
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             List<CoreTransaction> transactions = new ArrayList<>();
-            System.out.println("STARTING BATCHES");
             for (int i = 0; i < batches; i++) transactions.add(session.transaction(Arguments.Transaction.Type.WRITE));
             for (int i = 0; i < batches; i++) {
                 CoreTransaction txn = transactions.get(i);
                 txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Alice';"));
                 txn.commit();
-            }
-            try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
-                System.out.println("People: " + txn.graphMgr.data().stats().thingVertexTransitiveCount(Label.of("person")));
-                System.out.println("Name: " + txn.graphMgr.data().stats().thingVertexTransitiveCount(Label.of("name")));
             }
         }
         databaseMgr.close();

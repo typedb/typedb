@@ -257,14 +257,13 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
     }
 
     @Override
-    public <U> Optional<U> reduce(U initialAccumulator, BiFunction<T, U, U> accumulate) {
-        if (!hasNext()) return Optional.empty();
-        U acc = initialAccumulator;
+    public <ACC> ACC reduce(ACC initial, BiFunction<T, ACC, ACC> accumulate) {
+        ACC acc = initial;
         while (hasNext()) {
             T value = next();
             acc = accumulate.apply(value, acc);
         }
-        return Optional.of(acc);
+        return acc;
     }
 
     @Override

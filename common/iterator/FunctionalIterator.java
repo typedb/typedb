@@ -88,7 +88,7 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
     long count();
 
-    <U> Optional<U> reduce(U initialAcc, BiFunction<T, U, U> accumulate);
+    <ACC> ACC reduce(ACC initial, BiFunction<T, ACC, ACC> accumulate);
 
     FunctionalIterator<T> onConsumed(Runnable function);
 

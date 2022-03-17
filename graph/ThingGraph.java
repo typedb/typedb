@@ -660,7 +660,7 @@ public class ThingGraph {
         }
 
         public long thingVertexTransitiveCount(TypeVertex type) {
-            return iterate(typeGraph.getSubtypes(type)).map(this::thingVertexCount).reduce(0L, Long::sum).orElse(0L);
+            return iterate(typeGraph.getSubtypes(type)).map(this::thingVertexCount).reduce(0L, Long::sum);
         }
 
         public long thingVertexTransitiveMax(Set<Label> labels) {
