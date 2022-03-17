@@ -51,6 +51,6 @@ public class FindFirstStream<PACKET> extends SingleReceiverStream<PACKET, PACKET
 
     @Override
     public void pull(Receiver<PACKET> receiver) {
-        if (!packetFound) super.pull(receiver);  // TODO: Could this cause a failure to terminate if multiple upstream paths are never joined?
+        if (!packetFound) super.pull(receiver);
     }
 }

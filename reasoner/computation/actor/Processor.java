@@ -111,7 +111,7 @@ public abstract class Processor<INPUT, OUTPUT,
         applyConnectionTransforms(connection.transformations(), outlet(), createProvidingEndpoint(connection));
         monitor().execute(actor -> actor.registerPath(connection.identifier(), outlet().identifier()));
         if (isTerminated()) return;
-        connectionBuilder.receivingProcessor().execute(actor -> actor.finaliseConnection(connection));
+        connectionBuilder.receivingProcessor().execute(actor -> actor.finaliseConnection(connection));  // TODO: don't share a connection between two actors. split into a connection receiver and provider instead
     }
 
     public void applyConnectionTransforms(List<Function<OUTPUT, OUTPUT>> transformations,
