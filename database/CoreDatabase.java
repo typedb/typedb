@@ -559,13 +559,13 @@ public class CoreDatabase implements TypeDB.Database {
     class StatisticsCorrector {
 
         private final ConcurrentSet<CompletableFuture<Void>> corrections;
-        private final ConcurrentSet<Long> deletePendingDependencies;
+        private final ConcurrentSet<Long> deletedTxnIDs;
         private final AtomicBoolean correctionRequired;
         private CoreSession.Data session;
 
         StatisticsCorrector() {
             corrections = new ConcurrentSet<>();
-            deletePendingDependencies = new ConcurrentSet<>();
+            deletedTxnIDs = new ConcurrentSet<>();
             correctionRequired = new AtomicBoolean(false);
         }
 
@@ -655,7 +655,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         void deleted(CoreTransaction.Data transaction) {
-            deletePendingDependencies.add(transaction.id);
+            deletedTxnIDs.add(transaction.id);
         }
 
         /**
@@ -664,7 +664,7 @@ public class CoreDatabase implements TypeDB.Database {
          */
         private void correctMiscounts() {
             // note: take copy before open a snapshotted transaction
-            Set<Long> deletableTxnIDs = new HashSet<>(deletePendingDependencies);
+            Set<Long> deletableTxnIDs = new HashSet<>(deletedTxnIDs);
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
                 boolean[] modified = new boolean[]{false};
                 boolean[] miscountCorrected = new boolean[]{false};
@@ -682,6 +682,7 @@ public class CoreDatabase implements TypeDB.Database {
                         txn.dataStorage.deleteUntracked(item);
                         modified[0] = true;
                     } else {
+                        // transaction IDs causing miscount are not deletable
                         deletableTxnIDs.removeAll(txnIDsCausingMiscount);
                     }
                 });
@@ -689,7 +690,7 @@ public class CoreDatabase implements TypeDB.Database {
                     for (Long txnID : deletableTxnIDs) {
                         txn.dataStorage.deleteUntracked(StatisticsKey.txnCommitted(txnID));
                     }
-                    deletePendingDependencies.removeAll(deletableTxnIDs);
+                    deletedTxnIDs.removeAll(deletableTxnIDs);
                     modified[0] = true;
                 }
                 if (modified[0]) {
