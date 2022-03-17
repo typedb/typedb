@@ -94,8 +94,7 @@ public abstract class DisjunctionController<
         @Override
         public void setUp() {
             FanInStream<ConceptMap> fanIn = fanIn(this);
-            Reactive.Stream<ConceptMap, ConceptMap> outlet = getOutlet(fanIn);
-            setOutlet(outlet);  // TODO: Needs separating to be able to add a buffer()
+            setOutlet(getOutlet(fanIn));
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
                 InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
                 endpoint.publishTo(fanIn);
@@ -108,7 +107,7 @@ public abstract class DisjunctionController<
         }
 
         protected Reactive.Stream<ConceptMap, ConceptMap> getOutlet(FanInStream<ConceptMap> fanIn) {
-            // Simply here to be overridden by root disjuntion to avoid duplicating setUp
+            // This method is only here to be overridden by root disjunction to avoid duplicating setUp
             return fanIn.buffer();
         }
 

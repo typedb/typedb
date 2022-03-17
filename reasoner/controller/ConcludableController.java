@@ -62,7 +62,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         this.registry = registry;
         this.concludable = concludable;
         this.unboundVars = unboundVars();
-        this.conclusionControllers = new HashMap<>();  // TODO: Any reason to use LinkedHashMap over HashMap?
+        this.conclusionControllers = new HashMap<>();
         this.conclusionUnifiers = new HashMap<>();
     }
 
@@ -136,9 +136,11 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
             setOutlet(new FanOutStream<>(this));
             FanInStream<ConceptMap> fanIn = fanIn(this);
 //            boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
-//            if (singleAnswerRequired) fanIn.buffer().findFirst().publishTo(outlet());  // TODO: Buffer not needed as we're feeding a FanOut as the outlet which also buffers
-//            else fanIn.buffer().publishTo(outlet());  // TODO: Buffer not needed as we're feeding a FanOut as the outlet which also buffers
-            fanIn.buffer().publishTo(outlet());  // TODO: How do we do a find first optimisation and also know that we're done? This needs to be local to this processor because in general we couldn't call all upstream work done.
+//            if (singleAnswerRequired) fanIn.findFirst().publishTo(outlet());
+//            else fanIn.publishTo(outlet());
+            // TODO: How do we do a find first optimisation and also know that we're done? This needs to be local to
+            //  this processor because in general we couldn't call all upstream work done.
+            fanIn.buffer().publishTo(outlet());
 
             Source.fromIteratorSupplier(traversalSuppplier, this).publishTo(fanIn);
 
@@ -147,7 +149,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
                     InletEndpoint<Map<Variable, Concept>> endpoint = this.createReceivingEndpoint();
                     mayRequestConnection(new ConclusionRequest(driver(), endpoint.id(), conclusion, boundsAndRequirements.first()));
                     endpoint.flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
-                            .buffer() // TODO: Included to combat flatMap overproducing.
+                            .buffer()
                             .publishTo(fanIn);
                 }));
             });

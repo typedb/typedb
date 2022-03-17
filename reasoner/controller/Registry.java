@@ -128,7 +128,6 @@ public class Registry {
                                                                      monitor, this, reasonerConsumer), executorService);
         controller.execute(RootConjunctionController::setUpUpstreamProviders);
         controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));
-        // TODO: Consider exception handling
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
     }
@@ -142,7 +141,6 @@ public class Registry {
                                                                      monitor, this, reasonerConsumer), executorService);
         controller.execute(RootDisjunctionController::setUpUpstreamProviders);
         controller.execute(actor -> actor.computeProcessorIfAbsent(new ConceptMap()));
-        // TODO: Consider exception handling
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;

@@ -86,11 +86,6 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         }
 
         @Override
-        protected boolean isPulling() {
-            return true;  // TODO: Check this
-        }
-
-        @Override
         public void setUp() {
             setOutlet(new FanOutStream<>(this));
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();

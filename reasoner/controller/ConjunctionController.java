@@ -145,6 +145,7 @@ public abstract class ConjunctionController<OUTPUT,
         }
 
         protected InletEndpoint<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
+            // TODO: Rethink this ugly structure for compound reactives
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             if (planElement.isRetrievable()) {
                 requestConnection(new RetrievableRequest<>(driver(), endpoint.id(), planElement.asRetrievable(),

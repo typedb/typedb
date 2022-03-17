@@ -594,7 +594,7 @@ public class ResolutionTest {
         assertNull(answer);
         assertTrue(doneReceived.get());
         assertTrue(responses.isEmpty());
-        if (tracing) Tracer.get().finishDefaultTrace();  // TODO: Not nice that we start tracing in a different method
+        if (tracing) Tracer.get().finishDefaultTrace();  // TODO: We started tracing in a different method but finish here
         System.out.println("Time : " + (System.currentTimeMillis() - startTime));
     }
 }

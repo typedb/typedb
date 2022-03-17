@@ -34,7 +34,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ConditionController extends ConjunctionController<Either<ConceptMap, Materialisation>, ConditionController, ConditionController.ConditionProcessor> {
-    // TODO: It would be better not to use Either, since this class only ever outputs a ConceptMap
+    // TODO: Either here is just to match the input to ConclusionController, but this class only ever returns ConceptMap
 
     private final Rule.Condition condition;
     private final Driver<Monitor> monitor;

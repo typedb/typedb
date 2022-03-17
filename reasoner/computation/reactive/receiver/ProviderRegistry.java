@@ -35,7 +35,6 @@ public abstract class ProviderRegistry<R> {
         this.receiver = receiver;
     }
 
-    // TODO: Consider managing whether to pull on upstreams by telling the manager whether we are pulling or not
     public abstract void add(Reactive.Provider<R> provider);
 
     public abstract void pullAll();

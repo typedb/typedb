@@ -111,11 +111,6 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         }
 
         @Override
-        protected boolean isPulling() {
-            return reasonerEntryPoint.isPulling();
-        }
-
-        @Override
         protected void onFinished(Reactive.Identifier finishable) {
             assert !done;
 //            done = true;

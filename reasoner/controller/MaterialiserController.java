@@ -39,14 +39,16 @@ import static com.vaticle.typedb.core.logic.Rule.Conclusion.materialise;
 
 public class MaterialiserController extends Controller<Materialisable, Void, Either<ConceptMap, Materialisation>,
         MaterialiserController.MaterialiserProcessor, MaterialiserController> {
-    // TODO: It would be better not to use Either, since this class only ever outputs a Materialisation
+    // TODO: Either here is just to match the input to ConclusionController, but this class only ever returns Materialisation
+    // TODO: Rename from Materialiser to Materialisation
 
     private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
     private final Driver<Monitor> monitor;
 
     public MaterialiserController(Driver<MaterialiserController> driver, ActorExecutorGroup executorService,
-                                  Driver<Monitor> monitor, Registry registry, TraversalEngine traversalEng, ConceptManager conceptMgr) {
+                                  Driver<Monitor> monitor, Registry registry, TraversalEngine traversalEng,
+                                  ConceptManager conceptMgr) {
         super(driver, executorService, registry, MaterialiserController.class::getSimpleName);
         this.monitor = monitor;
         this.traversalEng = traversalEng;

@@ -65,9 +65,9 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
             processor().monitor().execute(actor -> actor.createAnswer(identifier()));
-            Set<Receiver<PACKET>> toSend = receiverRegistry().pullingReceivers();
+            Set<Receiver<PACKET>> pullingReceivers = receiverRegistry().pullingReceivers();
             receiverRegistry().setNotPulling();
-            toSend.forEach(this::send);
+            pullingReceivers.forEach(this::sendFromBuffer);
         } else {
             if (receiverRegistry().isPulling()) providerRegistry().retry(provider);
         }
@@ -82,11 +82,11 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
             // Finished the buffer
             if (receiverRegistry().isPulling()) providerRegistry().pullAll();
         } else {
-            send(receiver);
+            sendFromBuffer(receiver);
         }
     }
 
-    private void send(Receiver<PACKET> receiver) {  // TODO: Naming should show this updates the buffer position
+    private void sendFromBuffer(Receiver<PACKET> receiver) {
         Integer pos = bufferPositions.get(receiver);
         bufferPositions.put(receiver, pos + 1);
         receiver.receive(this, bufferList.get(pos));

@@ -162,10 +162,6 @@ public abstract class Processor<INPUT, OUTPUT,
         return monitor;
     }
 
-    protected boolean isPulling() {
-        throw TypeDBException.of(ILLEGAL_STATE);
-    }
-
     protected void onFinished(Reactive.Identifier finishable) {
         throw TypeDBException.of(ILLEGAL_STATE);
     }

@@ -46,7 +46,6 @@ public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET>
             receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
         } else {
-            // TODO: Could add an answer deduplication optimisation here, but means holding an extra set of all answers seen
             stack.add(packet);
         }
     }
