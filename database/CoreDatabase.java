@@ -676,15 +676,18 @@ public class CoreDatabase implements TypeDB.Database {
                         txn.dataStorage.deleteUntracked(item);
                         modified[0] = true;
                     } else if (noneOpen(txnIDsCausingMiscount, openTxnIDs)) {
-                        System.out.println("REMOVING miscountable -- not required!!!");
+                        System.out.println("REMOVING miscountable -- not required, sourced txn: " + item.getTxn());
                         txn.dataStorage.deleteUntracked(item);
                         modified[0] = true;
+                    } else {
+                        System.out.println("SKIPPING miscountable for txn: " + item.getTxn());
                     }
                 });
                 if (modified[0]) {
                     if (miscountCorrected[0]) txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
                     for (Long txnID : deletableTransactionIDs) {
                         txn.dataStorage.deleteUntracked(StatisticsKey.txnCommitted(txnID));
+                        System.out.println("Deleting ID: " + txnID);
                     }
                     deletableTransactionIDs.clear();
                     txn.commit();
