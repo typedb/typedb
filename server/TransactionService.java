@@ -284,7 +284,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     @Override
-    public synchronized void close() {
+    public void close() {
         if (isRPCAlive.compareAndSet(true, false)) {
             if (isTransactionOpen.compareAndSet(true, false)) {
                 transaction.close();
@@ -295,7 +295,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         }
     }
 
-    public synchronized void close(Throwable error) {
+    public void close(Throwable error) {
         if (isRPCAlive.compareAndSet(true, false)) {
             if (isTransactionOpen.compareAndSet(true, false)) {
                 transaction.close();
