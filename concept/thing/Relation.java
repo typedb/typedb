@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.concept.thing;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.concept.type.RelationType;
@@ -40,10 +39,6 @@ public interface Relation extends Thing {
     void removePlayer(RoleType roleType, Thing player);
 
     FunctionalIterator<Thing> getPlayers();
-
-    FunctionalIterator<Thing> getPlayers(String[] roleTypes);
-
-    FunctionalIterator<Thing> getPlayers(RoleType[] roleTypes);
 
     Forwardable<Thing, Order.Asc> getPlayers(String roleType, String... roleTypes);
 

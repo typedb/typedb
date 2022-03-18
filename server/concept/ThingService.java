@@ -35,6 +35,7 @@ import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.TransactionProto.Transaction;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -180,7 +181,9 @@ public class ThingService {
 
     private void getPlayers(Relation relation, List<ConceptProto.Type> protoRoleTypes, UUID reqID) {
         RoleType[] roleTypes = protoRoleTypes.stream().map(type -> notNull(getRoleType(type))).toArray(RoleType[]::new);
-        FunctionalIterator<? extends Thing> players = relation.getPlayers(roleTypes);
+        FunctionalIterator<? extends Thing> players = roleTypes.length == 0 ?
+                relation.getPlayers() :
+                relation.getPlayers(roleTypes[0], Arrays.copyOfRange(roleTypes, 1, roleTypes.length));
         transactionSvc.stream(players, reqID, things -> getPlayersResPart(reqID, things));
     }
 
