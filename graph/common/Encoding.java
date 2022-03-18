@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.graph.common;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typeql.lang.common.TypeQLArg;
@@ -55,27 +56,20 @@ public class Encoding {
     public static final int ENCODING_VERSION = 2;
 
     public enum Partition {
-        DEFAULT((short) 0, null),
-        VARIABLE_START_EDGE((short) 1, ByteArray.encodeString("VARIABLE_START_EDGE", STRING_ENCODING)),
-        FIXED_START_EDGE((short) 2, ByteArray.encodeString("FIXED_START_EDGE", STRING_ENCODING)),
-        OPTIMISATION_EDGE((short) 3, ByteArray.encodeString("OPTIMISATION_EDGE", STRING_ENCODING)),
-        METADATA((short) 4, ByteArray.encodeString("METADATA", STRING_ENCODING));
+        DEFAULT(0),
+        VARIABLE_START_EDGE(1),
+        FIXED_START_EDGE(2),
+        OPTIMISATION_EDGE(3),
+        METADATA(4);
 
-        private final short ID;
-        // TODO: Remove partition name (See issue #6526)
-        private final ByteArray partitionName;
+        private final byte ID;
 
-        Partition(short ID, @Nullable ByteArray partitionName) {
-            this.ID = ID;
-            this.partitionName = partitionName;
+        Partition(int ID) {
+            this.ID = Bytes.unsignedByte(ID);
         }
 
-        public short ID() {
+        public byte ID() {
             return ID;
-        }
-
-        public Optional<ByteArray> partitionName() {
-            return Optional.ofNullable(partitionName);
         }
     }
 
