@@ -110,7 +110,7 @@ public interface Storage {
             private final Encoding.Partition encoding;
             private final Integer fixedStartBytes;
 
-            public static Partition fromID(short ID) {
+            public static Partition fromID(byte ID) {
                 if (ID == Encoding.Partition.DEFAULT.ID()) {
                     return DEFAULT;
                 } else if (ID == Encoding.Partition.VARIABLE_START_EDGE.ID()) {

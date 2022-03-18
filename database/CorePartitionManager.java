@@ -125,19 +125,19 @@ public abstract class CorePartitionManager {
                     configuration.defaultCFOptions()
             );
             descriptors[VARIABLE_START_EDGE_HANDLE_INDEX] = new ColumnFamilyDescriptor(
-                    VARIABLE_START_EDGE.encoding().partitionName().get().getBytes(),
+                    new byte[]{VARIABLE_START_EDGE.encoding().ID()},
                     configuration.variableStartEdgeCFOptions()
             );
             descriptors[FIXED_START_EDGE_HANDLE_INDEX] = new ColumnFamilyDescriptor(
-                    FIXED_START_EDGE.encoding().partitionName().get().getBytes(),
+                    new byte[]{FIXED_START_EDGE.encoding().ID()},
                     configuration.fixedStartEdgeCFOptions()
             );
             descriptors[OPTIMISATION_EDGE_HANDLE_INDEX] = new ColumnFamilyDescriptor(
-                    OPTIMISATION_EDGE.encoding().partitionName().get().getBytes(),
+                    new byte[]{OPTIMISATION_EDGE.encoding().ID()},
                     configuration.optimisationEdgeCFOptions()
             );
             descriptors[METADATA_HANDLE_INDEX] = new ColumnFamilyDescriptor(
-                    METADATA.encoding().partitionName().get().getBytes(),
+                    new byte[]{METADATA.encoding().ID()},
                     configuration.metadataCFOptions()
             );
             return Arrays.asList(descriptors);
