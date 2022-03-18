@@ -159,8 +159,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         private class ConclusionReactive extends SingleReceiverStream<ConceptMap, Map<Variable, Concept>> {
 
-            private final ProviderRegistry.SingleProviderRegistry<ConceptMap> providerRegistry;
-            private ProviderRegistry.MultiProviderRegistry<Map<Variable, Concept>> materialisationRegistry;
+            private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<ConceptMap>> providerRegistry;
+            private ProviderRegistry.MultiProviderRegistry<Provider.Sync<Map<Variable, Concept>>> materialisationRegistry;
 
             protected ConclusionReactive(Processor<?, ?, ?, ?> processor) {
                 super(processor);
@@ -176,22 +176,22 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             @Override
-            protected ProviderRegistry<ConceptMap> providerRegistry() {
+            protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<ConceptMap>> providerRegistry() {
                 return providerRegistry;
             }
 
-            protected ProviderRegistry.MultiProviderRegistry<Map<Variable, Concept>> materialisationRegistry() {
+            protected ProviderRegistry.MultiProviderRegistry<Provider.Sync<Map<Variable, Concept>>> materialisationRegistry() {
                 return materialisationRegistry;
             }
 
             @Override
-            public void pull(Receiver<Map<Variable, Concept>> receiver) {
+            public void pull(Receiver.Sync<Map<Variable, Concept>> receiver) {
                 super.pull(receiver);
                 materialisationRegistry().pullAll();
             }
 
             @Override
-            public void receive(Provider<ConceptMap> provider, ConceptMap packet) {
+            public void receive(Provider.Sync<ConceptMap> provider, ConceptMap packet) {
                 super.receive(provider, packet);
                 InletEndpoint<Either<ConceptMap, Materialisation>> materialisationEndpoint = createReceivingEndpoint();
                 mayRequestMaterialiser(new MaterialiserRequest(
@@ -229,7 +229,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         private class MaterialisationReactive extends SingleReceiverStream<Map<Variable, Concept>, Map<Variable, Concept>> {
 
             private final ConclusionReactive parent;
-            private final ProviderRegistry.SingleProviderRegistry<Map<Variable, Concept>> providerRegistry;
+            private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<Map<Variable, Concept>>> providerRegistry;
 
             public MaterialisationReactive(ConclusionReactive parent, Processor<?, ?, ?, ?> processor) {
                 super(processor);
@@ -238,12 +238,12 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             @Override
-            protected ProviderRegistry<Map<Variable, Concept>> providerRegistry() {
+            protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<Map<Variable, Concept>>> providerRegistry() {
                 return providerRegistry;
             }
 
             @Override
-            public void receive(Provider<Map<Variable, Concept>> provider, Map<Variable, Concept> packet) {
+            public void receive(Provider.Sync<Map<Variable, Concept>> provider, Map<Variable, Concept> packet) {
                 super.receive(provider, packet);
                 receiverRegistry().setNotPulling();
                 parent.receiveMaterialisation(this, packet);

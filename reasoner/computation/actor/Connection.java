@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 
 public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>,
         PROV_PROCESSOR extends Processor<?, PACKET, ?, PROV_PROCESSOR>>
-        implements Reactive.Provider<PACKET>, Reactive.Receiver<PACKET> {
+        implements Reactive.Provider, Reactive.Receiver {
 
     private final Identifier identifier;
     private final Actor.Driver<PROCESSOR> recProcessor;
@@ -54,6 +54,10 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
         this.tracingGroupName = () -> Connection.class.getSimpleName() + "@" + System.identityHashCode(this);
     }
 
+    public Actor.Driver<PROCESSOR> receiverProcessor() {
+        return recProcessor;
+    }
+
     @Override
     public Supplier<String> tracingGroupName() {
         return tracingGroupName;
@@ -65,21 +69,21 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
     }
 
     @Override
-    public void receive(Provider<PACKET> provider, PACKET packet) {
+    public void receive(Provider provider, PACKET packet) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         recProcessor.execute(actor -> actor.endpointReceive(this, packet, recEndpointId));
     }
 
     @Override
-    public void pull(Receiver<PACKET> receiver) {
+    public void pull(Receiver receiver) {
         provProcessor.execute(actor -> actor.endpointPull(this, provEndpointId));
     }
 
-    protected long receiverEndpointId() {
+    protected Reactive.Identifier receiverEndpointId() {
         return recEndpointId;
     }
 
-    public long providerEndpointId() {
+    public Reactive.Identifier providerEndpointId() {
         return provEndpointId;
     }
 

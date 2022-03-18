@@ -27,9 +27,9 @@ import java.util.function.Function;
 public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT> {
 
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
-    private final ProviderRegistry.SingleProviderRegistry<INPUT> providerRegistry;
+    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<INPUT>> providerRegistry;
 
-    public FlatMapStream(Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
+    public FlatMapStream(Provider.Sync.Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
                          Processor<?, ?, ?, ?> processor) {
         super(processor);
         this.transform = transform;
@@ -37,12 +37,12 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OU
     }
 
     @Override
-    protected ProviderRegistry.SingleProviderRegistry<INPUT> providerRegistry() {
+    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<INPUT>> providerRegistry() {
         return providerRegistry;
     }
 
     @Override
-    public void receive(Provider<INPUT> provider, INPUT packet) {
+    public void receive(Provider.Sync<INPUT> provider, INPUT packet) {
         super.receive(provider, packet);
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {

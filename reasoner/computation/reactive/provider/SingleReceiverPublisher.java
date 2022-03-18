@@ -19,19 +19,19 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Sync.Subscriber;
 
 public abstract class SingleReceiverPublisher<OUTPUT> extends AbstractPublisher<OUTPUT> {
 
-    protected ReceiverRegistry.SingleReceiverRegistry<OUTPUT> receiverRegistry;
+    protected ReceiverRegistry.SingleReceiverRegistry<Receiver.Sync<OUTPUT>> receiverRegistry;
 
     protected SingleReceiverPublisher(Processor<?, ?, ?, ?> processor) {
         super(processor);
-        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(this);
+        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>();
     }
 
     @Override
-    protected ReceiverRegistry.SingleReceiverRegistry<OUTPUT> receiverRegistry() {
+    protected ReceiverRegistry.SingleReceiverRegistry<Receiver.Sync<OUTPUT>> receiverRegistry() {
         return receiverRegistry;
     }
 

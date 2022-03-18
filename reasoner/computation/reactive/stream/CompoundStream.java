@@ -30,15 +30,15 @@ import java.util.function.BiFunction;
 
 public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
-    private final Publisher<PACKET> leadingPublisher;
+    private final Provider.Sync.Publisher<PACKET> leadingPublisher;
     private final List<PLAN_ID> remainingPlan;
     private final BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc;
-    private final BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc;
-    private final Map<Provider<PACKET>, PACKET> publisherPackets;
+    private final BiFunction<PLAN_ID, PACKET, Provider.Sync.Publisher<PACKET>> spawnLeaderFunc;
+    private final Map<Provider, PACKET> publisherPackets;
     private final PACKET initialPacket;
-    private final ProviderRegistry.MultiProviderRegistry<PACKET> providerRegistry;
+    private final ProviderRegistry.MultiProviderRegistry<Provider.Sync<PACKET>> providerRegistry;
 
-    public CompoundStream(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
+    public CompoundStream(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Provider.Sync.Publisher<PACKET>> spawnLeaderFunc,
                           BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
                           Processor<?, ?, ?, ?> processor) {
         super(processor);
@@ -54,12 +54,12 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
     }
 
     @Override
-    protected ProviderRegistry<PACKET> providerRegistry() {
+    protected ProviderRegistry.MultiProviderRegistry<Provider.Sync<PACKET>> providerRegistry() {
         return providerRegistry;
     }
 
     @Override
-    public void receive(Provider<PACKET> provider, PACKET packet) {
+    public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
         PACKET mergedPacket = compoundPacketsFunc.apply(initialPacket, packet);
         if (leadingPublisher.equals(provider)) {
@@ -67,7 +67,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
                 receiverRegistry().setNotPulling();
                 receiverRegistry().receiver().receive(this, mergedPacket);
             } else {
-                Publisher<PACKET> follower;
+                Provider.Sync.Publisher<PACKET> follower;
                 if (remainingPlan.size() == 1) {
                     follower = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
                 } else {

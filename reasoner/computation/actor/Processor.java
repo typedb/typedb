@@ -22,8 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Sync.Subscriber;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveIdentifier;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.SingleReceiverPublisher;
@@ -51,8 +50,8 @@ public abstract class Processor<INPUT, OUTPUT,
     private static final Logger LOG = LoggerFactory.getLogger(Processor.class);
 
     private final Driver<CONTROLLER> controller;
-    private final Map<Long, InletEndpoint<INPUT>> receivingEndpoints;
-    private final Map<Long, OutletEndpoint<OUTPUT>> providingEndpoints;
+    private final Map<Reactive.Identifier, InletEndpoint<INPUT>> receivingEndpoints;
+    private final Map<Reactive.Identifier, OutletEndpoint<OUTPUT>> providingEndpoints;
     private final Driver<Monitor> monitor;
     private final Map<Reactive.Identifier, Reactive> reactives;  // TODO: Ever required?
     protected final Set<Connection<INPUT, ?, ?>> upstreamConnections;
@@ -86,8 +85,8 @@ public abstract class Processor<INPUT, OUTPUT,
         throw TypeDBException.of(ILLEGAL_OPERATION);
     }
 
-    public <PACKET> void retryPull(Reactive.Provider<PACKET> provider, Reactive.Receiver<PACKET> receiver) {  // TODO: Does making this static comform to actor model?
-        provider.pull(receiver);
+    public void retryPull(Reactive.Identifier provider, Reactive.Identifier receiver) {  // TODO: Does making this static comform to actor model?
+        reactives.get(provider).asSyncProvider().pull(reactives.get(receiver).asSyncReceiver());
     }
 
     public Reactive.Stream<OUTPUT,OUTPUT> outlet() {
@@ -113,7 +112,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
     public void applyConnectionTransforms(List<Function<OUTPUT, OUTPUT>> transformations,
                                           Reactive.Stream<OUTPUT,OUTPUT> outlet, OutletEndpoint<OUTPUT> upstreamEndpoint) {
-        Provider.Publisher<OUTPUT> op = outlet;
+        Provider.Sync.Publisher<OUTPUT> op = outlet;
         for (Function<OUTPUT, OUTPUT> t : transformations) op = op.map(t);
         op.publishTo(upstreamEndpoint);
     }
@@ -134,23 +133,23 @@ public abstract class Processor<INPUT, OUTPUT,
     protected OutletEndpoint<OUTPUT> createProvidingEndpoint(Connection<OUTPUT, ?, PROCESSOR> connection) {
         assert !done;
         OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection, this);
-        providingEndpoints.put(endpoint.id(), endpoint);
+        providingEndpoints.put(endpoint.identifier(), endpoint);
         return endpoint;
     }
 
     protected InletEndpoint<INPUT> createReceivingEndpoint() {
         assert !done;
         InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId(), this);
-        receivingEndpoints.put(endpoint.id(), endpoint);
+        receivingEndpoints.put(endpoint.identifier(), endpoint);
         return endpoint;
     }
 
-    protected void endpointPull(Receiver<OUTPUT> receiver, long pubEndpointId) {
+    public void endpointPull(Reactive.Identifier receiver, Reactive.Identifier pubEndpointId) {
         assert !done;
         providingEndpoints.get(pubEndpointId).pull(receiver);
     }
 
-    protected void endpointReceive(Provider<INPUT> provider, INPUT packet, long subEndpointId) {
+    protected void endpointReceive(ReactiveIdentifier.Output<INPUT> provider, INPUT packet, Reactive.Identifier subEndpointId) {
         assert !done;
         receivingEndpoints.get(subEndpointId).receive(provider, packet);
     }
@@ -198,10 +197,10 @@ public abstract class Processor<INPUT, OUTPUT,
     /**
      * Governs an input to a processor
      */
-    public static class InletEndpoint<PACKET> extends SingleReceiverPublisher<PACKET> implements Receiver<PACKET> {
+    public static class InletEndpoint<PACKET> extends SingleReceiverPublisher<PACKET> implements Reactive.Receiver.Async<PACKET> {
 
         private final long id;
-        private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
+        private final ProviderRegistry.SingleProviderRegistry<ReactiveIdentifier.Output<PACKET>> providerRegistry;
         private boolean ready;
 
         public InletEndpoint(long id, Processor<?, ?, ?, ?> processor) {
@@ -211,7 +210,7 @@ public abstract class Processor<INPUT, OUTPUT,
             this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
         }
 
-        private ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
+        private ProviderRegistry.SingleProviderRegistry<ReactiveIdentifier.Output<PACKET>> providerRegistry() {
             return providerRegistry;
         }
 
@@ -220,7 +219,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         void setReady(Connection<PACKET, ?, ?> connection) {
-            providerRegistry().add(connection);
+            providerRegistry().add(connection.providerEndpointId());
             assert !ready;
             this.ready = true;
         }
@@ -230,50 +229,53 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public void pull(Receiver<PACKET> receiver) {
+        public void pull(Receiver.Sync<PACKET> receiver) {
             assert receiver.equals(receiverRegistry().receiver());
             receiverRegistry().recordPull(receiver);
             if (ready) providerRegistry().pullAll();
         }
 
         @Override
-        public void receive(Provider<PACKET> provider, PACKET packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
-            providerRegistry().recordReceive(provider);
+        public void receive(ReactiveIdentifier.Output<PACKET> providerId, PACKET packet) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(providerId, this, packet));
+            providerRegistry().recordReceive(providerId);
             receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
         }
+
     }
 
     /**
      * Governs an output from a processor
      */
-    public static class OutletEndpoint<PACKET> implements Subscriber<PACKET>, Provider<PACKET> {
+    public static class OutletEndpoint<PACKET> implements Subscriber<PACKET>, Provider.Async {
 
-        private final Identifier reference;
+        private final ReactiveIdentifier.Output<PACKET> identifier;
         private final Processor<?, ?, ?, ?> processor;
-        private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
-        private final ReceiverRegistry.SingleReceiverRegistry<PACKET> receiverRegistry;
+        private final ProviderRegistry.SingleProviderRegistry<Reactive.Provider.Sync<PACKET>> providerRegistry;
+        private final ReceiverRegistry.SingleReceiverRegistry<Reactive.Identifier> receiverRegistry;
         private final long id;
+        private final Connection<PACKET, ?, ?> connection;
 
         public OutletEndpoint(Connection<PACKET, ?, ?> connection, Processor<?, ?, ?, ?> processor) {
             this.processor = processor;
-            this.reference = this.processor.registerReactive(this);
+            this.identifier = this.processor.registerReactive(this);
             this.id = connection.providerEndpointId();
+            this.connection = connection;
             this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
-            this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(this, connection);
+            this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(connection.receiverEndpointId());
         }
 
         @Override
-        public Identifier identifier() {
-            return reference;
+        public ReactiveIdentifier.Output<PACKET> identifier() {
+            return identifier;
         }
 
-        private ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
+        private ProviderRegistry.SingleProviderRegistry<Reactive.Provider.Sync<PACKET>> providerRegistry() {
             return providerRegistry;
         }
 
-        private ReceiverRegistry.SingleReceiverRegistry<PACKET> receiverRegistry() {
+        private ReceiverRegistry.SingleReceiverRegistry<Reactive.Identifier> receiverRegistry() {
             return receiverRegistry;
         }
 
@@ -287,22 +289,22 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public void receive(Provider<PACKET> provider, PACKET packet) {
+        public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
             providerRegistry().recordReceive(provider);
             receiverRegistry().setNotPulling();
-            receiverRegistry().receiver().receive(this, packet);
+            receiverRegistry().receiver().processor().execute(actor -> actor.endpointReceive(identifier(), packet, receiverRegistry().receiver()));
         }
 
         @Override
-        public void pull(Receiver<PACKET> receiver) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), this));
-            receiverRegistry().recordPull(receiver);
+        public void pull(Reactive.Identifier receiverId) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), identifier()));
+            receiverRegistry().recordPull(receiverId);
             providerRegistry().pullAll();
         }
 
         @Override
-        public void subscribeTo(Provider<PACKET> provider) {
+        public void subscribeTo(Provider.Sync<PACKET> provider) {
             providerRegistry().add(provider);
             if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
         }

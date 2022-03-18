@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRe
 
 public class NoOpStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
-    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
+    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry;
 
     public NoOpStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
@@ -31,12 +31,12 @@ public class NoOpStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
     }
 
     @Override
-    protected ProviderRegistry<PACKET> providerRegistry() {
+    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry() {
         return providerRegistry;
     }
 
     @Override
-    public void receive(Provider<PACKET> provider, PACKET packet) {
+    public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
         receiverRegistry().setNotPulling();
         receiverRegistry().receiver().receive(this, packet);

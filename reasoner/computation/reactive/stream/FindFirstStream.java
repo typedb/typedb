@@ -23,22 +23,22 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRe
 
 public class FindFirstStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
-    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
+    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry;
     private boolean packetFound;
 
-    public FindFirstStream(Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
+    public FindFirstStream(Provider.Sync.Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
         super(processor);
         this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, processor);
         this.packetFound = false;
     }
 
     @Override
-    protected ProviderRegistry<PACKET> providerRegistry() {
+    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry() {
         return providerRegistry;
     }
 
     @Override
-    public void receive(Provider<PACKET> provider, PACKET packet) {
+    public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
         if (!packetFound) {
             packetFound = true;
@@ -50,7 +50,7 @@ public class FindFirstStream<PACKET> extends SingleReceiverStream<PACKET, PACKET
     }
 
     @Override
-    public void pull(Receiver<PACKET> receiver) {
+    public void pull(Receiver.Sync<PACKET> receiver) {
         if (!packetFound) super.pull(receiver);
     }
 }

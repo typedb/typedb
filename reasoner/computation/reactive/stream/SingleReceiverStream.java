@@ -27,46 +27,46 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublisher<OUTPUT> implements Reactive.Stream<INPUT, OUTPUT> {
 
-    private final ReceiverRegistry.SingleReceiverRegistry<OUTPUT> receiverRegistry;
+    private final ReceiverRegistry.SingleReceiverRegistry<Reactive.Receiver.Sync<OUTPUT>> receiverRegistry;
 
     protected SingleReceiverStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
-        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(this);
+        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>();
     }
 
-    protected abstract ProviderRegistry<INPUT> providerRegistry();
+    protected abstract ProviderRegistry<Provider.Sync<INPUT>> providerRegistry();
 
     @Override
-    protected ReceiverRegistry.SingleReceiverRegistry<OUTPUT> receiverRegistry() {
+    protected ReceiverRegistry.SingleReceiverRegistry<Receiver.Sync<OUTPUT>> receiverRegistry() {
         return receiverRegistry;
     }
 
     @Override
-    public void receive(Provider<INPUT> provider, INPUT packet) {
+    public void receive(Provider.Sync<INPUT> provider, INPUT packet) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         providerRegistry().recordReceive(provider);
     }
 
     @Override
-    public void pull(Receiver<OUTPUT> receiver) {
+    public void pull(Receiver.Sync<OUTPUT> receiver) {
         assert receiver.equals(receiverRegistry().receiver());
         receiverRegistry().recordPull(receiver);
         providerRegistry().pullAll();
     }
 
     @Override
-    public void subscribeTo(Provider<INPUT> provider) {
+    public void subscribeTo(Provider.Sync<INPUT> provider) {
         providerRegistry().add(provider);
         if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
     }
 
     @Override
-    public void publishTo(Subscriber<OUTPUT> subscriber) {
+    public void publishTo(Receiver.Sync.Subscriber<OUTPUT> subscriber) {
         receiverRegistry().addReceiver(subscriber);
         subscriber.subscribeTo(this);
     }
 
-    public void sendTo(Receiver<OUTPUT> receiver) {
+    public void sendTo(Receiver.Sync<OUTPUT> receiver) {
         // Allows sending of data without the downstream being able to pull from here
         receiverRegistry().addReceiver(receiver);
     }

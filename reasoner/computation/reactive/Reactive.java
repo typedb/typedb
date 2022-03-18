@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -32,53 +31,70 @@ public interface Reactive {
 
     Identifier identifier();
 
-    interface Provider<R> extends Reactive {
-
-        void pull(Receiver<R> receiver);
-
-        interface Publisher<T> extends Provider<T> {
-
-            void publishTo(Receiver.Subscriber<T> subscriber);
-
-            Stream<T,T> findFirst();
-
-            <R> Stream<T, R> map(Function<T, R> function);
-
-            <R> Stream<T,R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
-
-            Stream<T, T> buffer();
-
-            Stream<T, T> deduplicate();
-
-        }
-
-    }
-
-    interface Receiver<R> extends Reactive {
-
-        void receive(Provider<R> provider, R packet);
-
-        interface Subscriber<T> extends Receiver<T> {
-
-            void subscribeTo(Provider<T> publisher);
-
-        }
-
-        interface Finishable<T> extends Receiver<T> {
-
-            void onFinished();
-
-        }
-
-    }
-
-    interface Stream<INPUT, OUTPUT> extends Receiver.Subscriber<INPUT>, Provider.Publisher<OUTPUT> {
-
-    }
-
-    interface Identifier {
+    interface Identifier extends Reactive {  // TODO: Don't extend Reactive if possible
 
         String toString();
+
+        Actor.Driver<? extends Processor<?, ?, ?, ?>> processor();
+    }
+
+    interface Provider extends Reactive {
+
+        interface Sync<R> extends Provider {
+
+            void pull(Receiver.Sync<R> receiver);
+
+            interface Publisher<T> extends Sync<T> {
+
+                void publishTo(Receiver.Sync.Subscriber<T> subscriber);
+
+                Stream<T,T> findFirst();
+
+                <R> Stream<T, R> map(Function<T, R> function);
+
+                <R> Stream<T,R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
+
+                Stream<T, T> buffer();
+
+                Stream<T, T> deduplicate();
+
+            }
+        }
+
+        interface Async extends Provider {
+
+            void pull(Reactive.Identifier receiverId);
+
+        }
+    }
+
+    interface Receiver extends Reactive {
+
+        interface Sync<R> extends Receiver {
+
+            void receive(Provider.Sync<R> provider, R packet);
+
+            interface Subscriber<T> extends Sync<T> {
+
+                void subscribeTo(Provider.Sync<T> publisher);
+
+            }
+
+            interface Finishable<T> extends Sync<T> {
+
+                void onFinished();
+
+            }
+        }
+
+        interface Async<R> extends Receiver {
+
+            void receive(ReactiveIdentifier.Output<R> providerId, R packet);
+
+        }
+    }
+
+    interface Stream<INPUT, OUTPUT> extends Receiver.Sync.Subscriber<INPUT>, Provider.Sync.Publisher<OUTPUT> {
 
     }
 

@@ -53,4 +53,25 @@ public class ReactiveIdentifier implements Reactive.Identifier {
     public String toString() {
         return processor.debugName().get() + ":" + reactiveClass +":" + scopedId;
     }
+
+    @Override
+    public Actor.Driver<? extends Processor<?, ?, ?, ?>> processor() {
+        return processor;
+    }
+
+    public static class Output<PACKET> extends ReactiveIdentifier {
+
+        private final Actor.Driver<? extends Processor<?, PACKET, ?, ?>> processor;  //TODO: Duplicates field from parent class
+
+        public Output(Actor.Driver<? extends Processor<?, PACKET, ?, ?>> processor,
+                      Class<? extends Reactive> reactiveClass, int scopedId) {
+            super(processor, reactiveClass, scopedId);
+            this.processor = processor;
+        }
+
+        @Override
+        public Actor.Driver<? extends Processor<?, PACKET, ?, ?>> processor() {
+            return processor;
+        }
+    }
 }

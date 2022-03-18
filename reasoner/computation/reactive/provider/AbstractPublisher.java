@@ -30,7 +30,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.stream.MapStream;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Publisher<OUTPUT> {
+public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Sync.Publisher<OUTPUT> {
 
     private final Identifier identifier;
     private final Processor<?, ?, ?, ?> processor;
@@ -45,7 +45,7 @@ public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Pub
         return identifier;
     }
 
-    protected abstract ReceiverRegistry<OUTPUT> receiverRegistry();
+    protected abstract ReceiverRegistry<Receiver.Sync<OUTPUT>> receiverRegistry();
 
     protected Processor<?, ?, ?, ?> processor() {
         return processor;

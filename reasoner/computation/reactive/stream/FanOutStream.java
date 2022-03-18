@@ -34,11 +34,11 @@ import java.util.Set;
 
 public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements Reactive.Stream<PACKET, PACKET> {
 
-    final Map<Receiver<PACKET>, Integer> bufferPositions;  // Points to the next item needed
+    final Map<Receiver, Integer> bufferPositions;  // Points to the next item needed
     final Set<PACKET> bufferSet;
     final List<PACKET> bufferList;
-    private final ProviderRegistry<PACKET> providerRegistry;
-    private final ReceiverRegistry.MultiReceiverRegistry<PACKET> receiverRegistry;
+    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry;
+    private final ReceiverRegistry.MultiReceiverRegistry<Receiver.Sync<PACKET>> receiverRegistry;
 
     public FanOutStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
@@ -46,26 +46,26 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
         this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
-        this.receiverRegistry = new ReceiverRegistry.MultiReceiverRegistry<>(this);
+        this.receiverRegistry = new ReceiverRegistry.MultiReceiverRegistry<>();
     }
 
     @Override
-    protected ReceiverRegistry.MultiReceiverRegistry<PACKET> receiverRegistry() {
+    protected ReceiverRegistry.MultiReceiverRegistry<Receiver.Sync<PACKET>> receiverRegistry() {
         return receiverRegistry;
     }
 
-    protected ProviderRegistry<PACKET> providerRegistry() {
+    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry() {
         return providerRegistry;
     }
 
     @Override
-    public void receive(Provider<PACKET> provider, PACKET packet) {
+    public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         providerRegistry().recordReceive(provider);
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
             processor().monitor().execute(actor -> actor.createAnswer(identifier()));
-            Set<Receiver<PACKET>> pullingReceivers = receiverRegistry().pullingReceivers();
+            Set<Receiver.Sync<PACKET>> pullingReceivers = receiverRegistry().pullingReceivers();
             receiverRegistry().setNotPulling();
             pullingReceivers.forEach(this::sendFromBuffer);
         } else {
@@ -75,7 +75,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     }
 
     @Override
-    public void pull(Receiver<PACKET> receiver) {
+    public void pull(Receiver.Sync<PACKET> receiver) {
         receiverRegistry().recordPull(receiver);
         bufferPositions.putIfAbsent(receiver, 0);
         if (bufferList.size() == bufferPositions.get(receiver)) {
@@ -86,21 +86,21 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         }
     }
 
-    private void sendFromBuffer(Receiver<PACKET> receiver) {
+    private void sendFromBuffer(Receiver.Sync<PACKET> receiver) {
         Integer pos = bufferPositions.get(receiver);
         bufferPositions.put(receiver, pos + 1);
         receiver.receive(this, bufferList.get(pos));
     }
 
     @Override
-    public void publishTo(Subscriber<PACKET> subscriber) {
+    public void publishTo(Receiver.Sync.Subscriber<PACKET> subscriber) {
         bufferPositions.putIfAbsent(subscriber, 0);
         receiverRegistry().addReceiver(subscriber);
         subscriber.subscribeTo(this);
     }
 
     @Override
-    public void subscribeTo(Provider<PACKET> provider) {
+    public void subscribeTo(Provider.Sync<PACKET> provider) {
         providerRegistry().add(provider);
         if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
     }

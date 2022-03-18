@@ -26,22 +26,22 @@ import java.util.Set;
 
 public class DeduplicationStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
-    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
+    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry;
     private final Set<PACKET> deduplicationSet;
 
-    public DeduplicationStream(Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
+    public DeduplicationStream(Provider.Sync.Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
         super(processor);
         this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, processor);
         this.deduplicationSet = new HashSet<>();
     }
 
     @Override
-    protected ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
+    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry() {
         return providerRegistry;
     }
 
     @Override
-    public void receive(Provider<PACKET> provider, PACKET packet) {
+    public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
         if (deduplicationSet.add(packet)) {
             receiverRegistry().setNotPulling();

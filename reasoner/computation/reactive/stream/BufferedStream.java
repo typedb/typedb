@@ -25,22 +25,22 @@ import java.util.Stack;
 
 public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
 
-    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
+    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry;
     private final Stack<PACKET> stack;
 
-    public BufferedStream(Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
+    public BufferedStream(Provider.Sync.Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
         super(processor);
         this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, processor);
         this.stack = new Stack<>();
     }
 
     @Override
-    protected ProviderRegistry<PACKET> providerRegistry() {
+    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry() {
         return providerRegistry;
     }
 
     @Override
-    public void receive(Provider<PACKET> provider, PACKET packet) {
+    public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
         super.receive(provider, packet);
         if (receiverRegistry().isPulling()) {
             receiverRegistry().setNotPulling();
@@ -51,7 +51,7 @@ public class BufferedStream<PACKET> extends SingleReceiverStream<PACKET, PACKET>
     }
 
     @Override
-    public void pull(Receiver<PACKET> receiver) {
+    public void pull(Receiver.Sync<PACKET> receiver) {
         assert receiver.equals(receiverRegistry().receiver());
         receiverRegistry().recordPull(receiver);
         if (stack.size() > 0) {

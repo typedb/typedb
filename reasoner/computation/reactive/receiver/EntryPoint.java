@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Finishable<ConceptMap> {
+public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Sync.Finishable<ConceptMap> {
 
     private final Identifier identifier;
     private final UUID traceId = UUID.randomUUID();
@@ -57,7 +57,7 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Fi
     }
 
     @Override
-    public void receive(@Nullable Provider<ConceptMap> provider, ConceptMap packet) {
+    public void receive(@Nullable Provider.Sync<ConceptMap> provider, ConceptMap packet) {
         super.receive(provider, packet);
         isPulling = false;
         reasonerConsumer.receiveAnswer(packet);
@@ -65,7 +65,7 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Fi
     }
 
     @Override
-    public void subscribeTo(Provider<ConceptMap> provider) {
+    public void subscribeTo(Provider.Sync<ConceptMap> provider) {
         super.subscribeTo(provider);
         if (isPulling) providerRegistry().pull(provider);
     }

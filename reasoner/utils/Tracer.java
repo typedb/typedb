@@ -79,7 +79,7 @@ public final class Tracer {
         return Optional.ofNullable(INSTANCE);
     }
 
-    public synchronized void pull(@Nullable Receiver<?> receiver, Provider<?> provider) {
+    public synchronized void pull(@Nullable Receiver receiver, Provider provider) {
         String receiverString;
         if (receiver == null) receiverString = "root";
         else {
@@ -90,7 +90,10 @@ public final class Tracer {
         addNodeGroup(provider.identifier().toString(), provider.tracingGroupName().get(), defaultTrace);
     }
 
-    public synchronized <INPUT, OUTPUT> void receive(Provider<OUTPUT> provider, Receiver<INPUT> receiver, OUTPUT packet) {
+    public void pull(Reactive.Identifier receiver, Reactive.Identifier identifier) {
+    }
+
+    public synchronized <INPUT, OUTPUT> void receive(Provider provider, Receiver receiver, OUTPUT packet) {
         addMessage(provider.identifier().toString(), receiver.identifier().toString(), defaultTrace, EdgeType.RECEIVE, packet.toString());
         addNodeGroup(receiver.identifier().toString(), receiver.tracingGroupName().get(), defaultTrace);
         addNodeGroup(provider.identifier().toString(), provider.tracingGroupName().get(), defaultTrace);
@@ -101,6 +104,10 @@ public final class Tracer {
         addMessage(provider.identifier().toString(), receiver.identifier().toString(),
                    defaultTrace, EdgeType.RECEIVE, packet.toString());
         addNodeGroup(provider.identifier().toString(), provider.tracingGroupName().get(), defaultTrace);
+    }
+
+    public <PACKET> void receive(Reactive.Identifier providerId, Processor.InletEndpoint<PACKET> packetInletEndpoint, PACKET packet) {
+
     }
 
     public void registerRoot(Reactive.Identifier root, Actor.Driver<Monitor> monitor) {

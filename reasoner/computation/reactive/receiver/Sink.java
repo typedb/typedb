@@ -19,12 +19,12 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.receiver;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Sync.Subscriber;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public abstract class Sink<PACKET> implements Subscriber<PACKET> {
 
-    private final ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry;
+    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry;
     private final Processor<?, ?, ?, ?> processor;
 
     protected Sink(Processor<?, ?, ?, ?> processor) {
@@ -32,7 +32,7 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET> {
         this.processor = processor;
     }
 
-    protected ProviderRegistry.SingleProviderRegistry<PACKET> providerRegistry() {
+    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry() {
         return providerRegistry;
     }
 
@@ -41,12 +41,12 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET> {
     }
 
     @Override
-    public void subscribeTo(Provider<PACKET> provider) {
+    public void subscribeTo(Provider.Sync<PACKET> provider) {
         providerRegistry().add(provider);
     }
 
     @Override
-    public void receive(Provider<PACKET> provider, PACKET packet) {
+    public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
         providerRegistry().recordReceive(provider);
     }

@@ -18,31 +18,26 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-
 import java.util.HashSet;
 import java.util.Set;
 
-public abstract class ReceiverRegistry<R> {
+public abstract class ReceiverRegistry<RECEIVER> {
 
     abstract void setNotPulling();
 
-    abstract boolean addReceiver(Reactive.Receiver<R> receiver);
+    abstract boolean addReceiver(RECEIVER receiver);
 
-    public static class SingleReceiverRegistry<R> extends ReceiverRegistry<R> {
+    public static class SingleReceiverRegistry<RECEIVER> extends ReceiverRegistry<RECEIVER> {
 
-        private final Reactive.Provider<R> provider;
         private boolean isPulling;
-        private Reactive.Receiver<R> receiver;
+        private RECEIVER receiver;
 
-        public SingleReceiverRegistry(Reactive.Provider<R> provider, Reactive.Receiver<R> receiver) {
-            this.provider = provider;
+        public SingleReceiverRegistry(RECEIVER receiver) {
             this.isPulling = false;
             addReceiver(receiver);
         }
 
-        public SingleReceiverRegistry(Reactive.Provider<R> provider) {
-            this.provider = provider;
+        public SingleReceiverRegistry() {
             this.receiver = null;
             this.isPulling = false;
         }
@@ -52,7 +47,7 @@ public abstract class ReceiverRegistry<R> {
             isPulling = false;
         }
 
-        public void recordPull(Reactive.Receiver<R> receiver) {
+        public void recordPull(RECEIVER receiver) {
             assert this.receiver.equals(receiver);
             isPulling = true;
         }
@@ -62,26 +57,24 @@ public abstract class ReceiverRegistry<R> {
         }
 
         @Override
-        public boolean addReceiver(Reactive.Receiver<R> receiver) {
+        public boolean addReceiver(RECEIVER receiver) {
             assert this.receiver == null;
             this.receiver = receiver;
             return false;
         }
 
-        public Reactive.Receiver<R> receiver() {
+        public RECEIVER receiver() {
             assert this.receiver != null;
             return receiver;
         }
     }
 
-    public static class MultiReceiverRegistry<R> extends ReceiverRegistry<R> {
+    public static class MultiReceiverRegistry<RECEIVER> extends ReceiverRegistry<RECEIVER> {
 
-        private final Reactive.Provider<R> provider;
-        private final Set<Reactive.Receiver<R>> receivers;
-        private final Set<Reactive.Receiver<R>> pullingReceivers;
+        private final Set<RECEIVER> receivers;
+        private final Set<RECEIVER> pullingReceivers;
 
-        public MultiReceiverRegistry(Reactive.Provider<R> provider) {
-            this.provider = provider;
+        public MultiReceiverRegistry() {
             this.receivers = new HashSet<>();
             this.pullingReceivers = new HashSet<>();
         }
@@ -91,7 +84,7 @@ public abstract class ReceiverRegistry<R> {
             pullingReceivers.clear();
         }
 
-        public void recordPull(Reactive.Receiver<R> receiver) {
+        public void recordPull(RECEIVER receiver) {
             assert receivers.contains(receiver);
             pullingReceivers.add(receiver);
         }
@@ -101,11 +94,11 @@ public abstract class ReceiverRegistry<R> {
         }
 
         @Override
-        public boolean addReceiver(Reactive.Receiver<R> receiver) {
+        public boolean addReceiver(RECEIVER receiver) {
             return receivers.add(receiver);
         }
 
-        public Set<Reactive.Receiver<R>> pullingReceivers() {
+        public Set<RECEIVER> pullingReceivers() {
             return new HashSet<>(pullingReceivers);
         }
 

@@ -42,7 +42,7 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
     }
 
     @Override
-    public void pull(Receiver<PACKET> receiver) {
+    public void pull(Receiver.Sync<PACKET> receiver) {
         assert receiver.equals(receiverRegistry().receiver());
         receiverRegistry().recordPull(receiver);
         if (!exhausted) {

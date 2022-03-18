@@ -26,21 +26,21 @@ import java.util.function.Function;
 public class MapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT> {
 
     private final Function<INPUT, OUTPUT> mappingFunc;
-    private final ProviderRegistry.SingleProviderRegistry<INPUT> providerRegistry;
+    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<INPUT>> providerRegistry;
 
-    public MapStream(Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, Processor<?, ?, ?, ?> processor) {
+    public MapStream(Provider.Sync.Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, Processor<?, ?, ?, ?> processor) {
         super(processor);
         this.mappingFunc = mappingFunc;
         this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, processor);
     }
 
     @Override
-    protected ProviderRegistry<INPUT> providerRegistry() {
+    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<INPUT>> providerRegistry() {
         return providerRegistry;
     }
 
     @Override
-    public void receive(Provider<INPUT> provider, INPUT packet) {
+    public void receive(Provider.Sync<INPUT> provider, INPUT packet) {
         super.receive(provider, packet);
         receiverRegistry().setNotPulling();
         receiverRegistry().receiver().receive(this, mappingFunc.apply(packet));
