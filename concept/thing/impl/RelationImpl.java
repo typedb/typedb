@@ -110,7 +110,10 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public FunctionalIterator<Thing> getPlayers(String... roleTypes) {
-        return getPlayers(iterate(roleTypes).map(label -> getType().getRelates(label)).map(rt -> rt.vertex));
+        if (roleTypes.length == 0) return readableVertex().outs().edge(ROLEPLAYER).to().map(ThingImpl::of);
+        else {
+            return getPlayers(iterate(roleTypes).map(label -> getType().getRelates(label)).map(rt -> rt.vertex));
+        }
     }
 
     @Override
