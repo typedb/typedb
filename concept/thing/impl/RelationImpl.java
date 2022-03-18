@@ -109,16 +109,8 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public FunctionalIterator<Thing> getPlayers() {
-        return readableVertex().outs().edge(ROLEPLAYER).to().map(ThingImpl::of);
-    }
-
-    @Override
-    public Forwardable<Thing, Order.Asc> getPlayers(String roleType, String... roleTypes) {
-        return getPlayers(
-                getType().getRelates(roleType),
-                iterate(roleTypes).map(label -> getType().getRelates(label)).stream().toArray(RoleType[]::new)
-        );
+    public FunctionalIterator<Thing> getPlayers(String... roleTypes) {
+        return getPlayers(iterate(roleTypes).map(label -> getType().getRelates(label)).map(rt -> rt.vertex));
     }
 
     @Override

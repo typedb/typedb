@@ -38,9 +38,7 @@ public interface Relation extends Thing {
 
     void removePlayer(RoleType roleType, Thing player);
 
-    FunctionalIterator<Thing> getPlayers();
-
-    Forwardable<Thing, Order.Asc> getPlayers(String roleType, String... roleTypes);
+    FunctionalIterator<Thing> getPlayers(String... roleTypes);
 
     Forwardable<Thing, Order.Asc> getPlayers(RoleType roleType, RoleType... roleTypes);
 
