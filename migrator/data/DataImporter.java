@@ -55,7 +55,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -172,25 +171,21 @@ public class DataImporter {
             this.workerConstructor = workerConstructor;
         }
 
-        long executeImport() {
-            long imported = 0;
+        void executeImport() {
             BlockingQueue<DataProto.Item> items = asyncItemReader();
-            CompletableFuture<Long>[] workers = new CompletableFuture[parallelisation];
+            CompletableFuture<Void>[] workers = new CompletableFuture[parallelisation];
             for (int i = 0; i < parallelisation; i++) {
-                workers[i] = CompletableFuture.supplyAsync(() -> workerConstructor.apply(items).importItems(), importExecutor);
+                workers[i] = CompletableFuture.runAsync(() -> workerConstructor.apply(items).importItems(), importExecutor);
             }
             try {
-                for (CompletableFuture<Long> worker : workers) {
-                    imported += worker.get();
-                }
-            } catch (CompletionException | InterruptedException | ExecutionException exception) {
+                CompletableFuture.allOf(workers).join();
+            } catch (CompletionException exception) {
                 throw TypeDBException.of(exception);
             }
-            return imported;
         }
 
         private BlockingQueue<DataProto.Item> asyncItemReader() {
-            BlockingQueue<DataProto.Item> queue = new ArrayBlockingQueue<>(1000);
+            BlockingQueue<DataProto.Item> queue = new ArrayBlockingQueue<>(4000);
             CompletableFuture.runAsync(() -> {
                 try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(dataFile))) {
                     DataProto.Item item;
@@ -224,29 +219,25 @@ public class DataImporter {
 
         abstract long importItem(DataProto.Item item);
 
-        long importItems() {
-            long imported = 0;
-            int batchCount = 0;
+        void importItems() {
+            int count = 0;
             DataProto.Item item;
             try {
                 transaction = session.transaction(Arguments.Transaction.Type.WRITE);
                 while ((item = items.poll(1, TimeUnit.SECONDS)) != null) {
-                    if (batchCount >= BATCH_SIZE) {
+                    if (count >= BATCH_SIZE) {
                         commitBatch();
                         transaction = session.transaction(Arguments.Transaction.Type.WRITE);
-                        batchCount = 0;
-                        imported += batchCount;
+                        count = 0;
                     }
-                    batchCount += importItem(item);
+                    count += importItem(item);
                 }
                 commitBatch();
-                imported += batchCount;
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
                 transaction.close();
             }
-            return imported;
         }
 
         private void commitBatch() {
@@ -473,8 +464,9 @@ public class DataImporter {
         boolean progressMade;
         do {
             skippedRelations.set(false);
-            long imported = new ParallelImport(Relations::new).executeImport();
-            progressMade = imported > 0;
+            long before = status.relationCount.get() + status.roleCount.get();
+            new ParallelImport(Relations::new).executeImport();
+            progressMade = before < (status.relationCount.get() + status.roleCount.get());
         } while (relationsUnfinished() && progressMade);
 
         if (relationsUnfinished()) loadCyclicalRelations();
