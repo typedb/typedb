@@ -383,8 +383,8 @@ public abstract class RocksStorage implements Storage {
         private final ConcurrentSkipListSet<ByteArray> deletedKeys;
         private final ConcurrentSkipListSet<ByteArray> exclusiveBytes; // these are not real keys, just reserved bytes
         private final long snapshotStart;
-        private volatile Long snapshotEnd;
-        private boolean hasWrite;
+        protected volatile Long snapshotEnd;
+        protected boolean hasWrite;
 
         public Data(CoreDatabase database, CoreTransaction transaction) {
             super(database.rocksData, database.rocksDataPartitionMgr, transaction);

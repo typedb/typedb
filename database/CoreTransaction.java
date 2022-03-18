@@ -128,7 +128,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         }
     }
 
-    void notifyClosed() {
+    protected void notifyClosed() {
         session.closed(this);
     }
 
@@ -358,7 +358,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         }
 
         @Override
-        void notifyClosed() {
+        protected void notifyClosed() {
             if (type().isWrite()) session.database().isolationMgr().closed(this);
             super.notifyClosed();
         }

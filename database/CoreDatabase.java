@@ -121,7 +121,7 @@ public class CoreDatabase implements TypeDB.Database {
     private final IsolationManager isolationMgr;
     private final StatisticsCorrector statisticsCorrector;
     protected OptimisticTransactionDB rocksSchema;
-    protected OptimisticTransactionDB rocksData;
+    public OptimisticTransactionDB rocksData;
     protected CorePartitionManager.Schema rocksSchemaPartitionMgr;
     protected CorePartitionManager.Data rocksDataPartitionMgr;
     protected CoreSession.Data statisticsBackgroundCounterSession;
@@ -160,6 +160,7 @@ public class CoreDatabase implements TypeDB.Database {
     static CoreDatabase loadAndOpen(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
         CoreDatabase database = new CoreDatabase(databaseMgr, name, sessionFactory);
         database.load();
+        database.statisticsCorrector.initialiseAndCleanUp();
         return database;
     }
 
@@ -232,7 +233,6 @@ public class CoreDatabase implements TypeDB.Database {
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
         }
-        statisticsCorrector.initialiseAndCleanUp();
     }
 
     private void openData() {
@@ -368,7 +368,7 @@ public class CoreDatabase implements TypeDB.Database {
         return isolationMgr;
     }
 
-    StatisticsCorrector statisticsCorrector() {
+    public StatisticsCorrector statisticsCorrector() {
         return statisticsCorrector;
     }
 
@@ -463,7 +463,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    static class IsolationManager {
+    public static class IsolationManager {
 
         private final ConcurrentMap<CoreTransaction.Data, CommitState> commitStates;
         private final ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> commitTimeline;
@@ -481,7 +481,7 @@ public class CoreDatabase implements TypeDB.Database {
             commitStates.put(transaction, CommitState.UNCOMMITTED);
         }
 
-        Set<CoreTransaction.Data> validateOverlappingAndStartCommit(CoreTransaction.Data txn) {
+        public Set<CoreTransaction.Data> validateOverlappingAndStartCommit(CoreTransaction.Data txn) {
             Set<CoreTransaction.Data> transactions;
             synchronized (this) {
                 transactions = commitMayConflict(txn);
@@ -510,7 +510,7 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        void committed(CoreTransaction.Data txn) {
+        public void committed(CoreTransaction.Data txn) {
             assert commitStates.get(txn) == CommitState.COMMITTING && txn.snapshotEnd().isPresent();
             commitStates.put(txn, CommitState.COMMITTED);
             commitTimeline.compute(txn.snapshotEnd().get(), (snapshot, committed) -> {
@@ -556,7 +556,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    class StatisticsCorrector {
+    public class StatisticsCorrector {
 
         private final ConcurrentSet<CompletableFuture<Void>> corrections;
         private final ConcurrentSet<Long> deletedTxnIDs;
@@ -569,11 +569,11 @@ public class CoreDatabase implements TypeDB.Database {
             correctionRequired = new AtomicBoolean(false);
         }
 
-        void initialise() {
+        public void initialise() {
             session = createAndOpenSession(DATA, new Options.Session()).asData();
         }
 
-        void initialiseAndCleanUp() {
+        public void initialiseAndCleanUp() {
             initialise();
             LOG.debug("Cleaning up statistics metadata.");
             correctMiscounts();
@@ -609,7 +609,7 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        void committed(CoreTransaction.Data transaction) {
+        public void committed(CoreTransaction.Data transaction) {
             if (mayMiscount(transaction) && correctionRequired.compareAndSet(false, true)) {
                 submitCorrection();
 
@@ -711,7 +711,7 @@ public class CoreDatabase implements TypeDB.Database {
             return iterate(txnIDs).noneMatch(openTxnIDs::contains);
         }
 
-        void recordCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> overlappingTxn) {
+        public void recordCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> overlappingTxn) {
             recordMiscountableCauses(txn, overlappingTxn);
             txn.dataStorage.putUntracked(StatisticsKey.txnCommitted(txn.id));
         }
