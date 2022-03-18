@@ -283,7 +283,7 @@ public class DataImporter {
 
         boolean isIncomplete(String id) {
             if (incomplete.contains(id)) return true;
-            else return conceptTracker.isMarkedIncomplete(id);
+            else return conceptTracker.isIncomplete(id);
         }
 
         Thing getMappedThing(String originalID) {
@@ -402,21 +402,21 @@ public class DataImporter {
             if (item.getItemCase() == DataProto.Item.ItemCase.RELATION) {
                 Thing importedRelation = getMappedThing(item.getRelation().getId());
                 if (importedRelation == null) {
-                    int inserted = tryInsertRelation(item.getRelation());
-                    if (inserted > 0) {
-                        return inserted + importOwnerships(item.getRelation().getId(), item.getRelation().getAttributeList());
+                    int imported = tryImport(item.getRelation());
+                    if (imported > 0) {
+                        return imported + importOwnerships(item.getRelation().getId(), item.getRelation().getAttributeList());
                     }
                 } else if (isIncomplete(item.getRelation().getId())) {
-                    return tryExtendRelation(importedRelation.asRelation(), item.getRelation());
+                    return tryExtend(importedRelation.asRelation(), item.getRelation());
                 }
             }
             return 0;
         }
 
-        private int tryInsertRelation(DataProto.Item.Relation relationMsg) {
+        private int tryImport(DataProto.Item.Relation relationMsg) {
             RelationType relationType = transaction.concepts().getRelationType(relationMsg.getLabel());
             if (relationType == null) throw TypeDBException.of(TYPE_NOT_FOUND, relationMsg.getLabel());
-            int rolesCreated = tryCreate(relationType, relationMsg.getId(), relationMsg.getRoleList());
+            int rolesCreated = instantiate(relationType, relationMsg.getId(), relationMsg.getRoleList());
             if (rolesCreated == 0) {
                 // none of the players were present, so the relation was not created
                 skippedRelations.set(true);
@@ -430,7 +430,7 @@ public class DataImporter {
             }
         }
 
-        private int tryCreate(RelationType relationType, String originalID, List<DataProto.Item.Relation.Role> roleList) {
+        private int instantiate(RelationType relationType, String originalID, List<DataProto.Item.Relation.Role> roleList) {
             int rolesCreated = 0;
             Relation relation = null;
             for (DataProto.Item.Relation.Role roleMsg : roleList) {
@@ -449,22 +449,18 @@ public class DataImporter {
             return rolesCreated;
         }
 
-        private int tryExtendRelation(Relation relation, DataProto.Item.Relation relationMsg) {
-            assert conceptTracker.getMapped(relationMsg.getId()).equals(relation.getIID()) && isIncomplete(relationMsg.getId());
+        private int tryExtend(Relation relation, DataProto.Item.Relation relationMsg) {
             int rolesCreated = 0;
             boolean stillIncomplete = false;
             for (DataProto.Item.Relation.Role roleMsg : relationMsg.getRoleList()) {
-                RoleType roleType = null;
+                RoleType roleType = getRoleType(relation.getType(), roleMsg);
                 for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
                     Thing player = getMappedThing(playerMessage.getId());
-                    if (player == null) {
-                        stillIncomplete = true;
-                        continue;
+                    if (player == null) stillIncomplete = true;
+                    else if (!relation.getPlayers(roleType).findFirst(player).isPresent()) {
+                        relation.addPlayer(roleType, player);
+                        rolesCreated++;
                     }
-                    if (roleType == null) roleType = getRoleType(relation.getType(), roleMsg);
-                    if (relation.getPlayers(roleType).findFirst(player).isPresent()) continue;
-                    relation.addPlayer(roleType, player);
-                    rolesCreated++;
                 }
             }
             if (!stillIncomplete) recordCompleted(relationMsg.getId());
@@ -473,73 +469,77 @@ public class DataImporter {
         }
     }
 
-    private boolean relationsFinished() {
-        return !skippedRelations.get() && !conceptTracker.containsIncomplete();
-    }
-
     private void importRelations() {
         boolean progressMade;
         do {
             skippedRelations.set(false);
             long imported = new ParallelImport(Relations::new).executeImport();
             progressMade = imported > 0;
-        } while (!relationsFinished() && progressMade);
+        } while (relationsUnfinished() && progressMade);
 
-        if (relationsFinished()) return;
+        if (relationsUnfinished()) loadCyclicalRelations();
+        assert !conceptTracker.containsIncomplete();
+    }
 
-        // Load all relations that are pure co-dependent cycles, which must be loaded in one transaction
+    private boolean relationsUnfinished() {
+        return skippedRelations.get() || conceptTracker.containsIncomplete();
+    }
+
+    private void loadCyclicalRelations() {
+        // Load all relations that have only relation role players in cycles in one transaction
         try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-            try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(dataFile))) {
-                DataProto.Item item;
-                while ((item = ITEM_PARSER.parseDelimitedFrom(inputStream)) != null) {
-                    if (item.getItemCase() == DataProto.Item.ItemCase.RELATION) {
-                        Thing imported = transaction.concepts().getThing(conceptTracker.getMapped(item.getRelation().getId()));
-                        if (imported == null) {
-                            imported = transaction.concepts().getRelationType(item.getRelation().getLabel()).create();
-                            status.relationCount.incrementAndGet();
-                            conceptTracker.recordMapping(item.getRelation().getId(), imported.getIID());
-                            conceptTracker.recordIncomplete(item.getRelation().getId());
+            createCyclicalRelationsAndOwnerships(transaction);
+            addRolePlayers(transaction);
+            transaction.commit();
+        } catch (IOException e) {
+            throw TypeDBException.of(e);
+        }
+    }
 
-                            for (DataProto.Item.OwnedAttribute ownership : item.getRelation().getAttributeList()) {
-                                Thing attribute = transaction.concepts().getThing(conceptTracker.getMapped(ownership.getId()));
-                                assert attribute != null;
-                                imported.setHas(attribute.asAttribute());
-                                status.ownershipCount.incrementAndGet();
+    private void createCyclicalRelationsAndOwnerships(TypeDB.Transaction transaction) throws IOException {
+        try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(dataFile))) {
+            DataProto.Item item;
+            while ((item = ITEM_PARSER.parseDelimitedFrom(inputStream)) != null) {
+                if (item.getItemCase() == DataProto.Item.ItemCase.RELATION) {
+                    Thing relation = transaction.concepts().getThing(conceptTracker.getMapped(item.getRelation().getId()));
+                    if (relation != null) continue;
+                    relation = transaction.concepts().getRelationType(item.getRelation().getLabel()).create();
+                    status.relationCount.incrementAndGet();
+                    conceptTracker.recordMapping(item.getRelation().getId(), relation.getIID());
+                    conceptTracker.recordIncomplete(item.getRelation().getId());
+                    for (DataProto.Item.OwnedAttribute ownership : item.getRelation().getAttributeList()) {
+                        Thing attribute = transaction.concepts().getThing(conceptTracker.getMapped(ownership.getId()));
+                        assert attribute != null;
+                        relation.setHas(attribute.asAttribute());
+                        status.ownershipCount.incrementAndGet();
+                    }
+                }
+            }
+        }
+    }
+
+    private void addRolePlayers(TypeDB.Transaction transaction) throws IOException {
+        try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(dataFile))) {
+            DataProto.Item item;
+            while ((item = ITEM_PARSER.parseDelimitedFrom(inputStream)) != null) {
+                if (item.getItemCase() == DataProto.Item.ItemCase.RELATION && conceptTracker.isIncomplete(item.getRelation().getId())) {
+                    Relation relation = transaction.concepts().getThing(conceptTracker.getMapped(item.getRelation().getId())).asRelation();
+                    RelationType relationType = relation.getType();
+                    item.getRelation().getRoleList().forEach(roleMsg -> {
+                        RoleType roleType = getRoleType(relationType, roleMsg);
+                        for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
+                            Thing player = transaction.concepts().getThing(conceptTracker.getMapped(playerMessage.getId()));
+                            if (player == null) throw TypeDBException.of(PLAYER_NOT_FOUND, relationType.getLabel());
+                            else if (!relation.asRelation().getPlayers(roleType).findFirst(player).isPresent()) {
+                                relation.addPlayer(roleType, player);
+                                status.roleCount.incrementAndGet();
                             }
                         }
-                    }
+                    });
+                    conceptTracker.deleteIncomplete(item.getRelation().getId());
                 }
-            } catch (IOException e) {
-                throw TypeDBException.of(e);
             }
-
-            try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(dataFile))) {
-                DataProto.Item item;
-                while ((item = ITEM_PARSER.parseDelimitedFrom(inputStream)) != null) {
-                    if (item.getItemCase() == DataProto.Item.ItemCase.RELATION && conceptTracker.isMarkedIncomplete(item.getRelation().getId())) {
-                        Relation relation = transaction.concepts().getThing(conceptTracker.getMapped(item.getRelation().getId())).asRelation();
-                        RelationType relationType = relation.asRelation().getType();
-                        item.getRelation().getRoleList().forEach(roleMsg -> {
-                            RoleType roleType = getRoleType(relationType, roleMsg);
-                            for (DataProto.Item.Relation.Role.Player playerMessage : roleMsg.getPlayerList()) {
-                                Thing player = transaction.concepts().getThing(conceptTracker.getMapped(playerMessage.getId()));
-                                if (player == null) throw TypeDBException.of(PLAYER_NOT_FOUND, relationType.getLabel());
-                                else if (!relation.asRelation().getPlayers(roleType).findFirst(player).isPresent()) {
-                                    relation.addPlayer(roleType, player);
-                                    status.roleCount.incrementAndGet();
-                                }
-                            }
-                        });
-                        conceptTracker.deleteIncomplete(item.getRelation().getId());
-                    }
-                }
-            } catch (IOException e) {
-                throw TypeDBException.of(e);
-            }
-            transaction.commit();
         }
-
-        assert !conceptTracker.containsIncomplete();
     }
 
     private RoleType getRoleType(RelationType relationType, DataProto.Item.Relation.Role roleMsg) {
@@ -548,9 +548,8 @@ public class DataImporter {
         if (roleLabel.contains(":")) unscopedRoleLabel = roleLabel.split(":")[1];
         else unscopedRoleLabel = roleLabel;
         RoleType roleType = relationType.getRelates(unscopedRoleLabel);
-        if (roleType == null) {
-            throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, roleLabel, relationType.getLabel().name());
-        } else return roleType;
+        if (roleType == null) throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, roleLabel, relationType.getLabel().name());
+        else return roleType;
     }
 
     private static class ConceptTracker {
@@ -622,7 +621,7 @@ public class DataImporter {
             }
         }
 
-        public boolean isMarkedIncomplete(String originalID) {
+        public boolean isIncomplete(String originalID) {
             ByteArray key = ByteArray.join(Prefix.ID_INCOMPLETE.bytes, encodeOriginalID(originalID));
             try {
                 return storage.get(key.getBytes()) != null;
