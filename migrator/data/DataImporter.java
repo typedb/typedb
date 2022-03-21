@@ -203,18 +203,18 @@ public class DataImporter {
     private abstract class ImportWorker {
 
         private final BlockingQueue<DataProto.Item> items;
-        private final Map<ByteArray, String> bufferedToOriginalIds;
-        private final Map<String, ByteArray> originalToBufferedIds;
-        private final Set<String> incomplete;
-        private final Set<String> completed;
+        private final Map<ByteArray, String> bufferedToOriginalIDs;
+        private final Map<String, ByteArray> originalToBufferedIDs;
+        private final Set<String> incompleteIDs;
+        private final Set<String> completedIDs;
         TypeDB.Transaction transaction;
 
         ImportWorker(BlockingQueue<DataProto.Item> items) {
             this.items = items;
-            originalToBufferedIds = new HashMap<>();
-            bufferedToOriginalIds = new HashMap<>();
-            incomplete = new HashSet<>();
-            completed = new HashSet<>();
+            originalToBufferedIDs = new HashMap<>();
+            bufferedToOriginalIDs = new HashMap<>();
+            incompleteIDs = new HashSet<>();
+            completedIDs = new HashSet<>();
         }
 
         abstract long importItem(DataProto.Item item);
@@ -241,45 +241,45 @@ public class DataImporter {
         }
 
         private void commitBatch() {
-            assert originalToBufferedIds.keySet().containsAll(incomplete);
+            assert originalToBufferedIDs.keySet().containsAll(incompleteIDs);
             transaction.commit();
             transaction.committedIIDs().forEachRemaining(pair -> {
-                String originalID = bufferedToOriginalIds.get(pair.first());
+                String originalID = bufferedToOriginalIDs.get(pair.first());
                 conceptTracker.recordMapping(originalID, pair.second());
-                if (incomplete.contains(originalID)) conceptTracker.recordIncomplete(originalID);
+                if (incompleteIDs.contains(originalID)) conceptTracker.recordIncomplete(originalID);
             });
-            bufferedToOriginalIds.clear();
-            originalToBufferedIds.clear();
-            completed.forEach(conceptTracker::deleteIncomplete);
+            bufferedToOriginalIDs.clear();
+            originalToBufferedIDs.clear();
+            completedIDs.forEach(conceptTracker::deleteIncomplete);
         }
 
         void recordMapping(ByteArray newIID, String originalID) {
-            assert !originalToBufferedIds.containsKey(originalID) && !conceptTracker.containsMapped(originalID);
-            bufferedToOriginalIds.put(newIID, originalID);
-            originalToBufferedIds.put(originalID, newIID);
+            assert !originalToBufferedIDs.containsKey(originalID) && !conceptTracker.containsMapped(originalID);
+            bufferedToOriginalIDs.put(newIID, originalID);
+            originalToBufferedIDs.put(originalID, newIID);
         }
 
-        protected void recordAttributeMapping(ByteArray iid, String originalID) {
-            conceptTracker.recordMapping(originalID, iid);
+        protected void recordAttributeIDMapping(ByteArray IID, String originalID) {
+            conceptTracker.recordMapping(originalID, IID);
         }
 
-        void recordIncomplete(String originalID) {
-            incomplete.add(originalID);
+        void recordIncompleteID(String originalID) {
+            incompleteIDs.add(originalID);
         }
 
-        void recordCompleted(String originalID) {
-            incomplete.remove(originalID);
-            completed.add(originalID);
+        void recordCompletedID(String originalID) {
+            incompleteIDs.remove(originalID);
+            completedIDs.add(originalID);
         }
 
-        boolean isIncomplete(String id) {
-            if (incomplete.contains(id)) return true;
+        boolean isIncompleteID(String id) {
+            if (incompleteIDs.contains(id)) return true;
             else return conceptTracker.isIncomplete(id);
         }
 
         Thing getMappedThing(String originalID) {
             ByteArray newIID;
-            if ((newIID = originalToBufferedIds.get(originalID)) == null && (newIID = conceptTracker.getMapped(originalID)) == null) {
+            if ((newIID = originalToBufferedIDs.get(originalID)) == null && (newIID = conceptTracker.getMapped(originalID)) == null) {
                 return null;
             } else {
                 Thing thing = transaction.concepts().getThing(newIID);
@@ -349,7 +349,7 @@ public class DataImporter {
                 default:
                     throw TypeDBException.of(INVALID_DATA);
             }
-            recordAttributeMapping(attribute.getIID(), attrMsg.getId());
+            recordAttributeIDMapping(attribute.getIID(), attrMsg.getId());
             status.attributeCount.incrementAndGet();
         }
     }
@@ -397,7 +397,7 @@ public class DataImporter {
                     if (imported > 0) {
                         return imported + importOwnerships(item.getRelation().getId(), item.getRelation().getAttributeList());
                     }
-                } else if (isIncomplete(item.getRelation().getId())) {
+                } else if (isIncompleteID(item.getRelation().getId())) {
                     return tryExtend(importedRelation.asRelation(), item.getRelation());
                 }
             }
@@ -414,7 +414,7 @@ public class DataImporter {
                 return 0;
             } else {
                 int expectedRoles = iterate(relationMsg.getRoleList()).map(rl -> rl.getPlayerList().size()).reduce(0, Integer::sum);
-                if (rolesCreated != expectedRoles) recordIncomplete(relationMsg.getId());
+                if (rolesCreated != expectedRoles) recordIncompleteID(relationMsg.getId());
                 status.relationCount.incrementAndGet();
                 status.roleCount.addAndGet(rolesCreated);
                 return 1 + rolesCreated;
@@ -454,7 +454,7 @@ public class DataImporter {
                     }
                 }
             }
-            if (!stillIncomplete) recordCompleted(relationMsg.getId());
+            if (!stillIncomplete) recordCompletedID(relationMsg.getId());
             status.roleCount.addAndGet(rolesCreated);
             return rolesCreated;
         }
