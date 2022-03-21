@@ -99,7 +99,7 @@ public class DataImporter {
         this.version = version;
         assert com.vaticle.typedb.core.concurrent.executor.Executors.isInitialised();
         this.parallelisation = com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
-        this.importExecutor = Executors.newFixedThreadPool(parallelisation);
+        this.importExecutor = Executors.newFixedThreadPool(parallelisation * 2);
         this.readerExecutor = Executors.newSingleThreadExecutor();
         this.conceptTracker = new ConceptTracker(database);
         this.skippedRelations = new AtomicBoolean(false);
@@ -685,13 +685,13 @@ public class DataImporter {
             this.roles = roles;
         }
 
-        public boolean verify(Status status) {
+        boolean verify(Status status) {
             return attributes == status.attributeCount.get() && entities == status.entityCount.get() &&
                     relations == status.relationCount.get() && ownerships == status.ownershipCount.get() &&
                     roles == status.roleCount.get();
         }
 
-        public String mismatch(Status status) {
+        String mismatch(Status status) {
             assert !verify(status);
             String mismatch = "";
             if (attributes != status.attributeCount.get()) {
