@@ -112,13 +112,6 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
 
         void commit();
 
-        /**
-         * Sets a boolean flag to indicate whether this vertex was a result of inference.
-         *
-         * @param isInferred indicating whether this vertex was a result of inference
-         */
-        void isInferred(boolean isInferred);
-
         @Override
         AttributeVertex.Write<?> asAttribute();
 

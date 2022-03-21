@@ -304,10 +304,10 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                     if (existingEdge == null) {
                         if (isOut()) owner.graph().edgeCreated(edge); // only record creation in one direction
                         return edge;
-                    } else if (existingEdge.isInferred() && !edge.isInferred()) {
-                        existingEdge.isInferred(true);
+                    } else {
+                        assert existingEdge.isInferred() == edge.isInferred();
+                        return existingEdge;
                     }
-                    return existingEdge;
                 });
                 return bufferedEdges;
             });

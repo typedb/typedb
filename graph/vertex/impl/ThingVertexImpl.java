@@ -189,11 +189,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             return ins;
         }
 
-        @Override
-        public void isInferred(boolean isInferred) {
-            throw TypeDBException.of(ILLEGAL_OPERATION);
-        }
-
         public boolean isModified() {
             return isModified;
         }
@@ -246,7 +241,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         public static class Buffered extends ThingVertexImpl.Write {
 
-            protected boolean isInferred;
+            private final boolean isInferred;
 
             public Buffered(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
                 super(graph, iid);
@@ -267,11 +262,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             @Override
             public Encoding.Status status() {
                 return Encoding.Status.BUFFERED;
-            }
-
-            @Override
-            public void isInferred(boolean isInferred) {
-                this.isInferred = isInferred;
             }
 
             @Override
