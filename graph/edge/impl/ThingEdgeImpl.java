@@ -48,7 +48,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
     final View.Forward forward;
     final View.Backward backward;
     final AtomicBoolean deleted;
-    boolean isInferred;
+    final boolean isInferred;
 
     ThingEdgeImpl(ThingGraph graph, Encoding.Edge.Thing encoding, boolean isInferred) {
         this.graph = graph;
@@ -235,11 +235,6 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             }
         }
 
-        @Override
-        public void isInferred(boolean isInferred) {
-            this.isInferred = isInferred;
-        }
-
         /**
          * Deletes this {@code Edge} from connecting between two {@code Vertex}.
          *
@@ -385,11 +380,6 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
-        public void isInferred(boolean isInferred) {
-            throw TypeDBException.of(ILLEGAL_OPERATION);
-        }
-
-        @Override
         public final boolean equals(Object object) {
             if (this == object) return true;
             if (object == null || getClass() != object.getClass()) return false;
@@ -502,11 +492,6 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             } else {
                 return EdgeViewIID.Thing.of(toIID(), InfixIID.Thing.of(encoding().backward()), fromIID());
             }
-        }
-
-        @Override
-        public void isInferred(boolean isInferred) {
-            throw TypeDBException.of(ILLEGAL_OPERATION);
         }
 
         /**

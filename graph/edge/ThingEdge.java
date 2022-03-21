@@ -40,8 +40,6 @@ public interface ThingEdge extends Edge<Encoding.Edge.Thing, ThingVertex> {
 
     Optional<ThingVertex> optimised();
 
-    void isInferred(boolean isInferred);
-
     boolean isInferred();
 
     View.Forward forwardView();
