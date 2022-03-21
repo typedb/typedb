@@ -67,7 +67,7 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Sy
     @Override
     public void subscribeTo(Provider.Sync<ConceptMap> provider) {
         super.subscribeTo(provider);
-        if (isPulling) providerRegistry().pull(provider);
+        if (isPulling && !providerRegistry().isPulling()) provider.pull(this);
     }
 
     @Override

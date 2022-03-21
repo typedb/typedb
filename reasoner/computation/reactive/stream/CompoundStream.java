@@ -78,8 +78,8 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
                 processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
                 follower.publishTo(this);
                 if (receiverRegistry().isPulling()) {
-                    providerRegistry().retry(leadingPublisher);  // Retry the leader in case the follower never produces an answer
-                    providerRegistry().pull(follower);
+                    processor().driver().execute(actor -> actor.retryPull(leadingPublisher.identifier(), identifier()));  // Retry the leader in case the follower never produces an answer
+                    if (!providerRegistry().isPulling(follower)) follower.pull(this);
                 }
             }
         } else {

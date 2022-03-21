@@ -102,7 +102,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     @Override
     public void subscribeTo(Provider.Sync<PACKET> provider) {
         providerRegistry().add(provider);
-        if (receiverRegistry().isPulling()) providerRegistry().pull(provider);
+        if (receiverRegistry().isPulling() && !providerRegistry().isPulling()) provider.pull(this);
     }
 
 }

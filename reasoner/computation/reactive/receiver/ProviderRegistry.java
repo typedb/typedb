@@ -94,7 +94,7 @@ public abstract class ProviderRegistry<PROVIDER extends Reactive> {
             }
         }
 
-        private boolean isPulling() {
+        public boolean isPulling() {
             return isPulling;
         }
 
@@ -174,7 +174,7 @@ public abstract class ProviderRegistry<PROVIDER extends Reactive> {
             }
         }
 
-        private boolean isPulling(PROVIDER provider) {
+        public boolean isPulling(PROVIDER provider) {
             assert providerPullState.containsKey(provider);
             return providerPullState.get(provider);
         }

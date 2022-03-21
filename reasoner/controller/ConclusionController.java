@@ -209,8 +209,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialisationReactive));
                 if (receiverRegistry().isPulling()) {
-                    materialisationRegistry().pull(materialisationReactive);
-                    providerRegistry().retry(provider);  // We need to retry the condition again in case materialisation fails
+                    if (!materialisationRegistry().isPulling(materialisationReactive)) materialisationReactive.pull(receiverRegistry().receiver());
+                    processor().driver().execute(actor -> actor.retryPull(provider.identifier(), identifier()));  // We need to retry the condition again in case materialisation fails
                 }
             }
 
