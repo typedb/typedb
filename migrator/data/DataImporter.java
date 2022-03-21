@@ -245,7 +245,7 @@ public class DataImporter {
             transaction.commit();
             transaction.committedIIDs().forEachRemaining(pair -> {
                 String originalID = bufferedToOriginalIDs.get(pair.first());
-                conceptTracker.recordMapping(originalID, pair.second());
+                conceptTracker.recordMapped(originalID, pair.second());
                 if (incompleteIDs.contains(originalID)) conceptTracker.recordIncomplete(originalID);
             });
             bufferedToOriginalIDs.clear();
@@ -260,7 +260,7 @@ public class DataImporter {
         }
 
         protected void recordAttributeIDMapping(ByteArray IID, String originalID) {
-            conceptTracker.recordMapping(originalID, IID);
+            conceptTracker.recordMapped(originalID, IID);
         }
 
         void recordIncompleteID(String originalID) {
@@ -497,7 +497,7 @@ public class DataImporter {
                     if (relation != null) continue;
                     relation = transaction.concepts().getRelationType(item.getRelation().getLabel()).create();
                     status.relationCount.incrementAndGet();
-                    conceptTracker.recordMapping(item.getRelation().getId(), relation.getIID());
+                    conceptTracker.recordMapped(item.getRelation().getId(), relation.getIID());
                     conceptTracker.recordIncomplete(item.getRelation().getId());
                     for (DataProto.Item.OwnedAttribute ownership : item.getRelation().getAttributeList()) {
                         Thing attribute = transaction.concepts().getThing(conceptTracker.getMapped(ownership.getId()));
@@ -578,7 +578,7 @@ public class DataImporter {
             }
         }
 
-        public void recordMapping(String originalID, ByteArray newID) {
+        private void recordMapped(String originalID, ByteArray newID) {
             ByteArray originalIDEncoded = encodeOriginalID(originalID);
             ByteArray mappingKey = ByteArray.join(Prefix.ID_MAPPING.bytes, originalIDEncoded);
             try {
@@ -604,7 +604,7 @@ public class DataImporter {
             return getMapped(originalID) != null;
         }
 
-        public void recordIncomplete(String originalID) {
+        private void recordIncomplete(String originalID) {
             ByteArray key = ByteArray.join(Prefix.ID_INCOMPLETE.bytes, encodeOriginalID(originalID));
             try {
                 storage.put(key.getBytes(), new byte[0]);
@@ -630,7 +630,7 @@ public class DataImporter {
             return hasIncomplete;
         }
 
-        public void deleteIncomplete(String originalID) {
+        private void deleteIncomplete(String originalID) {
             ByteArray key = ByteArray.join(Prefix.ID_INCOMPLETE.bytes, encodeOriginalID(originalID));
             try {
                 storage.delete(key.getBytes());
