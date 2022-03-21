@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,14 +127,12 @@ public abstract class Controller<
             REQ extends ProviderRequest<PROV_CID, PROV_PID, PROV_C, PACKET, PROCESSOR, ?, REQ>> {
 
         private final PROV_CID provControllerId;
-        private final Driver<PROCESSOR> recProcessor;
-        private final long recEndpointId;
+        private final Reactive.Identifier.Input<PACKET> recEndpointId;
         private final List<Function<PACKET, PACKET>> connectionTransforms;
         private final PROV_PID provProcessorId;
 
-        protected ProviderRequest(Driver<PROCESSOR> recProcessor, long recEndpointId, PROV_CID provControllerId,
+        protected ProviderRequest(Reactive.Identifier.Input<PACKET> recEndpointId, PROV_CID provControllerId,
                                   PROV_PID provProcessorId) {
-            this.recProcessor = recProcessor;
             this.recEndpointId = recEndpointId;
             this.provControllerId = provControllerId;
             this.provProcessorId = provProcessorId;
@@ -143,7 +142,8 @@ public abstract class Controller<
         public abstract Connection.Builder<PROV_PID, PACKET, REQ, PROCESSOR, ?> getConnectionBuilder(CONTROLLER controller);
 
         public Driver<PROCESSOR> receivingProcessor() {
-            return recProcessor;
+//            return recEndpointId.processor();
+            return null;  // TODO;
         }
 
         public PROV_CID providingControllerId() {
@@ -154,7 +154,7 @@ public abstract class Controller<
             return provProcessorId;
         }
 
-        public long receivingEndpointId() {
+        public Reactive.Identifier.Input<PACKET> receivingEndpointId() {
             return recEndpointId;
         }
 
@@ -170,14 +170,13 @@ public abstract class Controller<
             ProviderRequest<?, ?, ?, ?, ?, ?, ?> request = (ProviderRequest<?, ?, ?, ?, ?, ?, ?>) o;
             return recEndpointId == request.recEndpointId &&
                     provControllerId.equals(request.provControllerId) &&
-                    recProcessor.equals(request.recProcessor) &&
                     connectionTransforms.equals(request.connectionTransforms) &&
                     provProcessorId.equals(request.provProcessorId);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(provControllerId, recProcessor, recEndpointId, connectionTransforms, provProcessorId);
+            return Objects.hash(provControllerId, recEndpointId, connectionTransforms, provProcessorId);
         }
     }
 }

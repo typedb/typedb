@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
@@ -114,9 +115,9 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
     protected static class ConclusionRequest extends ProviderRequest<Conclusion, ConceptMap, ConclusionController,
             Map<Variable, Concept>, ConcludableProcessor, ConcludableController, ConclusionRequest> {
 
-        public ConclusionRequest(Driver<ConcludableProcessor> recProcessor, long recEndpointId,
+        public ConclusionRequest(Reactive.Identifier.Input<Map<Variable, Concept>> recEndpointId,
                                  Conclusion provControllerId, ConceptMap provProcessorId) {
-            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+            super(recEndpointId, provControllerId, provProcessorId);
         }
 
         @Override
@@ -162,7 +163,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     InletEndpoint<Map<Variable, Concept>> endpoint = this.createReceivingEndpoint();
-                    mayRequestConnection(new ConclusionRequest(driver(), endpoint.id(), conclusion, boundsAndRequirements.first()));
+                    mayRequestConnection(new ConclusionRequest(endpoint.identifier(), conclusion, boundsAndRequirements.first()));
                     endpoint.flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .buffer()
                             .publishTo(fanIn);

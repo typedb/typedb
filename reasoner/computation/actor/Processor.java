@@ -231,10 +231,6 @@ public abstract class Processor<INPUT, OUTPUT,
             return providerRegistry;
         }
 
-        public long id() {
-            return id;
-        }
-
         @Override
         public Identifier.Input<PACKET> identifier() {
             return identifier;

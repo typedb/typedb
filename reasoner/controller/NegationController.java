@@ -27,10 +27,8 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverSingleProviderStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverStream;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -76,9 +74,9 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
     protected static class DisjunctionRequest extends ProviderRequest<Disjunction, ConceptMap, NestedDisjunctionController,
             ConceptMap, NegationProcessor, NegationController, DisjunctionRequest> {
 
-        protected DisjunctionRequest(Driver<NegationProcessor> recProcessor, long recEndpointId,
-                                     Disjunction provControllerId, ConceptMap provProcessorId) {
-            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+        protected DisjunctionRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Disjunction provControllerId,
+                                     ConceptMap provProcessorId) {
+            super(recEndpointId, provControllerId, provProcessorId);
         }
 
         @Override
@@ -105,7 +103,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         public void setUp() {
             setOutlet(new FanOutStream<>(this));
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
-            requestProvider(new DisjunctionRequest(driver(), endpoint.id(), negated.pattern(), bounds));
+            requestProvider(new DisjunctionRequest(endpoint.identifier(), negated.pattern(), bounds));
             negation = new NegationReactive(this, bounds);
             monitor().execute(actor -> actor.registerRoot(driver(), negation.identifier()));
             monitor().execute(actor -> actor.forkFrontier(1, negation.identifier()));

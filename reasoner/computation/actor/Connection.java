@@ -36,8 +36,8 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
     /**
      * Connects a processor outlet (upstream, publishing) to another processor's inlet (downstream, subscribing)
      */
-    Connection(Actor.Driver<PROCESSOR> recProcessor, Actor.Driver<PROV_PROCESSOR> provProcessor, long recEndpointId,
-               long provEndpointId, List<Function<PACKET, PACKET>> transforms) {
+    Connection(Actor.Driver<PROCESSOR> recProcessor, Actor.Driver<PROV_PROCESSOR> provProcessor,
+               Identifier.Input<PACKET> recEndpointId, long provEndpointId, List<Function<PACKET, PACKET>> transforms) {
 //        this.recEndpointId = recEndpointId;
 //        this.provEndpointId = provEndpointId;
         this.transforms = transforms;
@@ -67,7 +67,7 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
 
         private final Actor.Driver<PROV_CONTROLLER> provController;
         private final Actor.Driver<PROCESSOR> recProcessor;
-        private final long recEndpointId;
+        private final Identifier.Input<PACKET> recEndpointId;
         private final List<Function<PACKET, PACKET>> connectionTransforms;
         private final PROV_PID provProcessorId;
 
@@ -80,7 +80,7 @@ public class Connection<PACKET, PROCESSOR extends Processor<PACKET, ?, ?, PROCES
             this.provProcessorId = providerRequest.providingProcessorId();
         }
 
-        public Builder(Actor.Driver<PROV_CONTROLLER> provController, Actor.Driver<PROCESSOR> recProcessor, long recEndpointId,
+        public Builder(Actor.Driver<PROV_CONTROLLER> provController, Actor.Driver<PROCESSOR> recProcessor, Identifier.Input<PACKET> recEndpointId,
                        List<Function<PACKET, PACKET>> connectionTransforms, PROV_PID provProcessorId) {
             this.provController = provController;
             this.recProcessor = recProcessor;

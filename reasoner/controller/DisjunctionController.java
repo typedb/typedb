@@ -79,9 +79,9 @@ public abstract class DisjunctionController<
     private static class NestedConjunctionRequest<P extends DisjunctionProcessor<C, P>, C extends DisjunctionController<P, C>>
             extends ProviderRequest<Conjunction, ConceptMap, NestedConjunctionController, ConceptMap, P, C, NestedConjunctionRequest<P, C>> {
 
-        protected NestedConjunctionRequest(Driver<P> recProcessor, long recEndpointId, Conjunction provControllerId,
+        protected NestedConjunctionRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Conjunction provControllerId,
                                            ConceptMap provProcessorId) {
-            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+            super(recEndpointId, provControllerId, provProcessorId);
         }
 
         @Override
@@ -117,7 +117,7 @@ public abstract class DisjunctionController<
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();
-                requestProvider(new DisjunctionController.NestedConjunctionRequest<>(driver(), endpoint.id(), conjunction, bounds.filter(retrievableConjunctionVars)));
+                requestProvider(new DisjunctionController.NestedConjunctionRequest<>(endpoint.identifier(), conjunction, bounds.filter(retrievableConjunctionVars)));
             }
             fanIn.finaliseProviders();
         }

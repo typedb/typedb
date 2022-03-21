@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.NoOpStream;
 import com.vaticle.typedb.core.reasoner.controller.Registry.ResolverView;
 import com.vaticle.typedb.core.reasoner.utils.Planner;
@@ -128,9 +129,9 @@ public abstract class ConjunctionController<OUTPUT,
     static class RetrievableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
             extends ProviderRequest<Retrievable, ConceptMap, RetrievableController, ConceptMap, P, C, RetrievableRequest<P, C>> {
 
-        public RetrievableRequest(Driver<P> recProcessor, long recEndpointId, Retrievable provControllerId,
+        public RetrievableRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Retrievable provControllerId,
                                   ConceptMap provProcessorId) {
-            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+            super(recEndpointId, provControllerId, provProcessorId);
         }
 
         @Override
@@ -146,9 +147,9 @@ public abstract class ConjunctionController<OUTPUT,
     static class ConcludableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
             extends ProviderRequest<Concludable, ConceptMap, ConcludableController, ConceptMap, P, C, ConcludableRequest<P, C>> {
 
-        public ConcludableRequest(Driver<P> recProcessor, long recEndpointId, Concludable provControllerId,
+        public ConcludableRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Concludable provControllerId,
                                   ConceptMap provProcessorId) {
-            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+            super(recEndpointId, provControllerId, provProcessorId);
         }
 
         @Override
@@ -166,9 +167,9 @@ public abstract class ConjunctionController<OUTPUT,
     static class NegatedRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
             extends ProviderRequest<Negated, ConceptMap, NegationController, ConceptMap, P, C, NegatedRequest<P, C>> {
 
-        protected NegatedRequest(Driver<P> recProcessor, long recEndpointId, Negated provControllerId,
+        protected NegatedRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Negated provControllerId,
                                  ConceptMap provProcessorId) {
-            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+            super(recEndpointId, provControllerId, provProcessorId);
         }
 
         @Override
@@ -205,13 +206,13 @@ public abstract class ConjunctionController<OUTPUT,
             // TODO: Rethink this ugly structure for compound reactives
             InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
             if (planElement.isRetrievable()) {
-                requestProvider(new RetrievableRequest<>(driver(), endpoint.id(), planElement.asRetrievable(),
+                requestProvider(new RetrievableRequest<>(endpoint.identifier(), planElement.asRetrievable(),
                                                          carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isConcludable()) {
-                requestProvider(new ConcludableRequest<>(driver(), endpoint.id(), planElement.asConcludable(),
+                requestProvider(new ConcludableRequest<>(endpoint.identifier(), planElement.asConcludable(),
                                                          carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isNegated()) {
-                requestProvider(new NegatedRequest<>(driver(), endpoint.id(), planElement.asNegated(),
+                requestProvider(new NegatedRequest<>(endpoint.identifier(), planElement.asNegated(),
                                                      carriedBounds.filter(planElement.retrieves())));
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);

@@ -30,10 +30,10 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverSingleProviderStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverStream;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -87,9 +87,9 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
     protected static class ConditionRequest extends ProviderRequest<Rule.Condition, ConceptMap, ConditionController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController, ConditionRequest> {
 
-        public ConditionRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
+        public ConditionRequest(Reactive.Identifier.Input<Either<ConceptMap, Materialisation>> recEndpointId,
                                 Rule.Condition provControllerId, ConceptMap provProcessorId) {
-            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+            super(recEndpointId, provControllerId, provProcessorId);
         }
 
         @Override
@@ -101,9 +101,9 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
     protected static class MaterialiserRequest extends ProviderRequest<Void, Materialisable, MaterialisationController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController, MaterialiserRequest> {
 
-        public MaterialiserRequest(Driver<ConclusionProcessor> recProcessor, long recEndpointId,
+        public MaterialiserRequest(Reactive.Identifier.Input<Either<ConceptMap, Materialisation>> recEndpointId,
                                    Void provControllerId, Materialisable provProcessorId) {
-            super(recProcessor, recEndpointId, provControllerId, provProcessorId);
+            super(recEndpointId, provControllerId, provProcessorId);
         }
 
         @Override
@@ -136,7 +136,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         public void setUp() {
             setOutlet(new FanOutStream<>(this));
             InletEndpoint<Either<ConceptMap, Materialisation>> conditionEndpoint = createReceivingEndpoint();
-            mayRequestCondition(new ConditionRequest(driver(), conditionEndpoint.id(), rule.condition(), bounds));
+            mayRequestCondition(new ConditionRequest(conditionEndpoint.identifier(), rule.condition(), bounds));
             ConclusionReactive conclusionReactive = new ConclusionReactive(this);
             conditionEndpoint.map(a -> a.first()).publishTo(conclusionReactive);
             conclusionReactive.publishTo(outlet());
@@ -189,7 +189,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 super.receive(provider, packet);
                 InletEndpoint<Either<ConceptMap, Materialisation>> materialisationEndpoint = createReceivingEndpoint();
                 mayRequestMaterialiser(new MaterialiserRequest(
-                        driver(), materialisationEndpoint.id(), null,
+                        materialisationEndpoint.identifier(), null,
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
                 Stream<?, Map<Variable, Concept>> op = materialisationEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
