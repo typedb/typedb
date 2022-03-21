@@ -69,7 +69,9 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
             receiverRegistry().setNotPulling();
             pullingReceivers.forEach(this::sendFromBuffer);
         } else {
-            if (receiverRegistry().isPulling()) providerRegistry().retry(provider);
+            if (receiverRegistry().isPulling()) {
+                processor().driver().execute(actor -> actor.retryPull(provider.identifier(), identifier()));
+            }
         }
         processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
     }
@@ -80,7 +82,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         bufferPositions.putIfAbsent(receiver, 0);
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
-            if (receiverRegistry().isPulling()) providerRegistry().pullAll();
+            if (receiverRegistry().isPulling() && !providerRegistry().isPulling()) providerRegistry().provider().pull(this);
         } else {
             sendFromBuffer(receiver);
         }

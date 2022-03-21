@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Sync.Finishable<ConceptMap> {
 
@@ -53,7 +52,7 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Sy
 
     public void pull() {
         isPulling = true;
-        providerRegistry().pullAll();
+        if (!providerRegistry().isPulling()) providerRegistry().provider().pull(this);
     }
 
     @Override
@@ -68,11 +67,6 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Sy
     public void subscribeTo(Provider.Sync<ConceptMap> provider) {
         super.subscribeTo(provider);
         if (isPulling && !providerRegistry().isPulling()) provider.pull(this);
-    }
-
-    @Override
-    public Supplier<String> tracingGroupName() {
-        return processor().debugName();
     }
 
     public Tracer.Trace trace() {

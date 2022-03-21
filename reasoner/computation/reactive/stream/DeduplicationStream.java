@@ -24,20 +24,13 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRe
 import java.util.HashSet;
 import java.util.Set;
 
-public class DeduplicationStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
+public class DeduplicationStream<PACKET> extends SingleReceiverSingleProviderStream<PACKET, PACKET> {
 
-    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry;
     private final Set<PACKET> deduplicationSet;
 
     public DeduplicationStream(Provider.Sync.Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
-        super(processor);
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, processor);
+        super(publisher, processor);
         this.deduplicationSet = new HashSet<>();
-    }
-
-    @Override
-    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry() {
-        return providerRegistry;
     }
 
     @Override
@@ -47,7 +40,9 @@ public class DeduplicationStream<PACKET> extends SingleReceiverStream<PACKET, PA
             receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
         } else {
-            if (receiverRegistry().isPulling()) providerRegistry().retry(provider);
+            if (receiverRegistry().isPulling()) {
+                processor().driver().execute(actor -> actor.retryPull(provider.identifier(), identifier()));
+            }
             processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
         }
     }

@@ -21,18 +21,10 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
-public class NoOpStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
-
-    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry;
+public class NoOpStream<PACKET> extends SingleReceiverSingleProviderStream<PACKET, PACKET> {  // TODO: Can we do away with this class?
 
     public NoOpStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
-    }
-
-    @Override
-    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry() {
-        return providerRegistry;
     }
 
     @Override

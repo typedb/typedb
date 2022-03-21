@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
-public class FanInStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
+public class FanInStream<PACKET> extends SingleReceiverMultiProviderStream<PACKET, PACKET> {
 
     private final ProviderRegistry.MultiProviderRegistry<Provider.Sync<PACKET>> providerRegistry;
 

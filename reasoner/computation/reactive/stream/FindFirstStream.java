@@ -21,20 +21,13 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
-public class FindFirstStream<PACKET> extends SingleReceiverStream<PACKET, PACKET> {
+public class FindFirstStream<PACKET> extends SingleReceiverSingleProviderStream<PACKET, PACKET> {
 
-    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry;
     private boolean packetFound;
 
     public FindFirstStream(Provider.Sync.Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
-        super(processor);
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, processor);
+        super(publisher, processor);
         this.packetFound = false;
-    }
-
-    @Override
-    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry() {
-        return providerRegistry;
     }
 
     @Override

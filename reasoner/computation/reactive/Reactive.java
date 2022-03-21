@@ -23,11 +23,8 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public interface Reactive {
-
-    Supplier<String> tracingGroupName();
 
     Identifier identifier();
 
@@ -36,6 +33,20 @@ public interface Reactive {
         String toString();
 
         Actor.Driver<? extends Processor<?, ?, ?, ?>> processor();
+
+        interface Input<PACKET> extends Identifier {
+
+            @Override
+            Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor();
+
+        }
+
+        interface Output<PACKET> extends Identifier {
+
+            @Override
+            Actor.Driver<? extends Processor<?, PACKET, ?, ?>> processor();
+
+        }
     }
 
     interface Provider extends Reactive {
@@ -61,9 +72,9 @@ public interface Reactive {
             }
         }
 
-        interface Async extends Provider {
+        interface Async<PACKET> extends Provider {
 
-            void pull(Reactive.Identifier receiverId);
+            void pull(Identifier.Input<PACKET> receiverId);
 
         }
     }
@@ -89,7 +100,7 @@ public interface Reactive {
 
         interface Async<R> extends Receiver {
 
-            void receive(ReactiveIdentifier.Output<R> providerId, R packet);
+            void receive(Reactive.Identifier.Output<R> providerId, R packet);
 
         }
     }

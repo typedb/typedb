@@ -84,10 +84,10 @@ public final class Tracer {
         if (receiver == null) receiverString = "root";
         else {
             receiverString = receiver.identifier().toString();
-            addNodeGroup(receiver.identifier().toString(), receiver.tracingGroupName().get(), defaultTrace);
+            addNodeGroup(receiver.identifier().toString(), receiver.identifier().toString(), defaultTrace);
         }
         addMessage(receiverString, provider.identifier().toString(), defaultTrace, EdgeType.PULL, "pull");
-        addNodeGroup(provider.identifier().toString(), provider.tracingGroupName().get(), defaultTrace);
+        addNodeGroup(provider.identifier().toString(), provider.identifier().toString(), defaultTrace);
     }
 
     public void pull(Reactive.Identifier receiver, Reactive.Identifier identifier) {
@@ -95,15 +95,15 @@ public final class Tracer {
 
     public synchronized <INPUT, OUTPUT> void receive(Provider provider, Receiver receiver, OUTPUT packet) {
         addMessage(provider.identifier().toString(), receiver.identifier().toString(), defaultTrace, EdgeType.RECEIVE, packet.toString());
-        addNodeGroup(receiver.identifier().toString(), receiver.tracingGroupName().get(), defaultTrace);
-        addNodeGroup(provider.identifier().toString(), provider.tracingGroupName().get(), defaultTrace);
+        addNodeGroup(receiver.identifier().toString(), receiver.identifier().toString(), defaultTrace);
+        addNodeGroup(provider.identifier().toString(), provider.identifier().toString(), defaultTrace);
     }
 
     public synchronized <PACKET> void receive(Processor.OutletEndpoint<PACKET> provider,
                                               Connection<PACKET, ?, ?> receiver, PACKET packet) {
         addMessage(provider.identifier().toString(), receiver.identifier().toString(),
                    defaultTrace, EdgeType.RECEIVE, packet.toString());
-        addNodeGroup(provider.identifier().toString(), provider.tracingGroupName().get(), defaultTrace);
+        addNodeGroup(provider.identifier().toString(), provider.identifier().toString(), defaultTrace);
     }
 
     public <PACKET> void receive(Reactive.Identifier providerId, Processor.InletEndpoint<PACKET> packetInletEndpoint, PACKET packet) {

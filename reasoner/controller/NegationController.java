@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverSingleProviderStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverStream;
 
 import java.util.function.Function;
@@ -120,22 +121,15 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             negation.onFinished();
         }
 
-        private static class NegationReactive extends SingleReceiverStream<ConceptMap, ConceptMap> implements Reactive.Receiver.Sync.Finishable<ConceptMap> {
+        private static class NegationReactive extends SingleReceiverSingleProviderStream<ConceptMap, ConceptMap> implements Reactive.Receiver.Sync.Finishable<ConceptMap> {
 
-            private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<ConceptMap>> providerRegistry;
             private final ConceptMap bounds;
             private boolean answerFound;
 
             protected NegationReactive(Processor<?, ?, ?, ?> processor, ConceptMap bounds) {
                 super(processor);
-                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
                 this.bounds = bounds;
                 this.answerFound = false;
-            }
-
-            @Override
-            protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<ConceptMap>> providerRegistry() {
-                return providerRegistry;
             }
 
             @Override

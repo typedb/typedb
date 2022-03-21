@@ -59,7 +59,12 @@ public class ReactiveIdentifier implements Reactive.Identifier {
         return processor;
     }
 
-    public static class Output<PACKET> extends ReactiveIdentifier {
+    @Override
+    public Identifier identifier() {
+        return this;
+    }
+
+    public static class Output<PACKET> extends ReactiveIdentifier implements Reactive.Identifier.Output<PACKET> {
 
         private final Actor.Driver<? extends Processor<?, PACKET, ?, ?>> processor;  //TODO: Duplicates field from parent class
 
@@ -72,6 +77,32 @@ public class ReactiveIdentifier implements Reactive.Identifier {
         @Override
         public Actor.Driver<? extends Processor<?, PACKET, ?, ?>> processor() {
             return processor;
+        }
+
+        @Override
+        public Identifier identifier() {
+            return this;
+        }
+    }
+
+    public static class Input<PACKET> extends ReactiveIdentifier implements Identifier.Input<PACKET> {
+
+        private final Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor;  //TODO: Duplicates field from parent class
+
+        public Input(Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor,
+                     Class<? extends Reactive> reactiveClass, int scopedId) {
+            super(processor, reactiveClass, scopedId);
+            this.processor = processor;
+        }
+
+        @Override
+        public Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor() {
+            return processor;
+        }
+
+        @Override
+        public Identifier identifier() {
+            return this;
         }
     }
 }

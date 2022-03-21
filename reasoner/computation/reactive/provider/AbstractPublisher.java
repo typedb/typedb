@@ -28,7 +28,6 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FlatMapStrea
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.MapStream;
 
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Sync.Publisher<OUTPUT> {
 
@@ -49,11 +48,6 @@ public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Syn
 
     protected Processor<?, ?, ?, ?> processor() {
         return processor;
-    }
-
-    @Override
-    public Supplier<String> tracingGroupName() {
-        return processor().debugName();
     }
 
     @Override

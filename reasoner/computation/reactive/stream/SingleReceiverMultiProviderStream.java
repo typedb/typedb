@@ -21,21 +21,24 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
-import java.util.function.Function;
+public class SingleReceiverMultiProviderStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT> {
 
-public class MapStream<INPUT, OUTPUT> extends SingleReceiverSingleProviderStream<INPUT, OUTPUT> {
+    private final ProviderRegistry.MultiProviderRegistry<Provider.Sync<INPUT>> providerRegistry;
 
-    private final Function<INPUT, OUTPUT> mappingFunc;
-
-    public MapStream(Provider.Sync.Publisher<INPUT> publisher, Function<INPUT, OUTPUT> mappingFunc, Processor<?, ?, ?, ?> processor) {
-        super(publisher, processor);
-        this.mappingFunc = mappingFunc;
+    protected SingleReceiverMultiProviderStream(Processor<?, ?, ?, ?> processor) {
+        super(processor);
+        this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this, processor);
     }
 
     @Override
-    public void receive(Provider.Sync<INPUT> provider, INPUT packet) {
-        super.receive(provider, packet);
-        receiverRegistry().setNotPulling();
-        receiverRegistry().receiver().receive(this, mappingFunc.apply(packet));
+    protected ProviderRegistry.MultiProviderRegistry<Provider.Sync<INPUT>> providerRegistry() {
+        return providerRegistry;
+    }
+
+    @Override
+    public void pull(Receiver.Sync<OUTPUT> receiver) {
+        assert receiver.equals(receiverRegistry().receiver());
+        receiverRegistry().recordPull(receiver);
+        providerRegistry().nonPulling().forEach(p -> p.pull(this));
     }
 }

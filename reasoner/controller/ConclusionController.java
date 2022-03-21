@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverSingleProviderStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverStream;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -157,14 +158,12 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
         }
 
-        private class ConclusionReactive extends SingleReceiverStream<ConceptMap, Map<Variable, Concept>> {
+        private class ConclusionReactive extends SingleReceiverSingleProviderStream<ConceptMap, Map<Variable, Concept>> {
 
-            private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<ConceptMap>> providerRegistry;
             private ProviderRegistry.MultiProviderRegistry<Provider.Sync<Map<Variable, Concept>>> materialisationRegistry;
 
             protected ConclusionReactive(Processor<?, ?, ?, ?> processor) {
                 super(processor);
-                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
                 this.materialisationRegistry = null;
             }
 
@@ -175,11 +174,6 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 this.materialisationRegistry = new ProviderRegistry.MultiProviderRegistry<>(receiverRegistry().receiver(), processor());
             }
 
-            @Override
-            protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<ConceptMap>> providerRegistry() {
-                return providerRegistry;
-            }
-
             protected ProviderRegistry.MultiProviderRegistry<Provider.Sync<Map<Variable, Concept>>> materialisationRegistry() {
                 return materialisationRegistry;
             }
@@ -187,7 +181,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             @Override
             public void pull(Receiver.Sync<Map<Variable, Concept>> receiver) {
                 super.pull(receiver);
-                materialisationRegistry().pullAll();
+                materialisationRegistry().nonPulling().forEach(p -> p.pull(receiverRegistry().receiver()));
             }
 
             @Override
@@ -219,27 +213,21 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 materialisationRegistry().recordReceive(provider);
                 if (receiverRegistry().isPulling()) {
                     Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, provider));
-                    materialisationRegistry().retry(provider);  // We need to retry so that the materialisation does a join
+                    processor().driver().execute(actor -> actor
+                            .retryPull(provider.identifier(), receiverRegistry().receiver().identifier()));  // We need to retry so that the materialisation does a join
                 }
                 receiverRegistry().setNotPulling();
                 receiverRegistry().receiver().receive(this, packet);
             }
         }
 
-        private class MaterialisationReactive extends SingleReceiverStream<Map<Variable, Concept>, Map<Variable, Concept>> {
+        private class MaterialisationReactive extends SingleReceiverSingleProviderStream<Map<Variable, Concept>, Map<Variable, Concept>> {
 
             private final ConclusionReactive parent;
-            private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<Map<Variable, Concept>>> providerRegistry;
 
             public MaterialisationReactive(ConclusionReactive parent, Processor<?, ?, ?, ?> processor) {
                 super(processor);
                 this.parent = parent;
-                this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
-            }
-
-            @Override
-            protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<Map<Variable, Concept>>> providerRegistry() {
-                return providerRegistry;
             }
 
             @Override

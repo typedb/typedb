@@ -24,21 +24,14 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRe
 
 import java.util.function.Function;
 
-public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT> {
+public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverSingleProviderStream<INPUT, OUTPUT> {
 
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
-    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<INPUT>> providerRegistry;
 
     public FlatMapStream(Provider.Sync.Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
                          Processor<?, ?, ?, ?> processor) {
-        super(processor);
+        super(publisher, processor);
         this.transform = transform;
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(publisher, this, processor);
-    }
-
-    @Override
-    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<INPUT>> providerRegistry() {
-        return providerRegistry;
     }
 
     @Override
@@ -53,7 +46,9 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OU
                 receiverRegistry().receiver().receive(this, t);
             });
         } else {
-            if (receiverRegistry().isPulling()) providerRegistry().retry(provider);
+            if (receiverRegistry().isPulling()) {
+                processor().driver().execute(actor -> actor.retryPull(provider.identifier(), identifier()));
+            }
         }
         processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
     }

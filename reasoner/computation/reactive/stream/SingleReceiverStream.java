@@ -48,16 +48,9 @@ public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublis
     }
 
     @Override
-    public void pull(Receiver.Sync<OUTPUT> receiver) {
-        assert receiver.equals(receiverRegistry().receiver());
-        receiverRegistry().recordPull(receiver);
-        providerRegistry().pullAll();
-    }
-
-    @Override
     public void subscribeTo(Provider.Sync<INPUT> provider) {
         providerRegistry().add(provider);
-        if (receiverRegistry().isPulling() && !providerRegistry().isPulling()) provider.pull(this);
+        if (receiverRegistry().isPulling()) provider.pull(this);
     }
 
     @Override

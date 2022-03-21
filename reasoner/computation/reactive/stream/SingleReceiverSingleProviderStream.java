@@ -21,38 +21,29 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
-import java.util.Stack;
+public class SingleReceiverSingleProviderStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT> {
 
-public class BufferedStream<PACKET> extends SingleReceiverSingleProviderStream<PACKET, PACKET> {
+    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<INPUT>> providerRegistry;
 
-    private final Stack<PACKET> stack;
+    protected SingleReceiverSingleProviderStream(Provider.Sync<INPUT> provider, Processor<?, ?, ?, ?> processor) {
+        super(processor);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(provider, this, processor);
+    }
 
-    public BufferedStream(Provider.Sync.Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
-        super(publisher, processor);
-        this.stack = new Stack<>();
+    protected SingleReceiverSingleProviderStream(Processor<?, ?, ?, ?> processor) {
+        super(processor);
+        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
     }
 
     @Override
-    public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
-        super.receive(provider, packet);
-        if (receiverRegistry().isPulling()) {
-            receiverRegistry().setNotPulling();
-            receiverRegistry().receiver().receive(this, packet);
-        } else {
-            stack.add(packet);
-        }
+    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<INPUT>> providerRegistry() {
+        return providerRegistry;
     }
 
     @Override
-    public void pull(Receiver.Sync<PACKET> receiver) {
+    public void pull(Receiver.Sync<OUTPUT> receiver) {
         assert receiver.equals(receiverRegistry().receiver());
         receiverRegistry().recordPull(receiver);
-        if (stack.size() > 0) {
-            receiver.receive(this, stack.pop());
-        } else {
-            if (receiverRegistry().isPulling() && !providerRegistry().isPulling()) {
-                providerRegistry().provider().pull(this);
-            }
-        }
+        if (!providerRegistry().isPulling()) providerRegistry().provider().pull(this);
     }
 }

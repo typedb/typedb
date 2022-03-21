@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider.Sync.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.ArrayList;
@@ -28,22 +29,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET, PACKET> {
+public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverMultiProviderStream<PACKET, PACKET> {
 
-    private final Provider.Sync.Publisher<PACKET> leadingPublisher;
+    private final Publisher<PACKET> leadingPublisher;
     private final List<PLAN_ID> remainingPlan;
     private final BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc;
-    private final BiFunction<PLAN_ID, PACKET, Provider.Sync.Publisher<PACKET>> spawnLeaderFunc;
+    private final BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc;
     private final Map<Provider, PACKET> publisherPackets;
     private final PACKET initialPacket;
-    private final ProviderRegistry.MultiProviderRegistry<Provider.Sync<PACKET>> providerRegistry;
 
-    public CompoundStream(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Provider.Sync.Publisher<PACKET>> spawnLeaderFunc,
+    public CompoundStream(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
                           BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
                           Processor<?, ?, ?, ?> processor) {
         super(processor);
         assert plan.size() > 0;
-        this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this, processor);
         this.initialPacket = initialPacket;
         this.remainingPlan = new ArrayList<>(plan);
         this.leadingPublisher = spawnLeaderFunc.apply(this.remainingPlan.remove(0), initialPacket);
@@ -51,11 +50,6 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
         this.spawnLeaderFunc = spawnLeaderFunc;
         this.publisherPackets = new HashMap<>();
         this.leadingPublisher.publishTo(this);
-    }
-
-    @Override
-    protected ProviderRegistry.MultiProviderRegistry<Provider.Sync<PACKET>> providerRegistry() {
-        return providerRegistry;
     }
 
     @Override
@@ -67,7 +61,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverStream<PACKET
                 receiverRegistry().setNotPulling();
                 receiverRegistry().receiver().receive(this, mergedPacket);
             } else {
-                Provider.Sync.Publisher<PACKET> follower;
+                Publisher<PACKET> follower;
                 if (remainingPlan.size() == 1) {
                     follower = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
                 } else {
