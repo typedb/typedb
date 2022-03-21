@@ -20,6 +20,8 @@ package com.vaticle.typedb.core.concept.thing.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.RoleType;
@@ -39,8 +41,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.R
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.RELATION_ROLE_UNRELATED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_ROLE_UNPLAYED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.PLAYING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.RELATING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
@@ -107,29 +109,29 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public FunctionalIterator<ThingImpl> getPlayers(String roleType, String... roleTypes) {
-        return getPlayers(link(single(roleType), iterate(roleTypes))
-                                  .map(label -> getType().getRelates(label))
-                                  .stream().toArray(RoleType[]::new));
-    }
-
-    @Override
-    public FunctionalIterator<ThingImpl> getPlayers(RoleType... roleTypes) {
-        if (roleTypes.length == 0) {
-            return readableVertex().outs().edge(ROLEPLAYER).to().map(ThingImpl::of);
+    public FunctionalIterator<Thing> getPlayers(String... roleTypes) {
+        if (roleTypes.length == 0) return readableVertex().outs().edge(ROLEPLAYER).to().map(ThingImpl::of);
+        else {
+            return getPlayers(iterate(roleTypes).map(label -> getType().getRelates(label)).map(rt -> rt.vertex));
         }
-        return getPlayers(iterate(roleTypes).flatMap(RoleType::getSubtypes).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
-    }
-
-    private FunctionalIterator<ThingImpl> getPlayers(FunctionalIterator<TypeVertex> roleTypeVertices) {
-        return roleTypeVertices.flatMap(v -> readableVertex().outs().edge(ROLEPLAYER, v).to()).map(ThingImpl::of);
     }
 
     @Override
-    public Map<RoleTypeImpl, ? extends List<ThingImpl>> getPlayersByRoleType() {
-        Map<RoleTypeImpl, List<ThingImpl>> playersByRole = new HashMap<>();
+    public Forwardable<Thing, Order.Asc> getPlayers(RoleType roleType, RoleType... roleTypes) {
+        return getPlayers(single(roleType).link(iterate(roleTypes)).flatMap(RoleType::getSubtypes).distinct().map(rt -> ((RoleTypeImpl) rt).vertex));
+    }
+
+    private Forwardable<Thing, Order.Asc> getPlayers(FunctionalIterator<TypeVertex> roleTypeVertices) {
+        assert roleTypeVertices.hasNext();
+        return roleTypeVertices.mergeMap(v -> readableVertex().outs().edge(ROLEPLAYER, v).to(), ASC)
+                .mapSorted(ThingImpl::of, thing -> ((ThingImpl) thing).readableVertex(), ASC);
+    }
+
+    @Override
+    public Map<RoleTypeImpl, List<Thing>> getPlayersByRoleType() {
+        Map<RoleTypeImpl, List<Thing>> playersByRole = new HashMap<>();
         getType().getRelates().forEachRemaining(rt -> {
-            List<ThingImpl> players = getPlayers(rt).toList();
+            List<Thing> players = getPlayers(rt).toList();
             if (!players.isEmpty()) playersByRole.put(rt, players);
         });
         return playersByRole;
