@@ -309,7 +309,7 @@ public class ThingGraph {
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
+        assert isInferred == vertex.isInferred();
         return vertex;
     }
 
@@ -327,7 +327,7 @@ public class ThingGraph {
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
+        assert isInferred == vertex.isInferred();
         return vertex;
     }
 
@@ -345,7 +345,7 @@ public class ThingGraph {
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
+        assert isInferred == vertex.isInferred();
         return vertex;
     }
 
@@ -374,7 +374,7 @@ public class ThingGraph {
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
+        assert isInferred == vertex.isInferred();
         return vertex;
     }
 
@@ -392,7 +392,7 @@ public class ThingGraph {
                     return v;
                 }
         );
-        if (!isInferred && vertex.isInferred()) vertex.isInferred(false);
+        assert isInferred == vertex.isInferred();
         return vertex;
     }
 
