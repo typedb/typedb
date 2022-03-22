@@ -77,7 +77,7 @@ public abstract class DisjunctionController<
     }
 
     private static class NestedConjunctionRequest<P extends DisjunctionProcessor<C, P>, C extends DisjunctionController<P, C>>
-            extends ProviderRequest<Conjunction, ConceptMap, ConceptMap, P, C> {
+            extends ProviderRequest<Conjunction, ConceptMap, ConceptMap, C> {
 
         protected NestedConjunctionRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Conjunction provControllerId,
                                            ConceptMap provProcessorId) {

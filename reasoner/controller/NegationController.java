@@ -71,8 +71,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         return this;
     }
 
-    protected static class DisjunctionRequest extends ProviderRequest<Disjunction, ConceptMap,
-            ConceptMap, NegationProcessor, NegationController> {
+    protected static class DisjunctionRequest extends ProviderRequest<Disjunction, ConceptMap, ConceptMap, NegationController> {
 
         protected DisjunctionRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Disjunction provControllerId,
                                      ConceptMap provProcessorId) {

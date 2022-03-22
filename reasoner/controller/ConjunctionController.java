@@ -127,7 +127,7 @@ public abstract class ConjunctionController<OUTPUT,
     }
 
     static class RetrievableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
-            extends ProviderRequest<Retrievable, ConceptMap, ConceptMap, P, C> {
+            extends ProviderRequest<Retrievable, ConceptMap, ConceptMap, C> {
 
         public RetrievableRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Retrievable provControllerId,
                                   ConceptMap provProcessorId) {
@@ -145,7 +145,7 @@ public abstract class ConjunctionController<OUTPUT,
     }
 
     static class ConcludableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
-            extends ProviderRequest<Concludable, ConceptMap, ConceptMap, P, C> {
+            extends ProviderRequest<Concludable, ConceptMap, ConceptMap, C> {
 
         public ConcludableRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Concludable provControllerId,
                                   ConceptMap provProcessorId) {
@@ -165,7 +165,7 @@ public abstract class ConjunctionController<OUTPUT,
 
     // TODO: Negated request or Negation?
     static class NegatedRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
-            extends ProviderRequest<Negated, ConceptMap, ConceptMap, P, C> {
+            extends ProviderRequest<Negated, ConceptMap, ConceptMap, C> {
 
         protected NegatedRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Negated provControllerId,
                                  ConceptMap provProcessorId) {

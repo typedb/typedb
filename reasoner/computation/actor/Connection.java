@@ -57,7 +57,7 @@ public class Connection<PACKET> {
         private final PROV_PID provProcessorId;
 
         public Builder(Actor.Driver<? extends Controller<PROV_PID, ?, PACKET, ?, ?>> provController,
-                       Controller.ProviderRequest<?, PROV_PID, PACKET, ? extends Processor<PACKET, ?, ?, ?>, ?> providerRequest) {
+                       Controller.ProviderRequest<?, PROV_PID, PACKET, ?> providerRequest) {
             this.provController = provController;
             this.recEndpointId = providerRequest.receivingEndpointId();
             this.connectionTransforms = providerRequest.connectionTransforms();

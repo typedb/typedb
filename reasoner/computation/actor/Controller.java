@@ -67,7 +67,7 @@ public abstract class Controller<
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PROC_ID id);
 
-    public <PROV_CID, PROV_PID, REQ extends ProviderRequest<PROV_CID, PROV_PID, INPUT, PROCESSOR, CONTROLLER>> void findProviderForRequest(REQ req) {
+    public <PROV_CID, PROV_PID, REQ extends ProviderRequest<PROV_CID, PROV_PID, INPUT, CONTROLLER>> void findProviderForRequest(REQ req) {
         if (isTerminated()) return;
         Connection.Builder<PROV_PID, INPUT> builder = req.getConnectionBuilder(getThis());
         builder.providerController().execute(actor -> actor.sendConnectionBuilder(builder));
@@ -119,10 +119,7 @@ public abstract class Controller<
         return terminated;
     }
 
-    public static abstract class ProviderRequest<
-            PROV_CID, PROV_PID, PACKET,
-            PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>,
-            CONTROLLER extends Controller<?, PACKET, ?, PROCESSOR, CONTROLLER>> {  // TODO: Looks like these generics can be further simplified
+    public static abstract class ProviderRequest<PROV_CID, PROV_PID, PACKET, CONTROLLER extends Controller<?, PACKET, ?, ?, CONTROLLER>> {
 
         private final PROV_CID provControllerId;
         private final Reactive.Identifier.Input<PACKET> recEndpointId;
@@ -160,7 +157,7 @@ public abstract class Controller<
             // TODO: be wary with request equality when conjunctions are involved
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            ProviderRequest<?, ?, ?, ?, ?> request = (ProviderRequest<?, ?, ?, ?, ?>) o;
+            ProviderRequest<?, ?, ?, ?> request = (ProviderRequest<?, ?, ?, ?>) o;
             return recEndpointId == request.recEndpointId &&
                     provControllerId.equals(request.provControllerId) &&
                     connectionTransforms.equals(request.connectionTransforms) &&

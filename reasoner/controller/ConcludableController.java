@@ -112,8 +112,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         return this;
     }
 
-    protected static class ConclusionRequest extends ProviderRequest<Conclusion, ConceptMap,
-            Map<Variable, Concept>, ConcludableProcessor, ConcludableController> {
+    protected static class ConclusionRequest extends ProviderRequest<Conclusion, ConceptMap, Map<Variable, Concept>, ConcludableController> {
 
         public ConclusionRequest(Reactive.Identifier.Input<Map<Variable, Concept>> recEndpointId,
                                  Conclusion provControllerId, ConceptMap provProcessorId) {

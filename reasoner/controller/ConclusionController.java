@@ -85,7 +85,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         return conditionController;
     }
 
-    protected static class ConditionRequest extends ProviderRequest<Rule.Condition, ConceptMap, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController> {
+    protected static class ConditionRequest extends ProviderRequest<Rule.Condition, ConceptMap, Either<ConceptMap, Materialisation>, ConclusionController> {
 
         public ConditionRequest(Reactive.Identifier.Input<Either<ConceptMap, Materialisation>> recEndpointId,
                                 Rule.Condition provControllerId, ConceptMap provProcessorId) {
@@ -99,7 +99,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
     }
 
-    protected static class MaterialiserRequest extends ProviderRequest<Void, Materialisable, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController> {
+    protected static class MaterialiserRequest extends ProviderRequest<Void, Materialisable, Either<ConceptMap, Materialisation>, ConclusionController> {
 
         public MaterialiserRequest(Reactive.Identifier.Input<Either<ConceptMap, Materialisation>> recEndpointId,
                                    Void provControllerId, Materialisable provProcessorId) {

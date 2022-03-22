@@ -94,7 +94,7 @@ public abstract class Processor<INPUT, OUTPUT,
         return outlet;
     }
 
-    protected <PROV_CID, PROV_PID, REQ extends Controller.ProviderRequest<PROV_CID, PROV_PID, INPUT, PROCESSOR, CONTROLLER>> void requestProvider(REQ req) {
+    protected <PROV_CID, PROV_PID, REQ extends Controller.ProviderRequest<PROV_CID, PROV_PID, INPUT, CONTROLLER>> void requestProvider(REQ req) {
         assert !done;
         if (isTerminated()) return;
         controller.execute(actor -> actor.findProviderForRequest(req));
