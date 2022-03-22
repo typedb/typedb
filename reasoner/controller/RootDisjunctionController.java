@@ -92,7 +92,7 @@ public class RootDisjunctionController
         }
 
         @Override
-        public void pull() {
+        public void entryPull() {
             reasonerEntryPoint.pull();
         }
 

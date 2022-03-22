@@ -106,7 +106,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         }
 
         @Override
-        public void pull() {
+        public void entryPull() {
             reasonerEntryPoint.pull();
         }
 

@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.answer.Mapping;
-import com.vaticle.typedb.core.reasoner.computation.actor.ConnectionBuilder;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connector;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -75,7 +75,7 @@ public abstract class ConjunctionController<OUTPUT,
     }
 
     @Override
-    public void setUpUpstreamProviders() {
+    public void setUpUpstreamControllers() {
         assert resolvables.isEmpty();
         Set<Concludable> concludables = concludablesTriggeringRules();
         Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
@@ -127,7 +127,7 @@ public abstract class ConjunctionController<OUTPUT,
     }
 
     static class RetrievableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
-            extends ProviderRequest<Retrievable, ConceptMap, ConceptMap, C> {
+            extends ConnectionRequest<Retrievable, ConceptMap, ConceptMap, C> {
 
         public RetrievableRequest(Reactive.Identifier.Input<ConceptMap> inputId, Retrievable controllerId,
                                   ConceptMap processorId) {
@@ -135,17 +135,17 @@ public abstract class ConjunctionController<OUTPUT,
         }
 
         @Override
-        public ConnectionBuilder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
-            ResolverView.FilteredRetrievable controllerView = controller.retrievableProvider(providerControllerId());
-            ConceptMap newPID = providerProcessorId().filter(controllerView.filter());
-            return new ConnectionBuilder<>(controllerView.controller(), this)
-                    .withMap(c -> merge(c, providerProcessorId()))
+        public Connector<ConceptMap, ConceptMap> getConnector(C controller) {
+            ResolverView.FilteredRetrievable controllerView = controller.retrievableProvider(outputControllerId());
+            ConceptMap newPID = outputProcessorId().filter(controllerView.filter());
+            return new Connector<>(controllerView.controller(), this)
+                    .withMap(c -> merge(c, outputProcessorId()))
                     .withNewProcessorId(newPID);
         }
     }
 
     static class ConcludableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
-            extends ProviderRequest<Concludable, ConceptMap, ConceptMap, C> {
+            extends ConnectionRequest<Concludable, ConceptMap, ConceptMap, C> {
 
         public ConcludableRequest(Reactive.Identifier.Input<ConceptMap> inputId, Concludable controllerId,
                                   ConceptMap processorId) {
@@ -153,11 +153,11 @@ public abstract class ConjunctionController<OUTPUT,
         }
 
         @Override
-        public ConnectionBuilder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
-            ResolverView.MappedConcludable controllerView = controller.concludableProvider(providerControllerId());
+        public Connector<ConceptMap, ConceptMap> getConnector(C controller) {
+            ResolverView.MappedConcludable controllerView = controller.concludableProvider(outputControllerId());
             Mapping mapping = Mapping.of(controllerView.mapping());
-            ConceptMap newPID = mapping.transform(providerProcessorId());
-            return new ConnectionBuilder<>(controllerView.controller(), this)
+            ConceptMap newPID = mapping.transform(outputProcessorId());
+            return new Connector<>(controllerView.controller(), this)
                     .withMap(mapping::unTransform)
                     .withNewProcessorId(newPID);
         }
@@ -165,7 +165,7 @@ public abstract class ConjunctionController<OUTPUT,
 
     // TODO: Negated request or Negation?
     static class NegatedRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
-            extends ProviderRequest<Negated, ConceptMap, ConceptMap, C> {
+            extends ConnectionRequest<Negated, ConceptMap, ConceptMap, C> {
 
         protected NegatedRequest(Reactive.Identifier.Input<ConceptMap> inputId, Negated controllerId,
                                  ConceptMap processorId) {
@@ -173,11 +173,11 @@ public abstract class ConjunctionController<OUTPUT,
         }
 
         @Override
-        public ConnectionBuilder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
-            ResolverView.FilteredNegation controllerView = controller.negationProvider(providerControllerId());
-            ConceptMap newPID = providerProcessorId().filter(controllerView.filter());
-            return new ConnectionBuilder<>(controllerView.controller(), this)
-                    .withMap(c -> merge(c, providerProcessorId()))
+        public Connector<ConceptMap, ConceptMap> getConnector(C controller) {
+            ResolverView.FilteredNegation controllerView = controller.negationProvider(outputControllerId());
+            ConceptMap newPID = outputProcessorId().filter(controllerView.filter());
+            return new Connector<>(controllerView.controller(), this)
+                    .withMap(c -> merge(c, outputProcessorId()))
                     .withNewProcessorId(newPID);
         }
     }
@@ -204,20 +204,20 @@ public abstract class ConjunctionController<OUTPUT,
 
         protected Input<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
             // TODO: Rethink this ugly structure for compound reactives
-            Input<ConceptMap> endpoint = createInput();
+            Input<ConceptMap> input = createInput();
             if (planElement.isRetrievable()) {
-                requestProvider(new RetrievableRequest<>(endpoint.identifier(), planElement.asRetrievable(),
+                requestProvider(new RetrievableRequest<>(input.identifier(), planElement.asRetrievable(),
                                                          carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isConcludable()) {
-                requestProvider(new ConcludableRequest<>(endpoint.identifier(), planElement.asConcludable(),
+                requestProvider(new ConcludableRequest<>(input.identifier(), planElement.asConcludable(),
                                                          carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isNegated()) {
-                requestProvider(new NegatedRequest<>(endpoint.identifier(), planElement.asNegated(),
+                requestProvider(new NegatedRequest<>(input.identifier(), planElement.asNegated(),
                                                      carriedBounds.filter(planElement.retrieves())));
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
-            return endpoint;
+            return input;
         }
 
     }

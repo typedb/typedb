@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
-import com.vaticle.typedb.core.reasoner.computation.actor.ConnectionBuilder;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connector;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -69,7 +69,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
     }
 
     @Override
-    public void setUpUpstreamProviders() {
+    public void setUpUpstreamControllers() {
         concludable.getApplicableRules(registry.conceptManager(), registry.logicManager())
                 .forEachRemaining(rule -> {
                     Driver<ConclusionController> controller = registry.registerConclusionController(rule.conclusion());
@@ -112,7 +112,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         return this;
     }
 
-    protected static class ConclusionRequest extends ProviderRequest<Conclusion, ConceptMap, Map<Variable, Concept>, ConcludableController> {
+    protected static class ConclusionRequest extends ConnectionRequest<Conclusion, ConceptMap, Map<Variable, Concept>, ConcludableController> {
 
         public ConclusionRequest(Reactive.Identifier.Input<Map<Variable, Concept>> inputId,
                                  Conclusion controllerId, ConceptMap processorId) {
@@ -120,8 +120,8 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         }
 
         @Override
-        public ConnectionBuilder<ConceptMap, Map<Variable, Concept>> getConnectionBuilder(ConcludableController controller) {
-            return new ConnectionBuilder<>(controller.conclusionProvider(providerControllerId()), this);
+        public Connector<ConceptMap, Map<Variable, Concept>> getConnector(ConcludableController controller) {
+            return new Connector<>(controller.conclusionProvider(outputControllerId()), this);
         }
     }
 
@@ -161,9 +161,9 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
-                    Input<Map<Variable, Concept>> endpoint = this.createInput();
-                    mayRequestConnection(new ConclusionRequest(endpoint.identifier(), conclusion, boundsAndRequirements.first()));
-                    endpoint.flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
+                    Input<Map<Variable, Concept>> input = this.createInput();
+                    mayRequestConnection(new ConclusionRequest(input.identifier(), conclusion, boundsAndRequirements.first()));
+                    input.flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .buffer()
                             .publishTo(fanIn);
                 }));

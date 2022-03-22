@@ -49,7 +49,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     }
 
     @Override
-    public void setUpUpstreamProviders() {
+    public void setUpUpstreamControllers() {
         // None to set up
     }
 

@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.EntryPoint;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -112,7 +111,7 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
     private void pull() {
         if (rootProcessor != null) {
             isPulling = true;
-            rootProcessor.execute(actor -> actor.pull());
+            rootProcessor.execute(actor -> actor.entryPull());
         }
     }
 

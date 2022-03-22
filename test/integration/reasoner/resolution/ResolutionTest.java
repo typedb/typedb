@@ -496,7 +496,7 @@ public class ResolutionTest {
         }
 
         private void pull() {
-            rootProcessor.execute(actor -> actor.pull());
+            rootProcessor.execute(actor -> actor.entryPull());
         }
 
         @Override

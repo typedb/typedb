@@ -26,9 +26,7 @@ import com.vaticle.typedb.core.reasoner.controller.Registry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -38,9 +36,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 
 
 public abstract class Controller<
-        PROC_ID, INPUT, OUTPUT,
+        PROCESSOR_ID, INPUT, OUTPUT,
         PROCESSOR extends Processor<INPUT, OUTPUT, ?, PROCESSOR>,
-        CONTROLLER extends Controller<PROC_ID, INPUT, OUTPUT, PROCESSOR, CONTROLLER>
+        CONTROLLER extends Controller<PROCESSOR_ID, INPUT, OUTPUT, PROCESSOR, CONTROLLER>
         > extends Actor<CONTROLLER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
@@ -48,7 +46,7 @@ public abstract class Controller<
     private boolean terminated;
     private final ActorExecutorGroup executorService;
     private final Registry registry;
-    protected final Map<PROC_ID, Actor.Driver<PROCESSOR>> processors;
+    protected final Map<PROCESSOR_ID, Actor.Driver<PROCESSOR>> processors;
 
     protected Controller(Driver<CONTROLLER> driver, ActorExecutorGroup executorService, Registry registry,
                          Supplier<String> debugName) {
@@ -59,39 +57,38 @@ public abstract class Controller<
         this.registry = registry;
     }
 
-    public abstract void setUpUpstreamProviders();
+    public abstract void setUpUpstreamControllers();
 
     protected Registry registry() {
         return registry;
     }
 
-    protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PROC_ID id);
-
-    public <PROV_CID, PROV_PID, REQ extends ProviderRequest<PROV_CID, PROV_PID, INPUT, CONTROLLER>> void findProviderForRequest(REQ req) {
+    public <OUTPUT_CID, OUTPUT_PID, REQ extends ConnectionRequest<OUTPUT_CID, OUTPUT_PID, INPUT, CONTROLLER>> void findOutputForRequest(REQ connectionRequest) {
         if (isTerminated()) return;
-        ConnectionBuilder<PROV_PID, INPUT> builder = req.getConnectionBuilder(getThis());
-        builder.providerController().execute(actor -> actor.sendConnectionBuilder(builder));
+        Connector<OUTPUT_PID, INPUT> connector = connectionRequest.getConnector(getThis());
+        connector.outputController().execute(actor -> actor.sendConnectorToProcessor(connector));
     }
 
     public abstract CONTROLLER getThis();  // We need this because the processor can't access the controller actor from the driver when building a request
 
-    public void sendConnectionBuilder(ConnectionBuilder<PROC_ID, OUTPUT> connectionBuilder) {
+    public void sendConnectorToProcessor(Connector<PROCESSOR_ID, OUTPUT> connector) {
         if (isTerminated()) return;
-        createProcessorIfAbsent(connectionBuilder.providerProcessorId())
-                .execute(actor -> actor.acceptConnection(connectionBuilder));
+        createProcessorIfAbsent(connector.outputProcessorId()).execute(actor -> actor.acceptConnector(connector));
     }
 
-    public Driver<PROCESSOR> createProcessorIfAbsent(PROC_ID processorId) {
+    public Driver<PROCESSOR> createProcessorIfAbsent(PROCESSOR_ID processorId) {
         // TODO: We can do subsumption in the subtypes here
         return processors.computeIfAbsent(processorId, this::createProcessor);
     }
 
-    private Actor.Driver<PROCESSOR> createProcessor(PROC_ID id) {
+    private Actor.Driver<PROCESSOR> createProcessor(PROCESSOR_ID processorId) {
         if (isTerminated()) return null;  // TODO: Avoid returning null
-        Driver<PROCESSOR> processor = Actor.driver(createProcessorFunc(id), executorService);
+        Driver<PROCESSOR> processor = Actor.driver(createProcessorFunc(processorId), executorService);
         processor.execute(Processor::setUp);
         return processor;
     }
+
+    protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PROCESSOR_ID processorId);
 
     @Override
     protected void exception(Throwable e) {
@@ -119,37 +116,31 @@ public abstract class Controller<
         return terminated;
     }
 
-    public static abstract class ProviderRequest<PROV_CID, PROV_PID, PACKET, CONTROLLER extends Controller<?, PACKET, ?, ?, CONTROLLER>> {
+    public static abstract class ConnectionRequest<OUTPUT_CID, OUTPUT_PID, PACKET, CONTROLLER extends Controller<?, PACKET, ?, ?, CONTROLLER>> {
 
-        private final PROV_CID providerControllerId;
-        private final Reactive.Identifier.Input<PACKET> receiverInputId;
-        private final List<Function<PACKET, PACKET>> connectionTransforms;
-        private final PROV_PID providerProcessorId;
+        private final OUTPUT_CID outputControllerId;
+        private final Reactive.Identifier.Input<PACKET> inputId;
+        private final OUTPUT_PID outputProcessorId;
 
-        protected ProviderRequest(Reactive.Identifier.Input<PACKET> receiverInputId, PROV_CID providerControllerId,
-                                  PROV_PID providerProcessorId) {
-            this.receiverInputId = receiverInputId;
-            this.providerControllerId = providerControllerId;
-            this.providerProcessorId = providerProcessorId;
-            this.connectionTransforms = new ArrayList<>();
+        protected ConnectionRequest(Reactive.Identifier.Input<PACKET> inputId, OUTPUT_CID outputControllerId,
+                                    OUTPUT_PID outputProcessorId) {
+            this.inputId = inputId;
+            this.outputControllerId = outputControllerId;
+            this.outputProcessorId = outputProcessorId;
         }
 
-        public abstract ConnectionBuilder<PROV_PID, PACKET> getConnectionBuilder(CONTROLLER controller);
+        public abstract Connector<OUTPUT_PID, PACKET> getConnector(CONTROLLER controller);
 
-        public PROV_CID providerControllerId() {
-            return providerControllerId;
+        public OUTPUT_CID outputControllerId() {
+            return outputControllerId;
         }
 
-        public PROV_PID providerProcessorId() {
-            return providerProcessorId;
+        public OUTPUT_PID outputProcessorId() {
+            return outputProcessorId;
         }
 
-        public Reactive.Identifier.Input<PACKET> receiverInputId() {
-            return receiverInputId;
-        }
-
-        public List<Function<PACKET, PACKET>> connectionTransforms() {
-            return connectionTransforms;
+        public Reactive.Identifier.Input<PACKET> inputId() {
+            return inputId;
         }
 
         @Override
@@ -157,16 +148,15 @@ public abstract class Controller<
             // TODO: be wary with request equality when conjunctions are involved
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            ProviderRequest<?, ?, ?, ?> request = (ProviderRequest<?, ?, ?, ?>) o;
-            return receiverInputId == request.receiverInputId &&
-                    providerControllerId.equals(request.providerControllerId) &&
-                    connectionTransforms.equals(request.connectionTransforms) &&
-                    providerProcessorId.equals(request.providerProcessorId);
+            ConnectionRequest<?, ?, ?, ?> request = (ConnectionRequest<?, ?, ?, ?>) o;
+            return inputId == request.inputId &&
+                    outputControllerId.equals(request.outputControllerId) &&
+                    outputProcessorId.equals(request.outputProcessorId);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(providerControllerId, receiverInputId, connectionTransforms, providerProcessorId);
+            return Objects.hash(outputControllerId, inputId, outputProcessorId);
         }
     }
 }

@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.computation.actor.ConnectionBuilder;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connector;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -62,7 +62,7 @@ public abstract class DisjunctionController<
     }
 
     @Override
-    public void setUpUpstreamProviders() {
+    public void setUpUpstreamControllers() {
         disjunction.conjunctions().forEach(conjunction -> {
             Driver<NestedConjunctionController> controller = registry().registerNestedConjunctionController(conjunction);
             conjunctionControllers.add(new Pair<>(conjunction, controller));
@@ -78,7 +78,7 @@ public abstract class DisjunctionController<
     }
 
     private static class NestedConjunctionRequest<P extends DisjunctionProcessor<C, P>, C extends DisjunctionController<P, C>>
-            extends ProviderRequest<Conjunction, ConceptMap, ConceptMap, C> {
+            extends ConnectionRequest<Conjunction, ConceptMap, ConceptMap, C> {
 
         protected NestedConjunctionRequest(Reactive.Identifier.Input<ConceptMap> inputId, Conjunction controllerId,
                                            ConceptMap processorId) {
@@ -86,9 +86,9 @@ public abstract class DisjunctionController<
         }
 
         @Override
-        public ConnectionBuilder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
-            return new ConnectionBuilder<>(controller.conjunctionProvider(providerControllerId()), this)
-                    .withMap(c -> merge(c, providerProcessorId()));
+        public Connector<ConceptMap, ConceptMap> getConnector(C controller) {
+            return new Connector<>(controller.conjunctionProvider(outputControllerId()), this)
+                    .withMap(c -> merge(c, outputProcessorId()));
         }
     }
 
@@ -113,13 +113,13 @@ public abstract class DisjunctionController<
             FanInStream<ConceptMap> fanIn = fanIn(this);
             setOutputRouter(getOutputRouter(fanIn));
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
-                Input<ConceptMap> endpoint = createInput();
-                endpoint.publishTo(fanIn);
+                Input<ConceptMap> input = createInput();
+                input.publishTo(fanIn);
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();
                 requestProvider(new DisjunctionController.NestedConjunctionRequest<>(
-                        endpoint.identifier(), conjunction, bounds.filter(retrievableConjunctionVars)));
+                        input.identifier(), conjunction, bounds.filter(retrievableConjunctionVars)));
             }
             fanIn.finaliseProviders();
         }

@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.computation.actor.ConnectionBuilder;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connector;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -48,7 +48,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
     }
 
     @Override
-    public void setUpUpstreamProviders() {
+    public void setUpUpstreamControllers() {
         // TODO: If there is only one conjunction in the disjunction we could theoretically skip the disjunction, but
         //  this is architecturally difficult.
         disjunctionContoller = registry().registerNestedDisjunctionController(negated.pattern());
@@ -71,7 +71,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         return this;
     }
 
-    protected static class DisjunctionRequest extends ProviderRequest<Disjunction, ConceptMap, ConceptMap, NegationController> {
+    protected static class DisjunctionRequest extends ConnectionRequest<Disjunction, ConceptMap, ConceptMap, NegationController> {
 
         protected DisjunctionRequest(Reactive.Identifier.Input<ConceptMap> inputId, Disjunction controllerId,
                                      ConceptMap processorId) {
@@ -79,8 +79,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         }
 
         @Override
-        public ConnectionBuilder<ConceptMap, ConceptMap> getConnectionBuilder(NegationController controller) {
-            return new ConnectionBuilder<>(controller.disjunctionContoller(), this);
+        public Connector<ConceptMap, ConceptMap> getConnector(NegationController controller) {
+            return new Connector<>(controller.disjunctionContoller(), this);
         }
     }
 
@@ -101,12 +101,12 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         @Override
         public void setUp() {
             setOutputRouter(new FanOutStream<>(this));
-            Input<ConceptMap> endpoint = createInput();
-            requestProvider(new DisjunctionRequest(endpoint.identifier(), negated.pattern(), bounds));
+            Input<ConceptMap> input = createInput();
+            requestProvider(new DisjunctionRequest(input.identifier(), negated.pattern(), bounds));
             negation = new NegationReactive(this, bounds);
             monitor().execute(actor -> actor.registerRoot(driver(), negation.identifier()));
             monitor().execute(actor -> actor.forkFrontier(1, negation.identifier()));
-            endpoint.publishTo(negation);
+            input.publishTo(negation);
             negation.publishTo(outputRouter());
         }
 

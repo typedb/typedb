@@ -33,9 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
@@ -49,8 +47,8 @@ public abstract class Processor<INPUT, OUTPUT,
     private static final Logger LOG = LoggerFactory.getLogger(Processor.class);
 
     private final Driver<CONTROLLER> controller;
-    private final Map<Reactive.Identifier, Input<INPUT>> inputEndpoints;
-    private final Map<Reactive.Identifier, Output<OUTPUT>> outputEndpoints;
+    private final Map<Reactive.Identifier, Input<INPUT>> inputs;
+    private final Map<Reactive.Identifier, Output<OUTPUT>> outputs;
     private final Map<Pair<Reactive.Identifier, Reactive.Identifier>, Runnable> pullRetries;
     private final Driver<Monitor> monitor;
     private Reactive.Stream<OUTPUT,OUTPUT> outputRouter;
@@ -62,8 +60,8 @@ public abstract class Processor<INPUT, OUTPUT,
                         Supplier<String> debugName) {
         super(driver, debugName);
         this.controller = controller;
-        this.inputEndpoints = new HashMap<>();
-        this.outputEndpoints = new HashMap<>();
+        this.inputs = new HashMap<>();
+        this.outputs = new HashMap<>();
         this.done = false;
         this.monitor = monitor;
         this.reactiveCounter = 0;
@@ -80,7 +78,17 @@ public abstract class Processor<INPUT, OUTPUT,
         return outputRouter;
     }
 
-    public void pull() {
+    public void pull(Reactive.Identifier.Input<OUTPUT> receiver, Reactive.Identifier outputId) {
+        assert !done;
+        outputs.get(outputId).pull(receiver);
+    }
+
+    protected void receive(Reactive.Identifier.Output<INPUT> provider, INPUT packet, Reactive.Identifier inputId) {
+        assert !done;
+        inputs.get(inputId).receive(provider, packet);
+    }
+
+    public void entryPull() {
         throw TypeDBException.of(ILLEGAL_OPERATION);
     }
 
@@ -93,58 +101,41 @@ public abstract class Processor<INPUT, OUTPUT,
         pullRetries.get(new Pair<>(provider, receiver)).run();
     }
 
-    protected <PROV_CID, PROV_PID, REQ extends Controller.ProviderRequest<PROV_CID, PROV_PID, INPUT, CONTROLLER>> void requestProvider(REQ req) {
+    protected <OUTPUT_CID, OUTPUT_PID, REQ extends Controller.ConnectionRequest<OUTPUT_CID, OUTPUT_PID, INPUT, CONTROLLER>> void requestProvider(REQ req) {
         assert !done;
         if (isTerminated()) return;
-        controller.execute(actor -> actor.findProviderForRequest(req));
+        controller.execute(actor -> actor.findOutputForRequest(req));
     }
 
-    protected void acceptConnection(ConnectionBuilder<?, OUTPUT> connectionBuilder) {
+    protected void acceptConnector(Connector<?, OUTPUT> connector) {
         assert !done;
-        Output<OUTPUT> provider = createOutput();
-        provider.setReceiver(connectionBuilder.inputId());
-        applyConnectionTransforms(connectionBuilder.connectionTransforms(), outputRouter(), provider);
         if (isTerminated()) return;
-        connectionBuilder.inputId().processor()
-                .execute(actor -> actor.finaliseConnection(connectionBuilder.inputId(), provider.identifier()));
+        Output<OUTPUT> output = createOutput();
+        output.setReceiver(connector.inputId());
+        connector.applyTransforms(outputRouter(), output);
+        connector.inputId().processor().execute(
+                actor -> actor.finaliseConnection(connector.inputId(), output.identifier()));
     }
 
-    public void applyConnectionTransforms(List<Function<OUTPUT, OUTPUT>> transformations,
-                                          Reactive.Stream<OUTPUT,OUTPUT> outputRouter, Output<OUTPUT> upstreamEndpoint) {
-        Provider.Sync.Publisher<OUTPUT> op = outputRouter;
-        for (Function<OUTPUT, OUTPUT> t : transformations) op = op.map(t);
-        op.publishTo(upstreamEndpoint);
-    }
-
-    protected void finaliseConnection(Reactive.Identifier.Input<INPUT> receiverInputId, Reactive.Identifier.Output<INPUT> providerOutputId) {
+    protected void finaliseConnection(Reactive.Identifier.Input<INPUT> inputId, Reactive.Identifier.Output<INPUT> outputId) {
         assert !done;
-        Input<INPUT> input = inputEndpoints.get(receiverInputId);
-        input.addProvider(providerOutputId);
+        Input<INPUT> input = inputs.get(inputId);
+        input.addProvider(outputId);
         input.pull();
+    }
+
+    protected Input<INPUT> createInput() {
+        assert !done;
+        Input<INPUT> input = new Input<>(this);
+        inputs.put(input.identifier(), input);
+        return input;
     }
 
     protected Output<OUTPUT> createOutput() {
         assert !done;
         Output<OUTPUT> output = new Output<>(this);
-        outputEndpoints.put(output.identifier(), output);
+        outputs.put(output.identifier(), output);
         return output;
-    }
-
-    protected Input<INPUT> createInput() {
-        assert !done;
-        Input<INPUT> endpoint = new Input<>(this);
-        inputEndpoints.put(endpoint.identifier(), endpoint);
-        return endpoint;
-    }
-
-    public void endpointPull(Reactive.Identifier.Input<OUTPUT> receiver, Reactive.Identifier pubEndpointId) {
-        assert !done;
-        outputEndpoints.get(pubEndpointId).pull(receiver);
-    }
-
-    protected void endpointReceive(Reactive.Identifier.Output<INPUT> provider, INPUT packet, Reactive.Identifier subEndpointId) {
-        assert !done;
-        inputEndpoints.get(subEndpointId).receive(provider, packet);
     }
 
     public Driver<Monitor> monitor() {
@@ -238,7 +229,7 @@ public abstract class Processor<INPUT, OUTPUT,
             receiverRegistry().recordPull(receiver);
             if (ready && providerRegistry().setPulling()) {
                 providerRegistry().provider().processor()
-                        .execute(actor -> actor.endpointPull(identifier(), providerRegistry().provider()));
+                        .execute(actor -> actor.pull(identifier(), providerRegistry().provider()));
             }
         }
 
@@ -286,7 +277,7 @@ public abstract class Processor<INPUT, OUTPUT,
             providerRegistry().recordReceive(provider);
             receiverRegistry().setNotPulling();
             receiverRegistry().receiver().processor()
-                    .execute(actor -> actor.endpointReceive(identifier(), packet, receiverRegistry().receiver()));
+                    .execute(actor -> actor.receive(identifier(), packet, receiverRegistry().receiver()));
         }
 
         @Override
@@ -302,8 +293,8 @@ public abstract class Processor<INPUT, OUTPUT,
             if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
         }
 
-        public void setReceiver(Identifier.Input<PACKET> receiverEndpointId) {
-            receiverRegistry().addReceiver(receiverEndpointId);
+        public void setReceiver(Identifier.Input<PACKET> inputId) {
+            receiverRegistry().addReceiver(inputId);
         }
     }
 

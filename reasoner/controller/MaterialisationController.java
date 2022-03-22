@@ -55,7 +55,7 @@ public class MaterialisationController extends Controller<Materialisable, Void, 
     }
 
     @Override
-    public void setUpUpstreamProviders() {
+    public void setUpUpstreamControllers() {
         // None to set up
     }
 

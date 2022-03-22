@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
-import com.vaticle.typedb.core.reasoner.computation.actor.ConnectionBuilder;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connector;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -60,7 +60,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
     }
 
     @Override
-    public void setUpUpstreamProviders() {
+    public void setUpUpstreamControllers() {
         conditionController = registry().registerConditionController(conclusion.rule().condition());
     }
 
@@ -85,7 +85,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         return conditionController;
     }
 
-    protected static class ConditionRequest extends ProviderRequest<Rule.Condition, ConceptMap, Either<ConceptMap, Materialisation>, ConclusionController> {
+    protected static class ConditionRequest extends ConnectionRequest<Rule.Condition, ConceptMap, Either<ConceptMap, Materialisation>, ConclusionController> {
 
         public ConditionRequest(Reactive.Identifier.Input<Either<ConceptMap, Materialisation>> inputId,
                                 Rule.Condition controllerId, ConceptMap processorId) {
@@ -93,13 +93,13 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         }
 
         @Override
-        public ConnectionBuilder<ConceptMap, Either<ConceptMap, Materialisation>> getConnectionBuilder(ConclusionController controller) {
-            return new ConnectionBuilder<>(controller.conditionController(), this);
+        public Connector<ConceptMap, Either<ConceptMap, Materialisation>> getConnector(ConclusionController controller) {
+            return new Connector<>(controller.conditionController(), this);
         }
 
     }
 
-    protected static class MaterialiserRequest extends ProviderRequest<Void, Materialisable, Either<ConceptMap, Materialisation>, ConclusionController> {
+    protected static class MaterialiserRequest extends ConnectionRequest<Void, Materialisable, Either<ConceptMap, Materialisation>, ConclusionController> {
 
         public MaterialiserRequest(Reactive.Identifier.Input<Either<ConceptMap, Materialisation>> inputId,
                                    Void controllerId, Materialisable processorId) {
@@ -107,8 +107,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         }
 
         @Override
-        public ConnectionBuilder<Materialisable, Either<ConceptMap, Materialisation>> getConnectionBuilder(ConclusionController controller) {
-            return new ConnectionBuilder<>(controller.materialisationController(), this);
+        public Connector<Materialisable, Either<ConceptMap, Materialisation>> getConnector(ConclusionController controller) {
+            return new Connector<>(controller.materialisationController(), this);
         }
 
     }
@@ -135,10 +135,10 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         @Override
         public void setUp() {
             setOutputRouter(new FanOutStream<>(this));
-            Input<Either<ConceptMap, Materialisation>> conditionEndpoint = createInput();
-            mayRequestCondition(new ConditionRequest(conditionEndpoint.identifier(), rule.condition(), bounds));
+            Input<Either<ConceptMap, Materialisation>> conditionInput = createInput();
+            mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), bounds));
             ConclusionReactive conclusionReactive = new ConclusionReactive(this);
-            conditionEndpoint.map(a -> a.first()).publishTo(conclusionReactive);
+            conditionInput.map(a -> a.first()).publishTo(conclusionReactive);
             conclusionReactive.publishTo(outputRouter());
         }
 
@@ -187,12 +187,12 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             @Override
             public void receive(Provider.Sync<ConceptMap> provider, ConceptMap packet) {
                 super.receive(provider, packet);
-                Input<Either<ConceptMap, Materialisation>> materialisationEndpoint = createInput();
+                Input<Either<ConceptMap, Materialisation>> materialisationInput = createInput();
                 mayRequestMaterialiser(new MaterialiserRequest(
-                        materialisationEndpoint.identifier(), null,
+                        materialisationInput.identifier(), null,
                         rule.conclusion().materialisable(packet, conceptManager))
                 );
-                Stream<?, Map<Variable, Concept>> op = materialisationEndpoint.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
+                Stream<?, Map<Variable, Concept>> op = materialisationInput.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
                 MaterialisationReactive materialisationReactive = new MaterialisationReactive(this, processor());
                 materialisationRegistry().add(materialisationReactive);
                 op.publishTo(materialisationReactive);
