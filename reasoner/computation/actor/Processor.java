@@ -56,7 +56,7 @@ public abstract class Processor<INPUT, OUTPUT,
     private Reactive.Stream<OUTPUT,OUTPUT> outlet;
     private boolean terminated;
     protected boolean done;
-    private int reactiveCounter;
+    private long reactiveCounter;
 
     protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, Driver<Monitor> monitor,
                         Supplier<String> debugName) {
@@ -180,19 +180,21 @@ public abstract class Processor<INPUT, OUTPUT,
         return terminated;
     }
 
+    public long incrementReactiveCounter() {
+        reactiveCounter += 1;
+        return reactiveCounter;
+    }
+
     public Reactive.Identifier registerReactive(Reactive reactive) {
-        reactiveCounter += 1;
-        return new ReactiveIdentifier(driver(), reactive.getClass(), reactiveCounter);
+        return new ReactiveIdentifier(driver(), reactive.getClass(), incrementReactiveCounter());
     }
 
-    public Reactive.Identifier.Output<OUTPUT> registerOutlet(Reactive reactive) {
-        reactiveCounter += 1;
-        return new ReactiveIdentifier.Output<>(driver(), reactive.getClass(), reactiveCounter);
+    public Reactive.Identifier.Output<OUTPUT> registerOutlet(OutletEndpoint<OUTPUT> reactive) {
+        return new ReactiveIdentifier.Output<>(driver(), reactive.getClass(), incrementReactiveCounter());
     }
 
-    public Reactive.Identifier.Input<INPUT> registerInlet(Reactive reactive) {
-        reactiveCounter += 1;
-        return new ReactiveIdentifier.Input<>(driver(), reactive.getClass(), reactiveCounter);
+    public Reactive.Identifier.Input<INPUT> registerInlet(InletEndpoint<INPUT> reactive) {
+        return new ReactiveIdentifier.Input<>(driver(), reactive.getClass(), incrementReactiveCounter());
     }
 
     /**

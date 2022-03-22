@@ -26,9 +26,9 @@ import java.util.Objects;
 public class ReactiveIdentifier implements Reactive.Identifier {
     private final Actor.Driver<? extends Processor<?, ?, ?, ?>> processor;
     private final Class<? extends Reactive> reactiveClass;
-    private final int scopedId;
+    private final long scopedId;
 
-    public ReactiveIdentifier(Actor.Driver<? extends Processor<?, ?, ?, ?>> processor, Class<? extends Reactive> reactiveClass, int scopedId) {
+    public ReactiveIdentifier(Actor.Driver<? extends Processor<?, ?, ?, ?>> processor, Class<? extends Reactive> reactiveClass, long scopedId) {
         this.processor = processor;
         this.reactiveClass = reactiveClass;
         this.scopedId = scopedId;
@@ -69,7 +69,7 @@ public class ReactiveIdentifier implements Reactive.Identifier {
         private final Actor.Driver<? extends Processor<?, PACKET, ?, ?>> processor;  //TODO: Duplicates field from parent class
 
         public Output(Actor.Driver<? extends Processor<?, PACKET, ?, ?>> processor,
-                      Class<? extends Reactive> reactiveClass, int scopedId) {
+                      Class<? extends Reactive> reactiveClass, long scopedId) {
             super(processor, reactiveClass, scopedId);
             this.processor = processor;
         }
@@ -104,7 +104,7 @@ public class ReactiveIdentifier implements Reactive.Identifier {
         private final Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor;  //TODO: Duplicates field from parent class
 
         public Input(Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor,
-                     Class<? extends Reactive> reactiveClass, int scopedId) {
+                     Class<? extends Reactive> reactiveClass, long scopedId) {
             super(processor, reactiveClass, scopedId);
             this.processor = processor;
         }
