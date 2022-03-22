@@ -86,7 +86,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     public void pullRetry(Reactive.Identifier provider, Reactive.Identifier receiver) {
-        pullRetries.remove(new Pair<>(provider, receiver)).run();
+        pullRetries.get(new Pair<>(provider, receiver)).run();
     }
 
     public Reactive.Stream<OUTPUT,OUTPUT> outlet() {
