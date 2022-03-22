@@ -50,7 +50,7 @@ public class BufferedStream<PACKET> extends SingleReceiverSingleProviderStream<P
         if (stack.size() > 0) {
             receiver.receive(this, stack.pop());
         } else {
-            if (receiverRegistry().isPulling() && !providerRegistry().isPulling()) {
+            if (receiverRegistry().isPulling() && providerRegistry().setPulling()) {
                 providerRegistry().provider().pull(this);
             }
         }

@@ -52,7 +52,7 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Sy
 
     public void pull() {
         isPulling = true;
-        if (!providerRegistry().isPulling()) providerRegistry().provider().pull(this);
+        if (providerRegistry().setPulling()) providerRegistry().provider().pull(this);
     }
 
     @Override
@@ -66,7 +66,7 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Sy
     @Override
     public void subscribeTo(Provider.Sync<ConceptMap> provider) {
         super.subscribeTo(provider);
-        if (isPulling && !providerRegistry().isPulling()) provider.pull(this);
+        if (isPulling && providerRegistry().setPulling()) provider.pull(this);
     }
 
     public Tracer.Trace trace() {

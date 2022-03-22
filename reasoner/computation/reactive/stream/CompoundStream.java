@@ -20,8 +20,6 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider.Sync.Publisher;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -73,7 +71,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverMultiProvider
                 follower.publishTo(this);
                 if (receiverRegistry().isPulling()) {
                     processor().driver().execute(actor -> actor.retryPull(leadingPublisher, this));  // Retry the leader in case the follower never produces an answer
-                    if (!providerRegistry().isPulling(follower)) follower.pull(this);
+                    if (providerRegistry().setPulling(follower)) follower.pull(this);
                 }
             }
         } else {

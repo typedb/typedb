@@ -82,7 +82,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         bufferPositions.putIfAbsent(receiver, 0);
         if (bufferList.size() == bufferPositions.get(receiver)) {
             // Finished the buffer
-            if (receiverRegistry().isPulling() && !providerRegistry().isPulling()) providerRegistry().provider().pull(this);
+            if (receiverRegistry().isPulling() && providerRegistry().setPulling()) providerRegistry().provider().pull(this);
         } else {
             sendFromBuffer(receiver);
         }
@@ -104,7 +104,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     @Override
     public void subscribeTo(Provider.Sync<PACKET> provider) {
         providerRegistry().add(provider);
-        if (receiverRegistry().isPulling() && !providerRegistry().isPulling()) provider.pull(this);
+        if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
     }
 
 }

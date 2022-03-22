@@ -244,7 +244,7 @@ public abstract class Processor<INPUT, OUTPUT,
         public void pull(Receiver.Sync<PACKET> receiver) {
             assert receiver.equals(receiverRegistry().receiver());
             receiverRegistry().recordPull(receiver);
-            if (ready && !providerRegistry().isPulling()) {
+            if (ready && providerRegistry().setPulling()) {
                 providerRegistry().provider().processor()
                         .execute(actor -> actor.endpointPull(identifier(), providerRegistry().provider()));
             }
@@ -302,13 +302,13 @@ public abstract class Processor<INPUT, OUTPUT,
         public void pull(Identifier.Input<PACKET> receiverId) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), identifier()));
             receiverRegistry().recordPull(receiverId);
-            if (!providerRegistry().isPulling()) providerRegistry().provider().pull(this);
+            if (providerRegistry().setPulling()) providerRegistry().provider().pull(this);
         }
 
         @Override
         public void subscribeTo(Provider.Sync<PACKET> provider) {
             providerRegistry().add(provider);
-            if (receiverRegistry().isPulling() && !providerRegistry().isPulling()) provider.pull(this);
+            if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
         }
 
         public void setReceiver(Identifier.Input<PACKET> receiverEndpointId) {

@@ -68,18 +68,16 @@ public abstract class ProviderRegistry<PROVIDER extends Reactive> {
             this.provider = provider;
         }
 
-        public boolean isPulling() {
-            return isPulling;
-        }
-
-        private void setPulling(boolean pulling) {
-            isPulling = pulling;
+        public boolean setPulling() {
+            boolean wasPulling = isPulling;
+            isPulling = true;
+            return !wasPulling;
         }
 
         @Override
         public void recordReceive(PROVIDER provider) {
             assert this.provider == provider;
-            setPulling(false);
+            isPulling = false;
         }
 
         public PROVIDER provider() {
@@ -109,7 +107,8 @@ public abstract class ProviderRegistry<PROVIDER extends Reactive> {
 
         @Override
         public void recordReceive(PROVIDER provider) {
-            setPulling(provider, false);
+            assert providerPullState.containsKey(provider);
+            providerPullState.put(provider, false);
         }
 
         public boolean isPulling(PROVIDER provider) {
@@ -117,9 +116,11 @@ public abstract class ProviderRegistry<PROVIDER extends Reactive> {
             return providerPullState.get(provider);
         }
 
-        private void setPulling(PROVIDER provider, boolean isPulling) {
+        public boolean setPulling(PROVIDER provider) {
             assert providerPullState.containsKey(provider);
-            providerPullState.put(provider, isPulling);
+            Boolean wasPulling = providerPullState.put(provider, true);
+            assert wasPulling != null;
+            return !wasPulling;
         }
 
         public int size() {
@@ -129,7 +130,7 @@ public abstract class ProviderRegistry<PROVIDER extends Reactive> {
         public Set<PROVIDER> nonPulling() {
             Set<PROVIDER> nonPulling = new HashSet<>();
             providerPullState.keySet().forEach(p -> {
-                if (!isPulling(p)) nonPulling.add(p);
+                if (setPulling(p)) nonPulling.add(p);
             });
             return nonPulling;
         }

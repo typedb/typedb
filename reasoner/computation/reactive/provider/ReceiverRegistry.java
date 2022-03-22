@@ -32,11 +32,6 @@ public abstract class ReceiverRegistry<RECEIVER> {
         private boolean isPulling;
         private RECEIVER receiver;
 
-        public SingleReceiverRegistry(RECEIVER receiver) {
-            this.isPulling = false;
-            addReceiver(receiver);
-        }
-
         public SingleReceiverRegistry() {
             this.receiver = null;
             this.isPulling = false;

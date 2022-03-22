@@ -44,6 +44,6 @@ public class SingleReceiverSingleProviderStream<INPUT, OUTPUT> extends SingleRec
     public void pull(Receiver.Sync<OUTPUT> receiver) {
         assert receiver.equals(receiverRegistry().receiver());
         receiverRegistry().recordPull(receiver);
-        if (!providerRegistry().isPulling()) providerRegistry().provider().pull(this);
+        if (providerRegistry().setPulling()) providerRegistry().provider().pull(this);
     }
 }
