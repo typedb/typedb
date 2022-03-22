@@ -28,7 +28,8 @@ public class ReactiveIdentifier implements Reactive.Identifier {
     private final Class<? extends Reactive> reactiveClass;
     private final long scopedId;
 
-    public ReactiveIdentifier(Actor.Driver<? extends Processor<?, ?, ?, ?>> processor, Class<? extends Reactive> reactiveClass, long scopedId) {
+    public ReactiveIdentifier(Actor.Driver<? extends Processor<?, ?, ?, ?>> processor,
+                              Class<? extends Reactive> reactiveClass, long scopedId) {
         this.processor = processor;
         this.reactiveClass = reactiveClass;
         this.scopedId = scopedId;
@@ -62,6 +63,41 @@ public class ReactiveIdentifier implements Reactive.Identifier {
     @Override
     public Identifier identifier() {
         return this;
+    }
+
+    public static class Input<PACKET> extends ReactiveIdentifier implements Identifier.Input<PACKET> {
+
+        private final Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor;  //TODO: Duplicates field from parent class
+
+        public Input(Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor,
+                     Class<? extends Reactive> reactiveClass, long scopedId) {
+            super(processor, reactiveClass, scopedId);
+            this.processor = processor;
+        }
+
+        @Override
+        public Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor() {
+            return processor;
+        }
+
+        @Override
+        public Identifier identifier() {
+            return this;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            ReactiveIdentifier.Input<?> input = (ReactiveIdentifier.Input<?>) o;
+            return processor.equals(input.processor);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), processor);
+        }
     }
 
     public static class Output<PACKET> extends ReactiveIdentifier implements Reactive.Identifier.Output<PACKET> {
@@ -99,38 +135,4 @@ public class ReactiveIdentifier implements Reactive.Identifier {
         }
     }
 
-    public static class Input<PACKET> extends ReactiveIdentifier implements Identifier.Input<PACKET> {
-
-        private final Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor;  //TODO: Duplicates field from parent class
-
-        public Input(Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor,
-                     Class<? extends Reactive> reactiveClass, long scopedId) {
-            super(processor, reactiveClass, scopedId);
-            this.processor = processor;
-        }
-
-        @Override
-        public Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor() {
-            return processor;
-        }
-
-        @Override
-        public Identifier identifier() {
-            return this;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            if (!super.equals(o)) return false;
-            ReactiveIdentifier.Input<?> input = (ReactiveIdentifier.Input<?>) o;
-            return processor.equals(input.processor);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(super.hashCode(), processor);
-        }
-    }
 }

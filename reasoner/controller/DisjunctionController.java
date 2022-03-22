@@ -53,7 +53,8 @@ public abstract class DisjunctionController<
     private final List<Pair<Conjunction, Driver<NestedConjunctionController>>> conjunctionControllers;
     protected Disjunction disjunction;
 
-    protected DisjunctionController(Driver<CONTROLLER> driver, Disjunction disjunction, ActorExecutorGroup executorService, Registry registry) {
+    protected DisjunctionController(Driver<CONTROLLER> driver, Disjunction disjunction,
+                                    ActorExecutorGroup executorService, Registry registry) {
         super(driver, executorService, registry,
               () -> DisjunctionController.class.getSimpleName() + "(pattern:" + disjunction + ")");
         this.disjunction = disjunction;
@@ -117,7 +118,8 @@ public abstract class DisjunctionController<
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();
-                requestProvider(new DisjunctionController.NestedConjunctionRequest<>(endpoint.identifier(), conjunction, bounds.filter(retrievableConjunctionVars)));
+                requestProvider(new DisjunctionController.NestedConjunctionRequest<>(
+                        endpoint.identifier(), conjunction, bounds.filter(retrievableConjunctionVars)));
             }
             fanIn.finaliseProviders();
         }

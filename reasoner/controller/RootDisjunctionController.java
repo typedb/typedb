@@ -75,8 +75,9 @@ public class RootDisjunctionController
         private EntryPoint reasonerEntryPoint;
 
         protected RootDisjunctionProcessor(Driver<RootDisjunctionProcessor> driver,
-                                           Driver<RootDisjunctionController> controller, Driver<Monitor> monitor, Disjunction disjunction,
-                                           ConceptMap bounds, Set<Identifier.Variable.Retrievable> filter,
+                                           Driver<RootDisjunctionController> controller, Driver<Monitor> monitor,
+                                           Disjunction disjunction, ConceptMap bounds,
+                                           Set<Identifier.Variable.Retrievable> filter,
                                            ReasonerConsumer reasonerConsumer, Supplier<String> debugName) {
             super(driver, controller, monitor, disjunction, bounds, debugName);
             this.filter = filter;
