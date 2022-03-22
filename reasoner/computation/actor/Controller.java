@@ -139,10 +139,6 @@ public abstract class Controller<
 
         public abstract Connection.Builder<PROV_PID, PACKET> getConnectionBuilder(CONTROLLER controller);
 
-        public Driver<? extends Processor<PACKET, ?, ?, ?>> receivingProcessor() {
-            return recEndpointId.processor();
-        }
-
         public PROV_CID providingControllerId() {
             return provControllerId;
         }

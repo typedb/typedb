@@ -91,23 +91,17 @@ public final class Tracer {
     }
 
     public void pull(Reactive.Identifier receiver, Reactive.Identifier identifier) {
+        // TODO
     }
 
-    public synchronized <INPUT, OUTPUT> void receive(Provider provider, Receiver receiver, OUTPUT packet) {
+    public synchronized <OUTPUT> void receive(Provider provider, Receiver receiver, OUTPUT packet) {
         addMessage(provider.identifier().toString(), receiver.identifier().toString(), defaultTrace, EdgeType.RECEIVE, packet.toString());
         addNodeGroup(receiver.identifier().toString(), receiver.identifier().toString(), defaultTrace);
         addNodeGroup(provider.identifier().toString(), provider.identifier().toString(), defaultTrace);
     }
 
-    public synchronized <PACKET> void receive(Processor.OutletEndpoint<PACKET> provider,
-                                              Connection<PACKET> receiver, PACKET packet) {
-        addMessage(provider.identifier().toString(), receiver.identifier().toString(),
-                   defaultTrace, EdgeType.RECEIVE, packet.toString());
-        addNodeGroup(provider.identifier().toString(), provider.identifier().toString(), defaultTrace);
-    }
-
     public <PACKET> void receive(Reactive.Identifier providerId, Processor.InletEndpoint<PACKET> packetInletEndpoint, PACKET packet) {
-
+        // TODO
     }
 
     public void registerRoot(Reactive.Identifier root, Actor.Driver<Monitor> monitor) {

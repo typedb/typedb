@@ -103,12 +103,12 @@ public abstract class Processor<INPUT, OUTPUT,
     protected void acceptConnection(Connection.Builder<?, OUTPUT> connectionBuilder) {
         assert !done;
         OutletEndpoint<OUTPUT> provider = createProvidingEndpoint();
-        Connection<OUTPUT> connection = connectionBuilder.build(driver(), provider.identifier());
+        Connection<OUTPUT> connection = connectionBuilder.build(provider.identifier());
         provider.setReceiver(connection.receiverEndpointId());
         applyConnectionTransforms(connection.transformations(), outlet(), provider);
-        monitor().execute(actor -> actor.registerPath(connection.identifier(), outlet().identifier()));
+//        monitor().execute(actor -> actor.registerPath(connection.identifier(), outlet().identifier()));  // TODO: Review whether this is necessary now. Should be taken care of automatically
         if (isTerminated()) return;
-        connectionBuilder.receivingProcessor().execute(actor -> actor.finaliseConnection(connection));  // TODO: don't share a connection between two actors. split into a connection receiver and provider instead
+        connectionBuilder.receiverEndpointId().processor().execute(actor -> actor.finaliseConnection(connection));
     }
 
     public void applyConnectionTransforms(List<Function<OUTPUT, OUTPUT>> transformations,

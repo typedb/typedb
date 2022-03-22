@@ -25,26 +25,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public class Connection<PACKET> implements Reactive.Provider, Reactive.Receiver {
+public class Connection<PACKET> {
 
     private final Reactive.Identifier.Input<PACKET> recEndpointId;
     private final Reactive.Identifier.Output<PACKET> provEndpointId;
     private final List<Function<PACKET, PACKET>> transforms;
 
-    /**
-     * Connects a processor outlet (upstream, publishing) to another processor's inlet (downstream, subscribing)
-     */
-    Connection(Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> recProcessor,
-               Actor.Driver<? extends Processor<?, PACKET, ?, ?>> provProcessor,
-               Identifier.Input<PACKET> recEndpointId, Reactive.Identifier.Output<PACKET> provEndpointId, List<Function<PACKET, PACKET>> transforms) {
+    Connection(Reactive.Identifier.Input<PACKET> recEndpointId, Reactive.Identifier.Output<PACKET> provEndpointId, List<Function<PACKET, PACKET>> transforms) {
         this.recEndpointId = recEndpointId;
         this.provEndpointId = provEndpointId;
         this.transforms = transforms;
-    }
-
-    @Override
-    public Connection.Identifier identifier() {
-        return null;
     }
 
     protected Reactive.Identifier.Input<PACKET> receiverEndpointId() {
@@ -62,26 +52,22 @@ public class Connection<PACKET> implements Reactive.Provider, Reactive.Receiver 
     public static class Builder<PROV_PID, PACKET> {
 
         private final Actor.Driver<? extends Controller<PROV_PID, ?, PACKET, ?, ?>> provController;
-        private final Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> recProcessor;
-        private final Identifier.Input<PACKET> recEndpointId;
+        private final Reactive.Identifier.Input<PACKET> recEndpointId;
         private final List<Function<PACKET, PACKET>> connectionTransforms;
         private final PROV_PID provProcessorId;
 
         public Builder(Actor.Driver<? extends Controller<PROV_PID, ?, PACKET, ?, ?>> provController,
                        Controller.ProviderRequest<?, PROV_PID, PACKET, ? extends Processor<PACKET, ?, ?, ?>, ?> providerRequest) {
             this.provController = provController;
-            this.recProcessor = providerRequest.receivingProcessor();
             this.recEndpointId = providerRequest.receivingEndpointId();
             this.connectionTransforms = providerRequest.connectionTransforms();
             this.provProcessorId = providerRequest.providingProcessorId();
         }
 
         public Builder(Actor.Driver<? extends Controller<PROV_PID, ?, PACKET, ?, ?>> provController,
-                       Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> recProcessor,
-                       Identifier.Input<PACKET> recEndpointId,
+                       Reactive.Identifier.Input<PACKET> recEndpointId,
                        List<Function<PACKET, PACKET>> connectionTransforms, PROV_PID provProcessorId) {
             this.provController = provController;
-            this.recProcessor = recProcessor;
             this.recEndpointId = recEndpointId;
             this.connectionTransforms = connectionTransforms;
             this.provProcessorId = provProcessorId;
@@ -95,22 +81,22 @@ public class Connection<PACKET> implements Reactive.Provider, Reactive.Receiver 
             return provProcessorId;
         }
 
-        public Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> receivingProcessor() {
-            return recProcessor;
+        public Reactive.Identifier.Input<PACKET> receiverEndpointId() {
+            return recEndpointId;
         }
 
         public Builder<PROV_PID, PACKET> withMap(Function<PACKET, PACKET> function) {
             ArrayList<Function<PACKET, PACKET>> newTransforms = new ArrayList<>(connectionTransforms);
             newTransforms.add(function);
-            return new Builder<>(provController, recProcessor, recEndpointId, newTransforms, provProcessorId);
+            return new Builder<>(provController, recEndpointId, newTransforms, provProcessorId);
         }
 
         public Builder<PROV_PID, PACKET> withNewProcessorId(PROV_PID newPID) {
-            return new Builder<>(provController, recProcessor, recEndpointId, connectionTransforms, newPID);
+            return new Builder<>(provController, recEndpointId, connectionTransforms, newPID);
         }
 
-        public Connection<PACKET> build(Actor.Driver<? extends Processor<?, PACKET, ?, ?>> pubProcessor, Identifier.Output<PACKET> pubEndpointId) {
-            return new Connection<>(recProcessor, pubProcessor, recEndpointId, pubEndpointId, connectionTransforms);
+        public Connection<PACKET> build(Reactive.Identifier.Output<PACKET> pubEndpointId) {
+            return new Connection<>(recEndpointId, pubEndpointId, connectionTransforms);
         }
     }
 }
