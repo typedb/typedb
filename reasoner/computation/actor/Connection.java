@@ -82,7 +82,7 @@ public class Connection<PACKET> {
             return providerProcessorId;
         }
 
-        public Reactive.Identifier.Input<PACKET> receiverEndpointId() {
+        public Reactive.Identifier.Input<PACKET> receiverInputId() {
             return receicerInputId;
         }
 

@@ -37,7 +37,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     final Map<Receiver, Integer> bufferPositions;  // Points to the next item needed
     final Set<PACKET> bufferSet;
     final List<PACKET> bufferList;
-    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry;
+    private final ProviderRegistry.Single<Provider.Sync<PACKET>> providerRegistry;
     private final ReceiverRegistry.MultiReceiverRegistry<Receiver.Sync<PACKET>> receiverRegistry;
 
     public FanOutStream(Processor<?, ?, ?, ?> processor) {
@@ -45,7 +45,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         this.bufferSet = new HashSet<>();
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
+        this.providerRegistry = new ProviderRegistry.Single<>(this, processor);
         this.receiverRegistry = new ReceiverRegistry.MultiReceiverRegistry<>();
     }
 
@@ -54,7 +54,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         return receiverRegistry;
     }
 
-    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<PACKET>> providerRegistry() {
+    protected ProviderRegistry.Single<Provider.Sync<PACKET>> providerRegistry() {
         return providerRegistry;
     }
 

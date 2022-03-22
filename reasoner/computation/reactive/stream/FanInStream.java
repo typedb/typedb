@@ -23,15 +23,15 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRe
 
 public class FanInStream<PACKET> extends SingleReceiverMultiProviderStream<PACKET, PACKET> {
 
-    private final ProviderRegistry.MultiProviderRegistry<Provider.Sync<PACKET>> providerRegistry;
+    private final ProviderRegistry.Multi<Provider.Sync<PACKET>> providerRegistry;
 
     protected FanInStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
-        this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this, processor);
+        this.providerRegistry = new ProviderRegistry.Multi<>(this, processor);
     }
 
     @Override
-    protected ProviderRegistry.MultiProviderRegistry<Provider.Sync<PACKET>> providerRegistry() {
+    protected ProviderRegistry.Multi<Provider.Sync<PACKET>> providerRegistry() {
         return providerRegistry;
     }
 

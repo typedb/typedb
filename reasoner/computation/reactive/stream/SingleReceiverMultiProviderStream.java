@@ -23,15 +23,15 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRe
 
 public class SingleReceiverMultiProviderStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT> {
 
-    private final ProviderRegistry.MultiProviderRegistry<Provider.Sync<INPUT>> providerRegistry;
+    private final ProviderRegistry.Multi<Provider.Sync<INPUT>> providerRegistry;
 
     protected SingleReceiverMultiProviderStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
-        this.providerRegistry = new ProviderRegistry.MultiProviderRegistry<>(this, processor);
+        this.providerRegistry = new ProviderRegistry.Multi<>(this, processor);
     }
 
     @Override
-    protected ProviderRegistry.MultiProviderRegistry<Provider.Sync<INPUT>> providerRegistry() {
+    protected ProviderRegistry.Multi<Provider.Sync<INPUT>> providerRegistry() {
         return providerRegistry;
     }
 

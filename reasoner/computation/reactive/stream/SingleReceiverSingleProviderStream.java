@@ -23,20 +23,20 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRe
 
 public class SingleReceiverSingleProviderStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT> {
 
-    private final ProviderRegistry.SingleProviderRegistry<Provider.Sync<INPUT>> providerRegistry;
+    private final ProviderRegistry.Single<Provider.Sync<INPUT>> providerRegistry;
 
     protected SingleReceiverSingleProviderStream(Provider.Sync<INPUT> provider, Processor<?, ?, ?, ?> processor) {
         super(processor);
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(provider, this, processor);
+        this.providerRegistry = new ProviderRegistry.Single<>(provider, this, processor);
     }
 
     protected SingleReceiverSingleProviderStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
-        this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
+        this.providerRegistry = new ProviderRegistry.Single<>(this, processor);
     }
 
     @Override
-    protected ProviderRegistry.SingleProviderRegistry<Provider.Sync<INPUT>> providerRegistry() {
+    protected ProviderRegistry.Single<Provider.Sync<INPUT>> providerRegistry() {
         return providerRegistry;
     }
 

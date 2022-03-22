@@ -38,20 +38,20 @@ public abstract class ProviderRegistry<PROVIDER extends Reactive> {
 
     public abstract void recordReceive(PROVIDER provider);
 
-    public static class SingleProviderRegistry<PROVIDER extends Reactive> extends ProviderRegistry<PROVIDER> {
+    public static class Single<PROVIDER extends Reactive> extends ProviderRegistry<PROVIDER> {
 
         private final Reactive.Receiver receiver;
         private PROVIDER provider;
         private boolean isPulling;
 
-        public SingleProviderRegistry(PROVIDER provider, Reactive.Receiver receiver, Processor<?, ?, ?, ?> processor) {
+        public Single(PROVIDER provider, Reactive.Receiver receiver, Processor<?, ?, ?, ?> processor) {
             super(processor);
             this.receiver = receiver;
             this.isPulling = false;
             add(provider);
         }
 
-        public SingleProviderRegistry(Reactive.Receiver receiver, Processor<?, ?, ?, ?> processor) {
+        public Single(Reactive.Receiver receiver, Processor<?, ?, ?, ?> processor) {
             super(processor);
             this.receiver = receiver;
             this.provider = null;
@@ -86,12 +86,12 @@ public abstract class ProviderRegistry<PROVIDER extends Reactive> {
 
     }
 
-    public static class MultiProviderRegistry<PROVIDER extends Reactive> extends ProviderRegistry<PROVIDER> {
+    public static class Multi<PROVIDER extends Reactive> extends ProviderRegistry<PROVIDER> {
 
         private final Map<PROVIDER, Boolean> providerPullState;
         private final Reactive.Receiver.Sync<?> receiver;
 
-        public MultiProviderRegistry(Reactive.Receiver.Sync<?> receiver, Processor<?, ?, ?, ?> processor) {
+        public Multi(Reactive.Receiver.Sync<?> receiver, Processor<?, ?, ?, ?> processor) {
             super(processor);
             this.receiver = receiver;
             this.providerPullState = new HashMap<>();

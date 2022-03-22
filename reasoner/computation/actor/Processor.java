@@ -32,10 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -53,8 +51,6 @@ public abstract class Processor<INPUT, OUTPUT,
     private final Map<Reactive.Identifier, InletEndpoint<INPUT>> receivingEndpoints;
     private final Map<Reactive.Identifier, OutletEndpoint<OUTPUT>> providingEndpoints;
     private final Driver<Monitor> monitor;
-    private final Map<Reactive.Identifier, Reactive> reactives;  // TODO: Ever required?
-    protected final Set<Connection<INPUT>> upstreamConnections;
     private Reactive.Stream<OUTPUT,OUTPUT> outlet;
     private boolean terminated;
     protected boolean done;
@@ -66,10 +62,8 @@ public abstract class Processor<INPUT, OUTPUT,
         this.controller = controller;
         this.receivingEndpoints = new HashMap<>();
         this.providingEndpoints = new HashMap<>();
-        this.upstreamConnections = new HashSet<>();
         this.done = false;
         this.monitor = monitor;
-        this.reactives = new HashMap<>();
         this.reactiveCounter = 0;
     }
 
@@ -107,9 +101,8 @@ public abstract class Processor<INPUT, OUTPUT,
         Connection<OUTPUT> connection = connectionBuilder.build(provider.identifier());
         provider.setReceiver(connection.receiverEndpointId());
         applyConnectionTransforms(connection.transformations(), outlet(), provider);
-//        monitor().execute(actor -> actor.registerPath(connection.identifier(), outlet().identifier()));  // TODO: Review whether this is necessary now. Should be taken care of automatically
         if (isTerminated()) return;
-        connectionBuilder.receiverEndpointId().processor().execute(actor -> actor.finaliseConnection(connection));
+        connectionBuilder.receiverInputId().processor().execute(actor -> actor.finaliseConnection(connection));
     }
 
     public void applyConnectionTransforms(List<Function<OUTPUT, OUTPUT>> transformations,
@@ -124,7 +117,6 @@ public abstract class Processor<INPUT, OUTPUT,
         InletEndpoint<INPUT> inlet = receivingEndpoints.get(connection.receiverEndpointId());
         inlet.setReady(connection);
         inlet.onReady();
-        upstreamConnections.add(connection);
     }
 
     protected OutletEndpoint<OUTPUT> createProvidingEndpoint() {
@@ -186,23 +178,17 @@ public abstract class Processor<INPUT, OUTPUT,
 
     public Reactive.Identifier registerReactive(Reactive reactive) {
         reactiveCounter += 1;
-        Reactive.Identifier identifier = new ReactiveIdentifier(driver(), reactive.getClass(), reactiveCounter);
-        reactives.put(identifier, reactive);
-        return identifier;
+        return new ReactiveIdentifier(driver(), reactive.getClass(), reactiveCounter);
     }
 
     public Reactive.Identifier.Output<OUTPUT> registerOutlet(Reactive reactive) {
         reactiveCounter += 1;
-        Reactive.Identifier.Output<OUTPUT> identifier = new ReactiveIdentifier.Output<>(driver(), reactive.getClass(), reactiveCounter);
-        reactives.put(identifier, reactive);
-        return identifier;
+        return new ReactiveIdentifier.Output<>(driver(), reactive.getClass(), reactiveCounter);
     }
 
     public Reactive.Identifier.Input<INPUT> registerInlet(Reactive reactive) {
         reactiveCounter += 1;
-        Reactive.Identifier.Input<INPUT> identifier = new ReactiveIdentifier.Input<>(driver(), reactive.getClass(), reactiveCounter);
-        reactives.put(identifier, reactive);
-        return identifier;
+        return new ReactiveIdentifier.Input<>(driver(), reactive.getClass(), reactiveCounter);
     }
 
     /**
@@ -210,18 +196,18 @@ public abstract class Processor<INPUT, OUTPUT,
      */
     public static class InletEndpoint<PACKET> extends SingleReceiverPublisher<PACKET> implements Reactive.Receiver.Async<PACKET> {
 
-        private final ProviderRegistry.SingleProviderRegistry<Reactive.Identifier.Output<PACKET>> providerRegistry;
+        private final ProviderRegistry.Single<Identifier.Output<PACKET>> providerRegistry;
         private final Identifier.Input<PACKET> identifier;
         private boolean ready;
 
         public InletEndpoint(Processor<PACKET, ?, ?, ?> processor) {
             super(processor);
             this.ready = false;
-            this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
+            this.providerRegistry = new ProviderRegistry.Single<>(this, processor);
             this.identifier = processor.registerInlet(this);
         }
 
-        private ProviderRegistry.SingleProviderRegistry<Reactive.Identifier.Output<PACKET>> providerRegistry() {
+        private ProviderRegistry.Single<Identifier.Output<PACKET>> providerRegistry() {
             return providerRegistry;
         }
 
@@ -266,14 +252,12 @@ public abstract class Processor<INPUT, OUTPUT,
     public static class OutletEndpoint<PACKET> implements Subscriber<PACKET>, Provider.Async<PACKET> {
 
         private final Reactive.Identifier.Output<PACKET> identifier;
-        private final Processor<?, PACKET, ?, ?> processor;
-        private final ProviderRegistry.SingleProviderRegistry<Reactive.Provider.Sync<PACKET>> providerRegistry;
+        private final ProviderRegistry.Single<Provider.Sync<PACKET>> providerRegistry;
         private final ReceiverRegistry.SingleReceiverRegistry<Reactive.Identifier.Input<PACKET>> receiverRegistry;
 
         public OutletEndpoint(Processor<?, PACKET, ?, ?> processor) {
-            this.processor = processor;
-            this.identifier = this.processor.registerOutlet(this);
-            this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
+            this.identifier = processor.registerOutlet(this);
+            this.providerRegistry = new ProviderRegistry.Single<>(this, processor);
             this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>();
         }
 
@@ -282,7 +266,7 @@ public abstract class Processor<INPUT, OUTPUT,
             return identifier;
         }
 
-        private ProviderRegistry.SingleProviderRegistry<Reactive.Provider.Sync<PACKET>> providerRegistry() {
+        private ProviderRegistry.Single<Provider.Sync<PACKET>> providerRegistry() {
             return providerRegistry;
         }
 
@@ -295,7 +279,8 @@ public abstract class Processor<INPUT, OUTPUT,
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
             providerRegistry().recordReceive(provider);
             receiverRegistry().setNotPulling();
-            receiverRegistry().receiver().processor().execute(actor -> actor.endpointReceive(identifier(), packet, receiverRegistry().receiver()));
+            receiverRegistry().receiver().processor()
+                    .execute(actor -> actor.endpointReceive(identifier(), packet, receiverRegistry().receiver()));
         }
 
         @Override

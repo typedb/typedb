@@ -160,7 +160,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         private class ConclusionReactive extends SingleReceiverSingleProviderStream<ConceptMap, Map<Variable, Concept>> {
 
-            private ProviderRegistry.MultiProviderRegistry<Provider.Sync<Map<Variable, Concept>>> materialisationRegistry;
+            private ProviderRegistry.Multi<Provider.Sync<Map<Variable, Concept>>> materialisationRegistry;
 
             protected ConclusionReactive(Processor<?, ?, ?, ?> processor) {
                 super(processor);
@@ -171,10 +171,10 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             public void publishTo(Subscriber<Map<Variable, Concept>> subscriber) {
                 super.publishTo(subscriber);
                 // We need to wait until the receiver has been given before we can create the materialisation registry
-                this.materialisationRegistry = new ProviderRegistry.MultiProviderRegistry<>(receiverRegistry().receiver(), processor());
+                this.materialisationRegistry = new ProviderRegistry.Multi<>(receiverRegistry().receiver(), processor());
             }
 
-            protected ProviderRegistry.MultiProviderRegistry<Provider.Sync<Map<Variable, Concept>>> materialisationRegistry() {
+            protected ProviderRegistry.Multi<Provider.Sync<Map<Variable, Concept>>> materialisationRegistry() {
                 return materialisationRegistry;
             }
 
