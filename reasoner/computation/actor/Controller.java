@@ -69,13 +69,13 @@ public abstract class Controller<
 
     public <PROV_CID, PROV_PID, REQ extends ProviderRequest<PROV_CID, PROV_PID, INPUT, CONTROLLER>> void findProviderForRequest(REQ req) {
         if (isTerminated()) return;
-        Connection.Builder<PROV_PID, INPUT> builder = req.getConnectionBuilder(getThis());
+        ConnectionBuilder<PROV_PID, INPUT> builder = req.getConnectionBuilder(getThis());
         builder.providerController().execute(actor -> actor.sendConnectionBuilder(builder));
     }
 
     public abstract CONTROLLER getThis();  // We need this because the processor can't access the controller actor from the driver when building a request
 
-    public void sendConnectionBuilder(Connection.Builder<PROC_ID, OUTPUT> connectionBuilder) {
+    public void sendConnectionBuilder(ConnectionBuilder<PROC_ID, OUTPUT> connectionBuilder) {
         if (isTerminated()) return;
         createProcessorIfAbsent(connectionBuilder.providerProcessorId())
                 .execute(actor -> actor.acceptConnection(connectionBuilder));
@@ -134,7 +134,7 @@ public abstract class Controller<
             this.connectionTransforms = new ArrayList<>();
         }
 
-        public abstract Connection.Builder<PROV_PID, PACKET> getConnectionBuilder(CONTROLLER controller);
+        public abstract ConnectionBuilder<PROV_PID, PACKET> getConnectionBuilder(CONTROLLER controller);
 
         public PROV_CID providerControllerId() {
             return providerControllerId;

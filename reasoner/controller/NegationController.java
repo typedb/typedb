@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
+import com.vaticle.typedb.core.reasoner.computation.actor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -79,8 +79,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         }
 
         @Override
-        public Connection.Builder<ConceptMap, ConceptMap> getConnectionBuilder(NegationController controller) {
-            return new Connection.Builder<>(controller.disjunctionContoller(), this);
+        public ConnectionBuilder<ConceptMap, ConceptMap> getConnectionBuilder(NegationController controller) {
+            return new ConnectionBuilder<>(controller.disjunctionContoller(), this);
         }
     }
 

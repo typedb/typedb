@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.answer.Mapping;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
+import com.vaticle.typedb.core.reasoner.computation.actor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -135,10 +135,10 @@ public abstract class ConjunctionController<OUTPUT,
         }
 
         @Override
-        public Connection.Builder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
+        public ConnectionBuilder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
             ResolverView.FilteredRetrievable controllerView = controller.retrievableProvider(providerControllerId());
             ConceptMap newPID = providerProcessorId().filter(controllerView.filter());
-            return new Connection.Builder<>(controllerView.controller(), this)
+            return new ConnectionBuilder<>(controllerView.controller(), this)
                     .withMap(c -> merge(c, providerProcessorId()))
                     .withNewProcessorId(newPID);
         }
@@ -153,11 +153,11 @@ public abstract class ConjunctionController<OUTPUT,
         }
 
         @Override
-        public Connection.Builder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
+        public ConnectionBuilder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
             ResolverView.MappedConcludable controllerView = controller.concludableProvider(providerControllerId());
             Mapping mapping = Mapping.of(controllerView.mapping());
             ConceptMap newPID = mapping.transform(providerProcessorId());
-            return new Connection.Builder<>(controllerView.controller(), this)
+            return new ConnectionBuilder<>(controllerView.controller(), this)
                     .withMap(mapping::unTransform)
                     .withNewProcessorId(newPID);
         }
@@ -173,10 +173,10 @@ public abstract class ConjunctionController<OUTPUT,
         }
 
         @Override
-        public Connection.Builder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
+        public ConnectionBuilder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
             ResolverView.FilteredNegation controllerView = controller.negationProvider(providerControllerId());
             ConceptMap newPID = providerProcessorId().filter(controllerView.filter());
-            return new Connection.Builder<>(controllerView.controller(), this)
+            return new ConnectionBuilder<>(controllerView.controller(), this)
                     .withMap(c -> merge(c, providerProcessorId()))
                     .withNewProcessorId(newPID);
         }

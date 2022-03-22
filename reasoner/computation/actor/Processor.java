@@ -95,14 +95,14 @@ public abstract class Processor<INPUT, OUTPUT,
         controller.execute(actor -> actor.findProviderForRequest(req));
     }
 
-    protected void acceptConnection(Connection.Builder<?, OUTPUT> connectionBuilder) {
+    protected void acceptConnection(ConnectionBuilder<?, OUTPUT> connectionBuilder) {
         assert !done;
         OutletEndpoint<OUTPUT> provider = createProvidingEndpoint();
-        Connection<OUTPUT> connection = connectionBuilder.build(provider.identifier());
-        provider.setReceiver(connection.receiverEndpointId());
-        applyConnectionTransforms(connection.transformations(), outlet(), provider);
+        provider.setReceiver(connectionBuilder.receiverInputId());
+        applyConnectionTransforms(connectionBuilder.connectionTransforms(), outlet(), provider);
         if (isTerminated()) return;
-        connectionBuilder.receiverInputId().processor().execute(actor -> actor.finaliseConnection(connection));
+        connectionBuilder.receiverInputId().processor()
+                .execute(actor -> actor.finaliseConnection(connectionBuilder.receiverInputId(), provider.identifier()));
     }
 
     public void applyConnectionTransforms(List<Function<OUTPUT, OUTPUT>> transformations,
@@ -112,10 +112,10 @@ public abstract class Processor<INPUT, OUTPUT,
         op.publishTo(upstreamEndpoint);
     }
 
-    protected void finaliseConnection(Connection<INPUT> connection) {
+    protected void finaliseConnection(Reactive.Identifier.Input<INPUT> receiverInputId, Reactive.Identifier.Output<INPUT> providerOutputId) {
         assert !done;
-        InletEndpoint<INPUT> inlet = receivingEndpoints.get(connection.receiverEndpointId());
-        inlet.setReady(connection);
+        InletEndpoint<INPUT> inlet = receivingEndpoints.get(receiverInputId);
+        inlet.setReady(providerOutputId);
         inlet.onReady();
     }
 
@@ -216,8 +216,8 @@ public abstract class Processor<INPUT, OUTPUT,
             return identifier;
         }
 
-        void setReady(Connection<PACKET> connection) {
-            providerRegistry().add(connection.providerEndpointId());
+        void setReady(Reactive.Identifier.Output<PACKET> providerOutputId) {
+            providerRegistry().add(providerOutputId);
             assert !ready;
             this.ready = true;
         }

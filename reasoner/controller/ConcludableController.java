@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
+import com.vaticle.typedb.core.reasoner.computation.actor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -120,8 +120,8 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         }
 
         @Override
-        public Connection.Builder<ConceptMap, Map<Variable, Concept>> getConnectionBuilder(ConcludableController controller) {
-            return new Connection.Builder<>(controller.conclusionProvider(providerControllerId()), this);
+        public ConnectionBuilder<ConceptMap, Map<Variable, Concept>> getConnectionBuilder(ConcludableController controller) {
+            return new ConnectionBuilder<>(controller.conclusionProvider(providerControllerId()), this);
         }
     }
 

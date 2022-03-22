@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
+import com.vaticle.typedb.core.reasoner.computation.actor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -85,8 +85,8 @@ public abstract class DisjunctionController<
         }
 
         @Override
-        public Connection.Builder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
-            return new Connection.Builder<>(controller.conjunctionProvider(providerControllerId()), this)
+        public ConnectionBuilder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
+            return new ConnectionBuilder<>(controller.conjunctionProvider(providerControllerId()), this)
                     .withMap(c -> merge(c, providerProcessorId()));
         }
     }

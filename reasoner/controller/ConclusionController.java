@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connection;
+import com.vaticle.typedb.core.reasoner.computation.actor.ConnectionBuilder;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -93,8 +93,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         }
 
         @Override
-        public Connection.Builder<ConceptMap, Either<ConceptMap, Materialisation>> getConnectionBuilder(ConclusionController controller) {
-            return new Connection.Builder<>(controller.conditionController(), this);
+        public ConnectionBuilder<ConceptMap, Either<ConceptMap, Materialisation>> getConnectionBuilder(ConclusionController controller) {
+            return new ConnectionBuilder<>(controller.conditionController(), this);
         }
 
     }
@@ -107,8 +107,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         }
 
         @Override
-        public Connection.Builder<Materialisable, Either<ConceptMap, Materialisation>> getConnectionBuilder(ConclusionController controller) {
-            return new Connection.Builder<>(controller.materialisationController(), this);
+        public ConnectionBuilder<Materialisable, Either<ConceptMap, Materialisation>> getConnectionBuilder(ConclusionController controller) {
+            return new ConnectionBuilder<>(controller.materialisationController(), this);
         }
 
     }
