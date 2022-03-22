@@ -22,6 +22,7 @@ import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
@@ -481,11 +482,13 @@ public class CoreDatabase implements TypeDB.Database {
             commitStates.put(transaction, CommitState.UNCOMMITTED);
         }
 
-        Set<CoreTransaction.Data> validateOverlappingAndStartCommit(CoreTransaction.Data txn) {
+        Set<CoreTransaction.Data> validateOverlappingAndStartCommit(CoreTransaction.Data txn) throws TypeDBCheckedException {
             Set<CoreTransaction.Data> transactions;
             synchronized (this) {
                 transactions = commitMayConflict(txn);
-                transactions.forEach(other -> validateIsolation(txn, other));
+                for (CoreTransaction.Data other : transactions) {
+                    validateIsolation(txn, other);
+                }
                 commitStates.put(txn, CommitState.COMMITTING);
             }
             return transactions;
@@ -500,13 +503,13 @@ public class CoreDatabase implements TypeDB.Database {
                     .toSet();
         }
 
-        private void validateIsolation(CoreTransaction.Data txn, CoreTransaction.Data mayConflict) {
+        private void validateIsolation(CoreTransaction.Data txn, CoreTransaction.Data mayConflict) throws TypeDBCheckedException {
             if (txn.dataStorage.modifyDeleteConflict(mayConflict.dataStorage)) {
-                throw TypeDBException.of(TRANSACTION_ISOLATION_MODIFY_DELETE_VIOLATION);
+                throw TypeDBCheckedException.of(TRANSACTION_ISOLATION_MODIFY_DELETE_VIOLATION);
             } else if (txn.dataStorage.deleteModifyConflict(mayConflict.dataStorage)) {
-                throw TypeDBException.of(TRANSACTION_ISOLATION_DELETE_MODIFY_VIOLATION);
+                throw TypeDBCheckedException.of(TRANSACTION_ISOLATION_DELETE_MODIFY_VIOLATION);
             } else if (txn.dataStorage.exclusiveCreateConflict(mayConflict.dataStorage)) {
-                throw TypeDBException.of(TRANSACTION_ISOLATION_EXCLUSIVE_CREATE_VIOLATION);
+                throw TypeDBCheckedException.of(TRANSACTION_ISOLATION_EXCLUSIVE_CREATE_VIOLATION);
             }
         }
 
