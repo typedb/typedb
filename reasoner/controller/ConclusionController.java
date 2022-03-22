@@ -85,7 +85,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         return conditionController;
     }
 
-    protected static class ConditionRequest extends ProviderRequest<Rule.Condition, ConceptMap, ConditionController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController, ConditionRequest> {
+    protected static class ConditionRequest extends ProviderRequest<Rule.Condition, ConceptMap, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController> {
 
         public ConditionRequest(Reactive.Identifier.Input<Either<ConceptMap, Materialisation>> recEndpointId,
                                 Rule.Condition provControllerId, ConceptMap provProcessorId) {
@@ -93,13 +93,13 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         }
 
         @Override
-        public Connection.Builder<ConceptMap, Either<ConceptMap, Materialisation>, ConditionRequest, ConclusionProcessor, ?> getConnectionBuilder(ConclusionController controller) {
+        public Connection.Builder<ConceptMap, Either<ConceptMap, Materialisation>> getConnectionBuilder(ConclusionController controller) {
             return new Connection.Builder<>(controller.conditionController(), this);
         }
 
     }
 
-    protected static class MaterialiserRequest extends ProviderRequest<Void, Materialisable, MaterialisationController, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController, MaterialiserRequest> {
+    protected static class MaterialiserRequest extends ProviderRequest<Void, Materialisable, Either<ConceptMap, Materialisation>, ConclusionProcessor, ConclusionController> {
 
         public MaterialiserRequest(Reactive.Identifier.Input<Either<ConceptMap, Materialisation>> recEndpointId,
                                    Void provControllerId, Materialisable provProcessorId) {
@@ -107,7 +107,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         }
 
         @Override
-        public Connection.Builder<Materialisable, Either<ConceptMap, Materialisation>, MaterialiserRequest, ConclusionProcessor, ?> getConnectionBuilder(ConclusionController controller) {
+        public Connection.Builder<Materialisable, Either<ConceptMap, Materialisation>> getConnectionBuilder(ConclusionController controller) {
             return new Connection.Builder<>(controller.materialisationController(), this);
         }
 

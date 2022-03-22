@@ -112,8 +112,8 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         return this;
     }
 
-    protected static class ConclusionRequest extends ProviderRequest<Conclusion, ConceptMap, ConclusionController,
-            Map<Variable, Concept>, ConcludableProcessor, ConcludableController, ConclusionRequest> {
+    protected static class ConclusionRequest extends ProviderRequest<Conclusion, ConceptMap,
+            Map<Variable, Concept>, ConcludableProcessor, ConcludableController> {
 
         public ConclusionRequest(Reactive.Identifier.Input<Map<Variable, Concept>> recEndpointId,
                                  Conclusion provControllerId, ConceptMap provProcessorId) {
@@ -121,7 +121,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         }
 
         @Override
-        public Connection.Builder<ConceptMap, Map<Variable, Concept>, ConclusionRequest, ConcludableProcessor, ?> getConnectionBuilder(ConcludableController controller) {
+        public Connection.Builder<ConceptMap, Map<Variable, Concept>> getConnectionBuilder(ConcludableController controller) {
             return new Connection.Builder<>(controller.conclusionProvider(providingControllerId()), this);
         }
     }

@@ -100,7 +100,7 @@ public final class Tracer {
     }
 
     public synchronized <PACKET> void receive(Processor.OutletEndpoint<PACKET> provider,
-                                              Connection<PACKET, ?, ?> receiver, PACKET packet) {
+                                              Connection<PACKET> receiver, PACKET packet) {
         addMessage(provider.identifier().toString(), receiver.identifier().toString(),
                    defaultTrace, EdgeType.RECEIVE, packet.toString());
         addNodeGroup(provider.identifier().toString(), provider.identifier().toString(), defaultTrace);

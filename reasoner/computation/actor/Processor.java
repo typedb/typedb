@@ -54,7 +54,7 @@ public abstract class Processor<INPUT, OUTPUT,
     private final Map<Reactive.Identifier, OutletEndpoint<OUTPUT>> providingEndpoints;
     private final Driver<Monitor> monitor;
     private final Map<Reactive.Identifier, Reactive> reactives;  // TODO: Ever required?
-    protected final Set<Connection<INPUT, ?, ?>> upstreamConnections;
+    protected final Set<Connection<INPUT>> upstreamConnections;
     private Reactive.Stream<OUTPUT,OUTPUT> outlet;
     private long endpointId;
     private boolean terminated;
@@ -94,18 +94,18 @@ public abstract class Processor<INPUT, OUTPUT,
         return outlet;
     }
 
-    protected <PROV_CID, PROV_PID,
-            REQ extends Controller.ProviderRequest<PROV_CID, PROV_PID, PROV_C, INPUT, PROCESSOR, CONTROLLER, REQ>,
-            PROV_C extends Controller<PROV_PID, ?, INPUT, ?, PROV_C>> void requestProvider(REQ req) {
+    protected <PROV_CID, PROV_PID, REQ extends Controller.ProviderRequest<PROV_CID, PROV_PID, INPUT, PROCESSOR, CONTROLLER>> void requestProvider(REQ req) {
         assert !done;
         if (isTerminated()) return;
         controller.execute(actor -> actor.findProviderForRequest(req));
     }
 
-    protected void acceptConnection(Connection.Builder<?, OUTPUT, ?, ?, ?> connectionBuilder) {
+    protected void acceptConnection(Connection.Builder<?, OUTPUT> connectionBuilder) {
         assert !done;
-        Connection<OUTPUT, ?, PROCESSOR> connection = connectionBuilder.build(driver(), nextEndpointId());
-        applyConnectionTransforms(connection.transformations(), outlet(), createProvidingEndpoint(connection));
+        OutletEndpoint<OUTPUT> provider = createProvidingEndpoint();
+        Connection<OUTPUT> connection = connectionBuilder.build(driver(), provider.identifier());
+        provider.setReceiver(connection.receiverEndpointId());
+        applyConnectionTransforms(connection.transformations(), outlet(), provider);
         monitor().execute(actor -> actor.registerPath(connection.identifier(), outlet().identifier()));
         if (isTerminated()) return;
         connectionBuilder.receivingProcessor().execute(actor -> actor.finaliseConnection(connection));  // TODO: don't share a connection between two actors. split into a connection receiver and provider instead
@@ -118,7 +118,7 @@ public abstract class Processor<INPUT, OUTPUT,
         op.publishTo(upstreamEndpoint);
     }
 
-    protected <PROV_PROCESSOR extends Processor<?, INPUT, ?, PROV_PROCESSOR>> void finaliseConnection(Connection<INPUT, ?, PROV_PROCESSOR> connection) {
+    protected void finaliseConnection(Connection<INPUT> connection) {
         assert !done;
         InletEndpoint<INPUT> inlet = receivingEndpoints.get(connection.receiverEndpointId());
         inlet.setReady(connection);
@@ -131,16 +131,16 @@ public abstract class Processor<INPUT, OUTPUT,
         return endpointId;
     }
 
-    protected OutletEndpoint<OUTPUT> createProvidingEndpoint(Connection<OUTPUT, ?, PROCESSOR> connection) {
+    protected OutletEndpoint<OUTPUT> createProvidingEndpoint() {
         assert !done;
-        OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(connection, this);
+        OutletEndpoint<OUTPUT> endpoint = new OutletEndpoint<>(this);
         providingEndpoints.put(endpoint.identifier(), endpoint);
         return endpoint;
     }
 
     protected InletEndpoint<INPUT> createReceivingEndpoint() {
         assert !done;
-        InletEndpoint<INPUT> endpoint = new InletEndpoint<>(nextEndpointId(), this);
+        InletEndpoint<INPUT> endpoint = new InletEndpoint<>(this);
         receivingEndpoints.put(endpoint.identifier(), endpoint);
         return endpoint;
     }
@@ -214,14 +214,12 @@ public abstract class Processor<INPUT, OUTPUT,
      */
     public static class InletEndpoint<PACKET> extends SingleReceiverPublisher<PACKET> implements Reactive.Receiver.Async<PACKET> {
 
-        private final long id;
         private final ProviderRegistry.SingleProviderRegistry<Reactive.Identifier.Output<PACKET>> providerRegistry;
         private final Identifier.Input<PACKET> identifier;
         private boolean ready;
 
-        public InletEndpoint(long id, Processor<PACKET, ?, ?, ?> processor) {
+        public InletEndpoint(Processor<PACKET, ?, ?, ?> processor) {
             super(processor);
-            this.id = id;
             this.ready = false;
             this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
             this.identifier = processor.registerInlet(this);
@@ -236,7 +234,7 @@ public abstract class Processor<INPUT, OUTPUT,
             return identifier;
         }
 
-        void setReady(Connection<PACKET, ?, ?> connection) {
+        void setReady(Connection<PACKET> connection) {
             providerRegistry().add(connection.providerEndpointId());
             assert !ready;
             this.ready = true;
@@ -276,11 +274,11 @@ public abstract class Processor<INPUT, OUTPUT,
         private final ProviderRegistry.SingleProviderRegistry<Reactive.Provider.Sync<PACKET>> providerRegistry;
         private final ReceiverRegistry.SingleReceiverRegistry<Reactive.Identifier.Input<PACKET>> receiverRegistry;
 
-        public OutletEndpoint(Connection<PACKET, ?, ?> connection, Processor<?, PACKET, ?, ?> processor) {
+        public OutletEndpoint(Processor<?, PACKET, ?, ?> processor) {
             this.processor = processor;
             this.identifier = this.processor.registerOutlet(this);
             this.providerRegistry = new ProviderRegistry.SingleProviderRegistry<>(this, processor);
-            this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>(connection.receiverEndpointId());
+            this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>();
         }
 
         @Override
@@ -315,6 +313,10 @@ public abstract class Processor<INPUT, OUTPUT,
         public void subscribeTo(Provider.Sync<PACKET> provider) {
             providerRegistry().add(provider);
             if (receiverRegistry().isPulling() && !providerRegistry().isPulling()) provider.pull(this);
+        }
+
+        public void setReceiver(Identifier.Input<PACKET> receiverEndpointId) {
+            receiverRegistry().addReceiver(receiverEndpointId);
         }
     }
 

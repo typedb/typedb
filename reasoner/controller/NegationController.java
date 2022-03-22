@@ -71,8 +71,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         return this;
     }
 
-    protected static class DisjunctionRequest extends ProviderRequest<Disjunction, ConceptMap, NestedDisjunctionController,
-            ConceptMap, NegationProcessor, NegationController, DisjunctionRequest> {
+    protected static class DisjunctionRequest extends ProviderRequest<Disjunction, ConceptMap,
+            ConceptMap, NegationProcessor, NegationController> {
 
         protected DisjunctionRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Disjunction provControllerId,
                                      ConceptMap provProcessorId) {
@@ -80,7 +80,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         }
 
         @Override
-        public Connection.Builder<ConceptMap, ConceptMap, DisjunctionRequest, NegationProcessor, ?> getConnectionBuilder(NegationController controller) {
+        public Connection.Builder<ConceptMap, ConceptMap> getConnectionBuilder(NegationController controller) {
             return new Connection.Builder<>(controller.disjunctionContoller(), this);
         }
     }

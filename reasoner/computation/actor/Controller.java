@@ -67,16 +67,15 @@ public abstract class Controller<
 
     protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PROC_ID id);
 
-    public <PROV_CID, PROV_PID, REQ extends ProviderRequest<PROV_CID, PROV_PID, PROV_C, INPUT, PROCESSOR, CONTROLLER, REQ>,
-            PROV_C extends Controller<PROV_PID, ?, INPUT, ?, PROV_C>> void findProviderForRequest(REQ req) {
+    public <PROV_CID, PROV_PID, REQ extends ProviderRequest<PROV_CID, PROV_PID, INPUT, PROCESSOR, CONTROLLER>> void findProviderForRequest(REQ req) {
         if (isTerminated()) return;
-        Connection.Builder<PROV_PID, INPUT, ?, ?, ?> builder = req.getConnectionBuilder(getThis());
+        Connection.Builder<PROV_PID, INPUT> builder = req.getConnectionBuilder(getThis());
         builder.providerController().execute(actor -> actor.sendConnectionBuilder(builder));
     }
 
     public abstract CONTROLLER getThis();  // We need this because the processor can't access the controller actor from the driver when building a request
 
-    public void sendConnectionBuilder(Connection.Builder<PROC_ID, OUTPUT, ?, ?, ?> connectionBuilder) {
+    public void sendConnectionBuilder(Connection.Builder<PROC_ID, OUTPUT> connectionBuilder) {
         if (isTerminated()) return;
         createProcessorIfAbsent(connectionBuilder.providerProcessorId())
                 .execute(actor -> actor.acceptConnection(connectionBuilder));
@@ -121,10 +120,9 @@ public abstract class Controller<
     }
 
     public static abstract class ProviderRequest<
-            PROV_CID, PROV_PID, PROV_C extends Controller<?, ?, PACKET, ?, PROV_C>, PACKET,
+            PROV_CID, PROV_PID, PACKET,
             PROCESSOR extends Processor<PACKET, ?, ?, PROCESSOR>,
-            CONTROLLER extends Controller<?, PACKET, ?, PROCESSOR, CONTROLLER>,
-            REQ extends ProviderRequest<PROV_CID, PROV_PID, PROV_C, PACKET, PROCESSOR, ?, REQ>> {
+            CONTROLLER extends Controller<?, PACKET, ?, PROCESSOR, CONTROLLER>> {  // TODO: Looks like these generics can be further simplified
 
         private final PROV_CID provControllerId;
         private final Reactive.Identifier.Input<PACKET> recEndpointId;
@@ -139,11 +137,10 @@ public abstract class Controller<
             this.connectionTransforms = new ArrayList<>();
         }
 
-        public abstract Connection.Builder<PROV_PID, PACKET, REQ, PROCESSOR, ?> getConnectionBuilder(CONTROLLER controller);
+        public abstract Connection.Builder<PROV_PID, PACKET> getConnectionBuilder(CONTROLLER controller);
 
-        public Driver<PROCESSOR> receivingProcessor() {
-//            return recEndpointId.processor();
-            return null;  // TODO;
+        public Driver<? extends Processor<PACKET, ?, ?, ?>> receivingProcessor() {
+            return recEndpointId.processor();
         }
 
         public PROV_CID providingControllerId() {
@@ -167,7 +164,7 @@ public abstract class Controller<
             // TODO: be wary with request equality when conjunctions are involved
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            ProviderRequest<?, ?, ?, ?, ?, ?, ?> request = (ProviderRequest<?, ?, ?, ?, ?, ?, ?>) o;
+            ProviderRequest<?, ?, ?, ?, ?> request = (ProviderRequest<?, ?, ?, ?, ?>) o;
             return recEndpointId == request.recEndpointId &&
                     provControllerId.equals(request.provControllerId) &&
                     connectionTransforms.equals(request.connectionTransforms) &&
