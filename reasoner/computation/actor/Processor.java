@@ -119,8 +119,8 @@ public abstract class Processor<INPUT, OUTPUT,
     protected void finaliseConnection(Reactive.Identifier.Input<INPUT> receiverInputId, Reactive.Identifier.Output<INPUT> providerOutputId) {
         assert !done;
         InletEndpoint<INPUT> inlet = receivingEndpoints.get(receiverInputId);
-        inlet.setReady(providerOutputId);
-        inlet.onReady();
+        inlet.addProvider(providerOutputId);
+        inlet.pull();
     }
 
     protected OutletEndpoint<OUTPUT> createProvidingEndpoint() {
@@ -220,13 +220,13 @@ public abstract class Processor<INPUT, OUTPUT,
             return identifier;
         }
 
-        void setReady(Reactive.Identifier.Output<PACKET> providerOutputId) {
+        void addProvider(Reactive.Identifier.Output<PACKET> providerOutputId) {
             providerRegistry().add(providerOutputId);
             assert !ready;
             this.ready = true;
         }
 
-        void onReady() {
+        void pull() {
             pull(receiverRegistry().receiver());
         }
 
