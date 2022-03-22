@@ -327,11 +327,6 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     session.database().isolationMgr().committed(this);
                     session.database().statisticsCorrector().committed(this);
                 } catch (TypeDBException e) {
-                    assert e.code().isPresent() && (
-                            e.code().get().equals(TRANSACTION_ISOLATION_MODIFY_DELETE_VIOLATION.code()) ||
-                                    e.code().get().equals(TRANSACTION_ISOLATION_DELETE_MODIFY_VIOLATION.code()) ||
-                                    e.code().get().equals(TRANSACTION_ISOLATION_EXCLUSIVE_CREATE_VIOLATION.code())
-                    );
                     delete();
                     throw e;
                 } catch (RocksDBException e) {
