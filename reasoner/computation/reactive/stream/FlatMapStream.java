@@ -47,7 +47,7 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverSingleProviderSt
             });
         } else {
             if (receiverRegistry().isPulling()) {
-                processor().driver().execute(actor -> actor.retryPull(provider.identifier(), identifier()));
+                processor().driver().execute(actor -> actor.retryPull(provider, this));
             }
         }
         processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));

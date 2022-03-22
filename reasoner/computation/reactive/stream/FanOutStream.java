@@ -70,7 +70,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
             pullingReceivers.forEach(this::sendFromBuffer);
         } else {
             if (receiverRegistry().isPulling()) {
-                processor().driver().execute(actor -> actor.retryPull(provider.identifier(), identifier()));
+                processor().driver().execute(actor -> actor.retryPull(provider, this));
             }
         }
         processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));

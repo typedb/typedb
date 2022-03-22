@@ -56,7 +56,6 @@ public abstract class Processor<INPUT, OUTPUT,
     private final Map<Reactive.Identifier, Reactive> reactives;  // TODO: Ever required?
     protected final Set<Connection<INPUT>> upstreamConnections;
     private Reactive.Stream<OUTPUT,OUTPUT> outlet;
-    private long endpointId;
     private boolean terminated;
     protected boolean done;
     private int reactiveCounter;
@@ -65,7 +64,6 @@ public abstract class Processor<INPUT, OUTPUT,
                         Supplier<String> debugName) {
         super(driver, debugName);
         this.controller = controller;
-        this.endpointId = 0;
         this.receivingEndpoints = new HashMap<>();
         this.providingEndpoints = new HashMap<>();
         this.upstreamConnections = new HashSet<>();
@@ -85,8 +83,11 @@ public abstract class Processor<INPUT, OUTPUT,
         throw TypeDBException.of(ILLEGAL_OPERATION);
     }
 
+    public <PACKET> void retryPull(Reactive.Provider.Sync<PACKET> provider, Reactive.Receiver.Sync<PACKET> receiver) {
+        // TODO: Re-implement with below signature
+        provider.pull(receiver);
+    }
     public void retryPull(Reactive.Identifier provider, Reactive.Identifier receiver) {
-        // TODO: Re-implement
         // reactives.get(provider).asSyncProvider().pull(reactives.get(receiver).asSyncReceiver());
     }
 
@@ -124,11 +125,6 @@ public abstract class Processor<INPUT, OUTPUT,
         inlet.setReady(connection);
         inlet.onReady();
         upstreamConnections.add(connection);
-    }
-
-    private long nextEndpointId() {
-        endpointId += 1;
-        return endpointId;
     }
 
     protected OutletEndpoint<OUTPUT> createProvidingEndpoint() {
