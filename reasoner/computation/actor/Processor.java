@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.actor;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
@@ -50,6 +51,7 @@ public abstract class Processor<INPUT, OUTPUT,
     private final Driver<CONTROLLER> controller;
     private final Map<Reactive.Identifier, InletEndpoint<INPUT>> receivingEndpoints;
     private final Map<Reactive.Identifier, OutletEndpoint<OUTPUT>> providingEndpoints;
+    private final Map<Pair<Reactive.Identifier, Reactive.Identifier>, Runnable> pullRetries;
     private final Driver<Monitor> monitor;
     private Reactive.Stream<OUTPUT,OUTPUT> outlet;
     private boolean terminated;
@@ -65,6 +67,7 @@ public abstract class Processor<INPUT, OUTPUT,
         this.done = false;
         this.monitor = monitor;
         this.reactiveCounter = 0;
+        this.pullRetries = new HashMap<>();
     }
 
     public abstract void setUp();
@@ -77,12 +80,13 @@ public abstract class Processor<INPUT, OUTPUT,
         throw TypeDBException.of(ILLEGAL_OPERATION);
     }
 
-    public <PACKET> void retryPull(Reactive.Provider.Sync<PACKET> provider, Reactive.Receiver.Sync<PACKET> receiver) {
-        // TODO: Re-implement with below signature
-        provider.pull(receiver);
+    public <PACKET> void schedulePullRetry(Provider.Sync<PACKET> provider, Reactive.Receiver.Sync<PACKET> receiver) {
+        pullRetries.put(new Pair<>(provider.identifier(), receiver.identifier()), () -> provider.pull(receiver));
+        driver().execute(actor -> actor.pullRetry(provider.identifier(), receiver.identifier()));
     }
-    public void retryPull(Reactive.Identifier provider, Reactive.Identifier receiver) {
-        // reactives.get(provider).asSyncProvider().pull(reactives.get(receiver).asSyncReceiver());
+
+    public void pullRetry(Reactive.Identifier provider, Reactive.Identifier receiver) {
+        pullRetries.remove(new Pair<>(provider, receiver)).run();
     }
 
     public Reactive.Stream<OUTPUT,OUTPUT> outlet() {

@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.function.Function;
 
@@ -45,10 +44,8 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverSingleProviderSt
                 processor().monitor().execute(actor -> actor.createAnswer(identifier()));
                 receiverRegistry().receiver().receive(this, t);
             });
-        } else {
-            if (receiverRegistry().isPulling()) {
-                processor().driver().execute(actor -> actor.retryPull(provider, this));
-            }
+        } else if (receiverRegistry().isPulling()) {
+             processor().schedulePullRetry(provider, this);
         }
         processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
     }

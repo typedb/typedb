@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -40,9 +39,7 @@ public class DeduplicationStream<PACKET> extends SingleReceiverSingleProviderStr
             receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
         } else {
-            if (receiverRegistry().isPulling()) {
-                processor().driver().execute(actor -> actor.retryPull(provider, this));
-            }
+            if (receiverRegistry().isPulling()) processor().schedulePullRetry(provider, this);
             processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
         }
     }

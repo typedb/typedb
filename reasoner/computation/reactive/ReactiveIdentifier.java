@@ -83,6 +83,20 @@ public class ReactiveIdentifier implements Reactive.Identifier {
         public Identifier identifier() {
             return this;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            ReactiveIdentifier.Output<?> output = (ReactiveIdentifier.Output<?>) o;
+            return processor.equals(output.processor);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), processor);
+        }
     }
 
     public static class Input<PACKET> extends ReactiveIdentifier implements Identifier.Input<PACKET> {
@@ -103,6 +117,20 @@ public class ReactiveIdentifier implements Reactive.Identifier {
         @Override
         public Identifier identifier() {
             return this;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            if (!super.equals(o)) return false;
+            ReactiveIdentifier.Input<?> input = (ReactiveIdentifier.Input<?>) o;
+            return processor.equals(input.processor);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), processor);
         }
     }
 }
