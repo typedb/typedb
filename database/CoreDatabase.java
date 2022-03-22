@@ -609,28 +609,6 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        void close() {
-            try {
-                correctionRequired.set(false);
-                for (CompletableFuture<Void> correction : corrections) {
-                    correction.get(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
-                }
-                corrections.clear();
-            } catch (InterruptedException | TimeoutException e) {
-                LOG.warn(STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT.message());
-                throw TypeDBException.of(e);
-            } catch (ExecutionException e) {
-                if (!((e.getCause() instanceof TypeDBException) &&
-                        ((TypeDBException) e.getCause()).code().map(code ->
-                                code.equals(RESOURCE_CLOSED.code()) || code.equals(DATABASE_CLOSED.code())
-                        ).orElse(false))) {
-                    throw TypeDBException.of(e);
-                }
-            } finally {
-                session.close();
-            }
-        }
-
         void committed(CoreTransaction.Data transaction) {
             if (mayMiscount(transaction) && correctionRequired.compareAndSet(false, true)) {
                 submitCorrection();
@@ -789,6 +767,28 @@ public class CoreDatabase implements TypeDB.Database {
                                 (key) -> new ArrayList<>()
                         ).add(cause)
                 );
+            }
+        }
+
+        void close() {
+            try {
+                correctionRequired.set(false);
+                for (CompletableFuture<Void> correction : corrections) {
+                    correction.get(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
+                }
+                corrections.clear();
+            } catch (InterruptedException | TimeoutException e) {
+                LOG.warn(STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT.message());
+                throw TypeDBException.of(e);
+            } catch (ExecutionException e) {
+                if (!((e.getCause() instanceof TypeDBException) &&
+                        ((TypeDBException) e.getCause()).code().map(code ->
+                                code.equals(RESOURCE_CLOSED.code()) || code.equals(DATABASE_CLOSED.code())
+                        ).orElse(false))) {
+                    throw TypeDBException.of(e);
+                }
+            } finally {
+                session.close();
             }
         }
     }
