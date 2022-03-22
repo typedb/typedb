@@ -110,9 +110,9 @@ public abstract class DisjunctionController<
         @Override
         public void setUp() {
             FanInStream<ConceptMap> fanIn = fanIn(this);
-            setOutlet(getOutlet(fanIn));
+            setOutputRouter(getOutputRouter(fanIn));
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
-                InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
+                Input<ConceptMap> endpoint = createInput();
                 endpoint.publishTo(fanIn);
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
@@ -122,7 +122,7 @@ public abstract class DisjunctionController<
             fanIn.finaliseProviders();
         }
 
-        protected Reactive.Stream<ConceptMap, ConceptMap> getOutlet(FanInStream<ConceptMap> fanIn) {
+        protected Reactive.Stream<ConceptMap, ConceptMap> getOutputRouter(FanInStream<ConceptMap> fanIn) {
             // This method is only here to be overridden by root disjunction to avoid duplicating setUp
             return fanIn.buffer();
         }

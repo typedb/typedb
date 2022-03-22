@@ -25,26 +25,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public class ConnectionBuilder<PROV_PID, PACKET> {
+public class ConnectionBuilder<OUTPUT_PID, PACKET> {
 
-    private final Actor.Driver<? extends Controller<PROV_PID, ?, PACKET, ?, ?>> providerController;
-    private final Reactive.Identifier.Input<PACKET> receicerInputId;
+    private final Actor.Driver<? extends Controller<OUTPUT_PID, ?, PACKET, ?, ?>> providerController;
+    private final Reactive.Identifier.Input<PACKET> inputId;
     private final List<Function<PACKET, PACKET>> connectionTransforms;
-    private final PROV_PID providerProcessorId;
+    private final OUTPUT_PID providerProcessorId;
 
-    public ConnectionBuilder(Actor.Driver<? extends Controller<PROV_PID, ?, PACKET, ?, ?>> providerController,
-                             Controller.ProviderRequest<?, PROV_PID, PACKET, ?> providerRequest) {
+    public ConnectionBuilder(Actor.Driver<? extends Controller<OUTPUT_PID, ?, PACKET, ?, ?>> providerController,
+                             Controller.ProviderRequest<?, OUTPUT_PID, PACKET, ?> providerRequest) {
         this.providerController = providerController;
-        this.receicerInputId = providerRequest.receiverInputId();
+        this.inputId = providerRequest.receiverInputId();
         this.connectionTransforms = providerRequest.connectionTransforms();
         this.providerProcessorId = providerRequest.providerProcessorId();
     }
 
-    public ConnectionBuilder(Actor.Driver<? extends Controller<PROV_PID, ?, PACKET, ?, ?>> providerController,
-                             Reactive.Identifier.Input<PACKET> receicerInputId,
-                             List<Function<PACKET, PACKET>> connectionTransforms, PROV_PID providerProcessorId) {
+    public ConnectionBuilder(Actor.Driver<? extends Controller<OUTPUT_PID, ?, PACKET, ?, ?>> providerController,
+                             Reactive.Identifier.Input<PACKET> inputId,
+                             List<Function<PACKET, PACKET>> connectionTransforms, OUTPUT_PID providerProcessorId) {
         this.providerController = providerController;
-        this.receicerInputId = receicerInputId;
+        this.inputId = inputId;
         this.connectionTransforms = connectionTransforms;
         this.providerProcessorId = providerProcessorId;
     }
@@ -53,26 +53,26 @@ public class ConnectionBuilder<PROV_PID, PACKET> {
         return connectionTransforms;
     }
 
-    public Actor.Driver<? extends Controller<PROV_PID, ?, PACKET, ?, ?>> providerController() {
+    public Actor.Driver<? extends Controller<OUTPUT_PID, ?, PACKET, ?, ?>> providerController() {
         return providerController;
     }
 
-    public PROV_PID providerProcessorId(){
+    public OUTPUT_PID providerProcessorId(){
         return providerProcessorId;
     }
 
-    public Reactive.Identifier.Input<PACKET> receiverInputId() {
-        return receicerInputId;
+    public Reactive.Identifier.Input<PACKET> inputId() {
+        return inputId;
     }
 
-    public ConnectionBuilder<PROV_PID, PACKET> withMap(Function<PACKET, PACKET> function) {
+    public ConnectionBuilder<OUTPUT_PID, PACKET> withMap(Function<PACKET, PACKET> function) {
         ArrayList<Function<PACKET, PACKET>> newTransforms = new ArrayList<>(connectionTransforms);
         newTransforms.add(function);
-        return new ConnectionBuilder<>(providerController, receicerInputId, newTransforms, providerProcessorId);
+        return new ConnectionBuilder<>(providerController, inputId, newTransforms, providerProcessorId);
     }
 
-    public ConnectionBuilder<PROV_PID, PACKET> withNewProcessorId(PROV_PID newPID) {
-        return new ConnectionBuilder<>(providerController, receicerInputId, connectionTransforms, newPID);
+    public ConnectionBuilder<OUTPUT_PID, PACKET> withNewProcessorId(OUTPUT_PID newPID) {
+        return new ConnectionBuilder<>(providerController, inputId, connectionTransforms, newPID);
     }
 
 }

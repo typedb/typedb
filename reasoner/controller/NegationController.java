@@ -100,14 +100,14 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
         @Override
         public void setUp() {
-            setOutlet(new FanOutStream<>(this));
-            InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
+            setOutputRouter(new FanOutStream<>(this));
+            Input<ConceptMap> endpoint = createInput();
             requestProvider(new DisjunctionRequest(endpoint.identifier(), negated.pattern(), bounds));
             negation = new NegationReactive(this, bounds);
             monitor().execute(actor -> actor.registerRoot(driver(), negation.identifier()));
             monitor().execute(actor -> actor.forkFrontier(1, negation.identifier()));
             endpoint.publishTo(negation);
-            negation.publishTo(outlet());
+            negation.publishTo(outputRouter());
         }
 
         @Override

@@ -97,12 +97,12 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         public void setUp() {
             super.setUp();
             reasonerEntryPoint = new EntryPoint(this, reasonerConsumer);
-            outlet().publishTo(reasonerEntryPoint);
+            outputRouter().publishTo(reasonerEntryPoint);
             new CompoundStream<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, this)
                     .buffer()
                     .map(conceptMap -> conceptMap.filter(filter))
                     .deduplicate()
-                    .publishTo(outlet());
+                    .publishTo(outputRouter());
         }
 
         @Override

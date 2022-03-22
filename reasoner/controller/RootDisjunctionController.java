@@ -87,7 +87,7 @@ public class RootDisjunctionController
         public void setUp() {
             super.setUp();
             reasonerEntryPoint = new EntryPoint(this, reasonerConsumer);
-            outlet().publishTo(reasonerEntryPoint);
+            outputRouter().publishTo(reasonerEntryPoint);
         }
 
         @Override
@@ -96,7 +96,7 @@ public class RootDisjunctionController
         }
 
         @Override
-        protected Reactive.Stream<ConceptMap, ConceptMap> getOutlet(FanInStream<ConceptMap> fanIn) {
+        protected Reactive.Stream<ConceptMap, ConceptMap> getOutputRouter(FanInStream<ConceptMap> fanIn) {
             // Simply here to be overridden by root disjuntion to avoid duplicating setUp
             return fanIn.buffer().map(conceptMap -> conceptMap.filter(filter)).deduplicate();
         }

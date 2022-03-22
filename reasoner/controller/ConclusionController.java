@@ -134,12 +134,12 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         @Override
         public void setUp() {
-            setOutlet(new FanOutStream<>(this));
-            InletEndpoint<Either<ConceptMap, Materialisation>> conditionEndpoint = createReceivingEndpoint();
+            setOutputRouter(new FanOutStream<>(this));
+            Input<Either<ConceptMap, Materialisation>> conditionEndpoint = createInput();
             mayRequestCondition(new ConditionRequest(conditionEndpoint.identifier(), rule.condition(), bounds));
             ConclusionReactive conclusionReactive = new ConclusionReactive(this);
             conditionEndpoint.map(a -> a.first()).publishTo(conclusionReactive);
-            conclusionReactive.publishTo(outlet());
+            conclusionReactive.publishTo(outputRouter());
         }
 
         private void mayRequestCondition(ConditionRequest conditionRequest) {
@@ -187,7 +187,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             @Override
             public void receive(Provider.Sync<ConceptMap> provider, ConceptMap packet) {
                 super.receive(provider, packet);
-                InletEndpoint<Either<ConceptMap, Materialisation>> materialisationEndpoint = createReceivingEndpoint();
+                Input<Either<ConceptMap, Materialisation>> materialisationEndpoint = createInput();
                 mayRequestMaterialiser(new MaterialiserRequest(
                         materialisationEndpoint.identifier(), null,
                         rule.conclusion().materialisable(packet, conceptManager))

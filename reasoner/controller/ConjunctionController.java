@@ -199,12 +199,12 @@ public abstract class ConjunctionController<OUTPUT,
 
         @Override
         public void setUp() {
-            setOutlet(new NoOpStream<>(this));
+            setOutputRouter(new NoOpStream<>(this));
         }
 
-        protected InletEndpoint<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
+        protected Input<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
             // TODO: Rethink this ugly structure for compound reactives
-            InletEndpoint<ConceptMap> endpoint = createReceivingEndpoint();
+            Input<ConceptMap> endpoint = createInput();
             if (planElement.isRetrievable()) {
                 requestProvider(new RetrievableRequest<>(endpoint.identifier(), planElement.asRetrievable(),
                                                          carriedBounds.filter(planElement.retrieves())));

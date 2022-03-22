@@ -99,7 +99,7 @@ public final class Tracer {
         addNodeGroup(provider.identifier().toString(), provider.identifier().toString(), defaultTrace);
     }
 
-    public <PACKET> void receive(Reactive.Identifier providerId, Processor.InletEndpoint<PACKET> packetInletEndpoint, PACKET packet) {
+    public <PACKET> void receive(Reactive.Identifier providerId, Processor.Input<PACKET> input, PACKET packet) {
         // TODO
     }
 

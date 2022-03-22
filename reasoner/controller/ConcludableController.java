@@ -148,20 +148,20 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 
         @Override
         public void setUp() {
-            setOutlet(new FanOutStream<>(this));
+            setOutputRouter(new FanOutStream<>(this));
             FanInStream<ConceptMap> fanIn = fanIn(this);
 //            boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
-//            if (singleAnswerRequired) fanIn.findFirst().publishTo(outlet());
-//            else fanIn.publishTo(outlet());
+//            if (singleAnswerRequired) fanIn.findFirst().publishTo(outputRouter());
+//            else fanIn.publishTo(outputRouter());
             // TODO: How do we do a find first optimisation and also know that we're done? This needs to be local to
             //  this processor because in general we couldn't call all upstream work done.
-            fanIn.buffer().publishTo(outlet());
+            fanIn.buffer().publishTo(outputRouter());
 
             Source.fromIteratorSupplier(traversalSuppplier, this).publishTo(fanIn);
 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
-                    InletEndpoint<Map<Variable, Concept>> endpoint = this.createReceivingEndpoint();
+                    Input<Map<Variable, Concept>> endpoint = this.createInput();
                     mayRequestConnection(new ConclusionRequest(endpoint.identifier(), conclusion, boundsAndRequirements.first()));
                     endpoint.flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .buffer()

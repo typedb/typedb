@@ -91,13 +91,13 @@ public class MaterialisationController extends Controller<Materialisable, Void, 
 
         @Override
         public void setUp() {
-            setOutlet(new FanOutStream<>(this));
+            setOutputRouter(new FanOutStream<>(this));
             new Source<>(
                     () -> materialise(materialisable, traversalEng, conceptMgr)
                             .map(Iterators::single)
                             .orElse(Iterators.empty()),
                     this
-            ).map(Either::<ConceptMap, Materialisation>second).publishTo(outlet());
+            ).map(Either::<ConceptMap, Materialisation>second).publishTo(outputRouter());
         }
     }
 }
