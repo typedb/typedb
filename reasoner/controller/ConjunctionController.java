@@ -129,17 +129,17 @@ public abstract class ConjunctionController<OUTPUT,
     static class RetrievableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
             extends ProviderRequest<Retrievable, ConceptMap, ConceptMap, C> {
 
-        public RetrievableRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Retrievable provControllerId,
-                                  ConceptMap provProcessorId) {
-            super(recEndpointId, provControllerId, provProcessorId);
+        public RetrievableRequest(Reactive.Identifier.Input<ConceptMap> inputId, Retrievable controllerId,
+                                  ConceptMap processorId) {
+            super(inputId, controllerId, processorId);
         }
 
         @Override
         public Connection.Builder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
-            ResolverView.FilteredRetrievable controllerView = controller.retrievableProvider(providingControllerId());
-            ConceptMap newPID = providingProcessorId().filter(controllerView.filter());
+            ResolverView.FilteredRetrievable controllerView = controller.retrievableProvider(providerControllerId());
+            ConceptMap newPID = providerProcessorId().filter(controllerView.filter());
             return new Connection.Builder<>(controllerView.controller(), this)
-                    .withMap(c -> merge(c, providingProcessorId()))
+                    .withMap(c -> merge(c, providerProcessorId()))
                     .withNewProcessorId(newPID);
         }
     }
@@ -147,16 +147,16 @@ public abstract class ConjunctionController<OUTPUT,
     static class ConcludableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
             extends ProviderRequest<Concludable, ConceptMap, ConceptMap, C> {
 
-        public ConcludableRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Concludable provControllerId,
-                                  ConceptMap provProcessorId) {
-            super(recEndpointId, provControllerId, provProcessorId);
+        public ConcludableRequest(Reactive.Identifier.Input<ConceptMap> inputId, Concludable controllerId,
+                                  ConceptMap processorId) {
+            super(inputId, controllerId, processorId);
         }
 
         @Override
         public Connection.Builder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
-            ResolverView.MappedConcludable controllerView = controller.concludableProvider(providingControllerId());
+            ResolverView.MappedConcludable controllerView = controller.concludableProvider(providerControllerId());
             Mapping mapping = Mapping.of(controllerView.mapping());
-            ConceptMap newPID = mapping.transform(providingProcessorId());
+            ConceptMap newPID = mapping.transform(providerProcessorId());
             return new Connection.Builder<>(controllerView.controller(), this)
                     .withMap(mapping::unTransform)
                     .withNewProcessorId(newPID);
@@ -167,17 +167,17 @@ public abstract class ConjunctionController<OUTPUT,
     static class NegatedRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
             extends ProviderRequest<Negated, ConceptMap, ConceptMap, C> {
 
-        protected NegatedRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Negated provControllerId,
-                                 ConceptMap provProcessorId) {
-            super(recEndpointId, provControllerId, provProcessorId);
+        protected NegatedRequest(Reactive.Identifier.Input<ConceptMap> inputId, Negated controllerId,
+                                 ConceptMap processorId) {
+            super(inputId, controllerId, processorId);
         }
 
         @Override
         public Connection.Builder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
-            ResolverView.FilteredNegation controllerView = controller.negationProvider(providingControllerId());
-            ConceptMap newPID = providingProcessorId().filter(controllerView.filter());
+            ResolverView.FilteredNegation controllerView = controller.negationProvider(providerControllerId());
+            ConceptMap newPID = providerProcessorId().filter(controllerView.filter());
             return new Connection.Builder<>(controllerView.controller(), this)
-                    .withMap(c -> merge(c, providingProcessorId()))
+                    .withMap(c -> merge(c, providerProcessorId()))
                     .withNewProcessorId(newPID);
         }
     }

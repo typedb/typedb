@@ -79,15 +79,15 @@ public abstract class DisjunctionController<
     private static class NestedConjunctionRequest<P extends DisjunctionProcessor<C, P>, C extends DisjunctionController<P, C>>
             extends ProviderRequest<Conjunction, ConceptMap, ConceptMap, C> {
 
-        protected NestedConjunctionRequest(Reactive.Identifier.Input<ConceptMap> recEndpointId, Conjunction provControllerId,
-                                           ConceptMap provProcessorId) {
-            super(recEndpointId, provControllerId, provProcessorId);
+        protected NestedConjunctionRequest(Reactive.Identifier.Input<ConceptMap> inputId, Conjunction controllerId,
+                                           ConceptMap processorId) {
+            super(inputId, controllerId, processorId);
         }
 
         @Override
         public Connection.Builder<ConceptMap, ConceptMap> getConnectionBuilder(C controller) {
-            return new Connection.Builder<>(controller.conjunctionProvider(providingControllerId()), this)
-                    .withMap(c -> merge(c, providingProcessorId()));
+            return new Connection.Builder<>(controller.conjunctionProvider(providerControllerId()), this)
+                    .withMap(c -> merge(c, providerProcessorId()));
         }
     }
 

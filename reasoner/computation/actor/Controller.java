@@ -121,31 +121,31 @@ public abstract class Controller<
 
     public static abstract class ProviderRequest<PROV_CID, PROV_PID, PACKET, CONTROLLER extends Controller<?, PACKET, ?, ?, CONTROLLER>> {
 
-        private final PROV_CID provControllerId;
-        private final Reactive.Identifier.Input<PACKET> recEndpointId;
+        private final PROV_CID providerControllerId;
+        private final Reactive.Identifier.Input<PACKET> receiverInputId;
         private final List<Function<PACKET, PACKET>> connectionTransforms;
-        private final PROV_PID provProcessorId;
+        private final PROV_PID providerProcessorId;
 
-        protected ProviderRequest(Reactive.Identifier.Input<PACKET> recEndpointId, PROV_CID provControllerId,
-                                  PROV_PID provProcessorId) {
-            this.recEndpointId = recEndpointId;
-            this.provControllerId = provControllerId;
-            this.provProcessorId = provProcessorId;
+        protected ProviderRequest(Reactive.Identifier.Input<PACKET> receiverInputId, PROV_CID providerControllerId,
+                                  PROV_PID providerProcessorId) {
+            this.receiverInputId = receiverInputId;
+            this.providerControllerId = providerControllerId;
+            this.providerProcessorId = providerProcessorId;
             this.connectionTransforms = new ArrayList<>();
         }
 
         public abstract Connection.Builder<PROV_PID, PACKET> getConnectionBuilder(CONTROLLER controller);
 
-        public PROV_CID providingControllerId() {
-            return provControllerId;
+        public PROV_CID providerControllerId() {
+            return providerControllerId;
         }
 
-        public PROV_PID providingProcessorId() {
-            return provProcessorId;
+        public PROV_PID providerProcessorId() {
+            return providerProcessorId;
         }
 
-        public Reactive.Identifier.Input<PACKET> receivingEndpointId() {
-            return recEndpointId;
+        public Reactive.Identifier.Input<PACKET> receiverInputId() {
+            return receiverInputId;
         }
 
         public List<Function<PACKET, PACKET>> connectionTransforms() {
@@ -158,15 +158,15 @@ public abstract class Controller<
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             ProviderRequest<?, ?, ?, ?> request = (ProviderRequest<?, ?, ?, ?>) o;
-            return recEndpointId == request.recEndpointId &&
-                    provControllerId.equals(request.provControllerId) &&
+            return receiverInputId == request.receiverInputId &&
+                    providerControllerId.equals(request.providerControllerId) &&
                     connectionTransforms.equals(request.connectionTransforms) &&
-                    provProcessorId.equals(request.provProcessorId);
+                    providerProcessorId.equals(request.providerProcessorId);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(provControllerId, recEndpointId, connectionTransforms, provProcessorId);
+            return Objects.hash(providerControllerId, receiverInputId, connectionTransforms, providerProcessorId);
         }
     }
 }
