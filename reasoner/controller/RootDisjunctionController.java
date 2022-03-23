@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.EntryPoint;
+import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.RootSink;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream;
@@ -72,7 +72,7 @@ public class RootDisjunctionController
 
         private final Set<Identifier.Variable.Retrievable> filter;
         private final ReasonerConsumer reasonerConsumer;
-        private EntryPoint reasonerEntryPoint;
+        private RootSink reasonerEntryPoint;
 
         protected RootDisjunctionProcessor(Driver<RootDisjunctionProcessor> driver,
                                            Driver<RootDisjunctionController> controller, Driver<Monitor> monitor,
@@ -87,12 +87,12 @@ public class RootDisjunctionController
         @Override
         public void setUp() {
             super.setUp();
-            reasonerEntryPoint = new EntryPoint(this, reasonerConsumer);
+            reasonerEntryPoint = new RootSink(this, reasonerConsumer);
             outputRouter().publishTo(reasonerEntryPoint);
         }
 
         @Override
-        public void entryPull() {
+        public void rootPull() {
             reasonerEntryPoint.pull();
         }
 
@@ -107,7 +107,7 @@ public class RootDisjunctionController
             assert !done;
 //            done = true;
             assert finishable == reasonerEntryPoint.identifier();
-            reasonerEntryPoint.onFinished();
+            reasonerEntryPoint.finished();
         }
     }
 }

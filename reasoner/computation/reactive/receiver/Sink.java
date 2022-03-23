@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Sync.Subscriber;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-public abstract class Sink<PACKET> implements Subscriber<PACKET> {
+public abstract class Sink<PACKET> implements Subscriber<PACKET> { // TODO: Collapse into RootSink
 
     private final ProviderRegistry.Single<Provider.Sync<PACKET>> providerRegistry;
     private final Processor<?, ?, ?, ?> processor;

@@ -79,6 +79,10 @@ public abstract class Processor<INPUT, OUTPUT,
         return outputRouter;
     }
 
+    public void rootPull() {
+        throw TypeDBException.of(ILLEGAL_OPERATION);
+    }
+
     public void pull(Reactive.Identifier.Input<OUTPUT> receiver, Reactive.Identifier outputId) {
         assert !done;
         outputs.get(outputId).pull(receiver);
@@ -87,10 +91,6 @@ public abstract class Processor<INPUT, OUTPUT,
     protected void receive(Reactive.Identifier.Output<INPUT> provider, INPUT packet, Reactive.Identifier inputId) {
         assert !done;
         inputs.get(inputId).receive(provider, packet);
-    }
-
-    public void entryPull() {
-        throw TypeDBException.of(ILLEGAL_OPERATION);
     }
 
     public <PACKET> void schedulePullRetry(Provider.Sync<PACKET> provider, Reactive.Receiver.Sync<PACKET> receiver) {

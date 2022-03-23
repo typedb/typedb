@@ -24,11 +24,11 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 
 public interface ReasonerConsumer {
 
-    void setRootProcessor(Actor.Driver<? extends Processor<?, ?, ?, ?>> rootProcessor);
+    void initialise(Actor.Driver<? extends Processor<?, ?, ?, ?>> rootProcessor);
 
     void receiveAnswer(ConceptMap answer);
 
-    void answersFinished();
+    void finished();
 
     void exception(Throwable e);
 

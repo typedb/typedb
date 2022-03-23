@@ -59,7 +59,7 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
         this.done = false;
         this.required = new AtomicInteger();
         this.isPulling = false;
-        this.controllerRegistry.createRootConjunctionController(conjunction, filter, this);
+        this.controllerRegistry.createRootConjunctionController(conjunction, filter, this);  // TODO: Doesn't indicate that this also triggers the setup of the upstream controllers and creates a processor and connects if back to this producer. Clean up this storyline.
         if (options.traceInference()) {
             Tracer.initialise(options.reasonerDebuggerDir());
             Tracer.get().startDefaultTrace();
@@ -83,7 +83,8 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
     }
 
     @Override
-    public void setRootProcessor(Actor.Driver<? extends Processor<?, ?, ?, ?>> rootProcessor) {
+    public void initialise(Actor.Driver<? extends Processor<?, ?, ?, ?>> rootProcessor) {
+        assert this.rootProcessor == null;
         this.rootProcessor = rootProcessor;
         if (required.get() > 0) pull();
     }
@@ -93,8 +94,8 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
         assert this.queue == null || this.queue == queue;
         assert request > 0;
         this.queue = queue;
-        required.addAndGet(request);
-        if (!isPulling) pull();
+        required.addAndGet(request); // TODO: improve variable naming here for required and request
+        if (rootProcessor != null && !isPulling) pull();
     }
 
     @Override
@@ -109,14 +110,13 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
     }
 
     private void pull() {
-        if (rootProcessor != null) {
-            isPulling = true;
-            rootProcessor.execute(actor -> actor.entryPull());
-        }
+        assert rootProcessor != null;
+        isPulling = true;
+        rootProcessor.execute(actor -> actor.rootPull());
     }
 
     @Override
-    public void answersFinished() {
+    public void finished() {
         // note: root resolver calls this single-threaded, so is thread safe
         LOG.trace("All answers found.");
 //        if (options.traceInference()) Tracer.get().finishDefaultTrace();
@@ -126,14 +126,13 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
     private void finish() {
         if (!done) {
             done = true;
-            queue.done();
             required.set(0);
+            queue.done();
         }
     }
 
     @Override
     public void exception(Throwable e) {
-        // TODO: Should this mirror finish()?
         if (!done) {
             done = true;
             required.set(0);

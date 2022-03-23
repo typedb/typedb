@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.EntryPoint;
+import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.RootSink;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.CompoundStream;
@@ -80,7 +80,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
     protected static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, RootConjunctionController, RootConjunctionProcessor> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
-        private EntryPoint reasonerEntryPoint;
+        private RootSink rootSink;
         private final ReasonerConsumer reasonerConsumer;
 
         protected RootConjunctionProcessor(Driver<RootConjunctionProcessor> driver,
@@ -101,21 +101,21 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
                             .map(conceptMap -> conceptMap.filter(filter))
                             .deduplicate()
             );
-            reasonerEntryPoint = new EntryPoint(this, reasonerConsumer);
-            outputRouter().publishTo(reasonerEntryPoint);
+            rootSink = new RootSink(this, reasonerConsumer);
+            outputRouter().publishTo(rootSink);
         }
 
         @Override
-        public void entryPull() {
-            reasonerEntryPoint.pull();
+        public void rootPull() {
+            rootSink.pull();
         }
 
         @Override
         protected void onFinished(Reactive.Identifier finishable) {
             assert !done;
 //            done = true;
-            assert finishable == reasonerEntryPoint.identifier();
-            reasonerEntryPoint.onFinished();
+            assert finishable == rootSink.identifier();
+            rootSink.finished();
         }
     }
 }

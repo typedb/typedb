@@ -126,7 +126,7 @@ public class Registry {
         Actor.Driver<RootConjunctionController> controller =
                 Actor.driver(driver -> new RootConjunctionController(driver, conjunction, filter, executorService,
                                                                      monitor, this, reasonerConsumer), executorService);
-        controller.execute(RootConjunctionController::setUpUpstreamControllers);
+        controller.execute(RootConjunctionController::setUpUpstreamControllers);  // TODO Wrap these two initialisation steps in an initialise method to give a higher level story here
         controller.execute(actor -> actor.createProcessorIfAbsent(new ConceptMap()));
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized

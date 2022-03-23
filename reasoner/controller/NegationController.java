@@ -116,7 +116,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             assert !done;
 //            done = true;
             assert finishable == negation.identifier();
-            negation.onFinished();
+            negation.finished();
         }
 
         private static class NegationReactive extends SingleReceiverSingleProviderStream<ConceptMap, ConceptMap> implements Reactive.Receiver.Sync.Finishable<ConceptMap> {
@@ -144,7 +144,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             }
 
             @Override
-            public void onFinished() {
+            public void finished() {
                 assert !answerFound;
                 processor().monitor().execute(actor -> actor.createAnswer(identifier()));
                 receiverRegistry().receiver().receive(this, bounds);

@@ -498,11 +498,11 @@ public class ComputationGraphTest {
         }
 
         private void pull() {
-            rootProcessor.execute(actor -> actor.entryPull());
+            rootProcessor.execute(actor -> actor.rootPull());
         }
 
         @Override
-        public void setRootProcessor(Actor.Driver<? extends Processor<?, ?, ?, ?>> rootProcessor) {
+        public void initialise(Actor.Driver<? extends Processor<?, ?, ?, ?>> rootProcessor) {
             this.rootProcessor = rootProcessor;
             if (pullOnSet) pull();
         }
@@ -515,7 +515,7 @@ public class ComputationGraphTest {
         }
 
         @Override
-        public void answersFinished() {
+        public void finished() {
             doneReceived.set(true);
         }
 

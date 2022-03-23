@@ -71,6 +71,9 @@ public class Monitor extends Actor<Monitor> {
     }
 
     public void rootFinalised(Reactive.Identifier root) {
+        // TODO: Improve this by having two separate finish states for a negation so that it can be finished as a
+        //  root prior to incrementing the in-flight answer count. In this way either it receives a message from the
+        //  monitor to say it's done, or it sends the monitor a message to tell that it's finished
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.rootFinalised(root, driver()));
         if (terminated) return;
         RootNode rootNode = getNode(root).asRoot();

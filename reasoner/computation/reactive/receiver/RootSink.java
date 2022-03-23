@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import javax.annotation.Nullable;
 import java.util.UUID;
 
-public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Sync.Finishable<ConceptMap> {
+public class RootSink extends Sink<ConceptMap> implements Reactive.Receiver.Sync.Finishable<ConceptMap> {
 
     private final Identifier identifier;
     private final UUID traceId = UUID.randomUUID();
@@ -35,12 +35,12 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Sy
     private boolean isPulling;
     private int traceCounter = 0;
 
-    public EntryPoint(Processor<ConceptMap, ?, ?, ?> processor, ReasonerConsumer reasonerConsumer) {
+    public RootSink(Processor<ConceptMap, ?, ?, ?> processor, ReasonerConsumer reasonerConsumer) {
         super(processor);
         this.identifier = processor.registerReactive(this);
         this.reasonerConsumer = reasonerConsumer;
         this.isPulling = false;
-        reasonerConsumer.setRootProcessor(processor.driver());
+        reasonerConsumer.initialise(processor.driver());
         processor().monitor().execute(actor -> actor.registerRoot(processor.driver(), identifier()));
         processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
     }
@@ -82,8 +82,8 @@ public class EntryPoint extends Sink<ConceptMap> implements Reactive.Receiver.Sy
     }
 
     @Override
-    public void onFinished() {
-        reasonerConsumer.answersFinished();
+    public void finished() {
+        reasonerConsumer.finished();
         processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
     }
 }

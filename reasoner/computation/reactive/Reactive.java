@@ -93,7 +93,7 @@ public interface Reactive {
 
             interface Finishable<T> extends Sync<T> {
 
-                void onFinished();
+                void finished();
 
             }
         }
