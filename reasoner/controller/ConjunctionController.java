@@ -33,7 +33,6 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.NoOpStream;
 import com.vaticle.typedb.core.reasoner.controller.Registry.ResolverView;
 import com.vaticle.typedb.core.reasoner.utils.Planner;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -195,11 +194,6 @@ public abstract class ConjunctionController<OUTPUT,
             super(driver, controller, monitor, debugName);
             this.bounds = bounds;
             this.plan = plan;
-        }
-
-        @Override
-        public void setUp() {
-            setOutputRouter(new NoOpStream<>(this));
         }
 
         protected Input<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
