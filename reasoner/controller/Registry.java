@@ -65,7 +65,7 @@ public class Registry {
     private final Map<Rule, Actor.Driver<ConclusionController>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Set<Actor.Driver<? extends Controller<?, ?, ?, ?, ?>>> controllers;
     private final TraversalEngine traversalEngine;
-    private final boolean resolutionTracing;
+    private final boolean tracing;
     private final Actor.Driver<MaterialisationController> materialisationController;
     private final AtomicBoolean terminated;
     private final Actor.Driver<Monitor> monitor;
@@ -73,7 +73,7 @@ public class Registry {
     private ActorExecutorGroup executorService;
 
     public Registry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                    LogicManager logicMgr, boolean resolutionTracing) {
+                    LogicManager logicMgr, boolean tracing) {
         this.executorService = executorService;
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
@@ -84,7 +84,7 @@ public class Registry {
         this.ruleConclusions = new ConcurrentHashMap<>();
         this.controllers = new ConcurrentSet<>();
         this.terminated = new AtomicBoolean(false);
-        this.resolutionTracing = resolutionTracing;
+        this.tracing = tracing;
         this.monitor = Actor.driver(driver -> new Monitor(driver, this), executorService);
         this.materialisationController = Actor.driver(driver -> new MaterialisationController(
                 driver, executorService, monitor, this, traversalEngine(), conceptManager()), executorService
@@ -107,8 +107,8 @@ public class Registry {
         return monitor;
     }
 
-    public boolean resolutionTracing() {
-        return resolutionTracing;
+    public boolean tracing() {
+        return tracing;
     }
 
     public void terminate(Throwable cause) {

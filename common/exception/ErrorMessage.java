@@ -596,11 +596,11 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Reasoner REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY =
                 new Reasoner(4, "Reasoner tracing cannot be enabled/disabled per query. Try using Transaction options instead.");
         public static final Reasoner REASONER_TRACING_HAS_NOT_BEEN_INITIALISED =
-                new Reasoner(5, "Attempted to get the resolution tracer before it has been initialised.");
+                new Reasoner(5, "Attempted to get the reasoner tracer before it has been initialised.");
         public static final Reasoner REASONER_TRACING_CALL_TO_FINISH_BEFORE_START =
-                new Reasoner(6, "Reasoner tracing has been instructed to finish without being started. Start the tracer before any resolution takes place.");
+                new Reasoner(6, "Reasoner tracing has been instructed to finish without being started. Start the tracer before any reasoning takes place.");
         public static final Reasoner REASONER_TRACING_CALL_TO_WRITE_BEFORE_START =
-                new Reasoner(7, "Reasoner tracing has been instructed to write without being started. Start the tracer before any resolution takes place.");
+                new Reasoner(7, "Reasoner tracing has been instructed to write without being started. Start the tracer before any reasoning takes place.");
 
         private static final String codePrefix = "RSN";
         private static final String messagePrefix = "Reasoner Error";

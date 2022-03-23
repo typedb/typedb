@@ -185,7 +185,7 @@ public final class Tracer {
         public void start() {
             path.set(logDir.resolve(filename()));
             try {
-                LOG.debug("Writing resolution traces to {}", path.get().toAbsolutePath());
+                LOG.debug("Writing reasoner traces to {}", path.get().toAbsolutePath());
                 File file = path.get().toFile();
                 boolean ignore = file.getParentFile().mkdirs();
                 writer = new PrintWriter(file, "UTF-8");
@@ -219,7 +219,7 @@ public final class Tracer {
         }
 
         private String filename() {
-            return String.format("resolution_trace_request_%s_%d.dot", trace.scope(), trace.root());
+            return String.format("reasoner_trace_request_%s_%d.dot", trace.scope(), trace.root());
         }
 
         private void endFile() {

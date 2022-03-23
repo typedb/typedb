@@ -65,9 +65,9 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-resolution",
-    srcs = ["resolution/ResolutionTest.java", "resolution/Util.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.resolution.ResolutionTest",
+    name = "test-computation-graph",
+    srcs = ["computation/ComputationGraphTest.java", "utils/Util.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.computation.ComputationGraphTest",
     native_libraries_deps = [
         # Internal dependencies
         "//:typedb",
@@ -90,9 +90,9 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-resolution-planner",
-    srcs = ["resolution/PlannerTest.java", "resolution/Util.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.resolution.PlannerTest",
+    name = "test-planner",
+    srcs = ["utils/PlannerTest.java", "utils/Util.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.utils.PlannerTest",
     native_libraries_deps = [
         # Internal dependencies
         "//database:database",
@@ -116,7 +116,8 @@ checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
-        "resolution/*",
+        "computation/*",
+        "utils/*",
     ]),
     license_type = "agpl",
 )

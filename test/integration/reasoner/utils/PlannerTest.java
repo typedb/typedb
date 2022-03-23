@@ -13,9 +13,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
-package com.vaticle.typedb.core.reasoner.resolution;
+package com.vaticle.typedb.core.reasoner.utils;
 
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
@@ -29,7 +30,6 @@ import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
-import com.vaticle.typedb.core.reasoner.utils.Planner;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
@@ -46,7 +46,7 @@ import java.util.Set;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
-import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedConjunction;
+import static com.vaticle.typedb.core.reasoner.utils.Util.resolvedConjunction;
 import static junit.framework.TestCase.assertEquals;
 
 public class PlannerTest {

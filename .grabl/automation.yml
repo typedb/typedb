@@ -75,18 +75,18 @@ build:
       image: vaticle-ubuntu-20.04
       command: |
         bazel test //test/integration/reasoner:test-reasoner --test_output=streamed
-    test-integration-test-resolution:
+    test-integration-test-computation-graph:
       image: vaticle-ubuntu-20.04
       command: |
-        bazel test //test/integration/reasoner:test-resolution --test_output=streamed
+        bazel test //test/integration/reasoner:test-computation-graph --test_output=streamed
 #    test-integration-test-explanation:
 #      image: vaticle-ubuntu-20.04
 #      command: |
 #        bazel test //test/integration/reasoner:test-explanation --test_output=streamed
-    test-integration-test-resolution-planner:
+    test-integration-test-planner:
       image: vaticle-ubuntu-20.04
       command: |
-        bazel test //test/integration/reasoner:test-resolution-planner --test_output=streamed
+        bazel test //test/integration/reasoner:test-planner --test_output=streamed
     test-behaviour-connection:
       image: vaticle-ubuntu-21.04
       command: |

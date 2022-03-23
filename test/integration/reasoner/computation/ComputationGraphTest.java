@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.vaticle.typedb.core.reasoner.resolution;
+package com.vaticle.typedb.core.reasoner.computation;
 
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
@@ -55,22 +55,22 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED_WITH_CAUSE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedConjunction;
-import static com.vaticle.typedb.core.reasoner.resolution.Util.resolvedDisjunction;
+import static com.vaticle.typedb.core.reasoner.utils.Util.resolvedConjunction;
+import static com.vaticle.typedb.core.reasoner.utils.Util.resolvedDisjunction;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
-public class ResolutionTest {
+public class ComputationGraphTest {
 
     private static final Boolean tracing = false;
-    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("resolution-test");
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("computation-graph-test");
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);
-    private static final String database = "resolution-test";
+    private static final String database = "computation-graph-test";
     private static CoreDatabaseManager databaseMgr;
 
     @Before
