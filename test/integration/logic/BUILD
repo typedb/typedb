@@ -169,7 +169,7 @@ host_compatible_java_test(
     test_class = "com.vaticle.typedb.core.logic.resolvable.AlphaEquivalenceTest",
     native_libraries_deps = [
         "//:typedb",
-        "//rocks:rocks",
+        "//database:database",
         "//logic:logic",
         "//pattern:pattern",
     ],

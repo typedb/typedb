@@ -266,8 +266,8 @@ public class ReasonerTest {
 
     @Test
     public void test_multiple_queries_single_transaction() {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
 
@@ -289,12 +289,12 @@ public class ReasonerTest {
                 txn.commit();
             }
         }
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
                 String queryString = "match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;";
                 List<ConceptMap> q1Ans = txn.query().match(TypeQL.parseQuery(queryString).asMatch()).toList();
                 List<ConceptMap> q2Ans = txn.query().match(TypeQL.parseQuery(queryString).asMatch()).toList();

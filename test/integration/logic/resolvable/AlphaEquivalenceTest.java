@@ -22,10 +22,10 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
@@ -55,23 +55,23 @@ public class AlphaEquivalenceTest {
     private static final String database = "AlphaEquivalenceTest";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
-    private RocksTypeDB typeDB;
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
+    private CoreDatabaseManager databaseMgr;
 
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        this.typeDB = RocksTypeDB.open(options);
-        this.typeDB.databases().create(database);
+        this.databaseMgr = CoreDatabaseManager.open(options);
+        this.databaseMgr.create(database);
     }
 
     @After
     public void tearDown() {
-        this.typeDB.close();
+        this.databaseMgr.close();
     }
 
     private void schema(String schema) {
-        try (TypeDB.Session session = typeDB.session(AlphaEquivalenceTest.database, Arguments.Session.Type.SCHEMA)) {
+        try (TypeDB.Session session = databaseMgr.session(AlphaEquivalenceTest.database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(TypeQL.parseQuery(String.join("\n", schema)).asDefine());
                 tx.commit();
@@ -80,9 +80,9 @@ public class AlphaEquivalenceTest {
     }
 
     private void inferTypes(Conjunction conjunction) {
-        try (TypeDB.Session session = typeDB.session(AlphaEquivalenceTest.database, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseMgr.session(AlphaEquivalenceTest.database, Arguments.Session.Type.DATA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                tx.logic().typeInference().infer(conjunction, false);
+                tx.logic().typeInference().applyCombination(conjunction, false);
             }
         }
     }
@@ -97,7 +97,7 @@ public class AlphaEquivalenceTest {
     private Concludable concludable(String variableString) {
         BoundVariable vars = TypeQL.parseVariable(variableString).asVariable();
         VariableRegistry registry = VariableRegistry.createFromVariables(list(vars), null);
-        Conjunction conjunction = new Conjunction(registry.variables(), set());
+        Conjunction conjunction = new Conjunction(registry.variables(), list());
         inferTypes(conjunction);
         Set<Concludable> concludables = Concludable.create(conjunction);
         assert concludables.size() == 1;
@@ -108,7 +108,7 @@ public class AlphaEquivalenceTest {
         List<BoundVariable> variables = new ArrayList<>();
         for (String variableString : variableStrings) variables.add(TypeQL.parseVariable(variableString).asVariable());
         VariableRegistry registry = VariableRegistry.createFromVariables(variables, null);
-        Conjunction conjunction = new Conjunction(registry.variables(), set());
+        Conjunction conjunction = new Conjunction(registry.variables(), list());
         inferTypes(conjunction);
         return Concludable.create(conjunction);
     }

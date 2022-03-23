@@ -278,8 +278,8 @@ public class ResolutionTest {
 
     @Test
     public void test_negation() throws InterruptedException {
-        try (RocksSession session = schemaSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = schemaSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(TypeQL.parseQuery(
                         "define person sub entity, owns age, owns name;" +
                                 "age sub attribute, value long;" +
@@ -290,15 +290,15 @@ public class ResolutionTest {
             }
         }
 
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().insert(TypeQL.parseQuery("insert $p1 isa person, has name \"Bob\";"));
                 transaction.commit();
             }
         }
 
-        try (RocksSession session = dataSession()) {
-            try (RocksTransaction transaction = singleThreadElgTransaction(session)) {
+        try (CoreSession session = dataSession()) {
+            try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $p isa person; not { $p has age 24; }; }", transaction.logic());
                 createRootAndAssertResponses(transaction, conjunctionPattern, 1L, 0L);
             }
@@ -533,7 +533,7 @@ public class ResolutionTest {
                                               Set<Identifier.Variable.Retrievable> filter, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
         if (tracing) {
-            Tracer.initialise(options.logsDir());
+            Tracer.initialise(options.reasonerDebuggerDir());
             Tracer.get().startDefaultTrace();
         }
         Registry registry = transaction.reasoner().controllerRegistry();
@@ -551,7 +551,7 @@ public class ResolutionTest {
     private void createRootAndAssertResponses(CoreTransaction transaction, Conjunction conjunction, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
         if (tracing) {
-            Tracer.initialise(options.logsDir());
+            Tracer.initialise(options.reasonerDebuggerDir());
             Tracer.get().startDefaultTrace();
         }
         Registry registry = transaction.reasoner().controllerRegistry();
