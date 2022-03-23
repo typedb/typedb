@@ -38,7 +38,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverMultiProvider
 
     public CompoundStream(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
                           BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
-                          Processor<?, ?, ?, ?> processor) {
+                          Processor<?, ?, ?, ?> processor) {  // TODO: Processor should always be the first argument since it's the owner
         super(processor);
         assert plan.size() > 0;
         this.initialPacket = initialPacket;
@@ -47,7 +47,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverMultiProvider
         this.compoundPacketsFunc = compoundPacketsFunc;
         this.spawnLeaderFunc = spawnLeaderFunc;
         this.publisherPackets = new HashMap<>();
-        this.leadingPublisher.publishTo(this);
+        this.leadingPublisher.registerSubscriber(this);
     }
 
     @Override
@@ -68,7 +68,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverMultiProvider
                 publisherPackets.put(follower, mergedPacket);
                 processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
                 processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
-                follower.publishTo(this);
+                follower.registerSubscriber(this);
                 if (receiverRegistry().isPulling()) {
                     processor().schedulePullRetry(leadingPublisher, this);  // Retry the leader in case the follower never produces an answer
                     if (providerRegistry().setPulling(follower)) follower.pull(this);

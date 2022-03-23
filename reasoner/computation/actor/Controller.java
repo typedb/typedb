@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
@@ -83,12 +82,12 @@ public abstract class Controller<
 
     private Actor.Driver<PROCESSOR> createProcessor(PROCESSOR_ID processorId) {
         if (isTerminated()) return null;  // TODO: Avoid returning null
-        Driver<PROCESSOR> processor = Actor.driver(createProcessorFunc(processorId), executorService);
+        Driver<PROCESSOR> processor = Actor.driver(d -> createProcessorFromDriver(d, processorId), executorService);
         processor.execute(Processor::setUp);
         return processor;
     }
 
-    protected abstract Function<Driver<PROCESSOR>, PROCESSOR> createProcessorFunc(PROCESSOR_ID processorId);
+    protected abstract PROCESSOR createProcessorFromDriver(Driver<PROCESSOR> processorDriver, PROCESSOR_ID processorId);
 
     @Override
     protected void exception(Throwable e) {

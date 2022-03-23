@@ -36,9 +36,9 @@ public abstract class SingleReceiverPublisher<OUTPUT> extends AbstractPublisher<
     }
 
     @Override
-    public void publishTo(Subscriber<OUTPUT> subscriber) {
+    public void registerSubscriber(Subscriber<OUTPUT> subscriber) {
         receiverRegistry().addReceiver(subscriber);
-        subscriber.subscribeTo(this);
+        subscriber.registerPublisher(this);
     }
 
 }

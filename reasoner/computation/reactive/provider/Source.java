@@ -30,15 +30,15 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
     private boolean exhausted;
     private FunctionalIterator<PACKET> iterator;
 
-    public Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, Processor<?, ?, ?, ?> processor) {
+    private Source(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, Processor<?, ?, ?, ?> processor) {
         super(processor);
         this.iteratorSupplier = iteratorSupplier;
         this.exhausted = false;
         processor().monitor().execute(actor -> actor.registerSource(identifier()));
     }
 
-    public static <INPUT> Source<INPUT> fromIteratorSupplier(Supplier<FunctionalIterator<INPUT>> iteratorSupplier,
-                                                             Processor<?, ?, ?, ?> processor) {
+    public static <INPUT> Source<INPUT> create(Supplier<FunctionalIterator<INPUT>> iteratorSupplier,
+                                               Processor<?, ?, ?, ?> processor) {
         return new Source<>(iteratorSupplier, processor);
     }
 

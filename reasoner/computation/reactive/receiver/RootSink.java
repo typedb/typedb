@@ -37,11 +37,11 @@ public class RootSink extends Sink<ConceptMap> implements Reactive.Receiver.Sync
 
     public RootSink(Processor<ConceptMap, ?, ?, ?> processor, ReasonerConsumer reasonerConsumer) {
         super(processor);
-        this.identifier = processor.registerReactive(this);
+        this.identifier = processor().registerReactive(this);
         this.reasonerConsumer = reasonerConsumer;
         this.isPulling = false;
-        reasonerConsumer.initialise(processor.driver());
-        processor().monitor().execute(actor -> actor.registerRoot(processor.driver(), identifier()));
+        this.reasonerConsumer.initialise(processor().driver());
+        processor().monitor().execute(actor -> actor.registerRoot(processor().driver(), identifier()));
         processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
     }
 
@@ -64,8 +64,8 @@ public class RootSink extends Sink<ConceptMap> implements Reactive.Receiver.Sync
     }
 
     @Override
-    public void subscribeTo(Provider.Sync<ConceptMap> provider) {
-        super.subscribeTo(provider);
+    public void registerPublisher(Provider.Sync<ConceptMap> provider) {
+        super.registerPublisher(provider);
         if (isPulling && providerRegistry().setPulling()) provider.pull(this);
     }
 

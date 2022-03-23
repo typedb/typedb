@@ -40,7 +40,6 @@ import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ConclusionController extends Controller<ConceptMap, Either<ConceptMap, Materialisation>, Map<Variable, Concept>,
@@ -65,9 +64,9 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
     }
 
     @Override
-    protected Function<Driver<ConclusionProcessor>, ConclusionProcessor> createProcessorFunc(ConceptMap bounds) {
-        return driver -> new ConclusionProcessor(
-                driver, driver(), monitor, this.conclusion.rule(), bounds, registry().conceptManager(),
+    protected ConclusionProcessor createProcessorFromDriver(Driver<ConclusionProcessor> processorDriver, ConceptMap bounds) {
+        return new ConclusionProcessor(
+                processorDriver, driver(), monitor, this.conclusion.rule(), bounds, registry().conceptManager(),
                 () -> ConclusionProcessor.class.getSimpleName() + "(pattern: " + conclusion + ", bounds: " + bounds + ")"
         );
     }
@@ -138,15 +137,15 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             Input<Either<ConceptMap, Materialisation>> conditionInput = createInput();
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), bounds));
             ConclusionReactive conclusionReactive = new ConclusionReactive(this);
-            conditionInput.map(a -> a.first()).publishTo(conclusionReactive);
-            conclusionReactive.publishTo(outputRouter());
+            conditionInput.map(a -> a.first()).registerSubscriber(conclusionReactive);
+            conclusionReactive.registerSubscriber(outputRouter());
         }
 
         private void mayRequestCondition(ConditionRequest conditionRequest) {
             // TODO: Does this method achieve anything?
             if (!conditionRequests.contains(conditionRequest)) {
                 conditionRequests.add(conditionRequest);
-                requestProvider(conditionRequest);
+                requestConnection(conditionRequest);
             }
         }
 
@@ -154,7 +153,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             // TODO: Does this method achieve anything?
             if (!materialisationRequests.contains(materialisationRequest)) {
                 materialisationRequests.add(materialisationRequest);
-                requestProvider(materialisationRequest);
+                requestConnection(materialisationRequest);
             }
         }
 
@@ -168,8 +167,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             @Override
-            public void publishTo(Subscriber<Map<Variable, Concept>> subscriber) {
-                super.publishTo(subscriber);
+            public void registerSubscriber(Subscriber<Map<Variable, Concept>> subscriber) {
+                super.registerSubscriber(subscriber);
                 // We need to wait until the receiver has been given before we can create the materialisation registry
                 this.materialisationRegistry = new ProviderRegistry.Multi<>(receiverRegistry().receiver(), processor());
             }
@@ -195,7 +194,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 Stream<?, Map<Variable, Concept>> op = materialisationInput.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
                 MaterialisationReactive materialisationReactive = new MaterialisationReactive(this, processor());
                 materialisationRegistry().add(materialisationReactive);
-                op.publishTo(materialisationReactive);
+                op.registerSubscriber(materialisationReactive);
                 materialisationReactive.sendTo(receiverRegistry().receiver());
 
                 processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));

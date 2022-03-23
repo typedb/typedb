@@ -32,7 +32,6 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.logic.Rule.Conclusion.materialise;
@@ -60,9 +59,9 @@ public class MaterialisationController extends Controller<Materialisable, Void, 
     }
 
     @Override
-    protected Function<Driver<MaterialisationProcessor>, MaterialisationProcessor> createProcessorFunc(Materialisable materialisable) {
-        return driver -> new MaterialisationProcessor(
-                driver, driver(), monitor, materialisable, traversalEng, conceptMgr,
+    protected MaterialisationProcessor createProcessorFromDriver(Driver<MaterialisationProcessor> processorDriver, Materialisable materialisable) {
+        return new MaterialisationProcessor(
+                processorDriver, driver(), monitor, materialisable, traversalEng, conceptMgr,
                 () -> MaterialisationProcessor.class.getSimpleName() + "(Materialisable: " + materialisable + ")"
         );
     }
@@ -92,12 +91,12 @@ public class MaterialisationController extends Controller<Materialisable, Void, 
         @Override
         public void setUp() {
             setOutputRouter(new FanOutStream<>(this));
-            new Source<>(
+            Source.create(
                     () -> materialise(materialisable, traversalEng, conceptMgr)
                             .map(Iterators::single)
                             .orElse(Iterators.empty()),
                     this
-            ).map(Either::<ConceptMap, Materialisation>second).publishTo(outputRouter());
+            ).map(Either::<ConceptMap, Materialisation>second).registerSubscriber(outputRouter());
         }
     }
 }

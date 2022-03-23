@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
 
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class RetrievableController extends Controller<ConceptMap, Void, ConceptMap,
@@ -54,9 +53,9 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     }
 
     @Override
-    protected Function<Driver<RetrievableProcessor>, RetrievableProcessor> createProcessorFunc(ConceptMap conceptMap) {
-        return driver -> new RetrievableProcessor(
-                driver, driver(), monitor, () -> Traversal.traversalIterator(registry, retrievable.pattern(), conceptMap),
+    protected RetrievableProcessor createProcessorFromDriver(Driver<RetrievableProcessor> processorDriver, ConceptMap conceptMap) {
+        return new RetrievableProcessor(
+                processorDriver, driver(), monitor, () -> Traversal.traversalIterator(registry, retrievable.pattern(), conceptMap),
                 () -> RetrievableProcessor.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ", bounds: " + conceptMap.toString() + ")"
         );
     }
@@ -81,7 +80,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
         @Override
         public void setUp() {
             setOutputRouter(new FanOutStream<>(this));
-            new Source<>(traversalSupplier, this).publishTo(outputRouter());
+            Source.create(traversalSupplier, this).registerSubscriber(outputRouter());
         }
     }
 }

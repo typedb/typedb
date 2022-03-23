@@ -52,7 +52,7 @@ public class Connector<UPSTREAM_PID, PACKET> {
     public void connectViaTransforms(Reactive.Stream<PACKET, PACKET> toConnect, Processor.Output<PACKET> output) {
         Reactive.Provider.Sync.Publisher<PACKET> op = toConnect;
         for (Function<PACKET, PACKET> t : transforms) op = op.map(t);
-        op.publishTo(output);
+        op.registerSubscriber(output);
     }
 
     public Actor.Driver<? extends Controller<UPSTREAM_PID, ?, PACKET, ?, ?>> upstreamController() {

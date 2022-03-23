@@ -51,13 +51,13 @@ public interface Reactive {
 
     interface Provider extends Reactive {
 
-        interface Sync<R> extends Provider {
+        interface Sync<R> extends Provider {  // TODO: This should now be Subscriber
 
             void pull(Receiver.Sync<R> receiver);
 
             interface Publisher<T> extends Sync<T> {
 
-                void publishTo(Receiver.Sync.Subscriber<T> subscriber);
+                void registerSubscriber(Receiver.Sync.Subscriber<T> subscriber);
 
                 Stream<T,T> findFirst();
 
@@ -72,7 +72,7 @@ public interface Reactive {
             }
         }
 
-        interface Async<PACKET> extends Provider {
+        interface Async<PACKET> extends Provider {  // TODO: This should now be Provider, it now shares nothing with Publisher. Symmetrically the same goes for Receiver/Subscriber.
 
             void pull(Identifier.Input<PACKET> receiverId);
 
@@ -87,7 +87,7 @@ public interface Reactive {
 
             interface Subscriber<T> extends Sync<T> {
 
-                void subscribeTo(Provider.Sync<T> publisher);
+                void registerPublisher(Provider.Sync<T> publisher);
 
             }
 

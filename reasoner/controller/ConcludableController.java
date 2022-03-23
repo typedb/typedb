@@ -40,7 +40,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -93,11 +92,11 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
     }
 
     @Override
-    protected Function<Driver<ConcludableProcessor>, ConcludableProcessor> createProcessorFunc(ConceptMap bounds) {
+    protected ConcludableProcessor createProcessorFromDriver(Driver<ConcludableProcessor> processorDriver, ConceptMap bounds) {
         // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular
         //  concludable. They should be filtered before being passed to the concludableProcessor's constructor
-        return driver -> new ConcludableProcessor(
-                driver, driver(), monitor, bounds, unboundVars, conclusionUnifiers,
+        return new ConcludableProcessor(
+                processorDriver, driver(), monitor, bounds, unboundVars, conclusionUnifiers,
                 () -> Traversal.traversalIterator(registry, concludable.pattern(), bounds),
                 () -> ConcludableProcessor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
         );
@@ -155,9 +154,9 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 //            else fanIn.publishTo(outputRouter());
             // TODO: How do we do a find first optimisation and also know that we're done? This needs to be local to
             //  this processor because in general we couldn't call all upstream work done.
-            fanIn.buffer().publishTo(outputRouter());
+            fanIn.buffer().registerSubscriber(outputRouter());
 
-            Source.fromIteratorSupplier(traversalSuppplier, this).publishTo(fanIn);
+            Source.create(traversalSuppplier, this).registerSubscriber(fanIn);
 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
@@ -165,7 +164,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
                     mayRequestConnection(new ConclusionRequest(input.identifier(), conclusion, boundsAndRequirements.first()));
                     input.flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .buffer()
-                            .publishTo(fanIn);
+                            .registerSubscriber(fanIn);
                 }));
             });
             fanIn.finaliseProviders();
@@ -174,7 +173,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         private void mayRequestConnection(ConclusionRequest conclusionRequest) {
             if (!requestedConnections.contains(conclusionRequest)) {
                 requestedConnections.add(conclusionRequest);
-                requestProvider(conclusionRequest);
+                requestConnection(conclusionRequest);
             }
         }
 

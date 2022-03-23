@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class RootDisjunctionController
@@ -49,9 +48,9 @@ public class RootDisjunctionController
     }
 
     @Override
-    protected Function<Driver<RootDisjunctionProcessor>, RootDisjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
-        return driver -> new RootDisjunctionProcessor(
-                driver, driver(), monitor, disjunction, bounds, filter, reasonerConsumer,
+    protected RootDisjunctionProcessor createProcessorFromDriver(Driver<RootDisjunctionProcessor> processorDriver, ConceptMap bounds) {
+        return new RootDisjunctionProcessor(
+                processorDriver, driver(), monitor, disjunction, bounds, filter, reasonerConsumer,
                 () -> RootDisjunctionProcessor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
         );
     }
@@ -88,7 +87,7 @@ public class RootDisjunctionController
         public void setUp() {
             super.setUp();
             reasonerEntryPoint = new RootSink(this, reasonerConsumer);
-            outputRouter().publishTo(reasonerEntryPoint);
+            outputRouter().registerSubscriber(reasonerEntryPoint);
         }
 
         @Override

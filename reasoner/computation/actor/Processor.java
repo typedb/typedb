@@ -103,7 +103,7 @@ public abstract class Processor<INPUT, OUTPUT,
         pullRetries.get(new Pair<>(provider, receiver)).run();
     }
 
-    protected <UPSTREAM_CID, UPSTREAM_PID, REQ extends ConnectionRequest<UPSTREAM_CID, UPSTREAM_PID, INPUT, CONTROLLER>> void requestProvider(REQ req) {
+    protected <UPSTREAM_CID, UPSTREAM_PID, REQ extends ConnectionRequest<UPSTREAM_CID, UPSTREAM_PID, INPUT, CONTROLLER>> void requestConnection(REQ req) {
         assert !done;
         if (isTerminated()) return;
         controller.execute(actor -> actor.makeConnection(req));
@@ -291,7 +291,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public void subscribeTo(Provider.Sync<PACKET> provider) {
+        public void registerPublisher(Provider.Sync<PACKET> provider) {
             providerRegistry().add(provider);
             if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
         }

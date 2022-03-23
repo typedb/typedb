@@ -48,15 +48,15 @@ public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublis
     }
 
     @Override
-    public void subscribeTo(Provider.Sync<INPUT> provider) {
+    public void registerPublisher(Provider.Sync<INPUT> provider) {
         providerRegistry().add(provider);
         if (receiverRegistry().isPulling()) provider.pull(this);
     }
 
     @Override
-    public void publishTo(Receiver.Sync.Subscriber<OUTPUT> subscriber) {
+    public void registerSubscriber(Receiver.Sync.Subscriber<OUTPUT> subscriber) {
         receiverRegistry().addReceiver(subscriber);
-        subscriber.subscribeTo(this);
+        subscriber.registerPublisher(this);
     }
 
     public void sendTo(Receiver.Sync<OUTPUT> receiver) {

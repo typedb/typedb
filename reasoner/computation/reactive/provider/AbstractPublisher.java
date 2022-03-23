@@ -53,35 +53,35 @@ public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Syn
     @Override
     public Stream<OUTPUT,OUTPUT> findFirst() {
         FindFirstStream<OUTPUT> findFirst = new FindFirstStream<>(this, processor());
-        publishTo(findFirst);
+        registerSubscriber(findFirst);
         return findFirst;
     }
 
     @Override
     public <R> Stream<OUTPUT, R> map(Function<OUTPUT, R> function) {
         MapStream<OUTPUT, R> map = new MapStream<>(this, function, processor());
-        publishTo(map);
+        registerSubscriber(map);
         return map;
     }
 
     @Override
     public <R> Stream<OUTPUT,R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
         FlatMapStream<OUTPUT, R> flatMap = new FlatMapStream<>(this, function, processor());
-        publishTo(flatMap);
+        registerSubscriber(flatMap);
         return flatMap;
     }
 
     @Override
     public Stream<OUTPUT, OUTPUT> buffer() {
         BufferedStream<OUTPUT> buffer = new BufferedStream<>(this, processor());
-        publishTo(buffer);
+        registerSubscriber(buffer);
         return buffer;
     }
 
     @Override
     public Stream<OUTPUT,OUTPUT> deduplicate() {
         DeduplicationStream<OUTPUT> dedup = new DeduplicationStream<>(this, processor());
-        publishTo(dedup);
+        registerSubscriber(dedup);
         return dedup;
     }
 }

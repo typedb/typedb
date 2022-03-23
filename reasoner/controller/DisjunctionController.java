@@ -114,11 +114,11 @@ public abstract class DisjunctionController<
             setOutputRouter(getOutputRouter(fanIn));
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
                 Input<ConceptMap> input = createInput();
-                input.publishTo(fanIn);
+                input.registerSubscriber(fanIn);
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();
-                requestProvider(new DisjunctionController.NestedConjunctionRequest<>(
+                requestConnection(new DisjunctionController.NestedConjunctionRequest<>(
                         input.identifier(), conjunction, bounds.filter(retrievableConjunctionVars)));
             }
             fanIn.finaliseProviders();

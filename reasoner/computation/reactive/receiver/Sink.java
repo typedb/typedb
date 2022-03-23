@@ -41,7 +41,7 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET> { // TODO: Coll
     }
 
     @Override
-    public void subscribeTo(Provider.Sync<PACKET> provider) {
+    public void registerPublisher(Provider.Sync<PACKET> provider) {
         providerRegistry().add(provider);
     }
 

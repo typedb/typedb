@@ -94,14 +94,14 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     }
 
     @Override
-    public void publishTo(Receiver.Sync.Subscriber<PACKET> subscriber) {
+    public void registerSubscriber(Receiver.Sync.Subscriber<PACKET> subscriber) {
         bufferPositions.putIfAbsent(subscriber, 0);
         receiverRegistry().addReceiver(subscriber);
-        subscriber.subscribeTo(this);
+        subscriber.registerPublisher(this);
     }
 
     @Override
-    public void subscribeTo(Provider.Sync<PACKET> provider) {
+    public void registerPublisher(Provider.Sync<PACKET> provider) {
         providerRegistry().add(provider);
         if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
     }

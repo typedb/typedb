@@ -31,7 +31,6 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverSingleProviderStream;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.NegationProcessor, NegationController> {
@@ -56,9 +55,9 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
     }
 
     @Override
-    protected Function<Driver<NegationProcessor>, NegationProcessor> createProcessorFunc(ConceptMap bounds) {
-        return driver -> new NegationProcessor(
-                driver, driver(), monitor, negated, bounds,
+    protected NegationProcessor createProcessorFromDriver(Driver<NegationProcessor> processorDriver, ConceptMap bounds) {
+        return new NegationProcessor(
+                processorDriver, driver(), monitor, negated, bounds,
                 () -> NegationProcessor.class.getSimpleName() + "(pattern: " + negated + ", bounds: " + bounds + ")"
         );
     }
@@ -103,12 +102,12 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         public void setUp() {
             setOutputRouter(new FanOutStream<>(this));
             Input<ConceptMap> input = createInput();
-            requestProvider(new DisjunctionRequest(input.identifier(), negated.pattern(), bounds));
+            requestConnection(new DisjunctionRequest(input.identifier(), negated.pattern(), bounds));
             negation = new NegationReactive(this, bounds);
             monitor().execute(actor -> actor.registerRoot(driver(), negation.identifier()));
             monitor().execute(actor -> actor.forkFrontier(1, negation.identifier()));
-            input.publishTo(negation);
-            negation.publishTo(outputRouter());
+            input.registerSubscriber(negation);
+            negation.registerSubscriber(outputRouter());
         }
 
         @Override

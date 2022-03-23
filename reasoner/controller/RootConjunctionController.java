@@ -33,7 +33,6 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class RootConjunctionController extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.RootConjunctionProcessor> {
@@ -52,9 +51,9 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
     }
 
     @Override
-    protected Function<Driver<RootConjunctionProcessor>, RootConjunctionProcessor> createProcessorFunc(ConceptMap bounds) {
-        return driver -> new RootConjunctionProcessor(
-                driver, driver(), monitor, bounds, plan(), filter, reasonerConsumer,
+    protected RootConjunctionProcessor createProcessorFromDriver(Driver<RootConjunctionProcessor> processorDriver, ConceptMap bounds) {
+        return new RootConjunctionProcessor(
+                processorDriver, driver(), monitor, bounds, plan(), filter, reasonerConsumer,
                 () -> RootConjunctionProcessor.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
         );
     }
@@ -102,7 +101,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
                             .deduplicate()
             );
             rootSink = new RootSink(this, reasonerConsumer);
-            outputRouter().publishTo(rootSink);
+            outputRouter().registerSubscriber(rootSink);
         }
 
         @Override

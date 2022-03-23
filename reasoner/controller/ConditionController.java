@@ -30,7 +30,6 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.stream.CompoundStre
 
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ConditionController extends ConjunctionController<Either<ConceptMap, Materialisation>, ConditionController, ConditionController.ConditionProcessor> {
@@ -52,9 +51,9 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
     }
 
     @Override
-    protected Function<Driver<ConditionController.ConditionProcessor>, ConditionController.ConditionProcessor> createProcessorFunc(ConceptMap bounds) {
-        return driver -> new ConditionProcessor(
-                driver, driver(), monitor, bounds, plan(),
+    protected ConditionProcessor createProcessorFromDriver(Driver<ConditionProcessor> processorDriver, ConceptMap bounds) {
+        return new ConditionProcessor(
+                processorDriver, driver(), monitor, bounds, plan(),
                 () -> ConditionProcessor.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
         );
     }

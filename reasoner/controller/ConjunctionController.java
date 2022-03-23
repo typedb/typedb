@@ -200,14 +200,14 @@ public abstract class ConjunctionController<OUTPUT,
             // TODO: Rethink this ugly structure for compound reactives
             Input<ConceptMap> input = createInput();
             if (planElement.isRetrievable()) {
-                requestProvider(new RetrievableRequest<>(input.identifier(), planElement.asRetrievable(),
-                                                         carriedBounds.filter(planElement.retrieves())));
+                requestConnection(new RetrievableRequest<>(input.identifier(), planElement.asRetrievable(),
+                                                           carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isConcludable()) {
-                requestProvider(new ConcludableRequest<>(input.identifier(), planElement.asConcludable(),
-                                                         carriedBounds.filter(planElement.retrieves())));
+                requestConnection(new ConcludableRequest<>(input.identifier(), planElement.asConcludable(),
+                                                           carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isNegated()) {
-                requestProvider(new NegatedRequest<>(input.identifier(), planElement.asNegated(),
-                                                     carriedBounds.filter(planElement.retrieves())));
+                requestConnection(new NegatedRequest<>(input.identifier(), planElement.asNegated(),
+                                                       carriedBounds.filter(planElement.retrieves())));
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
