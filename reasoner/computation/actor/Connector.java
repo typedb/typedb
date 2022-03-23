@@ -25,56 +25,56 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public class Connector<OUTPUT_PID, PACKET> {
+public class Connector<UPSTREAM_PID, PACKET> {
 
-    private final Actor.Driver<? extends Controller<OUTPUT_PID, ?, PACKET, ?, ?>> providerController;
+    private final Actor.Driver<? extends Controller<UPSTREAM_PID, ?, PACKET, ?, ?>> upstreamController;
     private final Reactive.Identifier.Input<PACKET> inputId;
     private final List<Function<PACKET, PACKET>> transforms;
-    private final OUTPUT_PID outputProcessorId;
+    private final UPSTREAM_PID upstreamProcessorId;
 
-    public Connector(Actor.Driver<? extends Controller<OUTPUT_PID, ?, PACKET, ?, ?>> providerController,
-                     Controller.ConnectionRequest<?, OUTPUT_PID, PACKET, ?> connectionRequest) {
-        this.providerController = providerController;
+    public Connector(Actor.Driver<? extends Controller<UPSTREAM_PID, ?, PACKET, ?, ?>> upstreamController,
+                     Controller.ConnectionRequest<?, UPSTREAM_PID, PACKET, ?> connectionRequest) {
+        this.upstreamController = upstreamController;
         this.inputId = connectionRequest.inputId();
         this.transforms = new ArrayList<>();
-        this.outputProcessorId = connectionRequest.outputProcessorId();
+        this.upstreamProcessorId = connectionRequest.upstreamProcessorId();
     }
 
-    public Connector(Actor.Driver<? extends Controller<OUTPUT_PID, ?, PACKET, ?, ?>> providerController,
-                     Reactive.Identifier.Input<PACKET> inputId,
-                     List<Function<PACKET, PACKET>> transforms, OUTPUT_PID outputProcessorId) {
-        this.providerController = providerController;
+    public Connector(Actor.Driver<? extends Controller<UPSTREAM_PID, ?, PACKET, ?, ?>> upstreamController,
+                     Reactive.Identifier.Input<PACKET> inputId, List<Function<PACKET, PACKET>> transforms,
+                     UPSTREAM_PID upstreamProcessorId) {
+        this.upstreamController = upstreamController;
         this.inputId = inputId;
         this.transforms = transforms;
-        this.outputProcessorId = outputProcessorId;
+        this.upstreamProcessorId = upstreamProcessorId;
     }
 
-    public void applyTransforms(Reactive.Stream<PACKET, PACKET> toConnect, Processor.Output<PACKET> output) {
+    public void connectViaTransforms(Reactive.Stream<PACKET, PACKET> toConnect, Processor.Output<PACKET> output) {
         Reactive.Provider.Sync.Publisher<PACKET> op = toConnect;
         for (Function<PACKET, PACKET> t : transforms) op = op.map(t);
         op.publishTo(output);
     }
 
-    public Actor.Driver<? extends Controller<OUTPUT_PID, ?, PACKET, ?, ?>> outputController() {
-        return providerController;
+    public Actor.Driver<? extends Controller<UPSTREAM_PID, ?, PACKET, ?, ?>> upstreamController() {
+        return upstreamController;
     }
 
-    public OUTPUT_PID outputProcessorId(){
-        return outputProcessorId;
+    public UPSTREAM_PID upstreamProcessorId(){
+        return upstreamProcessorId;
     }
 
     public Reactive.Identifier.Input<PACKET> inputId() {
         return inputId;
     }
 
-    public Connector<OUTPUT_PID, PACKET> withMap(Function<PACKET, PACKET> function) {
+    public Connector<UPSTREAM_PID, PACKET> withMap(Function<PACKET, PACKET> function) {
         ArrayList<Function<PACKET, PACKET>> newTransforms = new ArrayList<>(transforms);
         newTransforms.add(function);
-        return new Connector<>(providerController, inputId, newTransforms, outputProcessorId);
+        return new Connector<>(upstreamController, inputId, newTransforms, upstreamProcessorId);
     }
 
-    public Connector<OUTPUT_PID, PACKET> withNewProcessorId(OUTPUT_PID newPID) {
-        return new Connector<>(providerController, inputId, transforms, newPID);
+    public Connector<UPSTREAM_PID, PACKET> withNewProcessorId(UPSTREAM_PID newPID) {
+        return new Connector<>(upstreamController, inputId, transforms, newPID);
     }
 
 }

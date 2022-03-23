@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.reasoner.computation.actor.Controller.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Sync.Subscriber;
@@ -101,23 +102,23 @@ public abstract class Processor<INPUT, OUTPUT,
         pullRetries.get(new Pair<>(provider, receiver)).run();
     }
 
-    protected <OUTPUT_CID, OUTPUT_PID, REQ extends Controller.ConnectionRequest<OUTPUT_CID, OUTPUT_PID, INPUT, CONTROLLER>> void requestProvider(REQ req) {
+    protected <UPSTREAM_CID, UPSTREAM_PID, REQ extends ConnectionRequest<UPSTREAM_CID, UPSTREAM_PID, INPUT, CONTROLLER>> void requestProvider(REQ req) {
         assert !done;
         if (isTerminated()) return;
-        controller.execute(actor -> actor.findOutputForRequest(req));
+        controller.execute(actor -> actor.makeConnection(req));
     }
 
-    protected void acceptConnector(Connector<?, OUTPUT> connector) {
+    protected void createOutputAndConnectToInput(Connector<?, OUTPUT> connector) {
         assert !done;
         if (isTerminated()) return;
         Output<OUTPUT> output = createOutput();
         output.setReceiver(connector.inputId());
-        connector.applyTransforms(outputRouter(), output);
+        connector.connectViaTransforms(outputRouter(), output);
         connector.inputId().processor().execute(
-                actor -> actor.finaliseConnection(connector.inputId(), output.identifier()));
+                actor -> actor.connectInputToOutput(connector.inputId(), output.identifier()));
     }
 
-    protected void finaliseConnection(Reactive.Identifier.Input<INPUT> inputId, Reactive.Identifier.Output<INPUT> outputId) {
+    protected void connectInputToOutput(Reactive.Identifier.Input<INPUT> inputId, Reactive.Identifier.Output<INPUT> outputId) {
         assert !done;
         Input<INPUT> input = inputs.get(inputId);
         input.addProvider(outputId);

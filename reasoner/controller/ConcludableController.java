@@ -121,7 +121,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 
         @Override
         public Connector<ConceptMap, Map<Variable, Concept>> getConnector(ConcludableController controller) {
-            return new Connector<>(controller.conclusionProvider(outputControllerId()), this);
+            return new Connector<>(controller.conclusionProvider(upstreamControllerId()), this);
         }
     }
 

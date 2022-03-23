@@ -63,17 +63,17 @@ public abstract class Controller<
         return registry;
     }
 
-    public <OUTPUT_CID, OUTPUT_PID, REQ extends ConnectionRequest<OUTPUT_CID, OUTPUT_PID, INPUT, CONTROLLER>> void findOutputForRequest(REQ connectionRequest) {
+    public <UPSTREAM_CID, UPSTREAM_PID, REQ extends ConnectionRequest<UPSTREAM_CID, UPSTREAM_PID, INPUT, CONTROLLER>> void makeConnection(REQ connectionRequest) {
         if (isTerminated()) return;
-        Connector<OUTPUT_PID, INPUT> connector = connectionRequest.getConnector(getThis());
-        connector.outputController().execute(actor -> actor.sendConnectorToProcessor(connector));
+        Connector<UPSTREAM_PID, INPUT> connector = connectionRequest.getConnector(getThis());
+        connector.upstreamController().execute(actor -> actor.sendConnectorToProcessor(connector));
     }
 
     public abstract CONTROLLER getThis();  // We need this because the processor can't access the controller actor from the driver when building a request
 
     public void sendConnectorToProcessor(Connector<PROCESSOR_ID, OUTPUT> connector) {
         if (isTerminated()) return;
-        createProcessorIfAbsent(connector.outputProcessorId()).execute(actor -> actor.acceptConnector(connector));
+        createProcessorIfAbsent(connector.upstreamProcessorId()).execute(actor -> actor.createOutputAndConnectToInput(connector));
     }
 
     public Driver<PROCESSOR> createProcessorIfAbsent(PROCESSOR_ID processorId) {
@@ -116,47 +116,48 @@ public abstract class Controller<
         return terminated;
     }
 
-    public static abstract class ConnectionRequest<OUTPUT_CID, OUTPUT_PID, PACKET, CONTROLLER extends Controller<?, PACKET, ?, ?, CONTROLLER>> {
+    public static abstract class ConnectionRequest<UPSTREAM_CID, UPSTREAM_PID, PACKET, CONTROLLER extends Controller<?, PACKET, ?, ?, CONTROLLER>> {
 
-        private final OUTPUT_CID outputControllerId;
+        private final UPSTREAM_CID upstreamControllerId;
+        private final UPSTREAM_PID upstreamProcessorId;
         private final Reactive.Identifier.Input<PACKET> inputId;
-        private final OUTPUT_PID outputProcessorId;
 
-        protected ConnectionRequest(Reactive.Identifier.Input<PACKET> inputId, OUTPUT_CID outputControllerId,
-                                    OUTPUT_PID outputProcessorId) {
+        protected ConnectionRequest(Reactive.Identifier.Input<PACKET> inputId, UPSTREAM_CID upstreamControllerId,
+                                    UPSTREAM_PID upstreamProcessorId) {
             this.inputId = inputId;
-            this.outputControllerId = outputControllerId;
-            this.outputProcessorId = outputProcessorId;
-        }
-
-        public abstract Connector<OUTPUT_PID, PACKET> getConnector(CONTROLLER controller);
-
-        public OUTPUT_CID outputControllerId() {
-            return outputControllerId;
-        }
-
-        public OUTPUT_PID outputProcessorId() {
-            return outputProcessorId;
+            this.upstreamControllerId = upstreamControllerId;
+            this.upstreamProcessorId = upstreamProcessorId;
         }
 
         public Reactive.Identifier.Input<PACKET> inputId() {
             return inputId;
         }
 
+        public UPSTREAM_CID upstreamControllerId() {
+            return upstreamControllerId;
+        }
+
+        public UPSTREAM_PID upstreamProcessorId() {
+            return upstreamProcessorId;
+        }
+
+        public abstract Connector<UPSTREAM_PID, PACKET> getConnector(CONTROLLER controller);
+
         @Override
         public boolean equals(Object o) {
             // TODO: be wary with request equality when conjunctions are involved
+            // TODO: I think there's a subtle bug here where a conjunction could break down into two parts that according to conjunction comparison are the same, and therefore will not create separate processors for them
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             ConnectionRequest<?, ?, ?, ?> request = (ConnectionRequest<?, ?, ?, ?>) o;
             return inputId == request.inputId &&
-                    outputControllerId.equals(request.outputControllerId) &&
-                    outputProcessorId.equals(request.outputProcessorId);
+                    upstreamControllerId.equals(request.upstreamControllerId) &&
+                    upstreamProcessorId.equals(request.upstreamProcessorId);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(outputControllerId, inputId, outputProcessorId);
+            return Objects.hash(upstreamControllerId, inputId, upstreamProcessorId);
         }
     }
 }

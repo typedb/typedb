@@ -136,10 +136,10 @@ public abstract class ConjunctionController<OUTPUT,
 
         @Override
         public Connector<ConceptMap, ConceptMap> getConnector(C controller) {
-            ResolverView.FilteredRetrievable controllerView = controller.retrievableProvider(outputControllerId());
-            ConceptMap newPID = outputProcessorId().filter(controllerView.filter());
+            ResolverView.FilteredRetrievable controllerView = controller.retrievableProvider(upstreamControllerId());
+            ConceptMap newPID = upstreamProcessorId().filter(controllerView.filter());
             return new Connector<>(controllerView.controller(), this)
-                    .withMap(c -> merge(c, outputProcessorId()))
+                    .withMap(c -> merge(c, upstreamProcessorId()))
                     .withNewProcessorId(newPID);
         }
     }
@@ -154,9 +154,9 @@ public abstract class ConjunctionController<OUTPUT,
 
         @Override
         public Connector<ConceptMap, ConceptMap> getConnector(C controller) {
-            ResolverView.MappedConcludable controllerView = controller.concludableProvider(outputControllerId());
+            ResolverView.MappedConcludable controllerView = controller.concludableProvider(upstreamControllerId());
             Mapping mapping = Mapping.of(controllerView.mapping());
-            ConceptMap newPID = mapping.transform(outputProcessorId());
+            ConceptMap newPID = mapping.transform(upstreamProcessorId());
             return new Connector<>(controllerView.controller(), this)
                     .withMap(mapping::unTransform)
                     .withNewProcessorId(newPID);
@@ -174,10 +174,10 @@ public abstract class ConjunctionController<OUTPUT,
 
         @Override
         public Connector<ConceptMap, ConceptMap> getConnector(C controller) {
-            ResolverView.FilteredNegation controllerView = controller.negationProvider(outputControllerId());
-            ConceptMap newPID = outputProcessorId().filter(controllerView.filter());
+            ResolverView.FilteredNegation controllerView = controller.negationProvider(upstreamControllerId());
+            ConceptMap newPID = upstreamProcessorId().filter(controllerView.filter());
             return new Connector<>(controllerView.controller(), this)
-                    .withMap(c -> merge(c, outputProcessorId()))
+                    .withMap(c -> merge(c, upstreamProcessorId()))
                     .withNewProcessorId(newPID);
         }
     }

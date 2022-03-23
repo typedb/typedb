@@ -87,8 +87,8 @@ public abstract class DisjunctionController<
 
         @Override
         public Connector<ConceptMap, ConceptMap> getConnector(C controller) {
-            return new Connector<>(controller.conjunctionProvider(outputControllerId()), this)
-                    .withMap(c -> merge(c, outputProcessorId()));
+            return new Connector<>(controller.conjunctionProvider(upstreamControllerId()), this)
+                    .withMap(c -> merge(c, upstreamProcessorId()));
         }
     }
 
