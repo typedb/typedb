@@ -66,11 +66,13 @@ build:
       command: |
         bazel test //test/integration:test-basic --test_output=streamed
         bazel test //test/integration:test-query --test_output=streamed
-        bazel test //test/integration/migrator/... --test_output=streamed
+        bazel test //test/integration:test-attribute-string --test_output=streamed
+        bazel test //test/integration/database/... --test_output=streamed
+        bazel test //test/integration/graph/... --test_output=streamed
         bazel test //test/integration/logic/... --test_output=streamed
-        bazel test //test/integration/statistics/... --test_output=streamed
+        bazel test //test/integration/migrator/... --test_output=streamed
         bazel test //test/integration/traversal/... --test_output=streamed
-#        bazel test //test/integration/reasoner/... --test_output=streamed
+#        bazel test //test/integration/reasoner/... --test_output=streamed  # Expanded below because explanation tests won't work yet
     test-integration-test-reasoner:
       image: vaticle-ubuntu-20.04
       command: |
