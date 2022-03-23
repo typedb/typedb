@@ -43,7 +43,7 @@ public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublis
 
     @Override
     public void receive(Provider.Sync<INPUT> provider, INPUT packet) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider.identifier(), identifier(), packet));
         providerRegistry().recordReceive(provider);
     }
 

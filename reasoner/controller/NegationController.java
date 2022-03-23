@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverSingleProviderStream;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -131,6 +132,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
             @Override
             public void pull(Receiver.Sync<ConceptMap> receiver) {
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver.identifier(), identifier()));
                 if (!answerFound) super.pull(receiver);
             }
 

@@ -99,6 +99,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     public void pullRetry(Reactive.Identifier provider, Reactive.Identifier receiver) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pullRetry(receiver.identifier(), provider.identifier()));
         pullRetries.get(new Pair<>(provider, receiver)).run();
     }
 
@@ -227,6 +228,7 @@ public abstract class Processor<INPUT, OUTPUT,
         @Override
         public void pull(Receiver.Sync<PACKET> receiver) {
             assert receiver.equals(receiverRegistry().receiver());
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver.identifier(),identifier()));
             receiverRegistry().recordPull(receiver);
             if (ready && providerRegistry().setPulling()) {
                 providerRegistry().provider().processor()
@@ -236,7 +238,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
         @Override
         public void receive(Reactive.Identifier.Output<PACKET> providerId, PACKET packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(providerId, this, packet));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(providerId, identifier(), packet));
             providerRegistry().recordReceive(providerId);
             receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
@@ -274,7 +276,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
         @Override
         public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider.identifier(), identifier(), packet));
             providerRegistry().recordReceive(provider);
             receiverRegistry().setNotPulling();
             receiverRegistry().receiver().processor()

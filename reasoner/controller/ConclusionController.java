@@ -143,7 +143,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         }
 
         private void mayRequestCondition(ConditionRequest conditionRequest) {
-            // TODO: Does this methods achieve anything?
+            // TODO: Does this method achieve anything?
             if (!conditionRequests.contains(conditionRequest)) {
                 conditionRequests.add(conditionRequest);
                 requestProvider(conditionRequest);
@@ -151,7 +151,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         }
 
         private void mayRequestMaterialiser(MaterialiserRequest materialisationRequest) {
-            // TODO: Does this methods achieve anything?
+            // TODO: Does this method achieve anything?
             if (!materialisationRequests.contains(materialisationRequest)) {
                 materialisationRequests.add(materialisationRequest);
                 requestProvider(materialisationRequest);
@@ -201,7 +201,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
                 processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
 
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, materialisationReactive));
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(identifier(), materialisationReactive.identifier()));
                 if (receiverRegistry().isPulling()) {
                     if (materialisationRegistry().setPulling(materialisationReactive)) materialisationReactive.pull(receiverRegistry().receiver());
                     processor().schedulePullRetry(provider, this);  // We need to retry the condition again in case materialisation fails
@@ -209,10 +209,10 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             private void receiveMaterialisation(MaterialisationReactive provider, Map<Variable, Concept> packet) {
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+                Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider.identifier(), identifier(), packet));
                 materialisationRegistry().recordReceive(provider);
                 if (receiverRegistry().isPulling()) {
-                    Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(this, provider));
+                    Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(identifier(), provider.identifier()));
                     processor().schedulePullRetry(provider, receiverRegistry().receiver());  // We need to retry so that the materialisation does a join
                 }
                 receiverRegistry().setNotPulling();

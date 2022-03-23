@@ -60,7 +60,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
 
     @Override
     public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider.identifier(), identifier(), packet));
         providerRegistry().recordReceive(provider);
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
@@ -76,6 +76,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
 
     @Override
     public void pull(Receiver.Sync<PACKET> receiver) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver.identifier(),identifier()));
         receiverRegistry().recordPull(receiver);
         bufferPositions.putIfAbsent(receiver, 0);
         if (bufferList.size() == bufferPositions.get(receiver)) {

@@ -47,7 +47,7 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET> {
 
     @Override
     public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider, this, packet));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider.identifier(), identifier(), packet));
         providerRegistry().recordReceive(provider);
     }
 

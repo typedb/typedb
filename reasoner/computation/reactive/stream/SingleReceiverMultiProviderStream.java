@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public class SingleReceiverMultiProviderStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT> {
 
@@ -38,6 +39,7 @@ public class SingleReceiverMultiProviderStream<INPUT, OUTPUT> extends SingleRece
     @Override
     public void pull(Receiver.Sync<OUTPUT> receiver) {
         assert receiver.equals(receiverRegistry().receiver());
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver.identifier(), identifier()));
         receiverRegistry().recordPull(receiver);
         providerRegistry().nonPulling().forEach(p -> p.pull(this));
     }

@@ -21,10 +21,7 @@ package com.vaticle.typedb.core.reasoner.utils;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,67 +75,67 @@ public final class Tracer {
         return Optional.ofNullable(INSTANCE);
     }
 
-    public synchronized void pull(@Nullable Receiver receiver, Provider provider) {
+    public synchronized void pull(@Nullable Identifier receiverId, Identifier providerId) {
+        pull(receiverId, providerId, EdgeType.PULL, "pull");
+    }
+
+    public synchronized void pullRetry(Identifier receiverId, Identifier providerId) {
+        pull(receiverId, providerId, EdgeType.RETRY, "retry");
+    }
+
+    private void pull(@Nullable Identifier receiverId, Identifier providerId, EdgeType edgeType, String edgeLabel) {
         String receiverString;
-        if (receiver == null) receiverString = "root";
+        if (receiverId == null) receiverString = "root";
         else {
-            receiverString = receiver.identifier().toString();
-            addNodeGroup(receiver.identifier().toString(), receiver.identifier().toString(), defaultTrace);
+            receiverString = receiverId.toString();
+            addNodeGroup(receiverId.toString(), receiverId.toString(), defaultTrace);
         }
-        addMessage(receiverString, provider.identifier().toString(), defaultTrace, EdgeType.PULL, "pull");
-        addNodeGroup(provider.identifier().toString(), provider.identifier().toString(), defaultTrace);
+        addMessage(receiverString, providerId.toString(), defaultTrace, edgeType, edgeLabel);
+        addNodeGroup(providerId.toString(), providerId.toString(), defaultTrace);
     }
 
-    public void pull(Reactive.Identifier receiver, Reactive.Identifier identifier) {
-        // TODO
+    public <PACKET> void receive(Identifier providerId, Identifier receiverId, PACKET packet) {
+        addMessage(providerId.toString(), receiverId.toString(), defaultTrace, EdgeType.RECEIVE, packet.toString());
+        addNodeGroup(receiverId.toString(), receiverId.toString(), defaultTrace);
+        addNodeGroup(providerId.toString(), providerId.toString(), defaultTrace);
     }
 
-    public synchronized <OUTPUT> void receive(Provider provider, Receiver receiver, OUTPUT packet) {
-        addMessage(provider.identifier().toString(), receiver.identifier().toString(), defaultTrace, EdgeType.RECEIVE, packet.toString());
-        addNodeGroup(receiver.identifier().toString(), receiver.identifier().toString(), defaultTrace);
-        addNodeGroup(provider.identifier().toString(), provider.identifier().toString(), defaultTrace);
-    }
-
-    public <PACKET> void receive(Reactive.Identifier providerId, Processor.Input<PACKET> input, PACKET packet) {
-        // TODO
-    }
-
-    public void registerRoot(Reactive.Identifier root, Actor.Driver<Monitor> monitor) {
+    public void registerRoot(Identifier root, Actor.Driver<Monitor> monitor) {
         addMessage(root.toString(), monitor.debugName().get(), defaultTrace, EdgeType.ROOT, "reg_root");
     }
 
-    public void rootFinalised(Reactive.Identifier root, Actor.Driver<Monitor> monitor) {
+    public void rootFinalised(Identifier root, Actor.Driver<Monitor> monitor) {
         addMessage(root.toString(), monitor.debugName().get(), defaultTrace, EdgeType.ROOT_FINALISED, "root_finished");
     }
 
-    public void finishRootNode(Reactive.Identifier root, Actor.Driver<Monitor> monitor) {
+    public void finishRootNode(Identifier root, Actor.Driver<Monitor> monitor) {
         addMessage(monitor.debugName().get(), root.toString(), defaultTrace, EdgeType.ROOT_FINISH, "finished");
     }
 
-    public void registerPath(Reactive.Identifier receiver, @Nullable Reactive.Identifier provider, Actor.Driver<Monitor> monitor) {
+    public void registerPath(Identifier receiver, @Nullable Identifier provider, Actor.Driver<Monitor> monitor) {
         String providerName;
         if (provider == null) providerName = "entry";  // TODO: Prevent provider from ever being null
         else providerName = provider.toString();
         addMessage(receiver.toString(), monitor.debugName().get(), defaultTrace, EdgeType.REGISTER, "reg_" + providerName);
     }
 
-    public void registerSource(Reactive.Identifier source, Actor.Driver<Monitor> monitor) {
+    public void registerSource(Identifier source, Actor.Driver<Monitor> monitor) {
         addMessage(source.toString(), monitor.debugName().get(), defaultTrace, EdgeType.SOURCE, "reg_source");
     }
 
-    public void sourceFinished(Reactive.Identifier source, Actor.Driver<Monitor> monitor) {
+    public void sourceFinished(Identifier source, Actor.Driver<Monitor> monitor) {
         addMessage(source.toString(), monitor.debugName().get(), defaultTrace, EdgeType.SOURCE_FINISH, "source_finished");
     }
 
-    public void createAnswer(Reactive.Identifier provider, Actor.Driver<Monitor> monitor) {
+    public void createAnswer(Identifier provider, Actor.Driver<Monitor> monitor) {
         addMessage(provider.toString(), monitor.debugName().get(), defaultTrace, EdgeType.CREATE, "create");
     }
 
-    public void consumeAnswer(Reactive.Identifier receiver, Actor.Driver<Monitor> monitor) {
+    public void consumeAnswer(Identifier receiver, Actor.Driver<Monitor> monitor) {
         addMessage(receiver.toString(), monitor.debugName().get(), defaultTrace, EdgeType.CONSUME, "consume");
     }
 
-    public void forkFrontier(int numForks, Reactive.Identifier forker, Actor.Driver<Monitor> monitor) {
+    public void forkFrontier(int numForks, Identifier forker, Actor.Driver<Monitor> monitor) {
         addMessage(forker.toString(), monitor.debugName().get(), defaultTrace, EdgeType.FORK, "fork" + numForks);
     }
 
@@ -275,6 +272,7 @@ public final class Tracer {
 
     enum EdgeType {
         PULL("blue"),
+        RETRY("blue"),
         RECEIVE("green"),
         ROOT("black"),
         ROOT_FINISH("brown"),

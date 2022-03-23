@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Supplier;
 
@@ -44,6 +45,7 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
     @Override
     public void pull(Receiver.Sync<PACKET> receiver) {
         assert receiver.equals(receiverRegistry().receiver());
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver.identifier(), identifier()));
         receiverRegistry().recordPull(receiver);
         if (!exhausted) {
             if (iterator == null) iterator = iteratorSupplier.get();

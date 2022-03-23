@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public class FindFirstStream<PACKET> extends SingleReceiverSingleProviderStream<PACKET, PACKET> {
 
@@ -44,6 +45,7 @@ public class FindFirstStream<PACKET> extends SingleReceiverSingleProviderStream<
 
     @Override
     public void pull(Receiver.Sync<PACKET> receiver) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver.identifier(), identifier()));
         if (!packetFound) super.pull(receiver);
     }
 }

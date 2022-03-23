@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.Stack;
 
@@ -46,6 +46,7 @@ public class BufferedStream<PACKET> extends SingleReceiverSingleProviderStream<P
     @Override
     public void pull(Receiver.Sync<PACKET> receiver) {
         assert receiver.equals(receiverRegistry().receiver());
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver.identifier(),identifier()));
         receiverRegistry().recordPull(receiver);
         if (stack.size() > 0) {
             receiver.receive(this, stack.pop());
