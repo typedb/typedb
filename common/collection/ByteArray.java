@@ -21,14 +21,18 @@ package com.vaticle.typedb.core.common.collection;
 import com.google.common.primitives.UnsignedBytes;
 import com.vaticle.typedb.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
@@ -37,6 +41,7 @@ import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_UNSIGNED_MAX_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.UNENCODABLE_STRING;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 public abstract class ByteArray implements Comparable<ByteArray> {
@@ -48,12 +53,12 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         this.array = array;
     }
 
-    public static ByteArray.Base of(byte[] array) {
+    public static ByteArray of(byte[] array) {
         return new ByteArray.Base(array);
     }
 
     public static ByteArray empty() {
-        return new ByteArray.Base(new byte[]{});
+        return Base.EMPTY;
     }
 
     public abstract byte[] getBytes();
@@ -123,19 +128,13 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         return Base64.getEncoder().encodeToString(getBytes());
     }
 
-    public static ByteArray.Base encodeString(String string) {
-        return of(string.getBytes());
-    }
-
-    public static ByteArray.Base encodeString(String string, Charset encoding) {
+    public static ByteArray encodeString(String string, Charset encoding) {
         return of(string.getBytes(encoding));
     }
 
-    public abstract String decodeString();
-
     public abstract String decodeString(Charset encoding);
 
-    public static ByteArray.Base encodeUnsignedShort(int num) {
+    public static ByteArray encodeUnsignedShort(int num) {
         byte[] bytes = new byte[SHORT_SIZE];
         bytes[1] = (byte) (num);
         bytes[0] = (byte) (num >> 8);
@@ -156,7 +155,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     public abstract int decodeInt();
 
-    public static ByteArray.Base encodeUUID(UUID uuid) {
+    public static ByteArray encodeUUID(UUID uuid) {
         ByteBuffer buffer = ByteBuffer.wrap(new byte[16]);
         buffer.putLong(uuid.getMostSignificantBits());
         buffer.putLong(uuid.getLeastSignificantBits());
@@ -257,7 +256,11 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     }
 
     public static ByteArray encodeStringAsSorted(String value, Charset encoding) throws TypeDBCheckedException {
-        byte[] bytes = value.getBytes();
+        // note: cannot cache encoder because it is not thread safe
+        if (!encoding.newEncoder().canEncode(value)) {
+            throw TypeDBException.of(UNENCODABLE_STRING, value, encoding.name());
+        }
+        byte[] bytes = value.getBytes(encoding);
         if (bytes.length > SHORT_UNSIGNED_MAX_VALUE) {
             throw TypeDBCheckedException.of(ILLEGAL_STRING_SIZE, SHORT_UNSIGNED_MAX_VALUE);
         }
@@ -276,6 +279,27 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     public LocalDateTime decodeSortedAsDateTime(ZoneId timeZoneID) {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(decodeSortedAsLong()), timeZoneID);
+    }
+
+    public static ByteArray encodeLongs(List<Long> longs) {
+        ByteArray[] encoded = new ByteArray[longs.size()];
+        Iterator<Long> iterator = longs.iterator();
+        int i = 0;
+        while (iterator.hasNext()) {
+            encoded[i] = encodeLong(iterator.next());
+            assert encoded[i].length() == LONG_SIZE;
+            i++;
+        }
+        return join(encoded);
+    }
+
+    public List<Long> decodeLongs() {
+        assert length() % LONG_SIZE == 0;
+        List<Long> longs = new ArrayList<>(length() / LONG_SIZE);
+        for (int i = 0; i < length(); i += LONG_SIZE) {
+            longs.add(view(i, i + LONG_SIZE).decodeLong());
+        }
+        return longs;
     }
 
     @Override
@@ -313,6 +337,8 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     }
 
     public static class Base extends ByteArray {
+
+        private static final ByteArray EMPTY = new Base(new byte[]{});
 
         public Base(byte[] array) {
             super(array);
@@ -359,11 +385,6 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         void copyTo(byte[] destination, int pos) {
             assert pos + array.length <= destination.length;
             System.arraycopy(array, 0, destination, pos, array.length);
-        }
-
-        @Override
-        public String decodeString() {
-            return new String(array);
         }
 
         @Override
@@ -477,11 +498,6 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         void copyTo(byte[] destination, int pos) {
             assert pos + length <= destination.length;
             System.arraycopy(array, start, destination, pos, length);
-        }
-
-        @Override
-        public String decodeString() {
-            return new String(array, start, length);
         }
 
         @Override

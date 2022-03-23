@@ -18,19 +18,24 @@
 
 package com.vaticle.typedb.core.concept.type;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.concept.thing.Relation;
+
 
 public interface RelationType extends ThingType {
 
     @Override
-    FunctionalIterator<? extends RelationType> getSubtypes();
+    Forwardable<? extends RelationType, Order.Asc> getSubtypes();
 
     @Override
-    FunctionalIterator<? extends RelationType> getSubtypesExplicit();
+    Forwardable<? extends RelationType, Order.Asc> getSubtypesExplicit();
 
     @Override
-    FunctionalIterator<? extends Relation> getInstances();
+    Forwardable<? extends Relation, Order.Asc> getInstances();
+
+    @Override
+    Forwardable<? extends Relation, Order.Asc> getInstancesExplicit();
 
     void setSupertype(RelationType superType);
 
@@ -40,9 +45,9 @@ public interface RelationType extends ThingType {
 
     void unsetRelates(String roleLabel);
 
-    FunctionalIterator<? extends RoleType> getRelates();
+    Forwardable<? extends RoleType, Order.Asc> getRelates();
 
-    FunctionalIterator<? extends RoleType> getRelatesExplicit();
+    Forwardable<? extends RoleType, Order.Asc> getRelatesExplicit();
 
     RoleType getRelates(String roleLabel);
 

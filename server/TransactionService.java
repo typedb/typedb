@@ -50,6 +50,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -59,6 +60,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.EMPTY_TRANSACTION_REQUEST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ITERATION_WITH_UNKNOWN_ID;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.TRANSACTION_EXCEEDED_MAX_SECONDS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.BAD_TRANSACTION_TYPE;
@@ -66,11 +68,13 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ALREADY_OPENED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_NOT_OPENED;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.scheduled;
 import static com.vaticle.typedb.core.server.common.RequestReader.applyDefaultOptions;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Transaction.serverMsg;
 import static com.vaticle.typedb.protocol.TransactionProto.Transaction.Stream.State.CONTINUE;
 import static com.vaticle.typedb.protocol.TransactionProto.Transaction.Stream.State.DONE;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class TransactionService implements StreamObserver<TransactionProto.Transaction.Client>, AutoCloseable {
 
@@ -86,7 +90,9 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     private volatile SessionService sessionSvc;
     private volatile TypeDB.Transaction transaction;
+    private volatile Options.Transaction options;
     private volatile Services services;
+    private volatile ScheduledFuture<?> scheduledTimeout;
     private volatile int networkLatencyMillis;
 
     private class Services {
@@ -117,10 +123,14 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     @Override
-    public void onCompleted() { close(); }
+    public void onCompleted() {
+        close();
+    }
 
     @Override
-    public void onError(Throwable error) { close(error); }
+    public void onError(Throwable error) {
+        close(error);
+    }
 
     private synchronized void execute(TransactionProto.Transaction.Req request) {
         FactoryTracingThreadStatic.ThreadTrace trace = null;
@@ -185,10 +195,13 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         networkLatencyMillis = Math.min(openReq.getNetworkLatencyMillis(), MAX_NETWORK_LATENCY_MILLIS);
         sessionSvc = sessionService(typeDBSvc, openReq);
         sessionSvc.register(this);
-        transaction = transaction(sessionSvc, openReq);
+        options = new Options.Transaction().parent(sessionSvc.options());
+        applyDefaultOptions(options, openReq.getOptions());
+        transaction = transaction(sessionSvc, openReq, options);
         services = new Services();
         respond(ResponseBuilder.Transaction.open(byteStringAsUUID(request.getReqId())));
         isTransactionOpen.set(true);
+        scheduledTimeout = scheduled().schedule(this::timeout, options.transactionTimeoutMillis(), MILLISECONDS);
     }
 
     private static SessionService sessionService(TypeDBService typeDBSvc, TransactionProto.Transaction.Open.Req req) {
@@ -198,11 +211,10 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         return sessionSvc;
     }
 
-    private static TypeDB.Transaction transaction(SessionService sessionSvc, TransactionProto.Transaction.Open.Req req) {
+    private static TypeDB.Transaction transaction(SessionService sessionSvc, TransactionProto.Transaction.Open.Req req,
+                                                  Options.Transaction options) {
         Arguments.Transaction.Type type = Arguments.Transaction.Type.of(req.getType().getNumber());
         if (type == null) throw TypeDBException.of(BAD_TRANSACTION_TYPE, req.getType());
-        Options.Transaction options = new Options.Transaction().parent(sessionSvc.options());
-        applyDefaultOptions(options, req.getOptions());
         return sessionSvc.session().transaction(type, options);
     }
 
@@ -267,23 +279,29 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         if (trace != null) trace.close();
     }
 
+    private void timeout() {
+        close(TypeDBException.of(TRANSACTION_EXCEEDED_MAX_SECONDS, MILLISECONDS.toSeconds(options.transactionTimeoutMillis())));
+    }
+
     @Override
-    public synchronized void close() {
+    public void close() {
         if (isRPCAlive.compareAndSet(true, false)) {
             if (isTransactionOpen.compareAndSet(true, false)) {
                 transaction.close();
-                sessionSvc.remove(this);
+                sessionSvc.closed(this);
             }
+            if (scheduledTimeout != null) scheduledTimeout.cancel(false);
             responder.onCompleted();
         }
     }
 
-    public synchronized void close(Throwable error) {
+    public void close(Throwable error) {
         if (isRPCAlive.compareAndSet(true, false)) {
             if (isTransactionOpen.compareAndSet(true, false)) {
                 transaction.close();
-                sessionSvc.remove(this);
+                sessionSvc.closed(this);
             }
+            if (scheduledTimeout != null) scheduledTimeout.cancel(false);
             responder.onError(ResponseBuilder.exception(error));
             // TODO: We should restrict the type of errors that we log.
             //       Expected error handling from the server side does not need to be logged - they create noise.

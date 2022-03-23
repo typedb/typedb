@@ -17,13 +17,14 @@
 
 package com.vaticle.typedb.core.graph.structure.impl;
 
-import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.graph.common.Storage.Key;
 import com.vaticle.typedb.core.graph.iid.IndexIID;
+import com.vaticle.typedb.core.graph.iid.PropertyIID;
 import com.vaticle.typedb.core.graph.iid.StructureIID;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -43,12 +44,12 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeString;
-import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.LABEL;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.THEN;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.WHEN;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 
 public abstract class RuleStructureImpl implements RuleStructure {
 
@@ -198,10 +199,14 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         @Override
-        public Conjunction<? extends Pattern> when() { return when; }
+        public Conjunction<? extends Pattern> when() {
+            return when;
+        }
 
         @Override
-        public ThingVariable<?> then() { return then; }
+        public ThingVariable<?> then() {
+            return then;
+        }
 
         @Override
         public void delete() {
@@ -220,8 +225,8 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         private void commitVertex() {
-            graph.storage().putUntracked(iid.bytes());
-            graph.storage().putUntracked(IndexIID.Rule.of(label).bytes(), iid.bytes());
+            graph.storage().putUntracked(iid);
+            graph.storage().putUntracked(IndexIID.Rule.of(label), iid.bytes());
         }
 
         private void commitProperties() {
@@ -231,30 +236,33 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         private void commitPropertyLabel() {
-            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), encodeString(label));
+            graph.storage().putUntracked(PropertyIID.Structure.of(iid, LABEL), encodeString(label, STRING_ENCODING));
         }
 
         private void commitWhen() {
-            graph.storage().putUntracked(join(iid.bytes(), WHEN.infix().bytes()), encodeString(when().toString()));
+            graph.storage().putUntracked(PropertyIID.Structure.of(iid, WHEN),
+                    encodeString(when().toString(), STRING_ENCODING));
         }
 
         private void commitThen() {
-            graph.storage().putUntracked(join(iid.bytes(), THEN.infix().bytes()), encodeString(then().toString()));
+            graph.storage().putUntracked(PropertyIID.Structure.of(iid, THEN),
+                    encodeString(then().toString(), STRING_ENCODING));
         }
 
         private void indexReferences() {
             types().forEachRemaining(type -> graph.rules().references().buffered().put(this, type));
         }
-
     }
 
     public static class Persisted extends RuleStructureImpl {
 
         public Persisted(TypeGraph graph, StructureIID.Rule iid) {
             super(graph, iid,
-                  graph.storage().get(join(iid.bytes(), LABEL.infix().bytes())).decodeString(),
-                  TypeQL.parsePattern(graph.storage().get(join(iid.bytes(), WHEN.infix().bytes())).decodeString()).asConjunction(),
-                  TypeQL.parseVariable(graph.storage().get(join(iid.bytes(), THEN.infix().bytes())).decodeString()).asThing()
+                    graph.storage().get(PropertyIID.Structure.of(iid, LABEL)).decodeString(STRING_ENCODING),
+                    TypeQL.parsePattern(graph.storage().get(PropertyIID.Structure.of(iid, WHEN))
+                            .decodeString(STRING_ENCODING)).asConjunction(),
+                    TypeQL.parseVariable(graph.storage().get(PropertyIID.Structure.of(iid, THEN))
+                            .decodeString(STRING_ENCODING)).asThing()
             );
         }
 
@@ -276,9 +284,9 @@ public abstract class RuleStructureImpl implements RuleStructure {
         @Override
         public void label(String label) {
             graph.rules().update(this, this.label, label);
-            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), encodeString(label));
-            graph.storage().deleteUntracked(IndexIID.Rule.of(this.label).bytes());
-            graph.storage().putUntracked(IndexIID.Rule.of(label).bytes(), iid.bytes());
+            graph.storage().putUntracked(PropertyIID.Structure.of(iid, LABEL), encodeString(label, STRING_ENCODING));
+            graph.storage().deleteUntracked(IndexIID.Rule.of(this.label));
+            graph.storage().putUntracked(IndexIID.Rule.of(label), iid.bytes());
             this.label = label;
         }
 
@@ -288,17 +296,23 @@ public abstract class RuleStructureImpl implements RuleStructure {
                 graph.rules().references().delete(this, types());
                 deleteVertexFromGraph();
                 deleteVertexFromStorage();
+                deletePropertiesFromStorage();
             }
         }
 
+        private void deletePropertiesFromStorage() {
+            Key.Prefix<PropertyIID.Structure> prefix = PropertyIID.Structure.prefix(iid);
+            FunctionalIterator<PropertyIID.Structure> properties = graph.storage().iterate(prefix).map(KeyValue::key);
+            while (properties.hasNext()) graph.storage().deleteUntracked(properties.next());
+        }
+
         private void deleteVertexFromStorage() {
-            graph.storage().deleteUntracked(IndexIID.Rule.of(label).bytes());
-            FunctionalIterator<ByteArray> keys = graph.storage().iterate(iid.bytes()).map(KeyValue::key);
-            while (keys.hasNext()) graph.storage().deleteUntracked(keys.next());
+            graph.storage().deleteUntracked(IndexIID.Rule.of(label));
+            graph.storage().deleteUntracked(iid);
         }
 
         @Override
-        public void commit() {}
+        public void commit() {
+        }
     }
-
 }

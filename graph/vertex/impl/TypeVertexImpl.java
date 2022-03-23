@@ -26,8 +26,9 @@ import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.adjacency.TypeAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.TypeAdjacencyImpl;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.common.StatisticsBytes;
+import com.vaticle.typedb.core.graph.common.Storage.Key;
 import com.vaticle.typedb.core.graph.iid.IndexIID;
+import com.vaticle.typedb.core.graph.iid.PropertyIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
@@ -37,7 +38,6 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeString;
-import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
@@ -48,6 +48,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Property.LABEL;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.REGEX;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.SCOPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Property.VALUE_TYPE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
@@ -60,11 +61,12 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     final TypeGraph graph;
     final AtomicBoolean isDeleted;
-    final TypeAdjacency outs;
-    final TypeAdjacency ins;
+    final TypeAdjacency.Out outs;
+    final TypeAdjacency.In ins;
     boolean isModified;
     String label;
     String scope;
+    Label properLabel;
     Boolean isAbstract; // needs to be declared as the Boolean class
     Encoding.ValueType valueType;
     Pattern regex;
@@ -82,8 +84,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         this.label = label;
         this.scope = scope;
         this.isDeleted = new AtomicBoolean(false);
-        this.outs = newAdjacency(Encoding.Direction.Adjacency.OUT);
-        this.ins = newAdjacency(Encoding.Direction.Adjacency.IN);
+        this.outs = newOutAdjacency();
+        this.ins = newInAdjacency();
         outOwnsCount = UNSET_COUNT;
         outPlaysCount = UNSET_COUNT;
         outRelatesCount = UNSET_COUNT;
@@ -115,12 +117,12 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     }
 
     @Override
-    public TypeAdjacency outs() {
+    public TypeAdjacency.Out outs() {
         return outs;
     }
 
     @Override
-    public TypeAdjacency ins() {
+    public TypeAdjacency.In ins() {
         return ins;
     }
 
@@ -156,16 +158,17 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     @Override
     public Label properLabel() {
-        return Label.of(label, scope);
+        if (properLabel == null) setProperLabel();
+        return properLabel;
     }
 
-    /**
-     * Instantiates a new {@code TypeAdjacency} class
-     *
-     * @param direction the direction of the edges held in {@code TypeAdjacency}
-     * @return the new {@code TypeAdjacency} class
-     */
-    protected abstract TypeAdjacency newAdjacency(Encoding.Direction.Adjacency direction);
+    void setProperLabel() {
+        this.properLabel = Label.of(label, scope);
+    }
+
+    protected abstract TypeAdjacency.In newInAdjacency();
+
+    protected abstract TypeAdjacency.Out newOutAdjacency();
 
     @Override
     public boolean isEntityType() {
@@ -262,6 +265,11 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         ins.commit();
     }
 
+    @Override
+    public int compareTo(TypeVertex o) {
+        return iid.compareTo(o.iid());
+    }
+
     public static class Buffered extends TypeVertexImpl {
 
         private final AtomicBoolean isCommitted;
@@ -273,8 +281,13 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        protected TypeAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
-            return new TypeAdjacencyImpl.Buffered(this, direction);
+        protected TypeAdjacency.In newInAdjacency() {
+            return new TypeAdjacencyImpl.Buffered.In(this);
+        }
+
+        @Override
+        protected TypeAdjacency.Out newOutAdjacency() {
+            return new TypeAdjacencyImpl.Buffered.Out(this);
         }
 
         @Override
@@ -282,6 +295,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             assert !isDeleted();
             graph.update(this, this.label, scope, label, scope);
             this.label = label;
+            setProperLabel();
         }
 
         @Override
@@ -289,6 +303,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
             assert !isDeleted();
             graph.update(this, label, this.scope, label, scope);
             this.scope = scope;
+            setProperLabel();
         }
 
         @Override
@@ -353,8 +368,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         private void commitVertex() {
-            graph.storage().putUntracked(iid.bytes());
-            graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
+            graph.storage().putUntracked(iid);
+            graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope), iid.bytes());
         }
 
         private void commitProperties() {
@@ -366,23 +381,23 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         private void commitPropertyScope() {
-            graph.storage().putUntracked(join(iid.bytes(), SCOPE.infix().bytes()), encodeString(scope));
+            graph.storage().putUntracked(PropertyIID.Type.of(iid, SCOPE), encodeString(scope, STRING_ENCODING));
         }
 
         private void commitPropertyAbstract() {
-            graph.storage().putUntracked(join(iid.bytes(), ABSTRACT.infix().bytes()));
+            graph.storage().putUntracked(PropertyIID.Type.of(iid, ABSTRACT));
         }
 
         private void commitPropertyLabel() {
-            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), encodeString(label));
+            graph.storage().putUntracked(PropertyIID.Type.of(iid, LABEL), encodeString(label, STRING_ENCODING));
         }
 
         private void commitPropertyValueType() {
-            graph.storage().putUntracked(join(iid.bytes(), VALUE_TYPE.infix().bytes()), valueType.bytes());
+            graph.storage().putUntracked(PropertyIID.Type.of(iid, VALUE_TYPE), valueType.bytes());
         }
 
         private void commitPropertyRegex() {
-            graph.storage().putUntracked(join(iid.bytes(), REGEX.infix().bytes()), encodeString(regex.pattern()));
+            graph.storage().putUntracked(PropertyIID.Type.of(iid, REGEX), encodeString(regex.pattern(), STRING_ENCODING));
         }
     }
 
@@ -397,20 +412,25 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
         public Persisted(TypeGraph graph, VertexIID.Type iid) {
             super(graph, iid,
-                    graph.storage().get(join(iid.bytes(), LABEL.infix().bytes())).decodeString(),
+                    graph.storage().get(PropertyIID.Type.of(iid, LABEL)).decodeString(STRING_ENCODING),
                     getScope(graph, iid));
         }
 
         @Nullable
         private static String getScope(TypeGraph graph, VertexIID.Type iid) {
-            ByteArray scopeBytes = graph.storage().get(join(iid.bytes(), SCOPE.infix().bytes()));
-            if (scopeBytes != null) return scopeBytes.decodeString();
+            ByteArray scopeBytes = graph.storage().get(PropertyIID.Type.of(iid, SCOPE));
+            if (scopeBytes != null) return scopeBytes.decodeString(STRING_ENCODING);
             else return null;
         }
 
         @Override
-        protected TypeAdjacency newAdjacency(Encoding.Direction.Adjacency direction) {
-            return new TypeAdjacencyImpl.Persisted(this, direction);
+        protected TypeAdjacency.In newInAdjacency(){
+            return new TypeAdjacencyImpl.Persisted.In(this);
+        }
+
+        @Override
+        protected TypeAdjacency.Out newOutAdjacency(){
+            return new TypeAdjacencyImpl.Persisted.Out(this);
         }
 
         @Override
@@ -422,26 +442,28 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         public void label(String label) {
             assert !isDeleted();
             graph.update(this, this.label, scope, label, scope);
-            graph.storage().putUntracked(join(iid.bytes(), LABEL.infix().bytes()), encodeString(label));
-            graph.storage().deleteUntracked(IndexIID.Type.Label.of(this.label, scope).bytes());
-            graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
+            graph.storage().putUntracked(PropertyIID.Type.of(iid, LABEL), encodeString(label, STRING_ENCODING));
+            graph.storage().deleteUntracked(IndexIID.Type.Label.of(this.label, scope));
+            graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope), iid.bytes());
             this.label = label;
+            setProperLabel();
         }
 
         @Override
         public void scope(String scope) {
             assert !isDeleted();
             graph.update(this, label, this.scope, label, scope);
-            graph.storage().putUntracked(join(iid.bytes(), SCOPE.infix().bytes()), encodeString(scope));
-            graph.storage().deleteUntracked(IndexIID.Type.Label.of(label, this.scope).bytes());
-            graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope).bytes(), iid.bytes());
+            graph.storage().putUntracked(PropertyIID.Type.of(iid, SCOPE), encodeString(scope, STRING_ENCODING));
+            graph.storage().deleteUntracked(IndexIID.Type.Label.of(label, this.scope));
+            graph.storage().putUntracked(IndexIID.Type.Label.of(label, scope), iid.bytes());
             this.scope = scope;
+            setProperLabel();
         }
 
         @Override
         public boolean isAbstract() {
             if (isAbstract != null) return isAbstract;
-            ByteArray flag = graph.storage().get(join(iid.bytes(), ABSTRACT.infix().bytes()));
+            ByteArray flag = graph.storage().get(PropertyIID.Type.of(iid, ABSTRACT));
             isAbstract = flag != null;
             return isAbstract;
         }
@@ -449,8 +471,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public TypeVertexImpl isAbstract(boolean isAbstract) {
             assert !isDeleted();
-            if (isAbstract) graph.storage().putUntracked(join(iid.bytes(), ABSTRACT.infix().bytes()));
-            else graph.storage().deleteUntracked(join(iid.bytes(), ABSTRACT.infix().bytes()));
+            if (isAbstract) graph.storage().putUntracked(PropertyIID.Type.of(iid, ABSTRACT));
+            else graph.storage().deleteUntracked(PropertyIID.Type.of(iid, ABSTRACT));
             this.isAbstract = isAbstract;
             this.setModified();
             return this;
@@ -459,7 +481,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public Encoding.ValueType valueType() {
             if (valueType != null) return valueType;
-            ByteArray val = graph.storage().get(join(iid.bytes(), VALUE_TYPE.infix().bytes()));
+            ByteArray val = graph.storage().get(PropertyIID.Type.of(iid, VALUE_TYPE));
             if (val != null) valueType = Encoding.ValueType.of(val.get(0));
             return valueType;
         }
@@ -467,7 +489,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public TypeVertexImpl valueType(Encoding.ValueType valueType) {
             assert !isDeleted();
-            graph.storage().putUntracked(join(iid.bytes(), VALUE_TYPE.infix().bytes()), valueType.bytes());
+            graph.storage().putUntracked(PropertyIID.Type.of(iid, VALUE_TYPE), valueType.bytes());
             this.valueType = valueType;
             this.setModified();
             return this;
@@ -476,8 +498,8 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public Pattern regex() {
             if (regexLookedUp) return regex;
-            ByteArray val = graph.storage().get(join(iid.bytes(), REGEX.infix().bytes()));
-            if (val != null) regex = Pattern.compile(val.decodeString());
+            ByteArray val = graph.storage().get(PropertyIID.Type.of(iid, REGEX));
+            if (val != null) regex = Pattern.compile(val.decodeString(STRING_ENCODING));
             regexLookedUp = true;
             return regex;
         }
@@ -485,9 +507,11 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         @Override
         public TypeVertexImpl regex(Pattern regex) {
             assert !isDeleted();
-            if (regex == null) graph.storage().deleteUntracked(join(iid.bytes(), REGEX.infix().bytes()));
-            else
-                graph.storage().putUntracked(join(iid.bytes(), REGEX.infix().bytes()), encodeString(regex.pattern()));
+            if (regex == null) graph.storage().deleteUntracked(PropertyIID.Type.of(iid, REGEX));
+            else {
+                graph.storage().putUntracked(PropertyIID.Type.of(iid, REGEX),
+                        encodeString(regex.pattern(), STRING_ENCODING));
+            }
             this.regex = regex;
             this.setModified();
             return this;
@@ -504,14 +528,19 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
                 deleteEdges();
                 deleteVertexFromGraph();
                 deleteVertexFromStorage();
+                deletePropertiesFromStorage();
             }
         }
 
+        private void deletePropertiesFromStorage() {
+            Key.Prefix<PropertyIID.Type> prefix = PropertyIID.Type.prefix(iid);
+            FunctionalIterator<PropertyIID.Type> properties = graph.storage().iterate(prefix).map(KeyValue::key);
+            while (properties.hasNext()) graph.storage().deleteUntracked(properties.next());
+        }
+
         private void deleteVertexFromStorage() {
-            graph.storage().deleteUntracked(IndexIID.Type.Label.of(label, scope).bytes());
-            FunctionalIterator<ByteArray> keys = graph.storage().iterate(iid.bytes()).map(KeyValue::key);
-            while (keys.hasNext()) graph.storage().deleteUntracked(keys.next());
-            graph.storage().deleteUntracked(StatisticsBytes.vertexCountKey(iid));
+            graph.storage().deleteUntracked(IndexIID.Type.Label.of(label, scope));
+            graph.storage().deleteUntracked(iid);
         }
     }
 }

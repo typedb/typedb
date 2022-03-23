@@ -30,12 +30,8 @@ host_compatible_java_test(
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
-        "//rocks:rocks",
+        "//database:database",
         "//traversal:traversal",
-    ],
-    resource_strip_prefix = "common/test",
-    resources = [
-        "//common/test:logback-test",
     ],
     test_class = "com.vaticle.typedb.core.logic.RuleTest",
     deps = [
@@ -54,7 +50,7 @@ host_compatible_java_test(
     test_class = "com.vaticle.typedb.core.logic.TypeInferenceTest",
     native_libraries_deps = [
         "//:typedb",
-        "//rocks:rocks",
+        "//database:database",
         "//common",
         "//common/test:util",
         "//concept:concept",
@@ -71,10 +67,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
     ],
     data = [":basic-schema.tql", ":test-type-inference.tql"],
-    resources = [
-        "//common/test:logback-test"
-    ],
-    resource_strip_prefix = "common/test",
 )
 
 host_compatible_java_test(
@@ -82,7 +74,7 @@ host_compatible_java_test(
     srcs = ["resolvable/UnifyRelationConcludableTest.java", "resolvable/Util.java"],
     native_libraries_deps = [
         # Internal dependencies
-        "//rocks:rocks",
+        "//database:database",
         "//:typedb",
         "//common:common",
         "//concept:concept",
@@ -106,7 +98,7 @@ host_compatible_java_test(
     native_libraries_deps = [
         # Internal dependencies
         "//:typedb",
-        "//rocks:rocks",
+        "//database:database",
         "//common:common",
         "//concept:concept",
         "//logic:logic",
@@ -129,7 +121,7 @@ host_compatible_java_test(
     native_libraries_deps = [
         # Internal dependencies
         "//:typedb",
-        "//rocks:rocks",
+        "//database:database",
         "//common:common",
         "//concept:concept",
         "//logic:logic",
@@ -144,10 +136,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
-    resources = [
-        "//common/test:logback-test"
-    ],
-    resource_strip_prefix = "common/test",
 )
 
 host_compatible_java_test(
@@ -157,7 +145,7 @@ host_compatible_java_test(
         # Internal dependencies
         "//:typedb",
         "//common:common",
-        "//rocks:rocks",
+        "//database:database",
         "//concept:concept",
         "//logic:logic",
         "//pattern:pattern",
@@ -171,10 +159,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
-    resources = [
-        "//common/test:logback-test"
-    ],
-    resource_strip_prefix = "common/test",
 )
 
 host_compatible_java_test(

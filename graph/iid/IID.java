@@ -49,8 +49,7 @@ public abstract class IID {
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         return bytes.hashCode();
     }
-
 }

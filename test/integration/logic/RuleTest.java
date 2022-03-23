@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.logic;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.common.parameters.Options.Database;
+import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -30,13 +30,13 @@ import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.rocks.RocksSession;
-import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
@@ -54,6 +54,7 @@ import java.util.Set;
 import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
@@ -68,7 +69,8 @@ import static org.junit.Assert.assertFalse;
 public class RuleTest {
     private static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("rule-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageIndexCacheSize(MB).storageDataCacheSize(MB);
     private static String database = "rule-test";
 
     private Variable getVariable(Set<Variable> vars, Identifier identifier) {
@@ -79,10 +81,10 @@ public class RuleTest {
     public void rule_relation_materialises_when_missing() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
 
@@ -100,8 +102,8 @@ public class RuleTest {
                     txn.commit();
                 }
             }
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     txn.query().insert(TypeQL.parseQuery("insert $x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage;").asInsert());
 
@@ -130,10 +132,10 @@ public class RuleTest {
     public void rule_relation_does_not_materialise_when_present() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
 
@@ -151,8 +153,8 @@ public class RuleTest {
                     txn.commit();
                 }
             }
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     RelationType friendship = conceptMgr.getRelationType("friendship");
                     txn.query().insert(TypeQL.parseQuery("insert $x isa person; $y isa person; " +
@@ -180,10 +182,10 @@ public class RuleTest {
     public void rule_has_variable_materialises_when_missing() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
 
                     EntityType milk = conceptMgr.putEntityType("milk");
@@ -198,8 +200,8 @@ public class RuleTest {
                     txn.commit();
                 }
             }
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
 
                     EntityType milk = conceptMgr.getEntityType("milk");
@@ -227,10 +229,10 @@ public class RuleTest {
     public void rule_has_explicit_materialises_when_missing() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
 
                     EntityType milk = conceptMgr.putEntityType("milk");
@@ -245,8 +247,8 @@ public class RuleTest {
                     txn.commit();
                 }
             }
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
 
                     EntityType milk = conceptMgr.getEntityType("milk");
@@ -276,10 +278,10 @@ public class RuleTest {
     public void rule_indexes_created_and_readable() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
 
@@ -330,8 +332,8 @@ public class RuleTest {
                     txn.commit();
                 }
             }
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
 
                     Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
@@ -357,10 +359,10 @@ public class RuleTest {
     public void rule_indexes_update_on_rule_delete() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
 
@@ -400,7 +402,7 @@ public class RuleTest {
                     txn.commit();
                 }
                 // check index after commit, and delete some rules
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     LogicManager logicMgr = txn.logic();
                     Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
                     Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
@@ -417,8 +419,8 @@ public class RuleTest {
                 }
             }
             // check indexed types, should only includes rules that are still present
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
                     Set<Rule> friendshipRules = logicMgr.rulesConcluding(Label.of("friendship")).toSet();
                     Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
@@ -435,10 +437,10 @@ public class RuleTest {
     public void new_type_updates_rule_conclusion_index() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
 
@@ -463,7 +465,7 @@ public class RuleTest {
                     txn.commit();
                 }
                 // add a new subtype of an attribute in a rule
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     AttributeType lastName = conceptMgr.putAttributeType("last-name", AttributeType.ValueType.STRING);
                     lastName.setSupertype(conceptMgr.getAttributeType("name"));
@@ -471,7 +473,7 @@ public class RuleTest {
                     txn.commit();
                 }
                 // check the new attribute type is re-indexed in the conclusions index
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
                     Rule marriageSameName = logicMgr.getRule("marriage-same-name");
                     assertEquals(set(marriageSameName), logicMgr.rulesConcludingHas(Label.of("last-name")).toSet());
@@ -493,10 +495,10 @@ public class RuleTest {
     public void rule_contains_indexes_prevent_undefining_contained_types() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
 
@@ -527,7 +529,7 @@ public class RuleTest {
 
                     txn.commit();
                 }
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     EntityType person = conceptMgr.getEntityType("person");
                     assertThrowsTypeDBException(person::delete, ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES.code());
@@ -540,10 +542,10 @@ public class RuleTest {
     public void rule_contains_indexes_allow_deleting_type_after_deleting_rule() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     LogicManager logicMgr = txn.logic();
                     GraphManager graphMgr = logicMgr.graph();
@@ -579,7 +581,7 @@ public class RuleTest {
                     txn.commit();
                 }
                 // check the rule index is still established after commit
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     Rule marriageFriendsRule = txn.logic().getRule("marriage-is-friendship");
                     assertIndexTypesContainRule(set(Label.of("person"), Label.of("spouse", "marriage"),
                                                     Label.of("marriage"), Label.of("friend", "friendship"), Label.of("friendship")),
@@ -591,21 +593,21 @@ public class RuleTest {
                     );
                 }
                 // deleting a relation type used in a rule should throw
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     RelationType friendship = conceptMgr.getRelationType("friendship");
                     assertThrowsTypeDBException(friendship::delete, ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES.code());
                     assertTrue(!txn.isOpen());
                 }
                 // deleting an attribute type used in a rule should throw
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     AttributeType name = conceptMgr.getAttributeType("name");
                     assertThrowsTypeDBException(name::delete, ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES.code());
                     assertTrue(!txn.isOpen());
                 }
                 // deleting a rule, then an attribute type used in the rule is allowed
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     AttributeType name = conceptMgr.getAttributeType("name");
 
@@ -616,7 +618,7 @@ public class RuleTest {
                     txn.commit();
                 }
                 // deleting a rule, then an entity type used in the rule is allowed
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     ConceptManager conceptMgr = txn.concepts();
                     RelationType person = conceptMgr.getRelationType("friendship");
                     LogicManager logicMgr = txn.logic();
@@ -626,7 +628,7 @@ public class RuleTest {
                     txn.commit();
                 }
                 // after all rules are deleted, no rules should exist in the index
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
                     LogicManager logicMgr = txn.logic();
                     GraphManager graphMgr = logicMgr.graph();
                     // no types should be in the index
@@ -642,10 +644,10 @@ public class RuleTest {
     public void rule_then_that_cannot_be_satisfied_throws_an_error() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
 
                     final EntityType person = conceptMgr.putEntityType("person");
@@ -668,10 +670,10 @@ public class RuleTest {
     public void rule_when_that_cannot_be_satisfied_throws_an_error() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
 
                     final EntityType person = conceptMgr.putEntityType("person");
@@ -694,10 +696,10 @@ public class RuleTest {
     public void rule_that_cannot_be_inserted_throws_an_error() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
                     final ConceptManager conceptMgr = txn.concepts();
 
                     final EntityType animal = conceptMgr.putEntityType("animal");
@@ -718,13 +720,34 @@ public class RuleTest {
     }
 
     @Test
+    public void rule_with_ambiguous_then_throws() throws IOException {
+        Util.resetDirectory(dataDir);
+
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    txn.query().define(TypeQL.parseQuery("define " +
+                            "person sub entity, plays marriage:husband, plays marriage:wife;" +
+                            "marriage sub relation, relates husband, relates wife;"));
+
+                    assertThrows(() -> txn.logic().putRule(
+                            "invalid-marriage-insertion",
+                            TypeQL.parsePattern("{$x isa person;}").asConjunction(),
+                            TypeQL.parseVariable("(role: $x) isa marriage;").asThing()));
+                }
+            }
+        }
+    }
+
+    @Test
     public void rule_with_negated_cycle_throws_an_error() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
-            try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-                try (RocksTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
 
                     txn.query().define(TypeQL.parseQuery("define " +
                                                                  "person sub entity, owns is-starting-school, owns grade;" +

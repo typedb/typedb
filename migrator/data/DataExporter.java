@@ -49,7 +49,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FIL
 public class DataExporter {
     private static final Logger LOG = LoggerFactory.getLogger(DataExporter.class);
 
-    private final TypeDB typedb;
+    private final TypeDB.DatabaseManager databaseMgr;
     private final String database;
     private final Path filename;
     private final String version;
@@ -58,9 +58,9 @@ public class DataExporter {
     private long totalAttributeCount;
     private long totalRelationCount;
 
-    public DataExporter(TypeDB typedb, String database, Path filename, String version) {
-        if (!typedb.databases().contains(database)) throw TypeDBException.of(DATABASE_NOT_FOUND, database);
-        this.typedb = typedb;
+    public DataExporter(TypeDB.DatabaseManager databaseMgr, String database, Path filename, String version) {
+        if (!databaseMgr.contains(database)) throw TypeDBException.of(DATABASE_NOT_FOUND, database);
+        this.databaseMgr = databaseMgr;
         this.database = database;
         this.filename = filename;
         this.version = version;
@@ -71,7 +71,7 @@ public class DataExporter {
         LOG.info("Exporting {} from TypeDB {}", database, version);
         try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(filename))) {
             export(outputStream, header());
-            try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA);
+            try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA);
                  TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
                 totalEntityCount = tx.concepts().getRootEntityType().getInstancesCount();
                 totalAttributeCount = tx.concepts().getRootAttributeType().getInstancesCount();

@@ -17,6 +17,7 @@
 
 artifacts = [
     "ch.qos.logback:logback-classic",
+    "ch.qos.logback:logback-core",
     "commons-io:commons-io",
     "com.github.ben-manes.caffeine:caffeine",
     "com.google.code.findbugs:jsr305",
@@ -30,7 +31,6 @@ artifacts = [
     "com.google.ortools:ortools-win32-x86-64-java",
     "com.google.protobuf:protobuf-java",
     "com.eclipsesource.minimal-json:minimal-json",
-    "info.picocli:picocli",
     "io.cucumber:cucumber-java",
     "io.cucumber:cucumber-junit",
     "io.grpc:grpc-api",
@@ -39,8 +39,7 @@ artifacts = [
     "io.netty:netty-all",
     "junit:junit",
     "org.rocksdb:rocksdbjni",
-    "org.rocksdb:rocksdbjni-dev",
-    "org.rocksdb:rocksdbjni-dev-linux",
+    "org.rocksdb:rocksdbjni-dev-mac",
     "org.slf4j:slf4j-api",
     "org.zeroturnaround:zt-exec"
 ]

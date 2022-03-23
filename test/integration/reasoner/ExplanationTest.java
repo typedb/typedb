@@ -28,11 +28,11 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
-import com.vaticle.typedb.core.rocks.RocksSession;
-import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.concept.answer.ConceptMap.Explainable.NOT_IDENTIFIED;
 import static org.junit.Assert.assertEquals;
@@ -61,16 +62,17 @@ public class ExplanationTest {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("query-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageIndexCacheSize(MB).storageDataCacheSize(MB);
     private static final String database = "explanation-test";
-    private static RocksTypeDB typedb;
+    private static CoreDatabaseManager databaseMgr;
 
-    private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType) {
+    private CoreTransaction singleThreadElgTransaction(CoreSession session, Arguments.Transaction.Type transactionType) {
         return singleThreadElgTransaction(session, transactionType, new Options.Transaction().infer(true));
     }
 
-    private RocksTransaction singleThreadElgTransaction(RocksSession session, Arguments.Transaction.Type transactionType, Options.Transaction options) {
-        RocksTransaction transaction = session.transaction(transactionType, options.infer(true));
+    private CoreTransaction singleThreadElgTransaction(CoreSession session, Arguments.Transaction.Type transactionType, Options.Transaction options) {
+        CoreTransaction transaction = session.transaction(transactionType, options.infer(true));
         ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("typedb-actor"));
         transaction.reasoner().controllerRegistry().setExecutorService(service);
         return transaction;
@@ -79,19 +81,19 @@ public class ExplanationTest {
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(database);
     }
 
     @After
     public void tearDown() {
-        typedb.close();
+        databaseMgr.close();
     }
 
     @Test
     public void test_disjunction_explainable() {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
 
@@ -113,12 +115,12 @@ public class ExplanationTest {
                 txn.commit();
             }
         }
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
                 List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery(
                         "match $p1 isa person; { (friend: $p1, friend: $p2) isa friendship;} or { $p1 has name 'Zack'; }; "
                 ).asMatch()).toList();
@@ -153,8 +155,8 @@ public class ExplanationTest {
 
     @Test
     public void test_relation_explainable() {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
 
@@ -176,12 +178,12 @@ public class ExplanationTest {
                 txn.commit();
             }
         }
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
                 List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
                 assertEquals(2, ans.size());
 
@@ -196,8 +198,8 @@ public class ExplanationTest {
 
     @Test
     public void test_relation_explainable_multiple_ways() {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
 
@@ -223,12 +225,12 @@ public class ExplanationTest {
                 txn.commit();
             }
         }
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
                 List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
                 assertEquals(2, ans.size());
 
@@ -243,8 +245,8 @@ public class ExplanationTest {
 
     @Test
     public void test_has_explicit_explainable_two_ways() {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
 
@@ -265,14 +267,14 @@ public class ExplanationTest {
             }
         }
 
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 5;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 10;").asInsert());
                 txn.query().insert(TypeQL.parseQuery("insert $x isa milk, has age-in-days 15;").asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
                 List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x has is-still-good $a;").asMatch()).toList();
                 assertEquals(3, ans.size());
 
@@ -298,8 +300,8 @@ public class ExplanationTest {
 
     @Test
     public void test_has_variable_explainable_two_ways() {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 LogicManager logicMgr = txn.logic();
                 txn.query().define(TypeQL.parseQuery("define " +
                                                              "user sub entity, " +
@@ -327,8 +329,8 @@ public class ExplanationTest {
             }
         }
 
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert " +
                                                              "$x isa user; " +
                                                              "$wg isa user-group, has name \"write\", has permission \"write\";" +
@@ -338,7 +340,7 @@ public class ExplanationTest {
                 ).asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
                 List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x isa user, has permission \"write\";").asMatch()).toList();
                 assertEquals(1, ans.size());
 
@@ -350,8 +352,8 @@ public class ExplanationTest {
 
     @Test
     public void test_all_transitive_explanations() {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 LogicManager logicMgr = txn.logic();
                 txn.query().define(TypeQL.parseQuery("define " +
                                                              "location sub entity, " +
@@ -370,8 +372,8 @@ public class ExplanationTest {
             }
         }
 
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert " +
                                                              "(subordinate: $a, superior: $b) isa location-hierarchy; " +
                                                              "(subordinate: $b, superior: $c) isa location-hierarchy; " +
@@ -383,7 +385,7 @@ public class ExplanationTest {
                 ).asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
                 List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $r isa location-hierarchy;").asMatch()).toList();
                 assertEquals(10, ans.size());
 
@@ -417,8 +419,8 @@ public class ExplanationTest {
 
     @Test
     public void test_nested_explanations() {
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 ConceptManager conceptMgr = txn.concepts();
                 LogicManager logicMgr = txn.logic();
 
@@ -457,8 +459,8 @@ public class ExplanationTest {
             }
         }
 
-        try (RocksSession session = typedb.session(database, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert " +
                                                              "(male: $x, female: $y, location: $l) isa wedding;" +
                                                              "$x isa person, has gender \"male\";" +
@@ -467,7 +469,7 @@ public class ExplanationTest {
                 ).asInsert());
                 txn.commit();
             }
-            try (RocksTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
                 List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match ($x) isa friendship;").asMatch()).toList();
                 assertEquals(2, ans.size());
 
@@ -487,7 +489,7 @@ public class ExplanationTest {
     }
 
     private List<Explanation> assertSingleExplainableExplanations(ConceptMap ans, int anonymousConcepts, int explainablesCount,
-                                                                  int explanationsCount, RocksTransaction txn) {
+                                                                  int explanationsCount, CoreTransaction txn) {
         List<ConceptMap.Explainable> explainables = ans.explainables().iterator().toList();
         assertEquals(anonymousConcepts, iterate(ans.concepts().keySet()).filter(Identifier::isAnonymous).count());
         assertEquals(explainablesCount, explainables.size());

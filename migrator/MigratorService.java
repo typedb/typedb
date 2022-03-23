@@ -17,9 +17,9 @@
 
 package com.vaticle.typedb.core.migrator;
 
+import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.migrator.data.DataExporter;
 import com.vaticle.typedb.core.migrator.data.DataImporter;
-import com.vaticle.typedb.core.TypeDB;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -32,18 +32,18 @@ import java.util.concurrent.CompletableFuture;
 public class MigratorService extends MigratorGrpc.MigratorImplBase {
     private static final Logger LOG = LoggerFactory.getLogger(MigratorService.class);
 
-    private final TypeDB typedb;
+    private final TypeDB.DatabaseManager databaseMgr;
     private final String version;
 
-    public MigratorService(TypeDB typedb, String version) {
-        this.typedb = typedb;
+    public MigratorService(TypeDB.DatabaseManager databaseMgr, String version) {
+        this.databaseMgr = databaseMgr;
         this.version = version;
     }
 
     @Override
     public void exportData(MigratorProto.Export.Req request, StreamObserver<MigratorProto.Export.Progress> responseObserver) {
-        DataExporter exporter = new DataExporter(typedb, request.getDatabase(), Paths.get(request.getFilename()), version);
         try {
+            DataExporter exporter = new DataExporter(databaseMgr, request.getDatabase(), Paths.get(request.getFilename()), version);
             CompletableFuture<Void> migratorJob = CompletableFuture.runAsync(exporter::run);
             while (!migratorJob.isDone()) {
                 Thread.sleep(1000);
@@ -59,9 +59,9 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
 
     @Override
     public void importData(MigratorProto.Import.Req request, StreamObserver<MigratorProto.Import.Progress> responseObserver) {
-        DataImporter importer = new DataImporter(typedb, request.getDatabase(), Paths.get(request.getFilename()),
-                request.getRemapLabelsMap(), version);
+        DataImporter importer = null;
         try {
+            importer = new DataImporter(databaseMgr, request.getDatabase(), Paths.get(request.getFilename()), version);
             CompletableFuture<Void> migratorJob = CompletableFuture.runAsync(importer::run);
             while (!migratorJob.isDone()) {
                 Thread.sleep(1000);
@@ -73,7 +73,7 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
             LOG.error(e.getMessage(), e);
             responseObserver.onError(exception(e));
         } finally {
-            importer.close();
+            if (importer != null) importer.close();
         }
     }
 

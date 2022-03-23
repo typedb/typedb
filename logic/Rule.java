@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -68,7 +69,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_CAN_HAVE_INVALID_CONCLUSION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_CONCLUSION_AMBIGUOUS_LABELLED_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_CONCLUSION_ILLEGAL_INSERT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
@@ -183,7 +185,6 @@ public class Rule {
         if (!then.isCoherent()) throw TypeDBException.of(RULE_THEN_CANNOT_BE_SATISFIED, structure.label(), then);
     }
 
-
     /**
      * Remove inferred types in the `then` pattern that are not valid in the `when` pattern
      */
@@ -205,13 +206,13 @@ public class Rule {
             throw TypeDBException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
         }
 
-        logicMgr.typeInference().infer(when);
+        logicMgr.typeInference().applyCombination(when);
         return when.conjunctions().get(0);
     }
 
     private Conjunction thenPattern(com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
-        Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), set());
-        logicMgr.typeInference().infer(conj, true);
+        Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), list());
+        logicMgr.typeInference().applyCombination(conj, true);
         return conj;
     }
 
@@ -273,7 +274,7 @@ public class Rule {
             return negatedConcludablesTriggeringRules;
         }
 
-        private FunctionalIterator<Concludable> concludables(Set<Negation> negations) {
+        private FunctionalIterator<Concludable> concludables(List<Negation> negations) {
             return iterate(negations)
                     .flatMap(neg -> {
                         assert neg.disjunction().conjunctions().size() == 1;
@@ -422,12 +423,26 @@ public class Rule {
         }
 
         private void validateInsertable(LogicManager logicMgr) {
-            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenCombinations = logicMgr.typeInference().typePermutations(rule.when, false);
-            Set<Map<Identifier.Variable.Name, Label>> allowedThenCombinations = logicMgr.typeInference().typePermutations(rule.then, true).toSet();
+            Conjunction clonedThen = rule.then.clone();
+            logicMgr.typeInference().applyCombination(clonedThen, true);
+            Optional<Variable> ambiguousVar = iterate(clonedThen.variables())
+                    .filter(var -> var.isType() && var.id().isLabel() && var.inferredTypes().size() != 1).first();
+            if (ambiguousVar.isPresent()) {
+                throw TypeDBException.of(RULE_CONCLUSION_AMBIGUOUS_LABELLED_TYPE,
+                        rule.structure.label(), ambiguousVar.get().id(), ambiguousVar.get().inferredTypes());
+            }
 
-            whenCombinations.forEachRemaining(nameLabelMap -> {
-                if (allowedThenCombinations.stream().noneMatch(thenMap -> nameLabelMap.entrySet().containsAll(thenMap.entrySet())))
-                    throw TypeDBException.of(RULE_CAN_HAVE_INVALID_CONCLUSION, rule.structure.label(), nameLabelMap.toString());
+            Set<Identifier.Variable.Name> sharedIDs = iterate(rule.then.retrieves())
+                    .filter(id -> id.isName() && rule.when.retrieves().contains(id))
+                    .map(Identifier.Variable::asName).toSet();
+            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenPermutations = logicMgr.typeInference()
+                    .getPermutations(rule.when, false, sharedIDs);
+            Set<Map<Identifier.Variable.Name, Label>> insertableThenPermutations = logicMgr.typeInference()
+                    .getPermutations(rule.then, true, sharedIDs).toSet();
+            whenPermutations.forEachRemaining(nameLabelMap -> {
+                if (!insertableThenPermutations.contains(nameLabelMap)) {
+                    throw TypeDBException.of(RULE_CONCLUSION_ILLEGAL_INSERT, rule.structure.label(), nameLabelMap.toString());
+                }
             });
         }
 

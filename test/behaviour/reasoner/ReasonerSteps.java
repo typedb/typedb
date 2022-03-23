@@ -22,10 +22,10 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.rocks.RocksDatabase;
-import com.vaticle.typedb.core.rocks.RocksSession;
-import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.database.CoreDatabase;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier.initialise;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
@@ -53,12 +54,13 @@ import static org.junit.Assert.assertNull;
 
 public class ReasonerSteps {
 
-    public static RocksTypeDB typedb;
+    public static CoreDatabaseManager databaseMgr;
     public static Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("typedb");
     public static Path logsDir = dataDir.resolve("logs");
-    public static Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logsDir);
-    public static RocksSession session;
-    public static RocksTransaction reasoningTx;
+    public static Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logsDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
+    public static CoreSession session;
+    public static CoreTransaction reasoningTx;
     public static String DATABASE = "typedb-reasoner-test";
     private static CorrectnessVerifier correctnessVerifier;
     private static TypeQLMatch typeQLQuery;
@@ -66,11 +68,11 @@ public class ReasonerSteps {
 
     @Before
     public synchronized void before() throws IOException {
-        assertNull(typedb);
+        assertNull(databaseMgr);
         resetDirectory();
         System.out.println("Connecting to TypeDB ...");
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(DATABASE);
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(DATABASE);
     }
 
     @After
@@ -81,18 +83,18 @@ public class ReasonerSteps {
         session = null;
         if (correctnessVerifier != null) correctnessVerifier.close();
         correctnessVerifier = null;
-        typedb.databases().all().forEach(RocksDatabase::delete);
-        typedb.close();
-        assertFalse(typedb.isOpen());
-        typedb = null;
+        databaseMgr.all().forEach(CoreDatabase::delete);
+        databaseMgr.close();
+        assertFalse(databaseMgr.isOpen());
+        databaseMgr = null;
     }
 
-    static RocksSession dataSession() {
-        if (session == null || !session.isOpen()) session = typedb.session(DATABASE, Arguments.Session.Type.DATA);
+    static CoreSession dataSession() {
+        if (session == null || !session.isOpen()) session = databaseMgr.session(DATABASE, Arguments.Session.Type.DATA);
         return session;
     }
 
-    static RocksTransaction reasoningTx() {
+    static CoreTransaction reasoningTx() {
         if (reasoningTx == null || reasoningTx.isOpen()) {
             reasoningTx = dataSession().transaction(Arguments.Transaction.Type.READ,
                                                     new Options.Transaction().infer(true));
@@ -111,8 +113,8 @@ public class ReasonerSteps {
     public void schema(String defineQueryStatements) {
         if (correctnessVerifier != null) correctnessVerifier.close();
         if (session != null) session.close();
-        try (RocksSession session = typedb.session(DATABASE, Arguments.Session.Type.SCHEMA)) {
-            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(DATABASE, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(TypeQL.parseQuery(String.join("\n", defineQueryStatements)).asDefine());
                 tx.commit();
             }
@@ -121,8 +123,8 @@ public class ReasonerSteps {
 
     @Given("reasoning data")
     public void data(String insertQueryStatements) {
-        try (RocksSession session = typedb.session(DATABASE, Arguments.Session.Type.DATA)) {
-            try (RocksTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+        try (CoreSession session = databaseMgr.session(DATABASE, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(TypeQL.parseQuery(String.join("\n", insertQueryStatements)).asInsert());
                 tx.commit();
             }

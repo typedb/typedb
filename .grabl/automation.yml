@@ -31,38 +31,38 @@ build:
       owner: vaticle
       branch: master
     build-analysis:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       command: |
         SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
           bazel run @vaticle_dependencies//tool/sonarcloud:code-analysis -- \
           --project-key=vaticle_typedb \
           --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
     dependency-analysis:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       command: |
         bazel run @vaticle_dependencies//factory/analysis:dependency-analysis
   correctness:
     build:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       command: |
         bazel build //...
         bazel run @vaticle_dependencies//tool/checkstyle:test-coverage
         bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
     build-dependency:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       command: |
         dependencies/maven/update.sh
         git diff --exit-code dependencies/maven/artifacts.snapshot
         bazel run @vaticle_dependencies//tool/unuseddeps:unused-deps -- list
     test-unit:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       command: |
         bazel test //common/... --test_output=streamed
         bazel test //pattern/... --test_output=streamed
         bazel test //logic/... --test_output=streamed
         bazel test //reasoner/... --test_output=streamed
     test-integration:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       command: |
         bazel test //test/integration:test-basic --test_output=streamed
         bazel test //test/integration:test-query --test_output=streamed
@@ -88,32 +88,32 @@ build:
       command: |
         bazel test //test/integration/reasoner:test-resolution-planner --test_output=streamed
     test-behaviour-connection:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       command: |
         bazel test //test/behaviour/connection/... --test_output=streamed
     test-behaviour-concept:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       command: |
         bazel test //test/behaviour/concept/... --test_output=streamed
     test-behaviour-match:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       command: |
         bazel test //test/behaviour/typeql/language/match/... --test_output=streamed
         bazel test //test/behaviour/typeql/language/get/... --test_output=streamed
     test-behaviour-writable:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       command: |
         bazel test //test/behaviour/typeql/language/insert/... --test_output=streamed
         bazel test //test/behaviour/typeql/language/delete/... --test_output=streamed
         bazel test //test/behaviour/typeql/language/update/... --test_output=streamed
     test-behaviour-definable:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       command: |
         bazel test //test/behaviour/typeql/language/define/... --test_output=streamed
         bazel test //test/behaviour/typeql/language/undefine/... --test_output=streamed
         bazel test //test/behaviour/typeql/language/rule_validation/... --test_output=streamed
 #    test-behaviour-reasoner:
-#      image: vaticle-ubuntu-20.04
+#      image: vaticle-ubuntu-21.04
 #      command: |
 #        bazel test //test/behaviour/reasoner/tests/attribute_attachment:test --test_output=streamed
 #        bazel test //test/behaviour/reasoner/tests/compound_queries:test --test_output=streamed
@@ -161,7 +161,7 @@ build:
       image: vaticle-ubuntu-20.04
       command: bazel test //test/behaviour/reasoner/tests/variable_roles:test --test_output=streamed
     test-assembly-linux-targz:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       filter:
         owner: vaticle
         branch: master
@@ -171,7 +171,7 @@ build:
         export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
         bazel test //test/assembly:assembly --test_output=streamed
     test-assembly-docker:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       filter:
         owner: vaticle
         branch: master
@@ -179,7 +179,7 @@ build:
       command: |
         bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       dependencies: [test-assembly-linux-targz]
       command: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
@@ -191,7 +191,7 @@ build:
         bazel run --define version=$(git rev-parse HEAD) //:deploy-mac-zip -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //:deploy-windows-zip -- snapshot
     deploy-apt-snapshot:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       filter:
         owner: vaticle
         branch: master
@@ -207,7 +207,7 @@ build:
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-apt -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
     test-deployment-apt:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       filter:
         owner: vaticle
         branch: master
@@ -221,11 +221,11 @@ release:
     branch: master
   validation:
     validate-dependencies:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       command: bazel test //:release-validate-deps --test_output=streamed
   deployment:
     deploy-github:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       filter:
         owner: vaticle
         branch: master
@@ -233,12 +233,12 @@ release:
         pyenv install -s 3.6.10
         pyenv global 3.6.10 system
         pip install certifi
-        export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run @vaticle_dependencies//tool/release:create-notes -- typedb $(cat VERSION) ./RELEASE_TEMPLATE.md
+        export NOTES_CREATE_TOKEN=$REPO_GITHUB_TOKEN
+        bazel run @vaticle_dependencies//tool/release/notes:create -- $GRABL_OWNER $GRABL_REPO $GRABL_COMMIT $(cat VERSION) ./RELEASE_TEMPLATE.md
         export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
         bazel run --define version=$(cat VERSION) //:deploy-github -- $GRABL_COMMIT
     deploy-brew:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       dependencies: [deploy-github]
       filter:
         owner: vaticle
@@ -249,7 +249,7 @@ release:
         export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN DEPLOY_BREW_USERNAME=$REPO_GITHUB_USERNAME DEPLOY_BREW_EMAIL=$REPO_GITHUB_EMAIL
         bazel run --define version=$(cat VERSION) //:deploy-brew -- release
     deploy-apt-release:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       filter:
         owner: vaticle
         branch: master
@@ -265,7 +265,7 @@ release:
         bazel run --define version=$(cat VERSION) //server:deploy-apt -- release
         bazel run --define version=$(cat VERSION) //:deploy-apt -- release
     deploy-docker:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       filter:
         owner: vaticle
         branch: master
@@ -274,7 +274,7 @@ release:
         docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
         bazel run //:deploy-docker
     deploy-artifact-release:
-      image: vaticle-ubuntu-20.04
+      image: vaticle-ubuntu-21.04
       filter:
         owner: vaticle
         branch: master

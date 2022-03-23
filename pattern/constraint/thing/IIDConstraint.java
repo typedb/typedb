@@ -87,7 +87,7 @@ public class IIDConstraint extends ThingConstraint {
     }
 
     @Override
-    public IIDConstraint clone(Conjunction.Cloner cloner) {
+    public IIDConstraint clone(Conjunction.ConstraintCloner cloner) {
         return cloner.cloneVariable(owner).iid(iid);
     }
 }

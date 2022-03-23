@@ -22,26 +22,36 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.graph.iid.InfixIID;
+import com.vaticle.typedb.core.graph.iid.VertexIID;
+
+import javax.annotation.Nullable;
+import java.util.Objects;
+import java.util.Optional;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 
 public interface Storage {
 
     boolean isOpen();
 
-    ByteArray get(ByteArray key);
+    ByteArray get(Key key);
 
-    ByteArray getLastKey(ByteArray prefix);
+    <T extends Key> T getLastKey(Key.Prefix<T> key);
 
-    void deleteUntracked(ByteArray key);
+    void deleteUntracked(Key key);
 
-    FunctionalIterator.Sorted.Forwardable<KeyValue<ByteArray, ByteArray>> iterate(ByteArray key);
+    <T extends Key> Forwardable<KeyValue<T, ByteArray>, Order.Asc> iterate(Key.Prefix<T> key);
 
-    void putUntracked(ByteArray key);
+    <T extends Key, ORDER extends Order> Forwardable<KeyValue<T, ByteArray>, ORDER> iterate(Key.Prefix<T> key, ORDER order);
 
-    void putUntracked(ByteArray key, ByteArray value);
+    void putUntracked(Key key);
+
+    void putUntracked(Key key, ByteArray value);
 
     TypeDBException exception(ErrorMessage error);
 
@@ -49,7 +59,9 @@ public interface Storage {
 
     void close();
 
-    default boolean isSchema() { return false; }
+    default boolean isSchema() {
+        return false;
+    }
 
     default Schema asSchema() {
         throw exception(TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Schema.class)));
@@ -59,30 +71,149 @@ public interface Storage {
 
         KeyGenerator.Schema schemaKeyGenerator();
 
-        default boolean isSchema() { return true; }
+        default boolean isSchema() {
+            return true;
+        }
 
-        default Schema asSchema() { return this; }
+        default Schema asSchema() {
+            return this;
+        }
     }
 
     interface Data extends Storage {
 
         KeyGenerator.Data dataKeyGenerator();
 
-        void putTracked(ByteArray key);
+        void putTracked(Key key);
 
-        void putTracked(ByteArray key, ByteArray value);
+        void putTracked(Key key, ByteArray value);
 
-        void putTracked(ByteArray key, ByteArray value, boolean checkConsistency);
+        void deleteTracked(Key key);
 
-        void deleteTracked(ByteArray key);
+        void mergeUntracked(Key key, ByteArray value);
 
-        void trackModified(ByteArray bytes);
+        // TODO: investigate why replacing ByteArray with Key for tracking makes navigable set intersection super slow
+        void trackModified(ByteArray key);
 
-        void trackModified(ByteArray bytes, boolean checkConsistency);
+        void trackExclusiveBytes(ByteArray bytes);
+    }
 
-        void trackExclusiveCreate(ByteArray key);
+    interface Key extends Comparable<Key> {
 
-        void mergeUntracked(ByteArray key, ByteArray value);
+        enum Partition {
+            DEFAULT(Encoding.Partition.DEFAULT, null),
+            VARIABLE_START_EDGE(Encoding.Partition.VARIABLE_START_EDGE, null),
+            FIXED_START_EDGE(Encoding.Partition.FIXED_START_EDGE, VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.DEFAULT_LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH),
+            OPTIMISATION_EDGE(Encoding.Partition.OPTIMISATION_EDGE, VertexIID.Thing.DEFAULT_LENGTH + InfixIID.Thing.RolePlayer.LENGTH + VertexIID.Thing.PREFIX_W_TYPE_LENGTH),
+            METADATA(Encoding.Partition.METADATA, null);
 
+            private final Encoding.Partition encoding;
+            private final Integer fixedStartBytes;
+
+            public static Partition fromID(byte ID) {
+                if (ID == Encoding.Partition.DEFAULT.ID()) {
+                    return DEFAULT;
+                } else if (ID == Encoding.Partition.VARIABLE_START_EDGE.ID()) {
+                    return VARIABLE_START_EDGE;
+                } else if (ID == Encoding.Partition.FIXED_START_EDGE.ID()) {
+                    return FIXED_START_EDGE;
+                } else if (ID == Encoding.Partition.OPTIMISATION_EDGE.ID()) {
+                    return OPTIMISATION_EDGE;
+                } else if (ID == Encoding.Partition.METADATA.ID()) {
+                    return METADATA;
+                } else {
+                    throw TypeDBException.of(UNRECOGNISED_VALUE);
+                }
+            }
+
+            Partition(Encoding.Partition encoding, @Nullable Integer fixedStartBytes) {
+                this.encoding = encoding;
+                this.fixedStartBytes = fixedStartBytes;
+            }
+
+            public Encoding.Partition encoding() {
+                return encoding;
+            }
+
+            public Optional<Integer> fixedStartBytes() {
+                return Optional.ofNullable(fixedStartBytes);
+            }
+        }
+
+        ByteArray bytes();
+
+        Partition partition();
+
+        @Override
+        default int compareTo(Key other) {
+            int compare = partition().compareTo(other.partition());
+            if (compare == 0) return bytes().compareTo(other.bytes());
+            else return compare;
+        }
+
+        @Override
+        boolean equals(Object o);
+
+        @Override
+        int hashCode();
+
+        @Override
+        String toString();
+
+        interface Builder<K extends Key> {
+
+            K build(ByteArray bytes);
+        }
+
+        class Prefix<K extends Key> implements Key {
+
+            private final ByteArray prefix;
+            private final Partition partition;
+            private final Builder<K> builder;
+            private int hash = 0;
+
+            public Prefix(ByteArray prefix, Partition partition, Builder<K> builder) {
+                this.prefix = prefix;
+                this.partition = partition;
+                this.builder = builder;
+            }
+
+            @Override
+            public ByteArray bytes() {
+                return prefix;
+            }
+
+            @Override
+            public Partition partition() {
+                return partition;
+            }
+
+            public boolean isFixedStartInPartition() {
+                return partition.fixedStartBytes != null && prefix.length() >= partition.fixedStartBytes;
+            }
+
+            public Builder<K> builder() {
+                return builder;
+            }
+
+            @Override
+            public boolean equals(Object object) {
+                if (this == object) return true;
+                if (object == null || getClass() != object.getClass()) return false;
+                Prefix<?> other = (Prefix<?>) object;
+                return partition.equals(other.partition) && prefix.equals(other.prefix);
+            }
+
+            @Override
+            public int hashCode() {
+                if (hash == 0) hash = Objects.hash(partition, prefix);
+                return hash;
+            }
+
+            @Override
+            public String toString() {
+                return "[" + prefix.length() + ": " + prefix.toHexString() + "][partition: " + partition + "]";
+            }
+        }
     }
 }

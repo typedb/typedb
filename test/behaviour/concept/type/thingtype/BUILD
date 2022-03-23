@@ -65,10 +65,6 @@ java_test(
         "@vaticle_typedb_behaviour//concept/type:thingtype.feature",
     ],
     size = "medium",
-    resources = [
-        "//common/test:logback-test"
-    ],
-    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

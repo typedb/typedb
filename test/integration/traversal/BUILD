@@ -28,7 +28,7 @@ host_compatible_java_test(
         # Internal dependencies
         "//:typedb",
         "//common:common",
-        "//rocks:rocks",
+        "//database:database",
         "//traversal:traversal",
         "//concept:concept",
     ],
@@ -41,10 +41,6 @@ host_compatible_java_test(
         "@vaticle_typeql_lang_java//common",
         "@vaticle_typedb_common//:common"
     ],
-    resources = [
-        "//common/test:logback-test"
-    ],
-    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

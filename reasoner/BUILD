@@ -22,7 +22,7 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test
 package(default_visibility = [
     "//query:__subpackages__",
     "//reasoner:__subpackages__",
-    "//rocks:__pkg__",
+    "//database:__pkg__",
     "//server:__pkg__",
     "//test/integration/reasoner:__pkg__",
     "//test/behaviour/reasoner:__subpackages__",

@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
-import com.vaticle.typedb.core.traversal.GraphTraversal;
+import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
@@ -80,18 +80,18 @@ public class VertexProcedure implements PermutationProcedure {
     }
 
     @Override
-    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
+    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
-        LOG.debug(params.toString());
-        LOG.debug(this.toString());
+        LOG.trace(params.toString());
+        LOG.trace(this.toString());
         return async(iterator(graphMgr, params, filter));
     }
 
     @Override
-    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
+    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter) {
-        LOG.debug(params.toString());
-        LOG.debug(this.toString());
+        LOG.trace(params.toString());
+        LOG.trace(this.toString());
         assert vertex.id().isRetrievable() && filter.contains(vertex.id().asVariable().asRetrievable());
         FunctionalIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params);
         for (ProcedureEdge<?, ?> e : vertex.outs()) {

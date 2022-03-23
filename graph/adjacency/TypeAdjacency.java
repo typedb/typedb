@@ -18,23 +18,66 @@
 
 package com.vaticle.typedb.core.graph.adjacency;
 
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 public interface TypeAdjacency {
 
-    /**
-     * Returns an {@code IteratorBuilder} to retrieve vertices of a set of edges.
-     *
-     * This method allows us to traverse the graph, by going from one vertex to
-     * another, that are connected by edges that match the provided {@code encoding}.
-     *
-     * @param encoding the {@code Encoding} to filter the type of edges
-     * @return an {@code IteratorBuilder} to retrieve vertices of a set of edges.
-     */
-    TypeIteratorBuilder edge(Encoding.Edge.Type encoding);
+    interface In extends TypeAdjacency {
+
+        InEdgeIterator edge(Encoding.Edge.Type encoding);
+
+        @Override
+        default boolean isIn() {
+            return true;
+        }
+
+        interface InEdgeIterator {
+
+            Forwardable<TypeVertex, Order.Asc> from();
+
+            SortedIterator<TypeVertex, Order.Asc> to();
+
+            FunctionalIterator<TypeVertex> overridden();
+
+            Forwardable<KeyValue<TypeVertex, TypeVertex>, Order.Asc> fromAndOverridden();
+        }
+    }
+
+    interface Out extends TypeAdjacency {
+
+        OutEdgeIterator edge(Encoding.Edge.Type encoding);
+
+        @Override
+        default boolean isOut() {
+            return true;
+        }
+
+        interface OutEdgeIterator {
+
+            SortedIterator<TypeVertex, Order.Asc> from();
+
+            Forwardable<TypeVertex, Order.Asc> to();
+
+            FunctionalIterator<TypeVertex> overridden();
+
+            Forwardable<KeyValue<TypeVertex, TypeVertex>, Order.Asc> toAndOverridden();
+        }
+    }
+
+    default boolean isIn() {
+        return false;
+    }
+
+    default boolean isOut() {
+        return false;
+    }
 
     /**
      * Returns an edge of type {@code encoding} that connects to an {@code adjacent}
@@ -66,35 +109,4 @@ public interface TypeAdjacency {
     void remove(TypeEdge edge);
 
     void commit();
-
-
-    /**
-     * When used in combination with purely retrieving type edges (by infix encoding),
-     * this iterator builder performs safe vertex downcasts at both ends of the edge
-     */
-    class TypeIteratorBuilder {
-
-        private final FunctionalIterator<TypeEdge> edgeIterator;
-
-        public TypeIteratorBuilder(FunctionalIterator<TypeEdge> edgeIterator) {
-            this.edgeIterator = edgeIterator;
-        }
-
-        public FunctionalIterator<TypeVertex> from() {
-            return edgeIterator.map(edge -> edge.from().asType());
-        }
-
-        public FunctionalIterator<TypeVertex> to() {
-            return edgeIterator.map(edge -> edge.to().asType());
-        }
-
-        public FunctionalIterator<TypeVertex> overridden() {
-            return edgeIterator.map(TypeEdge::overridden);
-        }
-
-        public FunctionalIterator<TypeEdge> edge() {
-            return edgeIterator;
-        }
-    }
-
 }

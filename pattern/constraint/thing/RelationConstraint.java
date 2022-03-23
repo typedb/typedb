@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.pattern.constraint.thing;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
@@ -40,6 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COLON;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COMMA;
@@ -77,7 +79,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
     }
 
     @Override
-    public RelationConstraint clone(Conjunction.Cloner cloner) {
+    public RelationConstraint clone(Conjunction.ConstraintCloner cloner) {
         return cloner.cloneVariable(owner()).relation(Iterators.iterate(rolePlayers).map(
                 rolePlayer -> rolePlayer.clone(cloner)).toLinkedSet());
     }
@@ -89,30 +91,30 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
     @Override
     public void addTo(GraphTraversal.Thing traversal) {
         for (RolePlayer rolePlayer : rolePlayers) {
+            assert !rolePlayer.inferredRoleTypes.isEmpty();
             ThingVariable player = rolePlayer.player();
             int rep = rolePlayer.repetition();
-            if (rolePlayer.roleType().isPresent()) {
-                TypeVariable roleType = rolePlayer.roleType().get();
-                if (roleType.reference().isName()) {
-                    Identifier.Scoped role = Identifier.Scoped.of(owner.id(), roleType.id(), player.id(), rep);
-                    traversal.relating(owner.id(), role);
-                    traversal.playing(player.id(), role);
-                    traversal.isa(role, roleType.id());
-                } else {
-                    assert roleType.reference().isLabel() && !roleType.inferredTypes().isEmpty();
-                    traversal.rolePlayer(owner.id(), player.id(), roleType.inferredTypes(), rep);
-                }
+            if (rolePlayer.roleType().isPresent() && rolePlayer.roleType().get().id().isName()) {
+                Identifier.Scoped role = Identifier.Scoped.of(owner.id(), rolePlayer.roleType().get().id(), player.id(), rep);
+                traversal.relating(owner.id(), role);
+                traversal.playing(player.id(), role);
+                traversal.isa(role, rolePlayer.roleType().get().id());
+                traversal.types(role, rolePlayer.inferredRoleTypes());
             } else {
-                traversal.rolePlayer(owner.id(), player.id(), rep);
+                traversal.rolePlayer(owner.id(), player.id(), rolePlayer.inferredRoleTypes(), rep);
             }
         }
     }
 
     @Override
-    public boolean isRelation() { return true; }
+    public boolean isRelation() {
+        return true;
+    }
 
     @Override
-    public RelationConstraint asRelation() { return this; }
+    public RelationConstraint asRelation() {
+        return this;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -163,13 +165,15 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         private final ThingVariable player;
         private final int repetition;
         private final int hash;
+        private final Set<Label> inferredRoleTypes;
 
         public RolePlayer(@Nullable TypeVariable roleType, ThingVariable player, int repetition) {
-            assert roleType == null || roleType.reference().isName() ||
+            assert roleType == null || roleType.id().isName() ||
                     (roleType.label().isPresent() && roleType.label().get().scope().isPresent());
             if (player == null) throw new NullPointerException("Null player");
             this.roleType = roleType;
             this.player = player;
+            this.inferredRoleTypes = new HashSet<>();
             this.repetition = repetition;
             this.hash = Objects.hash(this.roleType, this.player, this.repetition);
         }
@@ -184,11 +188,13 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         }
 
         public static RolePlayer of(RolePlayer clone, VariableCloner cloner) {
-            return new RolePlayer(
+            RolePlayer rolePlayer = new RolePlayer(
                     clone.roleType().map(cloner::clone).orElse(null),
                     cloner.clone(clone.player()),
                     clone.repetition()
             );
+            rolePlayer.setInferredRoleTypes(clone.inferredRoleTypes);
+            return rolePlayer;
         }
 
         public int repetition() {
@@ -197,6 +203,15 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
         public Optional<TypeVariable> roleType() {
             return Optional.ofNullable(roleType);
+        }
+
+        public Set<Label> inferredRoleTypes() {
+            return inferredRoleTypes;
+        }
+
+        public void setInferredRoleTypes(Set<Label> roleTypes) {
+            this.inferredRoleTypes.clear();
+            this.inferredRoleTypes.addAll(roleTypes);
         }
 
         public ThingVariable player() {
@@ -229,10 +244,12 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
                     .flatMap(a -> player.alphaEquals(that.player).flatMap(a::extendIfCompatible));
         }
 
-        public RolePlayer clone(Conjunction.Cloner cloner) {
+        public RolePlayer clone(Conjunction.ConstraintCloner cloner) {
             TypeVariable roleTypeClone = roleType == null ? null : cloner.cloneVariable(roleType);
             ThingVariable playerClone = cloner.cloneVariable(player);
-            return new RelationConstraint.RolePlayer(roleTypeClone, playerClone, repetition);
+            RolePlayer rpClone = new RolePlayer(roleTypeClone, playerClone, repetition);
+            rpClone.setInferredRoleTypes(this.inferredRoleTypes);
+            return rpClone;
         }
     }
 

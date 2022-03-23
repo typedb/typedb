@@ -43,34 +43,66 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Server(3, "Exited with error.");
         public static final Server UNCAUGHT_EXCEPTION =
                 new Server(4, "Uncaught exception thrown at thread '%s'.");
+        public static final Server CONFIG_FILE_NOT_FOUND =
+                new Server(5, "Could not find/read the configuration file '%s'.");
+        public static final Server UNRECOGNISED_CLI_COMMAND =
+                new Server(6, "The command '%s' was not recognised.");
+        public static final Server CLI_OPTION_MISSING_PREFIX =
+                new Server(7, "All arguments should be prefixed with '%s', which '%s' is missing.");
+        public static final Server DUPLICATE_CLI_OPTION =
+                new Server(8, "Unexpected duplicate command line arguments '%s'.");
+        public static final Server CLI_FLAG_OPTION_HAS_VALUE =
+                new Server(9, "Command line option '%s' does not take a value.");
+        public static final Server CLI_OPTION_REQUIRES_TYPED_VALUE =
+                new Server(10, "Command line option '%s' requires a '%s' value.");
+        public static final Server CLI_OPTION_REQUIRES_VALUE =
+                new Server(11, "Command line option '%s' requires a value.");
+        public static final Server CLI_OPTION_REQUIRED =
+                new Server(12, "Missing required command line option: '%s'.");
+        public static final Server CLI_OPTION_UNRECOGNISED =
+                new Server(13, "Unrecognized command line option: '%s'.");
+        public static final Server CONFIG_YAML_MUST_BE_MAP =
+                new Server(14, "The configuration file must be a YAML map.");
+        public static final Server CONFIG_SECTION_MUST_BE_MAP =
+                new Server(15, "The configuration section with key '%s' must be a key-value map.");
+        public static final Server MISSING_CONFIG_OPTION =
+                new Server(16, "Required configuration '%s' is missing.");
+        public static final Server UNRECOGNISED_CONFIGURATION_OPTIONS =
+                new Server(17, "The provided configuration(s) '%s' are unrecognised.");
+        public static final Server CONFIG_UNEXPECTED_VALUE =
+                new Server(18, "Configuration '%s' received an unexpeted value '%s'. It must be '%s'.");
+        public static final Server CONFIG_ENUM_UNEXPECTED_VALUE =
+                new Server(19, "Configuration '%s' received an unexpected value '%s'. It must be one of '%s'.");
+        public static final Server CONFIG_OUTPUT_UNRECOGNISED =
+                new Server(20, "Configuration output named '%s' was not recognised (check the output definition names).");
+        public static final Server CONFIG_REASONER_REQUIRES_DIR_OUTPUT =
+                new Server(21, "Reasoner debugger configuration requires a directory output");
         public static final Server FAILED_AT_STOPPING =
-                new Server(5, "Exception occurred while attempting to stop the server");
-        public static final Server PROPERTIES_FILE_NOT_FOUND =
-                new Server(6, "Could not find/read default properties file '%s'.");
-        public static final Server FAILED_PARSE_PROPERTIES =
-                new Server(7, "Failed at parsing properties file.");
+                new Server(22, "Exception occurred while attempting to stop the server.");
         public static final Server ENV_VAR_NOT_FOUND =
-                new Server(8, "Environment variable '%s' is not defined.");
+                new Server(23, "Environment variable '%s' is not defined.");
         public static final Server SERVER_SHUTDOWN =
-                new Server(9, "TypeDB server has been shutdown.");
+                new Server(24, "TypeDB server has been shutdown.");
         public static final Server MISSING_FIELD =
-                new Server(10, "The request message does not contain the required field '%s'.");
+                new Server(25, "The request message does not contain the required field '%s'.");
         public static final Server MISSING_CONCEPT =
-                new Server(11, "Concept does not exist.");
+                new Server(26, "Concept does not exist.");
         public static final Server BAD_VALUE_TYPE =
-                new Server(12, "The value type '%s' was not recognised.");
+                new Server(27, "The value type '%s' was not recognised.");
+        public static final Server TRANSACTION_EXCEEDED_MAX_SECONDS =
+                new Server(28, "Transaction exceeded maximum configured duration of '%s' seconds.");
         public static final Server EMPTY_TRANSACTION_REQUEST =
-                new Server(13, "Empty transaction request.");
+                new Server(29, "Empty transaction request.");
         public static final Server UNKNOWN_REQUEST_TYPE =
-                new Server(14, "The request message was not recognised.");
+                new Server(30, "The request message was not recognised.");
         public static final Server ITERATION_WITH_UNKNOWN_ID =
-                new Server(15, "Iteration was requested for ID '%s', but this ID does not correspond to an existing query iterator.");
+                new Server(31, "Iteration was requested for ID '%s', but this ID does not correspond to an existing query iterator.");
         public static final Server DUPLICATE_REQUEST =
-                new Server(16, "The request with ID '%s' is a duplicate.");
+                new Server(32, "The request with ID '%s' is a duplicate.");
         public static final Server ALREADY_RUNNING =
-                new Server(17, "Another instance of TypeDB server is already running at this port: '%s'.");
+                new Server(33, "Another instance of TypeDB server is already running at this port: '%s'.");
         public static final Server INCOMPATIBLE_JAVA_RUNTIME =
-                new Server(18, "Incompatible Java runtime version: '%s'. Please use Java 11 or above.");
+                new Server(34, "Incompatible Java runtime version: '%s'. Please use Java 11 or above.");
 
         private static final String codePrefix = "SRV";
         private static final String messagePrefix = "Invalid Server Operation";
@@ -95,20 +127,22 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Internal(6, "Attempted to utilise a closed resource.");
         public static final Internal UNRECOGNISED_VALUE =
                 new Internal(7, "Unrecognised encoding value!");
+        public static final Internal STORAGE_PROPERTY_EXCEPTION =
+                new Internal(8, "Failed to get storage property.");
         public static final Internal DIRTY_INITIALISATION =
-                new Internal(8, "Invalid Database Initialisation.");
+                new Internal(9, "Invalid Database Initialisation.");
         public static final Internal TYPEDB_CLOSED =
-                new Internal(9, "Attempted to open a session on a closed TypeDB.");
+                new Internal(10, "Attempted to open a session on a closed TypeDB.");
         public static final Internal OUT_OF_BOUNDS =
-                new Internal(10, "Resource out of bounds.");
+                new Internal(11, "Resource out of bounds.");
         public static final Internal UNEXPECTED_INTERRUPTION =
-                new Internal(11, "Unexpected thread interruption!");
+                new Internal(12, "Unexpected thread interruption!");
         public static final Internal UNEXPECTED_PLANNING_ERROR =
-                new Internal(12, "Unexpected error during traversal plan optimisation.");
+                new Internal(13, "Unexpected error during traversal plan optimisation.");
         public static final Internal UNEXPECTED_OPTIMISER_VALUE =
-                new Internal(13, "Unexpected optimiser value.");
+                new Internal(14, "Unexpected optimiser value.");
         public static final Internal UNIMPLEMENTED =
-                new Internal(14, "This functionality is not yet implemented.");
+                new Internal(15, "This functionality is not yet implemented.");
 
         private static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";
@@ -119,21 +153,28 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
     }
 
     public static class Database extends ErrorMessage {
+        public static final Database INCOMPATIBLE_ENCODING =
+                new Database(1, "Database '%s' has incompatible data version '%d' - this server supports " +
+                        "version '%d'. (Did you copy a database across incompatible server versions?)");
         public static final Database DATABASE_MANAGER_CLOSED =
-                new Database(1, "Attempted to use database manager when it has been closed.");
+                new Database(2, "Attempted to use database manager when it has been closed.");
         public static final Database DATABASE_EXISTS =
-                new Database(2, "The database with the name '%s' already exists.");
+                new Database(3, "The database with the name '%s' already exists.");
         public static final Database DATABASE_NOT_FOUND =
-                new Database(3, "The database with the name '%s' does not exist.");
+                new Database(4, "The database with the name '%s' does not exist.");
         public static final Database DATABASE_DELETED =
-                new Database(4, "Database with the name '%s' has been deleted.");
+                new Database(5, "Database with the name '%s' has been deleted.");
         public static final Database DATABASE_CLOSED =
-                new Database(5, "Attempted to open a new session from the database '%s' that has been closed.");
+                new Database(6, "Attempted to open a new session from the database '%s' that has been closed.");
         public static final Database DATABASE_NAME_RESERVED =
-                new Database(6, "Database name must not start with an underscore.");
+                new Database(7, "Database name must not start with an underscore.");
+        public static final Database ROCKS_LOGGER_SHUTDOWN_TIMEOUT =
+                new Database(8, "Background RocksDB properties logger shutdown timed out.");
+        public static final Database STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT =
+                new Database(9, "Background statistics corrector shutdowne timed out.");
 
         private static final String codePrefix = "DBS";
-        private static final String messagePrefix = "Invalid Database Operations";
+        private static final String messagePrefix = "Invalid Database Operation";
 
         Database(int number, String message) {
             super(codePrefix, number, messagePrefix, message);
@@ -147,6 +188,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Session(2, "Attempted to open a transaction from closed session.");
         public static final Session SCHEMA_ACQUIRE_LOCK_TIMEOUT =
                 new Session(3, "Could not acquire lock for schema session. Another schema session may have been left open.");
+        public static final Session SESSION_IDLE_TIMEOUT_NOT_CONFIGURABLE =
+                new Session(4, "The session idle timeout is not configurable at the '%s' level.");
 
         private static final String codePrefix = "SSN";
         private static final String messagePrefix = "Invalid Session Operation";
@@ -173,12 +216,12 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Transaction(7, "Attempted schema writes when transaction type does not allow.");
         public static final Transaction TRANSACTION_DATA_READ_VIOLATION =
                 new Transaction(8, "Attempted data writes when transaction type does not allow.");
-        public static final Transaction TRANSACTION_CONSISTENCY_MODIFY_DELETE_VIOLATION =
-                new Transaction(9, "The transaction modifies a key that has been concurrently deleted.");
-        public static final Transaction TRANSACTION_CONSISTENCY_DELETE_MODIFY_VIOLATION =
-                new Transaction(10, "The transaction deletes a key that is concurrently modified.");
-        public static final Transaction TRANSACTION_CONSISTENCY_EXCLUSIVE_CREATE_VIOLATION =
-                new Transaction(11, "The transaction fails to exclusively create a key that is concurrently created.");
+        public static final Transaction TRANSACTION_ISOLATION_MODIFY_DELETE_VIOLATION =
+                new Transaction(9, "The transaction modifies a key that is deleted in a concurrent transaction.");
+        public static final Transaction TRANSACTION_ISOLATION_DELETE_MODIFY_VIOLATION =
+                new Transaction(10, "The transaction deletes a key that is modified in concurrent transaction.");
+        public static final Transaction TRANSACTION_ISOLATION_EXCLUSIVE_CREATE_VIOLATION =
+                new Transaction(11, "The transaction fails to create a key that is created exclusively in a concurrent transaction.");
         public static final Transaction SESSION_DATA_VIOLATION =
                 new Transaction(12, "Attempted schema writes when session type does not allow.");
         public static final Transaction SESSION_SCHEMA_VIOLATION =
@@ -191,6 +234,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Transaction(16, "Could not acquire lock for data transaction. A schema session may have been left open.");
         public static final Transaction RPC_PREFETCH_SIZE_TOO_SMALL =
                 new Transaction(17, "RPC answer streaming prefetch size must be at least 1, is set to: %d.");
+        public static final Transaction TRANSACTION_TIMEOUT_NOT_CONFIGURABLE =
+                new Transaction(18, "Transaction timeout cannot be configured at the '%s' level.");
 
         private static final String codePrefix = "TXN";
         private static final String messagePrefix = "Invalid Transaction Operation";
@@ -233,7 +278,13 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_REGEX =
                 new Pattern(15, "The type variable '%s' has multiple 'regex' constraints.");
         public static final Pattern UNSATISFIABLE_PATTERN =
-                new Pattern(16, "The pattern '%s' can never be satisfied the current schema, specifically due to '%s'.");
+                new Pattern(16, "The pattern '%s' can never be satisfied the current schema.");
+        public static final Pattern UNSATISFIABLE_SUB_PATTERN =
+                new Pattern(17, "The pattern '%s' can never be satisfied the current schema, due to '%s'.");
+        public static final Pattern UNSATISFIABLE_PATTERN_VARIABLE =
+                new Pattern(18, "The pattern '%s' can never be satisfied the current schema, due to contradicting types for '%s'.");
+        public static final Pattern UNSATISFIABLE_PATTERN_VARIABLE_VALUE =
+                new Pattern(19, "The pattern '%s' can never be satisfied the current schema, due to contradicting attribute value types for '%s'.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";
@@ -278,64 +329,66 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new ThingWrite(1, "Attempted an illegal write of a new '%s' of abstract type '%s'.");
         public static final ThingWrite ILLEGAL_STRING_SIZE =
                 new ThingWrite(2, "Attempted to insert a string larger than the maximum possible size: %s bytes.");
+        public static final ThingWrite UNENCODABLE_STRING =
+                new ThingWrite(3, "The string '%s' cannot be encoded to bytes using the encoding '%s'.");
         public static final ThingWrite THING_HAS_BEEN_DELETED =
-                new ThingWrite(3, "The thing with iid '%s' has been deleted and cannot be modified any further.");
+                new ThingWrite(4, "The thing with iid '%s' has been deleted and cannot be modified any further.");
         public static final ThingWrite THING_CANNOT_OWN_ATTRIBUTE =
-                new ThingWrite(4, "Attribute of type '%s' is not defined to be owned by type '%s'.");
+                new ThingWrite(5, "Attribute of type '%s' is not defined to be owned by type '%s'.");
         public static final ThingWrite THING_KEY_OVER =
-                new ThingWrite(5, "Attempted to assign a key of type '%s' onto a(n) '%s' that already has one.");
+                new ThingWrite(6, "Attempted to assign a key of type '%s' onto a(n) '%s' that already has one.");
         public static final ThingWrite THING_KEY_TAKEN =
-                new ThingWrite(6, "Attempted to assign a key '%s' of type '%s' that had been taken by another '%s'.");
+                new ThingWrite(7, "Attempted to assign a key '%s' of type '%s' that had been taken by another '%s'.");
         public static final ThingWrite THING_KEY_MISSING =
-                new ThingWrite(7, "Attempted to commit a(n) '%s' that is missing key(s) of type(s): %s"); // don't put quotes around the last %s
+                new ThingWrite(8, "Attempted to commit a(n) '%s' that is missing key(s) of type(s): %s"); // don't put quotes around the last %s
         public static final ThingWrite THING_ROLE_UNPLAYED =
-                new ThingWrite(8, "The thing type '%s' does not play the role type '%s'.");
+                new ThingWrite(9, "The thing type '%s' does not play the role type '%s'.");
         public static final ThingWrite RELATION_ROLE_UNRELATED =
-                new ThingWrite(9, "Relation type '%s' does not relate role type '%s'.");
+                new ThingWrite(10, "Relation type '%s' does not relate role type '%s'.");
         public static final ThingWrite RELATION_PLAYER_MISSING =
-                new ThingWrite(10, "Relation instance of type '%s' does not have any role player");
+                new ThingWrite(11, "Relation instance of type '%s' does not have any role player");
         public static final ThingWrite ATTRIBUTE_VALUE_UNSATISFIES_REGEX =
-                new ThingWrite(11, "Attempted to put an instance of '%s' with value '%s' that does not satisfy the regular expression '%s'.");
+                new ThingWrite(12, "Attempted to put an instance of '%s' with value '%s' that does not satisfy the regular expression '%s'.");
         public static final ThingWrite THING_IID_NOT_INSERTABLE =
-                new ThingWrite(12, "The variable '%s' tries to insert iid '%s'. IIDs are prohibited in insert clauses. You may want to query the variable using IID in the match clause.");
+                new ThingWrite(13, "The variable '%s' tries to insert iid '%s'. IIDs are prohibited in insert clauses. You may want to query the variable using IID in the match clause.");
         public static final ThingWrite THING_ISA_REINSERTION =
-                new ThingWrite(13, "Attempted to re-insert pre-existing thing of matched variable '%s' as a new instance (isa) of type '%s'.");
+                new ThingWrite(14, "Attempted to re-insert pre-existing thing of matched variable '%s' as a new instance (isa) of type '%s'.");
         public static final ThingWrite THING_ISA_MISSING =
-                new ThingWrite(14, "The thing variable '%s' cannot be inserted as a new instance without providing its type (isa).");
+                new ThingWrite(15, "The thing variable '%s' cannot be inserted as a new instance without providing its type (isa).");
         public static final ThingWrite ILLEGAL_TYPE_VARIABLE_IN_INSERT =
-                new ThingWrite(15, "Illegal type variable '%s' found in insert query. Types can only be referred to by their labels in insert queries or then clauses.");
+                new ThingWrite(16, "Illegal type variable '%s' found in insert query. Types can only be referred to by their labels in insert queries or then clauses.");
         public static final ThingWrite ILLEGAL_TYPE_VARIABLE_IN_DELETE =
-                new ThingWrite(16, "Illegal type variable '%s' found in delete query. Types can only be referred to by their labels in delete queries or then clauses.");
+                new ThingWrite(17, "Illegal type variable '%s' found in delete query. Types can only be referred to by their labels in delete queries or then clauses.");
         public static final ThingWrite ILLEGAL_ANONYMOUS_RELATION_IN_DELETE =
-                new ThingWrite(17, "Illegal anonymous relation in delete query: '%s'.  You must match the relation variable by name, and then delete it.");
+                new ThingWrite(18, "Illegal anonymous relation in delete query: '%s'.  You must match the relation variable by name, and then delete it.");
         public static final ThingWrite ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE =
-                new ThingWrite(18, "Illegal anonymous variable in delete query: '%s'.  You can only delete named variables that were matched.");
+                new ThingWrite(19, "Illegal anonymous variable in delete query: '%s'.  You can only delete named variables that were matched.");
         public static final ThingWrite INVALID_DELETE_THING =
-                new ThingWrite(19, "The thing '%s' cannot be deleted, as the provided type '%s' is not a valid type or supertype.");
+                new ThingWrite(20, "The thing '%s' cannot be deleted, as the provided type '%s' is not a valid type or supertype.");
         public static final ThingWrite INVALID_DELETE_THING_DIRECT =
-                new ThingWrite(20, "The thing '%s' cannot be deleted, as the provided direct type '%s' is not valid.");
+                new ThingWrite(21, "The thing '%s' cannot be deleted, as the provided direct type '%s' is not valid.");
         public static final ThingWrite INVALID_DELETE_HAS =
-                new ThingWrite(21, "Invalid attempt to delete attribute ownership. The thing '%s' does not have attribute '%s'.");
+                new ThingWrite(22, "Invalid attempt to delete attribute ownership. The thing '%s' does not have attribute '%s'.");
         public static final ThingWrite ILLEGAL_IS_CONSTRAINT =
-                new ThingWrite(22, "The 'is' constraint, e.g. used in '%s', is not accepted in an insert/delete query.");
+                new ThingWrite(23, "The 'is' constraint, e.g. used in '%s', is not accepted in an insert/delete query.");
         public static final ThingWrite ATTRIBUTE_VALUE_TOO_MANY =
-                new ThingWrite(23, "Unable to insert attribute '%s' of type '%s' with more than one value operations.");
+                new ThingWrite(24, "Unable to insert attribute '%s' of type '%s' with more than one value operations.");
         public static final ThingWrite ATTRIBUTE_VALUE_MISSING =
-                new ThingWrite(24, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
+                new ThingWrite(25, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
         public static final ThingWrite INSERT_RELATION_CONSTRAINT_TOO_MANY =
-                new ThingWrite(25, "Unable to insert relation '%s' as it has more than one relation tuple describing the role players.");
+                new ThingWrite(26, "Unable to insert relation '%s' as it has more than one relation tuple describing the role players.");
         public static final ThingWrite RELATION_CONSTRAINT_MISSING =
-                new ThingWrite(26, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
+                new ThingWrite(27, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
         public static final ThingWrite ROLE_TYPE_AMBIGUOUS =
-                new ThingWrite(27, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
+                new ThingWrite(28, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
         public static final ThingWrite ROLE_TYPE_MISSING =
-                new ThingWrite(28, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
+                new ThingWrite(29, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
         public static final ThingWrite MAX_INSTANCE_REACHED =
-                new ThingWrite(29, "The maximum number of instances for type '%s' has been reached: '%s'");
+                new ThingWrite(30, "The maximum number of instances for type '%s' has been reached: '%s'");
         public static final ThingWrite DELETE_RELATION_CONSTRAINT_TOO_MANY =
-                new ThingWrite(30, "Could not perform delete of role players due to multiple relation constraints being present for relation '%s'.");
+                new ThingWrite(31, "Could not perform delete of role players due to multiple relation constraints being present for relation '%s'.");
         public static final ThingWrite DELETE_ROLEPLAYER_NOT_PRESENT =
-                new ThingWrite(31, "Could not delete roleplayer '%s' as relation '%s' does not relate it.");
+                new ThingWrite(32, "Could not delete roleplayer '%s' as relation '%s' does not relate it.");
 
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";
@@ -354,7 +407,9 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         private static final String codePrefix = "SCG";
         private static final String messagePrefix = "Invalid Schema Graph Operation";
 
-        TypeGraph(int number, String message) { super(codePrefix, number, messagePrefix, message); }
+        TypeGraph(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
+        }
     }
 
     public static class TypeRead extends ErrorMessage {
@@ -510,16 +565,18 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new RuleWrite(2, "A cycle containing negation(s) that can cause inference contradictions has been detected in rules: %s");
         public static final RuleWrite INVALID_NEGATION_CONTAINS_DISJUNCTION =
                 new RuleWrite(3, "The rule '%s' contains a negation containing a disjunction, which is currently unsupported");
-        public static final RuleWrite RULE_CAN_HAVE_INVALID_CONCLUSION =
-                new RuleWrite(4, "The rule '%s''s conclusion may insert types '%s', which is not allowed in the current schema.");
+        public static final RuleWrite RULE_CONCLUSION_ILLEGAL_INSERT =
+                new RuleWrite(4, "The conclusion of rule '%s' may insert types '%s', which is not allowed in the current schema.");
+        public static final RuleWrite RULE_CONCLUSION_AMBIGUOUS_LABELLED_TYPE =
+                new RuleWrite(5, "The conclusion of rule '%s' contains ambiguous label '%s' (could represent: '%s'). ");
         public static final RuleWrite RULE_WHEN_CANNOT_BE_SATISFIED =
-                new RuleWrite(5, "The rule '%s' has a when clause '%s' that can never be satisfied in the current schema.");
+                new RuleWrite(6, "The rule '%s' has a when clause '%s' that can never be satisfied in the current schema.");
         public static final RuleWrite RULE_THEN_CANNOT_BE_SATISFIED =
-                new RuleWrite(6, "The rule '%s' has a then clause '%s' that can never be satisfied in the current schema.");
+                new RuleWrite(7, "The rule '%s' has a then clause '%s' that can never be satisfied in the current schema.");
         public static final RuleWrite RULE_THEN_INVALID_VALUE_ASSIGNMENT =
-                new RuleWrite(7, "The rule '%s' has a then clause with an invalid assignment of '%s' into a '%s'.");
+                new RuleWrite(8, "The rule '%s' has a then clause with an invalid assignment of '%s' into a '%s'.");
         public static final RuleWrite MAX_RULE_REACHED =
-                new RuleWrite(8, "The maximum number of rules has been reached: '%s'");
+                new RuleWrite(9, "The maximum number of rules has been reached: '%s'");
 
         private static final String codePrefix = "RUW";
         private static final String messagePrefix = "Invalid Rule Write";
@@ -548,7 +605,9 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         private static final String codePrefix = "RSN";
         private static final String messagePrefix = "Reasoner Error";
 
-        Reasoner(int number, String message) { super(codePrefix, number, messagePrefix, message); }
+        Reasoner(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
+        }
     }
 
     public static class Migrator extends ErrorMessage {
@@ -556,24 +615,22 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Migrator(1, "The database '%s' was not found.");
         public static final Migrator FILE_NOT_FOUND =
                 new Migrator(2, "The specified file path '%s' could not be found.");
-        public static final Migrator FILE_NOT_READABLE =
-                new Migrator(3, "The specified file '%s' cannot be opened for read.");
         public static final Migrator FILE_NOT_WRITABLE =
-                new Migrator(4, "The specified file '%s' cannot be opened for write.");
+                new Migrator(3, "The specified file '%s' cannot be opened for write.");
         public static final Migrator TYPE_NOT_FOUND =
-                new Migrator(5, "The type '%s' (originally '%s') is not defined in the schema.");
+                new Migrator(4, "The type '%s' is not defined in the schema.");
         public static final Migrator ROLE_TYPE_NOT_FOUND =
-                new Migrator(6, "The role type '%s' (originally '%s') is not defined for relation type '%s. Please confirm schema was migrated correctly.");
+                new Migrator(5, "The role type '%s'is not defined for relation type '%s. Please confirm schema was migrated correctly.");
         public static final Migrator PLAYER_NOT_FOUND =
-                new Migrator(7, "A player for relation type '%s' was expected but not found.");
+                new Migrator(6, "A player for relation type '%s' was expected but not found.");
         public static final Migrator NO_PLAYERS =
-                new Migrator(8, "The relation of type '%'s with original ID '%s' has no role players");
+                new Migrator(7, "The relation of type '%'s with original ID '%s' has no role players");
         public static final Migrator INVALID_DATA =
-                new Migrator(9, "The data being imported is invalid.");
+                new Migrator(8, "The data being imported is invalid.");
         public static final Migrator MISSING_HEADER =
-                new Migrator(10, "The data being imported is invalid - the header is missing.");
+                new Migrator(9, "The data being imported is invalid - the header is missing.");
         public static final Migrator IMPORT_CHECKSUM_MISMATCH =
-                new Migrator(11, "The import has finished but mismatches the required checksums.");
+                new Migrator(10, "The import has finished but mismatches the required checksums: '%s");
 
         private static final String codePrefix = "MIG";
         private static final String messagePrefix = "Migrator failure";

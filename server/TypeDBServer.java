@@ -18,20 +18,25 @@
 
 package com.vaticle.typedb.core.server;
 
+import ch.qos.logback.classic.LoggerContext;
 import com.vaticle.factory.tracing.client.FactoryTracing;
 import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.common.util.Java;
-import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreFactory;
+import com.vaticle.typedb.core.database.Factory;
 import com.vaticle.typedb.core.migrator.MigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
-import com.vaticle.typedb.core.rocks.Factory;
-import com.vaticle.typedb.core.rocks.RocksFactory;
-import com.vaticle.typedb.core.server.common.RunOptions;
-import com.vaticle.typedb.core.server.common.ServerDefaults;
+import com.vaticle.typedb.core.server.logging.CoreLogback;
+import com.vaticle.typedb.core.server.parameters.CoreConfig;
+import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
+import com.vaticle.typedb.core.server.parameters.ServerSubcommand;
+import com.vaticle.typedb.core.server.parameters.ServerSubcommandParser;
+import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
@@ -39,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.BindException;
+import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -47,6 +53,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ALREADY_RUNNING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
@@ -54,38 +61,47 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.EXITE
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
-import static com.vaticle.typedb.core.server.common.Util.parseCommandLine;
-import static com.vaticle.typedb.core.server.common.Util.parseProperties;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
+import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
-
+import static org.slf4j.Logger.ROOT_LOGGER_NAME;
 
 public class TypeDBServer implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBServer.class);
 
     protected final Factory factory;
-    protected final TypeDB typedb;
+    protected final CoreConfig config;
+    protected final CoreLogback logback;
+    protected final CoreDatabaseManager databaseMgr;
     protected final io.grpc.Server server;
-    protected final RunOptions.Server command;
+    protected final boolean debug;
     protected TypeDBService typeDBService;
 
-    private TypeDBServer(RunOptions.Server command) {
-        this(command, new RocksFactory());
+    private TypeDBServer(CoreConfig config, boolean debug) {
+        this(config, debug, new CoreFactory(), new CoreLogback());
     }
 
-    protected TypeDBServer(RunOptions.Server command, Factory factory) {
-        this.command = command;
-        configureAndVerifyJavaVersion();
-        configureAndVerifyDataDir();
+    protected TypeDBServer(CoreConfig config, boolean debug, Factory factory, CoreLogback logback) {
+        this.config = config;
+        this.debug = debug;
+        this.logback = logback;
+
+        verifyJavaVersion();
+        verifyDataDir();
+        configureLogging(this.logback, this.config);
         configureTracing();
 
-        if (command.debug()) logger().info("Running {} in debug mode.", name());
+        if (debug) logger().info("Running {} in debug mode.", name());
 
         Options.Database options = new Options.Database()
-                .typeDBDir(ServerDefaults.TYPEDB_DIR)
-                .dataDir(command.dataDir())
-                .logsDir(command.logsDir());
+                .typeDBDir(getTypedbDir())
+                .dataDir(config.storage().dataDir())
+                .storageDataCacheSize(config.storage().databaseCache().dataSize())
+                .storageIndexCacheSize(config.storage().databaseCache().indexSize())
+                .reasonerDebuggerDir(config.log().debugger().reasoner().output().path());
+
         this.factory = factory;
-        typedb = factory.typedb(options);
+        databaseMgr = factory.databaseManager(options);
         server = rpcServer();
         Thread.setDefaultUncaughtExceptionHandler(
                 (t, e) -> logger().error(UNCAUGHT_EXCEPTION.message(t.getName() + ": " + e.getMessage()), e)
@@ -93,11 +109,9 @@ public class TypeDBServer implements AutoCloseable {
         Runtime.getRuntime().addShutdownHook(
                 NamedThreadFactory.create(TypeDBServer.class, "shutdown").newThread(this::close)
         );
-
-        initLoggerConfig();
     }
 
-    private void configureAndVerifyJavaVersion() {
+    private void verifyJavaVersion() {
         int majorVersion = Java.getMajorVersion();
         if (majorVersion == Java.UNKNOWN_VERSION) {
             logger().warn("Could not detect Java version from version string '{}'. Will start {} anyway.", System.getProperty("java.version"), name());
@@ -106,31 +120,30 @@ public class TypeDBServer implements AutoCloseable {
         }
     }
 
-    private void configureAndVerifyDataDir() {
-        if (!Files.isDirectory(this.command.dataDir())) {
-            if (this.command.dataDir().equals(ServerDefaults.DATA_DIR)) {
-                try {
-                    Files.createDirectory(this.command.dataDir());
-                } catch (IOException e) {
-                    throw TypeDBException.of(e);
-                }
-            } else {
-                throw TypeDBException.of(DATA_DIRECTORY_NOT_FOUND, this.command.dataDir());
-            }
+    private void verifyDataDir() {
+        if (!Files.isDirectory(config.storage().dataDir())) {
+            throw TypeDBException.of(DATA_DIRECTORY_NOT_FOUND, this.config.storage().dataDir());
         }
 
-        if (!Files.isWritable(this.command.dataDir())) {
-            throw TypeDBException.of(DATA_DIRECTORY_NOT_WRITABLE, this.command.dataDir());
+        if (!Files.isWritable(config.storage().dataDir())) {
+            throw TypeDBException.of(DATA_DIRECTORY_NOT_WRITABLE, config.storage().dataDir());
         }
     }
 
+    private static void configureLogging(CoreLogback logback, CoreConfig config) {
+        logback.configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log());
+        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
+    }
+
     private void configureTracing() {
-        if (this.command.factoryTrace()) {
+        if (config.vaticleFactory().enable()) {
+            assert config.vaticleFactory().uri().isPresent() && config.vaticleFactory().username().isPresent() &&
+                    config.vaticleFactory().token().isPresent();
             FactoryTracing factoryTracingClient;
             factoryTracingClient = FactoryTracing.create(
-                    command.factoryURI().toString(),
-                    command.factoryUsername(),
-                    command.factoryToken()
+                    config.vaticleFactory().uri().get(),
+                    config.vaticleFactory().username().get(),
+                    config.vaticleFactory().token().get()
             ).withLogging();
             FactoryTracingThreadStatic.setGlobalTracingClient(factoryTracingClient);
             logger().info("Vaticle Factory tracing is enabled");
@@ -140,10 +153,10 @@ public class TypeDBServer implements AutoCloseable {
     protected io.grpc.Server rpcServer() {
         assert Executors.isInitialised();
 
-        typeDBService = new TypeDBService(typedb);
-        MigratorService migratorService = new MigratorService(typedb, Version.VERSION);
+        typeDBService = new TypeDBService(databaseMgr);
+        MigratorService migratorService = new MigratorService(databaseMgr, Version.VERSION);
 
-        return NettyServerBuilder.forPort(command.port())
+        return NettyServerBuilder.forAddress(config.server().address())
                 .executor(Executors.service())
                 .workerEventLoopGroup(Executors.network())
                 .bossEventLoopGroup(Executors.network())
@@ -154,20 +167,16 @@ public class TypeDBServer implements AutoCloseable {
                 .build();
     }
 
-    private void initLoggerConfig() {
-        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
-    }
-
     protected String name() {
         return "TypeDB Server";
     }
 
-    private int port() {
-        return command.port();
+    private InetSocketAddress address() {
+        return config.server().address();
     }
 
     protected Path dataDir() {
-        return command.dataDir();
+        return config.storage().dataDir();
     }
 
     protected Logger logger() {
@@ -182,7 +191,7 @@ public class TypeDBServer implements AutoCloseable {
             logger().info("");
         } catch (IOException e) {
             if (e.getCause() != null && e.getCause() instanceof BindException) {
-                throw TypeDBException.of(ALREADY_RUNNING, port());
+                throw TypeDBException.of(ALREADY_RUNNING, address());
             } else {
                 throw new RuntimeException(e);
             }
@@ -208,7 +217,7 @@ public class TypeDBServer implements AutoCloseable {
             typeDBService.close();
             server.shutdown();
             server.awaitTermination();
-            typedb.close();
+            databaseMgr.close();
             System.runFinalization();
             logger().info("{} has been shutdown", name());
         } catch (InterruptedException e) {
@@ -220,12 +229,29 @@ public class TypeDBServer implements AutoCloseable {
     public static void main(String[] args) {
         try {
             printASCIILogo();
-            Optional<RunOptions> options = parseCommandLine(parseProperties(), args);
-            if (options.isEmpty()) System.exit(0);
-            else if (options.get().isServer()) runServer(options.get().asServer());
-            else if (options.get().isDataImport()) importData(options.get().asDataImport());
-            else if (options.get().isDataExport()) exportData(options.get().asDataExport());
-            else assert false;
+
+            CoreConfigParser configParser = new CoreConfigParser();
+            ArgsParser<ServerSubcommand> argsParser = new ArgsParser<ServerSubcommand>()
+                    .subcommand(new ServerSubcommandParser.Server(configParser))
+                    .subcommand(new ServerSubcommandParser.Import())
+                    .subcommand(new ServerSubcommandParser.Export());
+            Optional<ServerSubcommand> subcmd = argsParser.parse(args);
+            if (subcmd.isEmpty()) {
+                LOG.error(UNRECOGNISED_CLI_COMMAND.message(String.join(" ", args)));
+                LOG.error(argsParser.usage());
+                System.exit(1);
+            } else {
+                if (subcmd.get().isServer()) {
+                    ServerSubcommand.Server subcmdServer = subcmd.get().asServer();
+                    if (subcmdServer.isHelp()) System.out.println(argsParser.help());
+                    else if (subcmdServer.isVersion()) System.out.println("Version: " + Version.VERSION);
+                    else runServer(subcmdServer);
+                } else if (subcmd.get().isImport()) {
+                    importData(subcmd.get().asImport());
+                } else if (subcmd.get().isExport()) {
+                    exportData(subcmd.get().asExport());
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+            }
         } catch (Exception e) {
             if (e instanceof TypeDBException) {
                 LOG.error(e.getMessage());
@@ -239,28 +265,34 @@ public class TypeDBServer implements AutoCloseable {
         System.exit(0);
     }
 
-    private static void runServer(RunOptions.Server command) {
+    private static void runServer(ServerSubcommand.Server subcmdServer) {
         Instant start = Instant.now();
-        TypeDBServer server = new TypeDBServer(command);
+        TypeDBServer server = new TypeDBServer(subcmdServer.config(), subcmdServer.isDebug());
         server.start();
         Instant end = Instant.now();
-        LOG.info("- version: {}", Version.VERSION);
-        LOG.info("- listening to port: {}", server.port());
-        LOG.info("- data directory configured to: {}", server.dataDir());
-        LOG.info("- bootup completed in: {} ms", Duration.between(start, end).toMillis());
-        LOG.info("...");
+        server.logger().info("- version: {}", Version.VERSION);
+        server.logger().info("- listening to address: {}:{}", server.address().getHostString(), server.address().getPort());
+        server.logger().info("- data directory configured to: {}", server.dataDir());
+        server.logger().info("- bootup completed in: {} ms", Duration.between(start, end).toMillis());
+        server.logger().info("...");
         server.serve();
     }
 
-    protected static void exportData(RunOptions.DataExport exportDataCommand) {
-        MigratorClient migrator = new MigratorClient(exportDataCommand.port());
-        boolean success = migrator.exportData(exportDataCommand.database(), exportDataCommand.filename());
+    protected static void exportData(ServerSubcommand.Export subcmdExport) {
+        ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
+                .setLevel(ch.qos.logback.classic.Level.WARN);
+
+        MigratorClient migrator = new MigratorClient(subcmdExport.port());
+        boolean success = migrator.exportData(subcmdExport.database(), subcmdExport.file());
         System.exit(success ? 0 : 1);
     }
 
-    protected static void importData(RunOptions.DataImport importDataCommand) {
-        MigratorClient migrator = new MigratorClient(importDataCommand.port());
-        boolean success = migrator.importData(importDataCommand.database(), importDataCommand.filename(), importDataCommand.remapLabels());
+    protected static void importData(ServerSubcommand.Import subcmdImport) {
+        ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
+                .setLevel(ch.qos.logback.classic.Level.WARN);
+
+        MigratorClient migrator = new MigratorClient(subcmdImport.port());
+        boolean success = migrator.importData(subcmdImport.database(), subcmdImport.file());
         System.exit(success ? 0 : 1);
     }
 }

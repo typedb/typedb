@@ -32,11 +32,6 @@ native_java_libraries(
     ]
 )
 
-filegroup(
-    name = "logback-test",
-    srcs = ["logback-test.xml"],
-)
-
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*"]),

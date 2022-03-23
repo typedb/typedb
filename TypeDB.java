@@ -32,19 +32,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-public interface TypeDB extends AutoCloseable {
+public interface TypeDB {
 
-    Session session(String database, Arguments.Session.Type type);
+    interface DatabaseManager extends AutoCloseable {
 
-    Session session(String database, Arguments.Session.Type type, Options.Session options);
-
-    DatabaseManager databases();
-
-    boolean isOpen();
-
-    void close();
-
-    interface DatabaseManager {
+        boolean isOpen();
 
         boolean contains(String name);
 
@@ -53,6 +45,13 @@ public interface TypeDB extends AutoCloseable {
         Database get(String name);
 
         Set<? extends Database> all();
+
+        Session session(String database, Arguments.Session.Type type);
+
+        Session session(String database, Arguments.Session.Type type, Options.Session options);
+
+        void close();
+
     }
 
     interface Database {

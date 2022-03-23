@@ -24,7 +24,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
-import java.util.Map;
+import java.nio.file.Path;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
@@ -41,11 +41,10 @@ public class MigratorClient {
         stub = MigratorGrpc.newStub(channel);
     }
 
-    public boolean importData(String database, String filename, Map<String, String> remapLabels) {
+    public boolean importData(String database, Path file) {
         MigratorProto.Import.Req req = MigratorProto.Import.Req.newBuilder()
                 .setDatabase(database)
-                .setFilename(filename)
-                .putAllRemapLabels(remapLabels)
+                .setFilename(file.toAbsolutePath().toString())
                 .build();
         ResponseObserver.Import streamObserver = new ResponseObserver.Import(new ProgressPrinter.Import());
         stub.importData(req, streamObserver);
@@ -53,10 +52,10 @@ public class MigratorClient {
         return streamObserver.success();
     }
 
-    public boolean exportData(String database, String filename) {
+    public boolean exportData(String database, Path file) {
         MigratorProto.Export.Req req = MigratorProto.Export.Req.newBuilder()
                 .setDatabase(database)
-                .setFilename(filename)
+                .setFilename(file.toAbsolutePath().toString())
                 .build();
         ResponseObserver.Export streamObserver = new ResponseObserver.Export(new ProgressPrinter.Export());
         stub.exportData(req, streamObserver);
@@ -69,7 +68,7 @@ public class MigratorClient {
         private final CountDownLatch latch;
         private boolean success;
 
-        public ResponseObserver() {
+        ResponseObserver() {
             this.latch = new CountDownLatch(1);
         }
 
@@ -77,7 +76,7 @@ public class MigratorClient {
 
             private final ProgressPrinter.Import progressPrinter;
 
-            public Import(ProgressPrinter.Import progressPrinter) {
+            private Import(ProgressPrinter.Import progressPrinter) {
                 super();
                 this.progressPrinter = progressPrinter;
             }
@@ -98,7 +97,7 @@ public class MigratorClient {
 
             private final ProgressPrinter.Export progressPrinter;
 
-            public Export(ProgressPrinter.Export progressPrinter) {
+            private Export(ProgressPrinter.Export progressPrinter) {
                 super();
                 this.progressPrinter = progressPrinter;
             }
@@ -149,7 +148,7 @@ public class MigratorClient {
         private int linesPrinted = 0;
         Status status = Status.STARTING;
 
-        public ProgressPrinter() {
+        private ProgressPrinter() {
             TimerTask task = new TimerTask() {
                 @Override
                 public void run() {
@@ -279,7 +278,6 @@ public class MigratorClient {
                 progressStr.append("\n");
                 long currentThings = prog.getAttributesCurrent() + prog.getEntitiesCurrent() + prog.getRelationsCurrent();
                 long things = prog.getAttributes() + prog.getEntities() + prog.getRelations();
-                progressStr.append("\n");
                 progressStr.append(String.format("Total: %d/%d (%.1f%%)", currentThings, things, 100.0 * currentThings / things));
                 return progressStr.toString();
             }

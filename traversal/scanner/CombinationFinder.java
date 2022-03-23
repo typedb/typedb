@@ -66,13 +66,12 @@ public class CombinationFinder {
     }
 
     public Optional<Map<Retrievable, Set<TypeVertex>>> combination() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug(procedures.toString());
+        if (LOG.isTraceEnabled()) {
+            LOG.trace(procedures.toString());
         }
 
         for (CombinationProcedure procedure : procedures) {
             start(procedure);
-            if (procedure.vertices().size() == 1) continue;
             State state = State.CHANGED;
             while (state == State.CHANGED) {
                 state = forward(procedure);
@@ -86,7 +85,7 @@ public class CombinationFinder {
 
     private void start(CombinationProcedure procedure) {
         ProcedureVertex.Type from = procedure.startVertex();
-        recordCombination(from.id(), vertexIter(from).toSet());
+        addOrIntersect(from.id(), vertexIter(from).toSet());
     }
 
     private State forward(CombinationProcedure procedure) {
@@ -98,7 +97,7 @@ public class CombinationFinder {
             from = toVisit.remove();
             for (ProcedureEdge<?, ?> procedureEdge : procedure.forwardEdges(from)) {
                 Set<TypeVertex> toCombination = toTypes(procedureEdge);
-                changed = recordCombination(procedureEdge.to().id(), toCombination) || changed;
+                changed = addOrIntersect(procedureEdge.to().id(), toCombination) || changed;
                 if (combination.get(procedureEdge.to().id()).isEmpty()) return State.EMPTY;
                 if (!procedure.isTerminal(procedureEdge.to().asType()) && !from.equals(procedureEdge.to())) {
                     toVisit.add(procedureEdge.to().asType());
@@ -116,19 +115,26 @@ public class CombinationFinder {
             from = toVisit.remove();
             for (ProcedureEdge<?, ?> procedureEdge : procedure.reverseEdges(from)) {
                 Set<TypeVertex> toTypes = toTypes(procedureEdge);
-                changed = recordCombination(procedureEdge.to().id(), toTypes) || changed;
+                changed = addOrIntersect(procedureEdge.to().id(), toTypes) || changed;
                 if (combination.get(procedureEdge.to().id()).isEmpty()) return State.EMPTY;
-                if (!procedureEdge.to().isStartingVertex()) toVisit.add(procedureEdge.to().asType());
+                if (!procedureEdge.to().isStartingVertex() && !from.equals(procedureEdge.to())) {
+                    toVisit.add(procedureEdge.to().asType());
+                }
             }
         }
         return changed ? State.CHANGED : State.UNCHANGED;
     }
 
     private Set<TypeVertex> toTypes(ProcedureEdge<?, ?> edge) {
-        return iterate(combination.get(edge.from().id())).flatMap(type -> branchIter(edge, type)).toSet();
+        if (edge.from().id().equals(edge.to().id())) {
+            // TODO this can be optimised with forward()
+            return iterate(combination.get(edge.from().id())).flatMap(type -> branchIter(edge, type).filter(to -> to.equals(type))).toSet();
+        } else {
+            return iterate(combination.get(edge.from().id())).flatMap(type -> branchIter(edge, type)).toSet();
+        }
     }
 
-    private boolean recordCombination(Identifier identifier, Set<TypeVertex> types) {
+    private boolean addOrIntersect(Identifier identifier, Set<? extends TypeVertex> types) {
         Set<TypeVertex> vertices = combination.computeIfAbsent(identifier, (id) -> new HashSet<>());
         int sizeBefore = vertices.size();
         if (vertices.isEmpty()) vertices.addAll(types);
@@ -136,8 +142,8 @@ public class CombinationFinder {
         return vertices.size() != sizeBefore;
     }
 
-    private FunctionalIterator<TypeVertex> vertexIter(ProcedureVertex.Type vertex) {
-        FunctionalIterator<TypeVertex> iterator = vertex.iterator(graphMgr, params);
+    private FunctionalIterator<? extends TypeVertex> vertexIter(ProcedureVertex.Type vertex) {
+        FunctionalIterator<? extends TypeVertex> iterator = vertex.iterator(graphMgr, params);
         if (vertex.id().isRetrievable() && concreteVarIds.contains(vertex.id().asVariable().asRetrievable())) {
             iterator = iterator.filter(type -> !type.isAbstract());
         }

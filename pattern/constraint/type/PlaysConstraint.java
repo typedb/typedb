@@ -125,7 +125,7 @@ public class PlaysConstraint extends TypeConstraint {
     }
 
     @Override
-    public PlaysConstraint clone(Conjunction.Cloner cloner) {
+    public PlaysConstraint clone(Conjunction.ConstraintCloner cloner) {
         return cloner.cloneVariable(owner).plays(
                 relationType == null ? null : cloner.cloneVariable(relationType),
                 cloner.cloneVariable(roleType),

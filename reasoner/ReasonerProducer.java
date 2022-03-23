@@ -61,7 +61,7 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
         this.isPulling = false;
         this.controllerRegistry.createRootConjunctionController(conjunction, filter, this);
         if (options.traceInference()) {
-            Tracer.initialise(options.logsDir());
+            Tracer.initialise(options.reasonerDebuggerDir());
             Tracer.get().startDefaultTrace();
         }
     }
@@ -77,7 +77,7 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
         this.isPulling = false;
         this.controllerRegistry.createRootDisjunctionController(disjunction, filter, this);
         if (options.traceInference()) {
-            Tracer.initialise(options.logsDir());
+            Tracer.initialise(options.reasonerDebuggerDir());
             Tracer.get().startDefaultTrace();
         }
     }
@@ -124,10 +124,11 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
     }
 
     private void finish() {
-        // query is completely terminated
-        done = true;
-        queue.done();
-        required.set(0);
+        if (!done) {
+            done = true;
+            queue.done();
+            required.set(0);
+        }
     }
 
     @Override

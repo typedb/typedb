@@ -51,6 +51,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
@@ -61,26 +62,27 @@ import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_OPEN;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.NEW_LINE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SEMICOLON;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
+import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.toList;
 
 public class Conjunction implements Pattern, Cloneable {
 
     private static final String TRACE_PREFIX = "conjunction.";
     private final Map<Identifier.Variable, Variable> variableMap;
     private final Set<Variable> variableSet;
-    private final Set<Negation> negations;
+    private final List<Negation> negations;
     private final int hash;
 
     private boolean isCoherent;
     private boolean isBounded;
     private Set<Identifier.Variable.Retrievable> retrieves;
 
-    public Conjunction(Set<Variable> variables, Set<Negation> negations) {
+    public Conjunction(Set<Variable> variables, List<Negation> negations) {
         this.variableSet = unmodifiableSet(variables);
         this.variableMap = parseToMap(variables);
-        this.negations = unmodifiableSet(negations);
+        this.negations = unmodifiableList(negations);
         this.hash = Objects.hash(variables, negations);
         this.isCoherent = true;
         this.isBounded = false;
@@ -110,8 +112,8 @@ public class Conjunction implements Pattern, Cloneable {
 
             if (typeQLVariables.isEmpty() && !typeQLNegations.isEmpty()) throw TypeDBException.of(UNBOUNDED_NEGATION);
             VariableRegistry registry = VariableRegistry.createFromVariables(typeQLVariables, bounds);
-            Set<Negation> typeDBNegations = typeQLNegations.isEmpty() ? set() :
-                    typeQLNegations.stream().map(n -> Negation.create(n, registry)).collect(toSet());
+            List<Negation> typeDBNegations = typeQLNegations.isEmpty() ? list() :
+                    typeQLNegations.stream().map(n -> Negation.create(n, registry)).collect(toList());
             return new Conjunction(registry.variables(), typeDBNegations);
         }
     }
@@ -163,7 +165,7 @@ public class Conjunction implements Pattern, Cloneable {
         return retrieves;
     }
 
-    public Set<Negation> negations() {
+    public List<Negation> negations() {
         return negations;
     }
 
@@ -194,7 +196,7 @@ public class Conjunction implements Pattern, Cloneable {
     @Override
     public Conjunction clone() {
         return new Conjunction(VariableCloner.cloneFromConjunction(this).variables(),
-                               iterate(this.negations).map(Negation::clone).toSet());
+                               iterate(this.negations).map(Negation::clone).toList());
     }
 
     @Override
@@ -218,6 +220,8 @@ public class Conjunction implements Pattern, Cloneable {
         if (obj == null || obj.getClass() != getClass()) return false;
         Conjunction that = (Conjunction) obj;
         // TODO: This doesn't work! It doesn't compare constraints
+        // TODO: negations should be a set not list
+        // TODO: both are corrected with https://github.com/vaticle/typedb/issues/6115
         return (this.variableSet.equals(that.variables()) &&
                 this.negations.equals(that.negations()));
     }
@@ -227,37 +231,37 @@ public class Conjunction implements Pattern, Cloneable {
         return hash;
     }
 
-    public static class Cloner {
+    public static class ConstraintCloner {
 
         private final Map<Identifier.Variable, Variable> variables;
         private final Map<Constraint, Constraint> constraints;
 
-        public Cloner() {
+        public ConstraintCloner() {
             variables = new HashMap<>();
             constraints = new HashMap<>();
         }
 
-        public static Cloner cloneExactly(Set<? extends Constraint> s1, Constraint... s2) {
+        public static ConstraintCloner cloneExactly(Set<? extends Constraint> s1, Constraint... s2) {
             LinkedHashSet<Constraint> ordered = new LinkedHashSet<>(s1);
             Collections.addAll(ordered, s2);
             return cloneExactly(ordered);
         }
 
-        public static Cloner cloneExactly(Set<? extends Constraint> s1, Set<? extends Constraint> s2, Constraint... s3) {
+        public static ConstraintCloner cloneExactly(Set<? extends Constraint> s1, Set<? extends Constraint> s2, Constraint... s3) {
             LinkedHashSet<Constraint> ordered = new LinkedHashSet<>(s1);
             ordered.addAll(s2);
             Collections.addAll(ordered, s3);
             return cloneExactly(ordered);
         }
 
-        public static Cloner cloneExactly(Constraint constraint) {
+        public static ConstraintCloner cloneExactly(Constraint constraint) {
             LinkedHashSet<Constraint> orderedSet = new LinkedHashSet<>();
             orderedSet.add(constraint);
             return cloneExactly(orderedSet);
         }
 
-        private static Cloner cloneExactly(LinkedHashSet<? extends Constraint> constraints) {
-            Cloner cloner = new Cloner();
+        private static ConstraintCloner cloneExactly(LinkedHashSet<? extends Constraint> constraints) {
+            ConstraintCloner cloner = new ConstraintCloner();
             constraints.forEach(cloner::clone);
             return cloner;
         }
@@ -283,7 +287,7 @@ public class Conjunction implements Pattern, Cloneable {
         }
 
         public Conjunction conjunction() {
-            return new Conjunction(set(variables.values()), set());
+            return new Conjunction(set(variables.values()), list());
         }
 
         public Constraint getClone(Constraint constraint) {

@@ -22,11 +22,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-class LinkedIterators<T> extends AbstractFunctionalIterator<T> {
+public class LinkedIterators<T> extends AbstractFunctionalIterator<T> {
 
     private final List<FunctionalIterator<T>> iterators;
 
-    LinkedIterators(List<FunctionalIterator<T>> iterators) {
+    public LinkedIterators(List<FunctionalIterator<T>> iterators) {
         this.iterators = new LinkedList<>(iterators);
     }
 

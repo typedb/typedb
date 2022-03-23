@@ -26,6 +26,12 @@ load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
 
 package(default_visibility = ["//visibility:private",])
 
+filegroup(
+    name = "config",
+    srcs = ["parameters/config.yml"],
+    visibility = ["//visibility:public"],
+)
+
 genrule(
     name = "version-src",
     srcs = [
@@ -54,7 +60,7 @@ native_java_libraries(
         "//concept:concept",
         "//logic:logic",
         "//query:query",
-        "//rocks:rocks",
+        "//database:database",
         "//reasoner:reasoner",
         "//migrator:migrator",
     ],
@@ -73,12 +79,13 @@ native_java_libraries(
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_protobuf_protobuf_java",
-        "@maven//:info_picocli_picocli",
         "@maven//:io_grpc_grpc_api",
         "@maven//:io_grpc_grpc_netty",
         "@maven//:io_grpc_grpc_stub",
         "@maven//:io_netty_netty_all",
         "@maven//:org_slf4j_slf4j_api",
+        "@maven//:ch_qos_logback_logback_classic",
+        "@maven//:ch_qos_logback_logback_core",
     ],
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
@@ -87,16 +94,20 @@ native_java_libraries(
     visibility = ["//visibility:public"],
 )
 
+genrule(
+    name = "prepare-server-directories",
+    srcs = [":config"],
+    # TODO: can we find a way to create a directory without including an empty file in the outs?
+    cmd = "cp $(location :config) $(@D)/conf/ && touch $(@D)/data/empty",
+    outs = ["conf/config.yml", "data/empty"]
+)
+
 java_binary(
     name = "server-bin-mac",
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-mac"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    classpath_resources = [
-        "//server/conf:logback.xml",
-        "//server/conf:typedb-properties"
-    ],
-    data = [ "//server/conf:typedb-properties" ], # Separately needed for com.vaticle.typedb.core.server.common.Util
+    data = [":prepare-server-directories"]
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-mac can depend directly on :server-mac (lib)
@@ -111,11 +122,7 @@ java_binary(
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-linux"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    classpath_resources = [
-        "//server/conf:logback.xml",
-        "//server/conf:typedb-properties"
-    ],
-    data = [ "//server/conf:typedb-properties" ], # Separately needed for com.vaticle.typedb.core.server.common.Util
+    data = [":prepare-server-directories"]
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-linux can depend directly on :server-linux (lib)
@@ -130,11 +137,7 @@ java_binary(
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-windows"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
-    classpath_resources = [
-        "//server/conf:logback.xml",
-        "//server/conf:typedb-properties"
-    ],
-    data = [ "//server/conf:typedb-properties" ], # Separately needed for com.vaticle.typedb.core.server.common.Util
+    data = [":prepare-server-directories"]
 )
 
 java_binary( # TODO: this target should not be needed if :server-deps-windows can depend directly on :server-windows (lib)
@@ -149,7 +152,7 @@ java_deps(
     target = ":server-bin-deps-mac",
     java_deps_root = "server/lib/common/",
     java_deps_root_overrides = {
-        "rocksdbjni-dev-*": "server/lib/dev/",
+        "rocksdbjni-dev-mac-*": "server/lib/dev/",
     },
     visibility = ["//:__pkg__"],
     maven_name = True,
@@ -190,23 +193,25 @@ assemble_deps_common = [
 ]
 
 assemble_files = {
-    "//server/conf:logback": "server/conf/logback.xml",
-    "//server/conf:logback-debug": "server/conf/logback-debug.xml",
-    "//server/conf:typedb-properties": "server/conf/typedb.properties",
+    "//server:config": "server/conf/config.yml",
     "//server/resources:logo": "server/resources/typedb-ascii.txt",
     "//:LICENSE": "LICENSE",
 }
 
+empty_directories = [
+    "server/data"
+]
+
 permissions = {
-    "server/conf/typedb.properties": "0755",
-    "server/conf/logback.xml": "0755",
-    "server/conf/logback-debug.xml": "0755",
+    "server/conf/config.yml" : "0755",
+    "server/data" : "0755",
 }
 
 assemble_targz(
     name = "assemble-linux-targz",
     targets = ["server-deps-linux", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
+    empty_directories = empty_directories,
     permissions = permissions,
     output_filename = "typedb-server-linux",
     visibility = ["//:__pkg__", "//test:__subpackages__"]
@@ -216,6 +221,7 @@ assemble_zip(
     name = "assemble-mac-zip",
     targets = assemble_deps_common + ["server-deps-mac", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
+    empty_directories = empty_directories,
     permissions = permissions,
     output_filename = "typedb-server-mac",
     visibility = ["//:__pkg__", "//test:__subpackages__"]
@@ -225,6 +231,7 @@ assemble_zip(
     name = "assemble-windows-zip",
     targets = ["server-deps-windows", "@vaticle_typedb_common//binary:assemble-bat-targz"],
     additional_files = assemble_files,
+    empty_directories = empty_directories,
     permissions = permissions,
     output_filename = "typedb-server-windows",
     visibility = ["//:__pkg__", "//test:__subpackages__"]

@@ -101,10 +101,6 @@ public abstract class Traversal {
             return iids.get(identifier);
         }
 
-        public Set<Identifier.Variable> getIdentifiersWithIID() {
-            return iids.keySet();
-        }
-
         public Set<Value> getValues(Identifier.Variable identifier, Predicate.Value<?> predicate) {
             return values.get(pair(identifier, predicate));
         }

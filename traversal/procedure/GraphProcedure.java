@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.traversal.GraphTraversal;
+import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.planner.GraphPlanner;
@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -77,14 +76,14 @@ public class GraphProcedure implements PermutationProcedure {
         return procedure.new Builder();
     }
 
-    public Stream<ProcedureVertex<?, ?>> vertices() {
-        return vertices.values().stream();
+    public FunctionalIterator<ProcedureVertex<?, ?>> vertices() {
+        return iterate(vertices.values());
     }
 
     public ProcedureVertex<?, ?> startVertex() {
         if (startVertex == null) {
             startVertex = this.vertices().filter(ProcedureVertex::isStartingVertex)
-                    .findAny().orElseThrow(() -> TypeDBException.of(ILLEGAL_STATE));
+                    .first().orElseThrow(() -> TypeDBException.of(ILLEGAL_STATE));
         }
         return startVertex;
     }
@@ -169,31 +168,60 @@ public class GraphProcedure implements PermutationProcedure {
     }
 
     @Override
-    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
+    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug(params.toString());
-            LOG.debug(this.toString());
+        if (LOG.isTraceEnabled()) {
+            LOG.trace(params.toString());
+            LOG.trace(this.toString());
         }
         assertWithinFilterBounds(filter);
-        return async(startVertex().iterator(graphMgr, params).map(
-                // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                v -> new GraphIterator(graphMgr, v, this, params, filter).distinct()
-        ), parallelisation);
+        if (startVertex().id().isRetrievable() && filter.contains(startVertex().id().asVariable().asRetrievable())) {
+            return async(startVertex().iterator(graphMgr, params).map(
+                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
+                    v -> new GraphIterator(graphMgr, v, this, params, filter).distinct()
+            ), parallelisation);
+        } else {
+            // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
+            return async(startVertex().iterator(graphMgr, params).map(
+                    v -> new GraphIterator(graphMgr, v, this, params, filter)
+            ), parallelisation).distinct();
+        }
     }
 
     @Override
-    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, GraphTraversal.Thing.Parameters params,
+    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
                                                   Set<Identifier.Variable.Retrievable> filter) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug(params.toString());
-            LOG.debug(this.toString());
+        if (LOG.isTraceEnabled()) {
+            LOG.trace(params.toString());
+            LOG.trace(this.toString());
         }
         assertWithinFilterBounds(filter);
-        return startVertex().iterator(graphMgr, params).flatMap(
-                // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                sv -> new GraphIterator(graphMgr, sv, this, params, filter).distinct()
-        );
+        if (startVertex().id().isRetrievable() && filter.contains(startVertex().id().asVariable().asRetrievable())) {
+            return startVertex().iterator(graphMgr, params).flatMap(
+                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
+                    sv -> new GraphIterator(graphMgr, sv, this, params, filter).distinct()
+            );
+        } else {
+            // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
+            return startVertex().iterator(graphMgr, params).flatMap(
+                    sv -> new GraphIterator(graphMgr, sv, this, params, filter)
+            ).distinct();
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        GraphProcedure that = (GraphProcedure) o;
+        return vertices.equals(that.vertices) && Arrays.equals(edges, that.edges) && startVertex().equals(that.startVertex());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(vertices, startVertex);
+        result = 31 * result + Arrays.hashCode(edges);
+        return result;
     }
 
     @Override

@@ -109,7 +109,7 @@ public class LabelConstraint extends TypeConstraint implements AlphaEquivalent<L
     }
 
     @Override
-    public LabelConstraint clone(Conjunction.Cloner cloner) {
+    public LabelConstraint clone(Conjunction.ConstraintCloner cloner) {
         return cloner.cloneVariable(owner).label(label);
     }
 }

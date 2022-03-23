@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.graph.iid.VertexIID;
 
 import java.util.regex.Pattern;
 
-public interface TypeVertex extends Vertex<VertexIID.Type, Encoding.Vertex.Type> {
+public interface TypeVertex extends Vertex<VertexIID.Type, Encoding.Vertex.Type>, Comparable<TypeVertex> {
     /**
      * @return the {@code Graph} containing all Schema elements
      */
@@ -53,9 +53,9 @@ public interface TypeVertex extends Vertex<VertexIID.Type, Encoding.Vertex.Type>
 
     void scope(String scope);
 
-    TypeAdjacency outs();
+    TypeAdjacency.Out outs();
 
-    TypeAdjacency ins();
+    TypeAdjacency.In ins();
 
     boolean isAbstract();
 

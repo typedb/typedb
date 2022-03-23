@@ -24,7 +24,7 @@ host_compatible_java_test(
     test_class = "com.vaticle.typedb.core.reasoner.ReasonerTest",
     native_libraries_deps = [
         "//:typedb",
-        "//rocks:rocks",
+        "//database:database",
         "//common:common",
         "//concurrent:concurrent",
         "//logic:logic",
@@ -38,10 +38,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
-    resources = [
-        "//common/test:logback-test"
-    ],
-    resource_strip_prefix = "common/test",
 )
 
 host_compatible_java_test(
@@ -50,7 +46,7 @@ host_compatible_java_test(
     test_class = "com.vaticle.typedb.core.reasoner.ExplanationTest",
     native_libraries_deps = [
         "//:typedb",
-        "//rocks:rocks",
+        "//database:database",
         "//concept:concept",
         "//common:common",
         "//concurrent:concurrent",
@@ -66,10 +62,6 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
-    resources = [
-        "//common/test:logback-test"
-    ],
-    resource_strip_prefix = "common/test",
 )
 
 host_compatible_java_test(
@@ -79,7 +71,7 @@ host_compatible_java_test(
     native_libraries_deps = [
         # Internal dependencies
         "//:typedb",
-        "//rocks:rocks",
+        "//database:database",
         "//common:common",
         "//concept:concept",
         "//concurrent:concurrent",
@@ -95,10 +87,6 @@ host_compatible_java_test(
         "@vaticle_typeql_lang_java//:typeql-lang",
         "@vaticle_typedb_common//:common",
     ],
-    resource_strip_prefix = "common/test",
-    resources = [
-        "//common/test:logback-test",
-    ],
 )
 
 host_compatible_java_test(
@@ -107,7 +95,7 @@ host_compatible_java_test(
     test_class = "com.vaticle.typedb.core.reasoner.resolution.PlannerTest",
     native_libraries_deps = [
         # Internal dependencies
-        "//rocks:rocks",
+        "//database:database",
         "//:typedb",
         "//common:common",
         "//concept:concept",

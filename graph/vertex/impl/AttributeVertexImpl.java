@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingAdjacencyImpl;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.iid.IndexIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 
@@ -31,6 +30,8 @@ import java.time.LocalDateTime;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
+import static com.vaticle.typedb.core.graph.common.Encoding.Status.BUFFERED;
+import static com.vaticle.typedb.core.graph.common.Encoding.Status.PERSISTED;
 
 public abstract class AttributeVertexImpl {
 
@@ -75,7 +76,12 @@ public abstract class AttributeVertexImpl {
 
         @Override
         public Encoding.Status status() {
-            return Encoding.Status.IMMUTABLE;
+            return isPersisted() ? PERSISTED : BUFFERED;
+        }
+
+        private boolean isPersisted() {
+            if (isPersisted == null) isPersisted = graph.storage().get(iid) != null;
+            return isPersisted;
         }
 
         @Override
@@ -86,11 +92,6 @@ public abstract class AttributeVertexImpl {
                 // TODO: implement for ValueType.TEXT
                 return null;
             }
-        }
-
-        public boolean isPersisted() {
-            if (isPersisted == null) isPersisted = graph.storage().get(iid.bytes()) != null;
-            return isPersisted;
         }
 
         @Override
@@ -255,10 +256,10 @@ public abstract class AttributeVertexImpl {
     public static abstract class Write<VALUE> extends ThingVertexImpl.Write implements AttributeVertex.Write<VALUE> {
 
         private final VertexIID.Attribute<VALUE> attributeIID;
-        private boolean isInferred;
+        private final boolean isInferred;
         private java.lang.Boolean isPersisted;
 
-        Write(ThingGraph graph, VertexIID.Attribute<VALUE> iid, boolean isInferred) {
+        private Write(ThingGraph graph, VertexIID.Attribute<VALUE> iid, boolean isInferred) {
             super(graph, iid);
             this.attributeIID = iid;
             this.isInferred = isInferred;
@@ -284,11 +285,14 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        protected ThingAdjacency.Write newAdjacency(Encoding.Direction.Adjacency direction) {
-            return new ThingAdjacencyImpl.Write.Persisted(this, direction);
+        protected ThingAdjacency.Write.In newInAdjacency() {
+            return new ThingAdjacencyImpl.Write.Persisted.In(this);
         }
 
-        protected abstract IndexIID.Attribute index();
+        @Override
+        protected ThingAdjacency.Write.Out newOutAdjacency() {
+            return new ThingAdjacencyImpl.Write.Persisted.Out(this);
+        }
 
         @Override
         public VertexIID.Attribute<VALUE> iid() {
@@ -302,7 +306,12 @@ public abstract class AttributeVertexImpl {
 
         @Override
         public Encoding.Status status() {
-            return Encoding.Status.IMMUTABLE;
+            return isPersisted() ? PERSISTED : BUFFERED;
+        }
+
+        private boolean isPersisted() {
+            if (isPersisted == null) isPersisted = graph.storage().get(iid) != null;
+            return isPersisted;
         }
 
         @Override
@@ -316,18 +325,8 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public void isInferred(boolean isInferred) {
-            this.isInferred = isInferred;
-        }
-
-        @Override
         public boolean isInferred() {
             return isInferred;
-        }
-
-        public boolean isPersisted() {
-            if (isPersisted == null) isPersisted = graph.storage().get(iid.bytes()) != null;
-            return isPersisted;
         }
 
         @Override
@@ -348,13 +347,8 @@ public abstract class AttributeVertexImpl {
             if (isDeleted.compareAndSet(false, true)) {
                 deleteEdges();
                 deleteVertexFromStorage();
-                deleteVertexFromIndex();
                 deleteVertexFromGraph();
             }
-        }
-
-        void deleteVertexFromIndex() {
-            graph.storage().deleteUntracked(index().bytes());
         }
 
         /**
@@ -445,11 +439,6 @@ public abstract class AttributeVertexImpl {
             }
 
             @Override
-            protected IndexIID.Attribute index() {
-                return IndexIID.Attribute.of(value(), type().iid());
-            }
-
-            @Override
             public boolean isBoolean() {
                 return true;
             }
@@ -468,11 +457,6 @@ public abstract class AttributeVertexImpl {
 
             public Long(ThingGraph graph, VertexIID.Attribute<java.lang.Long> iid, boolean isInferred) {
                 super(graph, iid, isInferred);
-            }
-
-            @Override
-            protected IndexIID.Attribute index() {
-                return IndexIID.Attribute.of(value(), type().iid());
             }
 
             @Override
@@ -497,11 +481,6 @@ public abstract class AttributeVertexImpl {
             }
 
             @Override
-            protected IndexIID.Attribute index() {
-                return IndexIID.Attribute.of(value(), type().iid());
-            }
-
-            @Override
             public boolean isDouble() {
                 return true;
             }
@@ -520,11 +499,6 @@ public abstract class AttributeVertexImpl {
 
             public String(ThingGraph graph, VertexIID.Attribute<java.lang.String> iid, boolean isInferred) {
                 super(graph, iid, isInferred);
-            }
-
-            @Override
-            protected IndexIID.Attribute index() {
-                return IndexIID.Attribute.of(value(), type().iid());
             }
 
             @Override
@@ -549,11 +523,6 @@ public abstract class AttributeVertexImpl {
             }
 
             @Override
-            protected IndexIID.Attribute index() {
-                return IndexIID.Attribute.of(value(), type().iid());
-            }
-
-            @Override
             public boolean isDateTime() {
                 return true;
             }
@@ -563,7 +532,5 @@ public abstract class AttributeVertexImpl {
                 return this;
             }
         }
-
     }
-
 }

@@ -26,7 +26,7 @@ host_compatible_java_test(
         # Internal dependencies
         "//:typedb",
         "//common:common",
-        "//rocks:rocks",
+        "//database:database",
         "//concept:concept",
         "//logic:logic",
     ],
@@ -36,10 +36,6 @@ host_compatible_java_test(
         "@vaticle_typeql_lang_java//pattern:pattern",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
-    resources = [
-        "//common/test:logback-test"
-    ],
-    resource_strip_prefix = "common/test",
     size = "large",
 )
 
@@ -49,7 +45,7 @@ host_compatible_java_test(
     test_class = "com.vaticle.typedb.core.test.integration.QueryTest",
     native_libraries_deps = [
         "//:typedb",
-        "//rocks:rocks",
+        "//database:database",
         "//common:common",
         "//concept:concept",
     ],
@@ -62,21 +58,17 @@ host_compatible_java_test(
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
     data = [":schema.tql"],
-    resources = [
-        "//common/test:logback-test"
-    ],
-    resource_strip_prefix = "common/test",
 )
 
 host_compatible_java_test(
-    name = "test-consistency",
-    srcs = ["ConsistencyTest.java"],
-    test_class = "com.vaticle.typedb.core.test.integration.ConsistencyTest",
+    name = "test-attribute-string",
+    srcs = ["StringAttributeTest.java"],
+    test_class = "com.vaticle.typedb.core.test.integration.StringAttributeTest",
     native_libraries_deps = [
         # Internal dependencies
         "//:typedb",
-        "//rocks:rocks",
         "//common:common",
+        "//database:database",
         "//concept:concept",
         "//logic:logic",
     ],
@@ -84,12 +76,9 @@ host_compatible_java_test(
         "//test/integration/util:util",
 
         # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
         "@vaticle_typeql_lang_java//:typeql-lang",
     ],
-    resources = [
-        "//common/test:logback-test"
-    ],
-    resource_strip_prefix = "common/test",
     size = "large",
 )
 

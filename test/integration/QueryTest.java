@@ -29,7 +29,7 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
@@ -45,6 +45,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.test.integration.util.Util.assertNotNulls;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
@@ -57,15 +58,16 @@ public class QueryTest {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("query-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
+    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "query-test";
 
     @Test
     public void test_query_define() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (TypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
+        try (TypeDB.DatabaseManager typedb = CoreDatabaseManager.open(options)) {
+            typedb.create(database);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
 
@@ -129,8 +131,8 @@ public class QueryTest {
     public void test_query_undefine() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (TypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
+        try (TypeDB.DatabaseManager typedb = CoreDatabaseManager.open(options)) {
+            typedb.create(database);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
 
@@ -214,8 +216,8 @@ public class QueryTest {
     public void test_query_insert() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (TypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
+        try (TypeDB.DatabaseManager typedb = CoreDatabaseManager.open(options)) {
+            typedb.create(database);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -265,8 +267,8 @@ public class QueryTest {
     public void test_query_delete() throws IOException {
         Util.resetDirectory(dataDir);
 
-        try (TypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
+        try (TypeDB.DatabaseManager typedb = CoreDatabaseManager.open(options)) {
+            typedb.create(database);
 
             try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
                 try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {

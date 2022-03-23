@@ -105,7 +105,7 @@ public class SubConstraint extends TypeConstraint {
     }
 
     @Override
-    public SubConstraint clone(Conjunction.Cloner cloner) {
+    public SubConstraint clone(Conjunction.ConstraintCloner cloner) {
         return cloner.cloneVariable(owner).sub(cloner.cloneVariable(type), isExplicit);
     }
 }

@@ -27,7 +27,7 @@ host_compatible_java_library(
         # Package dependencies
         "//:typedb",
         "//common:common",
-        "//rocks:rocks",
+        "//database:database",
         "//concept:concept",
         "//test/behaviour/reasoner/verification:verification",
     ],

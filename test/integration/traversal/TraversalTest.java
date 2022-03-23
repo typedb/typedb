@@ -23,9 +23,9 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Options;
-import com.vaticle.typedb.core.rocks.RocksSession;
-import com.vaticle.typedb.core.rocks.RocksTransaction;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreSession;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
@@ -48,6 +48,7 @@ import java.nio.file.Paths;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static org.junit.Assert.assertEquals;
@@ -56,18 +57,19 @@ public class TraversalTest {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("query-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Options.Database options = new Options.Database().dataDir(dataDir).logsDir(logDir);
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageIndexCacheSize(MB).storageDataCacheSize(MB);
     private static String database = "query-test";
 
-    private static RocksTypeDB typedb;
-    private static RocksSession session;
+    private static CoreDatabaseManager databaseMgr;
+    private static CoreSession session;
 
     @BeforeClass
     public static void setup() throws IOException {
         Util.resetDirectory(dataDir);
-        typedb = RocksTypeDB.open(options);
-        typedb.databases().create(database);
-        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(database);
+        session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery(
                     "define " +
@@ -90,7 +92,7 @@ public class TraversalTest {
 
     @AfterClass
     public static void teardown() {
-        typedb.close();
+        databaseMgr.close();
     }
 
     /**
@@ -105,20 +107,20 @@ public class TraversalTest {
     @Ignore
     @Test
     public void backtrack_seeks_do_not_skip_answers() {
-        session = typedb.session(database, Arguments.Session.Type.DATA);
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
         // note: must insert in separate Tx's so that the relations are retrieved in a specific order later
-        try (RocksTransaction transaction = session.transaction(WRITE)) {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
             transaction.query().insert(TypeQL.parseQuery(
                     "insert $x isa person; (friend: $x) isa friendship;").asInsert()
             );
             transaction.commit();
         }
-        try (RocksTransaction transaction = session.transaction(WRITE)) {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
             transaction.query().insert(TypeQL.parseQuery("insert" +
                     "$y isa dog; (friend: $y) isa friendship;").asInsert());
             transaction.commit();
         }
-        try (RocksTransaction transaction = session.transaction(READ)) {
+        try (CoreTransaction transaction = session.transaction(READ)) {
             /*
             match
             $rel ($role: $friend);
@@ -172,19 +174,18 @@ public class TraversalTest {
 
     @Test
     public void test_closure_backtrack_clears_scopes() {
-        session = typedb.session(database, Arguments.Session.Type.SCHEMA);
+        session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery("define " +
                     "lastname sub attribute, value string; " +
                     "person sub entity, owns lastname; "
-
             );
             transaction.query().define(query);
             transaction.commit();
         }
         session.close();
 
-        session = typedb.session(database, Arguments.Session.Type.DATA);
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLInsert query = TypeQL.parseQuery("insert " +
                     "$x isa person," +
@@ -201,7 +202,7 @@ public class TraversalTest {
             transaction.commit();
         }
 
-        try (RocksTransaction transaction = session.transaction(READ)) {
+        try (CoreTransaction transaction = session.transaction(READ)) {
             GraphProcedure.Builder proc = GraphProcedure.builder(10);
             /*
             vertices:
@@ -219,9 +220,11 @@ public class TraversalTest {
 
             ProcedureVertex.Thing _0 = proc.anonymousThing(0);
             _0.props().predicate(Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ));
+            _0.props().types(set(Label.of("name")));
 
             ProcedureVertex.Thing _1 = proc.anonymousThing(1);
             _1.props().predicate(Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ));
+            _1.props().types(set(Label.of("name")));
 
             ProcedureVertex.Thing f1 = proc.namedThing("f1");
             f1.props().types(set(Label.of("friendship")));
@@ -234,9 +237,11 @@ public class TraversalTest {
 
             ProcedureVertex.Thing r1 = proc.namedThing("r1");
             r1.props().predicate(Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG));
+            r1.props().types(set(Label.of("ref")));
 
             ProcedureVertex.Thing r2 = proc.namedThing("r2");
             r2.props().predicate(Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG));
+            r2.props().types(set(Label.of("ref")));
 
             ProcedureVertex.Thing x = proc.namedThing("x");
             x.props().types(set(Label.of("person")));

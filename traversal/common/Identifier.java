@@ -218,7 +218,7 @@ public abstract class Identifier {
 
         public static abstract class Retrievable extends Variable {
 
-            public Retrievable(Reference reference, Integer id) {
+            Retrievable(Reference reference, Integer id) {
                 super(reference, id);
             }
 
@@ -270,6 +270,10 @@ public abstract class Identifier {
 
             public String name() {
                 return reference().name() + id;
+            }
+
+            public int anonymousId() {
+                return id;
             }
 
             @Override

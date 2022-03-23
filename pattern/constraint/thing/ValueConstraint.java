@@ -227,7 +227,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public Long clone(Conjunction.Cloner cloner) {
+        public Long clone(Conjunction.ConstraintCloner cloner) {
             return cloner.cloneVariable(owner).valueLong(predicate(), value);
         }
     }
@@ -259,7 +259,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public Double clone(Conjunction.Cloner cloner) {
+        public Double clone(Conjunction.ConstraintCloner cloner) {
             return cloner.cloneVariable(owner).valueDouble(predicate(), value);
         }
     }
@@ -291,7 +291,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public Boolean clone(Conjunction.Cloner cloner) {
+        public Boolean clone(Conjunction.ConstraintCloner cloner) {
             return cloner.cloneVariable(owner).valueBoolean(predicate(), value);
         }
     }
@@ -323,7 +323,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public String clone(Conjunction.Cloner cloner) {
+        public String clone(Conjunction.ConstraintCloner cloner) {
             return cloner.cloneVariable(owner).valueString(predicate(), value);
         }
     }
@@ -355,7 +355,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public DateTime clone(Conjunction.Cloner cloner) {
+        public DateTime clone(Conjunction.ConstraintCloner cloner) {
             return cloner.cloneVariable(owner).valueDateTime(predicate(), value);
         }
     }
@@ -397,7 +397,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public Variable clone(Conjunction.Cloner cloner) {
+        public Variable clone(Conjunction.ConstraintCloner cloner) {
             return cloner.cloneVariable(owner).valueVariable(predicate(), cloner.cloneVariable(value));
         }
     }

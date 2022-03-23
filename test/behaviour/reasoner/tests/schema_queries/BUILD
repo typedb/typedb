@@ -37,10 +37,6 @@ java_test(
     data = [
         "@vaticle_typedb_behaviour//typeql/reasoner:schema-queries.feature",
     ],
-    resources = [
-        "//common/test:logback-test"
-    ],
-    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

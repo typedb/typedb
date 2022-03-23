@@ -242,6 +242,7 @@ public class GraphPlanner implements Planner {
     private void updateObjective(GraphManager graph) {
         if (snapshot < graph.data().stats().snapshot()) {
             totalCostNext = INIT_ZERO;
+            // TODO: we should not include the graph's uncommitted writes, but only the persisted counts in the costs
             setBranchingFactor(graph);
             setCostExponentUnit(graph);
             computeTotalCostNext(graph);

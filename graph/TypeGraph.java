@@ -20,14 +20,18 @@ package com.vaticle.typedb.core.graph;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.common.KeyGenerator;
 import com.vaticle.typedb.core.graph.common.Storage;
+import com.vaticle.typedb.core.graph.common.Storage.Key;
 import com.vaticle.typedb.core.graph.iid.IndexIID;
-import com.vaticle.typedb.core.graph.iid.IndexIID.Type.Rule;
+import com.vaticle.typedb.core.graph.iid.IndexIID.Type.RuleUsage;
 import com.vaticle.typedb.core.graph.iid.StructureIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
@@ -42,8 +46,10 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -51,7 +57,6 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
@@ -61,16 +66,15 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.merge;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
+import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.OBJECT;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
@@ -115,42 +119,48 @@ public class TypeGraph {
         isModified = false;
     }
 
-
     static class Cache {
 
-        private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownedAttributeTypes;
-        private final ConcurrentMap<TypeVertex, Set<TypeVertex>> ownersOfAttributeTypes;
+        // TODO: incorrect that Type graph is aware of Concept semantics, but we gain a lot of performance this way
+
+        private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> ownedAttributeTypes;
+        private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> ownedKeyAttributeTypes;
+        private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> ownersOfAttributeTypes;
+        private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> ownersOfKeyAttributeTypes;
+        private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> playersOfRoleType;
+        private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> playedRoleTypes;
+        private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> relatedRoleTypes;
+        private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> relationsOfRoleType;
+        private final ConcurrentMap<Encoding.ValueType, NavigableSet<TypeVertex>> valueAttributeTypes;
+        private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> subtypes;
         private final ConcurrentMap<Label, Set<Label>> resolvedRoleTypeLabels;
-        private final ConcurrentMap<Encoding.ValueType, Set<TypeVertex>> valueAttributeTypes;
-        private Set<TypeVertex> entityTypes;
-        private Set<TypeVertex> relationTypes;
-        private Set<TypeVertex> roleTypes;
-        private Set<TypeVertex> playerTypes;
-        private Set<TypeVertex> roleTypesPlayed;
-        private Set<TypeVertex> attributeTypes;
-        private Set<TypeVertex> attributeTypesOwned;
-        private Set<TypeVertex> attributeOwnerTypes;
 
         Cache() {
             ownedAttributeTypes = new ConcurrentHashMap<>();
+            ownedKeyAttributeTypes = new ConcurrentHashMap<>();
             ownersOfAttributeTypes = new ConcurrentHashMap<>();
+            ownersOfKeyAttributeTypes = new ConcurrentHashMap<>();
+            playersOfRoleType = new ConcurrentHashMap<>();
+            playedRoleTypes = new ConcurrentHashMap<>();
+            relatedRoleTypes = new ConcurrentHashMap<>();
+            relationsOfRoleType = new ConcurrentHashMap<>();
             resolvedRoleTypeLabels = new ConcurrentHashMap<>();
             valueAttributeTypes = new ConcurrentHashMap<>();
+            subtypes = new ConcurrentHashMap<>();
         }
 
         public void clear() {
             ownedAttributeTypes.clear();
+            ownedKeyAttributeTypes.clear();
             ownersOfAttributeTypes.clear();
+            ownersOfKeyAttributeTypes.clear();
+            playersOfRoleType.clear();
+            playedRoleTypes.clear();
+            relatedRoleTypes.clear();
+            relationsOfRoleType.clear();
             resolvedRoleTypeLabels.clear();
-            entityTypes = null;
-            relationTypes = null;
-            roleTypes = null;
-            playerTypes = null;
-            roleTypesPlayed = null;
-            attributeTypes = null;
-            attributeTypesOwned = null;
-            attributeOwnerTypes = null;
             valueAttributeTypes.clear();
+            subtypes.clear();
         }
     }
 
@@ -211,89 +221,166 @@ public class TypeGraph {
         return getType(ROLE.label(), ROLE.scope());
     }
 
-    public FunctionalIterator<TypeVertex> thingTypes() {
-        return tree(rootThingType(), v -> v.ins().edge(SUB).from());
+    public Forwardable<TypeVertex, Order.Asc> thingTypes() {
+        return merge(iterateSorted(ASC, rootThingType()), entityTypes(), relationTypes(), attributeTypes());
     }
 
-    public FunctionalIterator<TypeVertex> getSubtypes(TypeVertex type) {
-        return tree(type, v -> v.ins().edge(SUB).from());
+    public NavigableSet<TypeVertex> getSubtypes(TypeVertex type) {
+        Supplier<NavigableSet<TypeVertex>> fn = () -> {
+            TreeSet<TypeVertex> subtypes = new TreeSet<>();
+            tree(type, v -> v.ins().edge(SUB).from()).toSet(subtypes);
+            return subtypes;
+        };
+        if (isReadOnly) return cache.subtypes.computeIfAbsent(type, o -> fn.get());
+        else return fn.get();
     }
 
-    public FunctionalIterator<TypeVertex> entityTypes() {
-        if (cache.entityTypes == null) cache.entityTypes = getSubtypes(rootEntityType()).toSet();
-        return iterate(cache.entityTypes);
+    public Forwardable<TypeVertex, Order.Asc> entityTypes() {
+        return iterateSorted(getSubtypes(rootEntityType()), ASC);
     }
 
-    public FunctionalIterator<TypeVertex> attributeTypes() {
-        if (cache.attributeTypes == null) cache.attributeTypes = getSubtypes(rootAttributeType()).toSet();
-        return iterate(cache.attributeTypes);
+    public Forwardable<TypeVertex, Order.Asc> attributeTypes() {
+        return iterateSorted(getSubtypes(rootAttributeType()), ASC);
     }
 
-    public FunctionalIterator<TypeVertex> attributeTypes(Encoding.ValueType valueType) {
-        return iterate(cache.valueAttributeTypes.computeIfAbsent(valueType,
-                vt -> attributeTypes().filter(at -> at.valueType().equals(valueType)).toSet()));
+    public Forwardable<TypeVertex, Order.Asc> attributeTypes(Encoding.ValueType valueType) {
+        return iterateSorted(cache.valueAttributeTypes.computeIfAbsent(valueType,
+                vt -> attributeTypes().filter(at -> at.valueType().equals(valueType)).toNavigableSet()), ASC);
     }
 
-    public FunctionalIterator<TypeVertex> relationTypes() {
-        if (cache.relationTypes == null) cache.relationTypes = getSubtypes(rootRelationType()).toSet();
-        return iterate(cache.relationTypes);
+    public Forwardable<TypeVertex, Order.Asc> relationTypes() {
+        return iterateSorted(getSubtypes(rootRelationType()), ASC);
     }
 
-    public FunctionalIterator<TypeVertex> roleTypes() {
-        if (cache.roleTypes == null) cache.roleTypes = getSubtypes(rootRoleType()).toSet();
-        return iterate(cache.roleTypes);
+    public Forwardable<TypeVertex, Order.Asc> roleTypes() {
+        return iterateSorted(getSubtypes(rootRoleType()), ASC);
     }
 
-    public FunctionalIterator<TypeVertex> playerTypes() {
-        if (cache.playerTypes == null) {
-            cache.playerTypes = getSubtypes(rootThingType())
-                    .filter(type -> type.outs().edge(Encoding.Edge.Type.PLAYS).to().first().isPresent())
-                    .flatMap(this::getSubtypes).toSet();
-        }
-        return iterate(cache.playerTypes);
+    private NavigableSet<TypeVertex> ownedAttributeTypes(TypeVertex owner, boolean isKey) {
+        Set<TypeVertex> overriddens = new HashSet<>();
+        NavigableSet<TypeVertex> ownedAttributeTypes = new TreeSet<>();
+        loop(owner, Objects::nonNull, o -> o.outs().edge(SUB).to().firstOrNull())
+                .flatMap(sub -> {
+                    FunctionalIterator<KeyValue<TypeVertex, TypeVertex>> ownsAndOverridden = isKey ?
+                            sub.outs().edge(OWNS_KEY).toAndOverridden() :
+                            sub.outs().edge(OWNS).toAndOverridden().link(sub.outs().edge(OWNS_KEY).toAndOverridden());
+                    return ownsAndOverridden.map(e -> {
+                        if (e.value() != null) overriddens.add(e.value());
+                        if (sub.equals(owner) || !overriddens.contains(e.key())) return e.key();
+                        else return null;
+                    }).filter(Objects::nonNull);
+                }).toSet(ownedAttributeTypes);
+        return ownedAttributeTypes;
     }
 
-    public FunctionalIterator<TypeVertex> roleTypesPlayed() {
-        if (cache.roleTypesPlayed == null) {
-            cache.roleTypesPlayed = getSubtypes(rootRoleType())
-                    .filter(roleType -> roleType.ins().edge(Encoding.Edge.Type.PLAYS).from().first().isPresent())
-                    .toSet();
-        }
-        return iterate(cache.roleTypesPlayed);
-    }
-
-    public FunctionalIterator<TypeVertex> attributeOwnerTypes() {
-        if (cache.attributeOwnerTypes == null) {
-            cache.attributeOwnerTypes = getSubtypes(rootThingType())
-                    .filter(type -> type.outs().edge(OWNS).to().first().isPresent() ||
-                            type.outs().edge(OWNS_KEY).to().first().isPresent())
-                    .flatMap(this::getSubtypes).toSet();
-        }
-        return iterate(cache.attributeOwnerTypes);
-    }
-
-    public FunctionalIterator<TypeVertex> attributeTypesOwned() {
-        if (cache.attributeTypesOwned == null) {
-            cache.attributeTypesOwned = getSubtypes(rootAttributeType())
-                    .filter(attrType -> attrType.ins().edge(OWNS).from().first().isPresent() ||
-                            attrType.ins().edge(OWNS_KEY).from().first().isPresent()).toSet();
-        }
-        return iterate(cache.attributeTypesOwned);
-    }
-
-    public Set<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
-        Supplier<Set<TypeVertex>> fn = () -> link(
-                list(owner.outs().edge(OWNS).to(), owner.outs().edge(OWNS_KEY).to())
-        ).toSet();
+    public NavigableSet<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
+        Supplier<NavigableSet<TypeVertex>> fn = () -> ownedAttributeTypes(owner, false);
         if (isReadOnly) return cache.ownedAttributeTypes.computeIfAbsent(owner, o -> fn.get());
         else return fn.get();
     }
 
-    public Set<TypeVertex> ownersOfAttributeType(TypeVertex attType) {
-        Supplier<Set<TypeVertex>> fn = () -> link(
-                attType.ins().edge(OWNS).from(), attType.ins().edge(OWNS_KEY).from()
-        ).toSet();
+    public NavigableSet<TypeVertex> ownedKeyAttributeTypes(TypeVertex owner) {
+        Supplier<NavigableSet<TypeVertex>> fn = () -> ownedAttributeTypes(owner, true);
+        if (isReadOnly) return cache.ownedKeyAttributeTypes.computeIfAbsent(owner, o -> fn.get());
+        else return fn.get();
+    }
+
+    private FunctionalIterator<TypeVertex> overriddensOwnsKey(TypeVertex owner) {
+        return owner.outs().edge(OWNS_KEY).overridden().noNulls();
+    }
+
+    private FunctionalIterator<TypeVertex> overriddensOwns(TypeVertex owner) {
+        return owner.outs().edge(OWNS).overridden().noNulls();
+    }
+
+    private FunctionalIterator<TypeVertex> ownersOfAttTypeNonKey(TypeVertex attType) {
+        return attType.ins().edge(OWNS).from()
+                .flatMap(owner -> tree(owner, o -> o.ins().edge(SUB).from().filter(s ->
+                        overriddensOwns(s).noneMatch(ov -> ov.equals(attType))
+                )));
+    }
+
+    private FunctionalIterator<TypeVertex> ownersOfAttTypeKey(TypeVertex attType) {
+        return attType.ins().edge(OWNS_KEY).from()
+                .flatMap(owner -> tree(owner, o -> o.ins().edge(SUB).from().filter(s ->
+                        overriddensOwnsKey(s).noneMatch(ov -> ov.equals(attType))
+                )));
+    }
+
+    public NavigableSet<TypeVertex> ownersOfAttributeType(TypeVertex attType) {
+        Supplier<NavigableSet<TypeVertex>> fn = () -> {
+            TreeSet<TypeVertex> owners = new TreeSet<>();
+            ownersOfAttTypeNonKey(attType).toSet(owners);
+            ownersOfAttTypeKey(attType).toSet(owners);
+            return owners;
+        };
         if (isReadOnly) return cache.ownersOfAttributeTypes.computeIfAbsent(attType, a -> fn.get());
+        else return fn.get();
+    }
+
+    public NavigableSet<TypeVertex> ownersOfAttributeTypeKey(TypeVertex attType) {
+        Supplier<NavigableSet<TypeVertex>> fn = () -> {
+            TreeSet<TypeVertex> owners = new TreeSet<>();
+            ownersOfAttTypeKey(attType).toSet(owners);
+            return owners;
+        };
+        if (isReadOnly) return cache.ownersOfKeyAttributeTypes.computeIfAbsent(attType, a -> fn.get());
+        else return fn.get();
+    }
+
+    public NavigableSet<TypeVertex> playedRoleTypes(TypeVertex player) {
+        Supplier<NavigableSet<TypeVertex>> fn = () -> {
+            Set<TypeVertex> overriddens = new HashSet<>();
+            NavigableSet<TypeVertex> roleTypes = new TreeSet<>();
+            loop(player, Objects::nonNull, p -> p.outs().edge(SUB).to().firstOrNull())
+                    .flatMap(sub -> sub.outs().edge(PLAYS).toAndOverridden().map(e -> {
+                        if (e.value() != null) overriddens.add(e.value());
+                        if (sub.equals(player) || !overriddens.contains(e.key())) return e.key();
+                        else return null;
+                    }).noNulls()).toSet(roleTypes);
+            return roleTypes;
+        };
+        if (isReadOnly) return cache.playedRoleTypes.computeIfAbsent(player, o -> fn.get());
+        else return fn.get();
+    }
+
+    public NavigableSet<TypeVertex> playersOfRoleType(TypeVertex roleType) {
+        Supplier<NavigableSet<TypeVertex>> fn = () -> {
+            NavigableSet<TypeVertex> players = new TreeSet<>();
+            roleType.ins().edge(PLAYS).from().flatMap(player -> tree(player, p ->
+                    p.ins().edge(SUB).from().filter(s -> s.outs().edge(PLAYS).overridden()
+                            .noNulls().noneMatch(ov -> ov.equals(roleType))))).toSet(players);
+            return players;
+        };
+        if (isReadOnly) return cache.playersOfRoleType.computeIfAbsent(roleType, o -> fn.get());
+        else return fn.get();
+    }
+
+    public NavigableSet<TypeVertex> relationsOfRoleType(TypeVertex roleType) {
+        Supplier<NavigableSet<TypeVertex>> fn = () -> {
+            NavigableSet<TypeVertex> relations = new TreeSet<>();
+            roleType.ins().edge(RELATES).from().flatMap(relation -> tree(relation, r ->
+                    r.ins().edge(SUB).from().filter(s -> s.outs().edge(RELATES).overridden()
+                            .noNulls().noneMatch(ov -> ov.equals(roleType))))).toSet(relations);
+            return relations;
+        };
+        if (isReadOnly) return cache.relationsOfRoleType.computeIfAbsent(roleType, o -> fn.get());
+        else return fn.get();
+    }
+
+    public NavigableSet<TypeVertex> relatedRoleTypes(TypeVertex relation) {
+        Supplier<NavigableSet<TypeVertex>> fn = () -> {
+            Set<TypeVertex> overriddens = new HashSet<>();
+            NavigableSet<TypeVertex> roleTypes = new TreeSet<>();
+            loop(relation, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
+                    .flatMap(sub -> sub.outs().edge(RELATES).toAndOverridden().map(e -> {
+                        if (e.value() != null) overriddens.add(e.value());
+                        if (sub.equals(relation) || !overriddens.contains(e.key())) return e.key();
+                        else return null;
+                    }).noNulls()).toSet(roleTypes);
+            return roleTypes;
+        };
+        if (isReadOnly) return cache.relatedRoleTypes.computeIfAbsent(relation, o -> fn.get());
         else return fn.get();
     }
 
@@ -302,15 +389,17 @@ public class TypeGraph {
         Supplier<Set<Label>> fn = () -> {
             TypeVertex relationType = getType(scopedLabel.scope().get());
             if (relationType == null) throw TypeDBException.of(TYPE_NOT_FOUND, scopedLabel.scope().get());
-            else return link(
-                    loop(relationType, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
-                            .flatMap(rel -> rel.outs().edge(RELATES).to())
-                            .filter(rol -> rol.properLabel().name().equals(scopedLabel.name())),
-                    tree(relationType, rel -> rel.ins().edge(SUB).from())
-                            .flatMap(rel -> rel.outs().edge(RELATES).to())
-                            .flatMap(rol -> loop(rol, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull()))
-                            .filter(rol -> rol.properLabel().name().equals(scopedLabel.name()))
-            ).map(TypeVertex::properLabel).toSet();
+            else {
+                return link(
+                        loop(relationType, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
+                                .flatMap(rel -> rel.outs().edge(RELATES).to())
+                                .filter(rol -> rol.properLabel().name().equals(scopedLabel.name())),
+                        tree(relationType, rel -> rel.ins().edge(SUB).from())
+                                .flatMap(rel -> rel.outs().edge(RELATES).to())
+                                .flatMap(rol -> loop(rol, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull()))
+                                .filter(rol -> rol.properLabel().name().equals(scopedLabel.name()))
+                ).map(TypeVertex::properLabel).toSet();
+            }
         };
         if (isReadOnly) return cache.resolvedRoleTypeLabels.computeIfAbsent(scopedLabel, l -> fn.get());
         else return fn.get();
@@ -351,7 +440,7 @@ public class TypeGraph {
             if (vertex != null) return vertex;
 
             IndexIID.Type index = IndexIID.Type.Label.of(label, scope);
-            ByteArray iid = storage.get(index.bytes());
+            ByteArray iid = storage.get(index);
             if (iid != null) {
                 vertex = typesByIID.computeIfAbsent(
                         VertexIID.Type.of(iid), i -> new TypeVertexImpl.Persisted(this, i, label, scope)
@@ -496,8 +585,7 @@ public class TypeGraph {
         }
 
         public FunctionalIterator<RuleStructure> all() {
-            Encoding.Prefix index = IndexIID.Rule.prefix();
-            FunctionalIterator<RuleStructure> persistedRules = storage.iterate(index.bytes())
+            FunctionalIterator<RuleStructure> persistedRules = storage.iterate(IndexIID.Rule.prefix())
                     .map(kv -> convert(StructureIID.Rule.of(kv.value())));
             return link(buffered(), persistedRules).distinct();
         }
@@ -528,7 +616,7 @@ public class TypeGraph {
                 if (vertex != null) return vertex;
 
                 IndexIID.Rule index = IndexIID.Rule.of(label);
-                ByteArray iid = storage.get(index.bytes());
+                ByteArray iid = storage.get(index);
                 if (iid != null) vertex = convert(StructureIID.Rule.of(iid));
                 return vertex;
             } finally {
@@ -675,26 +763,26 @@ public class TypeGraph {
                     if (rules != null && rules.contains(rule)) {
                         concludesVertex.get(type).remove(rule);
                     }
-                    storage.deleteUntracked(Rule.Key.concludedVertex(type.iid(), rule.iid()).bytes());
+                    storage.deleteUntracked(RuleUsage.concludedVertex(type.iid(), rule.iid()));
                 }
 
                 private void deleteConcludesEdgeTo(RuleStructure rule, TypeVertex type) {
                     Set<RuleStructure> rules = concludesEdgeTo.get(type);
                     if (rules != null) rules.remove(rule);
-                    storage.deleteUntracked(Rule.Key.concludedEdgeTo(type.iid(), rule.iid()).bytes());
+                    storage.deleteUntracked(RuleUsage.concludedEdgeTo(type.iid(), rule.iid()));
                 }
 
                 private Set<RuleStructure> loadConcludesVertex(TypeVertex type) {
-                    Rule scanPrefix = Rule.Prefix.concludedVertex(type.iid());
-                    return storage.iterate(scanPrefix.bytes())
-                            .map(kv -> StructureIID.Rule.of((kv.key().view(scanPrefix.length()))))
+                    Key.Prefix<RuleUsage> prefix = RuleUsage.prefixConcludedVertex(type.iid());
+                    return storage.iterate(prefix)
+                            .map(kv -> StructureIID.Rule.of((kv.key().bytes().view(prefix.bytes().length()))))
                             .map(Rules.this::convert).toSet();
                 }
 
                 private Set<RuleStructure> loadConcludesEdgeTo(TypeVertex attrType) {
-                    Rule scanPrefix = Rule.Prefix.concludedEdgeTo(attrType.iid());
-                    return storage.iterate(scanPrefix.bytes())
-                            .map(kv -> StructureIID.Rule.of(kv.key().view(scanPrefix.length())))
+                    Key.Prefix<RuleUsage> prefix = RuleUsage.prefixConcludedEdgeTo(attrType.iid());
+                    return storage.iterate(prefix)
+                            .map(kv -> StructureIID.Rule.of(kv.key().bytes().view(prefix.bytes().length())))
                             .map(Rules.this::convert).toSet();
                 }
 
@@ -734,15 +822,15 @@ public class TypeGraph {
                     concludesVertex.forEach((type, rules) -> {
                         VertexIID.Type typeIID = type.iid();
                         rules.forEach(rule -> {
-                            Rule concludesVertex = Rule.Key.concludedVertex(typeIID, rule.iid());
-                            storage.putUntracked(concludesVertex.bytes());
+                            RuleUsage concludesVertex = RuleUsage.concludedVertex(typeIID, rule.iid());
+                            storage.putUntracked(concludesVertex);
                         });
                     });
                     concludesEdgeTo.forEach((type, rules) -> {
                         VertexIID.Type typeIID = type.iid();
                         rules.forEach(rule -> {
-                            Rule concludesEdgeTo = Rule.Key.concludedEdgeTo(typeIID, rule.iid());
-                            storage.putUntracked(concludesEdgeTo.bytes());
+                            RuleUsage concludesEdgeTo = RuleUsage.concludedEdgeTo(typeIID, rule.iid());
+                            storage.putUntracked(concludesEdgeTo);
                         });
                     });
                 }
@@ -819,13 +907,13 @@ public class TypeGraph {
                 private void delete(RuleStructure rule, TypeVertex type) {
                     Set<RuleStructure> rules = references.get(type);
                     if (rules != null) rules.remove(rule);
-                    storage.deleteUntracked(Rule.Key.contained(type.iid(), rule.iid()).bytes());
+                    storage.deleteUntracked(RuleUsage.contained(type.iid(), rule.iid()));
                 }
 
                 private Set<RuleStructure> loadIndex(TypeVertex type) {
-                    Rule scanPrefix = Rule.Prefix.contained(type.iid());
-                    return storage.iterate(scanPrefix.bytes())
-                            .map(kv -> StructureIID.Rule.of(kv.key().view(scanPrefix.length())))
+                    Key.Prefix<RuleUsage> prefix = RuleUsage.prefixContained(type.iid());
+                    return storage.iterate(prefix)
+                            .map(kv -> StructureIID.Rule.of(kv.key().bytes().view(prefix.bytes().length())))
                             .map(Rules.this::convert).toSet();
                 }
 
@@ -860,8 +948,8 @@ public class TypeGraph {
 
                 private void commit() {
                     references.forEach((type, rules) -> rules.forEach(rule -> {
-                        Rule typeInRule = Rule.Key.contained(type.iid(), rule.iid());
-                        storage.putUntracked(typeInRule.bytes());
+                        RuleUsage typeInRule = RuleUsage.contained(type.iid(), rule.iid());
+                        storage.putUntracked(typeInRule);
                     }));
                 }
 

@@ -22,10 +22,10 @@ import com.google.protobuf.Parser;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
+import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.migrator.data.DataExporter;
 import com.vaticle.typedb.core.migrator.data.DataImporter;
 import com.vaticle.typedb.core.migrator.data.DataProto;
-import com.vaticle.typedb.core.rocks.RocksTypeDB;
 import com.vaticle.typedb.core.server.Version;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
@@ -38,8 +38,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -48,7 +48,8 @@ public class MigratorTest {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("migrator-test");
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Database options = new Database().dataDir(dataDir).logsDir(logDir);
+    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private static final String database = "typedb";
     private static final Path schemaPath = Paths.get("test/integration/migrator/schema.tql");
     private final Path dataPath = Paths.get("test/integration/migrator/data.typedb");
@@ -57,11 +58,11 @@ public class MigratorTest {
     @Test
     public void test_import_export_schema() throws IOException {
         Util.resetDirectory(dataDir);
-        try (TypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
+        try (TypeDB.DatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
             String savedSchema = new String(Files.readAllBytes(schemaPath), UTF_8);
-            runSchema(typedb, savedSchema);
-            String exportedSchema = typedb.databases().get(database).schema();
+            runSchema(databaseMgr, savedSchema);
+            String exportedSchema = databaseMgr.get(database).schema();
             assertEquals(trimSchema(savedSchema), trimSchema(exportedSchema));
         }
     }
@@ -69,18 +70,18 @@ public class MigratorTest {
     @Test
     public void test_import_export_data() throws IOException {
         Util.resetDirectory(dataDir);
-        try (RocksTypeDB typedb = RocksTypeDB.open(options)) {
-            typedb.databases().create(database);
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
             String schema = new String(Files.readAllBytes(schemaPath), UTF_8);
-            runSchema(typedb, schema);
-            new DataImporter(typedb, database, dataPath, new HashMap<>(), Version.VERSION).run();
-            new DataExporter(typedb, database, exportDataPath, Version.VERSION).run();
+            runSchema(databaseMgr, schema);
+            new DataImporter(databaseMgr, database, dataPath, Version.VERSION).run();
+            new DataExporter(databaseMgr, database, exportDataPath, Version.VERSION).run();
             assertEquals(getChecksums(dataPath), getChecksums(exportDataPath));
         }
     }
 
-    private void runSchema(TypeDB typedb, String schema) {
-        try (TypeDB.Session session = typedb.session(database, Arguments.Session.Type.SCHEMA)) {
+    private void runSchema(TypeDB.DatabaseManager databaseMgr, String schema) {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 TypeQLDefine query = TypeQL.parseQuery(schema);
                 tx.query().define(query);

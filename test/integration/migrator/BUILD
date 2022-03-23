@@ -26,7 +26,7 @@ host_compatible_java_test(
         "//:typedb",
         "//common:common",
         "//server:server",
-        "//rocks:rocks",
+        "//database:database",
         "//migrator:migrator",
     ],
     deps = [
@@ -41,10 +41,6 @@ host_compatible_java_test(
         # External dependencies from Maven
         "@maven//:com_google_protobuf_protobuf_java",
     ],
-    resources = [
-        "//common/test:logback-test"
-    ],
-    resource_strip_prefix = "common/test",
     data = [":schema.tql", "data.typedb"],
     size = "large",
 )

@@ -61,7 +61,7 @@ public class ExplanationProducer implements Producer<Explanation> {
 //        this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
         this.requestTraceIdCounter = 0;
         this.traceId = UUID.randomUUID();
-        if (options.traceInference()) Tracer.initialise(options.logsDir());
+        if (options.traceInference()) Tracer.initialise(options.reasonerDebuggerDir());
     }
 
     @Override

@@ -63,10 +63,6 @@ java_test(
         "@vaticle_typedb_behaviour//connection:transaction.feature",
     ],
     size = "small",
-    resources = [
-        "//common/test:logback-test"
-    ],
-    resource_strip_prefix = "common/test",
 )
 
 checkstyle_test(

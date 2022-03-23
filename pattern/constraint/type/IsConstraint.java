@@ -89,7 +89,7 @@ public class IsConstraint extends TypeConstraint {
     }
 
     @Override
-    public IsConstraint clone(Conjunction.Cloner cloner) {
+    public IsConstraint clone(Conjunction.ConstraintCloner cloner) {
         return cloner.cloneVariable(owner).is(cloner.cloneVariable(variable));
     }
 }

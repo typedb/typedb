@@ -18,16 +18,19 @@
 
 package com.vaticle.typedb.core.graph.edge.impl;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
-import com.vaticle.typedb.core.graph.iid.EdgeIID;
+import com.vaticle.typedb.core.graph.iid.EdgeViewIID;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
 import static java.util.Objects.hash;
 
 /**
@@ -37,10 +40,91 @@ public abstract class TypeEdgeImpl implements TypeEdge {
 
     final TypeGraph graph;
     final Encoding.Edge.Type encoding;
+    final View.Forward forward;
+    final View.Backward backward;
 
     TypeEdgeImpl(TypeGraph graph, Encoding.Edge.Type encoding) {
         this.graph = graph;
         this.encoding = encoding;
+        this.forward = new View.Forward(this);
+        this.backward = new View.Backward(this);
+    }
+
+    @Override
+    public View.Forward forwardView() {
+        return forward;
+    }
+
+    @Override
+    public View.Backward backwardView() {
+        return backward;
+    }
+
+    abstract EdgeViewIID.Type computeForwardIID();
+
+    abstract EdgeViewIID.Type computeBackwardIID();
+
+    private static abstract class View<T extends TypeEdge.View<T>> implements TypeEdge.View<T> {
+
+        final TypeEdgeImpl edge;
+        EdgeViewIID.Type iidCache = null;
+
+        private View(TypeEdgeImpl edge) {
+            this.edge = edge;
+        }
+
+        @Override
+        public TypeEdge edge() {
+            return edge;
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (this == object) return true;
+            if (object == null || this.getClass() != object.getClass()) return false;
+            return edge.equals(((TypeEdgeImpl.View<?>) object).edge);
+        }
+
+        @Override
+        public int hashCode() {
+            return edge.hashCode();
+        }
+
+        private static class Forward extends TypeEdgeImpl.View<TypeEdge.View.Forward> implements TypeEdge.View.Forward {
+
+            private Forward(TypeEdgeImpl edge) {
+                super(edge);
+            }
+
+            @Override
+            public EdgeViewIID.Type iid() {
+                if (iidCache == null) iidCache = edge.computeForwardIID();
+                return iidCache;
+            }
+
+            @Override
+            public int compareTo(TypeEdge.View.Forward other) {
+                return iid().compareTo(other.iid());
+            }
+        }
+
+        private static class Backward extends TypeEdgeImpl.View<TypeEdge.View.Backward> implements TypeEdge.View.Backward {
+
+            private Backward(TypeEdgeImpl edge) {
+                super(edge);
+            }
+
+            @Override
+            public EdgeViewIID.Type iid() {
+                if (iidCache == null) iidCache = edge.computeBackwardIID();
+                return iidCache;
+            }
+
+            @Override
+            public int compareTo(TypeEdge.View.Backward other) {
+                return iid().compareTo(other.iid());
+            }
+        }
     }
 
     /**
@@ -77,13 +161,13 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public EdgeIID.Type outIID() {
-            return EdgeIID.Type.of(from().iid(), encoding.out(), to().iid());
+        public EdgeViewIID.Type computeForwardIID() {
+            return EdgeViewIID.Type.of(from().iid(), encoding.forward(), to().iid());
         }
 
         @Override
-        public EdgeIID.Type inIID() {
-            return EdgeIID.Type.of(to().iid(), encoding.in(), from().iid());
+        public EdgeViewIID.Type computeBackwardIID() {
+            return EdgeViewIID.Type.of(to().iid(), encoding.backward(), from().iid());
         }
 
         @Override
@@ -97,8 +181,8 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public TypeVertex overridden() {
-            return overridden;
+        public Optional<TypeVertex> overridden() {
+            return Optional.ofNullable(overridden);
         }
 
         @Override
@@ -118,8 +202,8 @@ public abstract class TypeEdgeImpl implements TypeEdge {
                 from.outs().remove(this);
                 to.ins().remove(this);
                 if (from instanceof Persisted && to instanceof Persisted) {
-                    graph.storage().deleteUntracked(outIID().bytes());
-                    graph.storage().deleteUntracked(inIID().bytes());
+                    graph.storage().deleteUntracked(forward.iid());
+                    graph.storage().deleteUntracked(backward.iid());
                 }
             }
         }
@@ -135,13 +219,13 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         @Override
         public void commit() {
             if (committed.compareAndSet(false, true)) {
-                if (encoding.out() != null) {
-                    if (overridden != null) graph.storage().putUntracked(outIID().bytes(), overridden.iid().bytes());
-                    else graph.storage().putUntracked(outIID().bytes());
-                }
-                if (encoding.in() != null) {
-                    if (overridden != null) graph.storage().putUntracked(inIID().bytes(), overridden.iid().bytes());
-                    else graph.storage().putUntracked(inIID().bytes());
+                // compute IID because vertices could have been committed
+                if (overridden != null) {
+                    graph.storage().putUntracked(computeForwardIID(), overridden.iid().bytes());
+                    graph.storage().putUntracked(computeBackwardIID(), overridden.iid().bytes());
+                } else {
+                    graph.storage().putUntracked(computeForwardIID());
+                    graph.storage().putUntracked(computeBackwardIID());
                 }
             }
         }
@@ -184,15 +268,89 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
     }
 
+
+    public static class Target extends TypeEdgeImpl implements TypeEdge {
+
+        private final TypeVertex from;
+        private final TypeVertex to;
+        private final int hash;
+
+        public Target(Encoding.Edge.Type encoding, TypeVertex from, TypeVertex to) {
+            super(from.graph(), encoding);
+            this.from = from;
+            this.to = to;
+            this.hash = hash(Target.class, from, to);
+        }
+
+        @Override
+        public Encoding.Edge.Type encoding() {
+            return encoding;
+        }
+
+        @Override
+        EdgeViewIID.Type computeForwardIID() {
+            return EdgeViewIID.Type.of(from.iid(), encoding.forward(), to.iid());
+        }
+
+        @Override
+        EdgeViewIID.Type computeBackwardIID() {
+            return EdgeViewIID.Type.of(to.iid(), encoding.forward(), from.iid());
+        }
+
+        @Override
+        public TypeVertex from() {
+            return from;
+        }
+
+        @Override
+        public TypeVertex to() {
+            return to;
+        }
+
+        @Override
+        public Optional<TypeVertex> overridden() {
+            return Optional.empty();
+        }
+
+        @Override
+        public void overridden(TypeVertex overridden) {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public void delete() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public void commit() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public final boolean equals(Object object) {
+            if (this == object) return true;
+            if (object == null || getClass() != object.getClass()) return false;
+            TypeEdgeImpl.Target that = (TypeEdgeImpl.Target) object;
+            return this.encoding.equals(that.encoding) &&
+                    this.from.equals(that.from) &&
+                    this.to.equals(that.to);
+        }
+
+        @Override
+        public final int hashCode() {
+            return hash;
+        }
+    }
+
     /**
      * Persisted Type Edge that connects two Type Vertices, and an overridden Type Vertex
      */
     public static class Persisted extends TypeEdgeImpl implements TypeEdge {
 
-        private final EdgeIID.Type outIID;
-        private final EdgeIID.Type inIID;
         private final VertexIID.Type fromIID;
         private final VertexIID.Type toIID;
+        private final Encoding.Edge.Type encoding;
         private final AtomicBoolean deleted;
         private TypeVertex from;
         private TypeVertex to;
@@ -215,23 +373,18 @@ public abstract class TypeEdgeImpl implements TypeEdge {
          * @param graph the graph comprised of all the vertices
          * @param iid   the {@code iid} of a persisted edge
          */
-        public Persisted(TypeGraph graph, EdgeIID.Type iid, @Nullable VertexIID.Type overriddenIID) {
+        public Persisted(TypeGraph graph, EdgeViewIID.Type iid, @Nullable VertexIID.Type overriddenIID) {
             super(graph, iid.encoding());
 
-            if (iid.isOutwards()) {
+            if (iid.isForward()) {
                 fromIID = iid.start();
                 toIID = iid.end();
-                outIID = iid;
-                inIID = EdgeIID.Type.of(iid.end(), iid.encoding().in(), iid.start());
             } else {
                 fromIID = iid.end();
                 toIID = iid.start();
-                inIID = iid;
-                outIID = EdgeIID.Type.of(iid.end(), iid.encoding().out(), iid.start());
             }
-
+            encoding = iid.encoding();
             deleted = new AtomicBoolean(false);
-
             if (overriddenIID != null) this.overriddenIID = overriddenIID;
         }
 
@@ -241,13 +394,12 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public EdgeIID.Type outIID() {
-            return outIID;
+        public EdgeViewIID.Type computeForwardIID() {
+            return EdgeViewIID.Type.of(fromIID, encoding.forward(), toIID);
         }
 
-        @Override
-        public EdgeIID.Type inIID() {
-            return inIID;
+        public EdgeViewIID.Type computeBackwardIID() {
+            return EdgeViewIID.Type.of(toIID, encoding.backward(), fromIID);
         }
 
         @Override
@@ -267,12 +419,11 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public TypeVertex overridden() {
-            if (overridden != null) return overridden;
-            if (overriddenIID == null) return null;
-
+        public Optional<TypeVertex> overridden() {
+            if (overridden != null) return Optional.of(overridden);
+            if (overriddenIID == null) return Optional.empty();
             overridden = graph.convert(overriddenIID);
-            return overridden;
+            return Optional.of(overridden);
         }
 
         /**
@@ -287,26 +438,24 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         public void overridden(TypeVertex overridden) {
             this.overridden = overridden;
             overriddenIID = overridden.iid();
-            graph.storage().putUntracked(outIID.bytes(), overriddenIID.bytes());
-            graph.storage().putUntracked(inIID.bytes(), overriddenIID.bytes());
+            graph.storage().putUntracked(computeForwardIID(), overriddenIID.bytes());
+            graph.storage().putUntracked(computeBackwardIID(), overriddenIID.bytes());
         }
 
         /**
          * Delete operation of a persisted edge.
          *
          * This operation can only be performed once, and thus protected by
-         * {@code isDelete} atomic boolean. The delete operation involves
-         * removing this edge from the {@code from.outs()} and {@code to.ins()}
-         * edge collections in case it is cached. Then, delete both directions
-         * of this edge from the graph storage.
+         * {@code isDelete} atomic boolean. We mark both from and to vertices
+         * as modified, and delete both directions of this edge from the graph storage.
          */
         @Override
         public void delete() {
             if (deleted.compareAndSet(false, true)) {
                 from().outs().remove(this);
                 to().ins().remove(this);
-                graph.storage().deleteUntracked(this.outIID.bytes());
-                graph.storage().deleteUntracked(this.inIID.bytes());
+                graph.storage().deleteUntracked(forwardView().iid());
+                graph.storage().deleteUntracked(backwardView().iid());
             }
         }
 
@@ -318,7 +467,8 @@ public abstract class TypeEdgeImpl implements TypeEdge {
          * {@code overriddenIID}, and that is immediately written to storage when changed.
          */
         @Override
-        public void commit() {}
+        public void commit() {
+        }
 
         /**
          * Determine the equality of a {@code Edge} against another.

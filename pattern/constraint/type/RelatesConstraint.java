@@ -115,7 +115,7 @@ public class RelatesConstraint extends TypeConstraint {
     }
 
     @Override
-    public RelatesConstraint clone(Conjunction.Cloner cloner) {
+    public RelatesConstraint clone(Conjunction.ConstraintCloner cloner) {
         return cloner.cloneVariable(owner).relates(
                 cloner.cloneVariable(roleType),
                 overriddenRoleType == null ? null : cloner.cloneVariable(overriddenRoleType)

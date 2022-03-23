@@ -85,7 +85,7 @@ public class RegexConstraint extends TypeConstraint {
     }
 
     @Override
-    public RegexConstraint clone(Conjunction.Cloner cloner) {
+    public RegexConstraint clone(Conjunction.ConstraintCloner cloner) {
         return cloner.cloneVariable(owner).regex(regex);
     }
 }

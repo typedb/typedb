@@ -51,7 +51,9 @@ public class VariableCloner {
 
     public ThingVariable clone(ThingVariable variable) {
         assert variable.id().isVariable();
-        ThingVariable newClone = variables.computeIfAbsent(variable.id().asVariable(), ThingVariable::new).asThing();
+        if (variables.containsKey(variable.id())) return variables.get(variable.id()).asThing();
+        ThingVariable newClone = new ThingVariable(variable.id());
+        variables.put(variable.id(), newClone);
         newClone.setInferredTypes(variable.inferredTypes());
         newClone.constrainClone(variable, this);
         return newClone;
@@ -59,7 +61,9 @@ public class VariableCloner {
 
     public TypeVariable clone(TypeVariable variable) {
         assert variable.id().isVariable();
-        TypeVariable newClone = variables.computeIfAbsent(variable.id().asVariable(), TypeVariable::new).asType();
+        if (variables.containsKey(variable.id())) return variables.get(variable.id()).asType();
+        TypeVariable newClone = new TypeVariable(variable.id());
+        variables.put(variable.id(), newClone);
         newClone.setInferredTypes(variable.inferredTypes());
         newClone.constrainClone(variable, this);
         return newClone;

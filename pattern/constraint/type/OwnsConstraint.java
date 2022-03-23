@@ -121,7 +121,7 @@ public class OwnsConstraint extends TypeConstraint {
     }
 
     @Override
-    public OwnsConstraint clone(Conjunction.Cloner cloner) {
+    public OwnsConstraint clone(Conjunction.ConstraintCloner cloner) {
         return cloner.cloneVariable(owner).owns(
                 cloner.cloneVariable(attributeType),
                 overriddenAttributeType == null ? null : cloner.cloneVariable(overriddenAttributeType),

@@ -29,7 +29,7 @@ public class Label {
 
     private final String name;
     private final String scope;
-    private final int hash;
+    private int hash = 0;
 
     /**
      * TODO:
@@ -50,7 +50,6 @@ public class Label {
     private Label(String name, @Nullable String scope) {
         this.name = name;
         this.scope = scope;
-        this.hash = Objects.hash(name, scope);
     }
 
     public static Label of(String name) {
@@ -90,6 +89,7 @@ public class Label {
 
     @Override
     public int hashCode() {
+        if (hash == 0) hash = Objects.hash(name, scope);
         return hash;
     }
 }

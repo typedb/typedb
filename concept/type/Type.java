@@ -20,12 +20,14 @@ package com.vaticle.typedb.core.concept.type;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.Concept;
 
 import java.util.List;
 
-public interface Type extends Concept {
+public interface Type extends Concept, Comparable<Type> {
 
     long getInstancesCount();
 
@@ -41,9 +43,9 @@ public interface Type extends Concept {
 
     FunctionalIterator<? extends Type> getSupertypes();
 
-    FunctionalIterator<? extends Type> getSubtypes();
+    Forwardable<? extends Type, Order.Asc> getSubtypes();
 
-    FunctionalIterator<? extends Type> getSubtypesExplicit();
+    Forwardable<? extends Type, Order.Asc> getSubtypesExplicit();
 
     List<TypeDBException> validate();
 }
