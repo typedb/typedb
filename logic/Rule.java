@@ -66,7 +66,6 @@ import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_CONCLUSION_AMBIGUOUS_LABELLED_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_CONCLUSION_ILLEGAL_INSERT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
@@ -404,12 +403,6 @@ public class Rule {
         private void validateInsertable(LogicManager logicMgr) {
             Conjunction clonedThen = rule.then.clone();
             logicMgr.typeInference().applyCombination(clonedThen, true);
-            Optional<Variable> ambiguousVar = iterate(clonedThen.variables())
-                    .filter(var -> var.isType() && var.id().isLabel() && var.inferredTypes().size() != 1).first();
-            if (ambiguousVar.isPresent()) {
-                throw TypeDBException.of(RULE_CONCLUSION_AMBIGUOUS_LABELLED_TYPE,
-                        rule.structure.label(), ambiguousVar.get().id(), ambiguousVar.get().inferredTypes());
-            }
 
             Set<Identifier.Variable.Name> sharedIDs = iterate(rule.then.retrieves())
                     .filter(id -> id.isName() && rule.when.retrieves().contains(id))
