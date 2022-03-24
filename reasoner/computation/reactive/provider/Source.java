@@ -43,15 +43,15 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
     }
 
     @Override
-    public void pull(Receiver.Sync<PACKET> receiver) {
-        assert receiver.equals(receiverRegistry().receiver());
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver.identifier(), identifier()));
-        receiverRegistry().recordPull(receiver);
+    public void pull(Subscriber<PACKET> subscriber) {
+        assert subscriber.equals(receiverRegistry().receiver());
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+        receiverRegistry().recordPull(subscriber);
         if (!exhausted) {
             if (iterator == null) iterator = iteratorSupplier.get();
             if (iterator.hasNext()) {
                 processor().monitor().execute(actor -> actor.createAnswer(identifier()));
-                receiver.receive(this, iterator.next());
+                subscriber.receive(this, iterator.next());
             } else {
                 exhausted = true;
                 processor().monitor().execute(actor -> actor.sourceFinished(identifier()));

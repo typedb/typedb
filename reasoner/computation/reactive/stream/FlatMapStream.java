@@ -27,15 +27,15 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverSingleProviderSt
 
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
 
-    public FlatMapStream(Provider.Sync.Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
+    public FlatMapStream(Publisher<INPUT> publisher, Function<INPUT, FunctionalIterator<OUTPUT>> transform,
                          Processor<?, ?, ?, ?> processor) {
         super(publisher, processor);
         this.transform = transform;
     }
 
     @Override
-    public void receive(Provider.Sync<INPUT> provider, INPUT packet) {
-        super.receive(provider, packet);
+    public void receive(Publisher<INPUT> publisher, INPUT packet) {
+        super.receive(publisher, packet);
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         if (transformed.hasNext()) {
             receiverRegistry().setNotPulling();
@@ -45,7 +45,7 @@ public class FlatMapStream<INPUT, OUTPUT> extends SingleReceiverSingleProviderSt
                 receiverRegistry().receiver().receive(this, t);
             });
         } else if (receiverRegistry().isPulling()) {
-             processor().schedulePullRetry(provider, this);
+             processor().schedulePullRetry(publisher, this);
         }
         processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
     }

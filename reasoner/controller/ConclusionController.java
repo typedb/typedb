@@ -159,7 +159,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         private class ConclusionReactive extends SingleReceiverSingleProviderStream<ConceptMap, Map<Variable, Concept>> {
 
-            private ProviderRegistry.Multi<Provider.Sync<Map<Variable, Concept>>> materialisationRegistry;
+            private ProviderRegistry.Multi<Publisher<Map<Variable, Concept>>> materialisationRegistry;
 
             protected ConclusionReactive(Processor<?, ?, ?, ?> processor) {
                 super(processor);
@@ -173,19 +173,19 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 this.materialisationRegistry = new ProviderRegistry.Multi<>(receiverRegistry().receiver(), processor());
             }
 
-            protected ProviderRegistry.Multi<Provider.Sync<Map<Variable, Concept>>> materialisationRegistry() {
+            protected ProviderRegistry.Multi<Publisher<Map<Variable, Concept>>> materialisationRegistry() {
                 return materialisationRegistry;
             }
 
             @Override
-            public void pull(Receiver.Sync<Map<Variable, Concept>> receiver) {
-                super.pull(receiver);
+            public void pull(Subscriber<Map<Variable, Concept>> subscriber) {
+                super.pull(subscriber);
                 materialisationRegistry().nonPulling().forEach(p -> p.pull(receiverRegistry().receiver()));
             }
 
             @Override
-            public void receive(Provider.Sync<ConceptMap> provider, ConceptMap packet) {
-                super.receive(provider, packet);
+            public void receive(Publisher<ConceptMap> publisher, ConceptMap packet) {
+                super.receive(publisher, packet);
                 Input<Either<ConceptMap, Materialisation>> materialisationInput = createInput();
                 mayRequestMaterialiser(new MaterialiserRequest(
                         materialisationInput.identifier(), null,
@@ -203,7 +203,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(identifier(), materialisationReactive.identifier()));
                 if (receiverRegistry().isPulling()) {
                     if (materialisationRegistry().setPulling(materialisationReactive)) materialisationReactive.pull(receiverRegistry().receiver());
-                    processor().schedulePullRetry(provider, this);  // We need to retry the condition again in case materialisation fails
+                    processor().schedulePullRetry(publisher, this);  // We need to retry the condition again in case materialisation fails
                 }
             }
 
@@ -229,8 +229,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             @Override
-            public void receive(Provider.Sync<Map<Variable, Concept>> provider, Map<Variable, Concept> packet) {
-                super.receive(provider, packet);
+            public void receive(Publisher<Map<Variable, Concept>> publisher, Map<Variable, Concept> packet) {
+                super.receive(publisher, packet);
                 receiverRegistry().setNotPulling();
                 parent.receiveMaterialisation(this, packet);
             }

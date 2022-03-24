@@ -23,8 +23,8 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Sync.Subscriber;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveIdentifier;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.SingleReceiverPublisher;
@@ -93,7 +93,7 @@ public abstract class Processor<INPUT, OUTPUT,
         inputs.get(inputId).receive(provider, packet);
     }
 
-    public <PACKET> void schedulePullRetry(Provider.Sync<PACKET> provider, Reactive.Receiver.Sync<PACKET> receiver) {
+    public <PACKET> void schedulePullRetry(Publisher<PACKET> provider, Reactive.Subscriber<PACKET> receiver) {
         pullRetries.put(new Pair<>(provider.identifier(), receiver.identifier()), () -> provider.pull(receiver));
         driver().execute(actor -> actor.pullRetry(provider.identifier(), receiver.identifier()));
     }
@@ -193,7 +193,7 @@ public abstract class Processor<INPUT, OUTPUT,
     /**
      * Governs an input to a processor
      */
-    public static class Input<PACKET> extends SingleReceiverPublisher<PACKET> implements Reactive.Receiver.Async<PACKET> {
+    public static class Input<PACKET> extends SingleReceiverPublisher<PACKET> implements Reactive.Receiver<PACKET> {
 
         private final ProviderRegistry.Single<Identifier.Output<PACKET>> providerRegistry;
         private final Identifier.Input<PACKET> identifier;
@@ -226,10 +226,10 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public void pull(Receiver.Sync<PACKET> receiver) {
-            assert receiver.equals(receiverRegistry().receiver());
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver.identifier(),identifier()));
-            receiverRegistry().recordPull(receiver);
+        public void pull(Subscriber<PACKET> subscriber) {
+            assert subscriber.equals(receiverRegistry().receiver());
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+            receiverRegistry().recordPull(subscriber);
             if (ready && providerRegistry().setPulling()) {
                 providerRegistry().provider().processor()
                         .execute(actor -> actor.pull(identifier(), providerRegistry().provider()));
@@ -249,10 +249,10 @@ public abstract class Processor<INPUT, OUTPUT,
     /**
      * Governs an output from a processor
      */
-    public static class Output<PACKET> implements Subscriber<PACKET>, Provider.Async<PACKET> {
+    public static class Output<PACKET> implements Subscriber<PACKET>, Reactive.Provider<PACKET> {
 
         private final Reactive.Identifier.Output<PACKET> identifier;
-        private final ProviderRegistry.Single<Provider.Sync<PACKET>> providerRegistry;
+        private final ProviderRegistry.Single<Publisher<PACKET>> providerRegistry;
         private final ReceiverRegistry.SingleReceiverRegistry<Reactive.Identifier.Input<PACKET>> receiverRegistry;
 
         public Output(Processor<?, PACKET, ?, ?> processor) {
@@ -266,7 +266,7 @@ public abstract class Processor<INPUT, OUTPUT,
             return identifier;
         }
 
-        private ProviderRegistry.Single<Provider.Sync<PACKET>> providerRegistry() {
+        private ProviderRegistry.Single<Publisher<PACKET>> providerRegistry() {
             return providerRegistry;
         }
 
@@ -275,9 +275,9 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider.identifier(), identifier(), packet));
-            providerRegistry().recordReceive(provider);
+        public void receive(Publisher<PACKET> publisher, PACKET packet) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(publisher.identifier(), identifier(), packet));
+            providerRegistry().recordReceive(publisher);
             receiverRegistry().setNotPulling();
             receiverRegistry().receiver().processor()
                     .execute(actor -> actor.receive(identifier(), packet, receiverRegistry().receiver()));
@@ -291,7 +291,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public void registerPublisher(Provider.Sync<PACKET> provider) {
+        public void registerPublisher(Publisher<PACKET> provider) {
             providerRegistry().add(provider);
             if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
         }

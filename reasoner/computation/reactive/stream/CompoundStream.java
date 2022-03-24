@@ -33,7 +33,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverMultiProvider
     private final List<PLAN_ID> remainingPlan;
     private final BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc;
     private final BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc;
-    private final Map<Provider, PACKET> publisherPackets;
+    private final Map<Publisher, PACKET> publisherPackets;
     private final PACKET initialPacket;
 
     public CompoundStream(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
@@ -51,10 +51,10 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverMultiProvider
     }
 
     @Override
-    public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
-        super.receive(provider, packet);
+    public void receive(Publisher<PACKET> publisher, PACKET packet) {
+        super.receive(publisher, packet);
         PACKET mergedPacket = compoundPacketsFunc.apply(initialPacket, packet);
-        if (leadingPublisher.equals(provider)) {
+        if (leadingPublisher.equals(publisher)) {
             if (remainingPlan.size() == 0) {  // For a single item plan
                 receiverRegistry().setNotPulling();
                 receiverRegistry().receiver().receive(this, mergedPacket);
@@ -76,7 +76,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverMultiProvider
             }
         } else {
             receiverRegistry().setNotPulling();
-            PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(provider));
+            PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(publisher));
             receiverRegistry().receiver().receive(this, compoundedPacket);
         }
     }

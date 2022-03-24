@@ -19,21 +19,20 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public class FindFirstStream<PACKET> extends SingleReceiverSingleProviderStream<PACKET, PACKET> {
 
     private boolean packetFound;
 
-    public FindFirstStream(Provider.Sync.Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
+    public FindFirstStream(Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
         super(publisher, processor);
         this.packetFound = false;
     }
 
     @Override
-    public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
-        super.receive(provider, packet);
+    public void receive(Publisher<PACKET> publisher, PACKET packet) {
+        super.receive(publisher, packet);
         if (!packetFound) {
             packetFound = true;
             receiverRegistry().setNotPulling();
@@ -44,8 +43,8 @@ public class FindFirstStream<PACKET> extends SingleReceiverSingleProviderStream<
     }
 
     @Override
-    public void pull(Receiver.Sync<PACKET> receiver) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver.identifier(), identifier()));
-        if (!packetFound) super.pull(receiver);
+    public void pull(Subscriber<PACKET> subscriber) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+        if (!packetFound) super.pull(subscriber);
     }
 }

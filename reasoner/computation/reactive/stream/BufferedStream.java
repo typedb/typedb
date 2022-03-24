@@ -27,14 +27,14 @@ public class BufferedStream<PACKET> extends SingleReceiverSingleProviderStream<P
 
     private final Stack<PACKET> stack;
 
-    public BufferedStream(Provider.Sync.Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
+    public BufferedStream(Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
         super(publisher, processor);
         this.stack = new Stack<>();
     }
 
     @Override
-    public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
-        super.receive(provider, packet);
+    public void receive(Publisher<PACKET> publisher, PACKET packet) {
+        super.receive(publisher, packet);
         if (receiverRegistry().isPulling()) {
             receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
@@ -44,12 +44,12 @@ public class BufferedStream<PACKET> extends SingleReceiverSingleProviderStream<P
     }
 
     @Override
-    public void pull(Receiver.Sync<PACKET> receiver) {
-        assert receiver.equals(receiverRegistry().receiver());
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver.identifier(),identifier()));
-        receiverRegistry().recordPull(receiver);
+    public void pull(Subscriber<PACKET> subscriber) {
+        assert subscriber.equals(receiverRegistry().receiver());
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+        receiverRegistry().recordPull(subscriber);
         if (stack.size() > 0) {
-            receiver.receive(this, stack.pop());
+            subscriber.receive(this, stack.pop());
         } else {
             if (receiverRegistry().isPulling() && providerRegistry().setPulling()) {
                 providerRegistry().provider().pull(this);

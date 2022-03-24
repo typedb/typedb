@@ -49,63 +49,50 @@ public interface Reactive {
         }
     }
 
-    interface Provider extends Reactive {
+    interface Provider<PACKET> extends Reactive {
 
-        interface Sync<R> extends Provider {  // TODO: This should now be Subscriber
+        void pull(Identifier.Input<PACKET> receiverId);
 
-            void pull(Receiver.Sync<R> receiver);
+    }
 
-            interface Publisher<T> extends Sync<T> {
+    interface Publisher<T> extends Reactive {
 
-                void registerSubscriber(Receiver.Sync.Subscriber<T> subscriber);
+        void pull(Subscriber<T> subscriber);
 
-                Stream<T,T> findFirst();
+        void registerSubscriber(Subscriber<T> subscriber);
 
-                <R> Stream<T, R> map(Function<T, R> function);
+        Stream<T,T> findFirst();
 
-                <R> Stream<T,R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
+        <R> Stream<T, R> map(Function<T, R> function);
 
-                Stream<T, T> buffer();
+        <R> Stream<T,R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
 
-                Stream<T, T> deduplicate();
+        Stream<T, T> buffer();
 
-            }
-        }
+        Stream<T, T> deduplicate();
 
-        interface Async<PACKET> extends Provider {  // TODO: This should now be Provider, it now shares nothing with Publisher. Symmetrically the same goes for Receiver/Subscriber.
+    }
 
-            void pull(Identifier.Input<PACKET> receiverId);
+    interface Receiver<R> extends Reactive {
+
+        void receive(Identifier.Output<R> providerId, R packet);
+
+    }
+
+    interface Subscriber<R> extends Reactive {
+
+        void receive(Publisher<R> publisher, R packet);
+
+        void registerPublisher(Publisher<R> publisher);
+
+        interface Finishable<T> extends Reactive.Subscriber<T> {
+
+            void finished();
 
         }
     }
 
-    interface Receiver extends Reactive {
-
-        interface Sync<R> extends Receiver {
-
-            void receive(Provider.Sync<R> provider, R packet);
-
-            interface Subscriber<T> extends Sync<T> {
-
-                void registerPublisher(Provider.Sync<T> publisher);
-
-            }
-
-            interface Finishable<T> extends Sync<T> {
-
-                void finished();
-
-            }
-        }
-
-        interface Async<R> extends Receiver {
-
-            void receive(Reactive.Identifier.Output<R> providerId, R packet);
-
-        }
-    }
-
-    interface Stream<INPUT, OUTPUT> extends Receiver.Sync.Subscriber<INPUT>, Provider.Sync.Publisher<OUTPUT> {
+    interface Stream<INPUT, OUTPUT> extends Subscriber<INPUT>, Publisher<OUTPUT> {
 
     }
 

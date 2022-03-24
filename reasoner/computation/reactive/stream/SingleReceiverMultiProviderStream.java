@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public class SingleReceiverMultiProviderStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT> {
 
-    private final ProviderRegistry.Multi<Provider.Sync<INPUT>> providerRegistry;
+    private final ProviderRegistry.Multi<Publisher<INPUT>> providerRegistry;
 
     protected SingleReceiverMultiProviderStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
@@ -32,15 +32,15 @@ public class SingleReceiverMultiProviderStream<INPUT, OUTPUT> extends SingleRece
     }
 
     @Override
-    protected ProviderRegistry.Multi<Provider.Sync<INPUT>> providerRegistry() {
+    protected ProviderRegistry.Multi<Publisher<INPUT>> providerRegistry() {
         return providerRegistry;
     }
 
     @Override
-    public void pull(Receiver.Sync<OUTPUT> receiver) {
-        assert receiver.equals(receiverRegistry().receiver());
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver.identifier(), identifier()));
-        receiverRegistry().recordPull(receiver);
+    public void pull(Subscriber<OUTPUT> subscriber) {
+        assert subscriber.equals(receiverRegistry().receiver());
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+        receiverRegistry().recordPull(subscriber);
         providerRegistry().nonPulling().forEach(p -> p.pull(this));
     }
 }

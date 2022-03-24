@@ -24,9 +24,9 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public class SingleReceiverSingleProviderStream<INPUT, OUTPUT> extends SingleReceiverStream<INPUT, OUTPUT> {
 
-    private final ProviderRegistry.Single<Provider.Sync<INPUT>> providerRegistry;
+    private final ProviderRegistry.Single<Publisher<INPUT>> providerRegistry;
 
-    protected SingleReceiverSingleProviderStream(Provider.Sync<INPUT> provider, Processor<?, ?, ?, ?> processor) {
+    protected SingleReceiverSingleProviderStream(Publisher<INPUT> provider, Processor<?, ?, ?, ?> processor) {
         super(processor);
         this.providerRegistry = new ProviderRegistry.Single<>(provider, this, processor);
     }
@@ -37,15 +37,15 @@ public class SingleReceiverSingleProviderStream<INPUT, OUTPUT> extends SingleRec
     }
 
     @Override
-    protected ProviderRegistry.Single<Provider.Sync<INPUT>> providerRegistry() {
+    protected ProviderRegistry.Single<Publisher<INPUT>> providerRegistry() {
         return providerRegistry;
     }
 
     @Override
-    public void pull(Receiver.Sync<OUTPUT> receiver) {
-        assert receiver.equals(receiverRegistry().receiver());
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiver.identifier(), identifier()));
-        receiverRegistry().recordPull(receiver);
+    public void pull(Subscriber<OUTPUT> subscriber) {
+        assert subscriber.equals(receiverRegistry().receiver());
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+        receiverRegistry().recordPull(subscriber);
         if (providerRegistry().setPulling()) providerRegistry().provider().pull(this);
     }
 }

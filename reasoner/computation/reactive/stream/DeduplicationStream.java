@@ -27,19 +27,19 @@ public class DeduplicationStream<PACKET> extends SingleReceiverSingleProviderStr
 
     private final Set<PACKET> deduplicationSet;
 
-    public DeduplicationStream(Provider.Sync.Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
+    public DeduplicationStream(Publisher<PACKET> publisher, Processor<?, ?, ?, ?> processor) {
         super(publisher, processor);
         this.deduplicationSet = new HashSet<>();
     }
 
     @Override
-    public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
-        super.receive(provider, packet);
+    public void receive(Publisher<PACKET> publisher, PACKET packet) {
+        super.receive(publisher, packet);
         if (deduplicationSet.add(packet)) {
             receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
         } else {
-            if (receiverRegistry().isPulling()) processor().schedulePullRetry(provider, this);
+            if (receiverRegistry().isPulling()) processor().schedulePullRetry(publisher, this);
             processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
         }
     }

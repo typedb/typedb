@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import javax.annotation.Nullable;
 import java.util.UUID;
 
-public class RootSink extends Sink<ConceptMap> implements Reactive.Receiver.Sync.Finishable<ConceptMap> {
+public class RootSink extends Sink<ConceptMap> implements Reactive.Subscriber.Finishable<ConceptMap> {
 
     private final Identifier identifier;
     private final UUID traceId = UUID.randomUUID();
@@ -56,15 +56,15 @@ public class RootSink extends Sink<ConceptMap> implements Reactive.Receiver.Sync
     }
 
     @Override
-    public void receive(@Nullable Provider.Sync<ConceptMap> provider, ConceptMap packet) {
-        super.receive(provider, packet);
+    public void receive(@Nullable Publisher<ConceptMap> publisher, ConceptMap packet) {
+        super.receive(publisher, packet);
         isPulling = false;
         reasonerConsumer.receiveAnswer(packet);
         processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
     }
 
     @Override
-    public void registerPublisher(Provider.Sync<ConceptMap> provider) {
+    public void registerPublisher(Publisher<ConceptMap> provider) {
         super.registerPublisher(provider);
         if (isPulling && providerRegistry().setPulling()) provider.pull(this);
     }

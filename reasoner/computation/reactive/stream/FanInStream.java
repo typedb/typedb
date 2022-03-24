@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRe
 
 public class FanInStream<PACKET> extends SingleReceiverMultiProviderStream<PACKET, PACKET> {
 
-    private final ProviderRegistry.Multi<Provider.Sync<PACKET>> providerRegistry;
+    private final ProviderRegistry.Multi<Publisher<PACKET>> providerRegistry;
 
     protected FanInStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
@@ -31,7 +31,7 @@ public class FanInStream<PACKET> extends SingleReceiverMultiProviderStream<PACKE
     }
 
     @Override
-    protected ProviderRegistry.Multi<Provider.Sync<PACKET>> providerRegistry() {
+    protected ProviderRegistry.Multi<Publisher<PACKET>> providerRegistry() {
         return providerRegistry;
     }
 
@@ -40,8 +40,8 @@ public class FanInStream<PACKET> extends SingleReceiverMultiProviderStream<PACKE
     }
 
     @Override
-    public void receive(Provider.Sync<PACKET> provider, PACKET packet) {
-        super.receive(provider, packet);
+    public void receive(Publisher<PACKET> publisher, PACKET packet) {
+        super.receive(publisher, packet);
         receiverRegistry().setNotPulling();
         receiverRegistry().receiver().receive(this, packet);
     }
