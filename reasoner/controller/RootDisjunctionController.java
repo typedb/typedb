@@ -102,7 +102,7 @@ public class RootDisjunctionController
         }
 
         @Override
-        protected void onFinished(Reactive.Identifier finishable) {
+        protected void onFinished(Reactive.Identifier<?, ?> finishable) {
             assert !done;
 //            done = true;
             assert finishable == reasonerEntryPoint.identifier();

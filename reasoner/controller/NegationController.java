@@ -73,7 +73,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
     protected static class DisjunctionRequest extends ConnectionRequest<Disjunction, ConceptMap, ConceptMap, NegationController> {
 
-        protected DisjunctionRequest(Reactive.Receiver.Input<ConceptMap> inputId, Disjunction controllerId,
+        protected DisjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Disjunction controllerId,
                                      ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }
@@ -111,7 +111,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         }
 
         @Override
-        protected void onFinished(Reactive.Identifier finishable) {
+        protected void onFinished(Reactive.Identifier<?, ?> finishable) {
             assert !done;
 //            done = true;
             assert finishable == negation.identifier();

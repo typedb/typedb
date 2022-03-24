@@ -26,29 +26,23 @@ import java.util.function.Function;
 
 public interface Reactive {
 
-    Identifier identifier();
+    Identifier<?, ?> identifier();
 
-    interface Identifier extends Reactive {  // TODO: Don't extend Reactive if possible
+    interface Identifier<P_IN, P_OUT> extends Reactive {  // TODO: Don't extend Reactive if possible
 
         String toString();
 
-        Actor.Driver<? extends Processor<?, ?, ?, ?>> processor();
+        Actor.Driver<? extends Processor<P_IN, P_OUT, ?, ?>> processor();
 
     }
 
     interface Provider<PACKET> extends Reactive {
 
-        void pull(Receiver.Input<PACKET> receiverId);
+        void pull(Identifier<PACKET, ?> receiverId);
 
         @Override
-        Output<PACKET> identifier();
+        Identifier<?, PACKET> identifier();
 
-        interface Output<PACKET> extends Identifier {
-
-            @Override
-            Actor.Driver<? extends Processor<?, PACKET, ?, ?>> processor();
-
-        }
     }
 
     interface Publisher<PACKET> extends Reactive {
@@ -71,17 +65,11 @@ public interface Reactive {
 
     interface Receiver<PACKET> extends Reactive {
 
-        void receive(Provider.Output<PACKET> providerId, PACKET packet);
+        void receive(Identifier<?, PACKET> providerId, PACKET packet);
 
         @Override
-        Input<PACKET> identifier();
+        Identifier<PACKET, ?> identifier();
 
-        interface Input<PACKET> extends Identifier {
-
-            @Override
-            Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor();
-
-        }
     }
 
     interface Subscriber<PACKET> extends Reactive {

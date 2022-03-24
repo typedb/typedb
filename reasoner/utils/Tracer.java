@@ -75,15 +75,15 @@ public final class Tracer {
         return Optional.ofNullable(INSTANCE);
     }
 
-    public synchronized void pull(@Nullable Identifier receiverId, Identifier providerId) {
+    public synchronized void pull(@Nullable Identifier<?, ?> receiverId, Identifier<?, ?> providerId) {
         pull(receiverId, providerId, EdgeType.PULL, "pull");
     }
 
-    public synchronized void pullRetry(Identifier receiverId, Identifier providerId) {
+    public synchronized void pullRetry(Identifier<?, ?> receiverId, Identifier<?, ?> providerId) {
         pull(receiverId, providerId, EdgeType.RETRY, "retry");
     }
 
-    private void pull(@Nullable Identifier receiverId, Identifier providerId, EdgeType edgeType, String edgeLabel) {
+    private void pull(@Nullable Identifier<?, ?> receiverId, Identifier<?, ?> providerId, EdgeType edgeType, String edgeLabel) {
         String receiverString;
         if (receiverId == null) receiverString = "root";
         else {
@@ -94,48 +94,48 @@ public final class Tracer {
         addNodeGroup(providerId.toString(), providerId.toString(), defaultTrace);
     }
 
-    public <PACKET> void receive(Identifier providerId, Identifier receiverId, PACKET packet) {
+    public <PACKET> void receive(Identifier<?, ?> providerId, Identifier<?, ?> receiverId, PACKET packet) {
         addMessage(providerId.toString(), receiverId.toString(), defaultTrace, EdgeType.RECEIVE, packet.toString());
         addNodeGroup(receiverId.toString(), receiverId.toString(), defaultTrace);
         addNodeGroup(providerId.toString(), providerId.toString(), defaultTrace);
     }
 
-    public void registerRoot(Identifier root, Actor.Driver<Monitor> monitor) {
+    public void registerRoot(Identifier<?, ?> root, Actor.Driver<Monitor> monitor) {
         addMessage(root.toString(), monitor.debugName().get(), defaultTrace, EdgeType.ROOT, "reg_root");
     }
 
-    public void rootFinalised(Identifier root, Actor.Driver<Monitor> monitor) {
+    public void rootFinalised(Identifier<?, ?> root, Actor.Driver<Monitor> monitor) {
         addMessage(root.toString(), monitor.debugName().get(), defaultTrace, EdgeType.ROOT_FINALISED, "root_finished");
     }
 
-    public void finishRootNode(Identifier root, Actor.Driver<Monitor> monitor) {
+    public void finishRootNode(Identifier<?, ?> root, Actor.Driver<Monitor> monitor) {
         addMessage(monitor.debugName().get(), root.toString(), defaultTrace, EdgeType.ROOT_FINISH, "finished");
     }
 
-    public void registerPath(Identifier receiver, @Nullable Identifier provider, Actor.Driver<Monitor> monitor) {
+    public void registerPath(Identifier<?, ?> receiver, @Nullable Identifier<?, ?> provider, Actor.Driver<Monitor> monitor) {
         String providerName;
         if (provider == null) providerName = "entry";  // TODO: Prevent provider from ever being null
         else providerName = provider.toString();
         addMessage(receiver.toString(), monitor.debugName().get(), defaultTrace, EdgeType.REGISTER, "reg_" + providerName);
     }
 
-    public void registerSource(Identifier source, Actor.Driver<Monitor> monitor) {
+    public void registerSource(Identifier<?, ?> source, Actor.Driver<Monitor> monitor) {
         addMessage(source.toString(), monitor.debugName().get(), defaultTrace, EdgeType.SOURCE, "reg_source");
     }
 
-    public void sourceFinished(Identifier source, Actor.Driver<Monitor> monitor) {
+    public void sourceFinished(Identifier<?, ?> source, Actor.Driver<Monitor> monitor) {
         addMessage(source.toString(), monitor.debugName().get(), defaultTrace, EdgeType.SOURCE_FINISH, "source_finished");
     }
 
-    public void createAnswer(Identifier provider, Actor.Driver<Monitor> monitor) {
+    public void createAnswer(Identifier<?, ?> provider, Actor.Driver<Monitor> monitor) {
         addMessage(provider.toString(), monitor.debugName().get(), defaultTrace, EdgeType.CREATE, "create");
     }
 
-    public void consumeAnswer(Identifier receiver, Actor.Driver<Monitor> monitor) {
+    public void consumeAnswer(Identifier<?, ?> receiver, Actor.Driver<Monitor> monitor) {
         addMessage(receiver.toString(), monitor.debugName().get(), defaultTrace, EdgeType.CONSUME, "consume");
     }
 
-    public void forkFrontier(int numForks, Identifier forker, Actor.Driver<Monitor> monitor) {
+    public void forkFrontier(int numForks, Identifier<?, ?> forker, Actor.Driver<Monitor> monitor) {
         addMessage(forker.toString(), monitor.debugName().get(), defaultTrace, EdgeType.FORK, "fork" + numForks);
     }
 

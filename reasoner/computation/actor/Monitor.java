@@ -40,27 +40,27 @@ public class Monitor extends Actor<Monitor> {
     private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
     private final Registry registry;
     private boolean terminated;
-    private final Map<Reactive.Identifier, ReactiveNode> reactiveNodes;
+    private final Map<Reactive.Identifier<?, ?>, ReactiveNode> reactiveNodes;
 
     public Monitor(Driver<Monitor> driver, Registry registry) {
         super(driver, Monitor.class::getSimpleName); this.registry = registry;
         this.reactiveNodes = new HashMap<>();
     }
 
-    private ReactiveNode getNode(Reactive.Identifier reactive) {
+    private ReactiveNode getNode(Reactive.Identifier<?, ?> reactive) {
         return reactiveNodes.get(reactive);
     }
 
-    private ReactiveNode getOrCreateNode(Reactive.Identifier reactive) {
+    private ReactiveNode getOrCreateNode(Reactive.Identifier<?, ?> reactive) {
         return reactiveNodes.computeIfAbsent(reactive, p -> new ReactiveNode());
     }
 
-    private void putNode(Reactive.Identifier reactive, ReactiveNode reactiveNode) {
+    private void putNode(Reactive.Identifier<?, ?> reactive, ReactiveNode reactiveNode) {
         ReactiveNode exists = reactiveNodes.put(reactive, reactiveNode);
         assert exists == null;
     }
 
-    public <R> void registerRoot(Driver<? extends Processor<R, ?, ?, ?>> processor, Reactive.Identifier root) {
+    public <R> void registerRoot(Driver<? extends Processor<R, ?, ?, ?>> processor, Reactive.Identifier<?, ?> root) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerRoot(root, driver()));
         if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the root, or a duplicate node will be created.
@@ -70,7 +70,7 @@ public class Monitor extends Actor<Monitor> {
         rootNode.setGraph(reactiveGraph);
     }
 
-    public void rootFinalised(Reactive.Identifier root) {
+    public void rootFinalised(Reactive.Identifier<?, ?> root) {
         // TODO: Improve this by having two separate finish states for a negation so that it can be finished as a
         //  root prior to incrementing the in-flight answer count. In this way either it receives a message from the
         //  monitor to say it's done, or it sends the monitor a message to tell that it's finished
@@ -81,7 +81,7 @@ public class Monitor extends Actor<Monitor> {
         rootNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
-    public void registerSource(Reactive.Identifier source) {
+    public void registerSource(Reactive.Identifier<?, ?> source) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerSource(source, driver()));
         if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the source, or a duplicate node will be created.
@@ -90,7 +90,7 @@ public class Monitor extends Actor<Monitor> {
         putNode(source, sourceNode);
     }
 
-    public void sourceFinished(Reactive.Identifier source) {
+    public void sourceFinished(Reactive.Identifier<?, ?> source) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.sourceFinished(source, driver()));
         if (terminated) return;
         ReactiveNode sourceNode = getNode(source);
@@ -98,7 +98,7 @@ public class Monitor extends Actor<Monitor> {
         sourceNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
-    public void registerPath(Reactive.Identifier receiver, Reactive.Identifier provider) {
+    public void registerPath(Reactive.Identifier<?, ?> receiver, Reactive.Identifier<?, ?> provider) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerPath(receiver, provider, driver()));
         if (terminated) return;
         ReactiveNode receiverNode = reactiveNodes.computeIfAbsent(receiver, n -> new ReactiveNode());
@@ -110,13 +110,13 @@ public class Monitor extends Actor<Monitor> {
         receiverNode.graphMemberships().forEach(ReactiveGraph::checkFinished);  // In case a root connects to an already complete graph it should terminate straight away  TODO: very inefficient
     }
 
-    public void createAnswer(Reactive.Identifier provider) {
+    public void createAnswer(Reactive.Identifier<?, ?> provider) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.createAnswer(provider, driver()));
         if (terminated) return;
         getOrCreateNode(provider).createAnswer();
     }
 
-    public void consumeAnswer(Reactive.Identifier receiver) {
+    public void consumeAnswer(Reactive.Identifier<?, ?> receiver) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.consumeAnswer(receiver, driver()));
         if (terminated) return;
         ReactiveNode receiverNode = getOrCreateNode(receiver);
@@ -124,7 +124,7 @@ public class Monitor extends Actor<Monitor> {
         receiverNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
-    public void forkFrontier(int numForks, Reactive.Identifier forker) {
+    public void forkFrontier(int numForks, Reactive.Identifier<?, ?> forker) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.forkFrontier(numForks, forker, driver()));
         if (terminated) return;
         getOrCreateNode(forker).forkFrontier(numForks);
@@ -328,15 +328,15 @@ public class Monitor extends Actor<Monitor> {
 
     private static class RootNode extends SourceNode {
 
-        private final Reactive.Identifier root;
+        private final Reactive.Identifier<?, ?> root;
         private ReactiveGraph reactiveGraph;
 
-        RootNode(Reactive.Identifier root) {
+        RootNode(Reactive.Identifier<?, ?> root) {
             super();
             this.root = root;
         }
 
-        public Reactive.Identifier root() {
+        public Reactive.Identifier<?, ?> root() {
             return root;
         }
 

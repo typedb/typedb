@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Identifier;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveIdentifier;
@@ -48,9 +49,9 @@ public abstract class Processor<INPUT, OUTPUT,
     private static final Logger LOG = LoggerFactory.getLogger(Processor.class);
 
     private final Driver<CONTROLLER> controller;
-    private final Map<Reactive.Identifier, Input<INPUT>> inputs;
-    private final Map<Reactive.Identifier, Output<OUTPUT>> outputs;
-    private final Map<Pair<Reactive.Identifier, Reactive.Identifier>, Runnable> pullRetries;
+    private final Map<Identifier<?, ?>, Input<INPUT>> inputs;
+    private final Map<Identifier<?, ?>, Output<OUTPUT>> outputs;
+    private final Map<Pair<Identifier<?, ?>, Identifier<?, ?>>, Runnable> pullRetries;
     private final Driver<Monitor> monitor;
     private Reactive.Stream<OUTPUT,OUTPUT> outputRouter;
     private boolean terminated;
@@ -83,12 +84,12 @@ public abstract class Processor<INPUT, OUTPUT,
         throw TypeDBException.of(ILLEGAL_OPERATION);
     }
 
-    public void pull(Reactive.Receiver.Input<OUTPUT> receiver, Reactive.Identifier outputId) {
+    public void pull(Identifier<OUTPUT, ?> receiver, Identifier<?, ?> outputId) {
         assert !done;
         outputs.get(outputId).pull(receiver);
     }
 
-    protected void receive(Reactive.Provider.Output<INPUT> provider, INPUT packet, Reactive.Identifier inputId) {
+    protected void receive(Identifier<?, INPUT> provider, INPUT packet, Identifier<?, ?> inputId) {
         assert !done;
         inputs.get(inputId).receive(provider, packet);
     }
@@ -98,9 +99,9 @@ public abstract class Processor<INPUT, OUTPUT,
         driver().execute(actor -> actor.pullRetry(provider.identifier(), receiver.identifier()));
     }
 
-    public void pullRetry(Reactive.Identifier provider, Reactive.Identifier receiver) {
+    public void pullRetry(Identifier<?, ?> provider, Identifier<?, ?> receiver) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pullRetry(receiver.identifier(), provider.identifier()));
-        pullRetries.get(new Pair<>(provider, receiver)).run();
+        pullRetries.get(new Pair<Identifier<?, ?>, Identifier<?, ?>>(provider, receiver)).run();
     }
 
     protected <UPSTREAM_CID, UPSTREAM_PID, REQ extends ConnectionRequest<UPSTREAM_CID, UPSTREAM_PID, INPUT, CONTROLLER>> void requestConnection(REQ req) {
@@ -119,7 +120,7 @@ public abstract class Processor<INPUT, OUTPUT,
                 actor -> actor.connectInputToOutput(connector.inputId(), output.identifier()));
     }
 
-    protected void connectInputToOutput(Reactive.Receiver.Input<INPUT> inputId, Reactive.Provider.Output<INPUT> outputId) {
+    protected void connectInputToOutput(Identifier<INPUT, ?> inputId, Identifier<?, INPUT> outputId) {
         assert !done;
         Input<INPUT> input = inputs.get(inputId);
         input.addProvider(outputId);
@@ -144,7 +145,7 @@ public abstract class Processor<INPUT, OUTPUT,
         return monitor;
     }
 
-    protected void onFinished(Reactive.Identifier finishable) {
+    protected void onFinished(Identifier<?, ?> finishable) {
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
@@ -178,16 +179,8 @@ public abstract class Processor<INPUT, OUTPUT,
         return reactiveCounter;
     }
 
-    public Reactive.Identifier registerReactive(Reactive reactive) {
-        return new ReactiveIdentifier(driver(), reactive.getClass(), incrementReactiveCounter());
-    }
-
-    public Reactive.Provider.Output<OUTPUT> registerOutput(Output<OUTPUT> reactive) {
-        return new ReactiveIdentifier.Output<>(driver(), reactive.getClass(), incrementReactiveCounter());
-    }
-
-    public Reactive.Receiver.Input<INPUT> registerInput(Input<INPUT> reactive) {
-        return new ReactiveIdentifier.Input<>(driver(), reactive.getClass(), incrementReactiveCounter());
+    public Identifier<INPUT, OUTPUT> registerReactive(Reactive reactive) {
+        return new ReactiveIdentifier<>(driver(), reactive.getClass(), incrementReactiveCounter());
     }
 
     /**
@@ -195,27 +188,27 @@ public abstract class Processor<INPUT, OUTPUT,
      */
     public static class Input<PACKET> extends SingleReceiverPublisher<PACKET> implements Reactive.Receiver<PACKET> {
 
-        private final ProviderRegistry.Single<Provider.Output<PACKET>> providerRegistry;
-        private final Input<PACKET> identifier;
+        private final ProviderRegistry.Single<Identifier<?, PACKET>> providerRegistry;
+        private final Identifier<PACKET, ?> identifier;
         private boolean ready;
 
         public Input(Processor<PACKET, ?, ?, ?> processor) {
             super(processor);
-            this.identifier = processor.registerInput(this);
+            this.identifier = processor.registerReactive(this);
             this.ready = false;
             this.providerRegistry = new ProviderRegistry.Single<>(this, processor);
         }
 
-        private ProviderRegistry.Single<Provider.Output<PACKET>> providerRegistry() {
+        private ProviderRegistry.Single<Identifier<?, PACKET>> providerRegistry() {
             return providerRegistry;
         }
 
         @Override
-        public Input<PACKET> identifier() {
+        public Identifier<PACKET, ?> identifier() {
             return identifier;
         }
 
-        void addProvider(Provider.Output<PACKET> providerOutputId) {
+        void addProvider(Identifier<?, PACKET> providerOutputId) {
             providerRegistry().add(providerOutputId);
             assert !ready;
             this.ready = true;
@@ -237,7 +230,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public void receive(Provider.Output<PACKET> providerId, PACKET packet) {
+        public void receive(Identifier<?, PACKET> providerId, PACKET packet) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(providerId, identifier(), packet));
             providerRegistry().recordReceive(providerId);
             receiverRegistry().setNotPulling();
@@ -251,18 +244,18 @@ public abstract class Processor<INPUT, OUTPUT,
      */
     public static class Output<PACKET> implements Subscriber<PACKET>, Reactive.Provider<PACKET> {
 
-        private final Output<PACKET> identifier;
+        private final Identifier<?, PACKET> identifier;
         private final ProviderRegistry.Single<Publisher<PACKET>> providerRegistry;
-        private final ReceiverRegistry.SingleReceiverRegistry<Receiver.Input<PACKET>> receiverRegistry;
+        private final ReceiverRegistry.SingleReceiverRegistry<Identifier<PACKET, ?>> receiverRegistry;
 
         public Output(Processor<?, PACKET, ?, ?> processor) {
-            this.identifier = processor.registerOutput(this);
+            this.identifier = processor.registerReactive(this);
             this.providerRegistry = new ProviderRegistry.Single<>(this, processor);
             this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>();
         }
 
         @Override
-        public Output<PACKET> identifier() {
+        public Identifier<?, PACKET> identifier() {
             return identifier;
         }
 
@@ -270,7 +263,7 @@ public abstract class Processor<INPUT, OUTPUT,
             return providerRegistry;
         }
 
-        private ReceiverRegistry.SingleReceiverRegistry<Receiver.Input<PACKET>> receiverRegistry() {
+        private ReceiverRegistry.SingleReceiverRegistry<Identifier<PACKET, ?>> receiverRegistry() {
             return receiverRegistry;
         }
 
@@ -284,7 +277,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public void pull(Receiver.Input<PACKET> receiverId) {
+        public void pull(Identifier<PACKET, ?> receiverId) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), identifier()));
             receiverRegistry().recordPull(receiverId);
             if (providerRegistry().setPulling()) providerRegistry().provider().pull(this);
@@ -296,7 +289,7 @@ public abstract class Processor<INPUT, OUTPUT,
             if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
         }
 
-        public void setReceiver(Receiver.Input<PACKET> inputId) {
+        public void setReceiver(Identifier<PACKET, ?> inputId) {
             receiverRegistry().addReceiver(inputId);
         }
     }

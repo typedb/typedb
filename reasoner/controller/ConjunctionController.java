@@ -128,7 +128,7 @@ public abstract class ConjunctionController<OUTPUT,
     static class RetrievableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
             extends ConnectionRequest<Retrievable, ConceptMap, ConceptMap, C> {
 
-        public RetrievableRequest(Reactive.Receiver.Input<ConceptMap> inputId, Retrievable controllerId,
+        public RetrievableRequest(Reactive.Identifier<ConceptMap, ?> inputId, Retrievable controllerId,
                                   ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }
@@ -146,7 +146,7 @@ public abstract class ConjunctionController<OUTPUT,
     static class ConcludableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
             extends ConnectionRequest<Concludable, ConceptMap, ConceptMap, C> {
 
-        public ConcludableRequest(Reactive.Receiver.Input<ConceptMap> inputId, Concludable controllerId,
+        public ConcludableRequest(Reactive.Identifier<ConceptMap, ?> inputId, Concludable controllerId,
                                   ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }
@@ -166,7 +166,7 @@ public abstract class ConjunctionController<OUTPUT,
     static class NegatedRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
             extends ConnectionRequest<Negated, ConceptMap, ConceptMap, C> {
 
-        protected NegatedRequest(Reactive.Receiver.Input<ConceptMap> inputId, Negated controllerId,
+        protected NegatedRequest(Reactive.Identifier<ConceptMap, ?> inputId, Negated controllerId,
                                  ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }

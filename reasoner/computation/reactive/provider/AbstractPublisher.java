@@ -31,7 +31,7 @@ import java.util.function.Function;
 
 public abstract class AbstractPublisher<OUTPUT> implements Reactive.Publisher<OUTPUT> {
 
-    private final Identifier identifier;
+    private final Identifier<?, ?> identifier;
     private final Processor<?, ?, ?, ?> processor;
 
     protected AbstractPublisher(Processor<?, ?, ?, ?> processor) {
@@ -40,7 +40,7 @@ public abstract class AbstractPublisher<OUTPUT> implements Reactive.Publisher<OU
     }
 
     @Override
-    public Identifier identifier() {
+    public Identifier<?, ?> identifier() {
         return identifier;
     }
 

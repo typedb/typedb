@@ -113,7 +113,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 
     protected static class ConclusionRequest extends ConnectionRequest<Conclusion, ConceptMap, Map<Variable, Concept>, ConcludableController> {
 
-        public ConclusionRequest(Reactive.Receiver.Input<Map<Variable, Concept>> inputId,
+        public ConclusionRequest(Reactive.Identifier<Map<Variable, Concept>, ?> inputId,
                                  Conclusion controllerId, ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }

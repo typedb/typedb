@@ -28,7 +28,7 @@ import java.util.function.Function;
 public class Connector<UPSTREAM_PID, PACKET> {
 
     private final Actor.Driver<? extends Controller<UPSTREAM_PID, ?, PACKET, ?, ?>> upstreamController;
-    private final Reactive.Receiver.Input<PACKET> inputId;
+    private final Reactive.Identifier<PACKET, ?> inputId;
     private final List<Function<PACKET, PACKET>> transforms;
     private final UPSTREAM_PID upstreamProcessorId;
 
@@ -41,7 +41,7 @@ public class Connector<UPSTREAM_PID, PACKET> {
     }
 
     public Connector(Actor.Driver<? extends Controller<UPSTREAM_PID, ?, PACKET, ?, ?>> upstreamController,
-                     Reactive.Receiver.Input<PACKET> inputId, List<Function<PACKET, PACKET>> transforms,
+                     Reactive.Identifier<PACKET, ?> inputId, List<Function<PACKET, PACKET>> transforms,
                      UPSTREAM_PID upstreamProcessorId) {
         this.upstreamController = upstreamController;
         this.inputId = inputId;
@@ -63,7 +63,7 @@ public class Connector<UPSTREAM_PID, PACKET> {
         return upstreamProcessorId;
     }
 
-    public Reactive.Receiver.Input<PACKET> inputId() {
+    public Reactive.Identifier<PACKET, ?> inputId() {
         return inputId;
     }
 

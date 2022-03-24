@@ -23,12 +23,12 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 
 import java.util.Objects;
 
-public class ReactiveIdentifier implements Reactive.Identifier {
-    private final Actor.Driver<? extends Processor<?, ?, ?, ?>> processor;
+public class ReactiveIdentifier<P_IN, P_OUT> implements Reactive.Identifier<P_IN, P_OUT> {
+    private final Actor.Driver<? extends Processor<P_IN, P_OUT, ?, ?>> processor;
     private final Class<? extends Reactive> reactiveClass;
     private final long scopedId;
 
-    public ReactiveIdentifier(Actor.Driver<? extends Processor<?, ?, ?, ?>> processor,
+    public ReactiveIdentifier(Actor.Driver<? extends Processor<P_IN, P_OUT, ?, ?>> processor,
                               Class<? extends Reactive> reactiveClass, long scopedId) {
         this.processor = processor;
         this.reactiveClass = reactiveClass;
@@ -39,7 +39,7 @@ public class ReactiveIdentifier implements Reactive.Identifier {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ReactiveIdentifier that = (ReactiveIdentifier) o;
+        ReactiveIdentifier<?, ?> that = (ReactiveIdentifier<?, ?>) o;
         return scopedId == that.scopedId &&
                 processor.equals(that.processor) &&
                 reactiveClass.equals(that.reactiveClass);
@@ -56,83 +56,13 @@ public class ReactiveIdentifier implements Reactive.Identifier {
     }
 
     @Override
-    public Actor.Driver<? extends Processor<?, ?, ?, ?>> processor() {
+    public Actor.Driver<? extends Processor<P_IN, P_OUT, ?, ?>> processor() {
         return processor;
     }
 
     @Override
-    public Identifier identifier() {
+    public Identifier<?, ?> identifier() {
         return this;
-    }
-
-    public static class Input<PACKET> extends ReactiveIdentifier implements Receiver.Input<PACKET> {
-
-        private final Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor;  //TODO: Duplicates field from parent class
-
-        public Input(Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor,
-                     Class<? extends Reactive> reactiveClass, long scopedId) {
-            super(processor, reactiveClass, scopedId);
-            this.processor = processor;
-        }
-
-        @Override
-        public Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor() {
-            return processor;
-        }
-
-        @Override
-        public Identifier identifier() {
-            return this;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            if (!super.equals(o)) return false;
-            ReactiveIdentifier.Input<?> input = (ReactiveIdentifier.Input<?>) o;
-            return processor.equals(input.processor);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(super.hashCode(), processor);
-        }
-    }
-
-    public static class Output<PACKET> extends ReactiveIdentifier implements Provider.Output<PACKET> {
-
-        private final Actor.Driver<? extends Processor<?, PACKET, ?, ?>> processor;  //TODO: Duplicates field from parent class
-
-        public Output(Actor.Driver<? extends Processor<?, PACKET, ?, ?>> processor,
-                      Class<? extends Reactive> reactiveClass, long scopedId) {
-            super(processor, reactiveClass, scopedId);
-            this.processor = processor;
-        }
-
-        @Override
-        public Actor.Driver<? extends Processor<?, PACKET, ?, ?>> processor() {
-            return processor;
-        }
-
-        @Override
-        public Identifier identifier() {
-            return this;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            if (!super.equals(o)) return false;
-            ReactiveIdentifier.Output<?> output = (ReactiveIdentifier.Output<?>) o;
-            return processor.equals(output.processor);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(super.hashCode(), processor);
-        }
     }
 
 }

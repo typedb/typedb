@@ -29,7 +29,7 @@ import java.util.UUID;
 
 public class RootSink extends Sink<ConceptMap> implements Reactive.Subscriber.Finishable<ConceptMap> {
 
-    private final Identifier identifier;
+    private final Identifier<?, ?> identifier;
     private final UUID traceId = UUID.randomUUID();
     private final ReasonerConsumer reasonerConsumer;
     private boolean isPulling;
@@ -46,7 +46,7 @@ public class RootSink extends Sink<ConceptMap> implements Reactive.Subscriber.Fi
     }
 
     @Override
-    public Identifier identifier() {
+    public Identifier<?, ?> identifier() {
         return identifier;
     }
 
