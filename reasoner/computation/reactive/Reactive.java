@@ -28,7 +28,7 @@ public interface Reactive {
 
     Identifier<?, ?> identifier();
 
-    interface Identifier<P_IN, P_OUT> extends Reactive {  // TODO: Don't extend Reactive if possible
+    interface Identifier<P_IN, P_OUT> {
 
         String toString();
 

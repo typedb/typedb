@@ -100,7 +100,7 @@ public abstract class Processor<INPUT, OUTPUT,
     }
 
     public void pullRetry(Identifier<?, ?> provider, Identifier<?, ?> receiver) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pullRetry(receiver.identifier(), provider.identifier()));
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pullRetry(receiver, provider));
         pullRetries.get(new Pair<Identifier<?, ?>, Identifier<?, ?>>(provider, receiver)).run();
     }
 
@@ -196,7 +196,7 @@ public abstract class Processor<INPUT, OUTPUT,
             super(processor);
             this.identifier = processor.registerReactive(this);
             this.ready = false;
-            this.providerRegistry = new ProviderRegistry.Single<>(this, processor);
+            this.providerRegistry = new ProviderRegistry.Single<>(processor);
         }
 
         private ProviderRegistry.Single<Identifier<?, PACKET>> providerRegistry() {
@@ -209,6 +209,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         void addProvider(Identifier<?, PACKET> providerOutputId) {
+            processor().monitor().execute(actor -> actor.registerPath(identifier(), providerOutputId));
             providerRegistry().add(providerOutputId);
             assert !ready;
             this.ready = true;
@@ -245,18 +246,24 @@ public abstract class Processor<INPUT, OUTPUT,
     public static class Output<PACKET> implements Subscriber<PACKET>, Reactive.Provider<PACKET> {
 
         private final Identifier<?, PACKET> identifier;
+        private final Processor<?, PACKET, ?, ?> processor;
         private final ProviderRegistry.Single<Publisher<PACKET>> providerRegistry;
         private final ReceiverRegistry.SingleReceiverRegistry<Identifier<PACKET, ?>> receiverRegistry;
 
         public Output(Processor<?, PACKET, ?, ?> processor) {
-            this.identifier = processor.registerReactive(this);
-            this.providerRegistry = new ProviderRegistry.Single<>(this, processor);
+            this.processor = processor;
+            this.identifier = processor().registerReactive(this);
+            this.providerRegistry = new ProviderRegistry.Single<>(processor);
             this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>();
         }
 
         @Override
         public Identifier<?, PACKET> identifier() {
             return identifier;
+        }
+
+        private Processor<?, PACKET, ?, ?> processor() {
+            return processor;
         }
 
         private ProviderRegistry.Single<Publisher<PACKET>> providerRegistry() {
@@ -285,6 +292,7 @@ public abstract class Processor<INPUT, OUTPUT,
 
         @Override
         public void registerPublisher(Publisher<PACKET> provider) {
+            processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
             providerRegistry().add(provider);
             if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
         }

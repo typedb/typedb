@@ -28,7 +28,7 @@ public class SingleReceiverMultiProviderStream<INPUT, OUTPUT> extends SingleRece
 
     protected SingleReceiverMultiProviderStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
-        this.providerRegistry = new ProviderRegistry.Multi<>(this, processor);
+        this.providerRegistry = new ProviderRegistry.Multi<>(processor);
     }
 
     @Override

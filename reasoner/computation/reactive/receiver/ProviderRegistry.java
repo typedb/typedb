@@ -26,7 +26,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public abstract class ProviderRegistry<PROVIDER extends Reactive> {
+public abstract class ProviderRegistry<PROVIDER> {
 
     protected final Processor<?, ?, ?, ?> processor;
 
@@ -38,22 +38,13 @@ public abstract class ProviderRegistry<PROVIDER extends Reactive> {
 
     public abstract void recordReceive(PROVIDER provider);
 
-    public static class Single<PROVIDER extends Reactive> extends ProviderRegistry<PROVIDER> {
+    public static class Single<PROVIDER> extends ProviderRegistry<PROVIDER> {
 
-        private final Reactive owner;
         private PROVIDER provider;
         private boolean isPulling;
 
-        public Single(PROVIDER provider, Reactive owner, Processor<?, ?, ?, ?> processor) {
+        public Single(Processor<?, ?, ?, ?> processor) {
             super(processor);
-            this.owner = owner;
-            this.isPulling = false;
-            add(provider);
-        }
-
-        public Single(Reactive owner, Processor<?, ?, ?, ?> processor) {
-            super(processor);
-            this.owner = owner;
             this.provider = null;
             this.isPulling = false;
         }
@@ -62,9 +53,6 @@ public abstract class ProviderRegistry<PROVIDER extends Reactive> {
         public void add(PROVIDER provider) {
             assert provider != null;
             assert this.provider == null || provider == this.provider;  // TODO: Tighten this to allow adding only once
-            if (this.provider == null) {
-                processor.monitor().execute(actor -> actor.registerPath(owner.identifier(), provider.identifier()));
-            }
             this.provider = provider;
         }
 
@@ -86,23 +74,19 @@ public abstract class ProviderRegistry<PROVIDER extends Reactive> {
 
     }
 
-    public static class Multi<PROVIDER extends Reactive> extends ProviderRegistry<PROVIDER> {
+    public static class Multi<PROVIDER> extends ProviderRegistry<PROVIDER> {
 
         private final Map<PROVIDER, Boolean> providerPullState;
-        private final Reactive owner;
 
-        public Multi(Reactive owner, Processor<?, ?, ?, ?> processor) {
+        public Multi(Processor<?, ?, ?, ?> processor) {
             super(processor);
-            this.owner = owner;
             this.providerPullState = new HashMap<>();
         }
 
         @Override
         public void add(PROVIDER provider) {
             assert provider != null;
-            if (providerPullState.putIfAbsent(provider, false) == null) {
-                processor.monitor().execute(actor -> actor.registerPath(owner.identifier(), provider.identifier()));
-            }
+            providerPullState.putIfAbsent(provider, false);
         }
 
         @Override

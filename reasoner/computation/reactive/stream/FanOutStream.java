@@ -45,7 +45,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         this.bufferSet = new HashSet<>();
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
-        this.providerRegistry = new ProviderRegistry.Single<>(this, processor);
+        this.providerRegistry = new ProviderRegistry.Single<>(processor);
         this.receiverRegistry = new ReceiverRegistry.MultiReceiverRegistry<>();
     }
 
@@ -102,6 +102,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
 
     @Override
     public void registerPublisher(Publisher<PACKET> provider) {
+        processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
         providerRegistry().add(provider);
         if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
     }

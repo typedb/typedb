@@ -170,7 +170,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             public void registerSubscriber(Subscriber<Map<Variable, Concept>> subscriber) {
                 super.registerSubscriber(subscriber);
                 // We need to wait until the receiver has been given before we can create the materialisation registry
-                this.materialisationRegistry = new ProviderRegistry.Multi<>(receiverRegistry().receiver(), processor());
+                this.materialisationRegistry = new ProviderRegistry.Multi<>(processor());
             }
 
             protected ProviderRegistry.Multi<Publisher<Map<Variable, Concept>>> materialisationRegistry() {
@@ -193,6 +193,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 );
                 Stream<?, Map<Variable, Concept>> op = materialisationInput.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
                 MaterialisationReactive materialisationReactive = new MaterialisationReactive(this, processor());
+                processor().monitor().execute(actor -> actor.registerPath(identifier(), materialisationReactive.identifier()));
                 materialisationRegistry().add(materialisationReactive);
                 op.registerSubscriber(materialisationReactive);
                 materialisationReactive.sendTo(receiverRegistry().receiver());

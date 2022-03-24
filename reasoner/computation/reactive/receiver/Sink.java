@@ -28,7 +28,7 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET> { // TODO: Coll
     private final Processor<?, ?, ?, ?> processor;
 
     protected Sink(Processor<?, ?, ?, ?> processor) {
-        this.providerRegistry = new ProviderRegistry.Single<>(this, processor);
+        this.providerRegistry = new ProviderRegistry.Single<>(processor);
         this.processor = processor;
     }
 
@@ -42,6 +42,7 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET> { // TODO: Coll
 
     @Override
     public void registerPublisher(Publisher<PACKET> provider) {
+        processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
         providerRegistry().add(provider);
     }
 

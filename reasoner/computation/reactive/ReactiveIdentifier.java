@@ -60,9 +60,4 @@ public class ReactiveIdentifier<P_IN, P_OUT> implements Reactive.Identifier<P_IN
         return processor;
     }
 
-    @Override
-    public Identifier<?, ?> identifier() {
-        return this;
-    }
-
 }

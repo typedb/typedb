@@ -27,7 +27,7 @@ public class FanInStream<PACKET> extends SingleReceiverMultiProviderStream<PACKE
 
     protected FanInStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
-        this.providerRegistry = new ProviderRegistry.Multi<>(this, processor);
+        this.providerRegistry = new ProviderRegistry.Multi<>(processor);
     }
 
     @Override

@@ -28,12 +28,14 @@ public class SingleReceiverSingleProviderStream<INPUT, OUTPUT> extends SingleRec
 
     protected SingleReceiverSingleProviderStream(Publisher<INPUT> provider, Processor<?, ?, ?, ?> processor) {
         super(processor);
-        this.providerRegistry = new ProviderRegistry.Single<>(provider, this, processor);
+        this.providerRegistry = new ProviderRegistry.Single<>(processor);
+        processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
+        this.providerRegistry.add(provider);
     }
 
     protected SingleReceiverSingleProviderStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
-        this.providerRegistry = new ProviderRegistry.Single<>(this, processor);
+        this.providerRegistry = new ProviderRegistry.Single<>(processor);
     }
 
     @Override
