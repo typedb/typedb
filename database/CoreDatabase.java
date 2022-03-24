@@ -160,7 +160,6 @@ public class CoreDatabase implements TypeDB.Database {
     static CoreDatabase loadAndOpen(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
         CoreDatabase database = new CoreDatabase(databaseMgr, name, sessionFactory);
         database.load();
-        database.statisticsCorrector.initialiseAndCleanUp();
         return database;
     }
 
@@ -179,7 +178,7 @@ public class CoreDatabase implements TypeDB.Database {
         statisticsCorrector.initialise();
     }
 
-    private void openSchema() {
+    protected void openSchema() {
         try {
             List<ColumnFamilyDescriptor> schemaDescriptors = CorePartitionManager.Schema.descriptors(rocksConfiguration.schema());
             List<ColumnFamilyHandle> schemaHandles = new ArrayList<>();
@@ -233,9 +232,10 @@ public class CoreDatabase implements TypeDB.Database {
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
         }
+        statisticsCorrector.initialiseAndCleanUp();
     }
 
-    private void openData() {
+    protected void openData() {
         try {
             List<ColumnFamilyDescriptor> dataDescriptors = CorePartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
@@ -277,7 +277,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    private void validateEncodingVersion() {
+    protected void validateEncodingVersion() {
         try {
             byte[] encodingBytes = rocksSchema.get(
                     rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
