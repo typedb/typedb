@@ -198,7 +198,7 @@ public class CoreDatabase implements TypeDB.Database {
         return new CorePartitionManager.Schema(schemaDescriptors, schemaHandles);
     }
 
-    private void openAndInitialiseData() {
+    protected void openAndInitialiseData() {
         try {
             List<ColumnFamilyDescriptor> dataDescriptors = CorePartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
@@ -265,7 +265,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    private void initialiseEncodingVersion() {
+    protected void initialiseEncodingVersion() {
         try {
             rocksSchema.put(
                     rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
@@ -770,7 +770,7 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        void close() {
+        public void close() {
             try {
                 correctionRequired.set(false);
                 for (CompletableFuture<Void> correction : corrections) {

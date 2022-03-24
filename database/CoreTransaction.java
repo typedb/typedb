@@ -181,16 +181,16 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             return this;
         }
 
-        TypeGraph graph() {
+        protected TypeGraph graph() {
             return graphMgr.schema();
         }
 
-        RocksStorage.Schema schemaStorage() {
+        protected RocksStorage.Schema schemaStorage() {
             if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
             return schemaStorage;
         }
 
-        RocksStorage.Data dataStorage() {
+        protected RocksStorage.Data dataStorage() {
             if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
             return dataStorage;
         }
