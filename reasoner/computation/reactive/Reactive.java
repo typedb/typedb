@@ -34,12 +34,14 @@ public interface Reactive {
 
         Actor.Driver<? extends Processor<?, ?, ?, ?>> processor();
 
-        interface Input<PACKET> extends Identifier {
+    }
 
-            @Override
-            Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor();
+    interface Provider<PACKET> extends Reactive {
 
-        }
+        void pull(Receiver.Input<PACKET> receiverId);
+
+        @Override
+        Output<PACKET> identifier();
 
         interface Output<PACKET> extends Identifier {
 
@@ -49,43 +51,46 @@ public interface Reactive {
         }
     }
 
-    interface Provider<PACKET> extends Reactive {
+    interface Publisher<PACKET> extends Reactive {
 
-        void pull(Identifier.Input<PACKET> receiverId);
+        void pull(Subscriber<PACKET> subscriber);
 
-    }
+        void registerSubscriber(Subscriber<PACKET> subscriber);
 
-    interface Publisher<T> extends Reactive {
+        Stream<PACKET, PACKET> findFirst();
 
-        void pull(Subscriber<T> subscriber);
+        <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function);
 
-        void registerSubscriber(Subscriber<T> subscriber);
+        <MAPPED> Stream<PACKET, MAPPED> flatMapOrRetry(Function<PACKET, FunctionalIterator<MAPPED>> function);
 
-        Stream<T,T> findFirst();
+        Stream<PACKET, PACKET> buffer();
 
-        <R> Stream<T, R> map(Function<T, R> function);
-
-        <R> Stream<T,R> flatMapOrRetry(Function<T, FunctionalIterator<R>> function);
-
-        Stream<T, T> buffer();
-
-        Stream<T, T> deduplicate();
+        Stream<PACKET, PACKET> deduplicate();
 
     }
 
-    interface Receiver<R> extends Reactive {
+    interface Receiver<PACKET> extends Reactive {
 
-        void receive(Identifier.Output<R> providerId, R packet);
+        void receive(Provider.Output<PACKET> providerId, PACKET packet);
 
+        @Override
+        Input<PACKET> identifier();
+
+        interface Input<PACKET> extends Identifier {
+
+            @Override
+            Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor();
+
+        }
     }
 
-    interface Subscriber<R> extends Reactive {
+    interface Subscriber<PACKET> extends Reactive {
 
-        void receive(Publisher<R> publisher, R packet);
+        void receive(Publisher<PACKET> publisher, PACKET packet);
 
-        void registerPublisher(Publisher<R> publisher);
+        void registerPublisher(Publisher<PACKET> publisher);
 
-        interface Finishable<T> extends Reactive.Subscriber<T> {
+        interface Finishable<PACKET> extends Reactive.Subscriber<PACKET> {
 
             void finished();
 

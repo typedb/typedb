@@ -80,7 +80,7 @@ public abstract class DisjunctionController<
     private static class NestedConjunctionRequest<P extends DisjunctionProcessor<C, P>, C extends DisjunctionController<P, C>>
             extends ConnectionRequest<Conjunction, ConceptMap, ConceptMap, C> {
 
-        protected NestedConjunctionRequest(Reactive.Identifier.Input<ConceptMap> inputId, Conjunction controllerId,
+        protected NestedConjunctionRequest(Reactive.Receiver.Input<ConceptMap> inputId, Conjunction controllerId,
                                            ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }

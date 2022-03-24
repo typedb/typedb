@@ -73,7 +73,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
     protected static class DisjunctionRequest extends ConnectionRequest<Disjunction, ConceptMap, ConceptMap, NegationController> {
 
-        protected DisjunctionRequest(Reactive.Identifier.Input<ConceptMap> inputId, Disjunction controllerId,
+        protected DisjunctionRequest(Reactive.Receiver.Input<ConceptMap> inputId, Disjunction controllerId,
                                      ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }

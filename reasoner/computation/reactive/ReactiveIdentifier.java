@@ -65,7 +65,7 @@ public class ReactiveIdentifier implements Reactive.Identifier {
         return this;
     }
 
-    public static class Input<PACKET> extends ReactiveIdentifier implements Identifier.Input<PACKET> {
+    public static class Input<PACKET> extends ReactiveIdentifier implements Receiver.Input<PACKET> {
 
         private final Actor.Driver<? extends Processor<PACKET, ?, ?, ?>> processor;  //TODO: Duplicates field from parent class
 
@@ -100,7 +100,7 @@ public class ReactiveIdentifier implements Reactive.Identifier {
         }
     }
 
-    public static class Output<PACKET> extends ReactiveIdentifier implements Reactive.Identifier.Output<PACKET> {
+    public static class Output<PACKET> extends ReactiveIdentifier implements Provider.Output<PACKET> {
 
         private final Actor.Driver<? extends Processor<?, PACKET, ?, ?>> processor;  //TODO: Duplicates field from parent class
 

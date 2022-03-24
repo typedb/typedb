@@ -86,7 +86,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
     protected static class ConditionRequest extends ConnectionRequest<Rule.Condition, ConceptMap, Either<ConceptMap, Materialisation>, ConclusionController> {
 
-        public ConditionRequest(Reactive.Identifier.Input<Either<ConceptMap, Materialisation>> inputId,
+        public ConditionRequest(Reactive.Receiver.Input<Either<ConceptMap, Materialisation>> inputId,
                                 Rule.Condition controllerId, ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }
@@ -100,7 +100,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
     protected static class MaterialiserRequest extends ConnectionRequest<Void, Materialisable, Either<ConceptMap, Materialisation>, ConclusionController> {
 
-        public MaterialiserRequest(Reactive.Identifier.Input<Either<ConceptMap, Materialisation>> inputId,
+        public MaterialiserRequest(Reactive.Receiver.Input<Either<ConceptMap, Materialisation>> inputId,
                                    Void controllerId, Materialisable processorId) {
             super(inputId, controllerId, processorId);
         }

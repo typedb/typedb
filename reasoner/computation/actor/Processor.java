@@ -83,12 +83,12 @@ public abstract class Processor<INPUT, OUTPUT,
         throw TypeDBException.of(ILLEGAL_OPERATION);
     }
 
-    public void pull(Reactive.Identifier.Input<OUTPUT> receiver, Reactive.Identifier outputId) {
+    public void pull(Reactive.Receiver.Input<OUTPUT> receiver, Reactive.Identifier outputId) {
         assert !done;
         outputs.get(outputId).pull(receiver);
     }
 
-    protected void receive(Reactive.Identifier.Output<INPUT> provider, INPUT packet, Reactive.Identifier inputId) {
+    protected void receive(Reactive.Provider.Output<INPUT> provider, INPUT packet, Reactive.Identifier inputId) {
         assert !done;
         inputs.get(inputId).receive(provider, packet);
     }
@@ -119,7 +119,7 @@ public abstract class Processor<INPUT, OUTPUT,
                 actor -> actor.connectInputToOutput(connector.inputId(), output.identifier()));
     }
 
-    protected void connectInputToOutput(Reactive.Identifier.Input<INPUT> inputId, Reactive.Identifier.Output<INPUT> outputId) {
+    protected void connectInputToOutput(Reactive.Receiver.Input<INPUT> inputId, Reactive.Provider.Output<INPUT> outputId) {
         assert !done;
         Input<INPUT> input = inputs.get(inputId);
         input.addProvider(outputId);
@@ -182,11 +182,11 @@ public abstract class Processor<INPUT, OUTPUT,
         return new ReactiveIdentifier(driver(), reactive.getClass(), incrementReactiveCounter());
     }
 
-    public Reactive.Identifier.Output<OUTPUT> registerOutput(Output<OUTPUT> reactive) {
+    public Reactive.Provider.Output<OUTPUT> registerOutput(Output<OUTPUT> reactive) {
         return new ReactiveIdentifier.Output<>(driver(), reactive.getClass(), incrementReactiveCounter());
     }
 
-    public Reactive.Identifier.Input<INPUT> registerInput(Input<INPUT> reactive) {
+    public Reactive.Receiver.Input<INPUT> registerInput(Input<INPUT> reactive) {
         return new ReactiveIdentifier.Input<>(driver(), reactive.getClass(), incrementReactiveCounter());
     }
 
@@ -195,8 +195,8 @@ public abstract class Processor<INPUT, OUTPUT,
      */
     public static class Input<PACKET> extends SingleReceiverPublisher<PACKET> implements Reactive.Receiver<PACKET> {
 
-        private final ProviderRegistry.Single<Identifier.Output<PACKET>> providerRegistry;
-        private final Identifier.Input<PACKET> identifier;
+        private final ProviderRegistry.Single<Provider.Output<PACKET>> providerRegistry;
+        private final Input<PACKET> identifier;
         private boolean ready;
 
         public Input(Processor<PACKET, ?, ?, ?> processor) {
@@ -206,16 +206,16 @@ public abstract class Processor<INPUT, OUTPUT,
             this.providerRegistry = new ProviderRegistry.Single<>(this, processor);
         }
 
-        private ProviderRegistry.Single<Identifier.Output<PACKET>> providerRegistry() {
+        private ProviderRegistry.Single<Provider.Output<PACKET>> providerRegistry() {
             return providerRegistry;
         }
 
         @Override
-        public Identifier.Input<PACKET> identifier() {
+        public Input<PACKET> identifier() {
             return identifier;
         }
 
-        void addProvider(Reactive.Identifier.Output<PACKET> providerOutputId) {
+        void addProvider(Provider.Output<PACKET> providerOutputId) {
             providerRegistry().add(providerOutputId);
             assert !ready;
             this.ready = true;
@@ -237,7 +237,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public void receive(Reactive.Identifier.Output<PACKET> providerId, PACKET packet) {
+        public void receive(Provider.Output<PACKET> providerId, PACKET packet) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(providerId, identifier(), packet));
             providerRegistry().recordReceive(providerId);
             receiverRegistry().setNotPulling();
@@ -251,9 +251,9 @@ public abstract class Processor<INPUT, OUTPUT,
      */
     public static class Output<PACKET> implements Subscriber<PACKET>, Reactive.Provider<PACKET> {
 
-        private final Reactive.Identifier.Output<PACKET> identifier;
+        private final Output<PACKET> identifier;
         private final ProviderRegistry.Single<Publisher<PACKET>> providerRegistry;
-        private final ReceiverRegistry.SingleReceiverRegistry<Reactive.Identifier.Input<PACKET>> receiverRegistry;
+        private final ReceiverRegistry.SingleReceiverRegistry<Receiver.Input<PACKET>> receiverRegistry;
 
         public Output(Processor<?, PACKET, ?, ?> processor) {
             this.identifier = processor.registerOutput(this);
@@ -262,7 +262,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public Reactive.Identifier.Output<PACKET> identifier() {
+        public Output<PACKET> identifier() {
             return identifier;
         }
 
@@ -270,7 +270,7 @@ public abstract class Processor<INPUT, OUTPUT,
             return providerRegistry;
         }
 
-        private ReceiverRegistry.SingleReceiverRegistry<Reactive.Identifier.Input<PACKET>> receiverRegistry() {
+        private ReceiverRegistry.SingleReceiverRegistry<Receiver.Input<PACKET>> receiverRegistry() {
             return receiverRegistry;
         }
 
@@ -284,7 +284,7 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public void pull(Identifier.Input<PACKET> receiverId) {
+        public void pull(Receiver.Input<PACKET> receiverId) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), identifier()));
             receiverRegistry().recordPull(receiverId);
             if (providerRegistry().setPulling()) providerRegistry().provider().pull(this);
@@ -296,7 +296,7 @@ public abstract class Processor<INPUT, OUTPUT,
             if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
         }
 
-        public void setReceiver(Identifier.Input<PACKET> inputId) {
+        public void setReceiver(Receiver.Input<PACKET> inputId) {
             receiverRegistry().addReceiver(inputId);
         }
     }

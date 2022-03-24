@@ -119,16 +119,16 @@ public abstract class Controller<
 
         private final UPSTREAM_CID upstreamControllerId;
         private final UPSTREAM_PID upstreamProcessorId;
-        private final Reactive.Identifier.Input<PACKET> inputId;
+        private final Reactive.Receiver.Input<PACKET> inputId;
 
-        protected ConnectionRequest(Reactive.Identifier.Input<PACKET> inputId, UPSTREAM_CID upstreamControllerId,
+        protected ConnectionRequest(Reactive.Receiver.Input<PACKET> inputId, UPSTREAM_CID upstreamControllerId,
                                     UPSTREAM_PID upstreamProcessorId) {
             this.inputId = inputId;
             this.upstreamControllerId = upstreamControllerId;
             this.upstreamProcessorId = upstreamProcessorId;
         }
 
-        public Reactive.Identifier.Input<PACKET> inputId() {
+        public Reactive.Receiver.Input<PACKET> inputId() {
             return inputId;
         }
 
