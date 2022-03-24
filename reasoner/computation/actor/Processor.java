@@ -89,9 +89,9 @@ public abstract class Processor<INPUT, OUTPUT,
         outputs.get(outputId).pull(receiver);
     }
 
-    protected void receive(Identifier<?, INPUT> provider, INPUT packet, Identifier<?, ?> inputId) {
+    protected void receive(Identifier<?, INPUT> providerId, INPUT input, Identifier<?, ?> inputId) {
         assert !done;
-        inputs.get(inputId).receive(provider, packet);
+        inputs.get(inputId).receive(providerId, input);
     }
 
     public <PACKET> void schedulePullRetry(Publisher<PACKET> provider, Reactive.Subscriber<PACKET> receiver) {
@@ -104,7 +104,7 @@ public abstract class Processor<INPUT, OUTPUT,
         pullRetries.get(new Pair<Identifier<?, ?>, Identifier<?, ?>>(provider, receiver)).run();
     }
 
-    protected <UPSTREAM_CID, UPSTREAM_PID, REQ extends ConnectionRequest<UPSTREAM_CID, UPSTREAM_PID, INPUT, CONTROLLER>> void requestConnection(REQ req) {
+    protected <CONTROLLER_ID, BOUNDS, REQ extends ConnectionRequest<CONTROLLER_ID, BOUNDS, INPUT, CONTROLLER>> void requestConnection(REQ req) {
         assert !done;
         if (isTerminated()) return;
         controller.execute(actor -> actor.makeConnection(req));

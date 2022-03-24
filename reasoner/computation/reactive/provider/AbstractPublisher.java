@@ -65,7 +65,7 @@ public abstract class AbstractPublisher<OUTPUT> implements Reactive.Publisher<OU
     }
 
     @Override
-    public <R> Stream<OUTPUT,R> flatMapOrRetry(Function<OUTPUT, FunctionalIterator<R>> function) {
+    public <R> Stream<OUTPUT,R> flatMap(Function<OUTPUT, FunctionalIterator<R>> function) {
         FlatMapStream<OUTPUT, R> flatMap = new FlatMapStream<>(this, function, processor());
         registerSubscriber(flatMap);
         return flatMap;

@@ -32,6 +32,8 @@ public interface Reactive {
 
         String toString();
 
+        // TODO: Weird to have a processor inside an Identifier, if anything we would expect to see a processor ID
+        //  here, or use some kind of compound ID of Reactive + Processor where we need it
         Actor.Driver<? extends Processor<P_IN, P_OUT, ?, ?>> processor();
 
     }
@@ -55,7 +57,7 @@ public interface Reactive {
 
         <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function);
 
-        <MAPPED> Stream<PACKET, MAPPED> flatMapOrRetry(Function<PACKET, FunctionalIterator<MAPPED>> function);
+        <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function);
 
         Stream<PACKET, PACKET> buffer();
 

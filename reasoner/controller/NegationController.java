@@ -79,7 +79,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         }
 
         @Override
-        public Connector<ConceptMap, ConceptMap> getConnector(NegationController controller) {
+        public Connector<ConceptMap, ConceptMap> createConnector(NegationController controller) {
             return new Connector<>(controller.disjunctionContoller(), this);
         }
     }

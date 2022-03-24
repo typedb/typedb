@@ -92,7 +92,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         }
 
         @Override
-        public Connector<ConceptMap, Either<ConceptMap, Materialisation>> getConnector(ConclusionController controller) {
+        public Connector<ConceptMap, Either<ConceptMap, Materialisation>> createConnector(ConclusionController controller) {
             return new Connector<>(controller.conditionController(), this);
         }
 
@@ -106,7 +106,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         }
 
         @Override
-        public Connector<Materialisable, Either<ConceptMap, Materialisation>> getConnector(ConclusionController controller) {
+        public Connector<Materialisable, Either<ConceptMap, Materialisation>> createConnector(ConclusionController controller) {
             return new Connector<>(controller.materialisationController(), this);
         }
 

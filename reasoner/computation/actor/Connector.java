@@ -25,28 +25,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public class Connector<UPSTREAM_PID, PACKET> {
+public class Connector<BOUNDS, PACKET> {
 
-    private final Actor.Driver<? extends Controller<UPSTREAM_PID, ?, PACKET, ?, ?>> upstreamController;
+    private final Actor.Driver<? extends Controller<BOUNDS, ?, PACKET, ?, ?>> upstreamController;
     private final Reactive.Identifier<PACKET, ?> inputId;
     private final List<Function<PACKET, PACKET>> transforms;
-    private final UPSTREAM_PID upstreamProcessorId;
+    private final BOUNDS bounds;
 
-    public Connector(Actor.Driver<? extends Controller<UPSTREAM_PID, ?, PACKET, ?, ?>> upstreamController,
-                     Controller.ConnectionRequest<?, UPSTREAM_PID, PACKET, ?> connectionRequest) {
+    public Connector(Actor.Driver<? extends Controller<BOUNDS, ?, PACKET, ?, ?>> upstreamController,
+                     Controller.ConnectionRequest<?, BOUNDS, PACKET, ?> connectionRequest) {
         this.upstreamController = upstreamController;
         this.inputId = connectionRequest.inputId();
         this.transforms = new ArrayList<>();
-        this.upstreamProcessorId = connectionRequest.upstreamProcessorId();
+        this.bounds = connectionRequest.bounds();
     }
 
-    public Connector(Actor.Driver<? extends Controller<UPSTREAM_PID, ?, PACKET, ?, ?>> upstreamController,
+    public Connector(Actor.Driver<? extends Controller<BOUNDS, ?, PACKET, ?, ?>> upstreamController,
                      Reactive.Identifier<PACKET, ?> inputId, List<Function<PACKET, PACKET>> transforms,
-                     UPSTREAM_PID upstreamProcessorId) {
+                     BOUNDS bounds) {
         this.upstreamController = upstreamController;
         this.inputId = inputId;
         this.transforms = transforms;
-        this.upstreamProcessorId = upstreamProcessorId;
+        this.bounds = bounds;
     }
 
     public void connectViaTransforms(Reactive.Stream<PACKET, PACKET> toConnect, Processor.Output<PACKET> output) {
@@ -55,26 +55,26 @@ public class Connector<UPSTREAM_PID, PACKET> {
         op.registerSubscriber(output);
     }
 
-    public Actor.Driver<? extends Controller<UPSTREAM_PID, ?, PACKET, ?, ?>> upstreamController() {
+    public Actor.Driver<? extends Controller<BOUNDS, ?, PACKET, ?, ?>> upstreamController() {
         return upstreamController;
     }
 
-    public UPSTREAM_PID upstreamProcessorId(){
-        return upstreamProcessorId;
+    public BOUNDS bounds(){
+        return bounds;
     }
 
     public Reactive.Identifier<PACKET, ?> inputId() {
         return inputId;
     }
 
-    public Connector<UPSTREAM_PID, PACKET> withMap(Function<PACKET, PACKET> function) {
+    public Connector<BOUNDS, PACKET> withMap(Function<PACKET, PACKET> function) {
         ArrayList<Function<PACKET, PACKET>> newTransforms = new ArrayList<>(transforms);
         newTransforms.add(function);
-        return new Connector<>(upstreamController, inputId, newTransforms, upstreamProcessorId);
+        return new Connector<>(upstreamController, inputId, newTransforms, bounds);
     }
 
-    public Connector<UPSTREAM_PID, PACKET> withNewProcessorId(UPSTREAM_PID newPID) {
-        return new Connector<>(upstreamController, inputId, transforms, newPID);
+    public Connector<BOUNDS, PACKET> withNewBounds(BOUNDS newBounds) {
+        return new Connector<>(upstreamController, inputId, transforms, newBounds);
     }
 
 }

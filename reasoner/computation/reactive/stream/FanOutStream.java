@@ -34,7 +34,7 @@ import java.util.Set;
 
 public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements Reactive.Stream<PACKET, PACKET> {
 
-    final Map<Subscriber, Integer> bufferPositions;  // Points to the next item needed
+    final Map<Subscriber<PACKET>, Integer> bufferPositions;  // Points to the next item needed
     final Set<PACKET> bufferSet;
     final List<PACKET> bufferList;
     private final ProviderRegistry.Single<Publisher<PACKET>> providerRegistry;

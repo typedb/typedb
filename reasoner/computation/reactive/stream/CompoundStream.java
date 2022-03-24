@@ -33,7 +33,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverMultiProvider
     private final List<PLAN_ID> remainingPlan;
     private final BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc;
     private final BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc;
-    private final Map<Publisher, PACKET> publisherPackets;
+    private final Map<Publisher<PACKET>, PACKET> publisherPackets;
     private final PACKET initialPacket;
 
     public CompoundStream(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,

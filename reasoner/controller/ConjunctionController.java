@@ -134,12 +134,12 @@ public abstract class ConjunctionController<OUTPUT,
         }
 
         @Override
-        public Connector<ConceptMap, ConceptMap> getConnector(C controller) {
-            ResolverView.FilteredRetrievable controllerView = controller.retrievableProvider(upstreamControllerId());
-            ConceptMap newPID = upstreamProcessorId().filter(controllerView.filter());
+        public Connector<ConceptMap, ConceptMap> createConnector(C controller) {
+            ResolverView.FilteredRetrievable controllerView = controller.retrievableProvider(controllerId());
+            ConceptMap newPID = bounds().filter(controllerView.filter());
             return new Connector<>(controllerView.controller(), this)
-                    .withMap(c -> merge(c, upstreamProcessorId()))
-                    .withNewProcessorId(newPID);
+                    .withMap(c -> merge(c, bounds()))
+                    .withNewBounds(newPID);
         }
     }
 
@@ -152,13 +152,13 @@ public abstract class ConjunctionController<OUTPUT,
         }
 
         @Override
-        public Connector<ConceptMap, ConceptMap> getConnector(C controller) {
-            ResolverView.MappedConcludable controllerView = controller.concludableProvider(upstreamControllerId());
+        public Connector<ConceptMap, ConceptMap> createConnector(C controller) {
+            ResolverView.MappedConcludable controllerView = controller.concludableProvider(controllerId());
             Mapping mapping = Mapping.of(controllerView.mapping());
-            ConceptMap newPID = mapping.transform(upstreamProcessorId());
+            ConceptMap newPID = mapping.transform(bounds());
             return new Connector<>(controllerView.controller(), this)
                     .withMap(mapping::unTransform)
-                    .withNewProcessorId(newPID);
+                    .withNewBounds(newPID);
         }
     }
 
@@ -172,12 +172,12 @@ public abstract class ConjunctionController<OUTPUT,
         }
 
         @Override
-        public Connector<ConceptMap, ConceptMap> getConnector(C controller) {
-            ResolverView.FilteredNegation controllerView = controller.negationProvider(upstreamControllerId());
-            ConceptMap newPID = upstreamProcessorId().filter(controllerView.filter());
+        public Connector<ConceptMap, ConceptMap> createConnector(C controller) {
+            ResolverView.FilteredNegation controllerView = controller.negationProvider(controllerId());
+            ConceptMap newPID = bounds().filter(controllerView.filter());
             return new Connector<>(controllerView.controller(), this)
-                    .withMap(c -> merge(c, upstreamProcessorId()))
-                    .withNewProcessorId(newPID);
+                    .withMap(c -> merge(c, bounds()))
+                    .withNewBounds(newPID);
         }
     }
 

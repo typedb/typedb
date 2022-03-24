@@ -119,8 +119,8 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         }
 
         @Override
-        public Connector<ConceptMap, Map<Variable, Concept>> getConnector(ConcludableController controller) {
-            return new Connector<>(controller.conclusionProvider(upstreamControllerId()), this);
+        public Connector<ConceptMap, Map<Variable, Concept>> createConnector(ConcludableController controller) {
+            return new Connector<>(controller.conclusionProvider(controllerId()), this);
         }
     }
 
@@ -162,7 +162,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     Input<Map<Variable, Concept>> input = this.createInput();
                     mayRequestConnection(new ConclusionRequest(input.identifier(), conclusion, boundsAndRequirements.first()));
-                    input.flatMapOrRetry(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
+                    input.flatMap(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .buffer()
                             .registerSubscriber(fanIn);
                 }));
