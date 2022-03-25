@@ -186,12 +186,10 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         }
 
         protected RocksStorage.Schema schemaStorage() {
-            if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
             return schemaStorage;
         }
 
         protected RocksStorage.Data dataStorage() {
-            if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
             return dataStorage;
         }
 

@@ -53,6 +53,10 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         this.array = array;
     }
 
+    public static ByteArray of(byte b) {
+        return ByteArray.of(new byte[] { b });
+    }
+
     public static ByteArray of(byte[] array) {
         return new ByteArray.Base(array);
     }

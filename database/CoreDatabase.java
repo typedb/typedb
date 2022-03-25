@@ -340,7 +340,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    private synchronized void cacheClose() {
+    protected synchronized void cacheClose() {
         if (cache != null) cache.close();
     }
 
@@ -607,6 +607,10 @@ public class CoreDatabase implements TypeDB.Database {
                 );
                 LOG.debug("Total 'has' count: " + hasCount);
             }
+        }
+
+        public boolean isOpen() {
+            return session != null;
         }
 
         public void committed(CoreTransaction.Data transaction) {
