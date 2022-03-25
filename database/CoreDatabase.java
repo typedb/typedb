@@ -104,7 +104,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CoreDatabase implements TypeDB.Database {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
     private static final int ROCKS_LOG_PERIOD = 300;
 
     private final CoreDatabaseManager databaseMgr;
@@ -135,7 +135,7 @@ public class CoreDatabase implements TypeDB.Database {
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
         isolationMgr = new IsolationManager();
-        statisticsCorrector = new StatisticsCorrector();
+        statisticsCorrector = statisticsCorrectorFactory();
         sessions = new ConcurrentHashMap<>();
         rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
                 options().storageIndexCacheSize(), LOG.isDebugEnabled(), ROCKS_LOG_PERIOD);
@@ -143,6 +143,10 @@ public class CoreDatabase implements TypeDB.Database {
         schemaLockWriteRequests = new AtomicInteger(0);
         nextTransactionID = new AtomicLong(0);
         isOpen = new AtomicBoolean(false);
+    }
+
+    protected StatisticsCorrector statisticsCorrectorFactory() {
+        return new StatisticsCorrector();
     }
 
     static CoreDatabase createAndOpen(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
@@ -558,9 +562,9 @@ public class CoreDatabase implements TypeDB.Database {
 
     public class StatisticsCorrector {
 
-        private final ConcurrentSet<CompletableFuture<Void>> corrections;
+        protected final ConcurrentSet<CompletableFuture<Void>> corrections;
         private final ConcurrentSet<Long> deletedTxnIDs;
-        private final AtomicBoolean correctionRequired;
+        protected final AtomicBoolean correctionRequired;
         protected CoreSession.Data session;
 
         protected StatisticsCorrector() {
