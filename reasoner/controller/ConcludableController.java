@@ -46,7 +46,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream.fanIn;
 
 public class ConcludableController extends Controller<ConceptMap, Map<Variable, Concept>, ConceptMap,
-        ConcludableController.ConcludableProcessor, ConcludableController> {
+        ConcludableController.ConclusionRequest, ConcludableController.ConcludableProcessor, ConcludableController> {
 
     private final Map<Conclusion, Driver<ConclusionController>> conclusionControllers;
     private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
@@ -103,15 +103,13 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
     }
 
     @Override
-    protected void resolveController(ConnectionRequest<?, ?, Map<Variable, Concept>> connectionRequest) {
+    protected void resolveController(ConclusionRequest req) {
         if (isTerminated()) return;
-        assert connectionRequest instanceof ConclusionRequest;
-        ConclusionRequest r = (ConclusionRequest) connectionRequest;
-        Connector<ConceptMap, Map<Variable, Concept>> connector = new Connector<>(r.inputId(), r.bounds());
-        conclusionControllers.get(r.controllerId()).execute(actor -> actor.resolveProcessor(connector));
+        conclusionControllers.get(req.controllerId())
+                .execute(actor -> actor.resolveProcessor(new Connector<>(req.inputId(), req.bounds())));
     }
 
-    protected static class ConclusionRequest extends ConnectionRequest<Conclusion, ConceptMap, Map<Variable, Concept>> {
+    protected static class ConclusionRequest extends Connector.ConnectionRequest<Conclusion, ConceptMap, Map<Variable, Concept>> {
 
         public ConclusionRequest(Reactive.Identifier<Map<Variable, Concept>, ?> inputId,
                                  Conclusion controllerId, ConceptMap processorId) {
@@ -120,7 +118,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 
     }
 
-    protected static class ConcludableProcessor extends Processor<Map<Variable, Concept>, ConceptMap, ConcludableController, ConcludableProcessor> {
+    protected static class ConcludableProcessor extends Processor<Map<Variable, Concept>, ConceptMap, ConclusionRequest, ConcludableProcessor> {
 
         private final ConceptMap bounds;
         private final Set<Variable.Retrievable> unboundVars;

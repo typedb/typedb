@@ -21,14 +21,12 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
@@ -36,8 +34,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 
 public abstract class Controller<
         PROCESSOR_ID, INPUT, OUTPUT,
+        REQ extends Connector.Request<?, ?, INPUT>,
         PROCESSOR extends Processor<INPUT, OUTPUT, ?, PROCESSOR>,
-        CONTROLLER extends Controller<PROCESSOR_ID, INPUT, OUTPUT, PROCESSOR, CONTROLLER>
+        CONTROLLER extends Controller<PROCESSOR_ID, INPUT, OUTPUT, ?, PROCESSOR, CONTROLLER>
         > extends Actor<CONTROLLER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
@@ -62,7 +61,7 @@ public abstract class Controller<
         return registry;
     }
 
-    protected abstract void resolveController(ConnectionRequest<?, ?, INPUT> connectionRequest);
+    protected abstract void resolveController(REQ connectionRequest);
 
     public void resolveProcessor(Connector<PROCESSOR_ID, OUTPUT> connector) {
         if (isTerminated()) return;
@@ -109,47 +108,4 @@ public abstract class Controller<
         return terminated;
     }
 
-    public static abstract class ConnectionRequest<CONTROLLER_ID, BOUNDS, PACKET> {  //TODO: Propagate name change
-
-        private final CONTROLLER_ID controllerId;
-        private final BOUNDS bounds;
-        private final Reactive.Identifier<PACKET, ?> inputId;
-
-        protected ConnectionRequest(Reactive.Identifier<PACKET, ?> inputId, CONTROLLER_ID controllerId,
-                                    BOUNDS bounds) {
-            this.inputId = inputId;
-            this.controllerId = controllerId;
-            this.bounds = bounds;
-        }
-
-        public Reactive.Identifier<PACKET, ?> inputId() {
-            return inputId;
-        }
-
-        public CONTROLLER_ID controllerId() {
-            return controllerId;
-        }
-
-        public BOUNDS bounds() {
-            return bounds;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            // TODO: be wary with request equality when conjunctions are involved
-            // TODO: I think there's a subtle bug here where a conjunction could break down into two parts that according
-            //  to conjunction comparison are the same, and therefore will not create separate processors for them
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ConnectionRequest<?, ?, ?> request = (ConnectionRequest<?, ?, ?>) o;
-            return inputId == request.inputId &&
-                    controllerId.equals(request.controllerId) &&
-                    bounds.equals(request.bounds);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(controllerId, inputId, bounds);
-        }
-    }
 }

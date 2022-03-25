@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
 
 public abstract class SingleReceiverPublisher<OUTPUT> extends AbstractPublisher<OUTPUT> {
 

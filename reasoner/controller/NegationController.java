@@ -33,7 +33,7 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Supplier;
 
-public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.NegationProcessor, NegationController> {
+public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.DisjunctionRequest, NegationController.NegationProcessor, NegationController> {
 
     private final Negated negated;
     private final Driver<Monitor> monitor;
@@ -63,18 +63,12 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
     }
 
     @Override
-    protected void resolveController(ConnectionRequest<?, ?, ConceptMap> connectionRequest) {
+    protected void resolveController(DisjunctionRequest req) {
         if (isTerminated()) return;
-        assert connectionRequest instanceof DisjunctionRequest;
-        DisjunctionRequest r = (DisjunctionRequest) connectionRequest;
-        disjunctionContoller.execute(actor -> actor.resolveProcessor(new Connector<>(r.inputId(), r.bounds())));
+        disjunctionContoller.execute(actor -> actor.resolveProcessor(new Connector<>(req.inputId(), req.bounds())));
     }
 
-    private Driver<NestedDisjunctionController> disjunctionContoller() {
-        return disjunctionContoller;
-    }
-
-    protected static class DisjunctionRequest extends ConnectionRequest<Disjunction, ConceptMap, ConceptMap> {
+    protected static class DisjunctionRequest extends Connector.ConnectionRequest<Disjunction, ConceptMap, ConceptMap> {
 
         protected DisjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Disjunction controllerId,
                                      ConceptMap processorId) {
@@ -83,7 +77,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
     }
 
-    protected static class NegationProcessor extends Processor<ConceptMap, ConceptMap, NegationController, NegationProcessor> {
+    protected static class NegationProcessor extends Processor<ConceptMap, ConceptMap, DisjunctionRequest, NegationProcessor> {
 
         private final Negated negated;
         private final ConceptMap bounds;

@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 public class Connector<BOUNDS, PACKET> {
@@ -66,4 +67,61 @@ public class Connector<BOUNDS, PACKET> {
         return new Connector<>(inputId, newBounds, transforms);
     }
 
+    public interface Request<CONTROLLER_ID, BOUNDS, PACKET> {  // TODO: Remove in favour of implementation
+
+        Reactive.Identifier<PACKET, ?> inputId();
+
+        CONTROLLER_ID controllerId();
+
+        BOUNDS bounds();
+
+    }
+
+    public abstract static class ConnectionRequest<CONTROLLER_ID, BOUNDS, PACKET> implements Request<CONTROLLER_ID, BOUNDS, PACKET> {  //TODO: Propagate name change
+
+        private final CONTROLLER_ID controllerId;
+        private final BOUNDS bounds;
+        private final Reactive.Identifier<PACKET, ?> inputId;
+
+        protected ConnectionRequest(Reactive.Identifier<PACKET, ?> inputId, CONTROLLER_ID controllerId,
+                                    BOUNDS bounds) {
+            this.inputId = inputId;
+            this.controllerId = controllerId;
+            this.bounds = bounds;
+        }
+
+        @Override
+        public Reactive.Identifier<PACKET, ?> inputId() {
+            return inputId;
+        }
+
+        @Override
+        public CONTROLLER_ID controllerId() {
+            return controllerId;
+        }
+
+        @Override
+        public BOUNDS bounds() {
+            return bounds;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            // TODO: be wary with request equality when conjunctions are involved
+            // TODO: I think there's a subtle bug here where a conjunction could break down into two parts that according
+            //  to conjunction comparison are the same, and therefore will not create separate processors for them
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ConnectionRequest<?, ?, ?> request = (ConnectionRequest<?, ?, ?>) o;
+            return inputId == request.inputId &&
+                    controllerId.equals(request.controllerId) &&
+                    bounds.equals(request.bounds);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(controllerId, inputId, bounds);
+        }
+
+    }
 }

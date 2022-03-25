@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Controller.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Identifier;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
@@ -43,12 +42,12 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 public abstract class Processor<INPUT, OUTPUT,
-        CONTROLLER extends Controller<?, INPUT, OUTPUT, PROCESSOR, CONTROLLER>,
-        PROCESSOR extends Processor<INPUT, OUTPUT, ?, PROCESSOR>> extends Actor<PROCESSOR> {
+        REQ extends Connector.Request<?, ?, INPUT>,
+        PROCESSOR extends Processor<INPUT, OUTPUT, REQ, PROCESSOR>> extends Actor<PROCESSOR> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Processor.class);
 
-    private final Driver<CONTROLLER> controller;
+    private final Driver<? extends Controller<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller;
     private final Map<Identifier<?, ?>, Input<INPUT>> inputs;
     private final Map<Identifier<?, ?>, Output<OUTPUT>> outputs;
     private final Map<Pair<Identifier<?, ?>, Identifier<?, ?>>, Runnable> pullRetries;
@@ -58,7 +57,9 @@ public abstract class Processor<INPUT, OUTPUT,
     protected boolean done;
     private long reactiveCounter;
 
-    protected Processor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller, Driver<Monitor> monitor,
+    protected Processor(Driver<PROCESSOR> driver,
+                        Driver<? extends Controller<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller,
+                        Driver<Monitor> monitor,
                         Supplier<String> debugName) {
         super(driver, debugName);
         this.controller = controller;
@@ -104,7 +105,7 @@ public abstract class Processor<INPUT, OUTPUT,
         pullRetries.get(new Pair<Identifier<?, ?>, Identifier<?, ?>>(provider, receiver)).run();
     }
 
-    protected void requestConnection(ConnectionRequest<?, ?, INPUT> req) {
+    protected void requestConnection(REQ req) {
         assert !done;
         if (isTerminated()) return;
         controller.execute(actor -> actor.resolveController(req));

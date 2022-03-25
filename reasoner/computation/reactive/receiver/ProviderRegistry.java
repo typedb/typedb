@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.receiver;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 
 import java.util.HashMap;
 import java.util.HashSet;

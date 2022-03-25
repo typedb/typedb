@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connector.ConnectionRequest;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -37,7 +38,7 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.core.logic.Rule.Conclusion.materialise;
 
 public class MaterialisationController extends Controller<Materialisable, Void, Either<ConceptMap, Materialisation>,
-        MaterialisationController.MaterialisationProcessor, MaterialisationController> {
+        ConnectionRequest<?, ?, Void>, MaterialisationController.MaterialisationProcessor, MaterialisationController> {
     // TODO: Either here is just to match the input to ConclusionController, but this class only ever returns Materialisation
 
     private final ConceptManager conceptMgr;
@@ -71,8 +72,8 @@ public class MaterialisationController extends Controller<Materialisable, Void, 
         // Nothing to do
     }
 
-    public static class MaterialisationProcessor
-            extends Processor<Void, Either<ConceptMap, Materialisation>, MaterialisationController, MaterialisationProcessor> {
+    public static class MaterialisationProcessor extends Processor<Void, Either<ConceptMap, Materialisation>,
+            ConnectionRequest<?, ?, Void>, MaterialisationProcessor> {
 
         private final Materialisable materialisable;
         private final TraversalEngine traversalEng;

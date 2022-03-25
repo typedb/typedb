@@ -35,6 +35,8 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverSingleProviderStream;
+import com.vaticle.typedb.core.reasoner.controller.ConclusionController.FromConclusionRequest.ConditionRequest;
+import com.vaticle.typedb.core.reasoner.controller.ConclusionController.FromConclusionRequest.MaterialiserRequest;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -46,7 +48,7 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class ConclusionController extends Controller<ConceptMap, Either<ConceptMap, Materialisation>, Map<Variable, Concept>,
-        ConclusionController.ConclusionProcessor, ConclusionController> {
+        ConclusionController.FromConclusionRequest<?, ?>, ConclusionController.ConclusionProcessor, ConclusionController> {
     private final Rule.Conclusion conclusion;
     private final Driver<MaterialisationController> materialisationController;
     private final Driver<Monitor> monitor;
@@ -75,38 +77,82 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
     }
 
     @Override
-    protected void resolveController(ConnectionRequest<?, ?, Either<ConceptMap, Materialisation>> connectionRequest) {
+    protected void resolveController(FromConclusionRequest<?, ?> req) {
         if (isTerminated()) return;
-        if (connectionRequest instanceof ConditionRequest) {
-            ConditionRequest r = (ConditionRequest) connectionRequest;
-            conditionController.execute(actor -> actor.resolveProcessor(new Connector<>(r.inputId(), r.bounds())));
-        } else if (connectionRequest instanceof MaterialiserRequest) {
-            MaterialiserRequest r = (MaterialiserRequest) connectionRequest;
-            materialisationController.execute(actor -> actor.resolveProcessor(new Connector<>(r.inputId(), r.bounds())));
+        if (req.isCondition()) {
+            conditionController.execute(actor -> actor.resolveProcessor(
+                    new Connector<>(req.asCondition().inputId(), req.asCondition().bounds())));
+        } else if (req.isMaterialiser()) {
+            materialisationController.execute(actor -> actor.resolveProcessor(
+                    new Connector<>(req.asMaterialiser().inputId(), req.asMaterialiser().bounds())));
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
-    protected static class ConditionRequest extends ConnectionRequest<Rule.Condition, ConceptMap, Either<ConceptMap, Materialisation>> {
+    protected static class FromConclusionRequest<CONTROLLER_ID, BOUNDS> extends Connector.ConnectionRequest<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>> {
 
-        public ConditionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
-                                Rule.Condition controllerId, ConceptMap processorId) {
-            super(inputId, controllerId, processorId);
+        protected FromConclusionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
+                                        CONTROLLER_ID controller_id, BOUNDS bounds) {
+            super(inputId, controller_id, bounds);
         }
 
-    }
-
-    protected static class MaterialiserRequest extends ConnectionRequest<Void, Materialisable, Either<ConceptMap, Materialisation>> {
-
-        public MaterialiserRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
-                                   Void controllerId, Materialisable processorId) {
-            super(inputId, controllerId, processorId);
+        public boolean isCondition() {
+            return false;
         }
 
+        public ConditionRequest asCondition() {
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        public boolean isMaterialiser() {
+            return false;
+        }
+
+        public MaterialiserRequest asMaterialiser() {
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        protected static class ConditionRequest extends FromConclusionRequest<Rule.Condition, ConceptMap> {
+
+            public ConditionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
+                                    Rule.Condition controllerId, ConceptMap processorId) {
+                super(inputId, controllerId, processorId);
+            }
+
+            @Override
+            public boolean isCondition() {
+                return true;
+            }
+
+            @Override
+            public ConditionRequest asCondition() {
+                return this;
+            }
+
+        }
+
+        protected static class MaterialiserRequest extends FromConclusionRequest<Void, Materialisable> {
+
+            public MaterialiserRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
+                                       Void controllerId, Materialisable processorId) {
+                super(inputId, controllerId, processorId);
+            }
+
+            @Override
+            public boolean isMaterialiser() {
+                return true;
+            }
+
+            @Override
+            public MaterialiserRequest asMaterialiser() {
+                return this;
+            }
+
+        }
     }
 
-    protected static class ConclusionProcessor extends Processor<Either<ConceptMap, Materialisation>, Map<Variable, Concept>, ConclusionController, ConclusionProcessor> {
+    protected static class ConclusionProcessor extends Processor<Either<ConceptMap, Materialisation>, Map<Variable, Concept>, FromConclusionRequest<?, ?>, ConclusionProcessor> {
 
         private final Rule rule;
         private final ConceptMap bounds;

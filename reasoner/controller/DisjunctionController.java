@@ -48,7 +48,7 @@ import static com.vaticle.typedb.core.reasoner.controller.ConjunctionController.
 public abstract class DisjunctionController<
         PROCESSOR extends DisjunctionController.DisjunctionProcessor<CONTROLLER, PROCESSOR>,
         CONTROLLER extends DisjunctionController<PROCESSOR, CONTROLLER>>
-        extends Controller<ConceptMap, ConceptMap, ConceptMap, PROCESSOR, CONTROLLER> {
+        extends Controller<ConceptMap, ConceptMap, ConceptMap, DisjunctionController.NestedConjunctionRequest, PROCESSOR, CONTROLLER> {
 
     private final List<Pair<Conjunction, Driver<NestedConjunctionController>>> conjunctionControllers;
     protected Disjunction disjunction;
@@ -70,16 +70,11 @@ public abstract class DisjunctionController<
     }
 
     @Override
-    protected void resolveController(ConnectionRequest<?, ?, ConceptMap> connectionRequest) {
+    protected void resolveController(NestedConjunctionRequest req) {
         if (isTerminated()) return;
-        if (connectionRequest instanceof NestedConjunctionRequest) {
-            NestedConjunctionRequest r = (NestedConjunctionRequest) connectionRequest;
-            Connector<ConceptMap, ConceptMap> connector = new Connector<>(r.inputId(), r.bounds())
-                    .withMap(c -> merge(c, r.bounds()));
-            getConjunctionController(r.controllerId()).execute(actor -> actor.resolveProcessor(connector));
-        } else {
-            throw TypeDBException.of(ILLEGAL_STATE);
-        }
+        getConjunctionController(req.controllerId())
+                .execute(actor -> actor.resolveProcessor(new Connector<>(req.inputId(), req.bounds())
+                                                                 .withMap(c -> merge(c, req.bounds()))));
     }
 
     protected Driver<NestedConjunctionController> getConjunctionController(Conjunction conjunction) {
@@ -90,7 +85,7 @@ public abstract class DisjunctionController<
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private static class NestedConjunctionRequest extends ConnectionRequest<Conjunction, ConceptMap, ConceptMap> {
+    protected static class NestedConjunctionRequest extends Connector.ConnectionRequest<Conjunction, ConceptMap, ConceptMap> {
 
         protected NestedConjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Conjunction controllerId,
                                            ConceptMap processorId) {
@@ -102,7 +97,7 @@ public abstract class DisjunctionController<
     protected static abstract class DisjunctionProcessor<
             CONTROLLER extends DisjunctionController<PROCESSOR, CONTROLLER>,
             PROCESSOR extends DisjunctionProcessor<CONTROLLER, PROCESSOR>>
-            extends Processor<ConceptMap, ConceptMap, CONTROLLER, PROCESSOR> {
+            extends Processor<ConceptMap, ConceptMap, NestedConjunctionRequest, PROCESSOR> {
 
         private final Disjunction disjunction;
         private final ConceptMap bounds;

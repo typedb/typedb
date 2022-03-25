@@ -63,7 +63,7 @@ public class Registry {
     private final Map<Actor.Driver<ConcludableController>, Set<Concludable>> controllerConcludables;
     private final Map<Rule, Actor.Driver<ConditionController>> ruleConditions;
     private final Map<Rule, Actor.Driver<ConclusionController>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
-    private final Set<Actor.Driver<? extends Controller<?, ?, ?, ?, ?>>> controllers;
+    private final Set<Actor.Driver<? extends Controller<?, ?, ?, ?, ?, ?>>> controllers;
     private final TraversalEngine traversalEngine;
     private final boolean tracing;
     private final Actor.Driver<MaterialisationController> materialisationController;
@@ -289,7 +289,7 @@ public class Registry {
             return new FilteredRetrievable(controller, filter);
         }
 
-        public abstract Actor.Driver<? extends Controller<?, ?, ?, ?, ?>> controller();
+        public abstract Actor.Driver<? extends Controller<?, ?, ?, ?, ?, ?>> controller();
 
         public static class MappedConcludable extends ResolverView {
             private final Actor.Driver<ConcludableController> resolver;
