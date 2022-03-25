@@ -104,23 +104,23 @@ public abstract class Processor<INPUT, OUTPUT,
         pullRetries.get(new Pair<Identifier<?, ?>, Identifier<?, ?>>(provider, receiver)).run();
     }
 
-    protected <CONTROLLER_ID, BOUNDS, REQ extends ConnectionRequest<CONTROLLER_ID, BOUNDS, INPUT, CONTROLLER>> void requestConnection(REQ req) {
+    protected void requestConnection(ConnectionRequest<?, ?, INPUT> req) {
         assert !done;
         if (isTerminated()) return;
-        controller.execute(actor -> actor.makeConnection(req));
+        controller.execute(actor -> actor.resolveController(req));
     }
 
-    protected void createOutputAndConnectToInput(Connector<?, OUTPUT> connector) {
+    protected void establishConnection(Connector<?, OUTPUT> connector) {
         assert !done;
         if (isTerminated()) return;
         Output<OUTPUT> output = createOutput();
         output.setReceiver(connector.inputId());
         connector.connectViaTransforms(outputRouter(), output);
         connector.inputId().processor().execute(
-                actor -> actor.connectInputToOutput(connector.inputId(), output.identifier()));
+                actor -> actor.finishConnection(connector.inputId(), output.identifier()));
     }
 
-    protected void connectInputToOutput(Identifier<INPUT, ?> inputId, Identifier<?, INPUT> outputId) {
+    protected void finishConnection(Identifier<INPUT, ?> inputId, Identifier<?, INPUT> outputId) {
         assert !done;
         Input<INPUT> input = inputs.get(inputId);
         input.addProvider(outputId);

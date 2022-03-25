@@ -56,11 +56,6 @@ public class RootDisjunctionController
     }
 
     @Override
-    public RootDisjunctionController getThis() {
-        return this;
-    }
-
-    @Override
     protected void exception(Throwable e) {
         super.exception(e);
         reasonerConsumer.exception(e);

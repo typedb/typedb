@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.computation.actor;
 
-import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 
 import java.util.ArrayList;
@@ -27,23 +26,17 @@ import java.util.function.Function;
 
 public class Connector<BOUNDS, PACKET> {
 
-    private final Actor.Driver<? extends Controller<BOUNDS, ?, PACKET, ?, ?>> upstreamController;
     private final Reactive.Identifier<PACKET, ?> inputId;
     private final List<Function<PACKET, PACKET>> transforms;
     private final BOUNDS bounds;
 
-    public Connector(Actor.Driver<? extends Controller<BOUNDS, ?, PACKET, ?, ?>> upstreamController,
-                     Controller.ConnectionRequest<?, BOUNDS, PACKET, ?> connectionRequest) {
-        this.upstreamController = upstreamController;
-        this.inputId = connectionRequest.inputId();
+    public Connector(Reactive.Identifier<PACKET, ?> inputId, BOUNDS bounds) {
+        this.inputId = inputId;
         this.transforms = new ArrayList<>();
-        this.bounds = connectionRequest.bounds();
+        this.bounds = bounds;
     }
 
-    public Connector(Actor.Driver<? extends Controller<BOUNDS, ?, PACKET, ?, ?>> upstreamController,
-                     Reactive.Identifier<PACKET, ?> inputId, List<Function<PACKET, PACKET>> transforms,
-                     BOUNDS bounds) {
-        this.upstreamController = upstreamController;
+    public Connector(Reactive.Identifier<PACKET, ?> inputId, BOUNDS bounds, List<Function<PACKET, PACKET>> transforms) {
         this.inputId = inputId;
         this.transforms = transforms;
         this.bounds = bounds;
@@ -53,10 +46,6 @@ public class Connector<BOUNDS, PACKET> {
         Reactive.Publisher<PACKET> op = toConnect;
         for (Function<PACKET, PACKET> t : transforms) op = op.map(t);
         op.registerSubscriber(output);
-    }
-
-    public Actor.Driver<? extends Controller<BOUNDS, ?, PACKET, ?, ?>> upstreamController() {
-        return upstreamController;
     }
 
     public BOUNDS bounds(){
@@ -70,11 +59,11 @@ public class Connector<BOUNDS, PACKET> {
     public Connector<BOUNDS, PACKET> withMap(Function<PACKET, PACKET> function) {
         ArrayList<Function<PACKET, PACKET>> newTransforms = new ArrayList<>(transforms);
         newTransforms.add(function);
-        return new Connector<>(upstreamController, inputId, newTransforms, bounds);
+        return new Connector<>(inputId, bounds, newTransforms);
     }
 
     public Connector<BOUNDS, PACKET> withNewBounds(BOUNDS newBounds) {
-        return new Connector<>(upstreamController, inputId, transforms, newBounds);
+        return new Connector<>(inputId, newBounds, transforms);
     }
 
 }

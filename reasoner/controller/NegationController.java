@@ -62,26 +62,25 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         );
     }
 
+    @Override
+    protected void resolveController(ConnectionRequest<?, ?, ConceptMap> connectionRequest) {
+        if (isTerminated()) return;
+        assert connectionRequest instanceof DisjunctionRequest;
+        DisjunctionRequest r = (DisjunctionRequest) connectionRequest;
+        disjunctionContoller.execute(actor -> actor.resolveProcessor(new Connector<>(r.inputId(), r.bounds())));
+    }
+
     private Driver<NestedDisjunctionController> disjunctionContoller() {
         return disjunctionContoller;
     }
 
-    @Override
-    public NegationController getThis() {
-        return this;
-    }
-
-    protected static class DisjunctionRequest extends ConnectionRequest<Disjunction, ConceptMap, ConceptMap, NegationController> {
+    protected static class DisjunctionRequest extends ConnectionRequest<Disjunction, ConceptMap, ConceptMap> {
 
         protected DisjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Disjunction controllerId,
                                      ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }
 
-        @Override
-        public Connector<ConceptMap, ConceptMap> createConnector(NegationController controller) {
-            return new Connector<>(controller.disjunctionContoller(), this);
-        }
     }
 
     protected static class NegationProcessor extends Processor<ConceptMap, ConceptMap, NegationController, NegationProcessor> {

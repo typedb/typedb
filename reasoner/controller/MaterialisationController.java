@@ -67,8 +67,8 @@ public class MaterialisationController extends Controller<Materialisable, Void, 
     }
 
     @Override
-    public MaterialisationController getThis() {
-        return this;
+    protected void resolveController(ConnectionRequest<?, ?, Void> connectionRequest) {
+        // Nothing to do
     }
 
     public static class MaterialisationProcessor

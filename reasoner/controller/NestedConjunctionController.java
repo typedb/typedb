@@ -56,11 +56,6 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
         );
     }
 
-    @Override
-    public NestedConjunctionController getThis() {
-        return this;
-    }
-
     protected static class NestedConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, NestedConjunctionController, NestedConjunctionProcessor> {
 
         protected NestedConjunctionProcessor(Driver<NestedConjunctionProcessor> driver,

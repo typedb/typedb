@@ -62,18 +62,11 @@ public abstract class Controller<
         return registry;
     }
 
-    public <CONTROLLER_ID, BOUNDS, REQ extends ConnectionRequest<CONTROLLER_ID, BOUNDS, INPUT, CONTROLLER>> void makeConnection(REQ connectionRequest) {
-        if (isTerminated()) return;
-        Connector<BOUNDS, INPUT> connector = connectionRequest.createConnector(getThis());  // TODO: A request shouldn't create a connection, it should be used by the controller to create a connection
-        connector.upstreamController().execute(actor -> actor.sendConnectorToProcessor(connector));
-    }
+    protected abstract void resolveController(ConnectionRequest<?, ?, INPUT> connectionRequest);
 
-    public abstract CONTROLLER getThis();  // We need this because the processor can't access the controller actor from the driver when building a request
-
-    public void sendConnectorToProcessor(Connector<PROCESSOR_ID, OUTPUT> connector) {
+    public void resolveProcessor(Connector<PROCESSOR_ID, OUTPUT> connector) {
         if (isTerminated()) return;
-        createProcessorIfAbsent(connector.bounds())
-                .execute(actor -> actor.createOutputAndConnectToInput(connector));
+        createProcessorIfAbsent(connector.bounds()).execute(actor -> actor.establishConnection(connector));
     }
 
     public Driver<PROCESSOR> createProcessorIfAbsent(PROCESSOR_ID processorId) {
@@ -116,7 +109,7 @@ public abstract class Controller<
         return terminated;
     }
 
-    public static abstract class ConnectionRequest<CONTROLLER_ID, BOUNDS, PACKET, CONTROLLER extends Controller<?, PACKET, ?, ?, CONTROLLER>> {  //TODO: Propagate name change
+    public static abstract class ConnectionRequest<CONTROLLER_ID, BOUNDS, PACKET> {  //TODO: Propagate name change
 
         private final CONTROLLER_ID controllerId;
         private final BOUNDS bounds;
@@ -141,8 +134,6 @@ public abstract class Controller<
             return bounds;
         }
 
-        public abstract Connector<BOUNDS, PACKET> createConnector(CONTROLLER controller);
-
         @Override
         public boolean equals(Object o) {
             // TODO: be wary with request equality when conjunctions are involved
@@ -150,7 +141,7 @@ public abstract class Controller<
             //  to conjunction comparison are the same, and therefore will not create separate processors for them
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            ConnectionRequest<?, ?, ?, ?> request = (ConnectionRequest<?, ?, ?, ?>) o;
+            ConnectionRequest<?, ?, ?> request = (ConnectionRequest<?, ?, ?>) o;
             return inputId == request.inputId &&
                     controllerId.equals(request.controllerId) &&
                     bounds.equals(request.bounds);

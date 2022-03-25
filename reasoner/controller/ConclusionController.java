@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -41,6 +42,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class ConclusionController extends Controller<ConceptMap, Either<ConceptMap, Materialisation>, Map<Variable, Concept>,
         ConclusionController.ConclusionProcessor, ConclusionController> {
@@ -72,42 +75,33 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
     }
 
     @Override
-    public ConclusionController getThis() {
-        return this;
+    protected void resolveController(ConnectionRequest<?, ?, Either<ConceptMap, Materialisation>> connectionRequest) {
+        if (isTerminated()) return;
+        if (connectionRequest instanceof ConditionRequest) {
+            ConditionRequest r = (ConditionRequest) connectionRequest;
+            conditionController.execute(actor -> actor.resolveProcessor(new Connector<>(r.inputId(), r.bounds())));
+        } else if (connectionRequest instanceof MaterialiserRequest) {
+            MaterialiserRequest r = (MaterialiserRequest) connectionRequest;
+            materialisationController.execute(actor -> actor.resolveProcessor(new Connector<>(r.inputId(), r.bounds())));
+        } else {
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
     }
 
-    private Driver<MaterialisationController> materialisationController() {
-        return materialisationController;
-    }
-
-    private Driver<ConditionController> conditionController() {
-        return conditionController;
-    }
-
-    protected static class ConditionRequest extends ConnectionRequest<Rule.Condition, ConceptMap, Either<ConceptMap, Materialisation>, ConclusionController> {
+    protected static class ConditionRequest extends ConnectionRequest<Rule.Condition, ConceptMap, Either<ConceptMap, Materialisation>> {
 
         public ConditionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
                                 Rule.Condition controllerId, ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }
 
-        @Override
-        public Connector<ConceptMap, Either<ConceptMap, Materialisation>> createConnector(ConclusionController controller) {
-            return new Connector<>(controller.conditionController(), this);
-        }
-
     }
 
-    protected static class MaterialiserRequest extends ConnectionRequest<Void, Materialisable, Either<ConceptMap, Materialisation>, ConclusionController> {
+    protected static class MaterialiserRequest extends ConnectionRequest<Void, Materialisable, Either<ConceptMap, Materialisation>> {
 
         public MaterialiserRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
                                    Void controllerId, Materialisable processorId) {
             super(inputId, controllerId, processorId);
-        }
-
-        @Override
-        public Connector<Materialisable, Either<ConceptMap, Materialisation>> createConnector(ConclusionController controller) {
-            return new Connector<>(controller.materialisationController(), this);
         }
 
     }

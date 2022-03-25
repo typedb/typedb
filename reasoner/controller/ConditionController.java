@@ -58,11 +58,6 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
         );
     }
 
-    @Override
-    public ConditionController getThis() {
-        return this;
-    }
-
     protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<Either<ConceptMap, Materialisation>, ConditionController, ConditionProcessor>{
         protected ConditionProcessor(Driver<ConditionProcessor> driver, Driver<ConditionController> controller,
                                      Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,

@@ -69,7 +69,20 @@ public abstract class DisjunctionController<
         });
     }
 
-    protected Driver<NestedConjunctionController> conjunctionProvider(Conjunction conjunction) {
+    @Override
+    protected void resolveController(ConnectionRequest<?, ?, ConceptMap> connectionRequest) {
+        if (isTerminated()) return;
+        if (connectionRequest instanceof NestedConjunctionRequest) {
+            NestedConjunctionRequest r = (NestedConjunctionRequest) connectionRequest;
+            Connector<ConceptMap, ConceptMap> connector = new Connector<>(r.inputId(), r.bounds())
+                    .withMap(c -> merge(c, r.bounds()));
+            getConjunctionController(r.controllerId()).execute(actor -> actor.resolveProcessor(connector));
+        } else {
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
+    }
+
+    protected Driver<NestedConjunctionController> getConjunctionController(Conjunction conjunction) {
         // TODO: Only necessary because conjunction equality is not well defined
         Optional<Driver<NestedConjunctionController>> controller =
                 iterate(conjunctionControllers).filter(p -> p.first() == conjunction).map(Pair::second).first();
@@ -77,19 +90,13 @@ public abstract class DisjunctionController<
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private static class NestedConjunctionRequest<P extends DisjunctionProcessor<C, P>, C extends DisjunctionController<P, C>>
-            extends ConnectionRequest<Conjunction, ConceptMap, ConceptMap, C> {
+    private static class NestedConjunctionRequest extends ConnectionRequest<Conjunction, ConceptMap, ConceptMap> {
 
         protected NestedConjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Conjunction controllerId,
                                            ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }
 
-        @Override
-        public Connector<ConceptMap, ConceptMap> createConnector(C controller) {
-            return new Connector<>(controller.conjunctionProvider(controllerId()), this)
-                    .withMap(c -> merge(c, bounds()));
-        }
     }
 
     protected static abstract class DisjunctionProcessor<
@@ -118,7 +125,7 @@ public abstract class DisjunctionController<
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();
-                requestConnection(new DisjunctionController.NestedConjunctionRequest<>(
+                requestConnection(new DisjunctionController.NestedConjunctionRequest(
                         input.identifier(), conjunction, bounds.filter(retrievableConjunctionVars)));
             }
             fanIn.finaliseProviders();

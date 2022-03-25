@@ -59,11 +59,6 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
     }
 
     @Override
-    public RootConjunctionController getThis() {
-        return this;
-    }
-
-    @Override
     Set<Concludable> concludablesTriggeringRules() {
         return Iterators.iterate(Concludable.create(conjunction))
                 .filter(c -> c.getApplicableRules(registry().conceptManager(), registry().logicManager()).hasNext())

@@ -61,8 +61,8 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     }
 
     @Override
-    public RetrievableController getThis() {
-        return this;
+    protected void resolveController(ConnectionRequest<?, ?, Void> connectionRequest) {
+        // Nothing to do
     }
 
     protected static class RetrievableProcessor extends Processor<Void, ConceptMap, RetrievableController, RetrievableProcessor> {

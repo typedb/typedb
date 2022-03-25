@@ -102,26 +102,22 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         );
     }
 
-    private Driver<ConclusionController> conclusionProvider(Conclusion conclusion) {
-        return conclusionControllers.get(conclusion);
-    }
-
     @Override
-    public ConcludableController getThis() {
-        return this;
+    protected void resolveController(ConnectionRequest<?, ?, Map<Variable, Concept>> connectionRequest) {
+        if (isTerminated()) return;
+        assert connectionRequest instanceof ConclusionRequest;
+        ConclusionRequest r = (ConclusionRequest) connectionRequest;
+        Connector<ConceptMap, Map<Variable, Concept>> connector = new Connector<>(r.inputId(), r.bounds());
+        conclusionControllers.get(r.controllerId()).execute(actor -> actor.resolveProcessor(connector));
     }
 
-    protected static class ConclusionRequest extends ConnectionRequest<Conclusion, ConceptMap, Map<Variable, Concept>, ConcludableController> {
+    protected static class ConclusionRequest extends ConnectionRequest<Conclusion, ConceptMap, Map<Variable, Concept>> {
 
         public ConclusionRequest(Reactive.Identifier<Map<Variable, Concept>, ?> inputId,
                                  Conclusion controllerId, ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }
 
-        @Override
-        public Connector<ConceptMap, Map<Variable, Concept>> createConnector(ConcludableController controller) {
-            return new Connector<>(controller.conclusionProvider(controllerId()), this);
-        }
     }
 
     protected static class ConcludableProcessor extends Processor<Map<Variable, Concept>, ConceptMap, ConcludableController, ConcludableProcessor> {

@@ -44,11 +44,6 @@ public class NestedDisjunctionController
         );
     }
 
-    @Override
-    public NestedDisjunctionController getThis() {
-        return this;
-    }
-
     protected static class NestedDisjunctionProcessor
             extends DisjunctionController.DisjunctionProcessor<NestedDisjunctionController, NestedDisjunctionProcessor> {
 

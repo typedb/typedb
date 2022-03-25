@@ -107,78 +107,79 @@ public abstract class ConjunctionController<OUTPUT,
         return plan;
     }
 
-    protected ResolverView.FilteredRetrievable retrievableProvider(Retrievable retrievable) {
-        return retrievableControllers.get(retrievable);
-    }
-
-    protected ResolverView.MappedConcludable concludableProvider(Concludable concludable) {
-        return concludableControllers.get(concludable);
-    }
-
-    protected ResolverView.FilteredNegation negationProvider(Negated negated) {
-        return negationControllers.get(negated);
-    }
-
     protected static ConceptMap merge(ConceptMap c1, ConceptMap c2) {
         Map<Variable.Retrievable, Concept> compounded = new HashMap<>(c1.concepts());
         compounded.putAll(c2.concepts());
         return new ConceptMap(compounded);
     }
 
-    static class RetrievableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
-            extends ConnectionRequest<Retrievable, ConceptMap, ConceptMap, C> {
+    @Override
+    protected void resolveController(ConnectionRequest<?, ?, ConceptMap> connectionRequest) {
+        if (isTerminated()) return;
+        if (connectionRequest instanceof RetrievableRequest) {
+            RetrievableRequest r = (RetrievableRequest) connectionRequest;
+            ResolverView.FilteredRetrievable controllerView = retrievableControllers.get(r.controllerId());
+            ConceptMap newPID = r.bounds().filter(controllerView.filter());
+            Connector<ConceptMap, ConceptMap> connector = new Connector<>(r.inputId(), r.bounds())
+                    .withMap(c -> merge(c, r.bounds()))
+                    .withNewBounds(newPID);
+            controllerView.controller().execute(actor -> actor.resolveProcessor(connector));
+        } else if (connectionRequest instanceof ConcludableRequest) {
+            ConcludableRequest r = (ConcludableRequest) connectionRequest;
+            ResolverView.MappedConcludable controllerView = concludableControllers.get(r.controllerId());
+            Mapping mapping = Mapping.of(controllerView.mapping());
+            ConceptMap newPID = mapping.transform(r.bounds());
+            Connector<ConceptMap, ConceptMap> connector = new Connector<>(r.inputId(), r.bounds())
+                    .withMap(mapping::unTransform)
+                    .withNewBounds(newPID);
+            controllerView.controller().execute(actor -> actor.resolveProcessor(connector));
+        } else if (connectionRequest instanceof NegatedRequest) {
+            NegatedRequest r = (NegatedRequest) connectionRequest;
+            ResolverView.FilteredNegation controllerView = negationControllers.get(r.controllerId());
+            ConceptMap newPID = r.bounds().filter(controllerView.filter());
+            Connector<ConceptMap, ConceptMap> connector = new Connector<>(r.inputId(), r.bounds())
+                    .withMap(c -> merge(c, r.bounds()))
+                    .withNewBounds(newPID);
+            controllerView.controller().execute(actor -> actor.resolveProcessor(connector));
+        } else {
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
+    }
+
+    public static class ConjunctionRequest<CONTROLLER_ID> extends ConnectionRequest<CONTROLLER_ID, ConceptMap, ConceptMap> {
+        // TODO: This parent class is unneeded unless it helps us to cast its children
+        protected ConjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, CONTROLLER_ID controller_id,
+                                     ConceptMap conceptMap) {
+            super(inputId, controller_id, conceptMap);
+        }
+    }
+
+    public static class RetrievableRequest extends ConjunctionRequest<Retrievable> {
 
         public RetrievableRequest(Reactive.Identifier<ConceptMap, ?> inputId, Retrievable controllerId,
                                   ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }
 
-        @Override
-        public Connector<ConceptMap, ConceptMap> createConnector(C controller) {
-            ResolverView.FilteredRetrievable controllerView = controller.retrievableProvider(controllerId());
-            ConceptMap newPID = bounds().filter(controllerView.filter());
-            return new Connector<>(controllerView.controller(), this)
-                    .withMap(c -> merge(c, bounds()))
-                    .withNewBounds(newPID);
-        }
     }
 
-    static class ConcludableRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
-            extends ConnectionRequest<Concludable, ConceptMap, ConceptMap, C> {
+    static class ConcludableRequest extends ConjunctionRequest<Concludable> {
 
         public ConcludableRequest(Reactive.Identifier<ConceptMap, ?> inputId, Concludable controllerId,
                                   ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }
 
-        @Override
-        public Connector<ConceptMap, ConceptMap> createConnector(C controller) {
-            ResolverView.MappedConcludable controllerView = controller.concludableProvider(controllerId());
-            Mapping mapping = Mapping.of(controllerView.mapping());
-            ConceptMap newPID = mapping.transform(bounds());
-            return new Connector<>(controllerView.controller(), this)
-                    .withMap(mapping::unTransform)
-                    .withNewBounds(newPID);
-        }
     }
 
-    // TODO: Negated request or Negation?
-    static class NegatedRequest<P extends Processor<ConceptMap, ?, ?, P>, C extends ConjunctionController<?, C, P>>
-            extends ConnectionRequest<Negated, ConceptMap, ConceptMap, C> {
+    // TODO: Negated or Negation request?
+    static class NegatedRequest extends ConjunctionRequest<Negated> {
 
         protected NegatedRequest(Reactive.Identifier<ConceptMap, ?> inputId, Negated controllerId,
                                  ConceptMap processorId) {
             super(inputId, controllerId, processorId);
         }
 
-        @Override
-        public Connector<ConceptMap, ConceptMap> createConnector(C controller) {
-            ResolverView.FilteredNegation controllerView = controller.negationProvider(controllerId());
-            ConceptMap newPID = bounds().filter(controllerView.filter());
-            return new Connector<>(controllerView.controller(), this)
-                    .withMap(c -> merge(c, bounds()))
-                    .withNewBounds(newPID);
-        }
     }
 
     protected static abstract class ConjunctionProcessor<OUTPUT,
@@ -200,14 +201,14 @@ public abstract class ConjunctionController<OUTPUT,
             // TODO: Rethink this ugly structure for compound reactives
             Input<ConceptMap> input = createInput();
             if (planElement.isRetrievable()) {
-                requestConnection(new RetrievableRequest<>(input.identifier(), planElement.asRetrievable(),
-                                                           carriedBounds.filter(planElement.retrieves())));
+                requestConnection(new RetrievableRequest(input.identifier(), planElement.asRetrievable(),
+                                                         carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isConcludable()) {
-                requestConnection(new ConcludableRequest<>(input.identifier(), planElement.asConcludable(),
-                                                           carriedBounds.filter(planElement.retrieves())));
+                requestConnection(new ConcludableRequest(input.identifier(), planElement.asConcludable(),
+                                                         carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isNegated()) {
-                requestConnection(new NegatedRequest<>(input.identifier(), planElement.asNegated(),
-                                                       carriedBounds.filter(planElement.retrieves())));
+                requestConnection(new NegatedRequest(input.identifier(), planElement.asNegated(),
+                                                     carriedBounds.filter(planElement.retrieves())));
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
