@@ -561,9 +561,9 @@ public class CoreDatabase implements TypeDB.Database {
         private final ConcurrentSet<CompletableFuture<Void>> corrections;
         private final ConcurrentSet<Long> deletedTxnIDs;
         private final AtomicBoolean correctionRequired;
-        private CoreSession.Data session;
+        protected CoreSession.Data session;
 
-        StatisticsCorrector() {
+        protected StatisticsCorrector() {
             corrections = new ConcurrentSet<>();
             deletedTxnIDs = new ConcurrentSet<>();
             correctionRequired = new AtomicBoolean(false);
@@ -644,41 +644,45 @@ public class CoreDatabase implements TypeDB.Database {
          * Scan through all attributes that may need to be corrected (eg. have been over/under counted),
          * and correct them if we have enough information to do so.
          */
-        private void correctMiscounts() {
+        protected void correctMiscounts() {
             // note: take copy before open a snapshotted transaction
-            Set<Long> deletableTxnIDs = new HashSet<>(deletedTxnIDs);
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
-                boolean[] modified = new boolean[]{false};
-                boolean[] miscountCorrected = new boolean[]{false};
-                Set<Long> openTxnIDs = isolationMgr.getNotCommitted().map(t -> t.id).toSet();
-                txn.dataStorage.iterate(StatisticsKey.Miscountable.prefix()).forEachRemaining(kv -> {
-                    StatisticsKey.Miscountable item = kv.key();
-                    List<Long> txnIDsCausingMiscount = kv.value().decodeLongs();
+                correctMiscounts(txn);
+            }
+        }
 
-                    if (anyCommitted(txnIDsCausingMiscount, txn.dataStorage)) {
-                        correctMiscount(item, txn);
-                        miscountCorrected[0] = true;
-                        txn.dataStorage.deleteUntracked(item);
-                        modified[0] = true;
-                    } else if (noneOpen(txnIDsCausingMiscount, openTxnIDs)) {
-                        txn.dataStorage.deleteUntracked(item);
-                        modified[0] = true;
-                    } else {
-                        // transaction IDs causing miscount are not deletable
-                        deletableTxnIDs.removeAll(txnIDsCausingMiscount);
-                    }
-                });
-                if (!deletableTxnIDs.isEmpty()) {
-                    for (Long txnID : deletableTxnIDs) {
-                        txn.dataStorage.deleteUntracked(StatisticsKey.txnCommitted(txnID));
-                    }
-                    deletedTxnIDs.removeAll(deletableTxnIDs);
+        protected void correctMiscounts(CoreTransaction.Data txn) {
+            Set<Long> deletableTxnIDs = new HashSet<>(deletedTxnIDs);
+            boolean[] modified = new boolean[]{false};
+            boolean[] miscountCorrected = new boolean[]{false};
+            Set<Long> openTxnIDs = isolationMgr.getNotCommitted().map(t -> t.id).toSet();
+            txn.dataStorage.iterate(StatisticsKey.Miscountable.prefix()).forEachRemaining(kv -> {
+                StatisticsKey.Miscountable item = kv.key();
+                List<Long> txnIDsCausingMiscount = kv.value().decodeLongs();
+
+                if (anyCommitted(txnIDsCausingMiscount, txn.dataStorage)) {
+                    correctMiscount(item, txn);
+                    miscountCorrected[0] = true;
+                    txn.dataStorage.deleteUntracked(item);
                     modified[0] = true;
+                } else if (noneOpen(txnIDsCausingMiscount, openTxnIDs)) {
+                    txn.dataStorage.deleteUntracked(item);
+                    modified[0] = true;
+                } else {
+                    // transaction IDs causing miscount are not deletable
+                    deletableTxnIDs.removeAll(txnIDsCausingMiscount);
                 }
-                if (modified[0]) {
-                    if (miscountCorrected[0]) txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
-                    txn.commit();
+            });
+            if (!deletableTxnIDs.isEmpty()) {
+                for (Long txnID : deletableTxnIDs) {
+                    txn.dataStorage.deleteUntracked(StatisticsKey.txnCommitted(txnID));
                 }
+                deletedTxnIDs.removeAll(deletableTxnIDs);
+                modified[0] = true;
+            }
+            if (modified[0]) {
+                if (miscountCorrected[0]) txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
+                txn.commit();
             }
         }
 
