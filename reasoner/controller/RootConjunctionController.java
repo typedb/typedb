@@ -51,6 +51,12 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
     }
 
     @Override
+    public void initialise() {
+        setUpUpstreamControllers();
+        createProcessorIfAbsent(new ConceptMap());
+    }
+
+    @Override
     protected RootConjunctionProcessor createProcessorFromDriver(Driver<RootConjunctionProcessor> processorDriver, ConceptMap bounds) {
         return new RootConjunctionProcessor(
                 processorDriver, driver(), monitor, bounds, plan(), filter, reasonerConsumer,

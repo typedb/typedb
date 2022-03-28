@@ -48,6 +48,12 @@ public class RootDisjunctionController
     }
 
     @Override
+    public void initialise() {
+        setUpUpstreamControllers();
+        createProcessorIfAbsent(new ConceptMap());
+    }
+
+    @Override
     protected RootDisjunctionProcessor createProcessorFromDriver(Driver<RootDisjunctionProcessor> processorDriver, ConceptMap bounds) {
         return new RootDisjunctionProcessor(
                 processorDriver, driver(), monitor, disjunction, bounds, filter, reasonerConsumer,

@@ -55,7 +55,11 @@ public abstract class Controller<
         this.registry = registry;
     }
 
-    public abstract void setUpUpstreamControllers();
+    public void initialise() {
+        setUpUpstreamControllers();
+    }
+
+    protected abstract void setUpUpstreamControllers();
 
     protected Registry registry() {
         return registry;

@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.ConceptManager;
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.LogicManager;
@@ -126,8 +125,7 @@ public class Registry {
         Actor.Driver<RootConjunctionController> controller =
                 Actor.driver(driver -> new RootConjunctionController(driver, conjunction, filter, executorService,
                                                                      monitor, this, reasonerConsumer), executorService);
-        controller.execute(RootConjunctionController::setUpUpstreamControllers);  // TODO Wrap these two initialisation steps in an initialise method to give a higher level story here
-        controller.execute(actor -> actor.createProcessorIfAbsent(new ConceptMap()));
+        controller.execute(RootConjunctionController::initialise);
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
     }
@@ -139,8 +137,7 @@ public class Registry {
         Actor.Driver<RootDisjunctionController> controller =
                 Actor.driver(driver -> new RootDisjunctionController(driver, disjunction, filter, executorService,
                                                                      monitor, this, reasonerConsumer), executorService);
-        controller.execute(RootDisjunctionController::setUpUpstreamControllers);
-        controller.execute(actor -> actor.createProcessorIfAbsent(new ConceptMap()));
+        controller.execute(RootDisjunctionController::initialise);
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
@@ -151,7 +148,7 @@ public class Registry {
         Actor.Driver<NestedConjunctionController> controller =
                 Actor.driver(driver -> new NestedConjunctionController(driver, conjunction, executorService, monitor, this),
                              executorService);
-        controller.execute(ConjunctionController::setUpUpstreamControllers);
+        controller.execute(ConjunctionController::initialise);
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
@@ -162,7 +159,7 @@ public class Registry {
         Actor.Driver<NestedDisjunctionController> controller =
                 Actor.driver(driver -> new NestedDisjunctionController(driver, disjunction, executorService, monitor, this),
                              executorService);
-        controller.execute(NestedDisjunctionController::setUpUpstreamControllers);
+        controller.execute(NestedDisjunctionController::initialise);
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
@@ -179,7 +176,7 @@ public class Registry {
             Actor.Driver<ConcludableController> controller =
                     Actor.driver(driver -> new ConcludableController(driver, concludable, executorService, monitor,
                                                                      this), executorService);
-            controller.execute(ConcludableController::setUpUpstreamControllers);
+            controller.execute(ConcludableController::initialise);
             controllerView = ResolverView.concludable(controller, identity(concludable));
             controllers.add(controller);
             concludableControllers.put(concludable, controllerView.controller());
@@ -219,7 +216,7 @@ public class Registry {
         LOG.debug("Creating NegationController for : {}", negated);
         Actor.Driver<NegationController> negationController = Actor.driver(
                 driver -> new NegationController(driver, negated, executorService, monitor, this), executorService);
-        negationController.execute(NegationController::setUpUpstreamControllers);
+        negationController.execute(NegationController::initialise);
         controllers.add(negationController);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         Set<Variable.Retrievable> filter = filter(conjunction, negated);
@@ -239,7 +236,7 @@ public class Registry {
             Actor.Driver<ConclusionController> c = Actor.driver(
                     driver -> new ConclusionController(driver, conclusion, executorService,
                                                        materialisationController, monitor, this), executorService);
-            c.execute(ConclusionController::setUpUpstreamControllers);
+            c.execute(ConclusionController::initialise);
             return c;
         });
         controllers.add(controller);
@@ -252,7 +249,7 @@ public class Registry {
         Actor.Driver<ConditionController> controller = ruleConditions.computeIfAbsent(condition.rule(), r -> {
             Actor.Driver<ConditionController> c = Actor.driver(
                     driver -> new ConditionController(driver, condition, executorService, monitor, this), executorService);
-            c.execute(ConditionController::setUpUpstreamControllers);
+            c.execute(ConditionController::initialise);
             return c;
         });
         controllers.add(controller);

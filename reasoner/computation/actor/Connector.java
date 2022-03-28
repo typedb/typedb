@@ -67,7 +67,7 @@ public class Connector<BOUNDS, PACKET> {
         return new Connector<>(inputId, newBounds, transforms);
     }
 
-    public abstract static class Request<CONTROLLER_ID, BOUNDS, PACKET> {  //TODO: Propagate name change
+    public abstract static class Request<CONTROLLER_ID, BOUNDS, PACKET> {
 
         private final CONTROLLER_ID controllerId;
         private final BOUNDS bounds;
