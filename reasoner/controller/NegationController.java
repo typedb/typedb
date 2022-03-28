@@ -33,7 +33,7 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Supplier;
 
-public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.DisjunctionRequest, NegationController.NegationProcessor, NegationController> {
+public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.NegationProcessor.DisjunctionRequest, NegationController.NegationProcessor, NegationController> {
 
     private final Negated negated;
     private final Driver<Monitor> monitor;
@@ -63,21 +63,12 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
     }
 
     @Override
-    protected void resolveController(DisjunctionRequest req) {
+    protected void resolveController(NegationProcessor.DisjunctionRequest req) {
         if (isTerminated()) return;
         disjunctionContoller.execute(actor -> actor.resolveProcessor(new Connector<>(req.inputId(), req.bounds())));
     }
 
-    protected static class DisjunctionRequest extends Connector.Request<Disjunction, ConceptMap, ConceptMap> {
-
-        protected DisjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Disjunction controllerId,
-                                     ConceptMap processorId) {
-            super(inputId, controllerId, processorId);
-        }
-
-    }
-
-    protected static class NegationProcessor extends Processor<ConceptMap, ConceptMap, DisjunctionRequest, NegationProcessor> {
+    protected static class NegationProcessor extends Processor<ConceptMap, ConceptMap, NegationProcessor.DisjunctionRequest, NegationProcessor> {
 
         private final Negated negated;
         private final ConceptMap bounds;
@@ -144,6 +135,14 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             }
         }
 
+        protected static class DisjunctionRequest extends Connector.Request<Disjunction, ConceptMap, ConceptMap> {
+
+            protected DisjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Disjunction controllerId,
+                                         ConceptMap processorId) {
+                super(inputId, controllerId, processorId);
+            }
+
+        }
     }
 
 }

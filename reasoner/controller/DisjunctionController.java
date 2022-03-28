@@ -48,7 +48,7 @@ import static com.vaticle.typedb.core.reasoner.controller.ConjunctionController.
 public abstract class DisjunctionController<
         PROCESSOR extends DisjunctionController.DisjunctionProcessor<PROCESSOR>,
         CONTROLLER extends DisjunctionController<PROCESSOR, CONTROLLER>>
-        extends Controller<ConceptMap, ConceptMap, ConceptMap, DisjunctionController.NestedConjunctionRequest, PROCESSOR, CONTROLLER> {
+        extends Controller<ConceptMap, ConceptMap, ConceptMap, DisjunctionController.DisjunctionProcessor.NestedConjunctionRequest, PROCESSOR, CONTROLLER> {
 
     private final List<Pair<Conjunction, Driver<NestedConjunctionController>>> conjunctionControllers;
     protected Disjunction disjunction;
@@ -70,7 +70,7 @@ public abstract class DisjunctionController<
     }
 
     @Override
-    protected void resolveController(NestedConjunctionRequest req) {
+    protected void resolveController(DisjunctionProcessor.NestedConjunctionRequest req) {
         if (isTerminated()) return;
         getConjunctionController(req.controllerId())
                 .execute(actor -> actor.resolveProcessor(new Connector<>(req.inputId(), req.bounds())
@@ -85,17 +85,8 @@ public abstract class DisjunctionController<
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    protected static class NestedConjunctionRequest extends Connector.Request<Conjunction, ConceptMap, ConceptMap> {
-
-        protected NestedConjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Conjunction controllerId,
-                                           ConceptMap processorId) {
-            super(inputId, controllerId, processorId);
-        }
-
-    }
-
     protected static abstract class DisjunctionProcessor<PROCESSOR extends DisjunctionProcessor<PROCESSOR>>
-            extends Processor<ConceptMap, ConceptMap, NestedConjunctionRequest, PROCESSOR> {
+            extends Processor<ConceptMap, ConceptMap, DisjunctionProcessor.NestedConjunctionRequest, PROCESSOR> {
 
         private final Disjunction disjunction;
         private final ConceptMap bounds;
@@ -119,7 +110,7 @@ public abstract class DisjunctionController<
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();
-                requestConnection(new DisjunctionController.NestedConjunctionRequest(
+                requestConnection(new NestedConjunctionRequest(
                         input.identifier(), conjunction, bounds.filter(retrievableConjunctionVars)));
             }
             fanIn.finaliseProviders();
@@ -130,6 +121,14 @@ public abstract class DisjunctionController<
             return fanIn.buffer();
         }
 
+        protected static class NestedConjunctionRequest extends Connector.Request<Conjunction, ConceptMap, ConceptMap> {
+
+            protected NestedConjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Conjunction controllerId,
+                                               ConceptMap processorId) {
+                super(inputId, controllerId, processorId);
+            }
+
+        }
     }
 
 }

@@ -35,8 +35,8 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverSingleProviderStream;
-import com.vaticle.typedb.core.reasoner.controller.ConclusionController.FromConclusionRequest.ConditionRequest;
-import com.vaticle.typedb.core.reasoner.controller.ConclusionController.FromConclusionRequest.MaterialiserRequest;
+import com.vaticle.typedb.core.reasoner.controller.ConclusionController.ConclusionProcessor.ConditionRequest;
+import com.vaticle.typedb.core.reasoner.controller.ConclusionController.ConclusionProcessor.MaterialiserRequest;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -113,43 +113,6 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
-        protected static class ConditionRequest extends FromConclusionRequest<Rule.Condition, ConceptMap> {
-
-            public ConditionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
-                                    Rule.Condition controllerId, ConceptMap processorId) {
-                super(inputId, controllerId, processorId);
-            }
-
-            @Override
-            public boolean isCondition() {
-                return true;
-            }
-
-            @Override
-            public ConditionRequest asCondition() {
-                return this;
-            }
-
-        }
-
-        protected static class MaterialiserRequest extends FromConclusionRequest<Void, Materialisable> {
-
-            public MaterialiserRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
-                                       Void controllerId, Materialisable processorId) {
-                super(inputId, controllerId, processorId);
-            }
-
-            @Override
-            public boolean isMaterialiser() {
-                return true;
-            }
-
-            @Override
-            public MaterialiserRequest asMaterialiser() {
-                return this;
-            }
-
-        }
     }
 
     protected static class ConclusionProcessor extends Processor<Either<ConceptMap, Materialisation>, Map<Variable, Concept>, FromConclusionRequest<?, ?>, ConclusionProcessor> {
@@ -275,6 +238,44 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 super.receive(publisher, packet);
                 receiverRegistry().setNotPulling();
                 parent.receiveMaterialisation(this, packet);
+            }
+
+        }
+
+        protected static class ConditionRequest extends FromConclusionRequest<Rule.Condition, ConceptMap> {
+
+            public ConditionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
+                                    Rule.Condition controllerId, ConceptMap processorId) {
+                super(inputId, controllerId, processorId);
+            }
+
+            @Override
+            public boolean isCondition() {
+                return true;
+            }
+
+            @Override
+            public ConditionRequest asCondition() {
+                return this;
+            }
+
+        }
+
+        protected static class MaterialiserRequest extends FromConclusionRequest<Void, Materialisable> {
+
+            public MaterialiserRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
+                                       Void controllerId, Materialisable processorId) {
+                super(inputId, controllerId, processorId);
+            }
+
+            @Override
+            public boolean isMaterialiser() {
+                return true;
+            }
+
+            @Override
+            public MaterialiserRequest asMaterialiser() {
+                return this;
             }
 
         }

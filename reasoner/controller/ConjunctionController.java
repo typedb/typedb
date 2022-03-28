@@ -117,7 +117,7 @@ public abstract class ConjunctionController<OUTPUT,
     protected void resolveController(FromConjunctionRequest<?> connectionRequest) {
         if (isTerminated()) return;
         if (connectionRequest.isRetrievable()) {
-            FromConjunctionRequest.RetrievableRequest req = connectionRequest.asRetrievable();
+            ConjunctionProcessor.RetrievableRequest req = connectionRequest.asRetrievable();
             ResolverView.FilteredRetrievable controllerView = retrievableControllers.get(req.controllerId());
             ConceptMap newPID = req.bounds().filter(controllerView.filter());
             Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
@@ -125,7 +125,7 @@ public abstract class ConjunctionController<OUTPUT,
                     .withNewBounds(newPID);
             controllerView.controller().execute(actor -> actor.resolveProcessor(connector));
         } else if (connectionRequest.isConcludable()) {
-            FromConjunctionRequest.ConcludableRequest req = connectionRequest.asConcludable();
+            ConjunctionProcessor.ConcludableRequest req = connectionRequest.asConcludable();
             ResolverView.MappedConcludable controllerView = concludableControllers.get(req.controllerId());
             Mapping mapping = Mapping.of(controllerView.mapping());
             ConceptMap newPID = mapping.transform(req.bounds());
@@ -134,7 +134,7 @@ public abstract class ConjunctionController<OUTPUT,
                     .withNewBounds(newPID);
             controllerView.controller().execute(actor -> actor.resolveProcessor(connector));
         } else if (connectionRequest.isNegated()) {
-            FromConjunctionRequest.NegatedRequest req = connectionRequest.asNegated();
+            ConjunctionProcessor.NegatedRequest req = connectionRequest.asNegated();
             ResolverView.FilteredNegation controllerView = negationControllers.get(req.controllerId());
             ConceptMap newPID = req.bounds().filter(controllerView.filter());
             Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
@@ -157,7 +157,7 @@ public abstract class ConjunctionController<OUTPUT,
             return false;
         }
 
-        public RetrievableRequest asRetrievable() {
+        public ConjunctionProcessor.RetrievableRequest asRetrievable() {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
@@ -165,7 +165,7 @@ public abstract class ConjunctionController<OUTPUT,
             return false;
         }
 
-        public ConcludableRequest asConcludable() {
+        public ConjunctionProcessor.ConcludableRequest asConcludable() {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
@@ -173,8 +173,42 @@ public abstract class ConjunctionController<OUTPUT,
             return false;
         }
 
-        public NegatedRequest asNegated() {
+        public ConjunctionProcessor.NegatedRequest asNegated() {
             throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+    }
+
+    protected static abstract class ConjunctionProcessor<OUTPUT, PROCESSOR extends ConjunctionProcessor<OUTPUT, PROCESSOR>>
+            extends Processor<ConceptMap, OUTPUT, FromConjunctionRequest<?>, PROCESSOR> {
+        protected final ConceptMap bounds;
+        protected final List<Resolvable<?>> plan;
+
+        protected ConjunctionProcessor(Driver<PROCESSOR> driver,
+                                       Driver<? extends ConjunctionController<OUTPUT, ?, PROCESSOR>> controller,
+                                       Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
+                                       Supplier<String> debugName) {
+            super(driver, controller, monitor, debugName);
+            this.bounds = bounds;
+            this.plan = plan;
+        }
+
+        protected Input<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
+            // TODO: Rethink this ugly structure for compound reactives
+            Input<ConceptMap> input = createInput();
+            if (planElement.isRetrievable()) {
+                requestConnection(new RetrievableRequest(input.identifier(), planElement.asRetrievable(),
+                                                         carriedBounds.filter(planElement.retrieves())));
+            } else if (planElement.isConcludable()) {
+                requestConnection(new ConcludableRequest(input.identifier(), planElement.asConcludable(),
+                                                         carriedBounds.filter(planElement.retrieves())));
+            } else if (planElement.isNegated()) {
+                requestConnection(new NegatedRequest(input.identifier(), planElement.asNegated(),
+                                                     carriedBounds.filter(planElement.retrieves())));
+            } else {
+                throw TypeDBException.of(ILLEGAL_STATE);
+            }
+            return input;
         }
 
         public static class RetrievableRequest extends FromConjunctionRequest<Retrievable> {
@@ -230,40 +264,6 @@ public abstract class ConjunctionController<OUTPUT,
             }
 
         }
-    }
-
-    protected static abstract class ConjunctionProcessor<OUTPUT, PROCESSOR extends ConjunctionProcessor<OUTPUT, PROCESSOR>>
-            extends Processor<ConceptMap, OUTPUT, FromConjunctionRequest<?>, PROCESSOR> {
-        protected final ConceptMap bounds;
-        protected final List<Resolvable<?>> plan;
-
-        protected ConjunctionProcessor(Driver<PROCESSOR> driver,
-                                       Driver<? extends ConjunctionController<OUTPUT, ?, PROCESSOR>> controller,
-                                       Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
-                                       Supplier<String> debugName) {
-            super(driver, controller, monitor, debugName);
-            this.bounds = bounds;
-            this.plan = plan;
-        }
-
-        protected Input<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
-            // TODO: Rethink this ugly structure for compound reactives
-            Input<ConceptMap> input = createInput();
-            if (planElement.isRetrievable()) {
-                requestConnection(new FromConjunctionRequest.RetrievableRequest(input.identifier(), planElement.asRetrievable(),
-                                                                                carriedBounds.filter(planElement.retrieves())));
-            } else if (planElement.isConcludable()) {
-                requestConnection(new FromConjunctionRequest.ConcludableRequest(input.identifier(), planElement.asConcludable(),
-                                                                                carriedBounds.filter(planElement.retrieves())));
-            } else if (planElement.isNegated()) {
-                requestConnection(new FromConjunctionRequest.NegatedRequest(input.identifier(), planElement.asNegated(),
-                                                                            carriedBounds.filter(planElement.retrieves())));
-            } else {
-                throw TypeDBException.of(ILLEGAL_STATE);
-            }
-            return input;
-        }
-
     }
 
 }
