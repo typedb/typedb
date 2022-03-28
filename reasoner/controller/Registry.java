@@ -119,8 +119,8 @@ public class Registry {
         }
     }
 
-    public void createRootConjunctionController(Conjunction conjunction, Set<Variable.Retrievable> filter,
-                                                ReasonerConsumer reasonerConsumer) {
+    public void registerRootConjunctionController(Conjunction conjunction, Set<Variable.Retrievable> filter,
+                                                  ReasonerConsumer reasonerConsumer) {
         LOG.debug("Creating Root Conjunction for: '{}'", conjunction);
         Actor.Driver<RootConjunctionController> controller =
                 Actor.driver(driver -> new RootConjunctionController(driver, conjunction, filter, executorService,
@@ -130,9 +130,9 @@ public class Registry {
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
     }
 
-    public Actor.Driver<RootDisjunctionController> createRootDisjunctionController(Disjunction disjunction,
-                                                                                   Set<Variable.Retrievable> filter,
-                                                                                   ReasonerConsumer reasonerConsumer) {
+    public void registerRootDisjunctionController(Disjunction disjunction,
+                                                  Set<Variable.Retrievable> filter,
+                                                  ReasonerConsumer reasonerConsumer) {
         LOG.debug("Creating Root Disjunction for: '{}'", disjunction);
         Actor.Driver<RootDisjunctionController> controller =
                 Actor.driver(driver -> new RootDisjunctionController(driver, disjunction, filter, executorService,
@@ -140,7 +140,6 @@ public class Registry {
         controller.execute(RootDisjunctionController::initialise);
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-        return controller;
     }
 
     public Actor.Driver<NestedConjunctionController> registerNestedConjunctionController(Conjunction conjunction) {

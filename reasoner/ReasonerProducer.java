@@ -59,7 +59,7 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
         this.done = false;
         this.required = new AtomicInteger();
         this.isPulling = false;
-        this.controllerRegistry.createRootConjunctionController(conjunction, filter, this);  // TODO: Doesn't indicate that this also triggers the setup of the upstream controllers and creates a processor and connects if back to this producer. Clean up this storyline.
+        this.controllerRegistry.registerRootConjunctionController(conjunction, filter, this);  // TODO: Doesn't indicate that this also triggers the setup of the upstream controllers and creates a processor and connects if back to this producer. Clean up this storyline.
         if (options.traceInference()) {
             Tracer.initialise(options.reasonerDebuggerDir());
             Tracer.get().startDefaultTrace();
@@ -75,7 +75,7 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
         this.done = false;
         this.required = new AtomicInteger();
         this.isPulling = false;
-        this.controllerRegistry.createRootDisjunctionController(disjunction, filter, this);
+        this.controllerRegistry.registerRootDisjunctionController(disjunction, filter, this);
         if (options.traceInference()) {
             Tracer.initialise(options.reasonerDebuggerDir());
             Tracer.get().startDefaultTrace();

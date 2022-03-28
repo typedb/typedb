@@ -147,7 +147,6 @@ public abstract class ConjunctionController<OUTPUT,
     }
 
     public static class FromConjunctionRequest<CONTROLLER_ID> extends Connector.Request<CONTROLLER_ID, ConceptMap, ConceptMap> {
-        // TODO: This parent class is unneeded unless it helps us to cast its children
         protected FromConjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, CONTROLLER_ID controller_id,
                                          ConceptMap conceptMap) {
             super(inputId, controller_id, conceptMap);
