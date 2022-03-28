@@ -210,8 +210,9 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         void addProvider(Identifier<?, PACKET> providerOutputId) {
-            processor().monitor().execute(actor -> actor.registerPath(identifier(), providerOutputId));
-            providerRegistry().add(providerOutputId);
+            if (providerRegistry().add(providerOutputId)) {
+                processor().monitor().execute(actor -> actor.registerPath(identifier(), providerOutputId));
+            }
             assert !ready;
             this.ready = true;
         }
@@ -293,8 +294,9 @@ public abstract class Processor<INPUT, OUTPUT,
 
         @Override
         public void registerPublisher(Publisher<PACKET> provider) {
-            processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
-            providerRegistry().add(provider);
+            if (providerRegistry().add(provider)) {
+                processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
+            }
             if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
         }
 

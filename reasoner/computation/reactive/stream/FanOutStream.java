@@ -102,8 +102,9 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
 
     @Override
     public void registerPublisher(Publisher<PACKET> provider) {
-        processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
-        providerRegistry().add(provider);
+        if (providerRegistry().add(provider)) {
+            processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
+        }
         if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
     }
 

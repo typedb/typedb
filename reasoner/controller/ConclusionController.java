@@ -233,8 +233,9 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 );
                 Stream<?, Map<Variable, Concept>> op = materialisationInput.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
                 MaterialisationReactive materialisationReactive = new MaterialisationReactive(this, processor());
-                processor().monitor().execute(actor -> actor.registerPath(identifier(), materialisationReactive.identifier()));
-                materialisationRegistry().add(materialisationReactive);
+                if (materialisationRegistry().add(materialisationReactive)) {
+                    processor().monitor().execute(actor -> actor.registerPath(receiverRegistry().receiver().identifier(), materialisationReactive.identifier()));
+                }
                 op.registerSubscriber(materialisationReactive);
                 materialisationReactive.sendTo(receiverRegistry().receiver());
 

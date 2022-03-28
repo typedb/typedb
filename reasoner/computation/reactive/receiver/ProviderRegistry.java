@@ -33,7 +33,7 @@ public abstract class ProviderRegistry<PROVIDER> {
         this.processor = processor;
     }
 
-    public abstract void add(PROVIDER provider);
+    public abstract boolean add(PROVIDER provider);
 
     public abstract void recordReceive(PROVIDER provider);
 
@@ -49,10 +49,12 @@ public abstract class ProviderRegistry<PROVIDER> {
         }
 
         @Override
-        public void add(PROVIDER provider) {
+        public boolean add(PROVIDER provider) {
             assert provider != null;
             assert this.provider == null || provider == this.provider;  // TODO: Tighten this to allow adding only once
+            boolean isNew = this.provider == null;
             this.provider = provider;
+            return isNew;
         }
 
         public boolean setPulling() {
@@ -83,9 +85,9 @@ public abstract class ProviderRegistry<PROVIDER> {
         }
 
         @Override
-        public void add(PROVIDER provider) {
+        public boolean add(PROVIDER provider) {
             assert provider != null;
-            providerPullState.putIfAbsent(provider, false);
+            return providerPullState.putIfAbsent(provider, false) == null;
         }
 
         @Override
