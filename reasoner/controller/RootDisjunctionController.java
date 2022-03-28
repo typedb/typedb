@@ -61,8 +61,7 @@ public class RootDisjunctionController
         reasonerConsumer.exception(e);
     }
 
-    protected static class RootDisjunctionProcessor
-            extends DisjunctionController.DisjunctionProcessor<RootDisjunctionController, RootDisjunctionProcessor> {
+    protected static class RootDisjunctionProcessor extends DisjunctionController.DisjunctionProcessor<RootDisjunctionProcessor> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
         private final ReasonerConsumer reasonerConsumer;

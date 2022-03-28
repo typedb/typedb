@@ -71,7 +71,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         reasonerConsumer.exception(e);
     }
 
-    protected static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, RootConjunctionController, RootConjunctionProcessor> {
+    protected static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, RootConjunctionProcessor> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
         private RootSink rootSink;

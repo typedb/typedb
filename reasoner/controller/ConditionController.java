@@ -58,7 +58,7 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
         );
     }
 
-    protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<Either<ConceptMap, Materialisation>, ConditionController, ConditionProcessor>{
+    protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<Either<ConceptMap, Materialisation>, ConditionProcessor>{
         protected ConditionProcessor(Driver<ConditionProcessor> driver, Driver<ConditionController> controller,
                                      Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
                                      Supplier<String> debugName) {

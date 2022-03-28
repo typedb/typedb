@@ -45,7 +45,7 @@ public class NestedDisjunctionController
     }
 
     protected static class NestedDisjunctionProcessor
-            extends DisjunctionController.DisjunctionProcessor<NestedDisjunctionController, NestedDisjunctionProcessor> {
+            extends DisjunctionController.DisjunctionProcessor<NestedDisjunctionProcessor> {
 
         protected NestedDisjunctionProcessor(Driver<NestedDisjunctionProcessor> driver,
                                              Driver<NestedDisjunctionController> controller, Driver<Monitor> monitor,

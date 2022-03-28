@@ -46,7 +46,7 @@ import static com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanIn
 import static com.vaticle.typedb.core.reasoner.controller.ConjunctionController.merge;
 
 public abstract class DisjunctionController<
-        PROCESSOR extends DisjunctionController.DisjunctionProcessor<CONTROLLER, PROCESSOR>,
+        PROCESSOR extends DisjunctionController.DisjunctionProcessor<PROCESSOR>,
         CONTROLLER extends DisjunctionController<PROCESSOR, CONTROLLER>>
         extends Controller<ConceptMap, ConceptMap, ConceptMap, DisjunctionController.NestedConjunctionRequest, PROCESSOR, CONTROLLER> {
 
@@ -94,15 +94,14 @@ public abstract class DisjunctionController<
 
     }
 
-    protected static abstract class DisjunctionProcessor<
-            CONTROLLER extends DisjunctionController<PROCESSOR, CONTROLLER>,
-            PROCESSOR extends DisjunctionProcessor<CONTROLLER, PROCESSOR>>
+    protected static abstract class DisjunctionProcessor<PROCESSOR extends DisjunctionProcessor<PROCESSOR>>
             extends Processor<ConceptMap, ConceptMap, NestedConjunctionRequest, PROCESSOR> {
 
         private final Disjunction disjunction;
         private final ConceptMap bounds;
 
-        protected DisjunctionProcessor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller,
+        protected DisjunctionProcessor(Driver<PROCESSOR> driver,
+                                       Driver<? extends DisjunctionController<PROCESSOR, ?>> controller,
                                        Driver<Monitor> monitor, Disjunction disjunction, ConceptMap bounds,
                                        Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);

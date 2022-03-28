@@ -56,7 +56,7 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
         );
     }
 
-    protected static class NestedConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, NestedConjunctionController, NestedConjunctionProcessor> {
+    protected static class NestedConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, NestedConjunctionProcessor> {
 
         protected NestedConjunctionProcessor(Driver<NestedConjunctionProcessor> driver,
                                              Driver<NestedConjunctionController> controller,

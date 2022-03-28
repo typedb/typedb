@@ -232,14 +232,13 @@ public abstract class ConjunctionController<OUTPUT,
         }
     }
 
-    protected static abstract class ConjunctionProcessor<OUTPUT,
-            CONTROLLER extends ConjunctionController<OUTPUT, CONTROLLER, PROCESSOR>,  // TODO: Remove CONTROLLER for all processors
-            PROCESSOR extends Processor<ConceptMap, OUTPUT, FromConjunctionRequest<?>, PROCESSOR>>
+    protected static abstract class ConjunctionProcessor<OUTPUT, PROCESSOR extends ConjunctionProcessor<OUTPUT, PROCESSOR>>
             extends Processor<ConceptMap, OUTPUT, FromConjunctionRequest<?>, PROCESSOR> {
         protected final ConceptMap bounds;
         protected final List<Resolvable<?>> plan;
 
-        protected ConjunctionProcessor(Driver<PROCESSOR> driver, Driver<CONTROLLER> controller,
+        protected ConjunctionProcessor(Driver<PROCESSOR> driver,
+                                       Driver<? extends ConjunctionController<OUTPUT, ?, PROCESSOR>> controller,
                                        Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
                                        Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
