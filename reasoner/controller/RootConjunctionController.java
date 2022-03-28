@@ -96,7 +96,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         @Override
         public void setUp() {
             setOutputRouter(
-                    new CompoundStream<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, this)
+                    new CompoundStream<>(this, plan, this::nextCompoundLeader, ConjunctionController::merge, bounds)
                             .buffer()
                             .map(conceptMap -> conceptMap.filter(filter))
                             .deduplicate()

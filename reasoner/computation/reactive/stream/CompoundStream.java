@@ -36,9 +36,9 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverMultiProvider
     private final Map<Publisher<PACKET>, PACKET> publisherPackets;
     private final PACKET initialPacket;
 
-    public CompoundStream(List<PLAN_ID> plan, BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
-                          BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket,
-                          Processor<?, ?, ?, ?> processor) {  // TODO: Processor should always be the first argument since it's the owner
+    public CompoundStream(Processor<?, ?, ?, ?> processor, List<PLAN_ID> plan,
+                          BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
+                          BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket) {
         super(processor);
         assert plan.size() > 0;
         this.initialPacket = initialPacket;
@@ -63,7 +63,7 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverMultiProvider
                 if (remainingPlan.size() == 1) {
                     follower = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
                 } else {
-                    follower = new CompoundStream<>(remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket, processor()).buffer();
+                    follower = new CompoundStream<>(processor(), remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket).buffer();
                 }
                 publisherPackets.put(follower, mergedPacket);
                 processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));

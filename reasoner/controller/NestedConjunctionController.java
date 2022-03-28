@@ -67,7 +67,7 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
 
         @Override
         public void setUp() {
-            setOutputRouter(new CompoundStream<>(plan, this::nextCompoundLeader, ConjunctionController::merge, bounds, this).buffer());
+            setOutputRouter(new CompoundStream<>(this, plan, this::nextCompoundLeader, ConjunctionController::merge, bounds).buffer());
         }
     }
 
