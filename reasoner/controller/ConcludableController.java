@@ -109,7 +109,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
                 .execute(actor -> actor.resolveProcessor(new Connector<>(req.inputId(), req.bounds())));
     }
 
-    protected static class ConclusionRequest extends Connector.ConnectionRequest<Conclusion, ConceptMap, Map<Variable, Concept>> {
+    protected static class ConclusionRequest extends Connector.Request<Conclusion, ConceptMap, Map<Variable, Concept>> {
 
         public ConclusionRequest(Reactive.Identifier<Map<Variable, Concept>, ?> inputId,
                                  Conclusion controllerId, ConceptMap processorId) {

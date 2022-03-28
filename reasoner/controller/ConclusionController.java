@@ -90,7 +90,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         }
     }
 
-    protected static class FromConclusionRequest<CONTROLLER_ID, BOUNDS> extends Connector.ConnectionRequest<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>> {
+    protected static class FromConclusionRequest<CONTROLLER_ID, BOUNDS> extends Connector.Request<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>> {
 
         protected FromConclusionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
                                         CONTROLLER_ID controller_id, BOUNDS bounds) {

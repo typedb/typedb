@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connector.ConnectionRequest;
+import com.vaticle.typedb.core.reasoner.computation.actor.Connector.Request;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
@@ -33,7 +33,7 @@ import com.vaticle.typedb.core.reasoner.utils.Traversal;
 import java.util.function.Supplier;
 
 public class RetrievableController extends Controller<ConceptMap, Void, ConceptMap,
-        ConnectionRequest<?, ?, Void>, RetrievableController.RetrievableProcessor, RetrievableController> {
+        Request<?, ?, Void>, RetrievableController.RetrievableProcessor, RetrievableController> {
 
     private final Retrievable retrievable;
     private final Driver<Monitor> monitor;
@@ -62,12 +62,12 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     }
 
     @Override
-    protected void resolveController(ConnectionRequest<?, ?, Void> connectionRequest) {
+    protected void resolveController(Request<?, ?, Void> connectionRequest) {
         // Nothing to do
     }
 
     protected static class RetrievableProcessor extends Processor<Void, ConceptMap,
-            ConnectionRequest<?, ?, Void>, RetrievableProcessor> {
+            Request<?, ?, Void>, RetrievableProcessor> {
 
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
 

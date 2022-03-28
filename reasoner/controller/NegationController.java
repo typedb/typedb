@@ -68,7 +68,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         disjunctionContoller.execute(actor -> actor.resolveProcessor(new Connector<>(req.inputId(), req.bounds())));
     }
 
-    protected static class DisjunctionRequest extends Connector.ConnectionRequest<Disjunction, ConceptMap, ConceptMap> {
+    protected static class DisjunctionRequest extends Connector.Request<Disjunction, ConceptMap, ConceptMap> {
 
         protected DisjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Disjunction controllerId,
                                      ConceptMap processorId) {

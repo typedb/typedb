@@ -67,40 +67,27 @@ public class Connector<BOUNDS, PACKET> {
         return new Connector<>(inputId, newBounds, transforms);
     }
 
-    public interface Request<CONTROLLER_ID, BOUNDS, PACKET> {  // TODO: Remove in favour of implementation
-
-        Reactive.Identifier<PACKET, ?> inputId();
-
-        CONTROLLER_ID controllerId();
-
-        BOUNDS bounds();
-
-    }
-
-    public abstract static class ConnectionRequest<CONTROLLER_ID, BOUNDS, PACKET> implements Request<CONTROLLER_ID, BOUNDS, PACKET> {  //TODO: Propagate name change
+    public abstract static class Request<CONTROLLER_ID, BOUNDS, PACKET> {  //TODO: Propagate name change
 
         private final CONTROLLER_ID controllerId;
         private final BOUNDS bounds;
         private final Reactive.Identifier<PACKET, ?> inputId;
 
-        protected ConnectionRequest(Reactive.Identifier<PACKET, ?> inputId, CONTROLLER_ID controllerId,
-                                    BOUNDS bounds) {
+        protected Request(Reactive.Identifier<PACKET, ?> inputId, CONTROLLER_ID controllerId,
+                          BOUNDS bounds) {
             this.inputId = inputId;
             this.controllerId = controllerId;
             this.bounds = bounds;
         }
 
-        @Override
         public Reactive.Identifier<PACKET, ?> inputId() {
             return inputId;
         }
 
-        @Override
         public CONTROLLER_ID controllerId() {
             return controllerId;
         }
 
-        @Override
         public BOUNDS bounds() {
             return bounds;
         }
@@ -112,7 +99,7 @@ public class Connector<BOUNDS, PACKET> {
             //  to conjunction comparison are the same, and therefore will not create separate processors for them
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            ConnectionRequest<?, ?, ?> request = (ConnectionRequest<?, ?, ?>) o;
+            Request<?, ?, ?> request = (Request<?, ?, ?>) o;
             return inputId == request.inputId &&
                     controllerId.equals(request.controllerId) &&
                     bounds.equals(request.bounds);

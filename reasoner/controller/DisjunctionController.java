@@ -85,7 +85,7 @@ public abstract class DisjunctionController<
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    protected static class NestedConjunctionRequest extends Connector.ConnectionRequest<Conjunction, ConceptMap, ConceptMap> {
+    protected static class NestedConjunctionRequest extends Connector.Request<Conjunction, ConceptMap, ConceptMap> {
 
         protected NestedConjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Conjunction controllerId,
                                            ConceptMap processorId) {
