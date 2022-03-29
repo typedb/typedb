@@ -27,12 +27,6 @@ import java.util.Set;
 
 public abstract class ProviderRegistry<PROVIDER> {
 
-    protected final Processor<?, ?, ?, ?> processor;
-
-    protected ProviderRegistry(Processor<?, ?, ?, ?> processor) {
-        this.processor = processor;
-    }
-
     public abstract boolean add(PROVIDER provider);
 
     public abstract void recordReceive(PROVIDER provider);
@@ -42,8 +36,7 @@ public abstract class ProviderRegistry<PROVIDER> {
         private PROVIDER provider;
         private boolean isPulling;
 
-        public Single(Processor<?, ?, ?, ?> processor) {
-            super(processor);
+        public Single() {
             this.provider = null;
             this.isPulling = false;
         }
@@ -79,8 +72,7 @@ public abstract class ProviderRegistry<PROVIDER> {
 
         private final Map<PROVIDER, Boolean> providerPullState;
 
-        public Multi(Processor<?, ?, ?, ?> processor) {
-            super(processor);
+        public Multi() {
             this.providerPullState = new HashMap<>();
         }
 

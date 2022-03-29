@@ -28,7 +28,7 @@ public class SingleReceiverSingleProviderStream<INPUT, OUTPUT> extends SingleRec
 
     protected SingleReceiverSingleProviderStream(Publisher<INPUT> provider, Processor<?, ?, ?, ?> processor) {
         super(processor);
-        this.providerRegistry = new ProviderRegistry.Single<>(processor);
+        this.providerRegistry = new ProviderRegistry.Single<>();
         if (this.providerRegistry.add(provider)) {
             processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
         }
@@ -36,7 +36,7 @@ public class SingleReceiverSingleProviderStream<INPUT, OUTPUT> extends SingleRec
 
     protected SingleReceiverSingleProviderStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
-        this.providerRegistry = new ProviderRegistry.Single<>(processor);
+        this.providerRegistry = new ProviderRegistry.Single<>();
     }
 
     @Override

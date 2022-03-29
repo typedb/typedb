@@ -28,7 +28,7 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET> { // TODO: Coll
     private final Processor<?, ?, ?, ?> processor;
 
     protected Sink(Processor<?, ?, ?, ?> processor) {
-        this.providerRegistry = new ProviderRegistry.Single<>(processor);
+        this.providerRegistry = new ProviderRegistry.Single<>();
         this.processor = processor;
     }
 

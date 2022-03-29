@@ -45,7 +45,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         this.bufferSet = new HashSet<>();
         this.bufferList = new ArrayList<>();
         this.bufferPositions = new HashMap<>();
-        this.providerRegistry = new ProviderRegistry.Single<>(processor);
+        this.providerRegistry = new ProviderRegistry.Single<>();
         this.receiverRegistry = new ReceiverRegistry.MultiReceiverRegistry<>();
     }
 

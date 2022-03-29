@@ -173,7 +173,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             public void registerSubscriber(Subscriber<Map<Variable, Concept>> subscriber) {
                 super.registerSubscriber(subscriber);
                 // We need to wait until the receiver has been given before we can create the materialisation registry
-                this.materialisationRegistry = new ProviderRegistry.Multi<>(processor());
+                this.materialisationRegistry = new ProviderRegistry.Multi<>();
             }
 
             protected ProviderRegistry.Multi<Publisher<Map<Variable, Concept>>> materialisationRegistry() {

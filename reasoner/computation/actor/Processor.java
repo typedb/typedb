@@ -197,7 +197,7 @@ public abstract class Processor<INPUT, OUTPUT,
             super(processor);
             this.identifier = processor.registerReactive(this);
             this.ready = false;
-            this.providerRegistry = new ProviderRegistry.Single<>(processor);
+            this.providerRegistry = new ProviderRegistry.Single<>();
         }
 
         private ProviderRegistry.Single<Identifier<?, PACKET>> providerRegistry() {
@@ -255,7 +255,7 @@ public abstract class Processor<INPUT, OUTPUT,
         public Output(Processor<?, PACKET, ?, ?> processor) {
             this.processor = processor;
             this.identifier = processor().registerReactive(this);
-            this.providerRegistry = new ProviderRegistry.Single<>(processor);
+            this.providerRegistry = new ProviderRegistry.Single<>();
             this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>();
         }
 
