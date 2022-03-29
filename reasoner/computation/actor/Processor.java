@@ -23,8 +23,8 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Identifier;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider.Publisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveIdentifier;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.SingleReceiverPublisher;
@@ -95,7 +95,7 @@ public abstract class Processor<INPUT, OUTPUT,
         inputs.get(inputId).receive(providerId, input);
     }
 
-    public <PACKET> void schedulePullRetry(Publisher<PACKET> provider, Reactive.Subscriber<PACKET> receiver) {
+    public <PACKET> void schedulePullRetry(Publisher<PACKET> provider, Subscriber<PACKET> receiver) {
         pullRetries.put(new Pair<>(provider.identifier(), receiver.identifier()), () -> provider.pull(receiver));
         driver().execute(actor -> actor.pullRetry(provider.identifier(), receiver.identifier()));
     }
@@ -187,7 +187,7 @@ public abstract class Processor<INPUT, OUTPUT,
     /**
      * Governs an input to a processor
      */
-    public static class Input<PACKET> extends SingleReceiverPublisher<PACKET> implements Reactive.Receiver<PACKET> {
+    public static class Input<PACKET> extends SingleReceiverPublisher<PACKET> implements Reactive.Receiver.Async<PACKET> {
 
         private final ProviderRegistry.Single<Identifier<?, PACKET>> providerRegistry;
         private final Identifier<PACKET, ?> identifier;
@@ -245,7 +245,7 @@ public abstract class Processor<INPUT, OUTPUT,
     /**
      * Governs an output from a processor
      */
-    public static class Output<PACKET> implements Subscriber<PACKET>, Reactive.Provider<PACKET> {
+    public static class Output<PACKET> implements Subscriber<PACKET>, Reactive.Provider.Async<PACKET> {
 
         private final Identifier<?, PACKET> identifier;
         private final Processor<?, PACKET, ?, ?> processor;

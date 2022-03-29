@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 
 public abstract class SingleReceiverPublisher<OUTPUT> extends AbstractPublisher<OUTPUT> {
 
-    protected ReceiverRegistry.Single<Subscriber<OUTPUT>> receiverRegistry;
+    protected ReceiverRegistry.Single<Receiver.Subscriber<OUTPUT>> receiverRegistry;
 
     protected SingleReceiverPublisher(Processor<?, ?, ?, ?> processor) {
         super(processor);
@@ -30,12 +30,12 @@ public abstract class SingleReceiverPublisher<OUTPUT> extends AbstractPublisher<
     }
 
     @Override
-    protected ReceiverRegistry.Single<Subscriber<OUTPUT>> receiverRegistry() {
+    protected ReceiverRegistry.Single<Receiver.Subscriber<OUTPUT>> receiverRegistry() {
         return receiverRegistry;
     }
 
     @Override
-    public void registerSubscriber(Subscriber<OUTPUT> subscriber) {
+    public void registerSubscriber(Receiver.Subscriber<OUTPUT> subscriber) {
         receiverRegistry().addReceiver(subscriber);
         subscriber.registerPublisher(this);
     }

@@ -38,56 +38,70 @@ public interface Reactive {
 
     }
 
-    interface Provider<PACKET> extends Reactive {
+    interface Provider<RECEIVER> extends Reactive {
 
-        void pull(Identifier<PACKET, ?> receiverId);
+        void pull(RECEIVER receiver);
 
-        @Override
-        Identifier<?, PACKET> identifier();
+        interface Async<PACKET> extends Provider<Identifier<PACKET, ?>> {  // TODO: Rename Output?
 
-    }
+            @Override
+            void pull(Identifier<PACKET, ?> receiverId);
 
-    interface Publisher<PACKET> extends Reactive {
+            @Override
+            Identifier<?, PACKET> identifier();
 
-        void pull(Subscriber<PACKET> subscriber);
+        }
 
-        void registerSubscriber(Subscriber<PACKET> subscriber);
+        interface Publisher<PACKET> extends Provider<Receiver.Subscriber<PACKET>> {
 
-        Stream<PACKET, PACKET> findFirst();
+            @Override
+            void pull(Receiver.Subscriber<PACKET> subscriber);
 
-        <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function);
+            void registerSubscriber(Receiver.Subscriber<PACKET> subscriber);
 
-        <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function);
+            Stream<PACKET, PACKET> findFirst();
 
-        Stream<PACKET, PACKET> buffer();
+            <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function);
 
-        Stream<PACKET, PACKET> deduplicate();
+            <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function);
 
-    }
+            Stream<PACKET, PACKET> buffer();
 
-    interface Receiver<PACKET> extends Reactive {
-
-        void receive(Identifier<?, PACKET> providerId, PACKET packet);
-
-        @Override
-        Identifier<PACKET, ?> identifier();
-
-    }
-
-    interface Subscriber<PACKET> extends Reactive {
-
-        void receive(Publisher<PACKET> publisher, PACKET packet);
-
-        void registerPublisher(Publisher<PACKET> publisher);
-
-        interface Finishable<PACKET> extends Reactive.Subscriber<PACKET> {
-
-            void finished();
+            Stream<PACKET, PACKET> deduplicate();
 
         }
     }
 
-    interface Stream<INPUT, OUTPUT> extends Subscriber<INPUT>, Publisher<OUTPUT> {
+    interface Receiver<PROVIDER, PACKET> extends Reactive {
+
+        void receive(PROVIDER provider, PACKET packet);
+
+        interface Async<PACKET> extends Receiver<Identifier<?, PACKET>, PACKET> {  // TODO: Rename Input?
+
+            @Override
+            void receive(Identifier<?, PACKET> providerId, PACKET packet);
+
+            @Override
+            Identifier<PACKET, ?> identifier();
+
+        }
+
+        interface Subscriber<PACKET> extends Receiver<Provider.Publisher<PACKET>, PACKET> {
+
+            @Override
+            void receive(Provider.Publisher<PACKET> publisher, PACKET packet);
+
+            void registerPublisher(Provider.Publisher<PACKET> publisher);
+
+            interface Finishable<PACKET> extends Reactive.Receiver.Subscriber<PACKET> {
+
+                void finished();
+
+            }
+        }
+    }
+
+    interface Stream<INPUT, OUTPUT> extends Receiver.Subscriber<INPUT>, Provider.Publisher<OUTPUT> {
 
     }
 

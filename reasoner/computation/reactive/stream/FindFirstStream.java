@@ -43,7 +43,7 @@ public class FindFirstStream<PACKET> extends SingleReceiverSingleProviderStream<
     }
 
     @Override
-    public void pull(Subscriber<PACKET> subscriber) {
+    public void pull(Receiver.Subscriber<PACKET> subscriber) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
         if (!packetFound) super.pull(subscriber);
     }

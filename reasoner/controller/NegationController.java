@@ -102,7 +102,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             negation.finished();
         }
 
-        private static class NegationReactive extends SingleReceiverSingleProviderStream<ConceptMap, ConceptMap> implements Reactive.Subscriber.Finishable<ConceptMap> {
+        private static class NegationReactive extends SingleReceiverSingleProviderStream<ConceptMap, ConceptMap> implements Reactive.Receiver.Subscriber.Finishable<ConceptMap> {
 
             private final ConceptMap bounds;
             private boolean answerFound;
@@ -114,7 +114,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             }
 
             @Override
-            public void pull(Subscriber<ConceptMap> subscriber) {
+            public void pull(Receiver.Subscriber<ConceptMap> subscriber) {
                 Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
                 if (!answerFound) super.pull(subscriber);
             }

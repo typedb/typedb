@@ -37,7 +37,7 @@ public class SingleReceiverMultiProviderStream<INPUT, OUTPUT> extends SingleRece
     }
 
     @Override
-    public void pull(Subscriber<OUTPUT> subscriber) {
+    public void pull(Receiver.Subscriber<OUTPUT> subscriber) {
         assert subscriber.equals(receiverRegistry().receiver());
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
         receiverRegistry().recordPull(subscriber);

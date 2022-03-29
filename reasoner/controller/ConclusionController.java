@@ -170,7 +170,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             @Override
-            public void registerSubscriber(Subscriber<Map<Variable, Concept>> subscriber) {
+            public void registerSubscriber(Receiver.Subscriber<Map<Variable, Concept>> subscriber) {
                 super.registerSubscriber(subscriber);
                 // We need to wait until the receiver has been given before we can create the materialisation registry
                 this.materialisationRegistry = new ProviderRegistry.Multi<>();
@@ -181,7 +181,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             @Override
-            public void pull(Subscriber<Map<Variable, Concept>> subscriber) {
+            public void pull(Receiver.Subscriber<Map<Variable, Concept>> subscriber) {
                 super.pull(subscriber);
                 materialisationRegistry().nonPulling().forEach(p -> p.pull(receiverRegistry().receiver()));
             }
