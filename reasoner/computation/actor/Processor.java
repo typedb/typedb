@@ -187,7 +187,7 @@ public abstract class Processor<INPUT, OUTPUT,
     /**
      * Governs an input to a processor
      */
-    public static class Input<PACKET> extends SingleReceiverPublisher<PACKET> implements Reactive.Receiver.Async<PACKET> {
+    public static class Input<PACKET> extends SingleReceiverPublisher<PACKET> implements Reactive.Receiver<Identifier<?, PACKET>, PACKET> {
 
         private final ProviderRegistry.Single<Identifier<?, PACKET>> providerRegistry;
         private final Identifier<PACKET, ?> identifier;
@@ -245,7 +245,7 @@ public abstract class Processor<INPUT, OUTPUT,
     /**
      * Governs an output from a processor
      */
-    public static class Output<PACKET> implements Subscriber<PACKET>, Reactive.Provider.Async<PACKET> {
+    public static class Output<PACKET> implements Subscriber<PACKET>, Reactive.Provider<Identifier<PACKET, ?>> {
 
         private final Identifier<?, PACKET> identifier;
         private final Processor<?, PACKET, ?, ?> processor;

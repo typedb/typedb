@@ -42,16 +42,6 @@ public interface Reactive {
 
         void pull(RECEIVER receiver);
 
-        interface Async<PACKET> extends Provider<Identifier<PACKET, ?>> {  // TODO: Rename Output?
-
-            @Override
-            void pull(Identifier<PACKET, ?> receiverId);
-
-            @Override
-            Identifier<?, PACKET> identifier();
-
-        }
-
         interface Publisher<PACKET> extends Provider<Receiver.Subscriber<PACKET>> {
 
             @Override
@@ -75,16 +65,6 @@ public interface Reactive {
     interface Receiver<PROVIDER, PACKET> extends Reactive {
 
         void receive(PROVIDER provider, PACKET packet);
-
-        interface Async<PACKET> extends Receiver<Identifier<?, PACKET>, PACKET> {  // TODO: Rename Input?
-
-            @Override
-            void receive(Identifier<?, PACKET> providerId, PACKET packet);
-
-            @Override
-            Identifier<PACKET, ?> identifier();
-
-        }
 
         interface Subscriber<PACKET> extends Receiver<Provider.Publisher<PACKET>, PACKET> {
 
