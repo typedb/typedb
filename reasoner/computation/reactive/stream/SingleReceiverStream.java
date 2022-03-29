@@ -27,17 +27,17 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublisher<OUTPUT> implements Reactive.Stream<INPUT, OUTPUT> {
 
-    private final ReceiverRegistry.SingleReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry;
+    private final ReceiverRegistry.Single<Subscriber<OUTPUT>> receiverRegistry;
 
     protected SingleReceiverStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
-        this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>();
+        this.receiverRegistry = new ReceiverRegistry.Single<>();
     }
 
     protected abstract ProviderRegistry<Publisher<INPUT>> providerRegistry();
 
     @Override
-    protected ReceiverRegistry.SingleReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry() {
+    protected ReceiverRegistry.Single<Subscriber<OUTPUT>> receiverRegistry() {
         return receiverRegistry;
     }
 

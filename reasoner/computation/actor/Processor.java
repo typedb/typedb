@@ -250,13 +250,13 @@ public abstract class Processor<INPUT, OUTPUT,
         private final Identifier<?, PACKET> identifier;
         private final Processor<?, PACKET, ?, ?> processor;
         private final ProviderRegistry.Single<Publisher<PACKET>> providerRegistry;
-        private final ReceiverRegistry.SingleReceiverRegistry<Identifier<PACKET, ?>> receiverRegistry;
+        private final ReceiverRegistry.Single<Identifier<PACKET, ?>> receiverRegistry;
 
         public Output(Processor<?, PACKET, ?, ?> processor) {
             this.processor = processor;
             this.identifier = processor().registerReactive(this);
             this.providerRegistry = new ProviderRegistry.Single<>();
-            this.receiverRegistry = new ReceiverRegistry.SingleReceiverRegistry<>();
+            this.receiverRegistry = new ReceiverRegistry.Single<>();
         }
 
         @Override
@@ -272,7 +272,7 @@ public abstract class Processor<INPUT, OUTPUT,
             return providerRegistry;
         }
 
-        private ReceiverRegistry.SingleReceiverRegistry<Identifier<PACKET, ?>> receiverRegistry() {
+        private ReceiverRegistry.Single<Identifier<PACKET, ?>> receiverRegistry() {
             return receiverRegistry;
         }
 

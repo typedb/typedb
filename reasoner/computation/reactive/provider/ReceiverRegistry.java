@@ -27,12 +27,12 @@ public abstract class ReceiverRegistry<RECEIVER> {
 
     abstract boolean addReceiver(RECEIVER receiver);
 
-    public static class SingleReceiverRegistry<RECEIVER> extends ReceiverRegistry<RECEIVER> {
+    public static class Single<RECEIVER> extends ReceiverRegistry<RECEIVER> {
 
         private boolean isPulling;
         private RECEIVER receiver;
 
-        public SingleReceiverRegistry() {
+        public Single() {
             this.receiver = null;
             this.isPulling = false;
         }
@@ -64,12 +64,12 @@ public abstract class ReceiverRegistry<RECEIVER> {
         }
     }
 
-    public static class MultiReceiverRegistry<RECEIVER> extends ReceiverRegistry<RECEIVER> {
+    public static class Multi<RECEIVER> extends ReceiverRegistry<RECEIVER> {
 
         private final Set<RECEIVER> receivers;
         private final Set<RECEIVER> pullingReceivers;
 
-        public MultiReceiverRegistry() {
+        public Multi() {
             this.receivers = new HashSet<>();
             this.pullingReceivers = new HashSet<>();
         }
