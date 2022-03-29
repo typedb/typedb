@@ -65,11 +65,11 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
             processor().monitor().execute(actor -> actor.createAnswer(identifier()));
-            Set<Receiver.Subscriber<PACKET>> pullingReceivers = receiverRegistry().pullingReceivers();
+            Set<Receiver.Subscriber<PACKET>> pullingReceivers = receiverRegistry().pulling();
             receiverRegistry().setNotPulling();
             pullingReceivers.forEach(this::sendFromBuffer);
         } else {
-            if (receiverRegistry().isPulling()) processor().schedulePullRetry(publisher, this);
+            if (receiverRegistry().anyPulling()) processor().schedulePullRetry(publisher, this);
         }
         processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
     }
@@ -81,7 +81,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         bufferPositions.putIfAbsent(subscriber, 0);
         if (bufferList.size() == bufferPositions.get(subscriber)) {
             // Finished the buffer
-            if (receiverRegistry().isPulling() && providerRegistry().setPulling()) providerRegistry().provider().pull(this);
+            if (receiverRegistry().anyPulling() && providerRegistry().setPulling()) providerRegistry().provider().pull(this);
         } else {
             sendFromBuffer(subscriber);
         }
@@ -105,7 +105,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         if (providerRegistry().add(provider)) {
             processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
         }
-        if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
+        if (receiverRegistry().anyPulling() && providerRegistry().setPulling()) provider.pull(this);
     }
 
 }

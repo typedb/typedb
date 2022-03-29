@@ -25,11 +25,17 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
+
 public abstract class ProviderRegistry<PROVIDER> {
 
     public abstract boolean add(PROVIDER provider);
 
     public abstract void recordReceive(PROVIDER provider);
+
+    public abstract boolean setPulling(PROVIDER provider);
+
+    public abstract Set<PROVIDER> nonPulling();
 
     public static class Single<PROVIDER> extends ProviderRegistry<PROVIDER> {
 
@@ -60,6 +66,18 @@ public abstract class ProviderRegistry<PROVIDER> {
         public void recordReceive(PROVIDER provider) {
             assert this.provider == provider;
             isPulling = false;
+        }
+
+        @Override
+        public boolean setPulling(PROVIDER provider) {
+            assert this.provider.equals(provider);
+            return setPulling();
+        }
+
+        @Override
+        public Set<PROVIDER> nonPulling() {
+            if (isPulling) return set();
+            else return set(provider);
         }
 
         public PROVIDER provider() {
@@ -93,6 +111,7 @@ public abstract class ProviderRegistry<PROVIDER> {
             return providerPullState.get(provider);
         }
 
+        @Override
         public boolean setPulling(PROVIDER provider) {
             assert providerPullState.containsKey(provider);
             Boolean wasPulling = providerPullState.put(provider, true);
@@ -104,6 +123,7 @@ public abstract class ProviderRegistry<PROVIDER> {
             return providerPullState.size();
         }
 
+        @Override
         public Set<PROVIDER> nonPulling() {
             Set<PROVIDER> nonPulling = new HashSet<>();
             providerPullState.keySet().forEach(p -> {

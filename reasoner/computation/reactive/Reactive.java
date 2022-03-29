@@ -47,7 +47,7 @@ public interface Reactive {
             @Override
             void pull(Receiver.Subscriber<PACKET> subscriber);
 
-            void registerSubscriber(Receiver.Subscriber<PACKET> subscriber);
+            void registerSubscriber(Receiver.Subscriber<PACKET> subscriber);  // TODO: Consider moving this to Provider
 
             Stream<PACKET, PACKET> findFirst();
 
@@ -71,7 +71,7 @@ public interface Reactive {
             @Override
             void receive(Provider.Publisher<PACKET> publisher, PACKET packet);
 
-            void registerPublisher(Provider.Publisher<PACKET> publisher);
+            void registerPublisher(Provider.Publisher<PACKET> publisher);  // TODO: Consider moving this to Receiver
 
             interface Finishable<PACKET> extends Reactive.Receiver.Subscriber<PACKET> {
 

@@ -21,11 +21,19 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
+
 public abstract class ReceiverRegistry<RECEIVER> {
 
     abstract void setNotPulling();
 
-    abstract boolean addReceiver(RECEIVER receiver);
+    public abstract boolean addReceiver(RECEIVER receiver);
+
+    public abstract Set<RECEIVER> pulling();
+
+    public abstract void setNotPulling(RECEIVER receiver);
+
+    public abstract boolean anyPulling();
 
     public static class Single<RECEIVER> extends ReceiverRegistry<RECEIVER> {
 
@@ -58,6 +66,23 @@ public abstract class ReceiverRegistry<RECEIVER> {
             return false;
         }
 
+        @Override
+        public Set<RECEIVER> pulling() {
+            if (isPulling) return set(receiver);
+            else return set();
+        }
+
+        @Override
+        public void setNotPulling(RECEIVER receiver) {
+            assert receiver.equals(this.receiver);
+            isPulling = false;
+        }
+
+        @Override
+        public boolean anyPulling() {
+            return isPulling;
+        }
+
         public RECEIVER receiver() {
             assert this.receiver != null;
             return receiver;
@@ -79,13 +104,14 @@ public abstract class ReceiverRegistry<RECEIVER> {
             pullingReceivers.clear();
         }
 
+        @Override
+        public void setNotPulling(RECEIVER receiver) {
+            pullingReceivers.remove(receiver);
+        }
+
         public void recordPull(RECEIVER receiver) {
             assert receivers.contains(receiver);
             pullingReceivers.add(receiver);
-        }
-
-        public boolean isPulling() {
-            return pullingReceivers.size() > 0;
         }
 
         @Override
@@ -93,12 +119,15 @@ public abstract class ReceiverRegistry<RECEIVER> {
             return receivers.add(receiver);
         }
 
-        public Set<RECEIVER> pullingReceivers() {
+        @Override
+        public Set<RECEIVER> pulling() {
             return new HashSet<>(pullingReceivers);
         }
 
-        public int size() {
-            return receivers.size();
+        @Override
+        public boolean anyPulling() {
+            return pullingReceivers.size() > 0;
         }
+
     }
 }
