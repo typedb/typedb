@@ -41,11 +41,11 @@ public interface Operator<INPUT, OUTPUT, PROVIDER> {
             this.newProviders = new HashSet<>();
         }
 
-        public static <OUTPUT, PROVIDER extends Provider<?>> Outcome<OUTPUT, PROVIDER> create(Set<OUTPUT> outputs) {
+        public static <OUTPUT, PROVIDER> Outcome<OUTPUT, PROVIDER> create(Set<OUTPUT> outputs) {
             return new Outcome<>(outputs, 0, 0);
         }
 
-        public static <OUTPUT, PROVIDER extends Provider<?>> Outcome<OUTPUT, PROVIDER> create() {
+        public static <OUTPUT, PROVIDER> Outcome<OUTPUT, PROVIDER> create() {
             return new Outcome<>(new HashSet<>(), 0, 0);
         }
 
@@ -73,7 +73,7 @@ public interface Operator<INPUT, OUTPUT, PROVIDER> {
             return outputs;
         }
 
-        void addNewProvider(PROVIDER newProvider) {
+        public void addNewProvider(PROVIDER newProvider) {
             newProviders.add(newProvider);
         }
 

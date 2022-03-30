@@ -32,11 +32,13 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider.Publisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverMultiProviderStream;
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController.FromConclusionRequest.ConditionRequest;
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController.FromConclusionRequest.MaterialiserRequest;
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashSet;
@@ -228,6 +230,39 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 }
             }
 
+        }
+
+        public static class ConclusionOperator implements Operator<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>, Publisher<Either<ConceptMap, Map<Variable, Concept>>>> {
+
+            private final ConclusionProcessor processor;
+
+            ConclusionOperator(ConclusionController.ConclusionProcessor processor) {
+                this.processor = processor;
+            }
+
+            private ConclusionProcessor processor() {
+                return processor;
+            }
+
+            @Override
+            public Outcome<Map<Identifier.Variable, Concept>, Publisher<Either<ConceptMap, Map<Variable, Concept>>>> operate(Publisher<Either<ConceptMap, Map<Variable, Concept>>> provider, Either<ConceptMap, Map<Identifier.Variable, Concept>> packet) {
+                Outcome<Map<Identifier.Variable, Concept>, Publisher<Either<ConceptMap, Map<Variable, Concept>>>> outcome = Outcome.create();
+                if (packet.isFirst()) {
+                    Processor.Input<Either<ConceptMap, Rule.Conclusion.Materialisation>> materialisationInput = processor().createInput();
+                    processor().mayRequestMaterialiser(new ConclusionController.FromConclusionRequest.MaterialiserRequest(
+                            materialisationInput.identifier(), null,
+                            processor().rule.conclusion().materialisable(packet.first(), processor().conceptManager))
+                    );
+                    Publisher<Either<ConceptMap, Map<Variable, Concept>>> op = materialisationInput
+                            .map(m -> Either.second(m.second().bindToConclusion(processor().rule.conclusion(), packet.first())));
+                    outcome.addNewProvider(op);
+                    outcome.addAnswerConsumed();
+                } else {
+                    // TODO: Previously we would retry here to get the materialiser(s) to do a join, is this automatic now?
+                    outcome.addOutput(packet.second());
+                }
+                return outcome;
+            }
         }
 
     }
