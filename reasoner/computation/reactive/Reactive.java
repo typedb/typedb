@@ -52,8 +52,6 @@ public interface Reactive {
             @Override
             void registerReceiver(Receiver.Subscriber<PACKET> subscriber);
 
-            Stream<PACKET, PACKET> findFirst();
-
             <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function);
 
             <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function);

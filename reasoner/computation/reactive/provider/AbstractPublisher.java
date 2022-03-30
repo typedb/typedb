@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.DeduplicationStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FindFirstStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FlatMapStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.MapStream;
 
@@ -48,13 +47,6 @@ public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Pub
 
     protected Processor<?, ?, ?, ?> processor() {
         return processor;
-    }
-
-    @Override
-    public Stream<OUTPUT,OUTPUT> findFirst() {
-        FindFirstStream<OUTPUT> findFirst = new FindFirstStream<>(this, processor());
-        registerReceiver(findFirst);
-        return findFirst;
     }
 
     @Override

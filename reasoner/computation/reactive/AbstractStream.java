@@ -207,11 +207,6 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
         }
 
         @Override
-        public Stream<OUTPUT, OUTPUT> findFirst() {
-            return null;
-        }
-
-        @Override
         public <MAPPED> Stream<OUTPUT, MAPPED> map(Function<OUTPUT, MAPPED> function) {
             SyncStream<OUTPUT, MAPPED> map = SyncStream.simple(processor(), new MapOperator<>(function), false);
             registerReceiver(map);
@@ -284,11 +279,6 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
         @Override
         public void registerReceiver(Subscriber<PACKET> packetSubscriber) {
 
-        }
-
-        @Override
-        public Stream<PACKET, PACKET> findFirst() {
-            return null;
         }
 
         @Override
