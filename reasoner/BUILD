@@ -34,6 +34,7 @@ native_java_libraries(
         ["*.java",
         "computation/actor/*.java",
         "computation/reactive/*.java",
+        "computation/reactive/operator/*.java",
         "computation/reactive/provider/*.java",
         "computation/reactive/receiver/*.java",
         "computation/reactive/stream/*.java",

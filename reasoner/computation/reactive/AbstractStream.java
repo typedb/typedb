@@ -22,27 +22,36 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.FlatMapOperator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.MapOperator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implements Provider<RECEIVER>, Receiver<PROVIDER, INPUT> {
 
     private final Processor<?, ?, ?, ?> processor;
-    private final Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> operator;
+    private final Operator<INPUT, OUTPUT, PROVIDER> operator;
     private final ReceiverRegistry<RECEIVER> receiverRegistry;
     private final ProviderRegistry<PROVIDER> providerRegistry;
     private final Reactive.Identifier<?, ?> identifier;
+    private final Buffer<OUTPUT, RECEIVER> buffer;
 
-    protected AbstractStream(Processor<?, ?, ?, ?> processor, Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> operator,
+    protected AbstractStream(Processor<?, ?, ?, ?> processor, Operator<INPUT, OUTPUT, PROVIDER> operator,
                              ReceiverRegistry<RECEIVER> receiverRegistry, ProviderRegistry<PROVIDER> providerRegistry) {
         this.processor = processor;
         this.operator = operator;
         this.receiverRegistry = receiverRegistry;
         this.providerRegistry = providerRegistry;
         this.identifier = processor().registerReactive(this);
+        boolean useBuffer = false;
+        if (useBuffer) this.buffer = new Buffer<>();
+        else this.buffer = null;
     }
 
     @Override
@@ -50,11 +59,11 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
         return identifier;
     }
 
-    protected Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> operator() {
+    protected Operator<INPUT, OUTPUT, PROVIDER> operator() {
         return operator;
     }
 
-    protected Processor<?, ?, ?, ?> processor() {
+    public Processor<?, ?, ?, ?> processor() {
         return processor;
     }
 
@@ -66,11 +75,15 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
         return providerRegistry;
     }
 
+    protected Optional<Buffer<OUTPUT, RECEIVER>> internalBuffer() {  // TODO: Rename to buffer when name clash is not an issue
+        return Optional.ofNullable(buffer);
+    }
+
     @Override
     public void pull(RECEIVER receiver) {
-        Optional<OUTPUT> packet = operator().nextPacket(receiver);
-        if (packet.isPresent()) {
-            sendOutput(receiver, packet.get());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
+        if (internalBuffer().isPresent() && internalBuffer().get().hasNext()) {
+            OUTPUT packet = internalBuffer().get().next(receiver);
+            sendOutput(receiver, packet);  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
         } else {
             providerRegistry().nonPulling().forEach(this::propagatePull);
         }
@@ -78,17 +91,40 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
 
     @Override
     public void receive(PROVIDER provider, INPUT packet) {
-        operator().receivePacket(provider, packet);
-        receiverRegistry().pulling().forEach(receiver -> {
-            Optional<OUTPUT> output = operator().nextPacket(receiver);
-            if (output.isPresent()) {
-                receiverRegistry().setNotPulling(receiver);
-                sendOutput(receiver, output.get());
-            } else {
-                retryPull(provider);
-            }
-        });
+        traceReceive(provider, packet);
+        providerRegistry().recordReceive(provider);
+
+        Operator.Outcome<OUTPUT> outcome = operator().operate(provider, packet);  // TODO: Most of the time we want to immediately process and pass on the output, regardless of pulling state
+        for (int i = 0; i <= outcome.answersCreated();) {
+            // TODO: We can now batch this and even send the delta between created and consumed
+            //  in fact we should be able to look at the number of inputs and outputs and move the monitoring
+            //  responsibility to streams in a generic way, removing the need for this Outcome object
+            processor().monitor().execute(actor -> actor.createAnswer(identifier()));
+        }
+        for (int i = 0; i <= outcome.answersConsumed();) {
+            processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
+        }
+        if (internalBuffer().isPresent()) {
+            internalBuffer().get().add(outcome.outputs());
+            receiverRegistry().pulling().forEach(receiver -> {
+                if (internalBuffer().get().hasNext()) {
+                    receiverRegistry().setNotPulling(receiver);
+                    sendOutput(receiver, internalBuffer().get().next(receiver));
+                } else {
+                    retryPull(provider);
+                }
+            });
+        } else {
+            outcome.outputs().forEach(output -> {
+                receiverRegistry().receivers().forEach(receiver -> {
+                    receiverRegistry.setNotPulling(receiver);
+                    sendOutput(receiver, output);
+                });
+            });
+        }
     }
+
+    protected abstract void traceReceive(PROVIDER provider, INPUT packet);
 
     protected abstract void propagatePull(PROVIDER provider);
 
@@ -98,34 +134,47 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
 
     protected abstract void registerPath(PROVIDER provider);
 
-    interface Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
+    private static class Buffer<OUTPUT, RECEIVER> {
 
-        void receivePacket(PROVIDER provider, INPUT packet);
+        public boolean hasNext() {
+            return false;
+        }
 
-        Optional<OUTPUT> nextPacket(RECEIVER receiver);
+        public OUTPUT next(RECEIVER receiver) {
+            return null;
+        }
+
+        public void add(Set<OUTPUT> outputs) {
+
+        }
     }
 
-    public static class SyncStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT, Subscriber<OUTPUT>, Publisher<INPUT>> implements Publisher<OUTPUT>, Subscriber<INPUT> {
+    public static class SyncStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT, Subscriber<OUTPUT>, Publisher<INPUT>> implements Stream<INPUT, OUTPUT> {
 
         private SyncStream(Processor<?, ?, ?, ?> processor,
-                           Operator<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator,
+                           Operator<INPUT, OUTPUT, Publisher<INPUT>> operator,
                            ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
                            ProviderRegistry<Publisher<INPUT>> providerRegistry) {
             super(processor, operator, receiverRegistry, providerRegistry);
         }
 
-        public SyncStream<INPUT, OUTPUT> simple(Processor<?, ?, ?, ?> processor,
-                                                Operator<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator) {
+        @Override
+        protected void traceReceive(Publisher<INPUT> publisher, INPUT packet) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(publisher.identifier(), identifier(), packet));
+        }
+
+        public static <INPUT, OUTPUT> SyncStream<INPUT, OUTPUT> simple(Processor<?, ?, ?, ?> processor,
+                                                Operator<INPUT, OUTPUT, Publisher<INPUT>> operator) {
             return new SyncStream<>(processor, operator, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
         }
 
-        public SyncStream<INPUT, OUTPUT> fanOut(Processor<?, ?, ?, ?> processor,
-                                                Operator<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator) {
+        public static <INPUT, OUTPUT> SyncStream<INPUT, OUTPUT> fanOut(Processor<?, ?, ?, ?> processor,
+                                                Operator<INPUT, OUTPUT, Publisher<INPUT>> operator) {
             return new SyncStream<>(processor, operator, new ReceiverRegistry.Multi<>(), new ProviderRegistry.Single<>());
         }
 
-        public SyncStream<INPUT, OUTPUT> fanIn(Processor<?, ?, ?, ?> processor,
-                                               Operator<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator) {
+        public static <INPUT, OUTPUT> SyncStream<INPUT, OUTPUT> fanIn(Processor<?, ?, ?, ?> processor,
+                                               Operator<INPUT, OUTPUT, Publisher<INPUT>> operator) {
             return new SyncStream<>(processor, operator, new ReceiverRegistry.Single<>(), new ProviderRegistry.Multi<>());
         }
 
@@ -157,12 +206,16 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
 
         @Override
         public <MAPPED> Stream<OUTPUT, MAPPED> map(Function<OUTPUT, MAPPED> function) {
-            return null;
+            SyncStream<OUTPUT, MAPPED> map = SyncStream.simple(processor(), new MapOperator<>(function));
+            registerSubscriber(map);
+            return map;
         }
 
         @Override
         public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
-            return null;
+            SyncStream<OUTPUT, MAPPED> flatMap = SyncStream.simple(processor(), new FlatMapOperator<>(function));
+            registerSubscriber(flatMap);
+            return flatMap;
         }
 
         @Override
@@ -190,9 +243,14 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
     public static class InputStream<PACKET> extends AbstractStream<PACKET, PACKET, Subscriber<PACKET>, Reactive.Identifier<?, PACKET>> {
 
         protected InputStream(Processor<?, ?, ?, ?> processor, Operator<PACKET, PACKET, Reactive.Identifier<?,
-                PACKET>, Subscriber<PACKET>> operator, ReceiverRegistry<Subscriber<PACKET>> receiverRegistry,
+                PACKET>> operator, ReceiverRegistry<Subscriber<PACKET>> receiverRegistry,
                               ProviderRegistry<Reactive.Identifier<?, PACKET>> providerRegistry) {
             super(processor, operator, receiverRegistry, providerRegistry);
+        }
+
+        @Override
+        protected void traceReceive(Identifier<?, PACKET> packetIdentifier, PACKET packet) {
+
         }
 
         @Override
@@ -218,11 +276,16 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
 
     public static class OutputStream<PACKET> extends AbstractStream<PACKET, PACKET, Reactive.Identifier<PACKET, ?>, Publisher<PACKET>> {
 
-        protected OutputStream(Processor<?, ?, ?, ?> processor, Operator<PACKET, PACKET, Publisher<PACKET>,
-                Reactive.Identifier<PACKET, ?>> operator,
+        protected OutputStream(Processor<?, ?, ?, ?> processor, Operator<PACKET, PACKET, Publisher<PACKET>
+                > operator,
                                ReceiverRegistry<Reactive.Identifier<PACKET, ?>> receiverRegistry,
                                ProviderRegistry<Publisher<PACKET>> providerRegistry) {
             super(processor, operator, receiverRegistry, providerRegistry);
+        }
+
+        @Override
+        protected void traceReceive(Publisher<PACKET> packetPublisher, PACKET packet) {
+
         }
 
         @Override

@@ -35,6 +35,8 @@ public abstract class ReceiverRegistry<RECEIVER> {
 
     public abstract boolean anyPulling();
 
+    public abstract Set<RECEIVER> receivers();
+
     public static class Single<RECEIVER> extends ReceiverRegistry<RECEIVER> {
 
         private boolean isPulling;
@@ -43,6 +45,11 @@ public abstract class ReceiverRegistry<RECEIVER> {
         public Single() {
             this.receiver = null;
             this.isPulling = false;
+        }
+
+        @Override
+        public Set<RECEIVER> receivers() {
+            return set(receiver);
         }
 
         @Override
@@ -127,6 +134,11 @@ public abstract class ReceiverRegistry<RECEIVER> {
         @Override
         public boolean anyPulling() {
             return pullingReceivers.size() > 0;
+        }
+
+        @Override
+        public Set<RECEIVER> receivers() {
+            return receivers;
         }
 
     }
