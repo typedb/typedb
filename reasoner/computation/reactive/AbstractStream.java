@@ -108,6 +108,8 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
         for (int i = 0; i <= outcome.answersConsumed();) {
             processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
         }
+        if (outcome.sourceFinished()) processor().monitor().execute(actor -> actor.sourceFinished(identifier()));
+
         // We want buffering separate to other operators because for an operator we can get an Outcome back immediately
         if (internalBuffer().isPresent()) {
             internalBuffer().get().add(outcome.outputs());
@@ -140,7 +142,7 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
 
     protected abstract void registerPath(PROVIDER provider);
 
-    private static class Buffer<OUTPUT, RECEIVER> {
+    public static class Buffer<OUTPUT, RECEIVER> {
         // TODO: The buffer can be more efficient if we know we will have a single receiver (we can throw away answers
         //  once sent)
         public boolean hasNext(RECEIVER receiver) {
@@ -154,6 +156,16 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
         public void add(Set<OUTPUT> outputs) {
 
         }
+    }
+
+    public interface SimpleBuffer<OUTPUT> {
+        // TODO: The buffer can be more efficient if we know we will have a single receiver (we can throw away answers
+        //  once sent)
+        boolean hasNext();
+
+        OUTPUT next();
+
+        void add(Set<OUTPUT> outputs);
     }
 
     public static class SyncStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT, Subscriber<OUTPUT>, Publisher<INPUT>> implements Stream<INPUT, OUTPUT> {

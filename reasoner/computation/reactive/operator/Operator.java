@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,12 +31,14 @@ public interface Operator<INPUT, OUTPUT, PROVIDER> {
         private final Set<PROVIDER> newProviders;
         int answersCreated;
         int answersConsumed;
+        private boolean sourceFinished;
 
         private Outcome(Set<OUTPUT> outputs, int answersCreated, int answersConsumed) {
             this.outputs = outputs;
             this.answersCreated = answersCreated;
             this.answersConsumed = answersConsumed;
             this.newProviders = new HashSet<>();
+            this.sourceFinished = false;
         }
 
         public static <OUTPUT, PROVIDER> Outcome<OUTPUT, PROVIDER> create(Set<OUTPUT> outputs) {
@@ -81,6 +81,13 @@ public interface Operator<INPUT, OUTPUT, PROVIDER> {
             return newProviders;
         }
 
+        public void addSourceFinished() {
+            sourceFinished = true;
+        }
+
+        public boolean sourceFinished() {
+            return sourceFinished;
+        }
     }
 
 }

@@ -68,7 +68,7 @@ public class CompoundOperator<PLAN_ID, PACKET> implements Operator<PACKET, PACKE
                             processor,
                             new CompoundOperator<>(processor, remainingPlan, spawnLeaderFunc, compoundPacketsFunc,
                                                    initialPacket),
-                            true);
+                            true).buffer();
                     outcome.addNewProvider(follower);
                 }
                 publisherPackets.put(follower, mergedPacket);
