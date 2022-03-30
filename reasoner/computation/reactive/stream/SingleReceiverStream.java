@@ -48,7 +48,7 @@ public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublis
     }
 
     @Override
-    public void registerPublisher(Publisher<INPUT> provider) {
+    public void registerProvider(Publisher<INPUT> provider) {
         if (providerRegistry().add(provider)) {
             processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
         }
@@ -56,9 +56,9 @@ public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublis
     }
 
     @Override
-    public void registerSubscriber(Receiver.Subscriber<OUTPUT> subscriber) {
+    public void registerReceiver(Receiver.Subscriber<OUTPUT> subscriber) {
         receiverRegistry().addReceiver(subscriber);
-        subscriber.registerPublisher(this);
+        subscriber.registerProvider(this);
     }
 
     public void sendTo(Receiver.Subscriber<OUTPUT> receiver) {

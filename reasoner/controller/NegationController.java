@@ -90,8 +90,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             negation = new NegationReactive(this, bounds);
             monitor().execute(actor -> actor.registerRoot(driver(), negation.identifier()));
             monitor().execute(actor -> actor.forkFrontier(1, negation.identifier()));
-            input.registerSubscriber(negation);
-            negation.registerSubscriber(outputRouter());
+            input.registerReceiver(negation);
+            negation.registerReceiver(outputRouter());
         }
 
         @Override

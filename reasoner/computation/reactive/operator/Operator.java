@@ -18,30 +18,34 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
+
 import java.util.HashSet;
 import java.util.Set;
 
 public interface Operator<INPUT, OUTPUT, PROVIDER> {
 
-    Outcome<OUTPUT> operate(PROVIDER provider, INPUT packet);
+    Outcome<OUTPUT, PROVIDER> operate(PROVIDER provider, INPUT packet);
 
-    class Outcome<OUTPUT> {
+    class Outcome<OUTPUT, PROVIDER> {
 
         private final Set<OUTPUT> outputs;
+        private final Set<PROVIDER> newProviders;
         int answersCreated;
         int answersConsumed;
 
-        public Outcome(Set<OUTPUT> outputs, int answersCreated, int answersConsumed) {
+        private Outcome(Set<OUTPUT> outputs, int answersCreated, int answersConsumed) {
             this.outputs = outputs;
             this.answersCreated = answersCreated;
             this.answersConsumed = answersConsumed;
+            this.newProviders = new HashSet<>();
         }
 
-        public static <OUTPUT> Outcome<OUTPUT> create(Set<OUTPUT> outputs) {
+        public static <OUTPUT, PROVIDER extends Provider<?>> Outcome<OUTPUT, PROVIDER> create(Set<OUTPUT> outputs) {
             return new Outcome<>(outputs, 0, 0);
         }
 
-        public static <OUTPUT> Outcome<OUTPUT> create() {
+        public static <OUTPUT, PROVIDER extends Provider<?>> Outcome<OUTPUT, PROVIDER> create() {
             return new Outcome<>(new HashSet<>(), 0, 0);
         }
 
@@ -68,6 +72,15 @@ public interface Operator<INPUT, OUTPUT, PROVIDER> {
         public Set<OUTPUT> outputs() {
             return outputs;
         }
+
+        void addNewProvider(PROVIDER newProvider) {
+            newProviders.add(newProvider);
+        }
+
+        public Set<PROVIDER> newProviders() {
+            return newProviders;
+        }
+
     }
 
 }

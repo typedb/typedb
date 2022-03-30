@@ -53,35 +53,35 @@ public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Pub
     @Override
     public Stream<OUTPUT,OUTPUT> findFirst() {
         FindFirstStream<OUTPUT> findFirst = new FindFirstStream<>(this, processor());
-        registerSubscriber(findFirst);
+        registerReceiver(findFirst);
         return findFirst;
     }
 
     @Override
     public <R> Stream<OUTPUT, R> map(Function<OUTPUT, R> function) {
         MapStream<OUTPUT, R> map = new MapStream<>(this, function, processor());
-        registerSubscriber(map);
+        registerReceiver(map);
         return map;
     }
 
     @Override
     public <R> Stream<OUTPUT,R> flatMap(Function<OUTPUT, FunctionalIterator<R>> function) {
         FlatMapStream<OUTPUT, R> flatMap = new FlatMapStream<>(this, function, processor());
-        registerSubscriber(flatMap);
+        registerReceiver(flatMap);
         return flatMap;
     }
 
     @Override
     public Stream<OUTPUT, OUTPUT> buffer() {
         BufferedStream<OUTPUT> buffer = new BufferedStream<>(this, processor());
-        registerSubscriber(buffer);
+        registerReceiver(buffer);
         return buffer;
     }
 
     @Override
     public Stream<OUTPUT,OUTPUT> deduplicate() {
         DeduplicationStream<OUTPUT> dedup = new DeduplicationStream<>(this, processor());
-        registerSubscriber(dedup);
+        registerReceiver(dedup);
         return dedup;
     }
 }

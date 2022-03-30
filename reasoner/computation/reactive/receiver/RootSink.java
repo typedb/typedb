@@ -64,8 +64,8 @@ public class RootSink extends Sink<ConceptMap> implements Reactive.Receiver.Subs
     }
 
     @Override
-    public void registerPublisher(Provider.Publisher<ConceptMap> provider) {
-        super.registerPublisher(provider);
+    public void registerProvider(Provider.Publisher<ConceptMap> provider) {
+        super.registerProvider(provider);
         if (isPulling && providerRegistry().setPulling()) provider.pull(this);
     }
 

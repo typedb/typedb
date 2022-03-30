@@ -106,7 +106,7 @@ public abstract class DisjunctionController<
             setOutputRouter(getOutputRouter(fanIn));
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
                 Input<ConceptMap> input = createInput();
-                input.registerSubscriber(fanIn);
+                input.registerReceiver(fanIn);
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();

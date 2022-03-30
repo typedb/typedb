@@ -35,9 +35,9 @@ public abstract class SingleReceiverPublisher<OUTPUT> extends AbstractPublisher<
     }
 
     @Override
-    public void registerSubscriber(Receiver.Subscriber<OUTPUT> subscriber) {
+    public void registerReceiver(Receiver.Subscriber<OUTPUT> subscriber) {
         receiverRegistry().addReceiver(subscriber);
-        subscriber.registerPublisher(this);
+        subscriber.registerProvider(this);
     }
 
 }

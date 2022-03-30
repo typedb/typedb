@@ -41,7 +41,7 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET> { // TODO: Coll
     }
 
     @Override
-    public void registerPublisher(Provider.Publisher<PACKET> provider) {
+    public void registerProvider(Provider.Publisher<PACKET> provider) {
         if (providerRegistry().add(provider)) {
             processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
         }

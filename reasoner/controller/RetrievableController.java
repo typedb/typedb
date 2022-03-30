@@ -82,7 +82,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
         @Override
         public void setUp() {
             setOutputRouter(new FanOutStream<>(this));
-            Source.create(traversalSupplier, this).registerSubscriber(outputRouter());
+            Source.create(traversalSupplier, this).registerReceiver(outputRouter());
         }
     }
 }

@@ -140,8 +140,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             Input<Either<ConceptMap, Materialisation>> conditionInput = createInput();
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), bounds));
             ConclusionReactive conclusionReactive = new ConclusionReactive(this);
-            conditionInput.map(a -> a.first()).registerSubscriber(conclusionReactive);
-            conclusionReactive.registerSubscriber(outputRouter());
+            conditionInput.map(a -> a.first()).registerReceiver(conclusionReactive);
+            conclusionReactive.registerReceiver(outputRouter());
         }
 
         private void mayRequestCondition(ConditionRequest conditionRequest) {
@@ -170,8 +170,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             @Override
-            public void registerSubscriber(Receiver.Subscriber<Map<Variable, Concept>> subscriber) {
-                super.registerSubscriber(subscriber);
+            public void registerReceiver(Receiver.Subscriber<Map<Variable, Concept>> subscriber) {
+                super.registerReceiver(subscriber);
                 // We need to wait until the receiver has been given before we can create the materialisation registry
                 this.materialisationRegistry = new ProviderRegistry.Multi<>();
             }
@@ -199,7 +199,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 if (materialisationRegistry().add(materialisationReactive)) {
                     processor().monitor().execute(actor -> actor.registerPath(receiverRegistry().receiver().identifier(), materialisationReactive.identifier()));
                 }
-                op.registerSubscriber(materialisationReactive);
+                op.registerReceiver(materialisationReactive);
                 materialisationReactive.sendTo(receiverRegistry().receiver());
 
                 processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));

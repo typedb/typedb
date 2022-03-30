@@ -97,7 +97,7 @@ public class MaterialisationController extends Controller<Materialisable, Void, 
                             .map(Iterators::single)
                             .orElse(Iterators.empty()),
                     this
-            ).map(Either::<ConceptMap, Materialisation>second).registerSubscriber(outputRouter());
+            ).map(Either::<ConceptMap, Materialisation>second).registerReceiver(outputRouter());
         }
     }
 }

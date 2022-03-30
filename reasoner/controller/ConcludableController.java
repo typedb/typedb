@@ -139,9 +139,9 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 //            else fanIn.publishTo(outputRouter());
             // TODO: How do we do a find first optimisation and also know that we're done? This needs to be local to
             //  this processor because in general we couldn't call all upstream work done.
-            fanIn.buffer().registerSubscriber(outputRouter());
+            fanIn.buffer().registerReceiver(outputRouter());
 
-            Source.create(traversalSuppplier, this).registerSubscriber(fanIn);
+            Source.create(traversalSuppplier, this).registerReceiver(fanIn);
 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
@@ -149,7 +149,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
                     mayRequestConnection(new ConclusionRequest(input.identifier(), conclusion, boundsAndRequirements.first()));
                     input.flatMap(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .buffer()
-                            .registerSubscriber(fanIn);
+                            .registerReceiver(fanIn);
                 }));
             });
             fanIn.finaliseProviders();

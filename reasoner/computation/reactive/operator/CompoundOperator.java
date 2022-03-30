@@ -16,10 +16,11 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive.stream;
-
+package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider.Publisher;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverMultiProviderStream<PACKET, PACKET> {
+public class CompoundOperator<PLAN_ID, PACKET> implements Operator<PACKET, PACKET, Publisher<PACKET>> {
 
     private final Publisher<PACKET> leadingPublisher;
     private final List<PLAN_ID> remainingPlan;
@@ -35,49 +36,49 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverMultiProvider
     private final BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc;
     private final Map<Publisher<PACKET>, PACKET> publisherPackets;
     private final PACKET initialPacket;
+    private final Processor<?, ?, ?, ?> processor;
 
-    public CompoundStream(Processor<?, ?, ?, ?> processor, List<PLAN_ID> plan,
-                          BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
-                          BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket) {
-        super(processor);
+    CompoundOperator(Processor<?, ?, ?, ?> processor, List<PLAN_ID> plan,
+                     BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
+                     BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket) {
+        this.processor = processor;
         assert plan.size() > 0;
         this.initialPacket = initialPacket;
         this.remainingPlan = new ArrayList<>(plan);
-        this.leadingPublisher = spawnLeaderFunc.apply(this.remainingPlan.remove(0), initialPacket);
         this.compoundPacketsFunc = compoundPacketsFunc;
         this.spawnLeaderFunc = spawnLeaderFunc;
         this.publisherPackets = new HashMap<>();
-        this.leadingPublisher.registerReceiver(this);
+        this.leadingPublisher = spawnLeaderFunc.apply(this.remainingPlan.remove(0), initialPacket);
+        // this.leadingPublisher.registerReceiver(this);  // TODO: This requires creating a new op + stream on construction. Perhaps this suggests this model of resolving compounds needs to change
     }
 
     @Override
-    public void receive(Publisher<PACKET> publisher, PACKET packet) {
-        super.receive(publisher, packet);
+    public Outcome<PACKET, Publisher<PACKET>> operate(Publisher<PACKET> provider, PACKET packet) {
         PACKET mergedPacket = compoundPacketsFunc.apply(initialPacket, packet);
-        if (leadingPublisher.equals(publisher)) {
+        Outcome<PACKET, Publisher<PACKET>> outcome = Outcome.create();
+        if (leadingPublisher.equals(provider)) {
             if (remainingPlan.size() == 0) {  // For a single item plan
-                receiverRegistry().setNotPulling();
-                receiverRegistry().receiver().receive(this, mergedPacket);
+                outcome.addOutput(mergedPacket);
             } else {
                 Publisher<PACKET> follower;
                 if (remainingPlan.size() == 1) {
                     follower = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
                 } else {
-                    follower = new CompoundStream<>(processor(), remainingPlan, spawnLeaderFunc, compoundPacketsFunc, mergedPacket).buffer();
+                    follower = AbstractStream.SyncStream.simple(
+                            processor,
+                            new CompoundOperator<>(processor, remainingPlan, spawnLeaderFunc, compoundPacketsFunc,
+                                                   initialPacket),
+                            true);
+                    outcome.addNewProvider(follower);
                 }
                 publisherPackets.put(follower, mergedPacket);
-                processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
-                processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
-                follower.registerReceiver(this);
-                if (receiverRegistry().isPulling()) {
-                    processor().schedulePullRetry(leadingPublisher, this);  // Retry the leader in case the follower never produces an answer
-                    if (providerRegistry().setPulling(follower)) follower.pull(this);
-                }
+                outcome.addAnswerConsumed();
             }
         } else {
-            receiverRegistry().setNotPulling();
-            PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(publisher));
-            receiverRegistry().receiver().receive(this, compoundedPacket);
+            PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(provider));
+            outcome.addOutput(compoundedPacket);
         }
+        return outcome;
     }
+
 }

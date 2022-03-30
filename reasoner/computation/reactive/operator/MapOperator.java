@@ -19,10 +19,11 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
 import com.vaticle.typedb.common.collection.Collections;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 
 import java.util.function.Function;
 
-public class MapOperator<INPUT, OUTPUT, PROVIDER, RECEIVER> implements Operator<INPUT, OUTPUT, PROVIDER> {
+public class MapOperator<INPUT, OUTPUT, PROVIDER extends Reactive.Provider<?>> implements Operator<INPUT, OUTPUT, PROVIDER> {
 
     private final Function<INPUT, OUTPUT> mappingFunc;
 
@@ -31,7 +32,7 @@ public class MapOperator<INPUT, OUTPUT, PROVIDER, RECEIVER> implements Operator<
     }
 
     @Override
-    public Outcome<OUTPUT> operate(PROVIDER provider, INPUT packet) {
+    public Outcome<OUTPUT, PROVIDER> operate(PROVIDER provider, INPUT packet) {
         return Outcome.create(Collections.set(mappingFunc.apply(packet)));
     }
 

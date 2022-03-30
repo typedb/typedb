@@ -40,6 +40,8 @@ public interface Reactive {
 
     interface Provider<RECEIVER> extends Reactive {
 
+        void registerReceiver(RECEIVER receiver);
+
         void pull(RECEIVER receiver);
 
         interface Publisher<PACKET> extends Provider<Receiver.Subscriber<PACKET>> {
@@ -47,7 +49,8 @@ public interface Reactive {
             @Override
             void pull(Receiver.Subscriber<PACKET> subscriber);
 
-            void registerSubscriber(Receiver.Subscriber<PACKET> subscriber);  // TODO: Consider moving this to Provider
+            @Override
+            void registerReceiver(Receiver.Subscriber<PACKET> subscriber);
 
             Stream<PACKET, PACKET> findFirst();
 
@@ -64,6 +67,8 @@ public interface Reactive {
 
     interface Receiver<PROVIDER, PACKET> extends Reactive {
 
+        void registerProvider(PROVIDER provider);
+
         void receive(PROVIDER provider, PACKET packet);
 
         interface Subscriber<PACKET> extends Receiver<Provider.Publisher<PACKET>, PACKET> {
@@ -71,7 +76,8 @@ public interface Reactive {
             @Override
             void receive(Provider.Publisher<PACKET> publisher, PACKET packet);
 
-            void registerPublisher(Provider.Publisher<PACKET> publisher);  // TODO: Consider moving this to Receiver
+            @Override
+            void registerProvider(Provider.Publisher<PACKET> publisher);
 
             interface Finishable<PACKET> extends Reactive.Receiver.Subscriber<PACKET> {
 

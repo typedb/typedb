@@ -115,7 +115,7 @@ public abstract class Processor<INPUT, OUTPUT,
         assert !done;
         if (isTerminated()) return;
         Output<OUTPUT> output = createOutput();
-        output.setReceiver(connector.inputId());
+        output.registerReceiver(connector.inputId());
         connector.connectViaTransforms(outputRouter(), output);
         connector.inputId().processor().execute(
                 actor -> actor.finishConnection(connector.inputId(), output.identifier()));
@@ -124,7 +124,7 @@ public abstract class Processor<INPUT, OUTPUT,
     protected void finishConnection(Identifier<INPUT, ?> inputId, Identifier<?, INPUT> outputId) {
         assert !done;
         Input<INPUT> input = inputs.get(inputId);
-        input.addProvider(outputId);
+        input.registerProvider(outputId);
         input.pull();
     }
 
@@ -209,7 +209,8 @@ public abstract class Processor<INPUT, OUTPUT,
             return identifier;
         }
 
-        void addProvider(Identifier<?, PACKET> providerOutputId) {
+        @Override
+        public void registerProvider(Identifier<?, PACKET> providerOutputId) {
             if (providerRegistry().add(providerOutputId)) {
                 processor().monitor().execute(actor -> actor.registerPath(identifier(), providerOutputId));
             }
@@ -293,14 +294,15 @@ public abstract class Processor<INPUT, OUTPUT,
         }
 
         @Override
-        public void registerPublisher(Publisher<PACKET> provider) {
+        public void registerProvider(Publisher<PACKET> provider) {
             if (providerRegistry().add(provider)) {
                 processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
             }
             if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
         }
 
-        public void setReceiver(Identifier<PACKET, ?> inputId) {
+        @Override
+        public void registerReceiver(Identifier<PACKET, ?> inputId) {
             receiverRegistry().addReceiver(inputId);
         }
     }

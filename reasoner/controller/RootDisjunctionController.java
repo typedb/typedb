@@ -87,7 +87,7 @@ public class RootDisjunctionController
         public void setUp() {
             super.setUp();
             reasonerEntryPoint = new RootSink(this, reasonerConsumer);
-            outputRouter().registerSubscriber(reasonerEntryPoint);
+            outputRouter().registerReceiver(reasonerEntryPoint);
         }
 
         @Override

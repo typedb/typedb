@@ -19,10 +19,11 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 
 import java.util.function.Function;
 
-public class FlatMapOperator<INPUT, OUTPUT, PROVIDER, RECEIVER> implements Operator<INPUT, OUTPUT, PROVIDER> {
+public class FlatMapOperator<INPUT, OUTPUT, PROVIDER extends Provider<?>> implements Operator<INPUT, OUTPUT, PROVIDER> {
 
     private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
 
@@ -31,11 +32,11 @@ public class FlatMapOperator<INPUT, OUTPUT, PROVIDER, RECEIVER> implements Opera
     }
 
     @Override
-    public Outcome<OUTPUT> operate(PROVIDER provider, INPUT packet) {
+    public Outcome<OUTPUT, PROVIDER> operate(PROVIDER provider, INPUT packet) {
         FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
         // This can actually create more receive() calls to downstream than the number of pulls it receives. Protect
         // against by manually adding .buffer() after calls to flatMap
-        Outcome<OUTPUT> outcome = Outcome.create();
+        Outcome<OUTPUT, PROVIDER> outcome = Outcome.create();
         transformed.forEachRemaining(t -> {
             outcome.addAnswerCreated();
             outcome.addOutput(t);
