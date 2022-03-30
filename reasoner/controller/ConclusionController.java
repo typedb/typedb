@@ -32,11 +32,10 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverSingleProviderStream;
-import com.vaticle.typedb.core.reasoner.controller.ConclusionController.ConclusionProcessor.ConditionRequest;
-import com.vaticle.typedb.core.reasoner.controller.ConclusionController.ConclusionProcessor.MaterialiserRequest;
+import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverMultiProviderStream;
+import com.vaticle.typedb.core.reasoner.controller.ConclusionController.FromConclusionRequest.ConditionRequest;
+import com.vaticle.typedb.core.reasoner.controller.ConclusionController.FromConclusionRequest.MaterialiserRequest;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -113,135 +112,6 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
-    }
-
-    protected static class ConclusionProcessor extends Processor<Either<ConceptMap, Materialisation>, Map<Variable, Concept>, FromConclusionRequest<?, ?>, ConclusionProcessor> {
-
-        private final Rule rule;
-        private final ConceptMap bounds;
-        private final ConceptManager conceptManager;
-        private final Set<ConditionRequest> conditionRequests;
-        private final Set<MaterialiserRequest> materialisationRequests;
-
-        protected ConclusionProcessor(Driver<ConclusionProcessor> driver,
-                                      Driver<ConclusionController> controller, Driver<Monitor> monitor, Rule rule,
-                                      ConceptMap bounds, ConceptManager conceptManager, Supplier<String> debugName) {
-            super(driver, controller, monitor, debugName);
-            this.rule = rule;
-            this.bounds = bounds;
-            this.conceptManager = conceptManager;
-            this.conditionRequests = new HashSet<>();
-            this.materialisationRequests = new HashSet<>();
-        }
-
-        @Override
-        public void setUp() {
-            setOutputRouter(new FanOutStream<>(this));
-            Input<Either<ConceptMap, Materialisation>> conditionInput = createInput();
-            mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), bounds));
-            ConclusionReactive conclusionReactive = new ConclusionReactive(this);
-            conditionInput.map(a -> a.first()).registerReceiver(conclusionReactive);
-            conclusionReactive.registerReceiver(outputRouter());
-        }
-
-        private void mayRequestCondition(ConditionRequest conditionRequest) {
-            // TODO: Does this method achieve anything?
-            if (!conditionRequests.contains(conditionRequest)) {
-                conditionRequests.add(conditionRequest);
-                requestConnection(conditionRequest);
-            }
-        }
-
-        private void mayRequestMaterialiser(MaterialiserRequest materialisationRequest) {
-            // TODO: Does this method achieve anything?
-            if (!materialisationRequests.contains(materialisationRequest)) {
-                materialisationRequests.add(materialisationRequest);
-                requestConnection(materialisationRequest);
-            }
-        }
-
-        private class ConclusionReactive extends SingleReceiverSingleProviderStream<ConceptMap, Map<Variable, Concept>> {
-
-            private ProviderRegistry.Multi<Publisher<Map<Variable, Concept>>> materialisationRegistry;
-
-            protected ConclusionReactive(Processor<?, ?, ?, ?> processor) {
-                super(processor);
-                this.materialisationRegistry = null;
-            }
-
-            @Override
-            public void registerReceiver(Receiver.Subscriber<Map<Variable, Concept>> subscriber) {
-                super.registerReceiver(subscriber);
-                // We need to wait until the receiver has been given before we can create the materialisation registry
-                this.materialisationRegistry = new ProviderRegistry.Multi<>();
-            }
-
-            protected ProviderRegistry.Multi<Publisher<Map<Variable, Concept>>> materialisationRegistry() {
-                return materialisationRegistry;
-            }
-
-            @Override
-            public void pull(Receiver.Subscriber<Map<Variable, Concept>> subscriber) {
-                super.pull(subscriber);
-                materialisationRegistry().nonPulling().forEach(p -> p.pull(receiverRegistry().receiver()));
-            }
-
-            @Override
-            public void receive(Publisher<ConceptMap> publisher, ConceptMap packet) {
-                super.receive(publisher, packet);
-                Input<Either<ConceptMap, Materialisation>> materialisationInput = createInput();
-                mayRequestMaterialiser(new MaterialiserRequest(
-                        materialisationInput.identifier(), null,
-                        rule.conclusion().materialisable(packet, conceptManager))
-                );
-                Stream<?, Map<Variable, Concept>> op = materialisationInput.map(m -> m.second().bindToConclusion(rule.conclusion(), packet));
-                MaterialisationReactive materialisationReactive = new MaterialisationReactive(this, processor());
-                if (materialisationRegistry().add(materialisationReactive)) {
-                    processor().monitor().execute(actor -> actor.registerPath(receiverRegistry().receiver().identifier(), materialisationReactive.identifier()));
-                }
-                op.registerReceiver(materialisationReactive);
-                materialisationReactive.sendTo(receiverRegistry().receiver());
-
-                processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
-                processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
-
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(identifier(), materialisationReactive.identifier()));
-                if (receiverRegistry().isPulling()) {
-                    if (materialisationRegistry().setPulling(materialisationReactive)) materialisationReactive.pull(receiverRegistry().receiver());
-                    processor().schedulePullRetry(publisher, this);  // We need to retry the condition again in case materialisation fails
-                }
-            }
-
-            private void receiveMaterialisation(MaterialisationReactive provider, Map<Variable, Concept> packet) {
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(provider.identifier(), identifier(), packet));
-                materialisationRegistry().recordReceive(provider);
-                if (receiverRegistry().isPulling()) {
-                    Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(identifier(), provider.identifier()));
-                    processor().schedulePullRetry(provider, receiverRegistry().receiver());  // We need to retry so that the materialisation does a join
-                }
-                receiverRegistry().setNotPulling();
-                receiverRegistry().receiver().receive(this, packet);
-            }
-        }
-
-        private class MaterialisationReactive extends SingleReceiverSingleProviderStream<Map<Variable, Concept>, Map<Variable, Concept>> {
-
-            private final ConclusionReactive parent;
-
-            public MaterialisationReactive(ConclusionReactive parent, Processor<?, ?, ?, ?> processor) {
-                super(processor);
-                this.parent = parent;
-            }
-
-            @Override
-            public void receive(Publisher<Map<Variable, Concept>> publisher, Map<Variable, Concept> packet) {
-                super.receive(publisher, packet);
-                receiverRegistry().setNotPulling();
-                parent.receiveMaterialisation(this, packet);
-            }
-
-        }
-
         protected static class ConditionRequest extends FromConclusionRequest<Rule.Condition, ConceptMap> {
 
             public ConditionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
@@ -276,6 +146,86 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             @Override
             public MaterialiserRequest asMaterialiser() {
                 return this;
+            }
+
+        }
+    }
+
+    protected static class ConclusionProcessor extends Processor<Either<ConceptMap, Materialisation>, Map<Variable, Concept>, FromConclusionRequest<?, ?>, ConclusionProcessor> {
+
+        private final Rule rule;
+        private final ConceptMap bounds;
+        private final ConceptManager conceptManager;
+        private final Set<ConditionRequest> conditionRequests;
+        private final Set<MaterialiserRequest> materialisationRequests;
+
+        protected ConclusionProcessor(Driver<ConclusionProcessor> driver,
+                                      Driver<ConclusionController> controller, Driver<Monitor> monitor, Rule rule,
+                                      ConceptMap bounds, ConceptManager conceptManager, Supplier<String> debugName) {
+            super(driver, controller, monitor, debugName);
+            this.rule = rule;
+            this.bounds = bounds;
+            this.conceptManager = conceptManager;
+            this.conditionRequests = new HashSet<>();
+            this.materialisationRequests = new HashSet<>();
+        }
+
+        @Override
+        public void setUp() {
+            setOutputRouter(new FanOutStream<>(this));
+            Input<Either<ConceptMap, Materialisation>> conditionInput = createInput();
+            mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), bounds));
+            ConclusionReactive conclusionReactive = new ConclusionReactive(this);
+            conditionInput.map(ConclusionProcessor::convertConclusionInput).registerReceiver(conclusionReactive);
+            conclusionReactive.registerReceiver(outputRouter());
+        }
+
+        private static Either<ConceptMap, Map<Variable, Concept>> convertConclusionInput(Either<ConceptMap, Materialisation> input) {
+            return Either.first(input.first());
+        }
+
+        private void mayRequestCondition(ConditionRequest conditionRequest) {
+            // TODO: Does this method achieve anything?
+            if (!conditionRequests.contains(conditionRequest)) {
+                conditionRequests.add(conditionRequest);
+                requestConnection(conditionRequest);
+            }
+        }
+
+        private void mayRequestMaterialiser(MaterialiserRequest materialisationRequest) {
+            // TODO: Does this method achieve anything?
+            if (!materialisationRequests.contains(materialisationRequest)) {
+                materialisationRequests.add(materialisationRequest);
+                requestConnection(materialisationRequest);
+            }
+        }
+
+        private class ConclusionReactive extends SingleReceiverMultiProviderStream<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>> {
+
+            protected ConclusionReactive(Processor<?, ?, ?, ?> processor) {
+                super(processor);
+            }
+
+            @Override
+            public void receive(Publisher<Either<ConceptMap, Map<Variable, Concept>>> publisher, Either<ConceptMap, Map<Variable, Concept>> packet) {
+                super.receive(publisher, packet);
+                if (packet.isFirst()) {
+                    Input<Either<ConceptMap, Materialisation>> materialisationInput = createInput();
+                    mayRequestMaterialiser(new MaterialiserRequest(
+                            materialisationInput.identifier(), null,
+                            rule.conclusion().materialisable(packet.first(), conceptManager))
+                    );
+                    Stream<?, Either<ConceptMap, Map<Variable, Concept>>> op = materialisationInput
+                            .map(m -> Either.second(m.second().bindToConclusion(rule.conclusion(), packet.first())));
+                    op.registerReceiver(this);
+                    processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
+                    processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
+                    if (receiverRegistry().isPulling())processor().schedulePullRetry(publisher, this);  // We need to retry the condition again in case materialisation fails
+                } else {
+                    if (receiverRegistry().isPulling()) processor().schedulePullRetry(publisher, this);  // We need to retry so that the materialisation does a join
+                    receiverRegistry().setNotPulling();
+                    receiverRegistry().receiver().receive(this, packet.second());
+                }
             }
 
         }
