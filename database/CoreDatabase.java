@@ -104,7 +104,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CoreDatabase implements TypeDB.Database {
 
-    protected static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
     private static final int ROCKS_LOG_PERIOD = 300;
 
     private final CoreDatabaseManager databaseMgr;
