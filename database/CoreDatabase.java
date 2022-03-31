@@ -575,7 +575,7 @@ public class CoreDatabase implements TypeDB.Database {
             correctionRequired = new AtomicBoolean(false);
         }
 
-        public void initialise() {
+        void initialise() {
             session = createAndOpenSession(DATA, new Options.Session()).asData();
         }
 
@@ -784,7 +784,7 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        public void close() {
+        protected void close() {
             try {
                 correctionRequired.set(false);
                 for (CompletableFuture<Void> correction : corrections) {
