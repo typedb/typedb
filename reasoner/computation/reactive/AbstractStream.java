@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
@@ -34,7 +35,7 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implements Provider<RECEIVER>, Receiver<PROVIDER, INPUT> {
+public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implements Provider<RECEIVER>, Receiver<PROVIDER, INPUT> {  // TODO: Rename Stream when there's no conflict
 
     private final Processor<?, ?, ?, ?> processor;
     private final Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> operator;
@@ -81,7 +82,9 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
     public void pull(RECEIVER receiver) {
         if (operator().isWithdrawable() && operator().asWithdrawable().hasNext(receiver)) {
             receiverRegistry().setNotPulling(receiver);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
-            outputToReceiver(receiver, operator().asWithdrawable().next(receiver));  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
+            Operator.Supplied<OUTPUT, PROVIDER> supplied = operator().asWithdrawable().next(receiver);
+            processEffects(supplied);
+            outputToReceiver(receiver, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
         } else {
             providerRegistry().nonPulling().forEach(this::propagatePull);
         }
@@ -93,12 +96,13 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
         providerRegistry().recordReceive(provider);
         assert operator().isAccepter();
         if (operator().isTransformer()) {
-            Operator.Transformed<OUTPUT, PROVIDER> outcome = operator().asTransformer().accept(provider, packet);  // TODO: Most of the time we want to immediately process and pass on the output, regardless of pulling state
+            Operator.Transformed<OUTPUT, PROVIDER> outcome = operator().asTransformer().accept(provider, packet);
             processEffects(outcome);
             assert !operator().isWithdrawable();  // Transformers shouldn't be withdrawable as they produce all of their outputs straight away
             if (outcome.outputs().isEmpty() && receiverRegistry().anyPulling()) {
-                retryPull(provider);
+                rePullProvider(provider);
             } else {
+                // pass on the output, regardless of pulling state
                 iterate(receiverRegistry().receivers()).forEachRemaining(
                         receiver -> iterate(outcome.outputs()).forEachRemaining(output -> outputToReceiver(receiver, output)));
             }
@@ -109,14 +113,15 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
             if (operator().isWithdrawable()) {
                 iterate(receiverRegistry().pulling()).forEachRemaining(receiver -> {
                     if (operator().asWithdrawable().hasNext(receiver)) {
-                        OUTPUT output = operator().asWithdrawable().next(receiver);
+                        Operator.Supplied<OUTPUT, PROVIDER> supplied = operator().asWithdrawable().next(receiver);
+                        processEffects(supplied);
                         receiverRegistry().setNotPulling(receiver);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
-                        outputToReceiver(receiver, output);
+                        outputToReceiver(receiver, supplied.output());
                     } else {
                         retry.set(true);
                     }
                 });
-                if (retry.get()) retryPull(provider);
+                if (retry.get()) rePullProvider(provider);
             }
         }
     }
@@ -142,7 +147,7 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
 
     protected abstract void propagatePull(PROVIDER provider);
 
-    protected abstract void retryPull(PROVIDER provider);
+    protected abstract void rePullProvider(PROVIDER provider);
 
     protected abstract void outputToReceiver(RECEIVER receiver, OUTPUT packet);
 
@@ -167,6 +172,17 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
             return new SyncStream<>(processor, operator, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
         }
 
+
+        public static <P1, P2, P3> Pair<SyncStream<P1, P2>, SyncStream<P2, P3>> chain(Processor<?, ?, ?, ?> processor,
+                                                                                      Operator<P1, P2, Publisher<P1>, Subscriber<P2>> op1,
+                                                                                      Operator<P2, P3, Publisher<P2>, Subscriber<P3>> op2) {
+            SyncStream<P1, P2> s1 = new SyncStream<>(processor, op1, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
+            SyncStream<P2, P3> s2 = new SyncStream<>(processor, op2, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
+            s2.registerProvider(s1);
+            s1.registerReceiver(s2);
+            return new Pair<>(s1, s2);
+        }
+
         public static <INPUT, OUTPUT> SyncStream<INPUT, OUTPUT> fanOut(Processor<?, ?, ?, ?> processor,
                                                                        Operator<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator) {
             return new SyncStream<>(processor, operator, new ReceiverRegistry.Multi<>(), new ProviderRegistry.Single<>());
@@ -183,19 +199,13 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
         }
 
         @Override
-        protected void retryPull(Publisher<INPUT> provider) {
+        protected void rePullProvider(Publisher<INPUT> provider) {
             processor().pullRetry(provider.identifier(), identifier());
         }
 
         @Override
         protected void outputToReceiver(Subscriber<OUTPUT> receiver, OUTPUT packet) {
             receiver.receive(this, packet);
-        }
-
-        @Override
-        public void registerReceiver(Subscriber<OUTPUT> subscriber) {
-            receiverRegistry().addReceiver(subscriber);
-            subscriber.registerProvider(this);
         }
 
         @Override
@@ -223,6 +233,12 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
         }
 
         @Override
+        public void registerReceiver(Subscriber<OUTPUT> subscriber) {
+            receiverRegistry().addReceiver(subscriber);
+            subscriber.registerProvider(this);  // TODO: Bad to have this mutual registering in one method call, it's unclear
+        }
+
+        @Override
         public void registerProvider(Publisher<INPUT> publisher) {
             if (providerRegistry().add(publisher)) registerPath(publisher);
             if (receiverRegistry().anyPulling() && providerRegistry().setPulling(publisher)) propagatePull(publisher);
@@ -233,6 +249,58 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
             processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
         }
 
+    }
+
+    public static class SourceStream<PACKET> extends AbstractStream<Void, PACKET, Subscriber<PACKET>, Void> {
+
+        protected SourceStream(Processor<?, ?, ?, ?> processor,
+                               Operator.Source<PACKET, Subscriber<PACKET>> operator,
+                               ReceiverRegistry<Subscriber<PACKET>> receiverRegistry,
+                               ProviderRegistry<Void> providerRegistry) {
+            super(processor, operator, receiverRegistry, providerRegistry);
+        }
+
+        public static <OUTPUT> SourceStream<OUTPUT> create(
+                Processor<?, ?, ?, ?> processor, Operator.Source<OUTPUT, Subscriber<OUTPUT>> operator) {
+            return new SourceStream<>(processor, operator, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
+        }
+
+        // TODO: So many of these methods are not applicable that this smells bad
+
+        @Override
+        protected void traceReceive(Void aVoid, Void packet) {
+
+        }
+
+        @Override
+        protected void propagatePull(Void aVoid) {
+
+        }
+
+        @Override
+        protected void rePullProvider(Void aVoid) {
+
+        }
+
+        @Override
+        protected void outputToReceiver(Subscriber<PACKET> packetSubscriber, PACKET packet) {
+
+        }
+
+        @Override
+        protected void registerPath(Void aVoid) {
+
+        }
+
+        @Override
+        public void registerReceiver(Subscriber<PACKET> packetSubscriber) {
+
+        }
+
+        @Override
+        public void registerProvider(Void aVoid) {
+
+        }
     }
 
     public static class InputStream<PACKET> extends AbstractStream<PACKET, PACKET, Subscriber<PACKET>, Reactive.Identifier<?, PACKET>> implements Publisher<PACKET> {
@@ -254,7 +322,7 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
         }
 
         @Override
-        protected void retryPull(Reactive.Identifier<?, PACKET> packetIdentifier) {
+        protected void rePullProvider(Reactive.Identifier<?, PACKET> packetIdentifier) {
 
         }
 
@@ -319,7 +387,7 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
         }
 
         @Override
-        protected void retryPull(Publisher<PACKET> packetPublisher) {
+        protected void rePullProvider(Publisher<PACKET> packetPublisher) {
 
         }
 

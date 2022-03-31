@@ -22,13 +22,13 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
 import java.util.function.Supplier;
 
-public class SupplierOperator<PACKET, RECEIVER> extends Operator.SourceImpl<Operator.Transformed<PACKET,?>, RECEIVER> {
+public class SupplierOperator<PACKET, RECEIVER> extends Operator.SourceImpl<PACKET, RECEIVER> {
 
     private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
     private boolean exhausted;
     private FunctionalIterator<PACKET> iterator;
 
-    SupplierOperator(Supplier<FunctionalIterator<PACKET>> iteratorSupplier) {
+    public SupplierOperator(Supplier<FunctionalIterator<PACKET>> iteratorSupplier) {
         this.iteratorSupplier = iteratorSupplier;
         this.exhausted = false;
     }
@@ -44,12 +44,12 @@ public class SupplierOperator<PACKET, RECEIVER> extends Operator.SourceImpl<Oper
     }
 
     @Override
-    public Transformed<PACKET, ?> next(RECEIVER receiver) {
-        Transformed<PACKET, ?> outcome = Transformed.create();
+    public Supplied<PACKET, Void> next(RECEIVER receiver) {
+        Supplied<PACKET, Void> outcome = Supplied.create();
         if (!exhausted) {
             if (hasNext(receiver)) {
                 outcome.addAnswerCreated();
-                outcome.addOutput(iterator().next());
+                outcome.setOutput(iterator().next());
             } else {
                 exhausted = true;
                 outcome.addSourceFinished();

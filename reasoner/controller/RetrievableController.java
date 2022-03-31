@@ -26,6 +26,8 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Connector.Request;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractStream.SourceStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.SupplierOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
@@ -83,6 +85,9 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
         public void setUp() {
             setOutputRouter(new FanOutStream<>(this));
             Source.create(traversalSupplier, this).registerReceiver(outputRouter());
+
+            // TODO: It should be really easy to create a source, but there's something wrong? Why do I need to create a Stream.Source (or customise a basic stream giving it redundant parts) and then the operator to go inside it?
+            SourceStream<ConceptMap> sourceStream = SourceStream.create(this, new SupplierOperator<>(traversalSupplier));
         }
     }
 }

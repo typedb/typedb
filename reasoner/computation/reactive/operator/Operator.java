@@ -51,7 +51,7 @@ public interface Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
 
         boolean hasNext(RECEIVER receiver);
 
-        OUTPUT next(RECEIVER receiver);
+        Supplied<OUTPUT, PROVIDER> next(RECEIVER receiver);
 
     }
 
@@ -206,6 +206,28 @@ public interface Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
             return outputs;
         }
 
+    }
+
+    class Supplied<OUTPUT, PROVIDER> extends Effects<PROVIDER> {
+
+        private OUTPUT output;
+
+        private Supplied(int answersCreated, int answersConsumed) {
+            super(answersCreated, answersConsumed);
+        }
+
+        public static <PACKET> Supplied<PACKET, Void> create() {
+            return new Supplied<>(0, 0);
+        }
+
+        public void setOutput(OUTPUT output) {
+            this.output = output;
+        }
+
+        public OUTPUT output() {
+            assert output != null;
+            return output;
+        }
     }
 
     class Effects<PROVIDER> {
