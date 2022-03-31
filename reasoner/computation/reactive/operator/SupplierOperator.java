@@ -18,26 +18,19 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractStream;
 
-import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-
-public class SupplierOperator<PACKET> implements AbstractStream.SimpleBuffer<Operator.Outcome<PACKET,?>> {
+public class SupplierOperator<PACKET, RECEIVER> extends Operator.SourceImpl<Operator.Transformed<PACKET,?>, RECEIVER> {
 
     private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
     private boolean exhausted;
     private FunctionalIterator<PACKET> iterator;
 
-    SupplierOperator(Supplier<FunctionalIterator<PACKET>> iteratorSupplier, Processor<?, ?, ?, ?> processor) {
+    SupplierOperator(Supplier<FunctionalIterator<PACKET>> iteratorSupplier) {
         this.iteratorSupplier = iteratorSupplier;
         this.exhausted = false;
-        // processor.monitor().execute(actor -> actor.registerSource(identifier()));  // TODO: How do we register a source? We can't return an Outcome object without a separate initialise method
     }
 
     private FunctionalIterator<PACKET> iterator() {
@@ -46,15 +39,15 @@ public class SupplierOperator<PACKET> implements AbstractStream.SimpleBuffer<Ope
     }
 
     @Override
-    public boolean hasNext() {
+    public boolean hasNext(RECEIVER receiver) {
         return !exhausted && iterator().hasNext();
     }
 
     @Override
-    public Operator.Outcome<PACKET, ?> next() {
-        Operator.Outcome<PACKET, ?> outcome = Operator.Outcome.create();
+    public Transformed<PACKET, ?> next(RECEIVER receiver) {
+        Transformed<PACKET, ?> outcome = Transformed.create();
         if (!exhausted) {
-            if (hasNext()) {
+            if (hasNext(receiver)) {
                 outcome.addAnswerCreated();
                 outcome.addOutput(iterator().next());
             } else {
@@ -65,8 +58,4 @@ public class SupplierOperator<PACKET> implements AbstractStream.SimpleBuffer<Ope
         return outcome;
     }
 
-    @Override
-    public void add(Set<Operator.Outcome<PACKET, ?>> packets) {
-        throw TypeDBException.of(ILLEGAL_STATE);
-    }
 }

@@ -232,7 +232,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         }
 
-        public static class ConclusionOperator implements Operator<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>, Publisher<Either<ConceptMap, Map<Variable, Concept>>>> {
+        public static class ConclusionOperator<RECEIVER> extends Operator.TransformerImpl<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>, Publisher<Either<ConceptMap, Map<Variable, Concept>>>, RECEIVER> {
 
             private final ConclusionProcessor processor;
 
@@ -245,8 +245,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             @Override
-            public Outcome<Map<Identifier.Variable, Concept>, Publisher<Either<ConceptMap, Map<Variable, Concept>>>> operate(Publisher<Either<ConceptMap, Map<Variable, Concept>>> provider, Either<ConceptMap, Map<Identifier.Variable, Concept>> packet) {
-                Outcome<Map<Identifier.Variable, Concept>, Publisher<Either<ConceptMap, Map<Variable, Concept>>>> outcome = Outcome.create();
+            public Transformed<Map<Variable, Concept>, Publisher<Either<ConceptMap, Map<Variable, Concept>>>> accept(Publisher<Either<ConceptMap, Map<Variable, Concept>>> provider, Either<ConceptMap, Map<Identifier.Variable, Concept>> packet) {
+                Transformed<Map<Variable, Concept>, Publisher<Either<ConceptMap, Map<Variable, Concept>>>> outcome = Transformed.create();
                 if (packet.isFirst()) {
                     Processor.Input<Either<ConceptMap, Rule.Conclusion.Materialisation>> materialisationInput = processor().createInput();
                     processor().mayRequestMaterialiser(new ConclusionController.FromConclusionRequest.MaterialiserRequest(

@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-public class CompoundOperator<PLAN_ID, PACKET> implements Operator<PACKET, PACKET, Publisher<PACKET>> {
+public class CompoundOperator<PLAN_ID, PACKET, RECEIVER> extends Operator.TransformerImpl<PACKET, PACKET, Publisher<PACKET>, RECEIVER> {
 
     private final Publisher<PACKET> leadingPublisher;
     private final List<PLAN_ID> remainingPlan;
@@ -53,9 +53,9 @@ public class CompoundOperator<PLAN_ID, PACKET> implements Operator<PACKET, PACKE
     }
 
     @Override
-    public Outcome<PACKET, Publisher<PACKET>> operate(Publisher<PACKET> provider, PACKET packet) {
+    public Transformed<PACKET, Publisher<PACKET>> accept(Publisher<PACKET> provider, PACKET packet) {
         PACKET mergedPacket = compoundPacketsFunc.apply(initialPacket, packet);
-        Outcome<PACKET, Publisher<PACKET>> outcome = Outcome.create();
+        Transformed<PACKET, Publisher<PACKET>> outcome = Transformed.create();
         if (leadingPublisher.equals(provider)) {
             if (remainingPlan.size() == 0) {  // For a single item plan
                 outcome.addOutput(mergedPacket);
@@ -67,8 +67,8 @@ public class CompoundOperator<PLAN_ID, PACKET> implements Operator<PACKET, PACKE
                     follower = AbstractStream.SyncStream.simple(
                             processor,
                             new CompoundOperator<>(processor, remainingPlan, spawnLeaderFunc, compoundPacketsFunc,
-                                                   initialPacket),
-                            true).buffer();
+                                                   initialPacket)
+                    ).buffer();
                     outcome.addNewProvider(follower);
                 }
                 publisherPackets.put(follower, mergedPacket);
