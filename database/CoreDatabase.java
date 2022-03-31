@@ -374,7 +374,7 @@ public class CoreDatabase implements TypeDB.Database {
         return isolationMgr;
     }
 
-    public StatisticsCorrector statisticsCorrector() {
+    protected StatisticsCorrector statisticsCorrector() {
         return statisticsCorrector;
     }
 
