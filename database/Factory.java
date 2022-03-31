@@ -44,7 +44,7 @@ public interface Factory {
         CoreTransaction.Schema transaction(CoreSession.Schema session, Arguments.Transaction.Type type,
                                            Options.Transaction options);
 
-        CoreTransaction.Schema initialisationTransaction(CoreSession.Schema session);
+        CoreTransaction.Schema transactionLocal(CoreSession.Schema session);
     }
 
     interface TransactionData {

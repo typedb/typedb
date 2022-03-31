@@ -165,7 +165,7 @@ public abstract class CoreSession implements TypeDB.Session {
             } catch (InterruptedException e) {
                 throw TypeDBException.of(e);
             }
-            CoreTransaction.Schema transaction = txSchemaFactory.initialisationTransaction(this);
+            CoreTransaction.Schema transaction = txSchemaFactory.transactionLocal(this);
             transactions.put(transaction, 0L);
             return transaction;
         }
