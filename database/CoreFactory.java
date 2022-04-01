@@ -78,7 +78,7 @@ public final class CoreFactory implements Factory {
                 }
 
                 @Override
-                public CoreTransaction.Schema transactionLocal(CoreSession.Schema session) {
+                public CoreTransaction.Schema initialisationTransaction(CoreSession.Schema session) {
                     return new CoreTransaction.Schema(session, Arguments.Transaction.Type.WRITE, new Options.Transaction(), storageFactory());
                 }
             };
