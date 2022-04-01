@@ -121,7 +121,7 @@ public class CoreDatabase implements TypeDB.Database {
     private final IsolationManager isolationMgr;
     private final StatisticsCorrector statisticsCorrector;
     protected OptimisticTransactionDB rocksSchema;
-    public OptimisticTransactionDB rocksData;
+    protected OptimisticTransactionDB rocksData;
     protected CorePartitionManager.Schema rocksSchemaPartitionMgr;
     protected CorePartitionManager.Data rocksDataPartitionMgr;
     protected CoreSession.Data statisticsBackgroundCounterSession;
