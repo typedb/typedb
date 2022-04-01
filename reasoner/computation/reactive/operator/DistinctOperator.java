@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider.P
 import java.util.HashSet;
 import java.util.Set;
 
-public class DistinctOperator<PACKET, RECEIVER> extends Operator.TransformerImpl<PACKET, PACKET, Publisher<PACKET>, RECEIVER> {
+public class DistinctOperator<PACKET, RECEIVER> implements Operator.Transformer<PACKET, PACKET, Publisher<PACKET>, RECEIVER>, Operator<PACKET, PACKET, Publisher<PACKET>, RECEIVER> {
 
     private final Set<PACKET> deduplicationSet;
 

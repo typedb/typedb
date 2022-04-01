@@ -18,34 +18,10 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
-
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-
 public interface Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
-
-    boolean isSource();
-
-    Source<OUTPUT, RECEIVER> asSource();
-
-    boolean isTransformer();
-
-    Transformer<INPUT, OUTPUT, PROVIDER, ?> asTransformer();
-
-    boolean isSink();
-
-    Sink<INPUT, OUTPUT, PROVIDER> asSink();
-
-    boolean isWithdrawable();
-
-    Withdrawable<INPUT, OUTPUT, PROVIDER, RECEIVER> asWithdrawable();
-
-    boolean isAccepter();
-
-    Accepter<INPUT, OUTPUT, PROVIDER, RECEIVER> asAccepter();
 
     interface Withdrawable<INPUT, OUTPUT, PROVIDER, RECEIVER> extends Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
 
@@ -56,7 +32,9 @@ public interface Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
     }
 
     interface Source<OUTPUT, RECEIVER> extends Withdrawable<Void, OUTPUT, Void, RECEIVER> {
-
+        // TODO: We can argue that Source shouldn't extend Withdrawable and have hasNext() because it has more of a
+        //  isExhausted(), where asking isExhausted will always return true after it has been true once, whereas
+        //  hasNext() could switch back
     }
 
     interface Accepter<INPUT, OUTPUT, PROVIDER, RECEIVER> extends Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
@@ -81,103 +59,50 @@ public interface Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
 
     }
 
-    abstract class OperatorImpl<INPUT, OUTPUT, PROVIDER, RECEIVER> implements Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
+    class Effects<PROVIDER> {
 
-        @Override
-        public boolean isSource() {
-            return false;
+        private final Set<PROVIDER> newProviders;
+        int answersCreated;
+        int answersConsumed;
+        private boolean sourceFinished;
+
+        private Effects(int answersCreated, int answersConsumed) {
+            this.answersCreated = answersCreated;
+            this.answersConsumed = answersConsumed;
+            this.newProviders = new HashSet<>();
+            this.sourceFinished = false;
         }
 
-        @Override
-        public Source<OUTPUT, RECEIVER> asSource() {
-            throw TypeDBException.of(ILLEGAL_CAST);
+        public void addAnswerCreated() {
+            answersCreated += 1;
         }
 
-        @Override
-        public boolean isTransformer() {
-            return false;
+        public void addAnswerConsumed() {
+            answersConsumed += 1;
         }
 
-        @Override
-        public Transformer<INPUT, OUTPUT, PROVIDER, ?> asTransformer() {
-            throw TypeDBException.of(ILLEGAL_CAST);
+        public int answersCreated() {
+            return answersCreated;
         }
 
-        @Override
-        public boolean isWithdrawable() {
-            return false;
+        public int answersConsumed() {
+            return answersConsumed;
         }
 
-        @Override
-        public Withdrawable<INPUT, OUTPUT, PROVIDER, RECEIVER> asWithdrawable() {
-            throw TypeDBException.of(ILLEGAL_CAST);
+        public void addNewProvider(PROVIDER newProvider) {
+            newProviders.add(newProvider);
         }
 
-        @Override
-        public boolean isAccepter() {
-            return false;
+        public Set<PROVIDER> newProviders() {
+            return newProviders;
         }
 
-        @Override
-        public Accepter<INPUT, OUTPUT, PROVIDER, RECEIVER> asAccepter() {
-            throw TypeDBException.of(ILLEGAL_CAST);
+        public void addSourceFinished() {  // TODO: This is specific to sources only, and there should be a better, type-safe, way to do this
+            sourceFinished = true;
         }
 
-        @Override
-        public boolean isSink() {
-            return false;
-        }
-
-        @Override
-        public Sink<INPUT, OUTPUT, PROVIDER> asSink() {
-            throw TypeDBException.of(ILLEGAL_CAST);
-        }
-    }
-
-    abstract class SourceImpl<OUTPUT, RECEIVER> extends OperatorImpl<Void, OUTPUT, Void, RECEIVER> implements Source<OUTPUT, RECEIVER> {
-
-        @Override
-        public boolean isSource() {
-            return true;
-        }
-
-        @Override
-        public Source<OUTPUT, RECEIVER> asSource() {
-            return this;
-        }
-
-        @Override
-        public boolean isWithdrawable() {
-            return true;
-        }
-
-        @Override
-        public Withdrawable<Void, OUTPUT, Void, RECEIVER> asWithdrawable() {
-            return this;
-        }
-    }
-
-    abstract class TransformerImpl<INPUT, OUTPUT, PROVIDER, RECEIVER> extends OperatorImpl<INPUT, OUTPUT, PROVIDER, RECEIVER> implements Transformer<INPUT, OUTPUT, PROVIDER, RECEIVER> {
-
-        @Override
-        public boolean isTransformer() {
-            return true;
-        }
-
-        @Override
-        public Transformer<INPUT, OUTPUT, PROVIDER, RECEIVER> asTransformer() {
-            return this;
-        }
-
-        @Override
-        public boolean isAccepter() {
-            return true;
-        }
-
-
-        @Override
-        public Accepter<INPUT, OUTPUT, PROVIDER, RECEIVER> asAccepter() {
-            return super.asAccepter();
+        public boolean sourceFinished() {
+            return sourceFinished;
         }
     }
 
@@ -227,53 +152,6 @@ public interface Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
         public OUTPUT output() {
             assert output != null;
             return output;
-        }
-    }
-
-    class Effects<PROVIDER> {
-
-        private final Set<PROVIDER> newProviders;
-        int answersCreated;
-        int answersConsumed;
-        private boolean sourceFinished;
-
-        private Effects(int answersCreated, int answersConsumed) {
-            this.answersCreated = answersCreated;
-            this.answersConsumed = answersConsumed;
-            this.newProviders = new HashSet<>();
-            this.sourceFinished = false;
-        }
-
-        public void addAnswerCreated() {
-            answersCreated += 1;
-        }
-
-        public void addAnswerConsumed() {
-            answersConsumed += 1;
-        }
-
-        public int answersCreated() {
-            return answersCreated;
-        }
-
-        public int answersConsumed() {
-            return answersConsumed;
-        }
-
-        public void addNewProvider(PROVIDER newProvider) {
-            newProviders.add(newProvider);
-        }
-
-        public Set<PROVIDER> newProviders() {
-            return newProviders;
-        }
-
-        public void addSourceFinished() {  // TODO: This is specific to sources only, and there should be a better, type-safe, way to do this
-            sourceFinished = true;
-        }
-
-        public boolean sourceFinished() {
-            return sourceFinished;
         }
     }
 

@@ -18,14 +18,16 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.FlatMapOperator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.MapOperator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveActions.ProviderActions;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveActions.ReceiverActions;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveActions.StreamActions;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Source;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Transformer;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
@@ -35,201 +37,280 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implements Provider<RECEIVER>, Receiver<PROVIDER, INPUT> {  // TODO: Rename Stream when there's no conflict
+public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends ReactiveImpl implements Provider<RECEIVER>, Receiver<PROVIDER, INPUT> {  // TODO: Rename Stream when there's no conflict
 
-    private final Processor<?, ?, ?, ?> processor;
-    private final Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> operator;
     private final ReceiverRegistry<RECEIVER> receiverRegistry;
     private final ProviderRegistry<PROVIDER> providerRegistry;
-    private final Reactive.Identifier<?, ?> identifier;
+    protected final ReceiverActions<PROVIDER, INPUT> receiverActions;
+    protected final ProviderActions<RECEIVER, OUTPUT> providerActions;
+    protected final StreamActions<PROVIDER> streamActions;
 
     protected AbstractStream(Processor<?, ?, ?, ?> processor, Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> operator,
-                             ReceiverRegistry<RECEIVER> receiverRegistry, ProviderRegistry<PROVIDER> providerRegistry) {
-        this.processor = processor;
-        this.operator = operator;
+                             ReceiverRegistry<RECEIVER> receiverRegistry, ProviderRegistry<PROVIDER> providerRegistry,
+                             ReceiverActions<PROVIDER, INPUT> receiverActions,
+                             ProviderActions<RECEIVER, OUTPUT> providerActions, StreamActions<PROVIDER> streamActions) {
+        super(processor);
         this.receiverRegistry = receiverRegistry;
         this.providerRegistry = providerRegistry;
-        this.identifier = processor().registerReactive(this);
-        if (operator().isSource()) registerSource();
+        this.receiverActions = receiverActions;
+        this.providerActions = providerActions;
+        this.streamActions = streamActions;
+//        if (operator().isSource()) registerSource();  // TODO: Call unconditionally in the constructor of a Source
     }
 
     private void registerSource() {
         processor().monitor().execute(actor -> actor.registerSource(identifier()));
     }
 
-    @Override
-    public Reactive.Identifier<?, ?> identifier() {
-        return identifier;
-    }
+    public ReceiverRegistry<RECEIVER> receiverRegistry() { return receiverRegistry; }
 
-    protected Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> operator() {
-        return operator;
-    }
-
-    public Processor<?, ?, ?, ?> processor() {
-        return processor;
-    }
-
-    protected ReceiverRegistry<RECEIVER> receiverRegistry() {
-        return receiverRegistry;
-    }
-
-    protected ProviderRegistry<PROVIDER> providerRegistry() {
+    public ProviderRegistry<PROVIDER> providerRegistry() {
         return providerRegistry;
     }
 
-    @Override
-    public void pull(RECEIVER receiver) {
-        if (operator().isWithdrawable() && operator().asWithdrawable().hasNext(receiver)) {
-            receiverRegistry().setNotPulling(receiver);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
-            Operator.Supplied<OUTPUT, PROVIDER> supplied = operator().asWithdrawable().next(receiver);
-            processEffects(supplied);
-            outputToReceiver(receiver, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
-        } else {
-            providerRegistry().nonPulling().forEach(this::propagatePull);
-        }
-    }
+//    public static class ReactiveBuilder {
+//
+//        private boolean fanOut = false;
+//        private boolean fanIn = false;
+//        private boolean asyncProvider = false;
+//        private boolean asyncReceiver = false;
+////        private Transformer<INPUT, OUTPUT, PROVIDER, RECEIVER> transformer;
+////        private Operator.Withdrawable<?, OUTPUT, PROVIDER, RECEIVER> operator;
+//
+//        public ReactiveBuilder fanOut() {
+//            fanOut = true;
+//            return this;
+//        }
+//
+//        public <PACKET, RECEIVER> SourceStream<PACKET, RECEIVER> build(Operator.Source<PACKET, RECEIVER> supplierOperator) {
+//            return new SourceStream<>()
+//        }
+//
+//    }
 
-    @Override
-    public void receive(PROVIDER provider, INPUT packet) {
-        traceReceive(provider, packet);
-        providerRegistry().recordReceive(provider);
-        assert operator().isAccepter();
-        if (operator().isTransformer()) {
-            Operator.Transformed<OUTPUT, PROVIDER> outcome = operator().asTransformer().accept(provider, packet);
-            processEffects(outcome);
-            assert !operator().isWithdrawable();  // Transformers shouldn't be withdrawable as they produce all of their outputs straight away
+    public static class TransformationStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> {
+
+        private final Transformer<INPUT, OUTPUT, PROVIDER, RECEIVER> transformer;
+
+        protected TransformationStream(Processor<?, ?, ?, ?> processor,
+                                       Transformer<INPUT, OUTPUT, PROVIDER, RECEIVER> transformer,
+                                       ReceiverRegistry<RECEIVER> receiverRegistry,
+                                       ProviderRegistry<PROVIDER> providerRegistry,
+                                       ReceiverActions<PROVIDER, INPUT> receiverActions,
+                                       ProviderActions<RECEIVER, OUTPUT> providerActions,
+                                       StreamActions<PROVIDER> streamActions) {
+            super(processor, transformer, receiverRegistry, providerRegistry, receiverActions, providerActions, streamActions);
+            this.transformer = transformer;
+        }
+
+        public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT, Subscriber<OUTPUT>, Publisher<INPUT>> sync(
+                Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer) {
+            ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry = new ReceiverRegistry.Single<>();
+            ProviderRegistry<Publisher<INPUT>> providerRegistry = new ProviderRegistry.Single<>();
+            ReceiverActions<Publisher<INPUT>, INPUT> receiverActions = new SyncReceiverActions<>(null);
+            ProviderActions<Subscriber<OUTPUT>, OUTPUT> providerActions = new SyncProviderActions<>(null);
+            StreamActions<Publisher<INPUT>> streamActions = new SyncStreamActions<>();
+            return new TransformationStream<>(processor, transformer, receiverRegistry, providerRegistry,
+                                              receiverActions, providerActions, streamActions);
+        }
+
+        protected Transformer<INPUT, OUTPUT, PROVIDER, RECEIVER> operator() {
+            return transformer;
+        }
+
+        @Override
+        public void pull(RECEIVER receiver) {
+            providerRegistry().nonPulling().forEach(streamActions::propagatePull);
+        }
+
+        @Override
+        public void receive(PROVIDER provider, INPUT packet) {
+            receiverActions.traceReceive(provider, packet);
+            providerRegistry().recordReceive(provider);
+
+            Operator.Transformed<OUTPUT, PROVIDER> outcome = operator().accept(provider, packet);
+            providerActions.processEffects(outcome);
             if (outcome.outputs().isEmpty() && receiverRegistry().anyPulling()) {
-                rePullProvider(provider);
+                receiverActions.rePullProvider(provider);
             } else {
                 // pass on the output, regardless of pulling state
                 iterate(receiverRegistry().receivers()).forEachRemaining(
-                        receiver -> iterate(outcome.outputs()).forEachRemaining(output -> outputToReceiver(receiver, output)));
+                        receiver -> iterate(outcome.outputs()).forEachRemaining(output -> providerActions.outputToReceiver(receiver, output)));
             }
-        } else {
-            processEffects(operator().asAccepter().accept(provider, packet));
+        }
+    }
+
+    public static abstract class PoolingStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> {
+
+        private final Operator.Pool<INPUT, OUTPUT, PROVIDER, RECEIVER> pool;
+
+        protected PoolingStream(Processor<?, ?, ?, ?> processor,
+                                Operator.Pool<INPUT, OUTPUT, PROVIDER, RECEIVER> pool,
+                                ReceiverRegistry<RECEIVER> receiverRegistry,
+                                ProviderRegistry<PROVIDER> providerRegistry,
+                                ReceiverActions<PROVIDER, INPUT> receiverActions,
+                                ProviderActions<RECEIVER, OUTPUT> providerActions,
+                                StreamActions<PROVIDER> streamActions) {
+            super(processor, pool, receiverRegistry, providerRegistry, receiverActions, providerActions, streamActions);
+            this.pool = pool;
+        }
+
+        protected Operator.Pool<INPUT, OUTPUT, PROVIDER, RECEIVER> operator() {
+            return pool;
+        }
+
+        @Override
+        public void pull(RECEIVER receiver) {
+            // TODO: We don't care about the receiver here
+            if (operator().hasNext(receiver)) {
+                WithdrawableHelper.pull(receiver, operator(), providerActions);
+            } else {
+                // TODO: for POOLING but not for SOURCE
+                providerRegistry().nonPulling().forEach(streamActions::propagatePull);
+            }
+        }
+
+        @Override
+        public void receive(PROVIDER provider, INPUT packet) {
+            receiverActions.traceReceive(provider, packet);
+            providerRegistry().recordReceive(provider);
+
+            providerActions.processEffects(operator().accept(provider, packet));
             AtomicBoolean retry = new AtomicBoolean();
             retry.set(false);
-            if (operator().isWithdrawable()) {
-                iterate(receiverRegistry().pulling()).forEachRemaining(receiver -> {
-                    if (operator().asWithdrawable().hasNext(receiver)) {
-                        Operator.Supplied<OUTPUT, PROVIDER> supplied = operator().asWithdrawable().next(receiver);
-                        processEffects(supplied);
-                        receiverRegistry().setNotPulling(receiver);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
-                        outputToReceiver(receiver, supplied.output());
-                    } else {
-                        retry.set(true);
-                    }
-                });
-                if (retry.get()) rePullProvider(provider);
+            iterate(receiverRegistry().pulling()).forEachRemaining(receiver -> {
+                if (operator().hasNext(receiver)) {
+                    Operator.Supplied<OUTPUT, PROVIDER> supplied = operator().next(receiver);
+                    providerActions.processEffects(supplied);
+                    receiverRegistry().setNotPulling(receiver);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
+                    providerActions.outputToReceiver(receiver, supplied.output());
+                } else {
+                    retry.set(true);
+                }
+            });
+            if (retry.get()) receiverActions.rePullProvider(provider);
+        }
+    }
+
+    public static class WithdrawableHelper {
+        // TODO: Can this go inside the providerActions?
+        static <OUTPUT, RECEIVER, PROVIDER> void pull(RECEIVER receiver, Operator.Withdrawable<?, OUTPUT, PROVIDER, RECEIVER> operator, ProviderActions<RECEIVER, OUTPUT> providerActions) {
+            providerActions.receiverRegistry().setNotPulling(receiver);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
+            Operator.Supplied<OUTPUT, PROVIDER> supplied = operator.next(receiver);
+            providerActions.processEffects(supplied);
+            providerActions.outputToReceiver(receiver, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
+        }
+    }
+
+    public static class PublisherHelper {  // TODO: Contents can go into ProviderActions
+
+        public static <OUTPUT, MAPPED> Stream<OUTPUT, MAPPED> map(
+                Processor<?, ?, ?, ?> processor, Publisher<OUTPUT> publisher, Function<OUTPUT, MAPPED> function) {
+            return null;
+        }
+
+        public static <OUTPUT, MAPPED> Stream<OUTPUT, MAPPED> flatMap(Processor<?, ?, ?, ?> processor, Publisher<OUTPUT> publisher,
+                                                       Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
+            return null;
+        }
+
+        public static <OUTPUT> Stream<OUTPUT, OUTPUT> buffer(Processor<?, ?, ?, ?> processor, Publisher<OUTPUT> publisher) {
+            return null;
+        }
+
+        public static <OUTPUT> Stream<OUTPUT,OUTPUT> deduplicate(Processor<?, ?, ?, ?> processor, Publisher<OUTPUT> publisher) {
+            return null;
+        }
+    }
+
+    public static class SourceStream<PACKET> extends ReactiveImpl implements Publisher<PACKET> {  // TODO: Rename to Source when there's no clash
+
+        private final Source<PACKET, Subscriber<PACKET>> supplierOperator;
+        private final ReceiverRegistry.Single<Subscriber<PACKET>> receiverRegistry;
+        private final ProviderActions<Subscriber<PACKET>, PACKET> providerActions;
+
+        protected SourceStream(Processor<?, ?, ?, ?> processor, Source<PACKET, Subscriber<PACKET>> supplierOperator,
+                               ReceiverRegistry.Single<Subscriber<PACKET>> receiverRegistry,
+                               ProviderActions<Subscriber<PACKET>, PACKET> providerActions) {
+            super(processor);
+            this.supplierOperator = supplierOperator;
+            this.receiverRegistry = receiverRegistry;
+            this.providerActions = providerActions;
+        }
+
+        public static <OUTPUT> SourceStream<OUTPUT> create(
+                Processor<?, ?, ?, ?> processor, Source<OUTPUT, Subscriber<OUTPUT>> operator) {
+            return new SourceStream<>(processor, operator, new ReceiverRegistry.Single<>(), new SyncProviderActions<>(null));
+        }
+
+        private Source<PACKET, Subscriber<PACKET>> operator() {
+            return supplierOperator;
+        }
+
+        @Override
+        public void pull(Subscriber<PACKET> subscriber) {
+            if (operator().hasNext(subscriber)) {
+                WithdrawableHelper.pull(subscriber, operator(), providerActions);
+            } else {
+                // TODO: Send terminated? This is rather than doing so inside the operator.
             }
         }
-    }
 
-    private void processEffects(Operator.Effects<PROVIDER> effects) {
-        effects.newProviders().forEach(newProvider -> {
-            processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
-//            newProvider.registerReceiver(this);  // TODO: This is only applicable for Publishers and Subscribers in this case
-        });
-        for (int i = 0; i <= effects.answersCreated();) {
-            // TODO: We can now batch this and even send the delta between created and consumed
-            //  in fact we should be able to look at the number of inputs and outputs and move the monitoring
-            //  responsibility to streams in a generic way, removing the need for this Outcome object
-            processor().monitor().execute(actor -> actor.createAnswer(identifier()));
+        public ReceiverRegistry<Subscriber<PACKET>> receiverRegistry() {
+            return receiverRegistry;
         }
-        for (int i = 0; i <= effects.answersConsumed();) {
-            processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
+
+        @Override
+        public void registerReceiver(Subscriber<PACKET> subscriber) {
+            receiverRegistry.addReceiver(subscriber);
         }
-        if (effects.sourceFinished()) processor().monitor().execute(actor -> actor.sourceFinished(identifier()));
+
+        @Override
+        public <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function) {
+            return PublisherHelper.map(processor, this, function);
+        }
+
+        @Override
+        public <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function) {
+            return PublisherHelper.flatMap(processor, this, function);
+        }
+
+        @Override
+        public Stream<PACKET, PACKET> buffer() {
+            return PublisherHelper.buffer(processor, this);
+        }
+
+        @Override
+        public Stream<PACKET, PACKET> deduplicate() {
+            return PublisherHelper.deduplicate(processor, this);
+        }
+
+        @Override
+        public Identifier<?, ?> identifier() {
+            return null;
+        }
+
     }
-
-    protected abstract void traceReceive(PROVIDER provider, INPUT packet);
-
-    protected abstract void propagatePull(PROVIDER provider);
-
-    protected abstract void rePullProvider(PROVIDER provider);
-
-    protected abstract void outputToReceiver(RECEIVER receiver, OUTPUT packet);
-
-    protected abstract void registerPath(PROVIDER provider);
 
     public static class SyncStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT, Subscriber<OUTPUT>, Publisher<INPUT>> implements Stream<INPUT, OUTPUT> {
 
         private SyncStream(Processor<?, ?, ?, ?> processor,
                            Operator<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator,
                            ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
-                           ProviderRegistry<Publisher<INPUT>> providerRegistry) {
-            super(processor, operator, receiverRegistry, providerRegistry);
+                           ProviderRegistry<Publisher<INPUT>> providerRegistry,
+                           ReceiverActions<Publisher<INPUT>, INPUT> receiverActions,
+                           ProviderActions<Subscriber<OUTPUT>, OUTPUT> providerActions,
+                           StreamActions<Publisher<INPUT>> streamActions) {
+            super(processor, operator, receiverRegistry, providerRegistry, receiverActions, providerActions, streamActions);
         }
 
-        @Override
-        protected void traceReceive(Publisher<INPUT> publisher, INPUT packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(publisher.identifier(), identifier(), packet));
-        }
+//        public static <INPUT, OUTPUT> SyncStream<INPUT, OUTPUT> simple(Processor<?, ?, ?, ?> processor,
+//                                                                       Operator<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator) {
+//            return new SyncStream<>(processor, operator, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
+//        }
 
-        public static <INPUT, OUTPUT> SyncStream<INPUT, OUTPUT> simple(Processor<?, ?, ?, ?> processor,
-                                                                       Operator<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator) {
-            return new SyncStream<>(processor, operator, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
-        }
-
-
-        public static <P1, P2, P3> Pair<SyncStream<P1, P2>, SyncStream<P2, P3>> chain(Processor<?, ?, ?, ?> processor,
-                                                                                      Operator<P1, P2, Publisher<P1>, Subscriber<P2>> op1,
-                                                                                      Operator<P2, P3, Publisher<P2>, Subscriber<P3>> op2) {
-            SyncStream<P1, P2> s1 = new SyncStream<>(processor, op1, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
-            SyncStream<P2, P3> s2 = new SyncStream<>(processor, op2, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
-            s2.registerProvider(s1);
-            s1.registerReceiver(s2);
-            return new Pair<>(s1, s2);
-        }
-
-        public static <INPUT, OUTPUT> SyncStream<INPUT, OUTPUT> fanOut(Processor<?, ?, ?, ?> processor,
-                                                                       Operator<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator) {
-            return new SyncStream<>(processor, operator, new ReceiverRegistry.Multi<>(), new ProviderRegistry.Single<>());
-        }
-
-        public static <INPUT, OUTPUT> SyncStream<INPUT, OUTPUT> fanIn(Processor<?, ?, ?, ?> processor,
-                                                                      Operator<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator) {
-            return new SyncStream<>(processor, operator, new ReceiverRegistry.Single<>(), new ProviderRegistry.Multi<>());
-        }
-
-        @Override
-        protected void propagatePull(Publisher<INPUT> provider) {
+        private void propagatePull(Publisher<INPUT> provider) {
             provider.pull(this);
-        }
-
-        @Override
-        protected void rePullProvider(Publisher<INPUT> provider) {
-            processor().pullRetry(provider.identifier(), identifier());
-        }
-
-        @Override
-        protected void outputToReceiver(Subscriber<OUTPUT> receiver, OUTPUT packet) {
-            receiver.receive(this, packet);
-        }
-
-        @Override
-        public <MAPPED> Stream<OUTPUT, MAPPED> map(Function<OUTPUT, MAPPED> function) {
-            SyncStream<OUTPUT, MAPPED> map = SyncStream.simple(processor(), new MapOperator<>(function));
-            registerReceiver(map);
-            return map;
-        }
-
-        @Override
-        public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
-            SyncStream<OUTPUT, MAPPED> flatMap = SyncStream.simple(processor(), new FlatMapOperator<>(function));
-            registerReceiver(flatMap);
-            return flatMap;
-        }
-
-        @Override
-        public Stream<OUTPUT, OUTPUT> buffer() {
-            return null;
-        }
-
-        @Override
-        public Stream<OUTPUT, OUTPUT> deduplicate() {
-            return null;
         }
 
         @Override
@@ -240,176 +321,111 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> implemen
 
         @Override
         public void registerProvider(Publisher<INPUT> publisher) {
-            if (providerRegistry().add(publisher)) registerPath(publisher);
+            if (providerRegistry().add(publisher)) receiverActions.registerPath(null);  // TODO: Should pass "this"
             if (receiverRegistry().anyPulling() && providerRegistry().setPulling(publisher)) propagatePull(publisher);
         }
 
         @Override
-        protected void registerPath(Publisher<INPUT> provider) {
-            processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
+        public <MAPPED> Stream<OUTPUT, MAPPED> map(Function<OUTPUT, MAPPED> function) {
+            return PublisherHelper.map(processor, this, function);
         }
-
-    }
-
-    public static class SourceStream<PACKET> extends AbstractStream<Void, PACKET, Subscriber<PACKET>, Void> {
-
-        protected SourceStream(Processor<?, ?, ?, ?> processor,
-                               Operator.Source<PACKET, Subscriber<PACKET>> operator,
-                               ReceiverRegistry<Subscriber<PACKET>> receiverRegistry,
-                               ProviderRegistry<Void> providerRegistry) {
-            super(processor, operator, receiverRegistry, providerRegistry);
-        }
-
-        public static <OUTPUT> SourceStream<OUTPUT> create(
-                Processor<?, ?, ?, ?> processor, Operator.Source<OUTPUT, Subscriber<OUTPUT>> operator) {
-            return new SourceStream<>(processor, operator, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
-        }
-
-        // TODO: So many of these methods are not applicable that this smells bad
 
         @Override
-        protected void traceReceive(Void aVoid, Void packet) {
+        public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
+            return PublisherHelper.flatMap(processor, this, function);
+        }
+
+        @Override
+        public Stream<OUTPUT, OUTPUT> buffer() {
+            return PublisherHelper.buffer(processor, this);
+        }
+
+        @Override
+        public Stream<OUTPUT, OUTPUT> deduplicate() {
+            return PublisherHelper.deduplicate(processor, this);
+        }
+
+        @Override
+        public void pull(Subscriber<OUTPUT> outputSubscriber) {
 
         }
 
         @Override
-        protected void propagatePull(Void aVoid) {
-
-        }
-
-        @Override
-        protected void rePullProvider(Void aVoid) {
-
-        }
-
-        @Override
-        protected void outputToReceiver(Subscriber<PACKET> packetSubscriber, PACKET packet) {
-
-        }
-
-        @Override
-        protected void registerPath(Void aVoid) {
-
-        }
-
-        @Override
-        public void registerReceiver(Subscriber<PACKET> packetSubscriber) {
-
-        }
-
-        @Override
-        public void registerProvider(Void aVoid) {
+        public void receive(Publisher<INPUT> inputPublisher, INPUT input) {
 
         }
     }
 
-    public static class InputStream<PACKET> extends AbstractStream<PACKET, PACKET, Subscriber<PACKET>, Reactive.Identifier<?, PACKET>> implements Publisher<PACKET> {
+    // TODO: Some of the behaviour of these classes can probably be abstracted
+    public static class SyncReceiverActions<INPUT> implements ReceiverActions<Publisher<INPUT>, INPUT> {
 
-        protected InputStream(Processor<?, ?, ?, ?> processor, Operator<PACKET, PACKET, Identifier<?,
-                PACKET>, Subscriber<PACKET>> operator, ReceiverRegistry<Subscriber<PACKET>> receiverRegistry,
-                              ProviderRegistry<Reactive.Identifier<?, PACKET>> providerRegistry) {
-            super(processor, operator, receiverRegistry, providerRegistry);
+        private final Receiver<?, INPUT> receiver;
+        private final Processor<?, ?, ?, ?> receiverProcessor = null;
+
+        SyncReceiverActions(Receiver<?, INPUT> receiver) {
+            this.receiver = receiver;
         }
 
         @Override
-        protected void traceReceive(Identifier<?, PACKET> packetIdentifier, PACKET packet) {
-
+        public void registerPath(Publisher<INPUT> publisher) {
+            receiverProcessor.monitor().execute(actor -> actor.registerPath(receiver.identifier(), publisher.identifier()));
         }
 
         @Override
-        protected void propagatePull(Reactive.Identifier<?, PACKET> packetIdentifier) {
-
+        public void traceReceive(Publisher<INPUT> publisher, INPUT packet) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(publisher.identifier(), receiver.identifier(), packet));
         }
 
         @Override
-        protected void rePullProvider(Reactive.Identifier<?, PACKET> packetIdentifier) {
-
-        }
-
-        @Override
-        protected void outputToReceiver(Subscriber<PACKET> packetSubscriber, PACKET packet) {
-
-        }
-
-        @Override
-        protected void registerPath(Reactive.Identifier<?, PACKET> packetIdentifier) {
-
-        }
-
-        @Override
-        public void registerReceiver(Subscriber<PACKET> packetSubscriber) {
-
-        }
-
-        @Override
-        public <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function) {
-            return null;
-        }
-
-        @Override
-        public <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function) {
-            return null;
-        }
-
-        @Override
-        public Stream<PACKET, PACKET> buffer() {
-            return null;
-        }
-
-        @Override
-        public Stream<PACKET, PACKET> deduplicate() {
-            return null;
-        }
-
-        @Override
-        public void registerProvider(Identifier<?, PACKET> packetIdentifier) {
-
+        public void rePullProvider(Publisher<INPUT> publisher) {
+            receiverProcessor.pullRetry(publisher.identifier(), receiver.identifier());
         }
     }
 
-    public static class OutputStream<PACKET> extends AbstractStream<PACKET, PACKET, Reactive.Identifier<PACKET, ?>, Publisher<PACKET>> implements Subscriber<PACKET> {
+    public static class SyncProviderActions<OUTPUT> implements ProviderActions<Subscriber<OUTPUT>, OUTPUT> {
 
-        protected OutputStream(Processor<?, ?, ?, ?> processor,
-                               Operator<PACKET, PACKET, Publisher<PACKET>, Identifier<PACKET, ?>> operator,
-                               ReceiverRegistry<Reactive.Identifier<PACKET, ?>> receiverRegistry,
-                               ProviderRegistry<Publisher<PACKET>> providerRegistry) {
-            super(processor, operator, receiverRegistry, providerRegistry);
+        private final Provider<?> provider;
+        private final Processor<?, ?, ?, ?> providerProcessor = null;
+
+        SyncProviderActions(Provider<?> provider) {
+            this.provider = provider;
         }
 
         @Override
-        protected void traceReceive(Publisher<PACKET> packetPublisher, PACKET packet) {
-
+        public void processEffects(Operator.Effects<?> effects) {
+            effects.newProviders().forEach(newProvider -> {
+                providerProcessor.monitor().execute(actor -> actor.forkFrontier(1, provider.identifier()));
+                // newProvider.registerReceiver(this);  // TODO: This is only applicable for Publishers and Subscribers in this case
+            });
+            for (int i = 0; i <= effects.answersCreated();) {
+                // TODO: We can now batch this and even send the delta between created and consumed
+                //  in fact we should be able to look at the number of inputs and outputs and move the monitoring
+                //  responsibility to streams in a generic way, removing the need for this Outcome object
+                providerProcessor.monitor().execute(actor -> actor.createAnswer(provider.identifier()));
+            }
+            for (int i = 0; i <= effects.answersConsumed();) {
+                providerProcessor.monitor().execute(actor -> actor.consumeAnswer(provider.identifier()));
+            }
+            if (effects.sourceFinished()) providerProcessor.monitor().execute(actor -> actor.sourceFinished(provider.identifier()));
         }
 
         @Override
-        protected void propagatePull(Publisher<PACKET> packetPublisher) {
-
+        public void outputToReceiver(Subscriber<OUTPUT> subscriber, OUTPUT packet) {
+            subscriber.receive(null, packet);  // TODO: Should pass "provider"
         }
 
         @Override
-        protected void rePullProvider(Publisher<PACKET> packetPublisher) {
-
-        }
-
-        @Override
-        protected void outputToReceiver(Reactive.Identifier<PACKET, ?> packetIdentifier, PACKET packet) {
-
-        }
-
-        @Override
-        protected void registerPath(Publisher<PACKET> packetPublisher) {
-
-        }
-
-        @Override
-        public void registerReceiver(Identifier<PACKET, ?> packetIdentifier) {
-
-        }
-
-        @Override
-        public void registerProvider(Publisher<PACKET> packetPublisher) {
-
+        public ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry() {
+            return null;
         }
     }
 
+    public static class SyncStreamActions<INPUT> implements StreamActions<Publisher<INPUT>> {
+
+        @Override
+        public void propagatePull(Publisher<INPUT> publisher) {
+            publisher.pull(null);  // TODO should pass "this" but it's unavailable
+        }
+
+    }
 }

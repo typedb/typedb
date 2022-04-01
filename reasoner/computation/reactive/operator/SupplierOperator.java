@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
 import java.util.function.Supplier;
 
-public class SupplierOperator<PACKET, RECEIVER> extends Operator.SourceImpl<PACKET, RECEIVER> {
+public class SupplierOperator<PACKET, RECEIVER> implements Operator.Source<PACKET, RECEIVER>, Operator<Void, PACKET, Void, RECEIVER> {
 
     private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
     private boolean exhausted;

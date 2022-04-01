@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider.P
 
 import java.util.function.Function;
 
-public class MapOperator<INPUT, OUTPUT, RECEIVER> extends Operator.TransformerImpl<INPUT, OUTPUT, Publisher<INPUT>, RECEIVER> {
+public class MapOperator<INPUT, OUTPUT, RECEIVER> implements Operator.Transformer<INPUT, OUTPUT, Publisher<INPUT>, RECEIVER>, Operator<INPUT, OUTPUT, Publisher<INPUT>, RECEIVER> {
 
     private final Function<INPUT, OUTPUT> mappingFunc;
 

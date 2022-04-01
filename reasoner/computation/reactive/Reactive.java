@@ -21,10 +21,14 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.function.Function;
 
 public interface Reactive {
+
+//    Processor<?, ?, ?, ?> processor();  // TODO: It's weird to be able to access your receiver/provider's processor, but this is needed for monitoring?
 
     Identifier<?, ?> identifier();
 
@@ -40,16 +44,19 @@ public interface Reactive {
 
     interface Provider<RECEIVER> extends Reactive {
 
-        void registerReceiver(RECEIVER receiver);
+//        void registerReceiver(RECEIVER receiver);  // TODO: Replace with calling .add() on the receiverRegistry(), except that the symmetric receiver call can't be replaced so easily
 
         void pull(RECEIVER receiver);
 
+//        ReceiverRegistry<RECEIVER> receiverRegistry();
+
         interface Publisher<PACKET> extends Provider<Receiver.Subscriber<PACKET>> {
 
+            // TODO: If sync/async behaviours are abstracted differently then there will be no difference between Publisher and Provider and they can be collapsed
             @Override
             void pull(Receiver.Subscriber<PACKET> subscriber);
 
-            @Override
+//            @Override
             void registerReceiver(Receiver.Subscriber<PACKET> subscriber);
 
             <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function);
@@ -65,16 +72,18 @@ public interface Reactive {
 
     interface Receiver<PROVIDER, PACKET> extends Reactive {
 
-        void registerProvider(PROVIDER provider);
+//        void registerProvider(PROVIDER provider);
 
         void receive(PROVIDER provider, PACKET packet);
+
+//        ProviderRegistry<PROVIDER> providerRegistry();
 
         interface Subscriber<PACKET> extends Receiver<Provider.Publisher<PACKET>, PACKET> {
 
             @Override
             void receive(Provider.Publisher<PACKET> publisher, PACKET packet);
 
-            @Override
+//            @Override
             void registerProvider(Provider.Publisher<PACKET> publisher);
 
             interface Finishable<PACKET> extends Reactive.Receiver.Subscriber<PACKET> {

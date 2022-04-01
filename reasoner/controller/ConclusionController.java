@@ -232,7 +232,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         }
 
-        public static class ConclusionOperator<RECEIVER> extends Operator.TransformerImpl<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>, Publisher<Either<ConceptMap, Map<Variable, Concept>>>, RECEIVER> {
+        public static class ConclusionOperator<RECEIVER> implements Operator.Transformer<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>, Publisher<Either<ConceptMap, Map<Variable, Concept>>>, RECEIVER>, Operator<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>, Publisher<Either<ConceptMap, Map<Variable, Concept>>>, RECEIVER> {
 
             private final ConclusionProcessor processor;
 
