@@ -224,7 +224,7 @@ public abstract class Processor<INPUT, OUTPUT,
     /**
      * Governs an input to a processor
      */
-    public static class Input<PACKET> extends SingleReceiverPublisher<PACKET> implements Reactive.Receiver<Identifier<?, PACKET>, PACKET> {
+    public static class Input<PACKET> extends SingleReceiverPublisher<PACKET> {
 
         private final Identifier<PACKET, ?> identifier;
         private boolean ready;
@@ -261,9 +261,8 @@ public abstract class Processor<INPUT, OUTPUT,
             if (ready) providingOutput.processor().execute(actor -> actor.pull(providingOutput));
         }
 
-        @Override
-        public void receive(Identifier<?, PACKET> providerId, PACKET packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(providerId, identifier(), packet));
+        public void receive(Identifier<?, PACKET> outputId, PACKET packet) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(outputId, identifier(), packet));
             receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
         }
