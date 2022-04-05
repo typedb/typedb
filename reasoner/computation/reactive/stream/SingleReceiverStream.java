@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublisher<OUTPUT> implements Reactive.Stream<INPUT, OUTPUT> {
 
-    private final ReceiverRegistry.Single<Receiver.Subscriber<OUTPUT>> receiverRegistry;
+    private final ReceiverRegistry.Single<Subscriber<OUTPUT>> receiverRegistry;
 
     protected SingleReceiverStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
@@ -37,7 +37,7 @@ public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublis
     protected abstract ProviderRegistry<Publisher<INPUT>> providerRegistry();
 
     @Override
-    protected ReceiverRegistry.Single<Receiver.Subscriber<OUTPUT>> receiverRegistry() {
+    protected ReceiverRegistry.Single<Subscriber<OUTPUT>> receiverRegistry() {
         return receiverRegistry;
     }
 
@@ -56,12 +56,12 @@ public abstract class SingleReceiverStream<INPUT, OUTPUT> extends AbstractPublis
     }
 
     @Override
-    public void registerReceiver(Receiver.Subscriber<OUTPUT> subscriber) {
+    public void registerReceiver(Subscriber<OUTPUT> subscriber) {
         receiverRegistry().addReceiver(subscriber);
         subscriber.registerProvider(this);
     }
 
-    public void sendTo(Receiver.Subscriber<OUTPUT> receiver) {
+    public void sendTo(Subscriber<OUTPUT> receiver) {
         // Allows sending of data without the downstream being able to pull from here
         receiverRegistry().addReceiver(receiver);
     }

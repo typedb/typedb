@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.actor;
 
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +45,7 @@ public class Connector<BOUNDS, PACKET> {
     }
 
     public void connectViaTransforms(Reactive.Stream<PACKET, PACKET> toConnect, Processor.Output<PACKET> output) {
-        Reactive.Provider.Publisher<PACKET> op = toConnect;
+        Publisher<PACKET> op = toConnect;
         for (Function<PACKET, PACKET> t : transforms) op = op.map(t);
         op.registerReceiver(output);
     }

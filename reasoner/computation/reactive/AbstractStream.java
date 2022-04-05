@@ -20,8 +20,8 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveActions.ProviderActions;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveActions.ReceiverActions;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveActions.StreamActions;
@@ -37,18 +37,18 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends ReactiveImpl implements Provider<RECEIVER>, Receiver<PROVIDER, INPUT> {  // TODO: Rename Stream when there's no conflict
+public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl implements Publisher<OUTPUT>, Subscriber<INPUT> {  // TODO: Rename Stream when there's no conflict
 
-    private final ReceiverRegistry<RECEIVER> receiverRegistry;
-    private final ProviderRegistry<PROVIDER> providerRegistry;
-    protected final ReceiverActions<PROVIDER, INPUT> receiverActions;
-    protected final ProviderActions<RECEIVER, OUTPUT> providerActions;
-    protected final StreamActions<PROVIDER> streamActions;
+    private final ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry;
+    private final ProviderRegistry<Publisher<INPUT>> providerRegistry;
+    protected final ReceiverActions<Publisher<INPUT>, INPUT> receiverActions;
+    protected final ProviderActions<Subscriber<OUTPUT>, OUTPUT> providerActions;
+    protected final StreamActions<Publisher<INPUT>> streamActions;
 
-    protected AbstractStream(Processor<?, ?, ?, ?> processor, Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> operator,
-                             ReceiverRegistry<RECEIVER> receiverRegistry, ProviderRegistry<PROVIDER> providerRegistry,
-                             ReceiverActions<PROVIDER, INPUT> receiverActions,
-                             ProviderActions<RECEIVER, OUTPUT> providerActions, StreamActions<PROVIDER> streamActions) {
+    protected AbstractStream(Processor<?, ?, ?, ?> processor, Operator<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator,
+                             ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry, ProviderRegistry<Publisher<INPUT>> providerRegistry,
+                             ReceiverActions<Publisher<INPUT>, INPUT> receiverActions,
+                             ProviderActions<Subscriber<OUTPUT>, OUTPUT> providerActions, StreamActions<Publisher<INPUT>> streamActions) {
         super(processor);
         this.receiverRegistry = receiverRegistry;
         this.providerRegistry = providerRegistry;
@@ -62,9 +62,9 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends 
         processor().monitor().execute(actor -> actor.registerSource(identifier()));
     }
 
-    public ReceiverRegistry<RECEIVER> receiverRegistry() { return receiverRegistry; }
+    public ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry() { return receiverRegistry; }
 
-    public ProviderRegistry<PROVIDER> providerRegistry() {
+    public ProviderRegistry<Publisher<INPUT>> providerRegistry() {
         return providerRegistry;
     }
 
@@ -74,36 +74,36 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends 
 //        private boolean fanIn = false;
 //        private boolean asyncProvider = false;
 //        private boolean asyncReceiver = false;
-////        private Transformer<INPUT, OUTPUT, PROVIDER, RECEIVER> transformer;
-////        private Operator.Withdrawable<?, OUTPUT, PROVIDER, RECEIVER> operator;
+////        private Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer;
+////        private Operator.Withdrawable<?, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator;
 //
 //        public ReactiveBuilder fanOut() {
 //            fanOut = true;
 //            return this;
 //        }
 //
-//        public <PACKET, RECEIVER> SourceStream<PACKET, RECEIVER> build(Operator.Source<PACKET, RECEIVER> supplierOperator) {
+//        public <PACKET, Subscriber<OUTPUT>> SourceStream<PACKET, Subscriber<OUTPUT>> build(Operator.Source<PACKET, Subscriber<OUTPUT>> supplierOperator) {
 //            return new SourceStream<>()
 //        }
 //
 //    }
 
-    public static class TransformationStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> {
+    public static class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> {
 
-        private final Transformer<INPUT, OUTPUT, PROVIDER, RECEIVER> transformer;
+        private final Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer;
 
         protected TransformationStream(Processor<?, ?, ?, ?> processor,
-                                       Transformer<INPUT, OUTPUT, PROVIDER, RECEIVER> transformer,
-                                       ReceiverRegistry<RECEIVER> receiverRegistry,
-                                       ProviderRegistry<PROVIDER> providerRegistry,
-                                       ReceiverActions<PROVIDER, INPUT> receiverActions,
-                                       ProviderActions<RECEIVER, OUTPUT> providerActions,
-                                       StreamActions<PROVIDER> streamActions) {
+                                       Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer,
+                                       ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
+                                       ProviderRegistry<Publisher<INPUT>> providerRegistry,
+                                       ReceiverActions<Publisher<INPUT>, INPUT> receiverActions,
+                                       ProviderActions<Subscriber<OUTPUT>, OUTPUT> providerActions,
+                                       StreamActions<Publisher<INPUT>> streamActions) {
             super(processor, transformer, receiverRegistry, providerRegistry, receiverActions, providerActions, streamActions);
             this.transformer = transformer;
         }
 
-        public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT, Subscriber<OUTPUT>, Publisher<INPUT>> sync(
+        public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> sync(
                 Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer) {
             ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry = new ReceiverRegistry.Single<>();
             ProviderRegistry<Publisher<INPUT>> providerRegistry = new ProviderRegistry.Single<>();
@@ -114,53 +114,83 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends 
                                               receiverActions, providerActions, streamActions);
         }
 
-        protected Transformer<INPUT, OUTPUT, PROVIDER, RECEIVER> operator() {
+        protected Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator() {
             return transformer;
         }
 
         @Override
-        public void pull(RECEIVER receiver) {
+        public void pull(Subscriber<OUTPUT> subscriber) {
             providerRegistry().nonPulling().forEach(streamActions::propagatePull);
         }
 
         @Override
-        public void receive(PROVIDER provider, INPUT packet) {
-            receiverActions.traceReceive(provider, packet);
-            providerRegistry().recordReceive(provider);
+        public void registerReceiver(Subscriber<OUTPUT> subscriber) {
 
-            Operator.Transformed<OUTPUT, PROVIDER> outcome = operator().accept(provider, packet);
+        }
+
+        @Override
+        public <MAPPED> Stream<OUTPUT, MAPPED> map(Function<OUTPUT, MAPPED> function) {
+            return null;
+        }
+
+        @Override
+        public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
+            return null;
+        }
+
+        @Override
+        public Stream<OUTPUT, OUTPUT> buffer() {
+            return null;
+        }
+
+        @Override
+        public Stream<OUTPUT, OUTPUT> deduplicate() {
+            return null;
+        }
+
+        @Override
+        public void receive(Publisher<INPUT> publisher, INPUT input) {
+            receiverActions.traceReceive(publisher, input);
+            providerRegistry().recordReceive(publisher);
+
+            Operator.Transformed<OUTPUT, Publisher<INPUT>> outcome = operator().accept(publisher, input);
             providerActions.processEffects(outcome);
             if (outcome.outputs().isEmpty() && receiverRegistry().anyPulling()) {
-                receiverActions.rePullProvider(provider);
+                receiverActions.rePullProvider(publisher);
             } else {
                 // pass on the output, regardless of pulling state
                 iterate(receiverRegistry().receivers()).forEachRemaining(
                         receiver -> iterate(outcome.outputs()).forEachRemaining(output -> providerActions.outputToReceiver(receiver, output)));
             }
         }
+
+        @Override
+        public void registerProvider(Publisher<INPUT> publisher) {
+
+        }
     }
 
-    public static abstract class PoolingStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> {
+    public static abstract class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> {
 
-        private final Operator.Pool<INPUT, OUTPUT, PROVIDER, RECEIVER> pool;
+        private final Operator.Pool<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> pool;
 
         protected PoolingStream(Processor<?, ?, ?, ?> processor,
-                                Operator.Pool<INPUT, OUTPUT, PROVIDER, RECEIVER> pool,
-                                ReceiverRegistry<RECEIVER> receiverRegistry,
-                                ProviderRegistry<PROVIDER> providerRegistry,
-                                ReceiverActions<PROVIDER, INPUT> receiverActions,
-                                ProviderActions<RECEIVER, OUTPUT> providerActions,
-                                StreamActions<PROVIDER> streamActions) {
+                                Operator.Pool<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> pool,
+                                ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
+                                ProviderRegistry<Publisher<INPUT>> providerRegistry,
+                                ReceiverActions<Publisher<INPUT>, INPUT> receiverActions,
+                                ProviderActions<Subscriber<OUTPUT>, OUTPUT> providerActions,
+                                StreamActions<Publisher<INPUT>> streamActions) {
             super(processor, pool, receiverRegistry, providerRegistry, receiverActions, providerActions, streamActions);
             this.pool = pool;
         }
 
-        protected Operator.Pool<INPUT, OUTPUT, PROVIDER, RECEIVER> operator() {
+        protected Operator.Pool<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator() {
             return pool;
         }
 
         @Override
-        public void pull(RECEIVER receiver) {
+        public void pull(Subscriber<OUTPUT> receiver) {
             // TODO: We don't care about the receiver here
             if (operator().hasNext(receiver)) {
                 WithdrawableHelper.pull(receiver, operator(), providerActions);
@@ -171,7 +201,7 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends 
         }
 
         @Override
-        public void receive(PROVIDER provider, INPUT packet) {
+        public void receive(Publisher<INPUT> provider, INPUT packet) {
             receiverActions.traceReceive(provider, packet);
             providerRegistry().recordReceive(provider);
 
@@ -180,7 +210,7 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends 
             retry.set(false);
             iterate(receiverRegistry().pulling()).forEachRemaining(receiver -> {
                 if (operator().hasNext(receiver)) {
-                    Operator.Supplied<OUTPUT, PROVIDER> supplied = operator().next(receiver);
+                    Operator.Supplied<OUTPUT, Publisher<INPUT>> supplied = operator().next(receiver);
                     providerActions.processEffects(supplied);
                     receiverRegistry().setNotPulling(receiver);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
                     providerActions.outputToReceiver(receiver, supplied.output());
@@ -194,9 +224,9 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends 
 
     public static class WithdrawableHelper {
         // TODO: Can this go inside the providerActions?
-        static <OUTPUT, RECEIVER, PROVIDER> void pull(RECEIVER receiver, Operator.Withdrawable<?, OUTPUT, PROVIDER, RECEIVER> operator, ProviderActions<RECEIVER, OUTPUT> providerActions) {
+        static <OUTPUT, INPUT> void pull(Subscriber<OUTPUT> receiver, Operator.Withdrawable<?, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator, ProviderActions<Subscriber<OUTPUT>, OUTPUT> providerActions) {
             providerActions.receiverRegistry().setNotPulling(receiver);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
-            Operator.Supplied<OUTPUT, PROVIDER> supplied = operator.next(receiver);
+            Operator.Supplied<OUTPUT, Publisher<INPUT>> supplied = operator.next(receiver);
             providerActions.processEffects(supplied);
             providerActions.outputToReceiver(receiver, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
         }
@@ -250,7 +280,7 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends 
         @Override
         public void pull(Subscriber<PACKET> subscriber) {
             if (operator().hasNext(subscriber)) {
-                WithdrawableHelper.pull(subscriber, operator(), providerActions);
+                // WithdrawableHelper.pull(subscriber, operator(), providerActions);
             } else {
                 // TODO: Send terminated? This is rather than doing so inside the operator.
             }
@@ -292,7 +322,7 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends 
 
     }
 
-    public static class SyncStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT, Subscriber<OUTPUT>, Publisher<INPUT>> implements Stream<INPUT, OUTPUT> {
+    public static class SyncStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> implements Stream<INPUT, OUTPUT> {
 
         private SyncStream(Processor<?, ?, ?, ?> processor,
                            Operator<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator,
@@ -359,10 +389,10 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends 
     // TODO: Some of the behaviour of these classes can probably be abstracted
     public static class SyncReceiverActions<INPUT> implements ReceiverActions<Publisher<INPUT>, INPUT> {
 
-        private final Receiver<?, INPUT> receiver;
+        private final Subscriber<INPUT> receiver;
         private final Processor<?, ?, ?, ?> receiverProcessor = null;
 
-        SyncReceiverActions(Receiver<?, INPUT> receiver) {
+        SyncReceiverActions(Subscriber<INPUT> receiver) {
             this.receiver = receiver;
         }
 
@@ -384,10 +414,10 @@ public abstract class AbstractStream<INPUT, OUTPUT, RECEIVER, PROVIDER> extends 
 
     public static class SyncProviderActions<OUTPUT> implements ProviderActions<Subscriber<OUTPUT>, OUTPUT> {
 
-        private final Provider<?> provider;
+        private final Publisher<?> provider;
         private final Processor<?, ?, ?, ?> providerProcessor = null;
 
-        SyncProviderActions(Provider<?> provider) {
+        SyncProviderActions(Publisher<?> provider) {
             this.provider = provider;
         }
 

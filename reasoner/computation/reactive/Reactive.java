@@ -21,8 +21,6 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 
 import java.util.function.Function;
 
@@ -42,60 +40,36 @@ public interface Reactive {
 
     }
 
-    interface Provider<RECEIVER> extends Reactive {
+    interface Publisher<PACKET> extends Reactive {
 
-//        void registerReceiver(RECEIVER receiver);  // TODO: Replace with calling .add() on the receiverRegistry(), except that the symmetric receiver call can't be replaced so easily
+        void pull(Subscriber<PACKET> subscriber);
 
-        void pull(RECEIVER receiver);
+        void registerReceiver(Subscriber<PACKET> subscriber);
 
-//        ReceiverRegistry<RECEIVER> receiverRegistry();
+        <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function);
 
-        interface Publisher<PACKET> extends Provider<Receiver.Subscriber<PACKET>> {
+        <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function);
 
-            // TODO: If sync/async behaviours are abstracted differently then there will be no difference between Publisher and Provider and they can be collapsed
-            @Override
-            void pull(Receiver.Subscriber<PACKET> subscriber);
+        Stream<PACKET, PACKET> buffer();
 
-//            @Override
-            void registerReceiver(Receiver.Subscriber<PACKET> subscriber);
+        Stream<PACKET, PACKET> deduplicate();
 
-            <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function);
+    }
 
-            <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function);
+    interface Subscriber<PACKET> extends Reactive {
 
-            Stream<PACKET, PACKET> buffer();
+        void receive(Publisher<PACKET> publisher, PACKET packet);
 
-            Stream<PACKET, PACKET> deduplicate();
+        void registerProvider(Publisher<PACKET> publisher);
+
+        interface Finishable<PACKET> extends Reactive.Subscriber<PACKET> {
+
+            void finished();
 
         }
     }
 
-    interface Receiver<PROVIDER, PACKET> extends Reactive {
-
-//        void registerProvider(PROVIDER provider);
-
-        void receive(PROVIDER provider, PACKET packet);
-
-//        ProviderRegistry<PROVIDER> providerRegistry();
-
-        interface Subscriber<PACKET> extends Receiver<Provider.Publisher<PACKET>, PACKET> {
-
-            @Override
-            void receive(Provider.Publisher<PACKET> publisher, PACKET packet);
-
-//            @Override
-            void registerProvider(Provider.Publisher<PACKET> publisher);
-
-            interface Finishable<PACKET> extends Reactive.Receiver.Subscriber<PACKET> {
-
-                void finished();
-
-            }
-        }
-    }
-
-    interface Stream<INPUT, OUTPUT> extends Receiver.Subscriber<INPUT>, Provider.Publisher<OUTPUT> {
+    interface Stream<INPUT, OUTPUT> extends Subscriber<INPUT>, Publisher<OUTPUT> {
 
     }
-
 }

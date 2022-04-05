@@ -34,11 +34,11 @@ import java.util.Set;
 
 public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements Reactive.Stream<PACKET, PACKET> {
 
-    final Map<Receiver.Subscriber<PACKET>, Integer> bufferPositions;  // Points to the next item needed
+    final Map<Subscriber<PACKET>, Integer> bufferPositions;  // Points to the next item needed
     final Set<PACKET> bufferSet;
     final List<PACKET> bufferList;
     private final ProviderRegistry.Single<Publisher<PACKET>> providerRegistry;
-    private final ReceiverRegistry.Multi<Receiver.Subscriber<PACKET>> receiverRegistry;
+    private final ReceiverRegistry.Multi<Subscriber<PACKET>> receiverRegistry;
 
     public FanOutStream(Processor<?, ?, ?, ?> processor) {
         super(processor);
@@ -50,7 +50,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     }
 
     @Override
-    protected ReceiverRegistry.Multi<Receiver.Subscriber<PACKET>> receiverRegistry() {
+    protected ReceiverRegistry.Multi<Subscriber<PACKET>> receiverRegistry() {
         return receiverRegistry;
     }
 
@@ -65,7 +65,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
             processor().monitor().execute(actor -> actor.createAnswer(identifier()));
-            Set<Receiver.Subscriber<PACKET>> pullingReceivers = receiverRegistry().pulling();
+            Set<Subscriber<PACKET>> pullingReceivers = receiverRegistry().pulling();
             receiverRegistry().setNotPulling();
             pullingReceivers.forEach(this::sendFromBuffer);
         } else {
@@ -75,7 +75,7 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
     }
 
     @Override
-    public void pull(Receiver.Subscriber<PACKET> subscriber) {
+    public void pull(Subscriber<PACKET> subscriber) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
         receiverRegistry().recordPull(subscriber);
         bufferPositions.putIfAbsent(subscriber, 0);
@@ -87,14 +87,14 @@ public class FanOutStream<PACKET> extends AbstractPublisher<PACKET> implements R
         }
     }
 
-    private void sendFromBuffer(Receiver.Subscriber<PACKET> receiver) {
+    private void sendFromBuffer(Subscriber<PACKET> receiver) {
         Integer pos = bufferPositions.get(receiver);
         bufferPositions.put(receiver, pos + 1);
         receiver.receive(this, bufferList.get(pos));
     }
 
     @Override
-    public void registerReceiver(Receiver.Subscriber<PACKET> subscriber) {
+    public void registerReceiver(Subscriber<PACKET> subscriber) {
         bufferPositions.putIfAbsent(subscriber, 0);
         receiverRegistry().addReceiver(subscriber);
         subscriber.registerProvider(this);

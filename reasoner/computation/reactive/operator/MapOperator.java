@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
 import com.vaticle.typedb.common.collection.Collections;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider.Publisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 
 import java.util.function.Function;
 

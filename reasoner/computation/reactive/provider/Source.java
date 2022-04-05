@@ -43,7 +43,7 @@ public class Source<PACKET> extends SingleReceiverPublisher<PACKET> {
     }
 
     @Override
-    public void pull(Receiver.Subscriber<PACKET> subscriber) {
+    public void pull(Subscriber<PACKET> subscriber) {
         assert subscriber.equals(receiverRegistry().receiver());
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
         receiverRegistry().recordPull(subscriber);

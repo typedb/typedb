@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.provider;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.BufferedStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.DeduplicationStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FlatMapStream;
@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.stream.MapStream;
 
 import java.util.function.Function;
 
-public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Publisher<OUTPUT> {
+public abstract class AbstractPublisher<OUTPUT> implements Publisher<OUTPUT> {
 
     private final Identifier<?, ?> identifier;
     private final Processor<?, ?, ?, ?> processor;
@@ -43,7 +43,7 @@ public abstract class AbstractPublisher<OUTPUT> implements Reactive.Provider.Pub
         return identifier;
     }
 
-    protected abstract ReceiverRegistry<Receiver.Subscriber<OUTPUT>> receiverRegistry();
+    protected abstract ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry();
 
     protected Processor<?, ?, ?, ?> processor() {
         return processor;
