@@ -16,9 +16,10 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive.refactored;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 
 public abstract class ReactiveImpl implements Reactive {
 

@@ -16,9 +16,9 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive.refactored;
 
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 
 public interface ReactiveActions {

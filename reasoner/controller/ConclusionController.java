@@ -33,7 +33,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverMultiProviderStream;
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController.FromConclusionRequest.ConditionRequest;
