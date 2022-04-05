@@ -262,7 +262,7 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
             if (operator().hasNext(subscriber)) {
                 // WithdrawableHelper.pull(subscriber, operator(), providerActions);
             } else {
-                // TODO: Send terminated? This is rather than doing so inside the operator.
+                processor().monitor().execute(actor -> actor.sourceFinished(identifier()));
             }
         }
 
