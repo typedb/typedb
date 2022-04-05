@@ -163,7 +163,7 @@ public abstract class Processor<INPUT, OUTPUT,
     protected void finishConnection(Identifier<INPUT, ?> inputId, Identifier<?, INPUT> outputId) {
         assert !done;
         Input<INPUT> input = inputs.get(inputId);
-        input.registerProvider(outputId);
+        input.setOutput(outputId);
         input.pull();
     }
 
@@ -228,19 +228,14 @@ public abstract class Processor<INPUT, OUTPUT,
      */
     public static class Input<PACKET> extends SingleReceiverPublisher<PACKET> implements Reactive.Receiver<Identifier<?, PACKET>, PACKET> {
 
-        private final ProviderRegistry.Single<Identifier<?, PACKET>> providerRegistry;
         private final Identifier<PACKET, ?> identifier;
         private boolean ready;
+        private Identifier<?, PACKET> providingOutput;
 
         public Input(Processor<PACKET, ?, ?, ?> processor) {
             super(processor);
             this.identifier = processor.registerReactive(this);
             this.ready = false;
-            this.providerRegistry = new ProviderRegistry.Single<>();
-        }
-
-        private ProviderRegistry.Single<Identifier<?, PACKET>> providerRegistry() {
-            return providerRegistry;
         }
 
         @Override
@@ -248,12 +243,12 @@ public abstract class Processor<INPUT, OUTPUT,
             return identifier;
         }
 
-        public void registerProvider(Identifier<?, PACKET> providerOutputId) {
-            if (providerRegistry().add(providerOutputId)) {
-                processor().monitor().execute(actor -> actor.registerPath(identifier(), providerOutputId));
-            }
+        public void setOutput(Identifier<?, PACKET> outputId) {
+            assert providingOutput == null;
+            providingOutput = outputId;
+            processor().monitor().execute(actor -> actor.registerPath(identifier(), outputId));
             assert !ready;
-            this.ready = true;
+            ready = true;
         }
 
         void pull() {
@@ -264,17 +259,13 @@ public abstract class Processor<INPUT, OUTPUT,
         public void pull(Subscriber<PACKET> subscriber) {
             assert subscriber.equals(receiverRegistry().receiver());
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
-            receiverRegistry().recordPull(subscriber);
-            if (ready && providerRegistry().setPulling()) {
-                providerRegistry().provider().processor()
-                        .execute(actor -> actor.pull(identifier(), providerRegistry().provider()));
-            }
+            receiverRegistry().recordPull(subscriber);  // TODO: There's no need for a receiver registry here, we never do anything differently depending upon whether the receiver pulling state
+            if (ready) providingOutput.processor().execute(actor -> actor.pull(identifier(), providingOutput));
         }
 
         @Override
         public void receive(Identifier<?, PACKET> providerId, PACKET packet) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(providerId, identifier(), packet));
-            providerRegistry().recordReceive(providerId);
             receiverRegistry().setNotPulling();
             receiverRegistry().receiver().receive(this, packet);
         }
