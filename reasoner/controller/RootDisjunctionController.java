@@ -98,7 +98,7 @@ public class RootDisjunctionController
         @Override
         protected Reactive.Stream<ConceptMap, ConceptMap> getOutputRouter(FanInStream<ConceptMap> fanIn) {
             // Simply here to be overridden by root disjuntion to avoid duplicating setUp
-            return fanIn.buffer().map(conceptMap -> conceptMap.filter(filter)).deduplicate();
+            return fanIn.buffer().map(conceptMap -> conceptMap.filter(filter)).distinct();
         }
 
         @Override

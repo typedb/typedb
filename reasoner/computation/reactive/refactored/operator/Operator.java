@@ -21,9 +21,9 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operato
 import java.util.HashSet;
 import java.util.Set;
 
-public interface Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
+public interface Operator {
 
-    interface Withdrawable<INPUT, OUTPUT, PROVIDER, RECEIVER> extends Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
+    interface Withdrawable<INPUT, OUTPUT, PROVIDER, RECEIVER> extends Operator {
 
         boolean hasNext(RECEIVER receiver);
 
@@ -37,7 +37,7 @@ public interface Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
         //  hasNext() could switch back
     }
 
-    interface Accepter<INPUT, OUTPUT, PROVIDER, RECEIVER> extends Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
+    interface Accepter<INPUT, OUTPUT, PROVIDER, RECEIVER> extends Operator {
 
         Effects<PROVIDER> accept(PROVIDER provider, INPUT packet);
 

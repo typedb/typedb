@@ -32,19 +32,17 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
     private final ReceiverRegistry.Single<Subscriber<PACKET>> receiverRegistry;
     private final ReactiveActions.PublisherActions<Subscriber<PACKET>, PACKET> providerActions;
 
-    protected Source(Processor<?, ?, ?, ?> processor, Operator.Source<PACKET, Subscriber<PACKET>> supplierOperator,
-                     ReceiverRegistry.Single<Subscriber<PACKET>> receiverRegistry,
-                     ReactiveActions.PublisherActions<Subscriber<PACKET>, PACKET> providerActions) {
+    protected Source(Processor<?, ?, ?, ?> processor, Operator.Source<PACKET, Subscriber<PACKET>> supplierOperator) {
         super(processor);
         this.supplierOperator = supplierOperator;
-        this.receiverRegistry = receiverRegistry;
-        this.providerActions = providerActions;
+        this.receiverRegistry = new ReceiverRegistry.Single<>();
+        this.providerActions = new AbstractStream.PublisherActionsImpl<>(this);
         processor().monitor().execute(actor -> actor.registerSource(identifier()));
     }
 
-    public static <OUTPUT> Source<OUTPUT> create(
-            Processor<?, ?, ?, ?> processor, Operator.Source<OUTPUT, Subscriber<OUTPUT>> operator) {
-        return new Source<>(processor, operator, new ReceiverRegistry.Single<>(), new AbstractStream.PublisherActionsImpl<>(null));
+    public static <OUTPUT> Source<OUTPUT> create(Processor<?, ?, ?, ?> processor,
+                                                 Operator.Source<OUTPUT, Subscriber<OUTPUT>> operator) {
+        return new Source<>(processor, operator);
     }
 
     private Operator.Source<PACKET, Subscriber<PACKET>> operator() {
@@ -55,7 +53,7 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
     public void pull(Subscriber<PACKET> subscriber) {
         if (operator().hasNext(subscriber)) {
             // TODO: Code duplicated in PoolingStream
-            providerActions.receiverRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
+            receiverRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
             Operator.Supplied<PACKET, Void> supplied = operator().next(subscriber);
             providerActions.processEffects(supplied);
             providerActions.outputToReceiver(subscriber, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
@@ -76,22 +74,22 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
 
     @Override
     public <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function) {
-        return providerActions.map(processor, this, function);
+        return providerActions.map(this, function);
     }
 
     @Override
     public <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function) {
-        return providerActions.flatMap(processor, this, function);
+        return providerActions.flatMap(this, function);
+    }
+
+    @Override
+    public Stream<PACKET, PACKET> distinct() {
+        return providerActions.distinct(this);
     }
 
     @Override
     public Stream<PACKET, PACKET> buffer() {
-        return providerActions.buffer(processor, this);
-    }
-
-    @Override
-    public Stream<PACKET, PACKET> deduplicate() {
-        return providerActions.deduplicate(processor, this);
+        return providerActions.buffer(this);
     }
 
 }

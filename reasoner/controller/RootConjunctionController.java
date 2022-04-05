@@ -99,7 +99,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
                     new CompoundStream<>(this, plan, this::nextCompoundLeader, ConjunctionController::merge, bounds)
                             .buffer()
                             .map(conceptMap -> conceptMap.filter(filter))
-                            .deduplicate()
+                            .distinct()
             );
             rootSink = new RootSink(this, reasonerConsumer);
             outputRouter().registerReceiver(rootSink);

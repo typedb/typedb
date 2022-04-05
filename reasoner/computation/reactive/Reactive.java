@@ -26,7 +26,7 @@ import java.util.function.Function;
 
 public interface Reactive {
 
-//    Processor<?, ?, ?, ?> processor();  // TODO: It's weird to be able to access your receiver/provider's processor, but this is needed for monitoring?
+    Processor<?, ?, ?, ?> processor();  // TODO: It's weird to be able to access your receiver/provider's processor, but this is needed for monitoring?
 
     Identifier<?, ?> identifier();
 
@@ -54,7 +54,7 @@ public interface Reactive {
 
         Stream<PACKET, PACKET> buffer();
 
-        Stream<PACKET, PACKET> deduplicate();
+        Stream<PACKET, PACKET> distinct();
 
     }
 

@@ -21,7 +21,9 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.refactored;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.DistinctOperator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.FlatMapOperator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.MapOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
@@ -42,59 +44,57 @@ public abstract class ReactiveImpl implements Reactive {
         return identifier;
     }
 
+    @Override
     public Processor<?, ?, ?, ?> processor() {
         return processor;
     }
 
-    // TODO: Some of the behaviour of these classes can probably be abstracted
     public static class SubscriberActionsImpl<INPUT> implements ReactiveActions.SubscriberActions<INPUT> {
 
-        private final Subscriber<INPUT> receiver;
-        private final Processor<?, ?, ?, ?> receiverProcessor = null;
+        private final Subscriber<INPUT> subscriber;
 
-        SubscriberActionsImpl(Subscriber<INPUT> receiver) {
-            this.receiver = receiver;
+        SubscriberActionsImpl(Subscriber<INPUT> subscriber) {
+            this.subscriber = subscriber;
         }
 
         @Override
         public void registerPath(Publisher<INPUT> publisher) {
-            receiverProcessor.monitor().execute(actor -> actor.registerPath(receiver.identifier(), publisher.identifier()));
+            subscriber.processor().monitor().execute(actor -> actor.registerPath(subscriber.identifier(), publisher.identifier()));
         }
 
         @Override
         public void traceReceive(Publisher<INPUT> publisher, INPUT packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(publisher.identifier(), receiver.identifier(), packet));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(publisher.identifier(), subscriber.identifier(), packet));
         }
 
         @Override
         public void rePullProvider(Publisher<INPUT> publisher) {
-            receiverProcessor.pullRetry(publisher.identifier(), receiver.identifier());
+            subscriber.processor().pullRetry(publisher.identifier(), subscriber.identifier());
         }
     }
 
     public static class PublisherActionsImpl<OUTPUT> implements ReactiveActions.PublisherActions<Subscriber<OUTPUT>, OUTPUT> {
 
-        private final Publisher<?> provider;
-        private final Processor<?, ?, ?, ?> providerProcessor = null;
+        private final Publisher<?> publisher;
 
-        PublisherActionsImpl(Publisher<?> provider) {
-            this.provider = provider;
+        PublisherActionsImpl(Publisher<?> publisher) {
+            this.publisher = publisher;
         }
 
         @Override
         public void processEffects(Operator.Effects<?> effects) {
             effects.newProviders().forEach(newProvider -> {
-                providerProcessor.monitor().execute(actor -> actor.forkFrontier(1, provider.identifier()));
+                publisher.processor().monitor().execute(actor -> actor.forkFrontier(1, publisher.identifier()));
                 // newProvider.registerReceiver(this);  // TODO: This is only applicable for Publishers and Subscribers in this case
             });
             for (int i = 0; i <= effects.answersCreated();) {
                 // TODO: We can now batch this and even send the delta between created and consumed
                 //  in fact we should be able to look at the number of inputs and outputs and move the monitoring
                 //  responsibility to streams in a generic way, removing the need for this Outcome object
-                providerProcessor.monitor().execute(actor -> actor.createAnswer(provider.identifier()));
+                publisher.processor().monitor().execute(actor -> actor.createAnswer(publisher.identifier()));
             }
             for (int i = 0; i <= effects.answersConsumed();) {
-                providerProcessor.monitor().execute(actor -> actor.consumeAnswer(provider.identifier()));
+                publisher.processor().monitor().execute(actor -> actor.consumeAnswer(publisher.identifier()));
             }
         }
 
@@ -104,26 +104,30 @@ public abstract class ReactiveImpl implements Reactive {
         }
 
         @Override
-        public ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry() {
-            return null;
+        public <MAPPED> Stream<OUTPUT, MAPPED> map(Publisher<OUTPUT> publisher, Function<OUTPUT, MAPPED> function) {
+            Stream<OUTPUT, MAPPED> newOp = TransformationStream.create(publisher.processor(), new MapOperator<>(function));
+            publisher.registerReceiver(newOp);
+            return newOp;
         }
 
-        public <OUTPUT, MAPPED> Stream<OUTPUT, MAPPED> map(
-                Processor<?, ?, ?, ?> processor, Publisher<OUTPUT> publisher, Function<OUTPUT, MAPPED> function) {
-            return null;
+        @Override
+        public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Publisher<OUTPUT> publisher,
+                                                       Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
+            Stream<OUTPUT, MAPPED> newOp = TransformationStream.create(publisher.processor(), new FlatMapOperator<>(function));
+            publisher.registerReceiver(newOp);
+            return newOp;
         }
 
-        public <OUTPUT, MAPPED> Stream<OUTPUT, MAPPED> flatMap(Processor<?, ?, ?, ?> processor, Publisher<OUTPUT> publisher,
-                                                                      Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
-            return null;
+        @Override
+        public Stream<OUTPUT, OUTPUT> distinct(Publisher<OUTPUT> publisher) {
+            Stream<OUTPUT, OUTPUT> newOp = TransformationStream.create(publisher.processor(), new DistinctOperator<>());
+            publisher.registerReceiver(newOp);
+            return newOp;
         }
 
-        public <OUTPUT> Stream<OUTPUT, OUTPUT> buffer(Processor<?, ?, ?, ?> processor, Publisher<OUTPUT> publisher) {
-            return null;
-        }
-
-        public <OUTPUT> Stream<OUTPUT,OUTPUT> deduplicate(Processor<?, ?, ?, ?> processor, Publisher<OUTPUT> publisher) {
-            return null;
+        @Override
+        public Stream<OUTPUT, OUTPUT> buffer(Publisher<OUTPUT> publisher) {
+            return null; // TODO
         }
     }
 }

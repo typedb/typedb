@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator.Transformer;
 
 import java.util.function.Function;
 
@@ -30,55 +31,26 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> {
 
-    private final Operator.Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer;
+    private final Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer;
 
     protected TransformationStream(Processor<?, ?, ?, ?> processor,
-                                   Operator.Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer,
-                                   ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
-                                   ProviderRegistry<Publisher<INPUT>> providerRegistry,
-                                   ReactiveActions.SubscriberActions<INPUT> receiverActions,
-                                   ReactiveActions.PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions) {
-        super(processor, receiverRegistry, providerRegistry, receiverActions, providerActions);
+                                   Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer) {
+        super(processor, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
         this.transformer = transformer;
     }
 
-    public static <INPUT, OUTPUT> com.vaticle.typedb.core.reasoner.computation.reactive.refactored.TransformationStream<INPUT, OUTPUT> sync(
-            Processor<?, ?, ?, ?> processor, Operator.Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer) {
-        ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry = new ReceiverRegistry.Single<>();
-        ProviderRegistry<Publisher<INPUT>> providerRegistry = new ProviderRegistry.Single<>();
-        ReactiveActions.SubscriberActions<INPUT> receiverActions = new SubscriberActionsImpl<>(null);
-        ReactiveActions.PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions = new PublisherActionsImpl<>(null);
-        return new TransformationStream<>(processor, transformer, receiverRegistry, providerRegistry, receiverActions,
-                                          providerActions);
+    public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> create(
+            Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer) {
+        return new TransformationStream<>(processor, transformer);
     }
 
-    protected Operator.Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator() {
+    protected Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator() {
         return transformer;
     }
 
     @Override
     public void pull(Subscriber<OUTPUT> subscriber) {
         providerRegistry().nonPulling().forEach(this::propagatePull);
-    }
-
-    @Override
-    public <MAPPED> Stream<OUTPUT, MAPPED> map(Function<OUTPUT, MAPPED> function) {
-        return null;
-    }
-
-    @Override
-    public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
-        return null;
-    }
-
-    @Override
-    public Stream<OUTPUT, OUTPUT> buffer() {
-        return null;
-    }
-
-    @Override
-    public Stream<OUTPUT, OUTPUT> deduplicate() {
-        return null;
     }
 
     @Override
@@ -100,5 +72,25 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
     @Override
     public void registerProvider(Publisher<INPUT> publisher) {
 
+    }
+
+    @Override
+    public <MAPPED> Stream<OUTPUT, MAPPED> map(Function<OUTPUT, MAPPED> function) {
+        return providerActions.map(this, function);
+    }
+
+    @Override
+    public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
+        return providerActions.flatMap(this, function);
+    }
+
+    @Override
+    public Stream<OUTPUT, OUTPUT> distinct() {
+        return providerActions.distinct(this);
+    }
+
+    @Override
+    public Stream<OUTPUT, OUTPUT> buffer() {
+        return providerActions.buffer(this);
     }
 }

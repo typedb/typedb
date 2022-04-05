@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operato
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.TransformationStream;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-public class CompoundOperator<PLAN_ID, PACKET, RECEIVER> implements Operator.Transformer<PACKET, PACKET, Publisher<PACKET>, RECEIVER>, Operator<PACKET, PACKET, Publisher<PACKET>, RECEIVER> {
+public class CompoundOperator<PLAN_ID, PACKET, RECEIVER> implements Operator.Transformer<PACKET, PACKET, Publisher<PACKET>, RECEIVER> {
 
     private final Publisher<PACKET> leadingPublisher;
     private final List<PLAN_ID> remainingPlan;
@@ -63,12 +64,11 @@ public class CompoundOperator<PLAN_ID, PACKET, RECEIVER> implements Operator.Tra
                 if (remainingPlan.size() == 1) {
                     follower = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
                 } else {
-//                    follower = AbstractStream.SyncStream.simple(
-//                            processor,
-//                            new CompoundOperator<>(processor, remainingPlan, spawnLeaderFunc, compoundPacketsFunc,
-//                                                   initialPacket)
-//                    ).buffer();
-                    follower = null;
+                    follower = TransformationStream.create(
+                            processor,
+                            new CompoundOperator<>(processor, remainingPlan, spawnLeaderFunc, compoundPacketsFunc,
+                                                   initialPacket)
+                    ).buffer();
                     outcome.addNewProvider(follower);
                 }
                 publisherPackets.put(follower, mergedPacket);

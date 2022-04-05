@@ -36,7 +36,8 @@ public abstract class Sink<PACKET> implements Subscriber<PACKET> { // TODO: Coll
         return providerRegistry;
     }
 
-    protected Processor<?, ?, ?, ?> processor() {
+    @Override
+    public Processor<?, ?, ?, ?> processor() {
         return processor;
     }
 

@@ -19,14 +19,13 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.refactored;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.ReactiveActions.PublisherActions;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.ReactiveActions.SubscriberActions;
 
-public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl implements Publisher<OUTPUT>, Subscriber<INPUT> {  // TODO: Rename Stream when there's no conflict
+public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl implements Reactive.Stream<INPUT, OUTPUT> {  // TODO: Rename Stream when there's no conflict
 
     private final ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry;
     private final ProviderRegistry<Publisher<INPUT>> providerRegistry;
@@ -35,14 +34,12 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
 
     protected AbstractStream(Processor<?, ?, ?, ?> processor,
                              ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
-                             ProviderRegistry<Publisher<INPUT>> providerRegistry,
-                             SubscriberActions<INPUT> receiverActions,
-                             PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions) {
+                             ProviderRegistry<Publisher<INPUT>> providerRegistry) {
         super(processor);
         this.receiverRegistry = receiverRegistry;
         this.providerRegistry = providerRegistry;
-        this.receiverActions = receiverActions;
-        this.providerActions = providerActions;
+        this.receiverActions = new SubscriberActionsImpl<>(this);
+        this.providerActions = new PublisherActionsImpl<>(this);
     }
 
     public ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry() { return receiverRegistry; }

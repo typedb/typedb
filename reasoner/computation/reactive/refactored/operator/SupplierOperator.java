@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import java.util.function.Supplier;
 
 // TODO: This is now such a thin wrapper it could be collapsed
-public class SupplierOperator<PACKET, RECEIVER> implements Operator.Source<PACKET, RECEIVER>, Operator<Void, PACKET, Void, RECEIVER> {
+public class SupplierOperator<PACKET, RECEIVER> implements Operator.Source<PACKET, RECEIVER> {
 
     private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
     private boolean exhausted;

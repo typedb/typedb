@@ -19,10 +19,8 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.refactored;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 
 import java.util.function.Function;
 
@@ -34,15 +32,15 @@ public interface ReactiveActions {
 
         void outputToReceiver(RECEIVER receiver, OUTPUT packet);
 
-        ReceiverRegistry<RECEIVER> receiverRegistry();
+        <MAPPED> Reactive.Stream<OUTPUT, MAPPED> map(Reactive.Publisher<OUTPUT> publisher,
+                                                     Function<OUTPUT, MAPPED> function);
 
-        <OUTPUT, MAPPED> Reactive.Stream<OUTPUT, MAPPED> map(Processor<?, ?, ?, ?> processor, Reactive.Publisher<OUTPUT> publisher, Function<OUTPUT, MAPPED> function);
+        <MAPPED> Reactive.Stream<OUTPUT, MAPPED> flatMap(Reactive.Publisher<OUTPUT> publisher,
+                                                         Function<OUTPUT, FunctionalIterator<MAPPED>> function);
 
-        <OUTPUT, MAPPED> Reactive.Stream<OUTPUT, MAPPED> flatMap(Processor<?, ?, ?, ?> processor, Reactive.Publisher<OUTPUT> publisher, Function<OUTPUT, FunctionalIterator<MAPPED>> function);
+        Reactive.Stream<OUTPUT, OUTPUT> buffer(Reactive.Publisher<OUTPUT> publisher);
 
-        <OUTPUT> Reactive.Stream<OUTPUT, OUTPUT> buffer(Processor<?, ?, ?, ?> processor, Reactive.Publisher<OUTPUT> publisher);
-
-        <OUTPUT> Reactive.Stream<OUTPUT,OUTPUT> deduplicate(Processor<?, ?, ?, ?> processor, Reactive.Publisher<OUTPUT> publisher);
+        Reactive.Stream<OUTPUT,OUTPUT> distinct(Reactive.Publisher<OUTPUT> publisher);
 
     }
 

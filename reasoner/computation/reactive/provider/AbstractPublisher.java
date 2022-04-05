@@ -45,7 +45,8 @@ public abstract class AbstractPublisher<OUTPUT> implements Publisher<OUTPUT> {
 
     protected abstract ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry();
 
-    protected Processor<?, ?, ?, ?> processor() {
+    @Override
+    public Processor<?, ?, ?, ?> processor() {
         return processor;
     }
 
@@ -71,7 +72,7 @@ public abstract class AbstractPublisher<OUTPUT> implements Publisher<OUTPUT> {
     }
 
     @Override
-    public Stream<OUTPUT,OUTPUT> deduplicate() {
+    public Stream<OUTPUT,OUTPUT> distinct() {
         DeduplicationStream<OUTPUT> dedup = new DeduplicationStream<>(this, processor());
         registerReceiver(dedup);
         return dedup;

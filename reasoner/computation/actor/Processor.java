@@ -250,7 +250,8 @@ public abstract class Processor<INPUT, OUTPUT,
             return identifier;
         }
 
-        private Processor<?, PACKET, ?, ?> processor() {
+        @Override
+        public Processor<?, PACKET, ?, ?> processor() {
             return processor;
         }
 
