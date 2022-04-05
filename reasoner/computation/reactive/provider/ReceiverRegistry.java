@@ -23,7 +23,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public abstract class ReceiverRegistry<RECEIVER> {
+public abstract class ReceiverRegistry<RECEIVER> {  // TODO: Rename SubscriberRegistry
 
     abstract void setNotPulling();
 

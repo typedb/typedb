@@ -40,6 +40,8 @@ public interface Reactive {
 
     }
 
+    // TODO: Rename all local variables from receiver to subscriber and from provider to publisher throughout
+
     interface Publisher<PACKET> extends Reactive {
 
         void pull(Subscriber<PACKET> subscriber);

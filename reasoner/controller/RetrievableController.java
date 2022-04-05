@@ -26,8 +26,6 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Connector.Request;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.AbstractStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.SupplierOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;

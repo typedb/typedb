@@ -25,9 +25,9 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.RootSink;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.RootSink;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.CompoundStream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 

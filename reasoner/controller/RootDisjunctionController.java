@@ -22,9 +22,9 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.RootSink;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.RootSink;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 

@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.receiver;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -27,7 +25,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public abstract class ProviderRegistry<PROVIDER> {
+public abstract class ProviderRegistry<PROVIDER> {  // TODO: Rename Publisher Registry
 
     public abstract boolean add(PROVIDER provider);
 
