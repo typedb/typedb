@@ -68,26 +68,6 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
         return providerRegistry;
     }
 
-//    public static class ReactiveBuilder {
-//
-//        private boolean fanOut = false;
-//        private boolean fanIn = false;
-//        private boolean asyncProvider = false;
-//        private boolean asyncReceiver = false;
-////        private Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer;
-////        private Operator.Withdrawable<?, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator;
-//
-//        public ReactiveBuilder fanOut() {
-//            fanOut = true;
-//            return this;
-//        }
-//
-//        public <PACKET, Subscriber<OUTPUT>> SourceStream<PACKET, Subscriber<OUTPUT>> build(Operator.Source<PACKET, Subscriber<OUTPUT>> supplierOperator) {
-//            return new SourceStream<>()
-//        }
-//
-//    }
-
     public static class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> {
 
         private final Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer;

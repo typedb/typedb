@@ -88,45 +88,6 @@ public abstract class Processor<INPUT, OUTPUT,
         outputs.get(outputId).pull();
     }
 
-//    private static class RemoteInputReactive<INPUT> implements Publisher<INPUT> {
-//        private final Identifier<?, INPUT> identifier;
-//        private final Processor<?, INPUT, ?, ?> processor;
-//
-//        RemoteInputReactive(Identifier<?, INPUT> identifier, Processor<?, INPUT, ?, ?> processor) {
-//            this.identifier = identifier;
-//            this.processor = processor;
-//        }
-//
-//        @Override
-//        public Identifier<?, ?> identifier() {
-//            return identifier;
-//        }
-//
-//        @Override
-//        public void pull(Subscriber<INPUT> subscriber) {
-//            assert subscriber.equals(receiverRegistry().receiver());
-//            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
-//            receiverRegistry().recordPull(subscriber);
-//            if (ready && providerRegistry().setPulling()) {
-//                providerRegistry().provider().processor()
-//                        .execute(actor -> actor.pull(identifier(), providerRegistry().provider()));
-//            }
-//        }
-//
-//        @Override
-//        public boolean equals(Object o) {
-//            if (this == o) return true;
-//            if (o == null || getClass() != o.getClass()) return false;
-//            RemoteInputReactive<?> that = (RemoteInputReactive<?>) o;
-//            return identifier.equals(that.identifier);
-//        }
-//
-//        @Override
-//        public int hashCode() {
-//            return Objects.hash(identifier);
-//        }
-//    }
-
     protected void receive(Identifier<?, INPUT> providerId, INPUT input, Identifier<?, ?> inputId) {
         assert !done;
         inputs.get(inputId).receive(providerId, input);
