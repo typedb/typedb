@@ -64,13 +64,11 @@ public interface Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
         private final Set<PROVIDER> newProviders;
         int answersCreated;
         int answersConsumed;
-        private boolean sourceFinished;
 
         private Effects(int answersCreated, int answersConsumed) {
             this.answersCreated = answersCreated;
             this.answersConsumed = answersConsumed;
             this.newProviders = new HashSet<>();
-            this.sourceFinished = false;
         }
 
         public void addAnswerCreated() {
@@ -97,13 +95,6 @@ public interface Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> {
             return newProviders;
         }
 
-        public void addSourceFinished() {  // TODO: This is specific to sources only, and there should be a better, type-safe, way to do this
-            sourceFinished = true;
-        }
-
-        public boolean sourceFinished() {
-            return sourceFinished;
-        }
     }
 
     class Transformed<OUTPUT, PROVIDER> extends Effects<PROVIDER> {

@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.refactored;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
@@ -35,10 +36,9 @@ public abstract class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT,
                             Operator.Pool<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> pool,
                             ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
                             ProviderRegistry<Publisher<INPUT>> providerRegistry,
-                            ReactiveActions.SubscriberActions<Publisher<INPUT>, INPUT> receiverActions,
-                            ReactiveActions.PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions,
-                            ReactiveActions.StreamActions<Publisher<INPUT>> streamActions) {
-        super(processor, pool, receiverRegistry, providerRegistry, receiverActions, providerActions, streamActions);
+                            ReactiveActions.SubscriberActions<INPUT> receiverActions,
+                            ReactiveActions.PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions) {
+        super(processor, receiverRegistry, providerRegistry, receiverActions, providerActions);
         this.pool = pool;
     }
 
@@ -47,13 +47,17 @@ public abstract class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT,
     }
 
     @Override
-    public void pull(Subscriber<OUTPUT> receiver) {
-        // TODO: We don't care about the receiver here
-        if (operator().hasNext(receiver)) {
-            WithdrawableHelper.pull(receiver, operator(), providerActions);
+    public void pull(Subscriber<OUTPUT> subscriber) {
+        // TODO: We don't care about the subscriber here
+        if (operator().hasNext(subscriber)) {
+            // TODO: Code duplicated in Source
+            providerActions.receiverRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
+            Operator.Supplied<OUTPUT, Reactive.Publisher<INPUT>> supplied = operator().next(subscriber);
+            providerActions.processEffects(supplied);
+            providerActions.outputToReceiver(subscriber, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
         } else {
             // TODO: for POOLING but not for SOURCE
-            providerRegistry().nonPulling().forEach(streamActions::propagatePull);
+            providerRegistry().nonPulling().forEach(this::propagatePull);
         }
     }
 

@@ -18,17 +18,15 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.refactored;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 
+import java.util.function.Function;
+
 public interface ReactiveActions {
-
-    //TODO: These should probably be provided by the reactive instead of from here
-//    Reactive.Identifier<?, ?> identifier();
-
-    // Operator<INPUT, OUTPUT, PROVIDER, RECEIVER> operator();  // TODO: Push this down and be more specific about the type, or just leave it to the reactives to control
-
-//    Processor<?, ?, ?, ?> processor();
 
     interface PublisherActions<RECEIVER, OUTPUT> extends ReactiveActions {
 
@@ -38,23 +36,24 @@ public interface ReactiveActions {
 
         ReceiverRegistry<RECEIVER> receiverRegistry();
 
-        // TODO: map, flatMap, buffer, and deduplicate can go here
+        <OUTPUT, MAPPED> Reactive.Stream<OUTPUT, MAPPED> map(Processor<?, ?, ?, ?> processor, Reactive.Publisher<OUTPUT> publisher, Function<OUTPUT, MAPPED> function);
+
+        <OUTPUT, MAPPED> Reactive.Stream<OUTPUT, MAPPED> flatMap(Processor<?, ?, ?, ?> processor, Reactive.Publisher<OUTPUT> publisher, Function<OUTPUT, FunctionalIterator<MAPPED>> function);
+
+        <OUTPUT> Reactive.Stream<OUTPUT, OUTPUT> buffer(Processor<?, ?, ?, ?> processor, Reactive.Publisher<OUTPUT> publisher);
+
+        <OUTPUT> Reactive.Stream<OUTPUT,OUTPUT> deduplicate(Processor<?, ?, ?, ?> processor, Reactive.Publisher<OUTPUT> publisher);
 
     }
 
-    interface SubscriberActions<PROVIDER, INPUT> extends ReactiveActions {
+    interface SubscriberActions<INPUT> extends ReactiveActions {
 
-        void registerPath(PROVIDER provider);
+        void registerPath(Reactive.Publisher<INPUT> provider);
 
-        void traceReceive(PROVIDER provider, INPUT packet);
+        void traceReceive(Reactive.Publisher<INPUT> provider, INPUT packet);
 
-        void rePullProvider(PROVIDER provider);
-
-    }
-
-    interface StreamActions<PROVIDER> extends ReactiveActions {
-
-        void propagatePull(PROVIDER provider);
+        void rePullProvider(Reactive.Publisher<INPUT> provider);
 
     }
+
 }

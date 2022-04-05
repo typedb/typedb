@@ -36,10 +36,9 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
                                    Operator.Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer,
                                    ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
                                    ProviderRegistry<Publisher<INPUT>> providerRegistry,
-                                   ReactiveActions.SubscriberActions<Publisher<INPUT>, INPUT> receiverActions,
-                                   ReactiveActions.PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions,
-                                   ReactiveActions.StreamActions<Publisher<INPUT>> streamActions) {
-        super(processor, transformer, receiverRegistry, providerRegistry, receiverActions, providerActions, streamActions);
+                                   ReactiveActions.SubscriberActions<INPUT> receiverActions,
+                                   ReactiveActions.PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions) {
+        super(processor, receiverRegistry, providerRegistry, receiverActions, providerActions);
         this.transformer = transformer;
     }
 
@@ -47,11 +46,10 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
             Processor<?, ?, ?, ?> processor, Operator.Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer) {
         ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry = new ReceiverRegistry.Single<>();
         ProviderRegistry<Publisher<INPUT>> providerRegistry = new ProviderRegistry.Single<>();
-        ReactiveActions.SubscriberActions<Publisher<INPUT>, INPUT> receiverActions = new SubscriberActionsImpl<>(null);
+        ReactiveActions.SubscriberActions<INPUT> receiverActions = new SubscriberActionsImpl<>(null);
         ReactiveActions.PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions = new PublisherActionsImpl<>(null);
-        ReactiveActions.StreamActions<Publisher<INPUT>> streamActions = new StreamActionsImpl<>();
-        return new com.vaticle.typedb.core.reasoner.computation.reactive.refactored.TransformationStream<>(processor, transformer, receiverRegistry, providerRegistry,
-                                                                                                           receiverActions, providerActions, streamActions);
+        return new TransformationStream<>(processor, transformer, receiverRegistry, providerRegistry, receiverActions,
+                                          providerActions);
     }
 
     protected Operator.Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator() {
@@ -60,12 +58,7 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
     @Override
     public void pull(Subscriber<OUTPUT> subscriber) {
-        providerRegistry().nonPulling().forEach(streamActions::propagatePull);
-    }
-
-    @Override
-    public void registerReceiver(Subscriber<OUTPUT> subscriber) {
-
+        providerRegistry().nonPulling().forEach(this::propagatePull);
     }
 
     @Override

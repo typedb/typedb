@@ -26,24 +26,25 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator
 
 import java.util.function.Function;
 
-public class SourceStream<PACKET> extends ReactiveImpl implements Reactive.Publisher<PACKET> {  // TODO: Rename to Source when there's no clash
+public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<PACKET> {
 
     private final Operator.Source<PACKET, Subscriber<PACKET>> supplierOperator;
     private final ReceiverRegistry.Single<Subscriber<PACKET>> receiverRegistry;
     private final ReactiveActions.PublisherActions<Subscriber<PACKET>, PACKET> providerActions;
 
-    protected SourceStream(Processor<?, ?, ?, ?> processor, Operator.Source<PACKET, Subscriber<PACKET>> supplierOperator,
-                           ReceiverRegistry.Single<Subscriber<PACKET>> receiverRegistry,
-                           ReactiveActions.PublisherActions<Subscriber<PACKET>, PACKET> providerActions) {
+    protected Source(Processor<?, ?, ?, ?> processor, Operator.Source<PACKET, Subscriber<PACKET>> supplierOperator,
+                     ReceiverRegistry.Single<Subscriber<PACKET>> receiverRegistry,
+                     ReactiveActions.PublisherActions<Subscriber<PACKET>, PACKET> providerActions) {
         super(processor);
         this.supplierOperator = supplierOperator;
         this.receiverRegistry = receiverRegistry;
         this.providerActions = providerActions;
+        processor().monitor().execute(actor -> actor.registerSource(identifier()));
     }
 
-    public static <OUTPUT> SourceStream<OUTPUT> create(
+    public static <OUTPUT> Source<OUTPUT> create(
             Processor<?, ?, ?, ?> processor, Operator.Source<OUTPUT, Subscriber<OUTPUT>> operator) {
-        return new SourceStream<>(processor, operator, new ReceiverRegistry.Single<>(), new AbstractStream.PublisherActionsImpl<>(null));
+        return new Source<>(processor, operator, new ReceiverRegistry.Single<>(), new AbstractStream.PublisherActionsImpl<>(null));
     }
 
     private Operator.Source<PACKET, Subscriber<PACKET>> operator() {
@@ -53,7 +54,11 @@ public class SourceStream<PACKET> extends ReactiveImpl implements Reactive.Publi
     @Override
     public void pull(Subscriber<PACKET> subscriber) {
         if (operator().hasNext(subscriber)) {
-            // WithdrawableHelper.pull(subscriber, operator(), providerActions);
+            // TODO: Code duplicated in PoolingStream
+            providerActions.receiverRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
+            Operator.Supplied<PACKET, Void> supplied = operator().next(subscriber);
+            providerActions.processEffects(supplied);
+            providerActions.outputToReceiver(subscriber, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
         } else {
             processor().monitor().execute(actor -> actor.sourceFinished(identifier()));
         }
@@ -66,31 +71,27 @@ public class SourceStream<PACKET> extends ReactiveImpl implements Reactive.Publi
     @Override
     public void registerReceiver(Subscriber<PACKET> subscriber) {
         receiverRegistry.addReceiver(subscriber);
+        subscriber.registerProvider(this);  // TODO: Bad to have this mutual registering in one method call, it's unclear
     }
 
     @Override
     public <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function) {
-        return AbstractStream.PublisherHelper.map(processor, this, function);
+        return providerActions.map(processor, this, function);
     }
 
     @Override
     public <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function) {
-        return AbstractStream.PublisherHelper.flatMap(processor, this, function);
+        return providerActions.flatMap(processor, this, function);
     }
 
     @Override
     public Stream<PACKET, PACKET> buffer() {
-        return AbstractStream.PublisherHelper.buffer(processor, this);
+        return providerActions.buffer(processor, this);
     }
 
     @Override
     public Stream<PACKET, PACKET> deduplicate() {
-        return AbstractStream.PublisherHelper.deduplicate(processor, this);
-    }
-
-    @Override
-    public Identifier<?, ?> identifier() {
-        return null;
+        return providerActions.deduplicate(processor, this);
     }
 
 }
