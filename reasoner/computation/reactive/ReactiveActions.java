@@ -30,7 +30,7 @@ public interface ReactiveActions {
 
 //    Processor<?, ?, ?, ?> processor();
 
-    interface ProviderActions<RECEIVER, OUTPUT> extends ReactiveActions {
+    interface PublisherActions<RECEIVER, OUTPUT> extends ReactiveActions {
 
         void processEffects(Operator.Effects<?> effects);  // TODO: Who needs this? The generic should be empty because in this circumstance no additional providers should be created
 
@@ -42,7 +42,7 @@ public interface ReactiveActions {
 
     }
 
-    interface ReceiverActions<PROVIDER, INPUT> extends ReactiveActions {
+    interface SubscriberActions<PROVIDER, INPUT> extends ReactiveActions {
 
         void registerPath(PROVIDER provider);
 

@@ -22,8 +22,8 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
-import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveActions.ProviderActions;
-import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveActions.ReceiverActions;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveActions.PublisherActions;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveActions.SubscriberActions;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveActions.StreamActions;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Source;
@@ -41,14 +41,14 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
 
     private final ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry;
     private final ProviderRegistry<Publisher<INPUT>> providerRegistry;
-    protected final ReceiverActions<Publisher<INPUT>, INPUT> receiverActions;
-    protected final ProviderActions<Subscriber<OUTPUT>, OUTPUT> providerActions;
+    protected final SubscriberActions<Publisher<INPUT>, INPUT> receiverActions;
+    protected final PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions;
     protected final StreamActions<Publisher<INPUT>> streamActions;
 
     protected AbstractStream(Processor<?, ?, ?, ?> processor, Operator<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator,
                              ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry, ProviderRegistry<Publisher<INPUT>> providerRegistry,
-                             ReceiverActions<Publisher<INPUT>, INPUT> receiverActions,
-                             ProviderActions<Subscriber<OUTPUT>, OUTPUT> providerActions, StreamActions<Publisher<INPUT>> streamActions) {
+                             SubscriberActions<Publisher<INPUT>, INPUT> receiverActions,
+                             PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions, StreamActions<Publisher<INPUT>> streamActions) {
         super(processor);
         this.receiverRegistry = receiverRegistry;
         this.providerRegistry = providerRegistry;
@@ -76,8 +76,8 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
                                        Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer,
                                        ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
                                        ProviderRegistry<Publisher<INPUT>> providerRegistry,
-                                       ReceiverActions<Publisher<INPUT>, INPUT> receiverActions,
-                                       ProviderActions<Subscriber<OUTPUT>, OUTPUT> providerActions,
+                                       SubscriberActions<Publisher<INPUT>, INPUT> receiverActions,
+                                       PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions,
                                        StreamActions<Publisher<INPUT>> streamActions) {
             super(processor, transformer, receiverRegistry, providerRegistry, receiverActions, providerActions, streamActions);
             this.transformer = transformer;
@@ -87,9 +87,9 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
                 Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer) {
             ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry = new ReceiverRegistry.Single<>();
             ProviderRegistry<Publisher<INPUT>> providerRegistry = new ProviderRegistry.Single<>();
-            ReceiverActions<Publisher<INPUT>, INPUT> receiverActions = new SyncReceiverActions<>(null);
-            ProviderActions<Subscriber<OUTPUT>, OUTPUT> providerActions = new SyncProviderActions<>(null);
-            StreamActions<Publisher<INPUT>> streamActions = new SyncStreamActions<>();
+            SubscriberActions<Publisher<INPUT>, INPUT> receiverActions = new SubscriberActionsImpl<>(null);
+            PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions = new PublisherActionsImpl<>(null);
+            StreamActions<Publisher<INPUT>> streamActions = new StreamActionsImpl<>();
             return new TransformationStream<>(processor, transformer, receiverRegistry, providerRegistry,
                                               receiverActions, providerActions, streamActions);
         }
@@ -158,8 +158,8 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
                                 Operator.Pool<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> pool,
                                 ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
                                 ProviderRegistry<Publisher<INPUT>> providerRegistry,
-                                ReceiverActions<Publisher<INPUT>, INPUT> receiverActions,
-                                ProviderActions<Subscriber<OUTPUT>, OUTPUT> providerActions,
+                                SubscriberActions<Publisher<INPUT>, INPUT> receiverActions,
+                                PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions,
                                 StreamActions<Publisher<INPUT>> streamActions) {
             super(processor, pool, receiverRegistry, providerRegistry, receiverActions, providerActions, streamActions);
             this.pool = pool;
@@ -204,7 +204,7 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
 
     public static class WithdrawableHelper {
         // TODO: Can this go inside the providerActions?
-        static <OUTPUT, INPUT> void pull(Subscriber<OUTPUT> receiver, Operator.Withdrawable<?, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator, ProviderActions<Subscriber<OUTPUT>, OUTPUT> providerActions) {
+        static <OUTPUT, INPUT> void pull(Subscriber<OUTPUT> receiver, Operator.Withdrawable<?, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator, PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions) {
             providerActions.receiverRegistry().setNotPulling(receiver);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
             Operator.Supplied<OUTPUT, Publisher<INPUT>> supplied = operator.next(receiver);
             providerActions.processEffects(supplied);
@@ -237,11 +237,11 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
 
         private final Source<PACKET, Subscriber<PACKET>> supplierOperator;
         private final ReceiverRegistry.Single<Subscriber<PACKET>> receiverRegistry;
-        private final ProviderActions<Subscriber<PACKET>, PACKET> providerActions;
+        private final PublisherActions<Subscriber<PACKET>, PACKET> providerActions;
 
         protected SourceStream(Processor<?, ?, ?, ?> processor, Source<PACKET, Subscriber<PACKET>> supplierOperator,
                                ReceiverRegistry.Single<Subscriber<PACKET>> receiverRegistry,
-                               ProviderActions<Subscriber<PACKET>, PACKET> providerActions) {
+                               PublisherActions<Subscriber<PACKET>, PACKET> providerActions) {
             super(processor);
             this.supplierOperator = supplierOperator;
             this.receiverRegistry = receiverRegistry;
@@ -250,7 +250,7 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
 
         public static <OUTPUT> SourceStream<OUTPUT> create(
                 Processor<?, ?, ?, ?> processor, Source<OUTPUT, Subscriber<OUTPUT>> operator) {
-            return new SourceStream<>(processor, operator, new ReceiverRegistry.Single<>(), new SyncProviderActions<>(null));
+            return new SourceStream<>(processor, operator, new ReceiverRegistry.Single<>(), new PublisherActionsImpl<>(null));
         }
 
         private Source<PACKET, Subscriber<PACKET>> operator() {
@@ -302,14 +302,14 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
 
     }
 
-    public static class SyncStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> implements Stream<INPUT, OUTPUT> {
+    public static class BaseStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> implements Stream<INPUT, OUTPUT> {
 
-        private SyncStream(Processor<?, ?, ?, ?> processor,
+        private BaseStream(Processor<?, ?, ?, ?> processor,
                            Operator<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator,
                            ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
                            ProviderRegistry<Publisher<INPUT>> providerRegistry,
-                           ReceiverActions<Publisher<INPUT>, INPUT> receiverActions,
-                           ProviderActions<Subscriber<OUTPUT>, OUTPUT> providerActions,
+                           SubscriberActions<Publisher<INPUT>, INPUT> receiverActions,
+                           PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions,
                            StreamActions<Publisher<INPUT>> streamActions) {
             super(processor, operator, receiverRegistry, providerRegistry, receiverActions, providerActions, streamActions);
         }
@@ -367,12 +367,12 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
     }
 
     // TODO: Some of the behaviour of these classes can probably be abstracted
-    public static class SyncReceiverActions<INPUT> implements ReceiverActions<Publisher<INPUT>, INPUT> {
+    public static class SubscriberActionsImpl<INPUT> implements SubscriberActions<Publisher<INPUT>, INPUT> {
 
         private final Subscriber<INPUT> receiver;
         private final Processor<?, ?, ?, ?> receiverProcessor = null;
 
-        SyncReceiverActions(Subscriber<INPUT> receiver) {
+        SubscriberActionsImpl(Subscriber<INPUT> receiver) {
             this.receiver = receiver;
         }
 
@@ -392,12 +392,12 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
         }
     }
 
-    public static class SyncProviderActions<OUTPUT> implements ProviderActions<Subscriber<OUTPUT>, OUTPUT> {
+    public static class PublisherActionsImpl<OUTPUT> implements PublisherActions<Subscriber<OUTPUT>, OUTPUT> {
 
         private final Publisher<?> provider;
         private final Processor<?, ?, ?, ?> providerProcessor = null;
 
-        SyncProviderActions(Publisher<?> provider) {
+        PublisherActionsImpl(Publisher<?> provider) {
             this.provider = provider;
         }
 
@@ -430,7 +430,7 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
         }
     }
 
-    public static class SyncStreamActions<INPUT> implements StreamActions<Publisher<INPUT>> {
+    public static class StreamActionsImpl<INPUT> implements StreamActions<Publisher<INPUT>> {
 
         @Override
         public void propagatePull(Publisher<INPUT> publisher) {
