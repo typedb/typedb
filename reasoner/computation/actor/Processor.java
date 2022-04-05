@@ -83,9 +83,9 @@ public abstract class Processor<INPUT, OUTPUT,
         throw TypeDBException.of(ILLEGAL_OPERATION);
     }
 
-    public void pull(Identifier<OUTPUT, ?> receiver, Identifier<?, ?> outputId) {
+    public void pull(Identifier<?, ?> outputId) {
         assert !done;
-        outputs.get(outputId).pull(receiver);
+        outputs.get(outputId).pull();
     }
 
 //    private static class RemoteInputReactive<INPUT> implements Publisher<INPUT> {
@@ -258,7 +258,7 @@ public abstract class Processor<INPUT, OUTPUT,
             assert subscriber.equals(receiverRegistry().receiver());
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
             receiverRegistry().recordPull(subscriber);  // TODO: There's no need for a receiver registry here, we never do anything differently depending upon whether the receiver pulling state
-            if (ready) providingOutput.processor().execute(actor -> actor.pull(identifier(), providingOutput));
+            if (ready) providingOutput.processor().execute(actor -> actor.pull(providingOutput));
         }
 
         @Override
@@ -273,7 +273,7 @@ public abstract class Processor<INPUT, OUTPUT,
     /**
      * Governs an output from a processor
      */
-    public static class Output<PACKET> implements Subscriber<PACKET>, Reactive.Provider<Identifier<PACKET, ?>> {
+    public static class Output<PACKET> implements Subscriber<PACKET> {
 
         private final Identifier<?, PACKET> identifier;
         private final Processor<?, PACKET, ?, ?> processor;
@@ -300,8 +300,7 @@ public abstract class Processor<INPUT, OUTPUT,
             receivingInput.processor().execute(actor -> actor.receive(identifier(), packet, receivingInput));
         }
 
-        @Override
-        public void pull(Identifier<PACKET, ?> receiverId) {
+        public void pull() {
             assert publisher != null;
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receivingInput, identifier()));
             publisher.pull(this);
