@@ -26,9 +26,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Identifier
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Provider.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Receiver.Subscriber;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveIdentifier;
-import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.SingleReceiverPublisher;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,7 +152,7 @@ public abstract class Processor<INPUT, OUTPUT,
         assert !done;
         if (isTerminated()) return;
         Output<OUTPUT> output = createOutput();
-        output.registerReceiver(connector.inputId());
+        output.setReceiver(connector.inputId());
         connector.connectViaTransforms(outputRouter(), output);
         connector.inputId().processor().execute(
                 actor -> actor.finishConnection(connector.inputId(), output.identifier()));
@@ -279,14 +277,12 @@ public abstract class Processor<INPUT, OUTPUT,
 
         private final Identifier<?, PACKET> identifier;
         private final Processor<?, PACKET, ?, ?> processor;
-        private final ProviderRegistry.Single<Publisher<PACKET>> providerRegistry;
-        private final ReceiverRegistry.Single<Identifier<PACKET, ?>> receiverRegistry;
+        private Identifier<PACKET, ?> receivingInput;
+        private Publisher<PACKET> publisher;
 
         public Output(Processor<?, PACKET, ?, ?> processor) {
             this.processor = processor;
             this.identifier = processor().registerReactive(this);
-            this.providerRegistry = new ProviderRegistry.Single<>();
-            this.receiverRegistry = new ReceiverRegistry.Single<>();
         }
 
         @Override
@@ -298,40 +294,29 @@ public abstract class Processor<INPUT, OUTPUT,
             return processor;
         }
 
-        private ProviderRegistry.Single<Publisher<PACKET>> providerRegistry() {
-            return providerRegistry;
-        }
-
-        private ReceiverRegistry.Single<Identifier<PACKET, ?>> receiverRegistry() {
-            return receiverRegistry;
-        }
-
         @Override
         public void receive(Publisher<PACKET> publisher, PACKET packet) {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(publisher.identifier(), identifier(), packet));
-            providerRegistry().recordReceive(publisher);
-            receiverRegistry().setNotPulling();
-            receiverRegistry().receiver().processor()
-                    .execute(actor -> actor.receive(identifier(), packet, receiverRegistry().receiver()));
+            receivingInput.processor().execute(actor -> actor.receive(identifier(), packet, receivingInput));
         }
 
         @Override
         public void pull(Identifier<PACKET, ?> receiverId) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receiverRegistry().receiver(), identifier()));
-            receiverRegistry().recordPull(receiverId);
-            if (providerRegistry().setPulling()) providerRegistry().provider().pull(this);
+            assert publisher != null;
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receivingInput, identifier()));
+            publisher.pull(this);
         }
 
         @Override
-        public void registerProvider(Publisher<PACKET> provider) {
-            if (providerRegistry().add(provider)) {
-                processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
-            }
-            if (receiverRegistry().isPulling() && providerRegistry().setPulling()) provider.pull(this);
+        public void registerProvider(Publisher<PACKET> publisher) {
+            assert this.publisher == null;
+            this.publisher = publisher;
+            processor().monitor().execute(actor -> actor.registerPath(identifier(), publisher.identifier()));
         }
 
-        public void registerReceiver(Identifier<PACKET, ?> inputId) {
-            receiverRegistry().addReceiver(inputId);
+        public void setReceiver(Identifier<PACKET, ?> inputId) {
+            assert receivingInput == null;
+            receivingInput = inputId;
         }
     }
 
