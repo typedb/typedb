@@ -44,9 +44,9 @@ public class FanOutOperator<PACKET> implements Operator.Pool<PACKET, PACKET> {
         EffectsImpl<PACKET> outcome = EffectsImpl.create();
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
-        } else {
-            outcome.addAnswerConsumed();
+            outcome.addAnswerCreated();
         }
+        outcome.addAnswerConsumed();
         return outcome;
     }
 
