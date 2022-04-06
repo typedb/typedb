@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRe
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator.Transformer;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Function;
 
@@ -50,6 +51,7 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
     @Override
     public void pull(Subscriber<OUTPUT> subscriber) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
         providerRegistry().nonPulling().forEach(this::propagatePull);
     }
 

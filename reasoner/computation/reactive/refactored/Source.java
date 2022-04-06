@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
+import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Function;
 
@@ -51,6 +52,7 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
 
     @Override
     public void pull(Subscriber<PACKET> subscriber) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
         if (!operator().isExhausted(subscriber)) {
             // TODO: Code duplicated in PoolingStream
             receiverRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
