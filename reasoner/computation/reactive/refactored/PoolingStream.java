@@ -63,6 +63,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
     @Override
     public void pull(Subscriber<OUTPUT> subscriber) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+        receiverRegistry().recordPull(subscriber);
         // TODO: We don't care about the subscriber here
         if (operator().hasNext(subscriber)) {
             // TODO: Code duplicated in Source

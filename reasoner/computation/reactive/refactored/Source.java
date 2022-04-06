@@ -53,6 +53,7 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
     @Override
     public void pull(Subscriber<PACKET> subscriber) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+        receiverRegistry().recordPull(subscriber);
         if (!operator().isExhausted(subscriber)) {
             // TODO: Code duplicated in PoolingStream
             receiverRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a receiver, so encapsulate it

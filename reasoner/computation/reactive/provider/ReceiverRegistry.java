@@ -37,6 +37,8 @@ public abstract class ReceiverRegistry<RECEIVER> {  // TODO: Rename SubscriberRe
 
     public abstract Set<RECEIVER> receivers();
 
+    public abstract void recordPull(RECEIVER receiver);
+
     public static class Single<RECEIVER> extends ReceiverRegistry<RECEIVER> {
 
         private boolean isPulling;
@@ -57,6 +59,7 @@ public abstract class ReceiverRegistry<RECEIVER> {  // TODO: Rename SubscriberRe
             isPulling = false;
         }
 
+        @Override
         public void recordPull(RECEIVER receiver) {
             assert this.receiver.equals(receiver);
             isPulling = true;
@@ -116,6 +119,7 @@ public abstract class ReceiverRegistry<RECEIVER> {  // TODO: Rename SubscriberRe
             pullingReceivers.remove(receiver);
         }
 
+        @Override
         public void recordPull(RECEIVER receiver) {
             assert receivers.contains(receiver);
             pullingReceivers.add(receiver);

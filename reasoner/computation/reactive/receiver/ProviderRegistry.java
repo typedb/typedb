@@ -74,6 +74,7 @@ public abstract class ProviderRegistry<PROVIDER> {  // TODO: Rename Publisher Re
 
         @Override
         public Set<PROVIDER> nonPulling() {
+            assert provider != null;
             if (isPulling) return set();
             else return set(provider);
         }

@@ -52,6 +52,7 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
     @Override
     public void pull(Subscriber<OUTPUT> subscriber) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+        receiverRegistry().recordPull(subscriber);
         providerRegistry().nonPulling().forEach(this::propagatePull);
     }
 
@@ -71,10 +72,10 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
         }
     }
 
-    @Override
-    public void registerProvider(Publisher<INPUT> publisher) {
-
-    }
+//    @Override
+//    public void registerProvider(Publisher<INPUT> publisher) {
+//
+//    }
 
     @Override
     public <MAPPED> Stream<OUTPUT, MAPPED> map(Function<OUTPUT, MAPPED> function) {
