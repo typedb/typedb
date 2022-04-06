@@ -114,7 +114,6 @@ public abstract class DisjunctionController<
                 requestConnection(new NestedConjunctionRequest(
                         input.identifier(), conjunction, bounds.filter(retrievableConjunctionVars)));
             }
-            fanIn.finaliseProviders();
         }
 
         protected Reactive.Stream<ConceptMap, ConceptMap> getOutputRouter(FanInStream<ConceptMap> fanIn) {

@@ -153,7 +153,6 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
                             .registerReceiver(fanIn);
                 }));
             });
-            fanIn.finaliseProviders();
         }
 
         private void mayRequestConnection(ConclusionRequest conclusionRequest) {
