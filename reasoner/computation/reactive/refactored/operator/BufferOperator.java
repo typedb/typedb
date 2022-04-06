@@ -18,23 +18,34 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator;
 
-import com.vaticle.typedb.common.collection.Collections;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 
-import java.util.function.Function;
+import java.util.Stack;
 
-public class MapOperator<INPUT, OUTPUT> implements Operator.Transformer<INPUT, OUTPUT> {
+public class BufferOperator<PACKET> implements Operator.Pool<PACKET, PACKET> {
 
-    private final Function<INPUT, OUTPUT> mappingFunc;
+    private final Stack<PACKET> stack;
 
-    public MapOperator(Function<INPUT, OUTPUT> mappingFunc) {
-        this.mappingFunc = mappingFunc;
+    public BufferOperator() {
+        this.stack = new Stack<>();
     }
 
     @Override
-    public Transformed<OUTPUT, INPUT> accept(Publisher<INPUT> publisher, INPUT packet) {
-        // TODO: Here and elsewhere the provider argument is unused
-        return Transformed.create(Collections.set(mappingFunc.apply(packet)));
+    public Effects<PACKET> accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
+        stack.add(packet);
+        return Effects.createEffects();
+    }
+
+    @Override
+    public boolean hasNext(Reactive.Subscriber<PACKET> subscriber) {
+        return stack.size() > 0;
+    }
+
+    @Override
+    public Supplied<PACKET> next(Reactive.Subscriber<PACKET> subscriber) {
+        Supplied<PACKET> outcome = Supplied.create();
+        outcome.setOutput(stack.pop());
+        return outcome;
     }
 
 }

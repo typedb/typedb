@@ -18,56 +18,63 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator;
 
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
+
 import java.util.HashSet;
 import java.util.Set;
 
 public interface Operator {
 
-    interface Source<OUTPUT, RECEIVER> {
+    interface Source<OUTPUT> {
 
-        boolean isExhausted(RECEIVER receiver);
+        boolean isExhausted(Subscriber<OUTPUT> subscriber);
 
-        Supplied<OUTPUT, Void> next(RECEIVER receiver);
+        Supplied<OUTPUT> next(Subscriber<OUTPUT> subscriber);
     }
 
-    interface Accepter<INPUT, PROVIDER> extends Operator {
+    interface Accepter<INPUT> extends Operator {
 
-        Effects<PROVIDER> accept(PROVIDER provider, INPUT packet);
+        Effects<INPUT> accept(Publisher<INPUT> publisher, INPUT packet);
 
     }
 
-    interface Transformer<INPUT, OUTPUT, PROVIDER> extends Accepter<INPUT, PROVIDER> {
+    interface Transformer<INPUT, OUTPUT> extends Accepter<INPUT> {
 
         @Override
-        Transformed<OUTPUT, PROVIDER> accept(PROVIDER provider, INPUT packet);
+        Transformed<OUTPUT, INPUT> accept(Publisher<INPUT> publisher, INPUT packet);
 
     }
 
-    interface Sink<INPUT, PROVIDER> extends Accepter<INPUT, PROVIDER> {
+    interface Sink<INPUT> extends Accepter<INPUT> {
         // TODO: Add methods to usefully retrieve items from the sink
     }
 
-    interface Pool<INPUT, OUTPUT, PROVIDER, RECEIVER> extends Accepter<INPUT, PROVIDER> {
+    interface Pool<INPUT, OUTPUT> extends Accepter<INPUT> {
 
-        boolean hasNext(RECEIVER receiver);
+        boolean hasNext(Subscriber<OUTPUT> subscriber);
 
-        Supplied<OUTPUT, PROVIDER> next(RECEIVER receiver);
+        Supplied<OUTPUT> next(Subscriber<OUTPUT> subscriber);
 
     }
 
-    class Effects<PROVIDER> {
+    class Effects<PACKET> {
         // TODO: We should be able to do without these classes by reporting the change in number of answers the
         //  reactives sees from before and after applying the operator. There are a couple of edge-cases to this that
         //  make it hard, notably fanOut.
 
-        private final Set<PROVIDER> newProviders;
+        private final Set<Publisher<PACKET>> newPublishers;
         int answersCreated;
         int answersConsumed;
 
         private Effects(int answersCreated, int answersConsumed) {
             this.answersCreated = answersCreated;
             this.answersConsumed = answersConsumed;
-            this.newProviders = new HashSet<>();
+            this.newPublishers = new HashSet<>();
+        }
+
+        public static <PACKET> Effects<PACKET> createEffects() {  // TODO: Name clash with child class if called create()
+            return new Effects<>(0, 0);
         }
 
         public void addAnswerCreated() {
@@ -86,17 +93,17 @@ public interface Operator {
             return answersConsumed;
         }
 
-        public void addNewProvider(PROVIDER newProvider) {
-            newProviders.add(newProvider);
+        public void addNewPublisher(Publisher<PACKET> newPublisher) {
+            newPublishers.add(newPublisher);
         }
 
-        public Set<PROVIDER> newProviders() {
-            return newProviders;
+        public Set<Publisher<PACKET>> newPublishers() {
+            return newPublishers;
         }
 
     }
 
-    class Transformed<OUTPUT, PROVIDER> extends Effects<PROVIDER> {
+    class Transformed<OUTPUT, INPUT> extends Effects<INPUT> {
 
         private final Set<OUTPUT> outputs;
 
@@ -105,11 +112,11 @@ public interface Operator {
             this.outputs = outputs;
         }
 
-        public static <OUTPUT, PROVIDER> Transformed<OUTPUT, PROVIDER> create(Set<OUTPUT> outputs) {
+        public static <OUTPUT, INPUT> Transformed<OUTPUT, INPUT> create(Set<OUTPUT> outputs) {
             return new Transformed<>(outputs, 0, 0);
         }
 
-        public static <OUTPUT, PROVIDER> Transformed<OUTPUT, PROVIDER> create() {
+        public static <OUTPUT, INPUT> Transformed<OUTPUT, INPUT> create() {
             return new Transformed<>(new HashSet<>(), 0, 0);
         }
 
@@ -123,7 +130,7 @@ public interface Operator {
 
     }
 
-    class Supplied<OUTPUT, PROVIDER> extends Effects<PROVIDER> {
+    class Supplied<OUTPUT> extends Effects<OUTPUT> {
 
         private OUTPUT output;
 
@@ -131,7 +138,7 @@ public interface Operator {
             super(answersCreated, answersConsumed);
         }
 
-        public static <PACKET> Supplied<PACKET, Void> create() {
+        public static <PACKET> Supplied<PACKET> create() {
             return new Supplied<>(0, 0);
         }
 

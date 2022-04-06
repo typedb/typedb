@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import java.util.HashSet;
 import java.util.Set;
 
-public class DistinctOperator<PACKET> implements Operator.Transformer<PACKET, PACKET, Publisher<PACKET>> {
+public class DistinctOperator<PACKET> implements Operator.Transformer<PACKET, PACKET> {
 
     private final Set<PACKET> deduplicationSet;
 
@@ -32,8 +32,8 @@ public class DistinctOperator<PACKET> implements Operator.Transformer<PACKET, PA
     }
 
     @Override
-    public Transformed<PACKET, Publisher<PACKET>> accept(Publisher<PACKET> provider, PACKET packet) {
-        Transformed<PACKET, Publisher<PACKET>> outcome = Transformed.create();
+    public Transformed<PACKET, PACKET> accept(Publisher<PACKET> publisher, PACKET packet) {
+        Transformed<PACKET, PACKET> outcome = Transformed.create();
         if (deduplicationSet.add(packet)) {
             outcome.addOutput(packet);
         } else {

@@ -31,20 +31,20 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> {
 
-    private final Transformer<INPUT, OUTPUT, Publisher<INPUT>> transformer;
+    private final Transformer<INPUT, OUTPUT> transformer;
 
     protected TransformationStream(Processor<?, ?, ?, ?> processor,
-                                   Transformer<INPUT, OUTPUT, Publisher<INPUT>> transformer) {
+                                   Transformer<INPUT, OUTPUT> transformer) {
         super(processor, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
         this.transformer = transformer;
     }
 
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> create(
-            Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT, Publisher<INPUT>> transformer) {
+            Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT> transformer) {
         return new TransformationStream<>(processor, transformer);
     }
 
-    protected Transformer<INPUT, OUTPUT, Publisher<INPUT>> operator() {
+    protected Transformer<INPUT, OUTPUT> operator() {
         return transformer;
     }
 
@@ -58,7 +58,7 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
         receiverActions.traceReceive(publisher, input);
         providerRegistry().recordReceive(publisher);
 
-        Operator.Transformed<OUTPUT, Publisher<INPUT>> outcome = operator().accept(publisher, input);
+        Operator.Transformed<OUTPUT, INPUT> outcome = operator().accept(publisher, input);
         providerActions.processEffects(outcome);
         if (outcome.outputs().isEmpty() && receiverRegistry().anyPulling()) {
             receiverActions.rePullProvider(publisher);

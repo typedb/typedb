@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.refactored;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
@@ -32,10 +31,10 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> {
 
-    private final Operator.Pool<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> pool;
+    private final Operator.Pool<INPUT, OUTPUT> pool;
 
     protected PoolingStream(Processor<?, ?, ?, ?> processor,
-                            Operator.Pool<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> pool,
+                            Operator.Pool<INPUT, OUTPUT> pool,
                             ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
                             ProviderRegistry<Publisher<INPUT>> providerRegistry) {
         super(processor, receiverRegistry, providerRegistry);
@@ -43,17 +42,17 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
     }
 
     public static <INPUT, OUTPUT> PoolingStream<INPUT, OUTPUT> fanOut(
-            Processor<?, ?, ?, ?> processor, Operator.Pool<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> pool) {
+            Processor<?, ?, ?, ?> processor, Operator.Pool<INPUT, OUTPUT> pool) {
         return new PoolingStream<>(processor, pool, new ReceiverRegistry.Multi<>(), new ProviderRegistry.Single<>());
     }
 
     public static <INPUT, OUTPUT> PoolingStream<INPUT, OUTPUT> buffer(
-            Processor<?, ?, ?, ?> processor, Operator.Pool<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> pool) {
+            Processor<?, ?, ?, ?> processor, Operator.Pool<INPUT, OUTPUT> pool) {
         // TODO: It's possible to choose the wrong pool operator here since the operator is not bound to the nature of the registries by type.
         return new PoolingStream<>(processor, pool, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
     }
 
-    protected Operator.Pool<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator() {
+    protected Operator.Pool<INPUT, OUTPUT> operator() {
         return pool;
     }
 
@@ -63,7 +62,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
         if (operator().hasNext(subscriber)) {
             // TODO: Code duplicated in Source
             receiverRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
-            Operator.Supplied<OUTPUT, Reactive.Publisher<INPUT>> supplied = operator().next(subscriber);
+            Operator.Supplied<OUTPUT> supplied = operator().next(subscriber);
             providerActions.processEffects(supplied);
             providerActions.subscriberReceive(subscriber, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
         } else {
@@ -82,7 +81,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
         retry.set(false);
         iterate(receiverRegistry().pulling()).forEachRemaining(receiver -> {
             if (operator().hasNext(receiver)) {
-                Operator.Supplied<OUTPUT, Publisher<INPUT>> supplied = operator().next(receiver);
+                Operator.Supplied<OUTPUT> supplied = operator().next(receiver);
                 providerActions.processEffects(supplied);
                 receiverRegistry().setNotPulling(receiver);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
                 providerActions.subscriberReceive(receiver, supplied.output());

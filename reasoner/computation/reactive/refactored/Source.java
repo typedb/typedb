@@ -28,11 +28,11 @@ import java.util.function.Function;
 
 public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<PACKET> {
 
-    private final Operator.Source<PACKET, Subscriber<PACKET>> sourceOperator;
+    private final Operator.Source<PACKET> sourceOperator;
     private final ReceiverRegistry.Single<Subscriber<PACKET>> receiverRegistry;
     private final ReactiveActions.PublisherActions<Subscriber<PACKET>, PACKET> providerActions;
 
-    protected Source(Processor<?, ?, ?, ?> processor, Operator.Source<PACKET, Subscriber<PACKET>> sourceOperator) {
+    protected Source(Processor<?, ?, ?, ?> processor, Operator.Source<PACKET> sourceOperator) {
         super(processor);
         this.sourceOperator = sourceOperator;
         this.receiverRegistry = new ReceiverRegistry.Single<>();
@@ -41,11 +41,11 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
     }
 
     public static <OUTPUT> Source<OUTPUT> create(Processor<?, ?, ?, ?> processor,
-                                                 Operator.Source<OUTPUT, Subscriber<OUTPUT>> operator) {
+                                                 Operator.Source<OUTPUT> operator) {
         return new Source<>(processor, operator);
     }
 
-    private Operator.Source<PACKET, Subscriber<PACKET>> operator() {
+    private Operator.Source<PACKET> operator() {
         return sourceOperator;
     }
 
@@ -54,7 +54,7 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
         if (!operator().isExhausted(subscriber)) {
             // TODO: Code duplicated in PoolingStream
             receiverRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
-            Operator.Supplied<PACKET, Void> supplied = operator().next(subscriber);
+            Operator.Supplied<PACKET> supplied = operator().next(subscriber);
             providerActions.processEffects(supplied);
             providerActions.subscriberReceive(subscriber, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
         } else {

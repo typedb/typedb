@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-public class CompoundOperator<PLAN_ID, PACKET> implements Operator.Transformer<PACKET, PACKET, Publisher<PACKET>> {
+public class CompoundOperator<PLAN_ID, PACKET> implements Operator.Transformer<PACKET, PACKET> {
 
     private final Publisher<PACKET> leadingPublisher;
     private final List<PLAN_ID> remainingPlan;
@@ -53,10 +53,10 @@ public class CompoundOperator<PLAN_ID, PACKET> implements Operator.Transformer<P
     }
 
     @Override
-    public Transformed<PACKET, Publisher<PACKET>> accept(Publisher<PACKET> provider, PACKET packet) {
+    public Transformed<PACKET, PACKET> accept(Publisher<PACKET> publisher, PACKET packet) {
         PACKET mergedPacket = compoundPacketsFunc.apply(initialPacket, packet);
-        Transformed<PACKET, Publisher<PACKET>> outcome = Transformed.create();
-        if (leadingPublisher.equals(provider)) {
+        Transformed<PACKET, PACKET> outcome = Transformed.create();
+        if (leadingPublisher.equals(publisher)) {
             if (remainingPlan.size() == 0) {  // For a single item plan
                 outcome.addOutput(mergedPacket);
             } else {
@@ -69,13 +69,13 @@ public class CompoundOperator<PLAN_ID, PACKET> implements Operator.Transformer<P
                             new CompoundOperator<>(processor, remainingPlan, spawnLeaderFunc, compoundPacketsFunc,
                                                    initialPacket)
                     ).buffer();
-                    outcome.addNewProvider(follower);
+                    outcome.addNewPublisher(follower);
                 }
                 publisherPackets.put(follower, mergedPacket);
                 outcome.addAnswerConsumed();
             }
         } else {
-            PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(provider));
+            PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(publisher));
             outcome.addOutput(compoundedPacket);
         }
         return outcome;
