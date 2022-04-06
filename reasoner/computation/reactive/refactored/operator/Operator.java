@@ -52,13 +52,16 @@ public interface Operator {
 
     interface Pool<INPUT, OUTPUT> extends Accepter<INPUT> {
 
+        @Override
+        EffectsImpl<INPUT> accept(Publisher<INPUT> publisher, INPUT packet);
+
         boolean hasNext(Subscriber<OUTPUT> subscriber);
 
         Supplied<OUTPUT> next(Subscriber<OUTPUT> subscriber);
 
     }
 
-    class Effects<PACKET> {
+    abstract class Effects<PACKET> {
         // TODO: We should be able to do without these classes by reporting the change in number of answers the
         //  reactives sees from before and after applying the operator. There are a couple of edge-cases to this that
         //  make it hard, notably fanOut.
@@ -71,10 +74,6 @@ public interface Operator {
             this.answersCreated = answersCreated;
             this.answersConsumed = answersConsumed;
             this.newPublishers = new HashSet<>();
-        }
-
-        public static <PACKET> Effects<PACKET> createEffects() {  // TODO: Name clash with child class if called create()
-            return new Effects<>(0, 0);
         }
 
         public void addAnswerCreated() {
@@ -101,6 +100,17 @@ public interface Operator {
             return newPublishers;
         }
 
+    }
+
+    class EffectsImpl<PACKET> extends Effects<PACKET> {
+
+        private EffectsImpl(int answersCreated, int answersConsumed) {
+            super(answersCreated, answersConsumed);
+        }
+
+        public static <PACKET> EffectsImpl<PACKET> create() {
+            return new EffectsImpl<>(0, 0);
+        }
     }
 
     class Transformed<OUTPUT, INPUT> extends Effects<INPUT> {

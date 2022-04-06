@@ -48,7 +48,10 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
 
     public static <INPUT, OUTPUT> PoolingStream<INPUT, OUTPUT> buffer(
             Processor<?, ?, ?, ?> processor, Operator.Pool<INPUT, OUTPUT> pool) {
-        // TODO: It's possible to choose the wrong pool operator here since the operator is not bound to the nature of the registries by type.
+        // TODO: It's possible to choose the wrong pool operator here since the operator is not bound to the nature of
+        //  the registries by type. In fact what really changes in tandem is the signature of the receive() and pull()
+        //  methods, as when there are multiple upstreams/downstreams we need to know which the message is from/to, but
+        //  not so for single upstream/downstreams
         return new PoolingStream<>(processor, pool, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
     }
 
@@ -66,7 +69,6 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
             providerActions.processEffects(supplied);
             providerActions.subscriberReceive(subscriber, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
         } else {
-            // TODO: for POOLING but not for SOURCE
             providerRegistry().nonPulling().forEach(this::propagatePull);
         }
     }
