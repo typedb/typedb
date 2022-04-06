@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-public class CompoundOperator<PLAN_ID, PACKET, RECEIVER> implements Operator.Transformer<PACKET, PACKET, Publisher<PACKET>, RECEIVER> {
+public class CompoundOperator<PLAN_ID, PACKET> implements Operator.Transformer<PACKET, PACKET, Publisher<PACKET>> {
 
     private final Publisher<PACKET> leadingPublisher;
     private final List<PLAN_ID> remainingPlan;

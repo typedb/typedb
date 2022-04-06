@@ -65,7 +65,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
             receiverRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
             Operator.Supplied<OUTPUT, Reactive.Publisher<INPUT>> supplied = operator().next(subscriber);
             providerActions.processEffects(supplied);
-            providerActions.outputToReceiver(subscriber, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
+            providerActions.subscriberReceive(subscriber, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
         } else {
             // TODO: for POOLING but not for SOURCE
             providerRegistry().nonPulling().forEach(this::propagatePull);
@@ -85,7 +85,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
                 Operator.Supplied<OUTPUT, Publisher<INPUT>> supplied = operator().next(receiver);
                 providerActions.processEffects(supplied);
                 receiverRegistry().setNotPulling(receiver);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
-                providerActions.outputToReceiver(receiver, supplied.output());
+                providerActions.subscriberReceive(receiver, supplied.output());
             } else {
                 retry.set(true);
             }

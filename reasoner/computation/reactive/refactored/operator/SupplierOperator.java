@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator.Supplied;
 
 import java.util.function.Supplier;
 
@@ -26,12 +27,10 @@ import java.util.function.Supplier;
 public class SupplierOperator<PACKET, RECEIVER> implements Operator.Source<PACKET, RECEIVER> {
 
     private final Supplier<FunctionalIterator<PACKET>> iteratorSupplier;
-    private boolean exhausted;
     private FunctionalIterator<PACKET> iterator;
 
     public SupplierOperator(Supplier<FunctionalIterator<PACKET>> iteratorSupplier) {
         this.iteratorSupplier = iteratorSupplier;
-        this.exhausted = false;
     }
 
     private FunctionalIterator<PACKET> iterator() {
@@ -40,21 +39,16 @@ public class SupplierOperator<PACKET, RECEIVER> implements Operator.Source<PACKE
     }
 
     @Override
-    public boolean hasNext(RECEIVER receiver) {
-        return !exhausted && iterator().hasNext();
+    public boolean isExhausted(RECEIVER receiver) {
+        return !iterator().hasNext();
     }
 
     @Override
     public Supplied<PACKET, Void> next(RECEIVER receiver) {
         Supplied<PACKET, Void> outcome = Supplied.create();
-        if (!exhausted) {
-            if (hasNext(receiver)) {
-                outcome.addAnswerCreated();
-                outcome.setOutput(iterator().next());
-            } else {
-                exhausted = true;
-            }
-        }
+        assert !isExhausted(receiver);
+        outcome.addAnswerCreated();
+        outcome.setOutput(iterator().next());
         return outcome;
     }
 

@@ -23,7 +23,31 @@ import java.util.Set;
 
 public interface Operator {
 
-    interface Withdrawable<INPUT, OUTPUT, PROVIDER, RECEIVER> extends Operator {
+    interface Source<OUTPUT, RECEIVER> {
+
+        boolean isExhausted(RECEIVER receiver);
+
+        Supplied<OUTPUT, Void> next(RECEIVER receiver);
+    }
+
+    interface Accepter<INPUT, PROVIDER> extends Operator {
+
+        Effects<PROVIDER> accept(PROVIDER provider, INPUT packet);
+
+    }
+
+    interface Transformer<INPUT, OUTPUT, PROVIDER> extends Accepter<INPUT, PROVIDER> {
+
+        @Override
+        Transformed<OUTPUT, PROVIDER> accept(PROVIDER provider, INPUT packet);
+
+    }
+
+    interface Sink<INPUT, PROVIDER> extends Accepter<INPUT, PROVIDER> {
+        // TODO: Add methods to usefully retrieve items from the sink
+    }
+
+    interface Pool<INPUT, OUTPUT, PROVIDER, RECEIVER> extends Accepter<INPUT, PROVIDER> {
 
         boolean hasNext(RECEIVER receiver);
 
@@ -31,35 +55,10 @@ public interface Operator {
 
     }
 
-    interface Source<OUTPUT, RECEIVER> extends Withdrawable<Void, OUTPUT, Void, RECEIVER> {
-        // TODO: We can argue that Source shouldn't extend Withdrawable and have hasNext() because it has more of a
-        //  isExhausted(), where asking isExhausted will always return true after it has been true once, whereas
-        //  hasNext() could switch back
-    }
-
-    interface Accepter<INPUT, OUTPUT, PROVIDER, RECEIVER> extends Operator {
-
-        Effects<PROVIDER> accept(PROVIDER provider, INPUT packet);
-
-    }
-
-    interface Transformer<INPUT, OUTPUT, PROVIDER, RECEIVER> extends Accepter<INPUT, OUTPUT, PROVIDER, RECEIVER> {
-
-        @Override
-        Transformed<OUTPUT, PROVIDER> accept(PROVIDER provider, INPUT packet);
-
-    }
-
-    interface Sink<INPUT, OUTPUT, PROVIDER> extends Accepter<INPUT, OUTPUT, PROVIDER, Void> {
-        // TODO: Add methods to usefully retrieve items from the sink
-    }
-
-    interface Pool<INPUT, OUTPUT, PROVIDER, RECEIVER> extends Withdrawable<INPUT, OUTPUT, PROVIDER, RECEIVER>,
-                                                              Accepter<INPUT, OUTPUT, PROVIDER, RECEIVER> {
-
-    }
-
     class Effects<PROVIDER> {
+        // TODO: We should be able to do without these classes by reporting the change in number of answers the
+        //  reactives sees from before and after applying the operator. There are a couple of edge-cases to this that
+        //  make it hard, notably fanOut.
 
         private final Set<PROVIDER> newProviders;
         int answersCreated;

@@ -31,20 +31,20 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> {
 
-    private final Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer;
+    private final Transformer<INPUT, OUTPUT, Publisher<INPUT>> transformer;
 
     protected TransformationStream(Processor<?, ?, ?, ?> processor,
-                                   Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer) {
+                                   Transformer<INPUT, OUTPUT, Publisher<INPUT>> transformer) {
         super(processor, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
         this.transformer = transformer;
     }
 
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> create(
-            Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> transformer) {
+            Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT, Publisher<INPUT>> transformer) {
         return new TransformationStream<>(processor, transformer);
     }
 
-    protected Transformer<INPUT, OUTPUT, Publisher<INPUT>, Subscriber<OUTPUT>> operator() {
+    protected Transformer<INPUT, OUTPUT, Publisher<INPUT>> operator() {
         return transformer;
     }
 
@@ -65,7 +65,7 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
         } else {
             // pass on the output, regardless of pulling state
             iterate(receiverRegistry().receivers()).forEachRemaining(
-                    receiver -> iterate(outcome.outputs()).forEachRemaining(output -> providerActions.outputToReceiver(receiver, output)));
+                    receiver -> iterate(outcome.outputs()).forEachRemaining(output -> providerActions.subscriberReceive(receiver, output)));
         }
     }
 

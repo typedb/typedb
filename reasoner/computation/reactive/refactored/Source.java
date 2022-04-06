@@ -28,13 +28,13 @@ import java.util.function.Function;
 
 public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<PACKET> {
 
-    private final Operator.Source<PACKET, Subscriber<PACKET>> supplierOperator;
+    private final Operator.Source<PACKET, Subscriber<PACKET>> sourceOperator;
     private final ReceiverRegistry.Single<Subscriber<PACKET>> receiverRegistry;
     private final ReactiveActions.PublisherActions<Subscriber<PACKET>, PACKET> providerActions;
 
-    protected Source(Processor<?, ?, ?, ?> processor, Operator.Source<PACKET, Subscriber<PACKET>> supplierOperator) {
+    protected Source(Processor<?, ?, ?, ?> processor, Operator.Source<PACKET, Subscriber<PACKET>> sourceOperator) {
         super(processor);
-        this.supplierOperator = supplierOperator;
+        this.sourceOperator = sourceOperator;
         this.receiverRegistry = new ReceiverRegistry.Single<>();
         this.providerActions = new AbstractStream.PublisherActionsImpl<>(this);
         processor().monitor().execute(actor -> actor.registerSource(identifier()));
@@ -46,17 +46,17 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
     }
 
     private Operator.Source<PACKET, Subscriber<PACKET>> operator() {
-        return supplierOperator;
+        return sourceOperator;
     }
 
     @Override
     public void pull(Subscriber<PACKET> subscriber) {
-        if (operator().hasNext(subscriber)) {
+        if (!operator().isExhausted(subscriber)) {
             // TODO: Code duplicated in PoolingStream
             receiverRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
             Operator.Supplied<PACKET, Void> supplied = operator().next(subscriber);
             providerActions.processEffects(supplied);
-            providerActions.outputToReceiver(subscriber, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
+            providerActions.subscriberReceive(subscriber, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
         } else {
             processor().monitor().execute(actor -> actor.sourceFinished(identifier()));
         }

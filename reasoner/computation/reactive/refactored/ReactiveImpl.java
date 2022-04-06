@@ -75,9 +75,9 @@ public abstract class ReactiveImpl implements Reactive {
 
     public static class PublisherActionsImpl<OUTPUT> implements ReactiveActions.PublisherActions<Subscriber<OUTPUT>, OUTPUT> {
 
-        private final Publisher<?> publisher;
+        private final Publisher<OUTPUT> publisher;
 
-        PublisherActionsImpl(Publisher<?> publisher) {
+        PublisherActionsImpl(Publisher<OUTPUT> publisher) {
             this.publisher = publisher;
         }
 
@@ -99,8 +99,8 @@ public abstract class ReactiveImpl implements Reactive {
         }
 
         @Override
-        public void outputToReceiver(Subscriber<OUTPUT> subscriber, OUTPUT packet) {
-            subscriber.receive(null, packet);  // TODO: Should pass "provider"
+        public void subscriberReceive(Subscriber<OUTPUT> subscriber, OUTPUT packet) {
+            subscriber.receive(publisher, packet);
         }
 
         @Override

@@ -30,7 +30,7 @@ public interface ReactiveActions {
 
         void processEffects(Operator.Effects<?> effects);  // TODO: Who needs this? The generic should be empty because in this circumstance no additional providers should be created
 
-        void outputToReceiver(RECEIVER receiver, OUTPUT packet);
+        void subscriberReceive(RECEIVER receiver, OUTPUT packet);
 
         <MAPPED> Reactive.Stream<OUTPUT, MAPPED> map(Reactive.Publisher<OUTPUT> publisher,
                                                      Function<OUTPUT, MAPPED> function);
