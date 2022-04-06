@@ -26,11 +26,13 @@ import java.util.function.Function;
 
 public interface ReactiveActions {
 
-    interface PublisherActions<RECEIVER, OUTPUT> extends ReactiveActions {
+    interface PublisherActions<OUTPUT> extends ReactiveActions {
 
         void processEffects(Operator.Effects<?> effects);  // TODO: Who needs this? The generic should be empty because in this circumstance no additional providers should be created
 
-        void subscriberReceive(RECEIVER receiver, OUTPUT packet);
+        void subscriberReceive(Reactive.Subscriber<OUTPUT> subscriber, OUTPUT packet);
+
+        void tracePull(Reactive.Subscriber<OUTPUT> subscriber);
 
         <MAPPED> Reactive.Stream<OUTPUT, MAPPED> map(Reactive.Publisher<OUTPUT> publisher,
                                                      Function<OUTPUT, MAPPED> function);
@@ -46,11 +48,11 @@ public interface ReactiveActions {
 
     interface SubscriberActions<INPUT> extends ReactiveActions {
 
-        void registerPath(Reactive.Publisher<INPUT> provider);
+        void registerPath(Reactive.Publisher<INPUT> publisher);
 
-        void traceReceive(Reactive.Publisher<INPUT> provider, INPUT packet);
+        void traceReceive(Reactive.Publisher<INPUT> publisher, INPUT packet);
 
-        void rePullProvider(Reactive.Publisher<INPUT> provider);
+        void rePullPublisher(Reactive.Publisher<INPUT> publisher);
 
     }
 

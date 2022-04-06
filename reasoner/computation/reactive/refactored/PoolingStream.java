@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -62,7 +61,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
 
     @Override
     public void pull(Subscriber<OUTPUT> subscriber) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+        providerActions.tracePull(subscriber);
         receiverRegistry().recordPull(subscriber);
         // TODO: We don't care about the subscriber here
         if (operator().hasNext(subscriber)) {
@@ -94,7 +93,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
                 retry.set(true);
             }
         });
-        if (retry.get()) receiverActions.rePullProvider(provider);
+        if (retry.get()) receiverActions.rePullPublisher(provider);
     }
 
     @Override

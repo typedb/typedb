@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveIdentifier;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Input;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Output;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +89,7 @@ public abstract class Processor<INPUT, OUTPUT,
         outputs.get(outputId).pull();
     }
 
-    protected void receive(Identifier<?, INPUT> providerId, INPUT input, Identifier<?, ?> inputId) {
+    public void receive(Identifier<?, INPUT> providerId, INPUT input, Identifier<?, ?> inputId) {
         assert !done;
         inputs.get(inputId).receive(providerId, input);
     }
@@ -180,56 +181,6 @@ public abstract class Processor<INPUT, OUTPUT,
 
     public Identifier<INPUT, OUTPUT> registerReactive(Reactive reactive) {
         return new ReactiveIdentifier<>(driver(), reactive.getClass(), incrementReactiveCounter());
-    }
-
-    /**
-     * Governs an output from a processor
-     */
-    public static class Output<PACKET> implements Subscriber<PACKET> {
-
-        private final Identifier<?, PACKET> identifier;
-        private final Processor<?, PACKET, ?, ?> processor;
-        private Identifier<PACKET, ?> receivingInput;
-        private Publisher<PACKET> publisher;
-
-        public Output(Processor<?, PACKET, ?, ?> processor) {
-            this.processor = processor;
-            this.identifier = processor().registerReactive(this);
-        }
-
-        @Override
-        public Identifier<?, PACKET> identifier() {
-            return identifier;
-        }
-
-        @Override
-        public Processor<?, PACKET, ?, ?> processor() {
-            return processor;
-        }
-
-        @Override
-        public void receive(Publisher<PACKET> publisher, PACKET packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(publisher.identifier(), identifier(), packet));
-            receivingInput.processor().execute(actor -> actor.receive(identifier(), packet, receivingInput));
-        }
-
-        public void pull() {
-            assert publisher != null;
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receivingInput, identifier()));
-            publisher.pull(this);
-        }
-
-        @Override
-        public void registerProvider(Publisher<PACKET> publisher) {
-            assert this.publisher == null;
-            this.publisher = publisher;
-            processor().monitor().execute(actor -> actor.registerPath(identifier(), publisher.identifier()));
-        }
-
-        public void setReceiver(Identifier<PACKET, ?> inputId) {
-            assert receivingInput == null;
-            receivingInput = inputId;
-        }
     }
 
 }

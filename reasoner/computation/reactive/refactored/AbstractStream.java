@@ -30,7 +30,7 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
     private final ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry;
     private final ProviderRegistry<Publisher<INPUT>> providerRegistry;
     protected final SubscriberActions<INPUT> receiverActions;
-    protected final PublisherActions<Subscriber<OUTPUT>, OUTPUT> providerActions;
+    protected final PublisherActions<OUTPUT> providerActions;
 
     protected AbstractStream(Processor<?, ?, ?, ?> processor,
                              ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,

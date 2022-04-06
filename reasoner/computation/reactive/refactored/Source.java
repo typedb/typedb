@@ -31,7 +31,7 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
 
     private final Operator.Source<PACKET> sourceOperator;
     private final ReceiverRegistry.Single<Subscriber<PACKET>> receiverRegistry;
-    private final ReactiveActions.PublisherActions<Subscriber<PACKET>, PACKET> providerActions;
+    private final ReactiveActions.PublisherActions<PACKET> providerActions;
 
     protected Source(Processor<?, ?, ?, ?> processor, Operator.Source<PACKET> sourceOperator) {
         super(processor);
@@ -52,7 +52,7 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
 
     @Override
     public void pull(Subscriber<PACKET> subscriber) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+        providerActions.tracePull(subscriber);
         receiverRegistry().recordPull(subscriber);
         if (!operator().isExhausted(subscriber)) {
             // TODO: Code duplicated in PoolingStream

@@ -51,7 +51,7 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
     @Override
     public void pull(Subscriber<OUTPUT> subscriber) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+        providerActions.tracePull(subscriber);
         receiverRegistry().recordPull(subscriber);
         providerRegistry().nonPulling().forEach(this::propagatePull);
     }
@@ -64,7 +64,7 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
         Operator.Transformed<OUTPUT, INPUT> outcome = operator().accept(publisher, input);
         providerActions.processEffects(outcome);
         if (outcome.outputs().isEmpty() && receiverRegistry().anyPulling()) {
-            receiverActions.rePullProvider(publisher);
+            receiverActions.rePullPublisher(publisher);
         } else {
             // pass on the output, regardless of pulling state
             iterate(receiverRegistry().receivers()).forEachRemaining(

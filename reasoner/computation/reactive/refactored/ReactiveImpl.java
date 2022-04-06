@@ -69,12 +69,12 @@ public abstract class ReactiveImpl implements Reactive {
         }
 
         @Override
-        public void rePullProvider(Publisher<INPUT> publisher) {
+        public void rePullPublisher(Publisher<INPUT> publisher) {
             subscriber.processor().schedulePullRetry(publisher, subscriber);
         }
     }
 
-    public static class PublisherActionsImpl<OUTPUT> implements ReactiveActions.PublisherActions<Subscriber<OUTPUT>, OUTPUT> {
+    public static class PublisherActionsImpl<OUTPUT> implements ReactiveActions.PublisherActions<OUTPUT> {
 
         private final Publisher<OUTPUT> publisher;
 
@@ -102,6 +102,11 @@ public abstract class ReactiveImpl implements Reactive {
         @Override
         public void subscriberReceive(Subscriber<OUTPUT> subscriber, OUTPUT packet) {
             subscriber.receive(publisher, packet);
+        }
+
+        @Override
+        public void tracePull(Subscriber<OUTPUT> subscriber) {
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), publisher.identifier()));
         }
 
         @Override
