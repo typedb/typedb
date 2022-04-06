@@ -69,8 +69,8 @@ public class CompoundOperator<PLAN_ID, PACKET> implements Operator.Transformer<P
                             new CompoundOperator<>(processor, remainingPlan, spawnLeaderFunc, compoundPacketsFunc,
                                                    initialPacket)
                     ).buffer();
-                    outcome.addNewPublisher(follower);
                 }
+                outcome.addNewPublisher(follower);
                 publisherPackets.put(follower, mergedPacket);
                 outcome.addAnswerConsumed();
             }
