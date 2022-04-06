@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Identifier
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
 import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveIdentifier;
-import com.vaticle.typedb.core.reasoner.computation.reactive.provider.SingleReceiverPublisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Input;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,7 +98,7 @@ public abstract class Processor<INPUT, OUTPUT,
         driver().execute(actor -> actor.pullRetry(provider.identifier(), receiver.identifier()));
     }
 
-    public void pullRetry(Identifier<?, ?> provider, Identifier<?, ?> receiver) {
+    protected void pullRetry(Identifier<?, ?> provider, Identifier<?, ?> receiver) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pullRetry(receiver, provider));
         pullRetries.get(new Pair<Identifier<?, ?>, Identifier<?, ?>>(provider, receiver)).run();
     }
@@ -180,54 +180,6 @@ public abstract class Processor<INPUT, OUTPUT,
 
     public Identifier<INPUT, OUTPUT> registerReactive(Reactive reactive) {
         return new ReactiveIdentifier<>(driver(), reactive.getClass(), incrementReactiveCounter());
-    }
-
-    /**
-     * Governs an input to a processor
-     */
-    public static class Input<PACKET> extends SingleReceiverPublisher<PACKET> {
-
-        private final Identifier<PACKET, ?> identifier;
-        private boolean ready;
-        private Identifier<?, PACKET> providingOutput;
-
-        public Input(Processor<PACKET, ?, ?, ?> processor) {
-            super(processor);
-            this.identifier = processor.registerReactive(this);
-            this.ready = false;
-        }
-
-        @Override
-        public Identifier<PACKET, ?> identifier() {
-            return identifier;
-        }
-
-        public void setOutput(Identifier<?, PACKET> outputId) {
-            assert providingOutput == null;
-            providingOutput = outputId;
-            processor().monitor().execute(actor -> actor.registerPath(identifier(), outputId));
-            assert !ready;
-            ready = true;
-        }
-
-        void pull() {
-            pull(receiverRegistry().receiver());
-        }
-
-        @Override
-        public void pull(Subscriber<PACKET> subscriber) {
-            assert subscriber.equals(receiverRegistry().receiver());
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
-            receiverRegistry().recordPull(subscriber);  // TODO: There's no need for a receiver registry here, we never do anything differently depending upon whether the receiver pulling state
-            if (ready) providingOutput.processor().execute(actor -> actor.pull(providingOutput));
-        }
-
-        public void receive(Identifier<?, PACKET> outputId, PACKET packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(outputId, identifier(), packet));
-            receiverRegistry().setNotPulling();
-            receiverRegistry().receiver().receive(this, packet);
-        }
-
     }
 
     /**

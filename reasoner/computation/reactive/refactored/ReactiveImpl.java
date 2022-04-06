@@ -70,7 +70,7 @@ public abstract class ReactiveImpl implements Reactive {
 
         @Override
         public void rePullProvider(Publisher<INPUT> publisher) {
-            subscriber.processor().pullRetry(publisher.identifier(), subscriber.identifier());
+            subscriber.processor().schedulePullRetry(publisher, subscriber);
         }
     }
 
@@ -78,7 +78,7 @@ public abstract class ReactiveImpl implements Reactive {
 
         private final Publisher<OUTPUT> publisher;
 
-        PublisherActionsImpl(Publisher<OUTPUT> publisher) {
+        public PublisherActionsImpl(Publisher<OUTPUT> publisher) {
             this.publisher = publisher;
         }
 

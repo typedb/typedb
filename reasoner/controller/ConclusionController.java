@@ -33,6 +33,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverMultiProviderStream;
@@ -247,7 +248,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             public Transformed<Map<Variable, Concept>, Either<ConceptMap, Map<Variable, Concept>>> accept(Publisher<Either<ConceptMap, Map<Variable, Concept>>> publisher, Either<ConceptMap, Map<Variable, Concept>> packet) {
                 Transformed<Map<Variable, Concept>, Either<ConceptMap, Map<Variable, Concept>>> outcome = Transformed.create();
                 if (packet.isFirst()) {
-                    Processor.Input<Either<ConceptMap, Rule.Conclusion.Materialisation>> materialisationInput = processor().createInput();
+                    Input<Either<ConceptMap, Materialisation>> materialisationInput = processor().createInput();
                     processor().mayRequestMaterialiser(new ConclusionController.FromConclusionRequest.MaterialiserRequest(
                             materialisationInput.identifier(), null,
                             processor().rule.conclusion().materialisable(packet.first(), processor().conceptManager))
