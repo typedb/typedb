@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.PoolingStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.FanOutOperator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.SupplierOperator;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
 
@@ -83,8 +83,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
         @Override
         public void setUp() {
             setOutputRouter(PoolingStream.fanOut(this));
-            com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Source.create(
-                    this, new SupplierOperator<>(traversalSupplier)).registerReceiver(outputRouter());
+            Source.create(this, new SupplierOperator<>(traversalSupplier)).registerReceiver(outputRouter());
         }
     }
 }

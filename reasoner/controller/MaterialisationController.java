@@ -29,8 +29,9 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Connector.Request;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.PoolingStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Source;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.SupplierOperator;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import java.util.function.Supplier;
@@ -92,11 +93,10 @@ public class MaterialisationController extends Controller<Materialisable, Void, 
         @Override
         public void setUp() {
             setOutputRouter(PoolingStream.fanOut(this));
-            Source.create(
+            Source.create(this, new SupplierOperator<>(
                     () -> materialise(materialisable, traversalEng, conceptMgr)
                             .map(Iterators::single)
-                            .orElse(Iterators.empty()),
-                    this
+                            .orElse(Iterators.empty()))
             ).map(Either::<ConceptMap, Materialisation>second).registerReceiver(outputRouter());
         }
     }
