@@ -74,7 +74,6 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
     public void processNewPublisherEffects(Operator.Transformed<OUTPUT, INPUT> effects) {
         effects.newPublishers().forEach(newProvider -> {
-            processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
             newProvider.registerReceiver(this);
         });
     }

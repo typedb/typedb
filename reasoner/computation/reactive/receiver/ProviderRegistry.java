@@ -35,6 +35,8 @@ public abstract class ProviderRegistry<PROVIDER> {  // TODO: Rename Publisher Re
 
     public abstract Set<PROVIDER> nonPulling();
 
+    public abstract int size();
+
     public static class Single<PROVIDER> extends ProviderRegistry<PROVIDER> {
 
         private PROVIDER provider;
@@ -79,6 +81,12 @@ public abstract class ProviderRegistry<PROVIDER> {  // TODO: Rename Publisher Re
             else return set(provider);
         }
 
+        @Override
+        public int size() {
+            if (provider == null) return 0;
+            else return 1;
+        }
+
         public PROVIDER provider() {
             return provider;
         }
@@ -118,6 +126,7 @@ public abstract class ProviderRegistry<PROVIDER> {  // TODO: Rename Publisher Re
             return !wasPulling;
         }
 
+        @Override
         public int size() {
             return providerPullState.size();
         }
