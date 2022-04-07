@@ -66,14 +66,12 @@ public interface Operator {
         //  reactives sees from before and after applying the operator. There are a couple of edge-cases to this that
         //  make it hard, notably fanOut.
 
-        private final Set<Publisher<PACKET>> newPublishers;
         int answersCreated;
         int answersConsumed;
 
         private Effects(int answersCreated, int answersConsumed) {
             this.answersCreated = answersCreated;
             this.answersConsumed = answersConsumed;
-            this.newPublishers = new HashSet<>();
         }
 
         public void addAnswerCreated() {
@@ -92,14 +90,6 @@ public interface Operator {
             return answersConsumed;
         }
 
-        public void addNewPublisher(Publisher<PACKET> newPublisher) {
-            newPublishers.add(newPublisher);
-        }
-
-        public Set<Publisher<PACKET>> newPublishers() {
-            return newPublishers;
-        }
-
     }
 
     class EffectsImpl<PACKET> extends Effects<PACKET> {
@@ -116,10 +106,12 @@ public interface Operator {
     class Transformed<OUTPUT, INPUT> extends Effects<INPUT> {
 
         private final Set<OUTPUT> outputs;
+        private final Set<Publisher<INPUT>> newPublishers;
 
         private Transformed(Set<OUTPUT> outputs, int answersCreated, int answersConsumed) {
             super(answersCreated, answersConsumed);
             this.outputs = outputs;
+            this.newPublishers = new HashSet<>();
         }
 
         public static <OUTPUT, INPUT> Transformed<OUTPUT, INPUT> create(Set<OUTPUT> outputs) {
@@ -136,6 +128,14 @@ public interface Operator {
 
         public Set<OUTPUT> outputs() {
             return outputs;
+        }
+
+        public void addNewPublisher(Publisher<INPUT> newPublisher) {
+            newPublishers.add(newPublisher);
+        }
+
+        public Set<Publisher<INPUT>> newPublishers() {
+            return newPublishers;
         }
 
     }

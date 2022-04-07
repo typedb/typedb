@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRe
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator.Transformer;
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Function;
 
@@ -62,6 +61,7 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
         providerRegistry().recordReceive(publisher);
 
         Operator.Transformed<OUTPUT, INPUT> outcome = operator().accept(publisher, input);
+        processNewPublisherEffects(outcome);
         providerActions.processEffects(outcome);
         if (outcome.outputs().isEmpty() && receiverRegistry().anyPulling()) {
             receiverActions.rePullPublisher(publisher);
@@ -72,10 +72,12 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
         }
     }
 
-//    @Override
-//    public void registerProvider(Publisher<INPUT> publisher) {
-//
-//    }
+    public void processNewPublisherEffects(Operator.Transformed<OUTPUT, INPUT> effects) {
+        effects.newPublishers().forEach(newProvider -> {
+            processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
+            newProvider.registerReceiver(this);
+        });
+    }
 
     @Override
     public <MAPPED> Stream<OUTPUT, MAPPED> map(Function<OUTPUT, MAPPED> function) {
