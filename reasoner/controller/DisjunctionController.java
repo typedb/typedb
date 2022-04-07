@@ -31,7 +31,8 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Input;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.PoolingStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.BufferOperator;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
@@ -43,7 +44,6 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream.fanIn;
 import static com.vaticle.typedb.core.reasoner.controller.ConjunctionController.merge;
 
 public abstract class DisjunctionController<
@@ -103,11 +103,11 @@ public abstract class DisjunctionController<
 
         @Override
         public void setUp() {
-            FanInStream<ConceptMap> fanIn = fanIn(this);
+            PoolingStream<ConceptMap, ConceptMap> fanIn = PoolingStream.fanIn(this, new BufferOperator<>());
             setOutputRouter(getOutputRouter(fanIn));
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
                 Input<ConceptMap> input = createInput();
-                input.registerReceiver(fanIn);
+                input.registerReceiver(outputRouter());
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();
@@ -116,9 +116,9 @@ public abstract class DisjunctionController<
             }
         }
 
-        protected Reactive.Stream<ConceptMap, ConceptMap> getOutputRouter(FanInStream<ConceptMap> fanIn) {
+        protected Reactive.Stream<ConceptMap, ConceptMap> getOutputRouter(Reactive.Stream<ConceptMap, ConceptMap> fanIn) {
             // This method is only here to be overridden by root disjunction to avoid duplicating setUp
-            return fanIn.buffer();
+            return fanIn;
         }
 
         protected static class NestedConjunctionRequest extends Connector.Request<Conjunction, ConceptMap, ConceptMap> {

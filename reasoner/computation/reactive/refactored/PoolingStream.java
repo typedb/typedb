@@ -29,7 +29,7 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> {
+public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> {  // TODO: We expect INPUT and OUTPUT to be the same for PoolingStreams
 
     private final Operator.Pool<INPUT, OUTPUT> pool;
 
