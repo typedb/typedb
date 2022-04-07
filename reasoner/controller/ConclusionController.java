@@ -220,7 +220,6 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                     Stream<?, Either<ConceptMap, Map<Variable, Concept>>> op = materialisationInput
                             .map(m -> Either.second(m.second().bindToConclusion(rule.conclusion(), packet.first())));
                     op.registerReceiver(this);
-                    processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
                     processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
                     if (receiverRegistry().isPulling())processor().schedulePullRetry(publisher, this);  // We need to retry the condition again in case materialisation fails
                 } else {

@@ -42,7 +42,6 @@ public class RootSink extends Sink<ConceptMap> implements Reactive.Subscriber.Fi
         this.isPulling = false;
         this.reasonerConsumer.initialise(processor().driver());
         processor().monitor().execute(actor -> actor.registerRoot(processor().driver(), identifier()));
-        processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
     }
 
     @Override

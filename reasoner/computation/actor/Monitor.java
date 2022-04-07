@@ -124,12 +124,6 @@ public class Monitor extends Actor<Monitor> {
         receiverNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
-    public void forkFrontier(int numForks, Reactive.Identifier<?, ?> forker) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.forkFrontier(numForks, forker, driver()));
-        if (terminated) return;
-        getOrCreateNode(forker).forkFrontier(numForks);
-    }
-
     private static class ReactiveGraph {  // TODO: A graph can effectively be a source node within another graph
 
         private final Driver<? extends Processor<?, ?, ?, ?>> rootProcessor;
@@ -203,7 +197,6 @@ public class Monitor extends Actor<Monitor> {
         private final Map<ReactiveGraph, Set<ReactiveNode>> receiversByGraph;
         private long answersCreated;
         private long answersConsumed;
-        protected long frontiers;
 
         ReactiveNode() {
             this.graphMemberships = new HashSet<>();
@@ -211,7 +204,6 @@ public class Monitor extends Actor<Monitor> {
             this.receiversByGraph = new HashMap<>();
             this.answersCreated = 0;
             this.answersConsumed = 0;
-            this.frontiers = 0;
         }
 
         public long answersCreated(ReactiveGraph reactiveGraph) {
@@ -227,7 +219,8 @@ public class Monitor extends Actor<Monitor> {
         }
 
         public long frontierForks() {
-            return frontiers + 1;
+            if (providers.size() == 0) return 1;
+            else return providers.size();
         }
 
         protected void createAnswer() {
@@ -236,10 +229,6 @@ public class Monitor extends Actor<Monitor> {
 
         protected void consumeAnswer() {
             answersConsumed += 1;
-        }
-
-        public void forkFrontier(int numForks) {
-            frontiers += numForks;
         }
 
         public Set<ReactiveNode> providers() {
@@ -300,11 +289,6 @@ public class Monitor extends Actor<Monitor> {
 
         SourceNode() {
             this.finished = false;
-        }
-
-        @Override
-        public long frontierForks() {
-            return frontiers;
         }
 
         public boolean isFinished() {

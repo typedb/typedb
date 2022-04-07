@@ -46,10 +46,4 @@ public class FanInStream<PACKET> extends SingleReceiverMultiProviderStream<PACKE
         receiverRegistry().receiver().receive(this, packet);
     }
 
-    @Override
-    public void registerProvider(Publisher<PACKET> provider) {
-        super.registerProvider(provider);
-        if (providerRegistry().size() > 1) processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
-    }
-
 }

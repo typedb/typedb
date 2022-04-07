@@ -54,10 +54,7 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
 
     @Override
     public void registerProvider(Publisher<INPUT> publisher) {
-        if (providerRegistry().add(publisher)) {
-            receiverActions.registerPath(publisher);
-            if (providerRegistry().size() > 1) processor().monitor().execute(actor -> actor.forkFrontier(1, identifier()));
-        }
+        if (providerRegistry().add(publisher)) receiverActions.registerPath(publisher);
         if (receiverRegistry().anyPulling() && providerRegistry().setPulling(publisher)) propagatePull(publisher);
     }
 

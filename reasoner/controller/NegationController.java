@@ -90,7 +90,6 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             requestConnection(new DisjunctionRequest(input.identifier(), negated.pattern(), bounds));
             negation = new NegationReactive(this, bounds);
             monitor().execute(actor -> actor.registerRoot(driver(), negation.identifier()));
-            monitor().execute(actor -> actor.forkFrontier(1, negation.identifier()));
             input.registerReceiver(negation);
             negation.registerReceiver(outputRouter());
         }
