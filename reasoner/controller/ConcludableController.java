@@ -30,10 +30,11 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.PoolingStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.BufferOperator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.SupplierOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -142,7 +143,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
             //  this processor because in general we couldn't call all upstream work done.
             bufferedFanIn.registerReceiver(outputRouter());
 
-            Source.create(traversalSuppplier, this).registerReceiver(bufferedFanIn);
+            Source.create(this, new SupplierOperator<>(traversalSuppplier)).registerReceiver(bufferedFanIn);
 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
