@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.refactored;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.BufferOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.DistinctOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.FlatMapOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.MapOperator;
@@ -129,7 +128,7 @@ public abstract class ReactiveImpl implements Reactive {
 
         @Override
         public Stream<OUTPUT, OUTPUT> buffer(Publisher<OUTPUT> publisher) {
-            Stream<OUTPUT, OUTPUT> newOp = PoolingStream.buffer(publisher.processor(), new BufferOperator<>());
+            Stream<OUTPUT, OUTPUT> newOp = PoolingStream.buffer(publisher.processor());
             publisher.registerReceiver(newOp);
             return newOp;
         }

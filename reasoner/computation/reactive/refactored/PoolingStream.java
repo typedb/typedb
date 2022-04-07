@@ -22,6 +22,8 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.BufferOperator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.FanOutOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,9 +43,10 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
         this.pool = pool;
     }
 
-    public static <INPUT, OUTPUT> PoolingStream<INPUT, OUTPUT> fanOut(
-            Processor<?, ?, ?, ?> processor, Operator.Pool<INPUT, OUTPUT> pool) {
-        return new PoolingStream<>(processor, pool, new ReceiverRegistry.Multi<>(), new ProviderRegistry.Single<>());
+    public static <PACKET> PoolingStream<PACKET, PACKET> fanOut(
+            Processor<?, ?, ?, ?> processor) {
+        return new PoolingStream<>(processor, new FanOutOperator<>(), new ReceiverRegistry.Multi<>(),
+                                   new ProviderRegistry.Single<>());
     }
 
     public static <INPUT, OUTPUT> PoolingStream<INPUT, OUTPUT> fanIn(
@@ -51,13 +54,14 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
         return new PoolingStream<>(processor, pool, new ReceiverRegistry.Single<>(), new ProviderRegistry.Multi<>());
     }
 
-    public static <INPUT, OUTPUT> PoolingStream<INPUT, OUTPUT> buffer(
-            Processor<?, ?, ?, ?> processor, Operator.Pool<INPUT, OUTPUT> pool) {
-        // TODO: It's possible to choose the wrong pool operator here since the operator is not bound to the nature of
-        //  the registries by type. In fact what really changes in tandem is the signature of the receive() and pull()
-        //  methods, as when there are multiple upstreams/downstreams we need to know which the message is from/to, but
-        //  not so for single upstream/downstreams
-        return new PoolingStream<>(processor, pool, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
+    public static <PACKET> PoolingStream<PACKET, PACKET> buffer(
+            Processor<?, ?, ?, ?> processor) {
+        // TODO: The operator is not bound to the nature of the registries by type. We could not correctly use a FanOut
+        //  operator here even though the types allow it. In fact what really changes in tandem is the signature of the
+        //  receive() and pull() methods, as when there are multiple upstreams/downstreams we need to know which the
+        //  message is from/to, but  not so for single upstream/downstreams
+        return new PoolingStream<>(processor, new BufferOperator<>(), new ReceiverRegistry.Single<>(),
+                                   new ProviderRegistry.Single<>());
     }
 
     protected Operator.Pool<INPUT, OUTPUT> operator() {

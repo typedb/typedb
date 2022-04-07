@@ -82,7 +82,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
 
         @Override
         public void setUp() {
-            setOutputRouter(PoolingStream.fanOut(this, new FanOutOperator<>()));
+            setOutputRouter(PoolingStream.fanOut(this));
             com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Source.create(
                     this, new SupplierOperator<>(traversalSupplier)).registerReceiver(outputRouter());
         }
