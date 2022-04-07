@@ -64,7 +64,7 @@ public class CompoundOperator<PLAN_ID, PACKET> implements Operator.Transformer<P
                 if (remainingPlan.size() == 1) {
                     follower = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
                 } else {
-                    follower = TransformationStream.create(
+                    follower = TransformationStream.single(
                             processor,
                             new CompoundOperator<>(processor, remainingPlan, spawnLeaderFunc, compoundPacketsFunc,
                                                    initialPacket)

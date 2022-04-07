@@ -34,14 +34,23 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
     private final Transformer<INPUT, OUTPUT> transformer;
 
     protected TransformationStream(Processor<?, ?, ?, ?> processor,
-                                   Transformer<INPUT, OUTPUT> transformer) {
-        super(processor, new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
+                                   Transformer<INPUT, OUTPUT> transformer,
+                                   ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
+                                   ProviderRegistry<Publisher<INPUT>> providerRegistry) {
+        super(processor, receiverRegistry, providerRegistry);
         this.transformer = transformer;
     }
 
-    public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> create(
+    public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> single(
             Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT> transformer) {
-        return new TransformationStream<>(processor, transformer);
+        return new TransformationStream<>(processor, transformer, new ReceiverRegistry.Single<>(),
+                                          new ProviderRegistry.Single<>());
+    }
+
+    public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> fanIn(
+            Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT> transformer) {
+        return new TransformationStream<>(processor, transformer, new ReceiverRegistry.Single<>(),
+                                          new ProviderRegistry.Multi<>());
     }
 
     protected Transformer<INPUT, OUTPUT> operator() {

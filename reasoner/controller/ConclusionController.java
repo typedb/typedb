@@ -33,7 +33,9 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Input;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.TransformationStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverMultiProviderStream;
@@ -177,7 +179,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             setOutputRouter(new FanOutStream<>(this));
             Input<Either<ConceptMap, Materialisation>> conditionInput = createInput();
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), bounds));
-            ConclusionReactive conclusionReactive = new ConclusionReactive(this);
+            Stream<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>> conclusionReactive =
+                    TransformationStream.fanIn(this, new ConclusionOperator(this));
             conditionInput.map(ConclusionProcessor::convertConclusionInput).registerReceiver(conclusionReactive);
             conclusionReactive.registerReceiver(outputRouter());
         }
@@ -202,36 +205,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
         }
 
-        private class ConclusionReactive extends SingleReceiverMultiProviderStream<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>> {
-
-            protected ConclusionReactive(Processor<?, ?, ?, ?> processor) {
-                super(processor);
-            }
-
-            @Override
-            public void receive(Publisher<Either<ConceptMap, Map<Variable, Concept>>> publisher, Either<ConceptMap, Map<Variable, Concept>> packet) {
-                super.receive(publisher, packet);
-                if (packet.isFirst()) {
-                    Input<Either<ConceptMap, Materialisation>> materialisationInput = createInput();
-                    mayRequestMaterialiser(new MaterialiserRequest(
-                            materialisationInput.identifier(), null,
-                            rule.conclusion().materialisable(packet.first(), conceptManager))
-                    );
-                    Stream<?, Either<ConceptMap, Map<Variable, Concept>>> op = materialisationInput
-                            .map(m -> Either.second(m.second().bindToConclusion(rule.conclusion(), packet.first())));
-                    op.registerReceiver(this);
-                    processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
-                    if (receiverRegistry().isPulling())processor().schedulePullRetry(publisher, this);  // We need to retry the condition again in case materialisation fails
-                } else {
-                    if (receiverRegistry().isPulling()) processor().schedulePullRetry(publisher, this);  // We need to retry so that the materialisation does a join
-                    receiverRegistry().setNotPulling();
-                    receiverRegistry().receiver().receive(this, packet.second());
-                }
-            }
-
-        }
-
-        public static class ConclusionOperator<RECEIVER> implements Operator.Transformer<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>>, Operator {
+        public static class ConclusionOperator implements Operator.Transformer<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>>, Operator {
 
             private final ConclusionProcessor processor;
 
@@ -248,7 +222,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                 Transformed<Map<Variable, Concept>, Either<ConceptMap, Map<Variable, Concept>>> outcome = Transformed.create();
                 if (packet.isFirst()) {
                     Input<Either<ConceptMap, Materialisation>> materialisationInput = processor().createInput();
-                    processor().mayRequestMaterialiser(new ConclusionController.FromConclusionRequest.MaterialiserRequest(
+                    processor().mayRequestMaterialiser(new MaterialiserRequest(
                             materialisationInput.identifier(), null,
                             processor().rule.conclusion().materialisable(packet.first(), processor().conceptManager))
                     );
@@ -257,7 +231,6 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                     outcome.addNewPublisher(op);
                     outcome.addAnswerConsumed();
                 } else {
-                    // TODO: Previously we would retry here to get the materialiser(s) to do a join, is this automatic now?
                     outcome.addOutput(packet.second());
                 }
                 return outcome;

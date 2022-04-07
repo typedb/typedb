@@ -106,7 +106,7 @@ public abstract class ReactiveImpl implements Reactive {
 
         @Override
         public <MAPPED> Stream<OUTPUT, MAPPED> map(Publisher<OUTPUT> publisher, Function<OUTPUT, MAPPED> function) {
-            Stream<OUTPUT, MAPPED> newOp = TransformationStream.create(publisher.processor(), new MapOperator<>(function));
+            Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.processor(), new MapOperator<>(function));
             publisher.registerReceiver(newOp);
             return newOp;
         }
@@ -114,14 +114,14 @@ public abstract class ReactiveImpl implements Reactive {
         @Override
         public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Publisher<OUTPUT> publisher,
                                                        Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
-            Stream<OUTPUT, MAPPED> newOp = TransformationStream.create(publisher.processor(), new FlatMapOperator<>(function));
+            Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.processor(), new FlatMapOperator<>(function));
             publisher.registerReceiver(newOp);
             return newOp;
         }
 
         @Override
         public Stream<OUTPUT, OUTPUT> distinct(Publisher<OUTPUT> publisher) {
-            Stream<OUTPUT, OUTPUT> newOp = TransformationStream.create(publisher.processor(), new DistinctOperator<>());
+            Stream<OUTPUT, OUTPUT> newOp = TransformationStream.single(publisher.processor(), new DistinctOperator<>());
             publisher.registerReceiver(newOp);
             return newOp;
         }
