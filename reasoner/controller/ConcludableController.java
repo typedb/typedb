@@ -32,7 +32,8 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Input;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.PoolingStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.BufferOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -44,7 +45,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanInStream.fanIn;
 
 public class ConcludableController extends Controller<ConceptMap, Map<Variable, Concept>, ConceptMap,
         ConcludableController.ConcludableProcessor.ConclusionRequest, ConcludableController.ConcludableProcessor, ConcludableController> {
@@ -134,15 +134,15 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         @Override
         public void setUp() {
             setOutputRouter(new FanOutStream<>(this));
-            FanInStream<ConceptMap> fanIn = fanIn(this);
+            PoolingStream<ConceptMap, ConceptMap> bufferedFanIn = PoolingStream.fanIn(this, new BufferOperator<>());
 //            boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
 //            if (singleAnswerRequired) fanIn.findFirst().publishTo(outputRouter());
 //            else fanIn.publishTo(outputRouter());
             // TODO: How do we do a find first optimisation and also know that we're done? This needs to be local to
             //  this processor because in general we couldn't call all upstream work done.
-            fanIn.buffer().registerReceiver(outputRouter());
+            bufferedFanIn.registerReceiver(outputRouter());
 
-            Source.create(traversalSuppplier, this).registerReceiver(fanIn);
+            Source.create(traversalSuppplier, this).registerReceiver(bufferedFanIn);
 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
@@ -150,7 +150,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
                     mayRequestConnection(new ConclusionRequest(input.identifier(), conclusion, boundsAndRequirements.first()));
                     input.flatMap(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .buffer()
-                            .registerReceiver(fanIn);
+                            .registerReceiver(bufferedFanIn);
                 }));
             });
         }

@@ -46,6 +46,11 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
         return new PoolingStream<>(processor, pool, new ReceiverRegistry.Multi<>(), new ProviderRegistry.Single<>());
     }
 
+    public static <INPUT, OUTPUT> PoolingStream<INPUT, OUTPUT> fanIn(
+            Processor<?, ?, ?, ?> processor, Operator.Pool<INPUT, OUTPUT> pool) {
+        return new PoolingStream<>(processor, pool, new ReceiverRegistry.Single<>(), new ProviderRegistry.Multi<>());
+    }
+
     public static <INPUT, OUTPUT> PoolingStream<INPUT, OUTPUT> buffer(
             Processor<?, ?, ?, ?> processor, Operator.Pool<INPUT, OUTPUT> pool) {
         // TODO: It's possible to choose the wrong pool operator here since the operator is not bound to the nature of
