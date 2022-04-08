@@ -46,6 +46,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -344,7 +345,7 @@ public class DataImporter {
                     break;
                 case DATETIME:
                     attribute = type.asDateTime().put(
-                            Instant.ofEpochMilli(valueMsg.getDatetime()).atZone(ZoneId.of("Z")).toLocalDateTime());
+                            Instant.ofEpochMilli(valueMsg.getDatetime()).atZone(ZoneOffset.UTC).toLocalDateTime());
                     break;
                 default:
                     throw TypeDBException.of(INVALID_DATA);
