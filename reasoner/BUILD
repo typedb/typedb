@@ -38,7 +38,6 @@ native_java_libraries(
         "computation/reactive/refactored/*.java",
         "computation/reactive/provider/*.java",
         "computation/reactive/receiver/*.java",
-        "computation/reactive/stream/*.java",
         "controller/*.java",
         "answer/*.java",
         "utils/*.java",

@@ -35,10 +35,9 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Input;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.PoolingStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.TransformationStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverMultiProviderStream;
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController.FromConclusionRequest.ConditionRequest;
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController.FromConclusionRequest.MaterialiserRequest;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -177,7 +176,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         @Override
         public void setUp() {
-            setOutputRouter(new FanOutStream<>(this));
+            setOutputRouter(PoolingStream.fanOut(this));
             Input<Either<ConceptMap, Materialisation>> conditionInput = createInput();
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), bounds));
             Stream<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>> conclusionReactive =

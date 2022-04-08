@@ -33,9 +33,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.PoolingStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Source;
-import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.BufferOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.SupplierOperator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -134,16 +132,11 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
 
         @Override
         public void setUp() {
-            setOutputRouter(new FanOutStream<>(this));
-            PoolingStream<ConceptMap, ConceptMap> bufferedFanIn = PoolingStream.fanIn(this, new BufferOperator<>());
-//            boolean singleAnswerRequired = bounds.concepts().keySet().containsAll(unboundVars);
-//            if (singleAnswerRequired) fanIn.findFirst().publishTo(outputRouter());
-//            else fanIn.publishTo(outputRouter());
+            setOutputRouter(PoolingStream.fanInFanOut(this));
             // TODO: How do we do a find first optimisation and also know that we're done? This needs to be local to
             //  this processor because in general we couldn't call all upstream work done.
-            bufferedFanIn.registerReceiver(outputRouter());
 
-            Source.create(this, new SupplierOperator<>(traversalSuppplier)).registerReceiver(bufferedFanIn);
+            Source.create(this, new SupplierOperator<>(traversalSuppplier)).registerReceiver(outputRouter());
 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
@@ -151,7 +144,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
                     mayRequestConnection(new ConclusionRequest(input.identifier(), conclusion, boundsAndRequirements.first()));
                     input.flatMap(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .buffer()
-                            .registerReceiver(bufferedFanIn);
+                            .registerReceiver(outputRouter());
                 }));
             });
         }

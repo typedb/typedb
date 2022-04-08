@@ -30,9 +30,9 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Input;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.PoolingStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.TransformationStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -91,7 +91,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
         @Override
         public void setUp() {
-            setOutputRouter(new FanOutStream<>(this));
+            setOutputRouter(PoolingStream.fanOut(this));
             Input<ConceptMap> input = createInput();
             requestConnection(new DisjunctionRequest(input.identifier(), negated.pattern(), bounds));
             negation = new NegationStream(this, bounds);

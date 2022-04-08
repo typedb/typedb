@@ -54,6 +54,11 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
         return new PoolingStream<>(processor, pool, new ReceiverRegistry.Single<>(), new ProviderRegistry.Multi<>());
     }
 
+    public static <PACKET> PoolingStream<PACKET, PACKET> fanInFanOut(Processor<?, ?, ?, ?> processor) {
+        return new PoolingStream<>(processor, new FanOutOperator<>(), new ReceiverRegistry.Multi<>(),
+                                   new ProviderRegistry.Multi<>());
+    }
+
     public static <PACKET> PoolingStream<PACKET, PACKET> buffer(
             Processor<?, ?, ?, ?> processor) {
         // TODO: The operator is not bound to the nature of the registries by type. We could not correctly use a FanOut

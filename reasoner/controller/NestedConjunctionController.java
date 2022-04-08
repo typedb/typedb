@@ -27,7 +27,6 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.TransformationStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.CompoundOperator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.CompoundStream;
 
 import java.util.List;
 import java.util.Set;
