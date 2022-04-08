@@ -61,6 +61,10 @@ public interface Operator {
 
     }
 
+    interface Bridge<PACKET> extends Accepter<PACKET>, Source<PACKET> {
+
+    }
+
     abstract class Effects<PACKET> {
         // TODO: We should be able to do without these classes by reporting the change in number of answers the
         //  reactives sees from before and after applying the operator. There are a couple of edge-cases to this that

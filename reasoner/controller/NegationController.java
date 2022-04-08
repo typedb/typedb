@@ -27,12 +27,19 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Input;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.TransformationStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverSingleProviderStream;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Supplier;
+
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.NegationProcessor.DisjunctionRequest, NegationController.NegationProcessor, NegationController> {
 
@@ -73,7 +80,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
         private final Negated negated;
         private final ConceptMap bounds;
-        private NegationReactive negation;
+        private NegationStream negation;
 
         protected NegationProcessor(Driver<NegationProcessor> driver, Driver<NegationController> controller,
                                     Driver<Monitor> monitor, Negated negated, ConceptMap bounds,
@@ -88,7 +95,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             setOutputRouter(new FanOutStream<>(this));
             Input<ConceptMap> input = createInput();
             requestConnection(new DisjunctionRequest(input.identifier(), negated.pattern(), bounds));
-            negation = new NegationReactive(this, bounds);
+            negation = new NegationStream(this, bounds);
             monitor().execute(actor -> actor.registerRoot(driver(), negation.identifier()));
             input.registerReceiver(negation);
             negation.registerReceiver(outputRouter());
@@ -100,6 +107,48 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 //            done = true;
             assert finishable == negation.identifier();
             negation.finished();
+        }
+
+        private static class NegationOperator<PACKET> implements Operator.Transformer<PACKET, PACKET> {
+
+            @Override
+            public Transformed<PACKET, PACKET> accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
+                return Transformed.create(set(packet));
+            }
+        }
+
+        private static class NegationStream extends TransformationStream<ConceptMap, ConceptMap> implements Reactive.Subscriber.Finishable<ConceptMap> {
+
+            private final ConceptMap bounds;
+            private boolean answerFound;
+
+            protected NegationStream(Processor<?, ?, ?, ?> processor, ConceptMap bounds) {
+                super(processor, new NegationOperator<>(), new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
+                this.bounds = bounds;
+                this.answerFound = false;
+            }
+
+            @Override
+            public void pull(Subscriber<ConceptMap> subscriber) {
+                // Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));  TODO: This would create duplicate traces, but removing it is also a misnomer
+                if (!answerFound) super.pull(subscriber);
+            }
+
+            @Override
+            public void receive(Publisher<ConceptMap> publisher, ConceptMap conceptMap) {
+                receiverActions.traceReceive(publisher, conceptMap);
+                providerRegistry().recordReceive(publisher);
+                answerFound = true;
+                processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
+            }
+
+            @Override
+            public void finished() {
+                assert !answerFound;
+                processor().monitor().execute(actor -> actor.createAnswer(identifier()));
+                iterate(receiverRegistry().receivers()).forEachRemaining(r -> r.receive(this, bounds));
+                processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
+            }
         }
 
         private static class NegationReactive extends SingleReceiverSingleProviderStream<ConceptMap, ConceptMap> implements Reactive.Subscriber.Finishable<ConceptMap> {
