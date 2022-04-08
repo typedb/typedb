@@ -44,15 +44,13 @@ import com.vaticle.typedb.protocol.SessionProto;
 import com.vaticle.typedb.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-
-import javax.annotation.Nullable;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
-
+import javax.annotation.Nullable;
 import static com.google.protobuf.ByteString.copyFrom;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeUUID;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -428,6 +426,13 @@ public class ResponseBuilder {
                             types.stream().map(Type::protoType).collect(toList()))));
         }
 
+        public static TransactionProto.Transaction.ResPart getSubtypesExplicitResPart(
+                UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.Type> types) {
+            return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setTypeGetSubtypesExplicitResPart(
+                    ConceptProto.Type.GetSubtypesExplicit.ResPart.newBuilder().addAllTypes(
+                            types.stream().map(Type::protoType).collect(toList()))));
+        }
+
         public static class RoleType {
 
             public static TransactionProto.Transaction.ResPart getRelationTypesResPart(
@@ -451,6 +456,13 @@ public class ResponseBuilder {
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> things) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetInstancesResPart(
                         ConceptProto.ThingType.GetInstances.ResPart.newBuilder().addAllThings(
+                                things.stream().map(Concept::protoThing).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.ResPart getInstancesExplicitResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> things) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetInstancesExplicitResPart(
+                        ConceptProto.ThingType.GetInstancesExplicit.ResPart.newBuilder().addAllThings(
                                 things.stream().map(Concept::protoThing).collect(toList()))));
             }
 

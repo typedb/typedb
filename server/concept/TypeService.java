@@ -29,12 +29,10 @@ import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.server.TransactionService;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.TransactionProto.Transaction;
-
-import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.regex.Pattern;
-
+import javax.annotation.Nullable;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
@@ -56,6 +54,7 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.Relatio
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.unsetRelatesRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayersResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getRelationTypesResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getPlaysResPart;
@@ -66,6 +65,7 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingTy
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.unsetOwnsRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.unsetPlaysRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.deleteRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSubtypesExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSubtypesResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSupertypeRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSupertypesResPart;
@@ -117,6 +117,9 @@ public class TypeService {
             case TYPE_GET_SUBTYPES_REQ:
                 getSubtypes(type, reqID);
                 return;
+            case TYPE_GET_SUBTYPES_EXPLICIT_REQ:
+                getSubtypesExplicit(type, reqID);
+                return;
             case ROLE_TYPE_GET_RELATION_TYPES_REQ:
                 getRelationTypes(type.asRoleType(), reqID);
                 return;
@@ -143,6 +146,9 @@ public class TypeService {
                 return;
             case THING_TYPE_GET_INSTANCES_REQ:
                 getInstances(type.asThingType(), reqID);
+                return;
+            case THING_TYPE_GET_INSTANCES_EXPLICIT_REQ:
+                getInstancesExplicit(type.asThingType(), reqID);
                 return;
             case THING_TYPE_GET_OWNS_REQ:
                 getOwns(type.asThingType(), typeReq, reqID);
@@ -246,17 +252,27 @@ public class TypeService {
 
     private void getSupertypes(Type type, UUID reqID) {
         transactionSvc.stream(type.getSupertypes(), reqID,
-                types -> getSupertypesResPart(reqID, types));
+                              types -> getSupertypesResPart(reqID, types));
     }
 
     private void getSubtypes(Type type, UUID reqID) {
         transactionSvc.stream(type.getSubtypes(), reqID,
-                types -> getSubtypesResPart(reqID, types));
+                              types -> getSubtypesResPart(reqID, types));
+    }
+
+    private void getSubtypesExplicit(Type type, UUID reqID) {
+        transactionSvc.stream(type.getSubtypesExplicit(), reqID,
+                              types -> getSubtypesExplicitResPart(reqID, types));
     }
 
     private void getInstances(ThingType thingType, UUID reqID) {
         transactionSvc.stream(thingType.getInstances(), reqID,
-                things -> getInstancesResPart(reqID, things));
+                              things -> getInstancesResPart(reqID, things));
+    }
+
+    private void getInstancesExplicit(ThingType thingType, UUID reqID) {
+        transactionSvc.stream(thingType.getInstancesExplicit(), reqID,
+                              things -> getInstancesExplicitResPart(reqID, things));
     }
 
     private void getOwns(ThingType thingType, ConceptProto.Type.Req typeReq, UUID reqID) {
