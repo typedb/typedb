@@ -118,6 +118,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         }
 
         private static class NegationStream extends TransformationStream<ConceptMap, ConceptMap> implements Reactive.Subscriber.Finishable<ConceptMap> {
+            // TODO: Negation should be modelled as both a source and a sink, called a Bridge for now. It is a Source for the graph downstream and a Sink for the graph upstream
 
             private final ConceptMap bounds;
             private boolean answerFound;
@@ -147,39 +148,6 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
                 assert !answerFound;
                 processor().monitor().execute(actor -> actor.createAnswer(identifier()));
                 iterate(receiverRegistry().receivers()).forEachRemaining(r -> r.receive(this, bounds));
-                processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
-            }
-        }
-
-        private static class NegationReactive extends SingleReceiverSingleProviderStream<ConceptMap, ConceptMap> implements Reactive.Subscriber.Finishable<ConceptMap> {
-
-            private final ConceptMap bounds;
-            private boolean answerFound;
-
-            protected NegationReactive(Processor<?, ?, ?, ?> processor, ConceptMap bounds) {
-                super(processor);
-                this.bounds = bounds;
-                this.answerFound = false;
-            }
-
-            @Override
-            public void pull(Subscriber<ConceptMap> subscriber) {
-                Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
-                if (!answerFound) super.pull(subscriber);
-            }
-
-            @Override
-            public void receive(Publisher<ConceptMap> publisher, ConceptMap packet) {
-                super.receive(publisher, packet);
-                answerFound = true;
-                processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
-            }
-
-            @Override
-            public void finished() {
-                assert !answerFound;
-                processor().monitor().execute(actor -> actor.createAnswer(identifier()));
-                receiverRegistry().receiver().receive(this, bounds);
                 processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
             }
         }
