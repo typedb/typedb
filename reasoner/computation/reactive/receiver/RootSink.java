@@ -22,21 +22,27 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
+import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.ReactiveImpl;
+import com.vaticle.typedb.core.reasoner.utils.Tracer.Trace;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
 
-public class RootSink extends Sink<ConceptMap> implements Reactive.Subscriber.Finishable<ConceptMap> {
+public class RootSink implements Reactive.Subscriber.Finishable<ConceptMap>, Reactive.Subscriber<ConceptMap> {
 
     private final Identifier<?, ?> identifier;
     private final UUID traceId = UUID.randomUUID();
     private final ReasonerConsumer reasonerConsumer;
+    private final ProviderRegistry.Single<Publisher<ConceptMap>> providerRegistry;
+    private final Processor<?, ?, ?, ?> processor;
+    private final ReactiveImpl.SubscriberActionsImpl<ConceptMap> subscriberActions;
     private boolean isPulling;
     private int traceCounter = 0;
 
     public RootSink(Processor<ConceptMap, ?, ?, ?> processor, ReasonerConsumer reasonerConsumer) {
-        super(processor);
+        this.providerRegistry = new ProviderRegistry.Single<>();
+        this.processor = processor;
+        this.subscriberActions = new ReactiveImpl.SubscriberActionsImpl<>(this);
         this.identifier = processor().registerReactive(this);
         this.reasonerConsumer = reasonerConsumer;
         this.isPulling = false;
@@ -56,7 +62,8 @@ public class RootSink extends Sink<ConceptMap> implements Reactive.Subscriber.Fi
 
     @Override
     public void receive(@Nullable Publisher<ConceptMap> publisher, ConceptMap packet) {
-        super.receive(publisher, packet);
+        subscriberActions.traceReceive(publisher, packet);
+        providerRegistry().recordReceive(publisher);
         isPulling = false;
         reasonerConsumer.receiveAnswer(packet);
         processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
@@ -64,25 +71,32 @@ public class RootSink extends Sink<ConceptMap> implements Reactive.Subscriber.Fi
 
     @Override
     public void registerProvider(Publisher<ConceptMap> provider) {
-        super.registerProvider(provider);
+        if (providerRegistry().add(provider)) {
+            processor().monitor().execute(actor -> actor.registerPath(identifier(), provider.identifier()));
+        }
         if (isPulling && providerRegistry().setPulling()) provider.pull(this);
     }
 
-    public Tracer.Trace trace() {
-        return Tracer.Trace.create(traceId, traceCounter);
+    public Trace trace() {
+        return Trace.create(traceId, traceCounter);
     }
 
     public void exception(Throwable e) {
         reasonerConsumer.exception(e);
     }
 
-    public boolean isPulling() {
-        return isPulling;
-    }
-
     @Override
     public void finished() {
         reasonerConsumer.finished();
         processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
+    }
+
+    protected ProviderRegistry.Single<Publisher<ConceptMap>> providerRegistry() {
+        return providerRegistry;
+    }
+
+    @Override
+    public Processor<?, ?, ?, ?> processor() {
+        return processor;
     }
 }

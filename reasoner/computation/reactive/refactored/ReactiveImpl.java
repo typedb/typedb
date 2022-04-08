@@ -53,7 +53,7 @@ public abstract class ReactiveImpl implements Reactive {
 
         private final Subscriber<INPUT> subscriber;
 
-        SubscriberActionsImpl(Subscriber<INPUT> subscriber) {
+        public SubscriberActionsImpl(Subscriber<INPUT> subscriber) {
             this.subscriber = subscriber;
         }
 
