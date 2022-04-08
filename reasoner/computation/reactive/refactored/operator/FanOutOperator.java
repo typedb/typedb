@@ -40,8 +40,8 @@ public class FanOutOperator<PACKET> implements Operator.Pool<PACKET, PACKET> {
     }
 
     @Override
-    public EffectsImpl<PACKET> accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
-        EffectsImpl<PACKET> outcome = EffectsImpl.create();
+    public EffectsImpl accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
+        EffectsImpl outcome = EffectsImpl.create();
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
             outcome.addAnswerCreated();

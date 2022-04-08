@@ -35,11 +35,13 @@ public interface Operator {
 
     interface Accepter<INPUT> extends Operator {
 
-        Effects<INPUT> accept(Publisher<INPUT> publisher, INPUT packet);
+        Effects accept(Publisher<INPUT> publisher, INPUT packet);
 
     }
 
     interface Transformer<INPUT, OUTPUT> extends Accepter<INPUT> {
+
+        Set<Publisher<INPUT>> initialise();
 
         @Override
         Transformed<OUTPUT, INPUT> accept(Publisher<INPUT> publisher, INPUT packet);
@@ -53,7 +55,7 @@ public interface Operator {
     interface Pool<INPUT, OUTPUT> extends Accepter<INPUT> {
 
         @Override
-        EffectsImpl<INPUT> accept(Publisher<INPUT> publisher, INPUT packet);
+        EffectsImpl accept(Publisher<INPUT> publisher, INPUT packet);
 
         boolean hasNext(Subscriber<OUTPUT> subscriber);
 
@@ -65,7 +67,7 @@ public interface Operator {
 
     }
 
-    abstract class Effects<PACKET> {
+    abstract class Effects {
         // TODO: We should be able to do without these classes by reporting the change in number of answers the
         //  reactives sees from before and after applying the operator. There are a couple of edge-cases to this that
         //  make it hard, notably fanOut.
@@ -96,18 +98,18 @@ public interface Operator {
 
     }
 
-    class EffectsImpl<PACKET> extends Effects<PACKET> {
+    class EffectsImpl extends Effects {
 
         private EffectsImpl(int answersCreated, int answersConsumed) {
             super(answersCreated, answersConsumed);
         }
 
-        public static <PACKET> EffectsImpl<PACKET> create() {
-            return new EffectsImpl<>(0, 0);
+        public static EffectsImpl create() {
+            return new EffectsImpl(0, 0);
         }
     }
 
-    class Transformed<OUTPUT, INPUT> extends Effects<INPUT> {
+    class Transformed<OUTPUT, INPUT> extends Effects {
 
         private final Set<OUTPUT> outputs;
         private final Set<Publisher<INPUT>> newPublishers;
@@ -144,7 +146,7 @@ public interface Operator {
 
     }
 
-    class Supplied<OUTPUT> extends Effects<OUTPUT> {
+    class Supplied<OUTPUT> extends Effects {
 
         private OUTPUT output;
 

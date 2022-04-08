@@ -82,7 +82,7 @@ public abstract class ReactiveImpl implements Reactive {
         }
 
         @Override
-        public void processEffects(Operator.Effects<?> effects) {
+        public void processEffects(Operator.Effects effects) {
             for (int i = 0; i < effects.answersCreated(); i++) {
                 // TODO: We can now batch this and even send the delta between created and consumed
                 //  in fact we should be able to look at the number of inputs and outputs and move the monitoring

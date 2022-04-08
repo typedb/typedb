@@ -68,9 +68,9 @@ public class CompoundStream<PLAN_ID, PACKET> extends SingleReceiverMultiProvider
                 publisherPackets.put(follower, mergedPacket);
                 follower.registerReceiver(this);
                 processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
-                if (receiverRegistry().isPulling()) {
-                    processor().schedulePullRetry(leadingPublisher, this);  // Retry the leader in case the follower never produces an answer
-                    if (providerRegistry().setPulling(follower)) follower.pull(this);
+                if (receiverRegistry().isPulling()) {  // TODO: Is the retry we do on the right reactive?
+                    processor().schedulePullRetry(leadingPublisher, this);  // Retry the leader in case the follower never produces an answer  // TODO: The fact we now rely on the outer layer to do this means it re-pulls on the parent which at the least looks weird when tracing
+                    if (providerRegistry().setPulling(follower)) follower.pull(this);  // TODO: Do we efficiently do a pull on the newly created follower?
                 }
             }
         } else {

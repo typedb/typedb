@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class ConclusionController extends Controller<ConceptMap, Either<ConceptMap, Materialisation>, Map<Variable, Concept>,
@@ -205,16 +206,21 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
         }
 
-        public static class ConclusionOperator implements Operator.Transformer<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>>, Operator {
+        private static class ConclusionOperator implements Operator.Transformer<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>>, Operator {
 
             private final ConclusionProcessor processor;
 
-            ConclusionOperator(ConclusionController.ConclusionProcessor processor) {
+            private ConclusionOperator(ConclusionController.ConclusionProcessor processor) {
                 this.processor = processor;
             }
 
             private ConclusionProcessor processor() {
                 return processor;
+            }
+
+            @Override
+            public Set<Publisher<Either<ConceptMap, Map<Variable, Concept>>>> initialise() {
+                return set();  // TODO: This could create the connection to the condition
             }
 
             @Override

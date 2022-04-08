@@ -28,7 +28,7 @@ public interface ReactiveActions {
 
     interface PublisherActions<OUTPUT> extends ReactiveActions {
 
-        void processEffects(Operator.Effects<?> effects);  // TODO: Who needs this? The generic should be empty because in this circumstance no additional providers should be created
+        void processEffects(Operator.Effects effects);
 
         void subscriberReceive(Reactive.Subscriber<OUTPUT> subscriber, OUTPUT packet);
 

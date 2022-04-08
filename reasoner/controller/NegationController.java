@@ -33,9 +33,8 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.TransformationStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.stream.FanOutStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.stream.SingleReceiverSingleProviderStream;
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
+import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -110,6 +109,11 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         }
 
         private static class NegationOperator<PACKET> implements Operator.Transformer<PACKET, PACKET> {
+
+            @Override
+            public Set<Reactive.Publisher<PACKET>> initialise() {
+                return set();
+            }
 
             @Override
             public Transformed<PACKET, PACKET> accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {

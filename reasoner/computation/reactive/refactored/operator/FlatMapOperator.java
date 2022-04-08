@@ -21,7 +21,10 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operato
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 
+import java.util.Set;
 import java.util.function.Function;
+
+import static com.vaticle.typedb.common.collection.Collections.set;
 
 public class FlatMapOperator<INPUT, OUTPUT> implements Operator.Transformer<INPUT, OUTPUT> {
 
@@ -29,6 +32,11 @@ public class FlatMapOperator<INPUT, OUTPUT> implements Operator.Transformer<INPU
 
     public FlatMapOperator(Function<INPUT, FunctionalIterator<OUTPUT>> transform) {
         this.transform = transform;
+    }
+
+    @Override
+    public Set<Publisher<INPUT>> initialise() {
+        return set();
     }
 
     @Override

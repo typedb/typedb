@@ -49,6 +49,7 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
     }
 
     public void propagatePull(Publisher<INPUT> publisher) {
+        providerRegistry().setPulling(publisher);
         publisher.pull(this);
     }
 

@@ -66,7 +66,7 @@ import static org.junit.Assert.fail;
 
 public class ComputationGraphTest {
 
-    private static final Boolean tracing = false;
+    private static final Boolean tracing = true;
     private static final boolean preventHanging = true;
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("computation-graph-test");
     private static final Path logDir = dataDir.resolve("logs");

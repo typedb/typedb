@@ -23,12 +23,19 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
+
 public class DistinctOperator<PACKET> implements Operator.Transformer<PACKET, PACKET> {
 
     private final Set<PACKET> deduplicationSet;
 
     public DistinctOperator() {
         this.deduplicationSet = new HashSet<>();
+    }
+
+    @Override
+    public Set<Publisher<PACKET>> initialise() {
+        return set();
     }
 
     @Override

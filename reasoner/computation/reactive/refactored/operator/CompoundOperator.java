@@ -26,7 +26,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
+
+import static com.vaticle.typedb.common.collection.Collections.set;
 
 public class CompoundOperator<PLAN_ID, PACKET> implements Operator.Transformer<PACKET, PACKET> {
 
@@ -38,9 +41,9 @@ public class CompoundOperator<PLAN_ID, PACKET> implements Operator.Transformer<P
     private final PACKET initialPacket;
     private final Processor<?, ?, ?, ?> processor;
 
-    CompoundOperator(Processor<?, ?, ?, ?> processor, List<PLAN_ID> plan,
-                     BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
-                     BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket) {
+    public CompoundOperator(Processor<?, ?, ?, ?> processor, List<PLAN_ID> plan,
+                            BiFunction<PLAN_ID, PACKET, Publisher<PACKET>> spawnLeaderFunc,
+                            BiFunction<PACKET, PACKET, PACKET> compoundPacketsFunc, PACKET initialPacket) {
         this.processor = processor;
         assert plan.size() > 0;
         this.initialPacket = initialPacket;
@@ -49,7 +52,11 @@ public class CompoundOperator<PLAN_ID, PACKET> implements Operator.Transformer<P
         this.spawnLeaderFunc = spawnLeaderFunc;
         this.publisherPackets = new HashMap<>();
         this.leadingPublisher = spawnLeaderFunc.apply(this.remainingPlan.remove(0), initialPacket);
-        // this.leadingPublisher.registerReceiver(this);  // TODO: This requires creating a new op + stream on construction. Perhaps this suggests this model of resolving compounds needs to change
+    }
+
+    @Override
+    public Set<Publisher<PACKET>> initialise() {
+        return set(this.leadingPublisher);
     }
 
     @Override
@@ -60,14 +67,14 @@ public class CompoundOperator<PLAN_ID, PACKET> implements Operator.Transformer<P
             if (remainingPlan.size() == 0) {  // For a single item plan
                 outcome.addOutput(mergedPacket);
             } else {
-                Publisher<PACKET> follower;
+                Publisher<PACKET> follower;  // TODO: Creation of a new publisher should be delegated to the owner of this operation
                 if (remainingPlan.size() == 1) {
                     follower = spawnLeaderFunc.apply(remainingPlan.get(0), mergedPacket);
                 } else {
-                    follower = TransformationStream.single(
+                    follower = TransformationStream.fanIn(
                             processor,
                             new CompoundOperator<>(processor, remainingPlan, spawnLeaderFunc, compoundPacketsFunc,
-                                                   initialPacket)
+                                                   mergedPacket)
                     ).buffer();
                 }
                 outcome.addNewPublisher(follower);

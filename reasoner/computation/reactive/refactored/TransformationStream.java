@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRe
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator.Transformer;
 
+import java.util.Set;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -39,6 +40,7 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
                                    ProviderRegistry<Publisher<INPUT>> providerRegistry) {
         super(processor, receiverRegistry, providerRegistry);
         this.transformer = transformer;
+        registerNewPublishers(transformer.initialise());
     }
 
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> single(
@@ -70,21 +72,22 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
         providerRegistry().recordReceive(publisher);
 
         Operator.Transformed<OUTPUT, INPUT> outcome = operator().accept(publisher, input);
-        processNewPublisherEffects(outcome);
+        registerNewPublishers(outcome.newPublishers());
         providerActions.processEffects(outcome);
         if (outcome.outputs().isEmpty() && receiverRegistry().anyPulling()) {
             receiverActions.rePullPublisher(publisher);
         } else {
             // pass on the output, regardless of pulling state
             iterate(receiverRegistry().receivers()).forEachRemaining(
-                    receiver -> iterate(outcome.outputs()).forEachRemaining(output -> providerActions.subscriberReceive(receiver, output)));
+                    receiver -> {
+                        receiverRegistry().setNotPulling(receiver);
+                        iterate(outcome.outputs()).forEachRemaining(output -> providerActions.subscriberReceive(receiver, output));
+                    });
         }
     }
 
-    public void processNewPublisherEffects(Operator.Transformed<OUTPUT, INPUT> effects) {
-        effects.newPublishers().forEach(newProvider -> {
-            newProvider.registerReceiver(this);
-        });
+    public void registerNewPublishers(Set<Publisher<INPUT>> newPublishers) {
+        newPublishers.forEach(newPublisher -> newPublisher.registerReceiver(this));
     }
 
     @Override

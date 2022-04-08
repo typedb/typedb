@@ -31,7 +31,7 @@ public class BufferOperator<PACKET> implements Operator.Pool<PACKET, PACKET> {
     }
 
     @Override
-    public EffectsImpl<PACKET> accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
+    public EffectsImpl accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
         stack.add(packet);
         return EffectsImpl.create();
     }

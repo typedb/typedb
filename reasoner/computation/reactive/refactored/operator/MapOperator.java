@@ -18,10 +18,12 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator;
 
-import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 
+import java.util.Set;
 import java.util.function.Function;
+
+import static com.vaticle.typedb.common.collection.Collections.set;
 
 public class MapOperator<INPUT, OUTPUT> implements Operator.Transformer<INPUT, OUTPUT> {
 
@@ -32,9 +34,14 @@ public class MapOperator<INPUT, OUTPUT> implements Operator.Transformer<INPUT, O
     }
 
     @Override
+    public Set<Publisher<INPUT>> initialise() {
+        return set();
+    }
+
+    @Override
     public Transformed<OUTPUT, INPUT> accept(Publisher<INPUT> publisher, INPUT packet) {
         // TODO: Here and elsewhere the provider argument is unused
-        return Transformed.create(Collections.set(mappingFunc.apply(packet)));
+        return Transformed.create(set(mappingFunc.apply(packet)));
     }
 
 }
