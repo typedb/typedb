@@ -16,52 +16,35 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator;
+package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.Stack;
 
-public class FanOutOperator<PACKET> implements Operator.Pool<PACKET, PACKET> {
+public class BufferOperator<PACKET> implements Operator.Pool<PACKET, PACKET> {
 
-    final Map<Reactive.Subscriber<PACKET>, Integer> bufferPositions;  // Points to the next item needed
-    final Set<PACKET> bufferSet;
-    final List<PACKET> bufferList;
+    private final Stack<PACKET> stack;
 
-    public FanOutOperator() {
-        this.bufferSet = new HashSet<>();
-        this.bufferList = new ArrayList<>();
-        this.bufferPositions = new HashMap<>();
+    public BufferOperator() {
+        this.stack = new Stack<>();
     }
 
     @Override
     public EffectsImpl accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
-        EffectsImpl outcome = EffectsImpl.create();
-        if (bufferSet.add(packet)) {
-            bufferList.add(packet);
-            outcome.addAnswerCreated();
-        }
-        outcome.addAnswerConsumed();
-        return outcome;
+        stack.add(packet);
+        return EffectsImpl.create();
     }
 
     @Override
     public boolean hasNext(Reactive.Subscriber<PACKET> subscriber) {
-        bufferPositions.putIfAbsent(subscriber, 0);
-        return bufferList.size() > bufferPositions.get(subscriber);
+        return stack.size() > 0;
     }
 
     @Override
     public Supplied<PACKET> next(Reactive.Subscriber<PACKET> subscriber) {
-        Integer pos = bufferPositions.get(subscriber);
-        bufferPositions.put(subscriber, pos + 1);
         Supplied<PACKET> outcome = Supplied.create();
-        outcome.setOutput(bufferList.get(pos));
+        outcome.setOutput(stack.pop());
         return outcome;
     }
 

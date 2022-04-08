@@ -34,10 +34,8 @@ native_java_libraries(
         ["*.java",
         "computation/actor/*.java",
         "computation/reactive/*.java",
-        "computation/reactive/refactored/operator/*.java",
-        "computation/reactive/refactored/*.java",
-        "computation/reactive/provider/*.java",
-        "computation/reactive/receiver/*.java",
+        "computation/reactive/operator/*.java",
+        "computation/reactive/utils/*.java",
         "controller/*.java",
         "answer/*.java",
         "utils/*.java",
@@ -71,6 +69,6 @@ native_java_libraries(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*", "*/*/*", "*/*/*/*", "*/*/*/*/*"]),
+    include = glob(["*", "*/*", "*/*/*", "*/*/*/*"]),
     license_type = "agpl",
 )

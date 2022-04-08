@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator;
+package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;

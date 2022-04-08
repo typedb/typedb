@@ -27,12 +27,12 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.provider.ReceiverRegistry;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.ProviderRegistry;
-import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Input;
-import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.PoolingStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.TransformationStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.Operator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReceiverRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ProviderRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
+import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.TransformationStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 
 import java.util.Set;
 import java.util.function.Supplier;

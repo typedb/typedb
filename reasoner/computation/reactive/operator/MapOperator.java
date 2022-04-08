@@ -16,36 +16,32 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator;
+package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public class DistinctOperator<PACKET> implements Operator.Transformer<PACKET, PACKET> {
+public class MapOperator<INPUT, OUTPUT> implements Operator.Transformer<INPUT, OUTPUT> {
 
-    private final Set<PACKET> deduplicationSet;
+    private final Function<INPUT, OUTPUT> mappingFunc;
 
-    public DistinctOperator() {
-        this.deduplicationSet = new HashSet<>();
+    public MapOperator(Function<INPUT, OUTPUT> mappingFunc) {
+        this.mappingFunc = mappingFunc;
     }
 
     @Override
-    public Set<Publisher<PACKET>> initialise() {
+    public Set<Publisher<INPUT>> initialise() {
         return set();
     }
 
     @Override
-    public Transformed<PACKET, PACKET> accept(Publisher<PACKET> publisher, PACKET packet) {
-        Transformed<PACKET, PACKET> outcome = Transformed.create();
-        if (deduplicationSet.add(packet)) {
-            outcome.addOutput(packet);
-        } else {
-            outcome.addAnswerConsumed();
-        }
-        return outcome;
+    public Transformed<OUTPUT, INPUT> accept(Publisher<INPUT> publisher, INPUT packet) {
+        // TODO: Here and elsewhere the provider argument is unused
+        return Transformed.create(set(mappingFunc.apply(packet)));
     }
+
 }

@@ -16,35 +16,52 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator;
+package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 
-import java.util.Stack;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-public class BufferOperator<PACKET> implements Operator.Pool<PACKET, PACKET> {
+public class FanOutOperator<PACKET> implements Operator.Pool<PACKET, PACKET> {
 
-    private final Stack<PACKET> stack;
+    final Map<Reactive.Subscriber<PACKET>, Integer> bufferPositions;  // Points to the next item needed
+    final Set<PACKET> bufferSet;
+    final List<PACKET> bufferList;
 
-    public BufferOperator() {
-        this.stack = new Stack<>();
+    public FanOutOperator() {
+        this.bufferSet = new HashSet<>();
+        this.bufferList = new ArrayList<>();
+        this.bufferPositions = new HashMap<>();
     }
 
     @Override
     public EffectsImpl accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
-        stack.add(packet);
-        return EffectsImpl.create();
+        EffectsImpl outcome = EffectsImpl.create();
+        if (bufferSet.add(packet)) {
+            bufferList.add(packet);
+            outcome.addAnswerCreated();
+        }
+        outcome.addAnswerConsumed();
+        return outcome;
     }
 
     @Override
     public boolean hasNext(Reactive.Subscriber<PACKET> subscriber) {
-        return stack.size() > 0;
+        bufferPositions.putIfAbsent(subscriber, 0);
+        return bufferList.size() > bufferPositions.get(subscriber);
     }
 
     @Override
     public Supplied<PACKET> next(Reactive.Subscriber<PACKET> subscriber) {
+        Integer pos = bufferPositions.get(subscriber);
+        bufferPositions.put(subscriber, pos + 1);
         Supplied<PACKET> outcome = Supplied.create();
-        outcome.setOutput(stack.pop());
+        outcome.setOutput(bufferList.get(pos));
         return outcome;
     }
 

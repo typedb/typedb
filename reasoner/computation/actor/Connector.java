@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.actor;
 
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
-import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Output;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Output;
 
 import java.util.ArrayList;
 import java.util.List;

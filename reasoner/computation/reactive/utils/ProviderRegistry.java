@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive.receiver;
+package com.vaticle.typedb.core.reasoner.computation.reactive.utils;
 
 import java.util.HashMap;
 import java.util.HashSet;

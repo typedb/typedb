@@ -30,9 +30,9 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.Input;
-import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.PoolingStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.BufferOperator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
+import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.BufferOperator;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 

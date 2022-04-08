@@ -16,10 +16,11 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.computation.reactive.utils;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 
 import java.util.Objects;
 

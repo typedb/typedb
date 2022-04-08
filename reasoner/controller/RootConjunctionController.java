@@ -27,9 +27,9 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.receiver.RootSink;
-import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.TransformationStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.operator.CompoundOperator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.RootSink;
+import com.vaticle.typedb.core.reasoner.computation.reactive.TransformationStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.CompoundOperator;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.List;

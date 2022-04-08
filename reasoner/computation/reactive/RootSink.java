@@ -16,13 +16,12 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive.receiver;
+package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.refactored.ReactiveImpl;
+import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer.Trace;
 
 import javax.annotation.Nullable;
