@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveActions;
 
 import java.util.function.Function;
 
-public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<PACKET> {
+public class Source<PACKET> extends AbstractReactive implements Reactive.Publisher<PACKET> {
 
     private final Operator.Source<PACKET> sourceOperator;
     private final SubscriberRegistry.Single<PACKET> subscriberRegistry;

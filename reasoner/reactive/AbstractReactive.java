@@ -25,12 +25,12 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Function;
 
-public abstract class ReactiveImpl implements Reactive {
+public abstract class AbstractReactive implements Reactive {
 
     protected final ReactiveBlock<?, ?, ?, ?> reactiveBlock;
     protected final Reactive.Identifier<?, ?> identifier;
 
-    protected ReactiveImpl(ReactiveBlock<?, ?, ?, ?> reactiveBlock) {
+    protected AbstractReactive(ReactiveBlock<?, ?, ?, ?> reactiveBlock) {
         this.reactiveBlock = reactiveBlock;
         this.identifier = reactiveBlock().registerReactive(this);
     }

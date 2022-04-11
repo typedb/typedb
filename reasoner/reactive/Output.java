@@ -27,14 +27,14 @@ public class Output<PACKET> implements Reactive.Subscriber<PACKET> {
 
     private final Identifier<?, PACKET> identifier;
     private final ReactiveBlock<?, PACKET, ?, ?> reactiveBlock;
-    private final ReactiveImpl.SubscriberActionsImpl<PACKET> subscriberActions;
+    private final AbstractReactive.SubscriberActionsImpl<PACKET> subscriberActions;
     private Identifier<PACKET, ?> receivingInput;
     private Publisher<PACKET> publisher;
 
     public Output(ReactiveBlock<?, PACKET, ?, ?> reactiveBlock) {
         this.reactiveBlock = reactiveBlock;
         this.identifier = reactiveBlock().registerReactive(this);
-        this.subscriberActions = new ReactiveImpl.SubscriberActionsImpl<>(this);
+        this.subscriberActions = new AbstractReactive.SubscriberActionsImpl<>(this);
     }
 
     @Override

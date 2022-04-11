@@ -30,7 +30,7 @@ public class Input<PACKET> implements Reactive.Publisher<PACKET> {
 
     private final Identifier<PACKET, ?> identifier;
     private final ReactiveBlock<PACKET, ?, ?, ?> reactiveBlock;
-    private final ReactiveImpl.PublisherActionsImpl<PACKET> publisherActions;
+    private final AbstractReactive.PublisherActionsImpl<PACKET> publisherActions;
     private boolean ready;
     private Identifier<?, PACKET> providingOutput;
     private Subscriber<PACKET> subscriber;
@@ -39,7 +39,7 @@ public class Input<PACKET> implements Reactive.Publisher<PACKET> {
         this.reactiveBlock = reactiveBlock;
         this.identifier = reactiveBlock.registerReactive(this);
         this.ready = false;
-        this.publisherActions = new ReactiveImpl.PublisherActionsImpl<>(this);
+        this.publisherActions = new AbstractReactive.PublisherActionsImpl<>(this);
     }
 
     @Override

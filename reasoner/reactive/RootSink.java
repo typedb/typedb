@@ -33,14 +33,14 @@ public class RootSink implements Reactive.Subscriber.Finishable<ConceptMap>, Rea
     private final ReasonerConsumer reasonerConsumer;
     private final PublisherRegistry.Single<ConceptMap> publisherRegistry;
     private final ReactiveBlock<?, ?, ?, ?> reactiveBlock;
-    private final ReactiveImpl.SubscriberActionsImpl<ConceptMap> subscriberActions;
+    private final AbstractReactive.SubscriberActionsImpl<ConceptMap> subscriberActions;
     private boolean isPulling;
     private int traceCounter = 0;
 
     public RootSink(ReactiveBlock<ConceptMap, ?, ?, ?> reactiveBlock, ReasonerConsumer reasonerConsumer) {
         this.publisherRegistry = new PublisherRegistry.Single<>();
         this.reactiveBlock = reactiveBlock;
-        this.subscriberActions = new ReactiveImpl.SubscriberActionsImpl<>(this);
+        this.subscriberActions = new AbstractReactive.SubscriberActionsImpl<>(this);
         this.identifier = reactiveBlock().registerReactive(this);
         this.reasonerConsumer = reasonerConsumer;
         this.isPulling = false;
