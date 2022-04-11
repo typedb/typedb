@@ -16,12 +16,11 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive.common;
+package com.vaticle.typedb.core.reasoner.reactive.common;
 
 import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,22 +36,22 @@ public interface Operator {
 
     interface Source<OUTPUT> {
 
-        boolean isExhausted(Subscriber<OUTPUT> subscriber);
+        boolean isExhausted(Reactive.Subscriber<OUTPUT> subscriber);
 
-        OUTPUT next(Subscriber<OUTPUT> subscriber);
+        OUTPUT next(Reactive.Subscriber<OUTPUT> subscriber);
     }
 
     interface Accepter<INPUT> extends Operator {
 
-        void accept(Publisher<INPUT> publisher, INPUT packet);
+        void accept(Reactive.Publisher<INPUT> publisher, INPUT packet);
 
     }
 
     interface Transformer<INPUT, OUTPUT> {
 
-        Set<Publisher<INPUT>> initialNewPublishers();
+        Set<Reactive.Publisher<INPUT>> initialNewPublishers();
 
-        Either<Publisher<INPUT>, Set<OUTPUT>> accept(Publisher<INPUT> publisher, INPUT packet);
+        Either<Reactive.Publisher<INPUT>, Set<OUTPUT>> accept(Reactive.Publisher<INPUT> publisher, INPUT packet);
 
     }
 
@@ -62,11 +61,11 @@ public interface Operator {
 
     interface Pool<INPUT, OUTPUT> {
 
-        boolean accept(Publisher<INPUT> publisher, INPUT packet);
+        boolean accept(Reactive.Publisher<INPUT> publisher, INPUT packet);
 
-        boolean hasNext(Subscriber<OUTPUT> subscriber);
+        boolean hasNext(Reactive.Subscriber<OUTPUT> subscriber);
 
-        OUTPUT next(Subscriber<OUTPUT> subscriber);
+        OUTPUT next(Reactive.Subscriber<OUTPUT> subscriber);
 
     }
 
@@ -83,12 +82,12 @@ public interface Operator {
         }
 
         @Override
-        public Set<Publisher<INPUT>> initialNewPublishers() {
+        public Set<Reactive.Publisher<INPUT>> initialNewPublishers() {
             return set();
         }
 
         @Override
-        public Either<Publisher<INPUT>, Set<OUTPUT>> accept(Publisher<INPUT> publisher, INPUT packet) {
+        public Either<Reactive.Publisher<INPUT>, Set<OUTPUT>> accept(Reactive.Publisher<INPUT> publisher, INPUT packet) {
             // TODO: Here and elsewhere the publisher argument is unused
             return Either.second(set(mappingFunc.apply(packet)));
         }
@@ -104,12 +103,12 @@ public interface Operator {
         }
 
         @Override
-        public Set<Publisher<INPUT>> initialNewPublishers() {
+        public Set<Reactive.Publisher<INPUT>> initialNewPublishers() {
             return set();
         }
 
         @Override
-        public Either<Publisher<INPUT>, Set<OUTPUT>> accept(Publisher<INPUT> publisher, INPUT packet) {
+        public Either<Reactive.Publisher<INPUT>, Set<OUTPUT>> accept(Reactive.Publisher<INPUT> publisher, INPUT packet) {
             // This can actually create more receive() calls to downstream than the number of pulls it receives. Protect
             // against by manually adding .buffer() after calls to flatMap
             return Either.second(transform.apply(packet).toSet());
@@ -132,12 +131,12 @@ public interface Operator {
         }
 
         @Override
-        public boolean isExhausted(Subscriber<PACKET> subscriber) {
+        public boolean isExhausted(Reactive.Subscriber<PACKET> subscriber) {
             return !iterator().hasNext();
         }
 
         @Override
-        public PACKET next(Subscriber<PACKET> subscriber) {
+        public PACKET next(Reactive.Subscriber<PACKET> subscriber) {
             assert !isExhausted(subscriber);
             return iterator().next();
         }
@@ -153,12 +152,12 @@ public interface Operator {
         }
 
         @Override
-        public Set<Publisher<PACKET>> initialNewPublishers() {
+        public Set<Reactive.Publisher<PACKET>> initialNewPublishers() {
             return set();
         }
 
         @Override
-        public Either<Publisher<PACKET>, Set<PACKET>> accept(Publisher<PACKET> publisher, PACKET packet) {
+        public Either<Reactive.Publisher<PACKET>, Set<PACKET>> accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
             if (deduplicationSet.add(packet)) return Either.second(set(packet));
             else return Either.second(set());
         }
@@ -173,18 +172,18 @@ public interface Operator {
         }
 
         @Override
-        public boolean accept(Publisher<PACKET> publisher, PACKET packet) {
+        public boolean accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
             stack.add(packet);
             return true;
         }
 
         @Override
-        public boolean hasNext(Subscriber<PACKET> subscriber) {
+        public boolean hasNext(Reactive.Subscriber<PACKET> subscriber) {
             return stack.size() > 0;
         }
 
         @Override
-        public PACKET next(Subscriber<PACKET> subscriber) {
+        public PACKET next(Reactive.Subscriber<PACKET> subscriber) {
             return stack.pop();
         }
 
@@ -192,7 +191,7 @@ public interface Operator {
 
     class FanOut<PACKET> implements Pool<PACKET, PACKET> {
 
-        final java.util.Map<Subscriber<PACKET>, Integer> bufferPositions;  // Points to the next item needed
+        final java.util.Map<Reactive.Subscriber<PACKET>, Integer> bufferPositions;  // Points to the next item needed
         final Set<PACKET> bufferSet;
         final List<PACKET> bufferList;
 
@@ -203,7 +202,7 @@ public interface Operator {
         }
 
         @Override
-        public boolean accept(Publisher<PACKET> publisher, PACKET packet) {
+        public boolean accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
             if (bufferSet.add(packet)) {
                 bufferList.add(packet);
                 return true;
@@ -213,13 +212,13 @@ public interface Operator {
         }
 
         @Override
-        public boolean hasNext(Subscriber<PACKET> subscriber) {
+        public boolean hasNext(Reactive.Subscriber<PACKET> subscriber) {
             bufferPositions.putIfAbsent(subscriber, 0);
             return bufferList.size() > bufferPositions.get(subscriber);
         }
 
         @Override
-        public PACKET next(Subscriber<PACKET> subscriber) {
+        public PACKET next(Reactive.Subscriber<PACKET> subscriber) {
             Integer pos = bufferPositions.get(subscriber);
             bufferPositions.put(subscriber, pos + 1);
             return bufferList.get(pos);

@@ -25,12 +25,12 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Monitor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBlock;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
-import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.common.Operator;
+import com.vaticle.typedb.core.reasoner.reactive.Monitor;
+import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.reactive.Input;
+import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
+import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 

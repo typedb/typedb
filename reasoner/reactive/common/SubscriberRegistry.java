@@ -16,9 +16,9 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive.common;
+package com.vaticle.typedb.core.reasoner.reactive.common;
 
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive.Subscriber;
 
 import java.util.HashSet;
 import java.util.Set;

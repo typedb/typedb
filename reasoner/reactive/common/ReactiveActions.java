@@ -16,10 +16,10 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive.common;
+package com.vaticle.typedb.core.reasoner.reactive.common;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 
 import java.util.function.Function;
 

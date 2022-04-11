@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
-import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

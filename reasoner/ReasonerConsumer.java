@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
 
 public interface ReasonerConsumer {
 

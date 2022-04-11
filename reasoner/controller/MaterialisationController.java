@@ -25,12 +25,12 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Monitor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBlock;
-import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBlock.Connector.Request;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
-import com.vaticle.typedb.core.reasoner.computation.reactive.common.Operator;
+import com.vaticle.typedb.core.reasoner.reactive.Monitor;
+import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
+import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock.Connector.Request;
+import com.vaticle.typedb.core.reasoner.reactive.Source;
+import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import java.util.function.Supplier;

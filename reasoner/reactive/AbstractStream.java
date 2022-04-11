@@ -16,19 +16,18 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.reactive;
 
-import com.vaticle.typedb.core.reasoner.computation.reactive.common.PublisherRegistry;
-import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveActions.PublisherActions;
-import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveActions.SubscriberActions;
-import com.vaticle.typedb.core.reasoner.computation.reactive.common.SubscriberRegistry;
+import com.vaticle.typedb.core.reasoner.reactive.common.PublisherRegistry;
+import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveActions;
+import com.vaticle.typedb.core.reasoner.reactive.common.SubscriberRegistry;
 
 public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl implements Reactive.Stream<INPUT, OUTPUT> {  // TODO: Rename Stream when there's no conflict
 
     private final SubscriberRegistry<OUTPUT> subscriberRegistry;
     private final PublisherRegistry<INPUT> publisherRegistry;
-    protected final SubscriberActions<INPUT> subscriberActions;
-    protected final PublisherActions<OUTPUT> publisherActions;
+    protected final ReactiveActions.SubscriberActions<INPUT> subscriberActions;
+    protected final ReactiveActions.PublisherActions<OUTPUT> publisherActions;
 
     protected AbstractStream(ReactiveBlock<?, ?, ?, ?> reactiveBlock,
                              SubscriberRegistry<OUTPUT> subscriberRegistry,

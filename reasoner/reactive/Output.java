@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 

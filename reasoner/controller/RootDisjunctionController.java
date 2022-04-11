@@ -22,9 +22,9 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Monitor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.RootSink;
+import com.vaticle.typedb.core.reasoner.reactive.Monitor;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.reactive.RootSink;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Set;
@@ -73,10 +73,10 @@ public class RootDisjunctionController
         private RootSink reasonerEntryPoint;
 
         protected RootDisjunctionReactiveBlock(Driver<RootDisjunctionReactiveBlock> driver,
-                                           Driver<RootDisjunctionController> controller, Driver<Monitor> monitor,
-                                           Disjunction disjunction, ConceptMap bounds,
-                                           Set<Identifier.Variable.Retrievable> filter,
-                                           ReasonerConsumer reasonerConsumer, Supplier<String> debugName) {
+                                               Driver<RootDisjunctionController> controller, Driver<Monitor> monitor,
+                                               Disjunction disjunction, ConceptMap bounds,
+                                               Set<Identifier.Variable.Retrievable> filter,
+                                               ReasonerConsumer reasonerConsumer, Supplier<String> debugName) {
             super(driver, controller, monitor, disjunction, bounds, debugName);
             this.filter = filter;
             this.reasonerConsumer = reasonerConsumer;

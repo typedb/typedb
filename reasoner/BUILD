@@ -32,8 +32,8 @@ native_java_libraries(
     name = "reasoner",
     srcs = glob(
         ["*.java",
-        "computation/reactive/*.java",
-        "computation/reactive/common/*.java",
+        "reactive/*.java",
+        "reactive/common/*.java",
         "controller/*.java",
         "answer/*.java",
         "utils/*.java",

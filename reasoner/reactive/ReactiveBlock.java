@@ -16,16 +16,16 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive;
+package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.controller.Controller;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Identifier;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
-import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveIdentifier;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive.Identifier;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive.Subscriber;
+import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveIdentifier;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
