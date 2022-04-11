@@ -37,7 +37,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
 
     protected PoolingStream(Processor<?, ?, ?, ?> processor,
                             Operator.Pool<INPUT, OUTPUT> pool,
-                            SubscriberRegistry<Subscriber<OUTPUT>> subscriberRegistry,
+                            SubscriberRegistry<OUTPUT> subscriberRegistry,
                             ProviderRegistry<Publisher<INPUT>> providerRegistry) {
         super(processor, subscriberRegistry, providerRegistry);
         this.pool = pool;

@@ -36,7 +36,7 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
     protected TransformationStream(Processor<?, ?, ?, ?> processor,
                                    Transformer<INPUT, OUTPUT> transformer,
-                                   SubscriberRegistry<Subscriber<OUTPUT>> subscriberRegistry,
+                                   SubscriberRegistry<OUTPUT> subscriberRegistry,
                                    ProviderRegistry<Publisher<INPUT>> providerRegistry) {
         super(processor, subscriberRegistry, providerRegistry);
         this.transformer = transformer;

@@ -29,7 +29,7 @@ import java.util.function.Function;
 public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<PACKET> {
 
     private final Operator.Source<PACKET> sourceOperator;
-    private final SubscriberRegistry.Single<Subscriber<PACKET>> subscriberRegistry;
+    private final SubscriberRegistry.Single<PACKET> subscriberRegistry;
     private final ReactiveActions.PublisherActions<PACKET> providerActions;
 
     protected Source(Processor<?, ?, ?, ?> processor, Operator.Source<PACKET> sourceOperator) {
@@ -64,7 +64,7 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
         }
     }
 
-    public SubscriberRegistry<Subscriber<PACKET>> subscriberRegistry() {
+    public SubscriberRegistry<PACKET> subscriberRegistry() {
         return subscriberRegistry;
     }
 

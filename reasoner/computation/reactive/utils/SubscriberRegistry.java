@@ -18,31 +18,33 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.utils;
 
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
+
 import java.util.HashSet;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public abstract class SubscriberRegistry<SUBSCRIBER> {  // TODO: Rename SubscriberRegistry
+public abstract class SubscriberRegistry<PACKET> {  // TODO: Rename SubscriberRegistry
 
     abstract void setNotPulling();
 
-    public abstract boolean addSubscriber(SUBSCRIBER subscriber);
+    public abstract boolean addSubscriber(Subscriber<PACKET> subscriber);
 
-    public abstract Set<SUBSCRIBER> pulling();
+    public abstract Set<Subscriber<PACKET>> pulling();
 
-    public abstract void setNotPulling(SUBSCRIBER subscriber);
+    public abstract void setNotPulling(Subscriber<PACKET> subscriber);
 
     public abstract boolean anyPulling();
 
-    public abstract Set<SUBSCRIBER> subscribers();
+    public abstract Set<Subscriber<PACKET>> subscribers();
 
-    public abstract void recordPull(SUBSCRIBER subscriber);
+    public abstract void recordPull(Subscriber<PACKET> subscriber);
 
-    public static class Single<SUBSCRIBER> extends SubscriberRegistry<SUBSCRIBER> {
+    public static class Single<PACKET> extends SubscriberRegistry<PACKET> {
 
         private boolean isPulling;
-        private SUBSCRIBER subscriber;
+        private Subscriber<PACKET> subscriber;
 
         public Single() {
             this.subscriber = null;
@@ -50,7 +52,7 @@ public abstract class SubscriberRegistry<SUBSCRIBER> {  // TODO: Rename Subscrib
         }
 
         @Override
-        public Set<SUBSCRIBER> subscribers() {
+        public Set<Subscriber<PACKET>> subscribers() {
             return set(subscriber);
         }
 
@@ -60,30 +62,26 @@ public abstract class SubscriberRegistry<SUBSCRIBER> {  // TODO: Rename Subscrib
         }
 
         @Override
-        public void recordPull(SUBSCRIBER subscriber) {
+        public void recordPull(Subscriber<PACKET> subscriber) {
             assert this.subscriber.equals(subscriber);
             isPulling = true;
         }
 
-        public boolean isPulling() {
-            return isPulling;
-        }
-
         @Override
-        public boolean addSubscriber(SUBSCRIBER subscriber) {
+        public boolean addSubscriber(Subscriber<PACKET> subscriber) {
             assert this.subscriber == null;
             this.subscriber = subscriber;
             return false;
         }
 
         @Override
-        public Set<SUBSCRIBER> pulling() {
+        public Set<Subscriber<PACKET>> pulling() {
             if (isPulling) return set(subscriber);
             else return set();
         }
 
         @Override
-        public void setNotPulling(SUBSCRIBER subscriber) {
+        public void setNotPulling(Subscriber<PACKET> subscriber) {
             assert subscriber.equals(this.subscriber);
             isPulling = false;
         }
@@ -95,10 +93,10 @@ public abstract class SubscriberRegistry<SUBSCRIBER> {  // TODO: Rename Subscrib
 
     }
 
-    public static class Multi<RECEIVER> extends SubscriberRegistry<RECEIVER> {
+    public static class Multi<PACKET> extends SubscriberRegistry<PACKET> {
 
-        private final Set<RECEIVER> subscribers;
-        private final Set<RECEIVER> pullingSubscribers;
+        private final Set<Subscriber<PACKET>> subscribers;
+        private final Set<Subscriber<PACKET>> pullingSubscribers;
 
         public Multi() {
             this.subscribers = new HashSet<>();
@@ -111,23 +109,23 @@ public abstract class SubscriberRegistry<SUBSCRIBER> {  // TODO: Rename Subscrib
         }
 
         @Override
-        public void setNotPulling(RECEIVER subscriber) {
+        public void setNotPulling(Subscriber<PACKET> subscriber) {
             pullingSubscribers.remove(subscriber);
         }
 
         @Override
-        public void recordPull(RECEIVER subscriber) {
+        public void recordPull(Subscriber<PACKET> subscriber) {
             assert subscribers.contains(subscriber);
             pullingSubscribers.add(subscriber);
         }
 
         @Override
-        public boolean addSubscriber(RECEIVER subscriber) {
+        public boolean addSubscriber(Subscriber<PACKET> subscriber) {
             return subscribers.add(subscriber);
         }
 
         @Override
-        public Set<RECEIVER> pulling() {
+        public Set<Subscriber<PACKET>> pulling() {
             return new HashSet<>(pullingSubscribers);
         }
 
@@ -137,7 +135,7 @@ public abstract class SubscriberRegistry<SUBSCRIBER> {  // TODO: Rename Subscrib
         }
 
         @Override
-        public Set<RECEIVER> subscribers() {
+        public Set<Subscriber<PACKET>> subscribers() {
             return subscribers;
         }
 

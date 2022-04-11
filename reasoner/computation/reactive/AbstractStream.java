@@ -26,13 +26,13 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberReg
 
 public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl implements Reactive.Stream<INPUT, OUTPUT> {  // TODO: Rename Stream when there's no conflict
 
-    private final SubscriberRegistry<Subscriber<OUTPUT>> subscriberRegistry;
+    private final SubscriberRegistry<OUTPUT> subscriberRegistry;
     private final ProviderRegistry<Publisher<INPUT>> providerRegistry;
     protected final SubscriberActions<INPUT> subscriberActions;
     protected final PublisherActions<OUTPUT> providerActions;
 
     protected AbstractStream(Processor<?, ?, ?, ?> processor,
-                             SubscriberRegistry<Subscriber<OUTPUT>> subscriberRegistry,
+                             SubscriberRegistry<OUTPUT> subscriberRegistry,
                              ProviderRegistry<Publisher<INPUT>> providerRegistry) {
         super(processor);
         this.subscriberRegistry = subscriberRegistry;
@@ -41,7 +41,7 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
         this.providerActions = new PublisherActionsImpl<>(this);
     }
 
-    public SubscriberRegistry<Subscriber<OUTPUT>> subscriberRegistry() { return subscriberRegistry; }
+    public SubscriberRegistry<OUTPUT> subscriberRegistry() { return subscriberRegistry; }
 
     public ProviderRegistry<Publisher<INPUT>> providerRegistry() {
         return providerRegistry;
