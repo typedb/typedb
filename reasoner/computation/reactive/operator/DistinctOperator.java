@@ -18,8 +18,8 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
+import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Transformed;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -40,13 +40,8 @@ public class DistinctOperator<PACKET> implements Operator.Transformer<PACKET, PA
     }
 
     @Override
-    public Transformed<PACKET, PACKET> accept(Publisher<PACKET> publisher, PACKET packet) {
-        Transformed<PACKET, PACKET> outcome = Transformed.create();
-        if (deduplicationSet.add(packet)) {
-            outcome.addOutput(packet);
-        } else {
-            outcome.addAnswerConsumed();
-        }
-        return outcome;
+    public Either<Publisher<PACKET>, Set<PACKET>> accept(Publisher<PACKET> publisher, PACKET packet) {
+        if (deduplicationSet.add(packet)) return Either.second(set(packet));
+        else return Either.second(set());
     }
 }

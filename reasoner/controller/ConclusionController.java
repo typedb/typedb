@@ -223,8 +223,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             @Override
-            public Transformed<Map<Variable, Concept>, Either<ConceptMap, Map<Variable, Concept>>> accept(Publisher<Either<ConceptMap, Map<Variable, Concept>>> publisher, Either<ConceptMap, Map<Variable, Concept>> packet) {
-                Transformed<Map<Variable, Concept>, Either<ConceptMap, Map<Variable, Concept>>> outcome = Transformed.create();
+            public Either<Publisher<Either<ConceptMap, Map<Variable, Concept>>>, Set<Map<Variable, Concept>>> accept(
+                    Publisher<Either<ConceptMap, Map<Variable, Concept>>> publisher, Either<ConceptMap, Map<Variable, Concept>> packet) {
                 if (packet.isFirst()) {
                     Input<Either<ConceptMap, Materialisation>> materialisationInput = processor().createInput();
                     processor().mayRequestMaterialiser(new MaterialiserRequest(
@@ -233,12 +233,10 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
                     );
                     Publisher<Either<ConceptMap, Map<Variable, Concept>>> op = materialisationInput
                             .map(m -> Either.second(m.second().bindToConclusion(processor().rule.conclusion(), packet.first())));
-                    outcome.addNewPublisher(op);
-                    outcome.addAnswerConsumed();
+                    return Either.first(op);
                 } else {
-                    outcome.addOutput(packet.second());
+                    return Either.second(set(packet.second()));
                 }
-                return outcome;
             }
         }
 

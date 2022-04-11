@@ -18,9 +18,9 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
+import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Transformed;
 
 import java.util.Set;
 import java.util.function.Function;
@@ -41,17 +41,10 @@ public class FlatMapOperator<INPUT, OUTPUT> implements Operator.Transformer<INPU
     }
 
     @Override
-    public Transformed<OUTPUT, INPUT> accept(Publisher<INPUT> publisher, INPUT packet) {
-        FunctionalIterator<OUTPUT> transformed = transform.apply(packet);
+    public Either<Publisher<INPUT>, Set<OUTPUT>> accept(Publisher<INPUT> publisher, INPUT packet) {
         // This can actually create more receive() calls to downstream than the number of pulls it receives. Protect
         // against by manually adding .buffer() after calls to flatMap
-        Transformed<OUTPUT, INPUT> outcome = Transformed.create();
-        transformed.forEachRemaining(t -> {
-            outcome.addAnswerCreated();
-            outcome.addOutput(t);
-        });
-        outcome.addAnswerConsumed();
-        return outcome;
+        return Either.second(transform.apply(packet).toSet());
     }
 
 }

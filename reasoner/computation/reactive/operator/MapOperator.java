@@ -18,8 +18,8 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
+import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Transformed;
 
 import java.util.Set;
 import java.util.function.Function;
@@ -40,9 +40,9 @@ public class MapOperator<INPUT, OUTPUT> implements Operator.Transformer<INPUT, O
     }
 
     @Override
-    public Transformed<OUTPUT, INPUT> accept(Publisher<INPUT> publisher, INPUT packet) {
+    public Either<Publisher<INPUT>, Set<OUTPUT>> accept(Publisher<INPUT> publisher, INPUT packet) {
         // TODO: Here and elsewhere the publisher argument is unused
-        return Transformed.create(set(mappingFunc.apply(packet)));
+        return Either.second(set(mappingFunc.apply(packet)));
     }
 
 }

@@ -18,9 +18,9 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
+import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Transformer;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberReg
 import java.util.Set;
 import java.util.function.Function;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> {
@@ -71,20 +72,25 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
         subscriberActions.traceReceive(publisher, input);
         publisherRegistry().recordReceive(publisher);
 
-        Operator.Transformed<OUTPUT, INPUT> outcome = operator().accept(publisher, input);
-        registerNewPublishers(outcome.newPublishers());
+        Either<Publisher<INPUT>, Set<OUTPUT>> outcome = operator().accept(publisher, input);
+        Set<OUTPUT> outputs;
+        if (outcome.isFirst()) {
+            outcome.first().registerSubscriber(this);
+            outputs = set();
+        } else {
+            outputs = outcome.second();
+        }
+        if (outputs.size() > 1) publisherActions.monitorCreateAnswers(outputs.size() - 1);
+        else if (outputs.isEmpty()) publisherActions.monitorConsumeAnswers(1);
 
-        if (outcome.outputs().size() > 1) publisherActions.monitorCreateAnswers(outcome.outputs().size() - 1);
-        else if (outcome.outputs().isEmpty()) publisherActions.monitorConsumeAnswers(1);
-
-        if (outcome.outputs().isEmpty() && subscriberRegistry().anyPulling()) {
+        if (outputs.isEmpty() && subscriberRegistry().anyPulling()) {
             subscriberActions.rePullPublisher(publisher);
         } else {
             // pass on the output, regardless of pulling state
             iterate(subscriberRegistry().subscribers()).forEachRemaining(
                     subscriber -> {
                         subscriberRegistry().setNotPulling(subscriber);
-                        iterate(outcome.outputs()).forEachRemaining(output -> publisherActions.subscriberReceive(subscriber, output));
+                        iterate(outputs).forEachRemaining(output -> publisherActions.subscriberReceive(subscriber, output));
                     });
         }
     }

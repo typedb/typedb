@@ -18,10 +18,10 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
+import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.TransformationStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Transformed;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,12 +61,11 @@ public class CompoundOperator<PLAN_ID, PACKET> implements Operator.Transformer<P
     }
 
     @Override
-    public Transformed<PACKET, PACKET> accept(Publisher<PACKET> publisher, PACKET packet) {
+    public Either<Publisher<PACKET>, Set<PACKET>> accept(Publisher<PACKET> publisher, PACKET packet) {
         PACKET mergedPacket = compoundPacketsFunc.apply(initialPacket, packet);
-        Transformed<PACKET, PACKET> outcome = Transformed.create();
         if (leadingPublisher.equals(publisher)) {
             if (remainingPlan.size() == 0) {  // For a single item plan
-                outcome.addOutput(mergedPacket);
+                return Either.second(set(mergedPacket));
             } else {
                 Publisher<PACKET> follower;  // TODO: Creation of a new publisher should be delegated to the owner of this operation
                 if (remainingPlan.size() == 1) {
@@ -78,15 +77,13 @@ public class CompoundOperator<PLAN_ID, PACKET> implements Operator.Transformer<P
                                                    mergedPacket)
                     ).buffer();
                 }
-                outcome.addNewPublisher(follower);
                 publisherPackets.put(follower, mergedPacket);
-                outcome.addAnswerConsumed();
+                return Either.first(follower);
             }
         } else {
             PACKET compoundedPacket = compoundPacketsFunc.apply(mergedPacket, publisherPackets.get(publisher));
-            outcome.addOutput(compoundedPacket);
+            return Either.second(set(compoundedPacket));
         }
-        return outcome;
     }
 
 }

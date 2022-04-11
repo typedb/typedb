@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
+import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
 
@@ -43,7 +44,7 @@ public interface Operator {
 
         Set<Publisher<INPUT>> initialise();
 
-        Transformed<OUTPUT, INPUT> accept(Publisher<INPUT> publisher, INPUT packet);
+        Either<Publisher<INPUT>, Set<OUTPUT>> accept(Publisher<INPUT> publisher, INPUT packet);
 
     }
 
@@ -82,64 +83,12 @@ public interface Operator {
             answersCreated += 1;
         }
 
-        public void addAnswerConsumed() {
-            answersConsumed += 1;
-        }
-
         public int answersCreated() {
             return answersCreated;
         }
 
         public int answersConsumed() {
             return answersConsumed;
-        }
-
-    }
-
-    class EffectsImpl extends Effects {
-
-        private EffectsImpl(int answersCreated, int answersConsumed) {
-            super(answersCreated, answersConsumed);
-        }
-
-        public static EffectsImpl create() {
-            return new EffectsImpl(0, 0);
-        }
-    }
-
-    class Transformed<OUTPUT, INPUT> extends Effects {
-
-        private final Set<OUTPUT> outputs;
-        private final Set<Publisher<INPUT>> newPublishers;
-
-        private Transformed(Set<OUTPUT> outputs, int answersCreated, int answersConsumed) {
-            super(answersCreated, answersConsumed);
-            this.outputs = outputs;
-            this.newPublishers = new HashSet<>();
-        }
-
-        public static <OUTPUT, INPUT> Transformed<OUTPUT, INPUT> create(Set<OUTPUT> outputs) {
-            return new Transformed<>(outputs, 0, 0);
-        }
-
-        public static <OUTPUT, INPUT> Transformed<OUTPUT, INPUT> create() {
-            return new Transformed<>(new HashSet<>(), 0, 0);
-        }
-
-        public void addOutput(OUTPUT output) {
-            outputs.add(output);
-        }
-
-        public Set<OUTPUT> outputs() {
-            return outputs;
-        }
-
-        public void addNewPublisher(Publisher<INPUT> newPublisher) {
-            newPublishers.add(newPublisher);
-        }
-
-        public Set<Publisher<INPUT>> newPublishers() {
-            return newPublishers;
         }
 
     }

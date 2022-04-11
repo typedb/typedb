@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
@@ -26,14 +27,13 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Connector;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Transformed;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.TransformationStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.utils.PublisherRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -117,8 +117,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             }
 
             @Override
-            public Transformed<PACKET, PACKET> accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
-                return Transformed.create(set(packet));
+            public Either<Reactive.Publisher<PACKET>, Set<PACKET>> accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
+                return Either.second(set(packet));
             }
         }
 
