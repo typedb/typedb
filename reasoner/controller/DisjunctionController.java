@@ -105,7 +105,7 @@ public abstract class DisjunctionController<
 
         @Override
         public void setUp() {
-            PoolingStream<ConceptMap, ConceptMap> fanIn = PoolingStream.fanIn(this, new Operator.Buffer<>());
+            PoolingStream<ConceptMap> fanIn = PoolingStream.fanIn(this, new Operator.Buffer<>());
             setOutputRouter(getOutputRouter(fanIn));
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
                 Input<ConceptMap> input = createInput();

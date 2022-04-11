@@ -28,35 +28,35 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> {  // TODO: We expect INPUT and OUTPUT to be the same for PoolingStreams
+public class PoolingStream<PACKET> extends AbstractStream<PACKET, PACKET> {
 
-    private final Operator.Pool<INPUT, OUTPUT> pool;
+    private final Operator.Pool<PACKET, PACKET> pool;
 
     protected PoolingStream(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock,
-                            Operator.Pool<INPUT, OUTPUT> pool,
-                            SubscriberRegistry<OUTPUT> subscriberRegistry,
-                            PublisherRegistry<INPUT> publisherRegistry) {
+                            Operator.Pool<PACKET, PACKET> pool,
+                            SubscriberRegistry<PACKET> subscriberRegistry,
+                            PublisherRegistry<PACKET> publisherRegistry) {
         super(reactiveBlock, subscriberRegistry, publisherRegistry);
         this.pool = pool;
     }
 
-    public static <PACKET> PoolingStream<PACKET, PACKET> fanOut(
+    public static <PACKET> PoolingStream<PACKET> fanOut(
             AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock) {
         return new PoolingStream<>(reactiveBlock, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
                                    new PublisherRegistry.Single<>());
     }
 
-    public static <INPUT, OUTPUT> PoolingStream<INPUT, OUTPUT> fanIn(
-            AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, Operator.Pool<INPUT, OUTPUT> pool) {
+    public static <PACKET> PoolingStream<PACKET> fanIn(
+            AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, Operator.Pool<PACKET, PACKET> pool) {
         return new PoolingStream<>(reactiveBlock, pool, new SubscriberRegistry.Single<>(), new PublisherRegistry.Multi<>());
     }
 
-    public static <PACKET> PoolingStream<PACKET, PACKET> fanInFanOut(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock) {
+    public static <PACKET> PoolingStream<PACKET> fanInFanOut(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock) {
         return new PoolingStream<>(reactiveBlock, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
                                    new PublisherRegistry.Multi<>());
     }
 
-    public static <PACKET> PoolingStream<PACKET, PACKET> buffer(
+    public static <PACKET> PoolingStream<PACKET> buffer(
             AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock) {
         // TODO: The operator is not bound to the nature of the registries by type. We could not correctly use a FanOut
         //  operator here even though the types allow it. In fact what really changes in tandem is the signature of the
@@ -66,12 +66,12 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
                                    new PublisherRegistry.Single<>());
     }
 
-    protected Operator.Pool<INPUT, OUTPUT> operator() {
+    protected Operator.Pool<PACKET, PACKET> operator() {
         return pool;
     }
 
     @Override
-    public void pull(Subscriber<OUTPUT> subscriber) {
+    public void pull(Subscriber<PACKET> subscriber) {
         publisherActions.tracePull(subscriber);
         subscriberRegistry().recordPull(subscriber);
         // TODO: We don't care about the subscriber here
@@ -85,7 +85,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
     }
 
     @Override
-    public void receive(Publisher<INPUT> publisher, INPUT packet) {
+    public void receive(Publisher<PACKET> publisher, PACKET packet) {
         subscriberActions.traceReceive(publisher, packet);
         publisherRegistry().recordReceive(publisher);
         if (operator().accept(publisher, packet)) publisherActions.monitorCreateAnswers(1);
@@ -104,22 +104,22 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
     }
 
     @Override
-    public <MAPPED> Stream<OUTPUT, MAPPED> map(Function<OUTPUT, MAPPED> function) {
+    public <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function) {
         return publisherActions.map(this, function);
     }
 
     @Override
-    public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
+    public <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function) {
         return publisherActions.flatMap(this, function);
     }
 
     @Override
-    public Stream<OUTPUT, OUTPUT> distinct() {
+    public Stream<PACKET, PACKET> distinct() {
         return publisherActions.distinct(this);
     }
 
     @Override
-    public Stream<OUTPUT, OUTPUT> buffer() {
+    public Stream<PACKET, PACKET> buffer() {
         return publisherActions.buffer(this);
     }
 
