@@ -18,23 +18,23 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 /**
- * Governs an output from a processor
+ * Governs an output from a reactiveBlock
  */
 public class Output<PACKET> implements Reactive.Subscriber<PACKET> {
 
     private final Identifier<?, PACKET> identifier;
-    private final Processor<?, PACKET, ?, ?> processor;
+    private final ReactiveBlock<?, PACKET, ?, ?> reactiveBlock;
     private final ReactiveImpl.SubscriberActionsImpl<PACKET> subscriberActions;
     private Identifier<PACKET, ?> receivingInput;
     private Publisher<PACKET> publisher;
 
-    public Output(Processor<?, PACKET, ?, ?> processor) {
-        this.processor = processor;
-        this.identifier = processor().registerReactive(this);
+    public Output(ReactiveBlock<?, PACKET, ?, ?> reactiveBlock) {
+        this.reactiveBlock = reactiveBlock;
+        this.identifier = reactiveBlock().registerReactive(this);
         this.subscriberActions = new ReactiveImpl.SubscriberActionsImpl<>(this);
     }
 
@@ -44,14 +44,14 @@ public class Output<PACKET> implements Reactive.Subscriber<PACKET> {
     }
 
     @Override
-    public Processor<?, PACKET, ?, ?> processor() {
-        return processor;
+    public ReactiveBlock<?, PACKET, ?, ?> reactiveBlock() {
+        return reactiveBlock;
     }
 
     @Override
     public void receive(Publisher<PACKET> publisher, PACKET packet) {
         subscriberActions.traceReceive(publisher, packet);
-        receivingInput.processor().execute(actor -> actor.receive(identifier(), packet, receivingInput));
+        receivingInput.reactiveBlock().execute(actor -> actor.receive(identifier(), packet, receivingInput));
     }
 
     public void pull() {

@@ -31,7 +31,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 public class RootDisjunctionController
-        extends DisjunctionController<RootDisjunctionController.RootDisjunctionProcessor, RootDisjunctionController> {
+        extends DisjunctionController<RootDisjunctionController.RootDisjunctionReactiveBlock, RootDisjunctionController> {
     private final Set<Identifier.Variable.Retrievable> filter;
     private final Driver<Monitor> monitor;
     private final ReasonerConsumer reasonerConsumer;
@@ -49,14 +49,14 @@ public class RootDisjunctionController
     @Override
     public void initialise() {
         setUpUpstreamControllers();
-        createProcessorIfAbsent(new ConceptMap());
+        createReactiveBlockIfAbsent(new ConceptMap());
     }
 
     @Override
-    protected RootDisjunctionProcessor createProcessorFromDriver(Driver<RootDisjunctionProcessor> processorDriver, ConceptMap bounds) {
-        return new RootDisjunctionProcessor(
-                processorDriver, driver(), monitor, disjunction, bounds, filter, reasonerConsumer,
-                () -> RootDisjunctionProcessor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
+    protected RootDisjunctionReactiveBlock createReactiveBlockFromDriver(Driver<RootDisjunctionReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
+        return new RootDisjunctionReactiveBlock(
+                reactiveBlockDriver, driver(), monitor, disjunction, bounds, filter, reasonerConsumer,
+                () -> RootDisjunctionReactiveBlock.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
         );
     }
 
@@ -66,13 +66,13 @@ public class RootDisjunctionController
         reasonerConsumer.exception(e);
     }
 
-    protected static class RootDisjunctionProcessor extends DisjunctionController.DisjunctionProcessor<RootDisjunctionProcessor> {
+    protected static class RootDisjunctionReactiveBlock extends DisjunctionController.DisjunctionReactiveBlock<RootDisjunctionReactiveBlock> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
         private final ReasonerConsumer reasonerConsumer;
         private RootSink reasonerEntryPoint;
 
-        protected RootDisjunctionProcessor(Driver<RootDisjunctionProcessor> driver,
+        protected RootDisjunctionReactiveBlock(Driver<RootDisjunctionReactiveBlock> driver,
                                            Driver<RootDisjunctionController> controller, Driver<Monitor> monitor,
                                            Disjunction disjunction, ConceptMap bounds,
                                            Set<Identifier.Variable.Retrievable> filter,

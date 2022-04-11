@@ -60,13 +60,13 @@ public class Monitor extends Actor<Monitor> {
         assert exists == null;
     }
 
-    public <R> void registerRoot(Driver<? extends Processor<R, ?, ?, ?>> processor, Reactive.Identifier<?, ?> root) {
+    public <R> void registerRoot(Driver<? extends ReactiveBlock<R, ?, ?, ?>> reactiveBlock, Reactive.Identifier<?, ?> root) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerRoot(root, driver()));
         if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the root, or a duplicate node will be created.
         RootNode rootNode = new RootNode(root);
         putNode(root, rootNode);
-        ReactiveGraph reactiveGraph = new ReactiveGraph(processor, rootNode, driver());
+        ReactiveGraph reactiveGraph = new ReactiveGraph(reactiveBlock, rootNode, driver());
         rootNode.setGraph(reactiveGraph);
     }
 
@@ -126,15 +126,15 @@ public class Monitor extends Actor<Monitor> {
 
     private static class ReactiveGraph {  // TODO: A graph can effectively be a source node within another graph
 
-        private final Driver<? extends Processor<?, ?, ?, ?>> rootProcessor;
+        private final Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootReactiveBlock;
         private final RootNode rootNode;
         private final Driver<Monitor> monitor;
         private final Set<ReactiveNode> reactives;
         private final Set<SourceNode> nestedSources;
         private boolean finished;
 
-        ReactiveGraph(Driver<? extends Processor<?, ?, ?, ?>> rootProcessor, RootNode rootNode, Driver<Monitor> monitor) {
-            this.rootProcessor = rootProcessor;
+        ReactiveGraph(Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootReactiveBlock, RootNode rootNode, Driver<Monitor> monitor) {
+            this.rootReactiveBlock = rootReactiveBlock;
             this.rootNode = rootNode;
             this.monitor = monitor;
             this.reactives = new HashSet<>();
@@ -148,7 +148,7 @@ public class Monitor extends Actor<Monitor> {
 
         private void finishRootNode() {
             Tracer.getIfEnabled().ifPresent(tracer -> tracer.finishRootNode(rootNode.root(), monitor));
-            rootProcessor.execute(actor -> actor.onFinished(rootNode.root()));
+            rootReactiveBlock.execute(actor -> actor.onFinished(rootNode.root()));
         }
 
         public void addReactiveNode(ReactiveNode toAdd) {
@@ -185,8 +185,8 @@ public class Monitor extends Actor<Monitor> {
             if (!finished && sourcesFinished() && activeAnswers() == 0 && activeFrontiers() == 0) finishRootNode();
         }
 
-        public Driver<? extends Processor<?, ?, ?, ?>> rootProcessor() {
-            return rootProcessor;
+        public Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootReactiveBlock() {
+            return rootReactiveBlock;
         }
     }
 
@@ -372,7 +372,7 @@ public class Monitor extends Actor<Monitor> {
         LOG.error("Actor exception", e);
         registry.terminate(e);
         reactiveNodes.values().forEach(node -> {
-            if (node.isRoot()) node.asRoot().graph().rootProcessor().execute(actor -> actor.exception(e));
+            if (node.isRoot()) node.asRoot().graph().rootReactiveBlock().execute(actor -> actor.exception(e));
         });
     }
 

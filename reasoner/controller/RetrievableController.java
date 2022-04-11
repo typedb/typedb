@@ -24,14 +24,14 @@ import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connector.Request;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.Operator;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
 
 public class RetrievableController extends Controller<ConceptMap, Void, ConceptMap,
-        Request<?, ?, Void>, RetrievableController.RetrievableProcessor, RetrievableController> {
+        Request<?, ?, Void>, RetrievableController.RetrievableReactiveBlock, RetrievableController> {
 
     private final Retrievable retrievable;
     private final Driver<Monitor> monitor;
@@ -52,10 +52,10 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     }
 
     @Override
-    protected RetrievableProcessor createProcessorFromDriver(Driver<RetrievableProcessor> processorDriver, ConceptMap conceptMap) {
-        return new RetrievableProcessor(
-                processorDriver, driver(), monitor, () -> Traversal.traversalIterator(registry, retrievable.pattern(), conceptMap),
-                () -> RetrievableProcessor.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ", bounds: " + conceptMap.toString() + ")"
+    protected RetrievableReactiveBlock createReactiveBlockFromDriver(Driver<RetrievableReactiveBlock> reactiveBlockDriver, ConceptMap conceptMap) {
+        return new RetrievableReactiveBlock(
+                reactiveBlockDriver, driver(), monitor, () -> Traversal.traversalIterator(registry, retrievable.pattern(), conceptMap),
+                () -> RetrievableReactiveBlock.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ", bounds: " + conceptMap.toString() + ")"
         );
     }
 
@@ -64,12 +64,12 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
         // Nothing to do
     }
 
-    protected static class RetrievableProcessor extends Processor<Void, ConceptMap,
-            Request<?, ?, Void>, RetrievableProcessor> {
+    protected static class RetrievableReactiveBlock extends ReactiveBlock<Void, ConceptMap,
+                Request<?, ?, Void>, RetrievableReactiveBlock> {
 
         private final java.util.function.Supplier traversalSupplier;
 
-        protected RetrievableProcessor(Driver<RetrievableProcessor> driver, Driver<RetrievableController> controller,
+        protected RetrievableReactiveBlock(Driver<RetrievableReactiveBlock> driver, Driver<RetrievableController> controller,
                                        Driver<Monitor> monitor,
                                        java.util.function.Supplier traversalSupplier,
                                        java.util.function.Supplier debugName) {

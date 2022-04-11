@@ -33,10 +33,10 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 
 
 public abstract class Controller<
-        PROCESSOR_ID, INPUT, OUTPUT,
+        REACTIVE_BLOCK_ID, INPUT, OUTPUT,
         REQ extends Connector.Request<?, ?, INPUT>,
-        PROCESSOR extends Processor<INPUT, OUTPUT, ?, PROCESSOR>,
-        CONTROLLER extends Controller<PROCESSOR_ID, INPUT, OUTPUT, ?, PROCESSOR, CONTROLLER>
+        REACTIVE_BLOCK extends ReactiveBlock<INPUT, OUTPUT, ?, REACTIVE_BLOCK>,
+        CONTROLLER extends Controller<REACTIVE_BLOCK_ID, INPUT, OUTPUT, ?, REACTIVE_BLOCK, CONTROLLER>
         > extends Actor<CONTROLLER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
@@ -44,13 +44,13 @@ public abstract class Controller<
     private boolean terminated;
     private final ActorExecutorGroup executorService;
     private final Registry registry;
-    protected final Map<PROCESSOR_ID, Actor.Driver<PROCESSOR>> processors;
+    protected final Map<REACTIVE_BLOCK_ID, Actor.Driver<REACTIVE_BLOCK>> reactiveBlocks;
 
     protected Controller(Driver<CONTROLLER> driver, ActorExecutorGroup executorService, Registry registry,
                          Supplier<String> debugName) {
         super(driver, debugName);
         this.executorService = executorService;
-        this.processors = new HashMap<>();
+        this.reactiveBlocks = new HashMap<>();
         this.terminated = false;
         this.registry = registry;
     }
@@ -67,24 +67,24 @@ public abstract class Controller<
 
     protected abstract void resolveController(REQ connectionRequest);
 
-    public void resolveProcessor(Connector<PROCESSOR_ID, OUTPUT> connector) {
+    public void resolveReactiveBlock(Connector<REACTIVE_BLOCK_ID, OUTPUT> connector) {
         if (isTerminated()) return;
-        createProcessorIfAbsent(connector.bounds()).execute(actor -> actor.establishConnection(connector));
+        createReactiveBlockIfAbsent(connector.bounds()).execute(actor -> actor.establishConnection(connector));
     }
 
-    public Driver<PROCESSOR> createProcessorIfAbsent(PROCESSOR_ID processorId) {
+    public Driver<REACTIVE_BLOCK> createReactiveBlockIfAbsent(REACTIVE_BLOCK_ID reactiveBlockId) {
         // TODO: We can do subsumption in the subtypes here
-        return processors.computeIfAbsent(processorId, this::createProcessor);
+        return reactiveBlocks.computeIfAbsent(reactiveBlockId, this::createReactiveBlock);
     }
 
-    private Actor.Driver<PROCESSOR> createProcessor(PROCESSOR_ID processorId) {
+    private Actor.Driver<REACTIVE_BLOCK> createReactiveBlock(REACTIVE_BLOCK_ID reactiveBlockId) {
         if (isTerminated()) return null;  // TODO: Avoid returning null
-        Driver<PROCESSOR> processor = Actor.driver(d -> createProcessorFromDriver(d, processorId), executorService);
-        processor.execute(Processor::setUp);
-        return processor;
+        Driver<REACTIVE_BLOCK> reactiveBlock = Actor.driver(d -> createReactiveBlockFromDriver(d, reactiveBlockId), executorService);
+        reactiveBlock.execute(ReactiveBlock::setUp);
+        return reactiveBlock;
     }
 
-    protected abstract PROCESSOR createProcessorFromDriver(Driver<PROCESSOR> processorDriver, PROCESSOR_ID processorId);
+    protected abstract REACTIVE_BLOCK createReactiveBlockFromDriver(Driver<REACTIVE_BLOCK> reactiveBlockDriver, REACTIVE_BLOCK_ID reactiveBlockId);
 
     @Override
     protected void exception(Throwable e) {
@@ -105,7 +105,7 @@ public abstract class Controller<
     public void terminate(Throwable cause) {
         LOG.debug("Actor terminated.", cause);
         this.terminated = true;
-        processors.values().forEach(p -> p.execute(actor -> actor.terminate(cause)));
+        reactiveBlocks.values().forEach(p -> p.execute(actor -> actor.terminate(cause)));
     }
 
     public boolean isTerminated() {

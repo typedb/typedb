@@ -31,7 +31,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.test.integration.util.Util;
@@ -484,7 +484,7 @@ public class ComputationGraphTest {
         public LinkedBlockingQueue<ConceptMap> responses;
         public LinkedBlockingQueue<Throwable> exceptions;
         public AtomicBoolean doneReceived;
-        private Actor.Driver<? extends Processor<?, ?, ?, ?>> rootProcessor;
+        private Actor.Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootProcessor;
         private boolean pullOnSet;
 
         AnswerProducer() {
@@ -504,7 +504,7 @@ public class ComputationGraphTest {
         }
 
         @Override
-        public void initialise(Actor.Driver<? extends Processor<?, ?, ?, ?>> rootProcessor) {
+        public void initialise(Actor.Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootProcessor) {
             this.rootProcessor = rootProcessor;
             if (pullOnSet) pull();
         }

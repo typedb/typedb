@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connector;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
@@ -47,9 +47,9 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.controller.ConjunctionController.merge;
 
 public abstract class DisjunctionController<
-        PROCESSOR extends DisjunctionController.DisjunctionProcessor<PROCESSOR>,
-        CONTROLLER extends DisjunctionController<PROCESSOR, CONTROLLER>>
-        extends Controller<ConceptMap, ConceptMap, ConceptMap, DisjunctionController.DisjunctionProcessor.NestedConjunctionRequest, PROCESSOR, CONTROLLER> {
+        REACTIVE_BLOCK extends DisjunctionController.DisjunctionReactiveBlock<REACTIVE_BLOCK>,
+        CONTROLLER extends DisjunctionController<REACTIVE_BLOCK, CONTROLLER>>
+        extends Controller<ConceptMap, ConceptMap, ConceptMap, DisjunctionController.DisjunctionReactiveBlock.NestedConjunctionRequest, REACTIVE_BLOCK, CONTROLLER> {
 
     private final List<Pair<Conjunction, Driver<NestedConjunctionController>>> conjunctionControllers;
     protected Disjunction disjunction;
@@ -71,10 +71,10 @@ public abstract class DisjunctionController<
     }
 
     @Override
-    protected void resolveController(DisjunctionProcessor.NestedConjunctionRequest req) {
+    protected void resolveController(DisjunctionReactiveBlock.NestedConjunctionRequest req) {
         if (isTerminated()) return;
         getConjunctionController(req.controllerId())
-                .execute(actor -> actor.resolveProcessor(new Connector<>(req.inputId(), req.bounds())
+                .execute(actor -> actor.resolveReactiveBlock(new Connector<>(req.inputId(), req.bounds())
                                                                  .withMap(c -> merge(c, req.bounds()))));
     }
 
@@ -86,14 +86,14 @@ public abstract class DisjunctionController<
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    protected static abstract class DisjunctionProcessor<PROCESSOR extends DisjunctionProcessor<PROCESSOR>>
-            extends Processor<ConceptMap, ConceptMap, DisjunctionProcessor.NestedConjunctionRequest, PROCESSOR> {
+    protected static abstract class DisjunctionReactiveBlock<REACTIVE_BLOCK extends DisjunctionReactiveBlock<REACTIVE_BLOCK>>
+            extends ReactiveBlock<ConceptMap, ConceptMap, DisjunctionReactiveBlock.NestedConjunctionRequest, REACTIVE_BLOCK> {
 
         private final Disjunction disjunction;
         private final ConceptMap bounds;
 
-        protected DisjunctionProcessor(Driver<PROCESSOR> driver,
-                                       Driver<? extends DisjunctionController<PROCESSOR, ?>> controller,
+        protected DisjunctionReactiveBlock(Driver<REACTIVE_BLOCK> driver,
+                                       Driver<? extends DisjunctionController<REACTIVE_BLOCK, ?>> controller,
                                        Driver<Monitor> monitor, Disjunction disjunction, ConceptMap bounds,
                                        Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
@@ -124,8 +124,8 @@ public abstract class DisjunctionController<
         protected static class NestedConjunctionRequest extends Connector.Request<Conjunction, ConceptMap, ConceptMap> {
 
             protected NestedConjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Conjunction controllerId,
-                                               ConceptMap processorId) {
-                super(inputId, controllerId, processorId);
+                                               ConceptMap reactiveBlockId) {
+                super(inputId, controllerId, reactiveBlockId);
             }
 
         }

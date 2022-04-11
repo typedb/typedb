@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveActions;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.SubscriberRegistry;
@@ -32,17 +32,17 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
     private final SubscriberRegistry.Single<PACKET> subscriberRegistry;
     private final ReactiveActions.PublisherActions<PACKET> publisherActions;
 
-    protected Source(Processor<?, ?, ?, ?> processor, Operator.Source<PACKET> sourceOperator) {
-        super(processor);
+    protected Source(ReactiveBlock<?, ?, ?, ?> reactiveBlock, Operator.Source<PACKET> sourceOperator) {
+        super(reactiveBlock);
         this.sourceOperator = sourceOperator;
         this.subscriberRegistry = new SubscriberRegistry.Single<>();
         this.publisherActions = new AbstractStream.PublisherActionsImpl<>(this);
-        processor().monitor().execute(actor -> actor.registerSource(identifier()));
+        reactiveBlock().monitor().execute(actor -> actor.registerSource(identifier()));
     }
 
-    public static <OUTPUT> Source<OUTPUT> create(Processor<?, ?, ?, ?> processor,
+    public static <OUTPUT> Source<OUTPUT> create(ReactiveBlock<?, ?, ?, ?> reactiveBlock,
                                                  Operator.Source<OUTPUT> operator) {
-        return new Source<>(processor, operator);
+        return new Source<>(reactiveBlock, operator);
     }
 
     private Operator.Source<PACKET> operator() {
@@ -59,7 +59,7 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
             publisherActions.monitorCreateAnswers(1);
             publisherActions.subscriberReceive(subscriber, operator().next(subscriber));  // TODO: If the operator isn't tracking which subscribers have seen this packet then it needs to be sent to all subscribers. So far this is never the case.
         } else {
-            processor().monitor().execute(actor -> actor.sourceFinished(identifier()));
+            reactiveBlock().monitor().execute(actor -> actor.sourceFinished(identifier()));
         }
     }
 

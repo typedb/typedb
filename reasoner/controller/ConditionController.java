@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-public class ConditionController extends ConjunctionController<Either<ConceptMap, Materialisation>, ConditionController, ConditionController.ConditionProcessor> {
+public class ConditionController extends ConjunctionController<Either<ConceptMap, Materialisation>, ConditionController, ConditionController.ConditionReactiveBlock> {
     // TODO: Either here is just to match the input to ConclusionController, but this class only ever returns ConceptMap
 
     private final Rule.Condition condition;
@@ -51,15 +51,15 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
     }
 
     @Override
-    protected ConditionProcessor createProcessorFromDriver(Driver<ConditionProcessor> processorDriver, ConceptMap bounds) {
-        return new ConditionProcessor(
-                processorDriver, driver(), monitor, bounds, plan(),
-                () -> ConditionProcessor.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
+    protected ConditionReactiveBlock createReactiveBlockFromDriver(Driver<ConditionReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
+        return new ConditionReactiveBlock(
+                reactiveBlockDriver, driver(), monitor, bounds, plan(),
+                () -> ConditionReactiveBlock.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
         );
     }
 
-    protected static class ConditionProcessor extends ConjunctionController.ConjunctionProcessor<Either<ConceptMap, Materialisation>, ConditionProcessor>{
-        protected ConditionProcessor(Driver<ConditionProcessor> driver, Driver<ConditionController> controller,
+    protected static class ConditionReactiveBlock extends ConjunctionController.ConjunctionReactiveBlock<Either<ConceptMap, Materialisation>, ConditionReactiveBlock>{
+        protected ConditionReactiveBlock(Driver<ConditionReactiveBlock> driver, Driver<ConditionController> controller,
                                      Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
                                      Supplier<String> debugName) {
             super(driver, controller, monitor, bounds, plan, debugName);

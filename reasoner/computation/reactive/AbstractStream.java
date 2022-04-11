@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveActions.PublisherActions;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveActions.SubscriberActions;
@@ -31,10 +31,10 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
     protected final SubscriberActions<INPUT> subscriberActions;
     protected final PublisherActions<OUTPUT> publisherActions;
 
-    protected AbstractStream(Processor<?, ?, ?, ?> processor,
+    protected AbstractStream(ReactiveBlock<?, ?, ?, ?> reactiveBlock,
                              SubscriberRegistry<OUTPUT> subscriberRegistry,
                              PublisherRegistry<INPUT> publisherRegistry) {
-        super(processor);
+        super(reactiveBlock);
         this.subscriberRegistry = subscriberRegistry;
         this.publisherRegistry = publisherRegistry;
         this.subscriberActions = new SubscriberActionsImpl<>(this);

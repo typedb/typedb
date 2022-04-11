@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connector;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
@@ -44,7 +44,7 @@ import java.util.Set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class ConcludableController extends Controller<ConceptMap, Map<Variable, Concept>, ConceptMap,
-        ConcludableController.ConcludableProcessor.ConclusionRequest, ConcludableController.ConcludableProcessor, ConcludableController> {
+        ConcludableController.ConcludableReactiveBlock.ConclusionRequest, ConcludableController.ConcludableReactiveBlock, ConcludableController> {
 
     private final Map<Conclusion, Driver<ConclusionController>> conclusionControllers;
     private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
@@ -90,24 +90,24 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
     }
 
     @Override
-    protected ConcludableProcessor createProcessorFromDriver(Driver<ConcludableProcessor> processorDriver, ConceptMap bounds) {
+    protected ConcludableReactiveBlock createReactiveBlockFromDriver(Driver<ConcludableReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
         // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular
-        //  concludable. They should be filtered before being passed to the concludableProcessor's constructor
-        return new ConcludableProcessor(
-                processorDriver, driver(), monitor, bounds, unboundVars, conclusionUnifiers,
+        //  concludable. They should be filtered before being passed to the concludableReactiveBlock's constructor
+        return new ConcludableReactiveBlock(
+                reactiveBlockDriver, driver(), monitor, bounds, unboundVars, conclusionUnifiers,
                 () -> Traversal.traversalIterator(registry, concludable.pattern(), bounds),
-                () -> ConcludableProcessor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
+                () -> ConcludableReactiveBlock.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
         );
     }
 
     @Override
-    protected void resolveController(ConcludableProcessor.ConclusionRequest req) {
+    protected void resolveController(ConcludableReactiveBlock.ConclusionRequest req) {
         if (isTerminated()) return;
         conclusionControllers.get(req.controllerId())
-                .execute(actor -> actor.resolveProcessor(new Connector<>(req.inputId(), req.bounds())));
+                .execute(actor -> actor.resolveReactiveBlock(new Connector<>(req.inputId(), req.bounds())));
     }
 
-    protected static class ConcludableProcessor extends Processor<Map<Variable, Concept>, ConceptMap, ConcludableProcessor.ConclusionRequest, ConcludableProcessor> {
+    protected static class ConcludableReactiveBlock extends ReactiveBlock<Map<Variable, Concept>, ConceptMap, ConcludableReactiveBlock.ConclusionRequest, ConcludableReactiveBlock> {
 
         private final ConceptMap bounds;
         private final Set<Variable.Retrievable> unboundVars;
@@ -115,7 +115,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         private final java.util.function.Supplier traversalSuppplier;
         private final Set<ConclusionRequest> requestedConnections;
 
-        public ConcludableProcessor(Driver<ConcludableProcessor> driver, Driver<ConcludableController> controller,
+        public ConcludableReactiveBlock(Driver<ConcludableReactiveBlock> driver, Driver<ConcludableController> controller,
                                     Driver<Monitor> monitor, ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                                     java.util.function.Supplier traversalSuppplier,
@@ -132,7 +132,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         public void setUp() {
             setOutputRouter(PoolingStream.fanInFanOut(this));
             // TODO: How do we do a find first optimisation and also know that we're done? This needs to be local to
-            //  this processor because in general we couldn't call all upstream work done.
+            //  this reactiveBlock because in general we couldn't call all upstream work done.
 
             Source.create(this, new Operator.Supplier<>(traversalSuppplier)).registerSubscriber(outputRouter());
 
@@ -157,8 +157,8 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         protected static class ConclusionRequest extends Connector.Request<Conclusion, ConceptMap, Map<Variable, Concept>> {
 
             public ConclusionRequest(Reactive.Identifier<Map<Variable, Concept>, ?> inputId,
-                                     Conclusion controllerId, ConceptMap processorId) {
-                super(inputId, controllerId, processorId);
+                                     Conclusion controllerId, ConceptMap reactiveBlockId) {
+                super(inputId, controllerId, reactiveBlockId);
             }
 
         }

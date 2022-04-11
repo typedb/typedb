@@ -19,33 +19,33 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Function;
 
 /**
- * Governs an input to a processor
+ * Governs an input to a reactiveBlock
  */
 public class Input<PACKET> implements Reactive.Publisher<PACKET> {
 
     private final Identifier<PACKET, ?> identifier;
-    private final Processor<PACKET, ?, ?, ?> processor;
+    private final ReactiveBlock<PACKET, ?, ?, ?> reactiveBlock;
     private final ReactiveImpl.PublisherActionsImpl<PACKET> publisherActions;
     private boolean ready;
     private Identifier<?, PACKET> providingOutput;
     private Subscriber<PACKET> subscriber;
 
-    public Input(Processor<PACKET, ?, ?, ?> processor) {
-        this.processor = processor;
-        this.identifier = processor.registerReactive(this);
+    public Input(ReactiveBlock<PACKET, ?, ?, ?> reactiveBlock) {
+        this.reactiveBlock = reactiveBlock;
+        this.identifier = reactiveBlock.registerReactive(this);
         this.ready = false;
         this.publisherActions = new ReactiveImpl.PublisherActionsImpl<>(this);
     }
 
     @Override
-    public Processor<?, ?, ?, ?> processor() {
-        return processor;
+    public ReactiveBlock<?, ?, ?, ?> reactiveBlock() {
+        return reactiveBlock;
     }
 
     @Override
@@ -56,7 +56,7 @@ public class Input<PACKET> implements Reactive.Publisher<PACKET> {
     public void setOutput(Identifier<?, PACKET> outputId) {
         assert providingOutput == null;
         providingOutput = outputId;
-        processor().monitor().execute(actor -> actor.registerPath(identifier(), outputId));
+        reactiveBlock().monitor().execute(actor -> actor.registerPath(identifier(), outputId));
         assert !ready;
         ready = true;
     }
@@ -69,7 +69,7 @@ public class Input<PACKET> implements Reactive.Publisher<PACKET> {
     public void pull(Subscriber<PACKET> subscriber) {
         assert subscriber.equals(this.subscriber);
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
-        if (ready) providingOutput.processor().execute(actor -> actor.pull(providingOutput));
+        if (ready) providingOutput.reactiveBlock().execute(actor -> actor.pull(providingOutput));
     }
 
     @Override

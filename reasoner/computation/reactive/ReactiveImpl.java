@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveActions;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.Operator;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
@@ -28,12 +28,12 @@ import java.util.function.Function;
 
 public abstract class ReactiveImpl implements Reactive {
 
-    protected final Processor<?, ?, ?, ?> processor;
+    protected final ReactiveBlock<?, ?, ?, ?> reactiveBlock;
     protected final Reactive.Identifier<?, ?> identifier;
 
-    protected ReactiveImpl(Processor<?, ?, ?, ?> processor) {
-        this.processor = processor;
-        this.identifier = processor().registerReactive(this);
+    protected ReactiveImpl(ReactiveBlock<?, ?, ?, ?> reactiveBlock) {
+        this.reactiveBlock = reactiveBlock;
+        this.identifier = reactiveBlock().registerReactive(this);
     }
 
     @Override
@@ -42,8 +42,8 @@ public abstract class ReactiveImpl implements Reactive {
     }
 
     @Override
-    public Processor<?, ?, ?, ?> processor() {
-        return processor;
+    public ReactiveBlock<?, ?, ?, ?> reactiveBlock() {
+        return reactiveBlock;
     }
 
     public static class SubscriberActionsImpl<INPUT> implements ReactiveActions.SubscriberActions<INPUT> {
@@ -56,7 +56,7 @@ public abstract class ReactiveImpl implements Reactive {
 
         @Override
         public void registerPath(Publisher<INPUT> publisher) {
-            subscriber.processor().monitor().execute(actor -> actor.registerPath(subscriber.identifier(), publisher.identifier()));
+            subscriber.reactiveBlock().monitor().execute(actor -> actor.registerPath(subscriber.identifier(), publisher.identifier()));
         }
 
         @Override
@@ -66,7 +66,7 @@ public abstract class ReactiveImpl implements Reactive {
 
         @Override
         public void rePullPublisher(Publisher<INPUT> publisher) {
-            subscriber.processor().schedulePullRetry(publisher, subscriber);
+            subscriber.reactiveBlock().schedulePullRetry(publisher, subscriber);
         }
     }
 
@@ -81,14 +81,14 @@ public abstract class ReactiveImpl implements Reactive {
         @Override
         public void monitorCreateAnswers(int answersCreated) {
             for (int i = 0; i < answersCreated; i++) {
-                publisher.processor().monitor().execute(actor -> actor.createAnswer(publisher.identifier()));
+                publisher.reactiveBlock().monitor().execute(actor -> actor.createAnswer(publisher.identifier()));
             }
         }
 
         @Override
         public void monitorConsumeAnswers(int answersConsumed) {
             for (int i = 0; i < answersConsumed; i++) {
-                publisher.processor().monitor().execute(actor -> actor.consumeAnswer(publisher.identifier()));
+                publisher.reactiveBlock().monitor().execute(actor -> actor.consumeAnswer(publisher.identifier()));
             }
         }
 
@@ -104,7 +104,7 @@ public abstract class ReactiveImpl implements Reactive {
 
         @Override
         public <MAPPED> Stream<OUTPUT, MAPPED> map(Publisher<OUTPUT> publisher, Function<OUTPUT, MAPPED> function) {
-            Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.processor(), new Operator.Map<>(function));
+            Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.reactiveBlock(), new Operator.Map<>(function));
             publisher.registerSubscriber(newOp);
             return newOp;
         }
@@ -112,21 +112,21 @@ public abstract class ReactiveImpl implements Reactive {
         @Override
         public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Publisher<OUTPUT> publisher,
                                                        Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
-            Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.processor(), new Operator.FlatMap<>(function));
+            Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.reactiveBlock(), new Operator.FlatMap<>(function));
             publisher.registerSubscriber(newOp);
             return newOp;
         }
 
         @Override
         public Stream<OUTPUT, OUTPUT> distinct(Publisher<OUTPUT> publisher) {
-            Stream<OUTPUT, OUTPUT> newOp = TransformationStream.single(publisher.processor(), new Operator.Distinct<>());
+            Stream<OUTPUT, OUTPUT> newOp = TransformationStream.single(publisher.reactiveBlock(), new Operator.Distinct<>());
             publisher.registerSubscriber(newOp);
             return newOp;
         }
 
         @Override
         public Stream<OUTPUT, OUTPUT> buffer(Publisher<OUTPUT> publisher) {
-            Stream<OUTPUT, OUTPUT> newOp = PoolingStream.buffer(publisher.processor());
+            Stream<OUTPUT, OUTPUT> newOp = PoolingStream.buffer(publisher.reactiveBlock());
             publisher.registerSubscriber(newOp);
             return newOp;
         }

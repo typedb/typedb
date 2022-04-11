@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.SubscriberRegistry;
@@ -33,37 +33,37 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
 
     private final Operator.Pool<INPUT, OUTPUT> pool;
 
-    protected PoolingStream(Processor<?, ?, ?, ?> processor,
+    protected PoolingStream(ReactiveBlock<?, ?, ?, ?> reactiveBlock,
                             Operator.Pool<INPUT, OUTPUT> pool,
                             SubscriberRegistry<OUTPUT> subscriberRegistry,
                             PublisherRegistry<INPUT> publisherRegistry) {
-        super(processor, subscriberRegistry, publisherRegistry);
+        super(reactiveBlock, subscriberRegistry, publisherRegistry);
         this.pool = pool;
     }
 
     public static <PACKET> PoolingStream<PACKET, PACKET> fanOut(
-            Processor<?, ?, ?, ?> processor) {
-        return new PoolingStream<>(processor, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
+            ReactiveBlock<?, ?, ?, ?> reactiveBlock) {
+        return new PoolingStream<>(reactiveBlock, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
                                    new PublisherRegistry.Single<>());
     }
 
     public static <INPUT, OUTPUT> PoolingStream<INPUT, OUTPUT> fanIn(
-            Processor<?, ?, ?, ?> processor, Operator.Pool<INPUT, OUTPUT> pool) {
-        return new PoolingStream<>(processor, pool, new SubscriberRegistry.Single<>(), new PublisherRegistry.Multi<>());
+            ReactiveBlock<?, ?, ?, ?> reactiveBlock, Operator.Pool<INPUT, OUTPUT> pool) {
+        return new PoolingStream<>(reactiveBlock, pool, new SubscriberRegistry.Single<>(), new PublisherRegistry.Multi<>());
     }
 
-    public static <PACKET> PoolingStream<PACKET, PACKET> fanInFanOut(Processor<?, ?, ?, ?> processor) {
-        return new PoolingStream<>(processor, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
+    public static <PACKET> PoolingStream<PACKET, PACKET> fanInFanOut(ReactiveBlock<?, ?, ?, ?> reactiveBlock) {
+        return new PoolingStream<>(reactiveBlock, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
                                    new PublisherRegistry.Multi<>());
     }
 
     public static <PACKET> PoolingStream<PACKET, PACKET> buffer(
-            Processor<?, ?, ?, ?> processor) {
+            ReactiveBlock<?, ?, ?, ?> reactiveBlock) {
         // TODO: The operator is not bound to the nature of the registries by type. We could not correctly use a FanOut
         //  operator here even though the types allow it. In fact what really changes in tandem is the signature of the
         //  receive() and pull() methods, as when there are multiple upstreams/downstreams we need to know which the
         //  message is from/to, but  not so for single upstream/downstreams
-        return new PoolingStream<>(processor, new Operator.Buffer<>(), new SubscriberRegistry.Single<>(),
+        return new PoolingStream<>(reactiveBlock, new Operator.Buffer<>(), new SubscriberRegistry.Single<>(),
                                    new PublisherRegistry.Single<>());
     }
 

@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.Operator.Transformer;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.SubscriberRegistry;
@@ -35,24 +35,24 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
     private final Transformer<INPUT, OUTPUT> transformer;
 
-    protected TransformationStream(Processor<?, ?, ?, ?> processor,
+    protected TransformationStream(ReactiveBlock<?, ?, ?, ?> reactiveBlock,
                                    Transformer<INPUT, OUTPUT> transformer,
                                    SubscriberRegistry<OUTPUT> subscriberRegistry,
                                    PublisherRegistry<INPUT> publisherRegistry) {
-        super(processor, subscriberRegistry, publisherRegistry);
+        super(reactiveBlock, subscriberRegistry, publisherRegistry);
         this.transformer = transformer;
         registerNewPublishers(transformer.initialNewPublishers());
     }
 
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> single(
-            Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT> transformer) {
-        return new TransformationStream<>(processor, transformer, new SubscriberRegistry.Single<>(),
+            ReactiveBlock<?, ?, ?, ?> reactiveBlock, Transformer<INPUT, OUTPUT> transformer) {
+        return new TransformationStream<>(reactiveBlock, transformer, new SubscriberRegistry.Single<>(),
                                           new PublisherRegistry.Single<>());
     }
 
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> fanIn(
-            Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT> transformer) {
-        return new TransformationStream<>(processor, transformer, new SubscriberRegistry.Single<>(),
+            ReactiveBlock<?, ?, ?, ?> reactiveBlock, Transformer<INPUT, OUTPUT> transformer) {
+        return new TransformationStream<>(reactiveBlock, transformer, new SubscriberRegistry.Single<>(),
                                           new PublisherRegistry.Multi<>());
     }
 

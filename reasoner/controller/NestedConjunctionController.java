@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-public class NestedConjunctionController extends ConjunctionController<ConceptMap, NestedConjunctionController, NestedConjunctionController.NestedConjunctionProcessor> {
+public class NestedConjunctionController extends ConjunctionController<ConceptMap, NestedConjunctionController, NestedConjunctionController.NestedConjunctionReactiveBlock> {
 
     private final Driver<Monitor> monitor;
 
@@ -49,16 +49,16 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
     }
 
     @Override
-    protected NestedConjunctionProcessor createProcessorFromDriver(Driver<NestedConjunctionProcessor> processorDriver, ConceptMap bounds) {
-        return new NestedConjunctionProcessor(
-                processorDriver, driver(), monitor, bounds, plan(),
-                () -> NestedConjunctionProcessor.class.getSimpleName() + "(pattern: " + conjunction + ", bounds: " + bounds + ")"
+    protected NestedConjunctionReactiveBlock createReactiveBlockFromDriver(Driver<NestedConjunctionReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
+        return new NestedConjunctionReactiveBlock(
+                reactiveBlockDriver, driver(), monitor, bounds, plan(),
+                () -> NestedConjunctionReactiveBlock.class.getSimpleName() + "(pattern: " + conjunction + ", bounds: " + bounds + ")"
         );
     }
 
-    protected static class NestedConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, NestedConjunctionProcessor> {
+    protected static class NestedConjunctionReactiveBlock extends ConjunctionController.ConjunctionReactiveBlock<ConceptMap, NestedConjunctionReactiveBlock> {
 
-        protected NestedConjunctionProcessor(Driver<NestedConjunctionProcessor> driver,
+        protected NestedConjunctionReactiveBlock(Driver<NestedConjunctionReactiveBlock> driver,
                                              Driver<NestedConjunctionController> controller,
                                              Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
                                              Supplier<String> debugName) {

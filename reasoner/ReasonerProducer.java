@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -46,7 +46,7 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
     private final ExplainablesManager explainablesManager;
     private boolean done;
     private Queue<ConceptMap> queue;
-    private Actor.Driver<? extends Processor<?, ?, ?, ?>> rootProcessor;
+    private Actor.Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootReactiveBlock;
     private boolean isPulling;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
@@ -59,7 +59,7 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
         this.done = false;
         this.required = new AtomicInteger();
         this.isPulling = false;
-        this.controllerRegistry.registerRootConjunctionController(conjunction, filter, this);  // TODO: Doesn't indicate that this also triggers the setup of the upstream controllers and creates a processor and connects if back to this producer. Clean up this storyline.
+        this.controllerRegistry.registerRootConjunctionController(conjunction, filter, this);  // TODO: Doesn't indicate that this also triggers the setup of the upstream controllers and creates a reactiveBlock and connects if back to this producer. Clean up this storyline.
         if (options.traceInference()) {
             Tracer.initialise(options.reasonerDebuggerDir());
             Tracer.get().startDefaultTrace();
@@ -83,9 +83,9 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
     }
 
     @Override
-    public void initialise(Actor.Driver<? extends Processor<?, ?, ?, ?>> rootProcessor) {
-        assert this.rootProcessor == null;
-        this.rootProcessor = rootProcessor;
+    public void initialise(Actor.Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootReactiveBlock) {
+        assert this.rootReactiveBlock == null;
+        this.rootReactiveBlock = rootReactiveBlock;
         if (required.get() > 0) pull();
     }
 
@@ -95,7 +95,7 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
         assert request > 0;
         this.queue = queue;
         required.addAndGet(request); // TODO: improve variable naming here for required and request
-        if (rootProcessor != null && !isPulling) pull();
+        if (rootReactiveBlock != null && !isPulling) pull();
     }
 
     @Override
@@ -110,9 +110,9 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
     }
 
     private void pull() {
-        assert rootProcessor != null;
+        assert rootReactiveBlock != null;
         isPulling = true;
-        rootProcessor.execute(actor -> actor.rootPull());
+        rootReactiveBlock.execute(actor -> actor.rootPull());
     }
 
     @Override

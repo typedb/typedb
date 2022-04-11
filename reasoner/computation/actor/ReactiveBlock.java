@@ -40,13 +40,13 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
-public abstract class Processor<INPUT, OUTPUT,
+public abstract class ReactiveBlock<INPUT, OUTPUT,
         REQ extends Connector.Request<?, ?, INPUT>,
-        PROCESSOR extends Processor<INPUT, OUTPUT, REQ, PROCESSOR>> extends Actor<PROCESSOR> {
+        REACTIVE_BLOCK extends ReactiveBlock<INPUT, OUTPUT, REQ, REACTIVE_BLOCK>> extends Actor<REACTIVE_BLOCK> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Processor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReactiveBlock.class);
 
-    private final Driver<? extends Controller<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller;
+    private final Driver<? extends Controller<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller;
     private final Map<Identifier<?, ?>, Input<INPUT>> inputs;
     private final Map<Identifier<?, ?>, Output<OUTPUT>> outputs;
     private final Map<Pair<Identifier<?, ?>, Identifier<?, ?>>, Runnable> pullRetries;
@@ -56,10 +56,10 @@ public abstract class Processor<INPUT, OUTPUT,
     protected boolean done;
     private long reactiveCounter;
 
-    protected Processor(Driver<PROCESSOR> driver,
-                        Driver<? extends Controller<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller,
-                        Driver<Monitor> monitor,
-                        Supplier<String> debugName) {
+    protected ReactiveBlock(Driver<REACTIVE_BLOCK> driver,
+                            Driver<? extends Controller<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller,
+                            Driver<Monitor> monitor,
+                            Supplier<String> debugName) {
         super(driver, debugName);
         this.controller = controller;
         this.inputs = new HashMap<>();
@@ -116,7 +116,7 @@ public abstract class Processor<INPUT, OUTPUT,
         Output<OUTPUT> output = createOutput();
         output.setSubscriber(connector.inputId());
         connector.connectViaTransforms(outputRouter(), output);
-        connector.inputId().processor().execute(
+        connector.inputId().reactiveBlock().execute(
                 actor -> actor.finishConnection(connector.inputId(), output.identifier()));
     }
 
@@ -154,11 +154,11 @@ public abstract class Processor<INPUT, OUTPUT,
         if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent()) {
             String code = ((TypeDBException) e).code().get();
             if (code.equals(RESOURCE_CLOSED.code())) {
-                LOG.debug("Processor interrupted by resource close: {}", e.getMessage());
+                LOG.debug("ReactiveBlock interrupted by resource close: {}", e.getMessage());
                 controller.execute(actor -> actor.exception(e));
                 return;
             } else {
-                LOG.debug("Processor interrupted by TypeDB exception: {}", e.getMessage());
+                LOG.debug("ReactiveBlock interrupted by TypeDB exception: {}", e.getMessage());
             }
         }
         LOG.error("Actor exception", e);

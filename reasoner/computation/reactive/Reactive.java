@@ -20,13 +20,13 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 
 import java.util.function.Function;
 
 public interface Reactive {
 
-    Processor<?, ?, ?, ?> processor();  // TODO: It's weird to be able to access your subscriber/publisher's processor, but this is needed for monitoring?
+    ReactiveBlock<?, ?, ?, ?> reactiveBlock();  // TODO: It's weird to be able to access your subscriber/publisher's reactiveBlock, but this is needed for monitoring?
 
     Identifier<?, ?> identifier();
 
@@ -34,9 +34,9 @@ public interface Reactive {
 
         String toString();
 
-        // TODO: Weird to have a processor inside an Identifier, if anything we would expect to see a processor ID
-        //  here, or use some kind of compound ID of Reactive + Processor where we need it
-        Actor.Driver<? extends Processor<P_IN, P_OUT, ?, ?>> processor();
+        // TODO: Weird to have a reactiveBlock inside an Identifier, if anything we would expect to see a reactiveBlock ID
+        //  here, or use some kind of compound ID of Reactive + ReactiveBlock where we need it
+        Actor.Driver<? extends ReactiveBlock<P_IN, P_OUT, ?, ?>> reactiveBlock();
 
     }
 

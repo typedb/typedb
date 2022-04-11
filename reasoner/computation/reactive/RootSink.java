@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer.Trace;
 
@@ -33,20 +33,20 @@ public class RootSink implements Reactive.Subscriber.Finishable<ConceptMap>, Rea
     private final UUID traceId = UUID.randomUUID();
     private final ReasonerConsumer reasonerConsumer;
     private final PublisherRegistry.Single<ConceptMap> publisherRegistry;
-    private final Processor<?, ?, ?, ?> processor;
+    private final ReactiveBlock<?, ?, ?, ?> reactiveBlock;
     private final ReactiveImpl.SubscriberActionsImpl<ConceptMap> subscriberActions;
     private boolean isPulling;
     private int traceCounter = 0;
 
-    public RootSink(Processor<ConceptMap, ?, ?, ?> processor, ReasonerConsumer reasonerConsumer) {
+    public RootSink(ReactiveBlock<ConceptMap, ?, ?, ?> reactiveBlock, ReasonerConsumer reasonerConsumer) {
         this.publisherRegistry = new PublisherRegistry.Single<>();
-        this.processor = processor;
+        this.reactiveBlock = reactiveBlock;
         this.subscriberActions = new ReactiveImpl.SubscriberActionsImpl<>(this);
-        this.identifier = processor().registerReactive(this);
+        this.identifier = reactiveBlock().registerReactive(this);
         this.reasonerConsumer = reasonerConsumer;
         this.isPulling = false;
-        this.reasonerConsumer.initialise(processor().driver());
-        processor().monitor().execute(actor -> actor.registerRoot(processor().driver(), identifier()));
+        this.reasonerConsumer.initialise(reactiveBlock().driver());
+        reactiveBlock().monitor().execute(actor -> actor.registerRoot(reactiveBlock().driver(), identifier()));
     }
 
     @Override
@@ -65,7 +65,7 @@ public class RootSink implements Reactive.Subscriber.Finishable<ConceptMap>, Rea
         publisherRegistry().recordReceive(publisher);
         isPulling = false;
         reasonerConsumer.receiveAnswer(packet);
-        processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
+        reactiveBlock().monitor().execute(actor -> actor.consumeAnswer(identifier()));
     }
 
     @Override
@@ -85,7 +85,7 @@ public class RootSink implements Reactive.Subscriber.Finishable<ConceptMap>, Rea
     @Override
     public void finished() {
         reasonerConsumer.finished();
-        processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
+        reactiveBlock().monitor().execute(actor -> actor.rootFinalised(identifier()));
     }
 
     protected PublisherRegistry.Single<ConceptMap> publisherRegistry() {
@@ -93,7 +93,7 @@ public class RootSink implements Reactive.Subscriber.Finishable<ConceptMap>, Rea
     }
 
     @Override
-    public Processor<?, ?, ?, ?> processor() {
-        return processor;
+    public ReactiveBlock<?, ?, ?, ?> reactiveBlock() {
+        return reactiveBlock;
     }
 }

@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-public class RootConjunctionController extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.RootConjunctionProcessor> {
+public class RootConjunctionController extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.RootConjunctionReactiveBlock> {
     private final Set<Identifier.Variable.Retrievable> filter;
     private final Driver<Monitor> monitor;
     private final ReasonerConsumer reasonerConsumer;
@@ -53,14 +53,14 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
     @Override
     public void initialise() {
         setUpUpstreamControllers();
-        createProcessorIfAbsent(new ConceptMap());
+        createReactiveBlockIfAbsent(new ConceptMap());
     }
 
     @Override
-    protected RootConjunctionProcessor createProcessorFromDriver(Driver<RootConjunctionProcessor> processorDriver, ConceptMap bounds) {
-        return new RootConjunctionProcessor(
-                processorDriver, driver(), monitor, bounds, plan(), filter, reasonerConsumer,
-                () -> RootConjunctionProcessor.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
+    protected RootConjunctionReactiveBlock createReactiveBlockFromDriver(Driver<RootConjunctionReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
+        return new RootConjunctionReactiveBlock(
+                reactiveBlockDriver, driver(), monitor, bounds, plan(), filter, reasonerConsumer,
+                () -> RootConjunctionReactiveBlock.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
         );
     }
 
@@ -77,13 +77,13 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         reasonerConsumer.exception(e);
     }
 
-    protected static class RootConjunctionProcessor extends ConjunctionController.ConjunctionProcessor<ConceptMap, RootConjunctionProcessor> {
+    protected static class RootConjunctionReactiveBlock extends ConjunctionController.ConjunctionReactiveBlock<ConceptMap, RootConjunctionReactiveBlock> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
         private RootSink rootSink;
         private final ReasonerConsumer reasonerConsumer;
 
-        protected RootConjunctionProcessor(Driver<RootConjunctionProcessor> driver,
+        protected RootConjunctionReactiveBlock(Driver<RootConjunctionReactiveBlock> driver,
                                            Driver<RootConjunctionController> controller, Driver<Monitor> monitor,
                                            ConceptMap bounds, List<Resolvable<?>> plan,
                                            Set<Identifier.Variable.Retrievable> filter,

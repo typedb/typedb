@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Connector;
 import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
-import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
+import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
@@ -41,7 +41,7 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.NegationProcessor.DisjunctionRequest, NegationController.NegationProcessor, NegationController> {
+public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.NegationReactiveBlock.DisjunctionRequest, NegationController.NegationReactiveBlock, NegationController> {
 
     private final Negated negated;
     private final Driver<Monitor> monitor;
@@ -63,26 +63,26 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
     }
 
     @Override
-    protected NegationProcessor createProcessorFromDriver(Driver<NegationProcessor> processorDriver, ConceptMap bounds) {
-        return new NegationProcessor(
-                processorDriver, driver(), monitor, negated, bounds,
-                () -> NegationProcessor.class.getSimpleName() + "(pattern: " + negated + ", bounds: " + bounds + ")"
+    protected NegationReactiveBlock createReactiveBlockFromDriver(Driver<NegationReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
+        return new NegationReactiveBlock(
+                reactiveBlockDriver, driver(), monitor, negated, bounds,
+                () -> NegationReactiveBlock.class.getSimpleName() + "(pattern: " + negated + ", bounds: " + bounds + ")"
         );
     }
 
     @Override
-    protected void resolveController(NegationProcessor.DisjunctionRequest req) {
+    protected void resolveController(NegationReactiveBlock.DisjunctionRequest req) {
         if (isTerminated()) return;
-        disjunctionContoller.execute(actor -> actor.resolveProcessor(new Connector<>(req.inputId(), req.bounds())));
+        disjunctionContoller.execute(actor -> actor.resolveReactiveBlock(new Connector<>(req.inputId(), req.bounds())));
     }
 
-    protected static class NegationProcessor extends Processor<ConceptMap, ConceptMap, NegationProcessor.DisjunctionRequest, NegationProcessor> {
+    protected static class NegationReactiveBlock extends ReactiveBlock<ConceptMap, ConceptMap, NegationReactiveBlock.DisjunctionRequest, NegationReactiveBlock> {
 
         private final Negated negated;
         private final ConceptMap bounds;
         private NegationStream negation;
 
-        protected NegationProcessor(Driver<NegationProcessor> driver, Driver<NegationController> controller,
+        protected NegationReactiveBlock(Driver<NegationReactiveBlock> driver, Driver<NegationController> controller,
                                     Driver<Monitor> monitor, Negated negated, ConceptMap bounds,
                                     Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
@@ -128,8 +128,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             private final ConceptMap bounds;
             private boolean answerFound;
 
-            protected NegationStream(Processor<?, ?, ?, ?> processor, ConceptMap bounds) {
-                super(processor, new NegationOperator<>(), new SubscriberRegistry.Single<>(), new PublisherRegistry.Single<>());
+            protected NegationStream(ReactiveBlock<?, ?, ?, ?> reactiveBlock, ConceptMap bounds) {
+                super(reactiveBlock, new NegationOperator<>(), new SubscriberRegistry.Single<>(), new PublisherRegistry.Single<>());
                 this.bounds = bounds;
                 this.answerFound = false;
             }
@@ -145,23 +145,23 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
                 subscriberActions.traceReceive(publisher, conceptMap);
                 publisherRegistry().recordReceive(publisher);
                 answerFound = true;
-                processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
+                reactiveBlock().monitor().execute(actor -> actor.rootFinalised(identifier()));
             }
 
             @Override
             public void finished() {
                 assert !answerFound;
-                processor().monitor().execute(actor -> actor.createAnswer(identifier()));
+                reactiveBlock().monitor().execute(actor -> actor.createAnswer(identifier()));
                 iterate(subscriberRegistry().subscribers()).forEachRemaining(r -> r.receive(this, bounds));
-                processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
+                reactiveBlock().monitor().execute(actor -> actor.rootFinalised(identifier()));
             }
         }
 
         protected static class DisjunctionRequest extends Connector.Request<Disjunction, ConceptMap, ConceptMap> {
 
             protected DisjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Disjunction controllerId,
-                                         ConceptMap processorId) {
-                super(inputId, controllerId, processorId);
+                                         ConceptMap reactiveBlockId) {
+                super(inputId, controllerId, reactiveBlockId);
             }
 
         }
