@@ -31,10 +31,8 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.SupplierOperator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
-
-import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.logic.Rule.Conclusion.materialise;
 
@@ -83,7 +81,7 @@ public class MaterialisationController extends Controller<Materialisable, Void, 
         protected MaterialisationProcessor(
                 Driver<MaterialisationProcessor> driver, Driver<MaterialisationController> controller,
                 Driver<Monitor> monitor, Materialisable materialisable, TraversalEngine traversalEng,
-                ConceptManager conceptMgr, Supplier<String> debugName) {
+                ConceptManager conceptMgr, java.util.function.Supplier debugName) {
             super(driver, controller, monitor, debugName);
             this.materialisable = materialisable;
             this.traversalEng = traversalEng;
@@ -93,7 +91,7 @@ public class MaterialisationController extends Controller<Materialisable, Void, 
         @Override
         public void setUp() {
             setOutputRouter(PoolingStream.fanOut(this));
-            Source.create(this, new SupplierOperator<>(
+            Source.create(this, new Operator.Supplier<>(
                     () -> materialise(materialisable, traversalEng, conceptMgr)
                             .map(Iterators::single)
                             .orElse(Iterators.empty()))

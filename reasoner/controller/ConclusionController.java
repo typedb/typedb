@@ -205,7 +205,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
         }
 
-        private static class ConclusionOperator implements Operator.Transformer<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>>, Operator {
+        private static class ConclusionOperator implements Operator.Transformer<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>> {
 
             private final ConclusionProcessor processor;
 

@@ -20,8 +20,6 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.BufferOperator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.FanOutOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.SubscriberRegistry;
@@ -45,7 +43,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
 
     public static <PACKET> PoolingStream<PACKET, PACKET> fanOut(
             Processor<?, ?, ?, ?> processor) {
-        return new PoolingStream<>(processor, new FanOutOperator<>(), new SubscriberRegistry.Multi<>(),
+        return new PoolingStream<>(processor, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
                                    new PublisherRegistry.Single<>());
     }
 
@@ -55,7 +53,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
     }
 
     public static <PACKET> PoolingStream<PACKET, PACKET> fanInFanOut(Processor<?, ?, ?, ?> processor) {
-        return new PoolingStream<>(processor, new FanOutOperator<>(), new SubscriberRegistry.Multi<>(),
+        return new PoolingStream<>(processor, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
                                    new PublisherRegistry.Multi<>());
     }
 
@@ -65,7 +63,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
         //  operator here even though the types allow it. In fact what really changes in tandem is the signature of the
         //  receive() and pull() methods, as when there are multiple upstreams/downstreams we need to know which the
         //  message is from/to, but  not so for single upstream/downstreams
-        return new PoolingStream<>(processor, new BufferOperator<>(), new SubscriberRegistry.Single<>(),
+        return new PoolingStream<>(processor, new Operator.Buffer<>(), new SubscriberRegistry.Single<>(),
                                    new PublisherRegistry.Single<>());
     }
 

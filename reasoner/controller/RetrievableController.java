@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
@@ -28,10 +27,8 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.SupplierOperator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
-
-import java.util.function.Supplier;
 
 public class RetrievableController extends Controller<ConceptMap, Void, ConceptMap,
         Request<?, ?, Void>, RetrievableController.RetrievableProcessor, RetrievableController> {
@@ -70,12 +67,12 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     protected static class RetrievableProcessor extends Processor<Void, ConceptMap,
             Request<?, ?, Void>, RetrievableProcessor> {
 
-        private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
+        private final java.util.function.Supplier traversalSupplier;
 
         protected RetrievableProcessor(Driver<RetrievableProcessor> driver, Driver<RetrievableController> controller,
                                        Driver<Monitor> monitor,
-                                       Supplier<FunctionalIterator<ConceptMap>> traversalSupplier,
-                                       Supplier<String> debugName) {
+                                       java.util.function.Supplier traversalSupplier,
+                                       java.util.function.Supplier debugName) {
             super(driver, controller, monitor, debugName);
             this.traversalSupplier = traversalSupplier;
         }
@@ -83,7 +80,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
         @Override
         public void setUp() {
             setOutputRouter(PoolingStream.fanOut(this));
-            Source.create(this, new SupplierOperator<>(traversalSupplier)).registerSubscriber(outputRouter());
+            Source.create(this, new Operator.Supplier<>(traversalSupplier)).registerSubscriber(outputRouter());
         }
     }
 }

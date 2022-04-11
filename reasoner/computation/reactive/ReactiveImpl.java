@@ -20,10 +20,8 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.DistinctOperator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.FlatMapOperator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.MapOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveActions;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Function;
@@ -106,7 +104,7 @@ public abstract class ReactiveImpl implements Reactive {
 
         @Override
         public <MAPPED> Stream<OUTPUT, MAPPED> map(Publisher<OUTPUT> publisher, Function<OUTPUT, MAPPED> function) {
-            Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.processor(), new MapOperator<>(function));
+            Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.processor(), new Operator.Map<>(function));
             publisher.registerSubscriber(newOp);
             return newOp;
         }
@@ -114,14 +112,14 @@ public abstract class ReactiveImpl implements Reactive {
         @Override
         public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Publisher<OUTPUT> publisher,
                                                        Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
-            Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.processor(), new FlatMapOperator<>(function));
+            Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.processor(), new Operator.FlatMap<>(function));
             publisher.registerSubscriber(newOp);
             return newOp;
         }
 
         @Override
         public Stream<OUTPUT, OUTPUT> distinct(Publisher<OUTPUT> publisher) {
-            Stream<OUTPUT, OUTPUT> newOp = TransformationStream.single(publisher.processor(), new DistinctOperator<>());
+            Stream<OUTPUT, OUTPUT> newOp = TransformationStream.single(publisher.processor(), new Operator.Distinct<>());
             publisher.registerSubscriber(newOp);
             return newOp;
         }

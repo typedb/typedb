@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
@@ -33,7 +32,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.SupplierOperator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -41,7 +40,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
@@ -114,14 +112,14 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         private final ConceptMap bounds;
         private final Set<Variable.Retrievable> unboundVars;
         private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
-        private final Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
+        private final java.util.function.Supplier traversalSuppplier;
         private final Set<ConclusionRequest> requestedConnections;
 
         public ConcludableProcessor(Driver<ConcludableProcessor> driver, Driver<ConcludableController> controller,
                                     Driver<Monitor> monitor, ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
-                                    Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
-                                    Supplier<String> debugName) {
+                                    java.util.function.Supplier traversalSuppplier,
+                                    java.util.function.Supplier debugName) {
             super(driver, controller, monitor, debugName);
             this.bounds = bounds;
             this.unboundVars = unboundVars;
@@ -136,7 +134,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
             // TODO: How do we do a find first optimisation and also know that we're done? This needs to be local to
             //  this processor because in general we couldn't call all upstream work done.
 
-            Source.create(this, new SupplierOperator<>(traversalSuppplier)).registerSubscriber(outputRouter());
+            Source.create(this, new Operator.Supplier<>(traversalSuppplier)).registerSubscriber(outputRouter());
 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {

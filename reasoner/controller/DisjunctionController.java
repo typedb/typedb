@@ -32,7 +32,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.BufferOperator;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
@@ -103,7 +103,7 @@ public abstract class DisjunctionController<
 
         @Override
         public void setUp() {
-            PoolingStream<ConceptMap, ConceptMap> fanIn = PoolingStream.fanIn(this, new BufferOperator<>());
+            PoolingStream<ConceptMap, ConceptMap> fanIn = PoolingStream.fanIn(this, new Operator.Buffer<>());
             setOutputRouter(getOutputRouter(fanIn));
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
                 Input<ConceptMap> input = createInput();
