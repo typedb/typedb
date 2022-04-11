@@ -255,8 +255,6 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
             @Override
             public boolean equals(Object o) {
                 // TODO: be wary with request equality when conjunctions are involved
-                // TODO: I think there's a subtle bug here where a conjunction could break down into two parts that according
-                //  to conjunction comparison are the same, and therefore will not create separate reactiveBlocks for them
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 AbstractRequest<?, ?, ?> request = (AbstractRequest<?, ?, ?>) o;

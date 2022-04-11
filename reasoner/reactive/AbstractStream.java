@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.reasoner.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveActions;
 import com.vaticle.typedb.core.reasoner.reactive.common.SubscriberRegistry;
 
-public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive implements Reactive.Stream<INPUT, OUTPUT> {  // TODO: Rename Stream when there's no conflict
+public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive implements Reactive.Stream<INPUT, OUTPUT> {
 
     private final SubscriberRegistry<OUTPUT> subscriberRegistry;
     private final PublisherRegistry<INPUT> publisherRegistry;

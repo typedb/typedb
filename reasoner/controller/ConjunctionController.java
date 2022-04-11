@@ -29,11 +29,13 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.answer.Mapping;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.reactive.Monitor;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Input;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
 import com.vaticle.typedb.core.reasoner.controller.Registry.ResolverView;
@@ -131,7 +133,7 @@ public abstract class ConjunctionController<OUTPUT,
             ReactiveBlock.RetrievableRequest req = connectionRequest.asRetrievable();
             ResolverView.FilteredRetrievable controllerView = retrievableControllers.get(req.controllerId());
             ConceptMap newPID = req.bounds().filter(controllerView.filter());
-            AbstractReactiveBlock.Connector<ConceptMap, ConceptMap> connector = new AbstractReactiveBlock.Connector<>(req.inputId(), req.bounds())
+            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
                     .withMap(c -> merge(c, req.bounds()))
                     .withNewBounds(newPID);
             controllerView.controller().execute(actor -> actor.resolveReactiveBlock(connector));
@@ -140,7 +142,7 @@ public abstract class ConjunctionController<OUTPUT,
             ResolverView.MappedConcludable controllerView = concludableControllers.get(req.controllerId());
             Mapping mapping = Mapping.of(controllerView.mapping());
             ConceptMap newPID = mapping.transform(req.bounds());
-            AbstractReactiveBlock.Connector<ConceptMap, ConceptMap> connector = new AbstractReactiveBlock.Connector<>(req.inputId(), req.bounds())
+            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
                     .withMap(mapping::unTransform)
                     .withNewBounds(newPID);
             controllerView.controller().execute(actor -> actor.resolveReactiveBlock(connector));
@@ -148,7 +150,7 @@ public abstract class ConjunctionController<OUTPUT,
             ReactiveBlock.NegatedRequest req = connectionRequest.asNegated();
             ResolverView.FilteredNegation controllerView = negationControllers.get(req.controllerId());
             ConceptMap newPID = req.bounds().filter(controllerView.filter());
-            AbstractReactiveBlock.Connector<ConceptMap, ConceptMap> connector = new AbstractReactiveBlock.Connector<>(req.inputId(), req.bounds())
+            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
                     .withMap(c -> merge(c, req.bounds()))
                     .withNewBounds(newPID);
             controllerView.controller().execute(actor -> actor.resolveReactiveBlock(connector));
@@ -206,13 +208,14 @@ public abstract class ConjunctionController<OUTPUT,
 
         public class CompoundOperator implements Operator.Transformer<ConceptMap, ConceptMap> {
 
-            private final Reactive.Publisher<ConceptMap> leadingPublisher;
+            private final Publisher<ConceptMap> leadingPublisher;
             private final List<Resolvable<?>> remainingPlan;
-            private final Map<Reactive.Publisher<ConceptMap>, ConceptMap> publisherPackets;
+            private final Map<Publisher<ConceptMap>, ConceptMap> publisherPackets;
             private final ConceptMap initialPacket;
             private final AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock;
 
-            public CompoundOperator(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, List<Resolvable<?>> plan, ConceptMap initialPacket) {
+            public CompoundOperator(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, List<Resolvable<?>> plan,
+                                    ConceptMap initialPacket) {
                 this.reactiveBlock = reactiveBlock;
                 assert plan.size() > 0;
                 this.initialPacket = initialPacket;
@@ -222,18 +225,19 @@ public abstract class ConjunctionController<OUTPUT,
             }
 
             @Override
-            public Set<Reactive.Publisher<ConceptMap>> initialNewPublishers() {
+            public Set<Publisher<ConceptMap>> initialNewPublishers() {
                 return set(this.leadingPublisher);
             }
 
             @Override
-            public Either<Reactive.Publisher<ConceptMap>, Set<ConceptMap>> accept(Reactive.Publisher<ConceptMap> publisher, ConceptMap packet) {
+            public Either<Publisher<ConceptMap>, Set<ConceptMap>> accept(Publisher<ConceptMap> publisher,
+                                                                         ConceptMap packet) {
                 ConceptMap mergedPacket = merge(initialPacket, packet);
                 if (leadingPublisher.equals(publisher)) {
                     if (remainingPlan.size() == 0) {  // For a single item plan
                         return Either.second(set(mergedPacket));
                     } else {
-                        Reactive.Publisher<ConceptMap> follower;  // TODO: Creation of a new publisher should be delegated to the owner of this operation
+                        Publisher<ConceptMap> follower;  // TODO: Creation of a new publisher should be delegated to the owner of this operation
                         if (remainingPlan.size() == 1) {
                             follower = nextCompoundLeader(remainingPlan.get(0), mergedPacket);
                         } else {

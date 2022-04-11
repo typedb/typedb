@@ -25,7 +25,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public abstract class SubscriberRegistry<PACKET> {  // TODO: Rename SubscriberRegistry
+public abstract class SubscriberRegistry<PACKET> {
 
     abstract void setNotPulling();
 
